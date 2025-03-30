@@ -1,9 +1,10 @@
 import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema({
-  email: String,
-  password: String,
-  role: String, // 'student', 'parent', or 'teacher'
+  email: {
+  type: String,
+  required: true, // Optionally make it required
+  role: String, // 'admin', 'parent', or 'teacher'
   profile: {
     name: String,
     age: Number,
@@ -14,6 +15,7 @@ const UserSchema = new mongoose.Schema({
     font: String,
     spacing: Number,
     backgroundColor: String,
+    },
   },
 });
 
