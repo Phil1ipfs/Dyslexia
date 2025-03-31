@@ -1,46 +1,32 @@
 import React from 'react';
+import '../styles/homepage.css';
 
-const Homepage = () => {
+function Homepage() {
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Welcome to Dyslexia Learn</h1>
-      <p style={styles.subtitle}>
-        Empowering young learners with personalized reading support.
-      </p>
-      <button style={styles.button} onClick={() => alert('Let’s get started!')}>
-        Get Started
-      </button>
+    <div className="homepage">
+      <header className="homepage-header">
+        <h1>Dyslexia App</h1>
+        <p>Empowering young minds through better reading support.</p>
+      </header>
+
+      <main className="homepage-content">
+        <section className="features">
+          <div className="card">
+            <h2>Personalized Lessons</h2>
+            <p>Interactive and adaptive reading exercises tailored to each child.</p>
+          </div>
+          <div className="card">
+            <h2>Progress Tracking</h2>
+            <p>Real-time feedback and analytics to monitor reading improvements.</p>
+          </div>
+          <div className="card">
+            <h2>Teacher Support</h2>
+            <p>Tools for teachers to manage students and review progress easily.</p>
+          </div>
+        </section>
+      </main>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    textAlign: 'center',
-    padding: '100px 20px',
-    fontFamily: 'Arial, sans-serif',
-    background: '#f5f7fa',
-    height: '100vh',
-  },
-  title: {
-    fontSize: '3rem',
-    color: '#333',
-  },
-  subtitle: {
-    fontSize: '1.2rem',
-    color: '#666',
-    marginTop: '10px',
-  },
-  button: {
-    marginTop: '30px',
-    padding: '10px 20px',
-    fontSize: '1rem',
-    background: '#4CAF50',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-  },
-};
+}
 
 export default Homepage;
