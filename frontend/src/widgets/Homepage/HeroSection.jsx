@@ -1,13 +1,18 @@
-import React from 'react';
-import "../css/Homepage.css";  
-import penguin from '../../assets/images/penguin.png';
-import clouds from '../../assets/images/clouds.png';
+import React from "react";
+import "../../css/Homepage/Homepage.css";
+import "../../css/Homepage/responsive.css";
 
-function HeroSection() {
+import heroImage from "../../assets/images/Group 4076.png"; 
+
+const HeroSection = () => {
   return (
-    <section className="hero-section">
-      <img src={clouds} className="clouds-bg" alt="Clouds" />
-      <div className="hero-left">
+    <section
+      className="hero-section"
+      style={{
+        backgroundImage: `url(${heroImage})`,
+      }}
+    >
+      <div className="hero-content">
         <h2>Learn Tagalog for Kids</h2>
         <p>
           Kids love learning Tagalog with fun videos, interactive games, catchy songs,
@@ -15,9 +20,8 @@ function HeroSection() {
         </p>
         <button className="register-btn">Register</button>
       </div>
-      <img src={penguin} className="penguin-float" alt="Penguin Mascot" />
     </section>
   );
-}
+};
 
 export default HeroSection;

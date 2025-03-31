@@ -1,6 +1,11 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Homepage from './pages/Homepage.jsx';
+import './assets/fonts/fonts.css'; 
+// in App.jsx or index.jsx
+import "./css/Homepage/responsive.css";
+
+
 
 function App() {
   return (
