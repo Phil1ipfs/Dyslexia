@@ -3,10 +3,10 @@
     padding: 0;
     box-sizing: border-box;
   }
-/*  
+ 
 html, body {
     overflow-x: hidden;
-  } */
+  } 
   
 
     /* ---- Navbar styles moved from Navbar.css ---- */
@@ -133,20 +133,14 @@ html, body {
   
   .about-section {
     width: 100vw;
-    position: relative; /* Add position relative */
-    top: -10vh; /* Pull up by 20% of viewport height, adjust as needed */
-    height: auto; /* Changed from 100vh to auto */
-    min-height: 80vh;
     background-color: #fff;
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding-top: 0;
-    padding-left: 9%;
-    padding-right: 9%;
-    padding-bottom: 2rem;
-    overflow: visible; /* Changed from hidden to visible */
-    margin-bottom: -20vh; /* Compensate for the negative top offset */
+    padding: 3rem 9% 4rem;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 2;
   }
   
   .about-container {
@@ -168,15 +162,15 @@ html, body {
     display: block;
     margin-top: 0;
     padding-top: 0;
-    position: relative; /* Required for 'top' to work */
-    top: -200px; /* Adjust this value as needed */
+    position: relative; 
+    top: -200px; 
   }
   
   .about-text {
     flex: 1;
     min-width: 280px;
     position: relative; 
-    top: -40px; /* Adjust this value as needed */
+    top: -80px;
     font-family: 'Atkinson Hyperlegible', sans-serif;
     margin-top: 0;
     padding-top: 0;
@@ -190,9 +184,96 @@ html, body {
   }
   
   .about-description {
-    font-size: 1rem;
+    font-size: 1.2rem;
     color: #2a2a2a;
     line-height: 1.6;
     text-align: justify;
   }
+
+  /* ----FEATURES SECTION ------ */
+
+  .features-section {
+    background-image: url('../../assets/images/background-2.png');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: top center;
+    min-height: 110vh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    font-family: 'Atkinson Hyperlegible', sans-serif;
+    overflow: hidden;
+    padding: 5rem 2rem 3rem;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 1;
+    }
   
+    .features-heading {
+      font-size: 2.8rem;
+      font-weight: bold;
+      color: white;
+      margin-top: 3rem;
+
+      margin-bottom: 3rem;
+      text-align: center;
+    }
+    
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr); 
+      gap: 3rem 6rem;
+      max-width: 1000px;
+      width: 100%;
+      text-align: center;
+    }
+    
+    .feature-card {
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .feature-card img {
+      width: 90px;
+      margin-bottom: 1rem;
+    }
+    
+    .feature-card h4 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    
+    .feature-card p {
+      font-size: 1rem;
+      line-height: 1.6;
+      max-width: 300px;
+    }
+    
+    .bear-mascot {
+      width: 120px;
+      margin-top: 3rem;
+    }
+    
+    @media screen and (max-width: 768px) {
+      .features-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+    
+      .features-heading {
+        font-size: 1.5rem;
+      }
+    
+      .feature-card img {
+        width: 70px;
+      }
+    
+      .feature-card p {
+        font-size: 0.95rem;
+      }
+    }
