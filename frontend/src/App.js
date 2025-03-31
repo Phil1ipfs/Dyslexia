@@ -1,11 +1,10 @@
 import React from 'react';
-import './App.css';
-import Homepage from './pages/Homepage';
 
 function App() {
   return (
-    <div className="App">
-      <Homepage />
+    <div>
+      <h1>Hello, Dyslexia App!</h1>
+      <p>Welcome to your Vite + React setup.</p>
     </div>
   );
 }
