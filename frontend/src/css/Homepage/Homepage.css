@@ -1,0 +1,46 @@
+.hero-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #2b3760;
+    color: white;
+    padding: 4rem 2rem;
+    position: relative;
+  }
+  
+  .clouds-bg {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    z-index: 0;
+    opacity: 0.4;
+  }
+  
+  .penguin-float {
+    width: 250px;
+    animation: float 3s ease-in-out infinite;
+    z-index: 2;
+  }
+  
+  .hero-left {
+    z-index: 2;
+    max-width: 500px;
+  }
+  
+  .register-btn {
+    background: linear-gradient(to right, #ff9900, #ffcc66);
+    border: none;
+    padding: 0.8rem 1.8rem;
+    font-size: 1rem;
+    border-radius: 50px;
+    color: white;
+    font-weight: bold;
+    margin-top: 1rem;
+    cursor: pointer;
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+  
