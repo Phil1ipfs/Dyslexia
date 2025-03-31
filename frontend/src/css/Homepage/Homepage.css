@@ -78,7 +78,6 @@ body {
 }
 
 /* --------HERO Section------ */
-
 .hero-section {
   height: 155vh;
   width: 100vw;
@@ -94,14 +93,12 @@ body {
   padding-top: 6rem;
 }
 
-
 .hero-content {
   max-width: 500px;
   color: white;
   align-self: flex-start;
   margin-top: 8rem;
 }
-
 
 .hero-content h2 {
   font-size: 3.5rem;
@@ -115,7 +112,6 @@ body {
   line-height: 1.6;
   margin-bottom: 1.8rem;
   font-family: 'Atkinson Hyperlegible', sans-serif;
-
 }
 
 .register-btn {
@@ -128,6 +124,98 @@ body {
   font-weight: bold;
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* --- NEW: Animated Clouds & Penguin --- */
+
+/* Wrap your cloud/penguin images in this container */
+.hero-animations {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; 
+  pointer-events: none;
+}
+
+/* Common styling for all clouds */
+.cloud {
+  position: absolute;
+  width: 200px;  /* Adjust as needed */
+  opacity: 0.9;  /* Slight transparency if desired */
+}
+
+/* 
+  Each cloud has a different position/speed so 
+  they aren’t all in sync.
+  (Tweak top/left to place them where you like.)
+*/
+
+/* CLOUD 1: gentle side-to-side drift */
+.cloud1 {
+  top: 30%;
+  right: 10%;
+  animation: driftCloud1 20s ease-in-out infinite;
+}
+
+/* CLOUD 2 */
+.cloud2 {
+  top: 18%;
+  left: 55%;
+  animation: driftCloud2 20s ease-in-out infinite;
+}
+
+/* CLOUD 3 */
+.cloud3 {
+  top: 13%;
+  left: 70%;
+  animation: driftCloud3 45s ease-in-out infinite;
+}
+
+/* Keyframes for a subtle horizontal + slight vertical drift */
+@keyframes driftCloud1 {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(30px, -20px);
+  }
+}
+
+@keyframes driftCloud2 {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-40px, 15px);
+  }
+}
+
+@keyframes driftCloud3 {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(25px, -10px);
+  }
+}
+
+.hero-penguin {
+  position: absolute;
+  top:16rem;      /* Adjust as you like */
+  right: 20%;
+  width: 200px;      /* Adjust size as needed */
+  animation: floatPenguin 4s ease-in-out infinite;
+}
+
+@keyframes floatPenguin {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
 }
 
 /* --------About Section------ */
@@ -346,20 +434,17 @@ body {
   background-repeat: no-repeat;
   background-size: 100% 100%;
   background-position: top center;
-
   width: 100%;
   min-height: 188vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-
   padding: 2rem 2rem 6rem;
   box-sizing: border-box;
   overflow-x: hidden;
   font-family: 'Atkinson Hyperlegible', sans-serif;
 }
-
 
 .teaching-methodology-section .teaching-image {
   width: 140px;
@@ -418,5 +503,107 @@ body {
 
   .teaching-methodology-section .features-heading {
     font-size: 1.5rem;
+  }
+}
+
+/* --------------------------------------- */
+/*          WHY CHOOSE LITEREXIA          */
+/* --------------------------------------- */
+
+.why-literexia-section {
+  width: 100vw;
+  background-color: #fff; 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 1rem 9%;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 2;
+}
+
+.why-literexia-heading {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  margin-top: -5rem;
+  color: #2a3b73; 
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+  text-align: center;
+}
+
+.why-laptop-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.why-laptop-image {
+  max-width: 450px;
+  width: 90%;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Grid for the four items */
+.why-literexia-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4rem 6rem; 
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.why-card {
+  background-color: transparent; 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #2a3b73; 
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.why-card h4 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 1rem 0% 0.9rem;
+}
+
+.why-card p {
+  font-size: 1rem;
+  line-height: 1.6;
+  max-width: 1700px;
+}
+
+.why-star {
+  width: 90px;
+  height: auto;
+  margin-bottom: 0.3rem;
+}
+
+@media screen and (max-width: 768px) {
+  .why-literexia-grid {
+    grid-template-columns: 1fr; 
+  }
+
+  .why-literexia-heading {
+    font-size: 1.8rem;
+  }
+
+  .why-card h4 {
+    font-size: 1.2rem;
+  }
+
+  .why-card p {
+    font-size: 0.95rem;
+  }
+
+  .why-star {
+    width: 60px;
   }
 }

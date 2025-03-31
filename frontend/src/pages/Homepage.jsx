@@ -2,7 +2,16 @@ import React from "react";
 import "../css/Homepage/Homepage.css";
 import "../css/Homepage/responsive.css";
 
+// widgets reusable
 import Navbar from "../widgets/Homepage/Navbar";
+import Footer from "../widgets/Homepage/Footer"; 
+
+
+
+import heroCloud1 from "../assets/images/hero-clouds.png";
+import heroCloud2 from "../assets/images/hero-clouds2.png";
+import heroCloud3 from "../assets/images/hero-clouds3.png";
+import heroPenguin from "../assets/images/hero-penguin.png";
 
 // Hero
 import heroImage from "../assets/images/Group 4076.png";
@@ -26,6 +35,10 @@ import methodPenguin from "../assets/icons/penguin.png";
 import methodElephant from "../assets/icons/elephant.png";
 import methodLion from "../assets/icons/sealion.png";
 
+// Why Choose Us 
+import laptopPenguin from "../assets/icons/laptop.png";
+import starIcon from "../assets/icons/star.png";
+
 function Homepage() {
   return (
 
@@ -38,6 +51,15 @@ function Homepage() {
         className="hero-section"
         style={{ backgroundImage: `url(${heroImage})` }}
       >
+        {/* 1) Animated clouds and penguin container */}
+        <div className="hero-animations">
+          <img src={heroCloud1} alt="cloud 1" className="cloud cloud1" />
+          <img src={heroCloud2} alt="cloud 2" className="cloud cloud2" />
+          <img src={heroCloud3} alt="cloud 3" className="cloud cloud3" />
+          <img src={heroPenguin} alt="hero penguin" className="hero-penguin" />
+        </div>
+
+        {/* 2) Existing hero content */}
         <div className="hero-content">
           <h2>Learn Tagalog for Kids</h2>
           <p>
@@ -47,6 +69,7 @@ function Homepage() {
           <button className="register-btn">Register</button>
         </div>
       </section>
+
 
       {/* ---- ABOUT SECTION ---- */}
       <section className="about-section">
@@ -166,8 +189,63 @@ function Homepage() {
         </div>
       </section>
 
+       {/* ---- WHY CHOOSE LITEREXIA SECTION ---- */}
+       <section className="why-literexia-section">
+        <h2 className="why-literexia-heading">Why choose Literexia?</h2>
+        
+        {/* Centered laptop image */}
+        <div className="why-laptop-wrapper">
+          <img 
+            src={laptopPenguin} 
+            alt="Laptop with Penguin" 
+            className="why-laptop-image" 
+          />
+        </div>
 
+        {/* Four-star features */}
+        <div className="why-literexia-grid">
+          <div className="why-card">
+            <img src={starIcon} alt="Star Icon" className="why-star" />
+            <h4>Progress Tracking &amp; Performance Dashboard</h4>
+            <p>
+              Teachers and parents can monitor student progress 
+              through detailed reports and insights.
+            </p>
+          </div>
+
+          <div className="why-card">
+            <img src={starIcon} alt="Star Icon" className="why-star" />
+            <h4>Predictive Data Analytics for Personalized Learning</h4>
+            <p>
+              Monitors reading progress and identifies weaknesses.
+              Recommends personalized learning paths based on student data.
+              Generates insights for teachers to optimize lesson plans.
+            </p>
+          </div>
+
+          <div className="why-card">
+            <img src={starIcon} alt="Star Icon" className="why-star" />
+            <h4>Interactive Learning Activities</h4>
+            <p>
+              Word recognition, phonics, and comprehension games.
+              Repetitive but engaging exercises to reinforce learning.
+            </p>
+          </div>
+
+          <div className="why-card">
+            <img src={starIcon} alt="Star Icon" className="why-star" />
+            <h4>Dyslexia-Friendly Features &amp; Accessibility</h4>
+            <p>
+              Customizable fonts (Dyslexie, OpenDyslexic, etc.) for better readability.
+              Adjustable word spacing &amp; background colors to reduce visual stress.
+              Text-to-speech (TTS) &amp; speech-to-text (STT) for auditory support.
+            </p>
+          </div>
+        </div>
+      </section>
+      <Footer />
     </div>
+    
 
   );
 }
