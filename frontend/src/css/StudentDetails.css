@@ -1,3 +1,4 @@
+/* Container for the entire Student Details page */
 .student-details-container {
   background: #f7f8fa;
   padding: 2rem;
@@ -7,7 +8,7 @@
   box-sizing: border-box;
 }
 
-/* Header */
+/* Header / Title Bar */
 .student-details-header {
   display: flex;
   justify-content: space-between;
@@ -66,7 +67,11 @@
   color: #3B4F81;
 }
 
-/* Reading Performance */
+.student-info h3 {
+  margin-top: 0;
+}
+
+/* Reading Performance Box */
 .reading-box {
   flex: 1;
   background: #f1f3f9;
@@ -89,7 +94,7 @@
   transition: width 0.3s ease;
 }
 
-/* Tabs */
+/* Tabs at the top: Progress, Activities Result, etc. */
 .student-tabs {
   display: flex;
   gap: 1rem;
@@ -112,7 +117,7 @@
   color: white;
 }
 
-/* Tab Content */
+/* Main Content / Tab Body */
 .tab-content {
   background: white;
   padding: 1.5rem;
@@ -120,167 +125,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-/* Progress Tab Grid */
-.progress-tab {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-}
-
-.progress-graph,
-.recent-activity,
-.ai-usage,
-.feedback-box {
-  background: #f6f7fb;
-  padding: 1rem;
-  border-radius: 10px;
-}
-
-.green {
-  color: #2e7d32;
-  font-weight: bold;
-}
-
-.orange {
-  color: #e67e22;
-  font-weight: bold;
-}
-
-/* Feedback Box */
-.feedback-box textarea {
-  width: 100%;
-  height: 100px;;
-  padding: 1.6rem;
-  margin: 0.5rem 0;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
-  font-size: 1rem;
-}
-
-.send-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.send-footer button {
-  background: #3B4F81;
-  color: white;
-  padding: 0.4rem 1rem;
-  border-radius: 20px;
-  border: none;
-  display: flex;
-  gap: 0.5rem;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.3s ease;
-}
-
-.send-footer button:hover {
-  background-color: #2d3e6e;
-}
-
-/* Family Tab */
-.family-tab .family-info {
-  background: #f2f4fa;
-  padding: 1rem;
-  border-radius: 10px;
-  margin-bottom: 1.5rem;
-}
-.family-info-card {
-  background-color: #f5f8fc;
-  padding: 1.5rem;
-  border-radius: 16px;
-  margin-bottom: 1.5rem;
-  color: #111;
-}
-
-.section-heading {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin-bottom: 199rem; /* 🔼 increase this value */
-}
-
-
-.family-grid {
-  display: flex;
-  gap: 1.5rem;
-  align-items: flex-start;
-}
-
-.family-avatar {
-  background-color: #2e3e64;
-  color: white;
-  font-weight: bold;
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  font-size: 1.1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.family-grid-details {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.7rem 2rem;
-  flex: 1;
-}
-
-.info-pair p {
-  margin: 0;
-  line-height: 1.5;
-}
-
-
-.sibling-card {
-  background-color: white;
-  border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  color: #333;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.sibling-avatar {
-  background-color: #3B4F81;
-  color: white;
-  border-radius: 50%;
-  width: 45px;
-  height: 45px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 1rem;
-}
-
-.no-siblings {
-  font-style: italic;
-  color: #ccc;
-  margin-top: 0.5rem;
-}
-
-.view-btn {
-  background-color: #3B4F81;
-  color: white;
-  padding: 0.4rem 1rem;
-  border-radius: 20px;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.3s ease;
-}
-
-.view-btn:hover {
-  background-color: #2d3e6e;
-}
-
+/* PROGRESS TAB Layout */
 .progress-overview-grid {
   display: flex;
   flex-wrap: wrap;
@@ -294,16 +139,11 @@
   padding: 1.2rem;
   flex: 1 1 250px;
   min-width: 260px;
-  height: 240px; 
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); 
-
+  height: 240px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-}
-
-.real-chart {
-  margin-top: 0.6rem;
 }
 
 .chart-title {
@@ -311,6 +151,10 @@
   font-weight: 700;
   color: #111827;
   margin-bottom: 0.6rem;
+}
+
+.real-chart {
+  margin-top: 0.6rem;
 }
 
 .chart-desc {
@@ -321,92 +165,29 @@
   font-style: italic;
 }
 
-
-.recent-activities {
-  list-style: none;
-  padding: 0;
-}
-
-.activity-item {
-  background: #f9f9f9;
-  border-radius: 8px;
-  padding: 0.8rem 1rem;
-  margin-bottom: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.score-badge {
-  font-weight: bold;
-  padding: 0.4rem 0.7rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
-}
-
-.score-badge.green {
-  background: #e0f7e9;
-  color: #2e7d32;
-}
-
-.score-badge.yellow {
-  background: #fff5cc;
-  color: #b68600;
-}
-
-.score-badge.red {
-  background: #ffe5e5;
-  color: #c62828;
-}
-
-.feedback-history li {
-  margin-bottom: 1rem;
-}
-
-.progress-overview-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.progress-card {
-  background: #f6f7fb;
-  padding: 1rem;
-  border-radius: 10px;
-}
-
-.mock-chart {
-  margin-top: 0.5rem;
-  padding: 1rem;
-  border: 2px dashed #ccc;
-  color: #888;
-  font-size: 0.9rem;
-  border-radius: 6px;
-  min-height: 120px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
 .progress-bottom-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
+  margin-top: 2rem;
 }
 
+/* Recent Activities Box in Progress Tab */
 .recent-activities-box {
   background: #f6f7fb;
   padding: 1rem;
   border-radius: 10px;
 }
 
-.recent-activities-box .activity-item {
+/* Single Activity item in that box */
+.activity-item {
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
   display: flex;
   align-items: flex-start;
   gap: 0.8rem;
-  margin-bottom: 1rem;
 }
 
 .activity-icon {
@@ -431,10 +212,12 @@
   margin: 0.2rem 0 0;
 }
 
+/* Score badge color-coded */
 .score-badge {
   font-weight: bold;
   padding: 0.2rem 0.6rem;
   border-radius: 12px;
+  margin-left: 0.25rem;
 }
 
 .score-badge.green {
@@ -449,9 +232,10 @@
 
 .score-badge.red {
   background-color: #ffe0e0;
-  color: #d32f2f;
+  color: #c62828;
 }
 
+/* FEEDBACK BOX */
 .feedback-box {
   background-color: #f5f8fc;
   padding: 1.5rem;
@@ -460,12 +244,15 @@
   color: #111;
 }
 
+.section-title {
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
 .feedback-toolbar {
   display: flex;
   gap: 0.7rem;
-  margin-top: 0.6rem;
-
-  margin-bottom: 0.9rem;
+  margin: 0.6rem 0 0.9rem;
 }
 
 .feedback-toolbar button {
@@ -479,17 +266,17 @@
   font-size: 1rem;
   transition: all 0.2s ease;
 }
-
 .feedback-toolbar button:hover {
   background-color: #2c3d65;
 }
 
+/* contentEditable feedback editor */
 .feedback-editor {
   background-color: white;
   border-radius: 10px;
   border: 1px solid #ccc;
   padding: 1rem;
-  min-height: 200px; 
+  min-height: 200px;
   max-height: 280px;
   overflow-y: auto;
   font-family: 'Atkinson Hyperlegible', sans-serif;
@@ -498,7 +285,6 @@
   resize: none;
 }
 
-
 .feedback-editor:empty:before {
   content: attr(placeholder);
   color: #aaa;
@@ -506,6 +292,7 @@
   pointer-events: none;
 }
 
+/* Footer with "To:" and "Email:" */
 .send-footer {
   display: flex;
   justify-content: space-between;
@@ -563,30 +350,113 @@
   cursor: pointer;
   transition: background 0.2s ease;
 }
-
 .send-btn:hover {
   background-color: #1f2c4b;
 }
 
-.send-footer {
+/* FEEDBACK HISTORY */
+.feedback-history li {
+  margin-bottom: 1rem;
+}
+
+/* FAMILY TAB */
+.family-tab .family-info {
+  background: #f2f4fa;
+  padding: 1rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.family-info-card {
+  background-color: #f5f8fc;
+  padding: 1.5rem;
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+  color: #111;
+}
+
+.family-grid {
   display: flex;
-  justify-content: space-between;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.family-avatar {
+  background-color: #2e3e64;
+  color: white;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.family-grid-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.7rem 2rem;
+  flex: 1;
+}
+
+.info-pair p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.siblings {
+  margin-top: 1rem;
+}
+
+.sibling-card {
+  background-color: white;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.sibling-avatar {
+  background-color: #3B4F81;
+  color: white;
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.no-siblings {
+  font-style: italic;
+  color: #ccc;
   margin-top: 0.5rem;
 }
 
-.send-footer button {
-  background: #3B4F81;
+/* "View Details" button for siblings */
+.view-btn {
+  background-color: #3B4F81;
   color: white;
-  border: none;
-  padding: 1.5rem 2.0rem;
+  padding: 0.4rem 1rem;
   border-radius: 20px;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  border: none;
+  cursor: pointer;
   font-weight: bold;
+  transition: all 0.3s ease;
+}
+.view-btn:hover {
+  background-color: #2d3e6e;
 }
 
-
+/* ACTIVITIES RESULT TAB */
 .activities-result-section {
   display: flex;
   flex-direction: column;
@@ -606,7 +476,7 @@
   font-weight: 600;
   font-size: 1rem;
   margin-bottom: 0.6rem;
-  margin-top: 0.2rem; /* 🔽 reduced top space */
+  margin-top: 0.2rem; /* reduce extra top spacing */
 }
 
 .activity-item-box {
@@ -628,11 +498,6 @@
   align-items: center;
 }
 
-.activity-title {
-  font-weight: 600;
-  color: #2c3e50;
-}
-
 .activity-score {
   font-weight: bold;
   color: #3B4F81;
@@ -644,10 +509,49 @@
   margin-top: 0.25rem;
 }
 
+/* Dropdown toggle button for question-level feedback */
+.activity-dropdown .dropdown-toggle {
+  margin-top: 0.6rem;
+  background: #3B4F81;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
 
+.activity-dropdown .dropdown-toggle:hover {
+  background: #2d3e6e;
+}
 
+/* Question list inside the dropdown */
+.question-list {
+  list-style: none;
+  padding: 0.6rem 1rem;
+  margin-top: 0.5rem;
+  background: #f9f9f9;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
 
+.question-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+}
 
+.question-text {
+  margin-right: 1rem;
+}
 
+/* Mark question correctness */
+.question-item.correct .question-result {
+  color: #2e7d32;
+  font-weight: bold;
+}
 
-
+.question-item.incorrect .question-result {
+  color: #c62828;
+  font-weight: bold;
+}

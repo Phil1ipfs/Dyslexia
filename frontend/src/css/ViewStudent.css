@@ -76,46 +76,61 @@
   /* Table */
   .view-student-table {
     width: 100%;
-    padding: 0;
-    margin: 0;
+    margin-top: 1rem;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
   }
   
   .view-student-table table {
     width: 100%;
-    border-collapse: collapse;
     border-radius: 12px;
     overflow: hidden;
-    background-color: white;
-    color: #333;
   }
   
-  .view-student-table th,
-  .view-student-table td {
-    padding: 1rem;
+  .view-student-table th {
+    background-color: #2e3d66;
+    color: white;
+    padding: 12px;
     text-align: left;
   }
   
-  .group-row td {
-    background-color: #e4e7f1;
-    font-weight: bold;
-    color: #2c3e50;
+  .view-student-table td {
+    padding: 14px 12px;
+    color: #2c2c2c;
+    font-size: 15px;
   }
   
-  /* View Button */
+  .view-student-table tbody tr:nth-child(odd) {
+    background-color: #f4f6fc;
+  }
+  
+  .view-student-table tbody tr:nth-child(even) {
+    background-color: #e6eaf4;
+  }
+  
+  .group-row td {
+    background-color: #d3d9e8;
+    font-weight: bold;
+    padding: 10px;
+    color: #2e3d66;
+  }
+  
   .view-btn {
-    background-color: #EF5350;
+    background-color: #2e3d66;
     color: white;
-    padding: 0.4rem 1rem;
-    border-radius: 20px;
     border: none;
+    border-radius: 20px;
+    padding: 6px 16px;
     cursor: pointer;
     font-weight: bold;
-    transition: all 0.3s ease;
+    transition: background 0.2s;
   }
   
   .view-btn:hover {
-    background-color: #d84340;
-    transform: scale(1.05);
+    background-color: #1f2b4d;
   }
   
   /* Pagination */

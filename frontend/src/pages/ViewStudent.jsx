@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import '../css/ViewStudent.css';
-import { FaSearch, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaSearch } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-
-
 
 const mockData = [
   {
@@ -20,12 +18,38 @@ const mockData = [
     totalActivities: 20,
     progressCharts: [
       { title: 'Letter Identification', type: 'bar', desc: 'Knows 18 out of 28 letters' },
-      { title: 'Sound Recognition', type: 'line', desc: 'Improved from 30% to 50%' },
+      { title: 'Sound Recognition', type: 'line', desc: 'Improved from 30 to 50' },
       { title: 'Activity Completion', type: 'donut', desc: '50% Completed' }
     ],
     activities: [
-      { title: 'Letter Matching A–Z', time: 'Apr 1, 2025, 9:00AM', score: 40 },
-      { title: 'Sound Recognition (M)', time: 'Mar 30, 2025, 10:30AM', score: 50 }
+      {
+        title: 'Letter Matching A–Z',
+        category: 'Alpabeto at Tunog',
+        score: 4,
+        total: 5,
+        time: 'Apr 1, 2025, 9:00AM',
+        questions: [
+          { text: 'Ano ang tamang letra ng "aso"?', correct: true },
+          { text: 'Ano ang tunog ng "ba"?', correct: false },
+          { text: 'Ano ang titik para sa "gabi"?', correct: true },
+          { text: 'Alin ang larawan ng "lobo"?', correct: true },
+          { text: 'Ano ang unang tunog sa "ilaw"?', correct: false }
+        ]
+      },
+      {
+        title: 'Sound Recognition (M)',
+        category: 'Alpabeto at Tunog',
+        score: 3,
+        total: 5,
+        time: 'Mar 30, 2025, 10:30AM',
+        questions: [
+          { text: 'Alin ang tamang tunog ng "M"?', correct: true },
+          { text: 'Ano ang tunog ng "Ma"?', correct: true },
+          { text: 'Ang "M" ba ay tunog ng aso?', correct: false },
+          { text: 'Ano ang tunog ng titik "M"?', correct: true },
+          { text: 'Ang "M" ay huling tunog sa "gamot"?', correct: false }
+        ]
+      }
     ],
     feedbackHistory: [
       { date: 'Mar 29, 2025', message: 'Improving on letter sounds' }
@@ -35,7 +59,6 @@ const mockData = [
     siblings: [
       { name: 'Miguel Cruz', grade: 2, id: '03223123126', age: 7, readingLevel: 'B' }
     ]
-
   },
   {
     id: 2,
@@ -50,12 +73,39 @@ const mockData = [
     activitiesCompleted: 14,
     totalActivities: 20,
     progressCharts: [
-      { title: 'Sight Word Fluency', type: 'bar', desc: 'Reads 30 sight words correctly' },
-      { title: 'Sentence Completion', type: 'line', desc: '85% accuracy' },
+      { title: 'Sight Word Fluency', type: 'bar', desc: 'Reads 30 sight words' },
+      { title: 'Sentence Completion', type: 'line', desc: '85 to 90' },
       { title: 'Activity Rate', type: 'donut', desc: '70% Completed' }
     ],
     activities: [
-      { title: 'Sight Word Matching', time: 'Mar 29, 2025, 10:00AM', score: 60 }
+      {
+        title: 'Sight Word Matching',
+        category: 'Sight Words',
+        score: 4,
+        total: 5,
+        time: 'Mar 29, 2025, 10:00AM',
+        questions: [
+          { text: 'Piliin ang tamang salita para sa larawan ng aso.', correct: true },
+          { text: 'Alin ang salitang "nanay"?', correct: true },
+          { text: 'Ang "mesa" ba ay hayop?', correct: false },
+          { text: 'Tama ba ang salitang "bahay"?', correct: true },
+          { text: 'Ang salitang "mangga" ay kulay asul?', correct: false }
+        ]
+      },
+      {
+        title: 'Pagsunod sa Simpleng Pangungusap',
+        category: 'Simpleng Pangungusap',
+        score: 3,
+        total: 5,
+        time: 'Mar 27, 2025, 8:45AM',
+        questions: [
+          { text: 'Basahin: Si Ana ay kumain ng ___.', correct: true },
+          { text: 'Alin ang tamang pagkakasunod ng salita?', correct: true },
+          { text: 'Tama ba ang pangungusap: "Ako takbo bahay"?', correct: false },
+          { text: 'Tama ba: "Ang bata ay masaya."', correct: true },
+          { text: 'Ang "pusa ay aso" ba ay tama?', correct: false }
+        ]
+      }
     ],
     feedbackHistory: [
       { date: 'Mar 25, 2025', message: 'Struggles with sentence endings' }
@@ -79,12 +129,39 @@ const mockData = [
     activitiesCompleted: 28,
     totalActivities: 30,
     progressCharts: [
-      { title: 'Story Sequencing', type: 'line', desc: 'Sequencing skills 88%' },
-      { title: 'Inference & Summary', type: 'bar', desc: 'Makes accurate summaries' },
+      { title: 'Story Sequencing', type: 'line', desc: 'Sequencing 70 to 88' },
+      { title: 'Inference & Summary', type: 'bar', desc: 'Makes accurate summaries 40 to 80' },
       { title: 'Completion Rate', type: 'donut', desc: '93% Completed' }
     ],
     activities: [
-      { title: 'Summarizing a Paragraph', time: 'Apr 2, 2025, 8:00AM', score: 88 }
+      {
+        title: 'Paglalagom ng Talata',
+        category: 'Paglalagom',
+        score: 5,
+        total: 5,
+        time: 'Apr 2, 2025, 8:00AM',
+        questions: [
+          { text: 'Ano ang pangunahing ideya ng talata?', correct: true },
+          { text: 'Tama ba ang pagbibigay ng buod?', correct: true },
+          { text: 'Nabanggit ba ang mga tauhan?', correct: true },
+          { text: 'Tama ba ang pagkakasunod ng pangyayari?', correct: true },
+          { text: 'May maling detalye sa buod?', correct: false }
+        ]
+      },
+      {
+        title: 'Paghinuha Mula sa Kwento',
+        category: 'Paghinuha',
+        score: 4,
+        total: 5,
+        time: 'Mar 30, 2025, 2:30PM',
+        questions: [
+          { text: 'Ano ang damdamin ng tauhan?', correct: true },
+          { text: 'Ano ang dahilan sa likod ng aksyon?', correct: true },
+          { text: 'May patunay ba sa sagot?', correct: false },
+          { text: 'Ang hinuha ba ay lohikal?', correct: true },
+          { text: 'Naintindihan ba ang konteksto?', correct: true }
+        ]
+      }
     ],
     feedbackHistory: [],
     contact: '+63 922 334 5678',
@@ -106,15 +183,39 @@ const mockData = [
     activitiesCompleted: 24,
     totalActivities: 30,
     progressCharts: [
-      { title: 'Reading Comprehension Score', type: 'line', desc: 'From 65% to 78% in 3 weeks' },
-      { title: 'Word Recognition Accuracy', type: 'bar', desc: 'Weekly Pattern Accuracy' },
+      { title: 'Reading Comprehension Score', type: 'line', desc: 'From 65 to 78' },
+      { title: 'Word Recognition Accuracy', type: 'bar', desc: 'Weekly Pattern Accuracy 30 to 70' }, // <== ADDED NUMBERS
       { title: 'Activity Completion Rate', type: 'donut', desc: '76% Completed' }
     ],
     activities: [
-      { title: 'Talata: Pangunahing Ideya', time: 'Apr 2, 2025, 9:00AM', score: 78 },
-      { title: 'Pagkilala sa Detalye', time: 'Apr 1, 2025, 10:15AM', score: 84 },
-      { title: 'Paggamit ng Konteksto', time: 'Mar 31, 2025, 1:30PM', score: 67 },
-      { title: 'Pagbuo ng Pangungusap', time: 'Mar 30, 2025, 2:00PM', score: 72 }
+      {
+        title: 'Talata: Pangunahing Ideya',
+        category: 'Pangunahing Ideya',
+        score: 4,
+        total: 5,
+        time: 'Apr 2, 2025, 9:00AM',
+        questions: [
+          { text: 'Ano ang pangunahing ideya?', correct: true },
+          { text: 'Tama ba ang detalyeng ibinigay?', correct: true },
+          { text: 'May hindi kaugnay na detalye?', correct: false },
+          { text: 'Malinaw ba ang pagkakasulat?', correct: true },
+          { text: 'Tama ang sagot sa tanong?', correct: true }
+        ]
+      },
+      {
+        title: 'Paggamit ng Konteksto',
+        category: 'Paggamit ng Konteksto',
+        score: 3,
+        total: 5,
+        time: 'Mar 31, 2025, 1:30PM',
+        questions: [
+          { text: 'Naintindihan ba ang salita gamit ang konteksto?', correct: true },
+          { text: 'Tama ba ang kahulugan ng "masigla"?', correct: false },
+          { text: 'Gamitin ang "mabango" sa pangungusap.', correct: true },
+          { text: 'Tama ba ang pagkakagamit ng "mabait"?', correct: true },
+          { text: 'Alin ang maling kahulugan?', correct: false }
+        ]
+      }
     ],
     feedbackHistory: [
       { date: 'March 25, 2025', message: 'Kit improved in paragraph comprehension.' },
@@ -125,7 +226,6 @@ const mockData = [
     siblings: [
       { name: 'Anna Santiago', grade: 3, id: '03223123125', age: 9, readingLevel: 'D' }
     ]
-
   },
   {
     id: 5,
@@ -140,13 +240,39 @@ const mockData = [
     activitiesCompleted: 27,
     totalActivities: 30,
     progressCharts: [
-      { title: 'Critical Text Analysis', type: 'line', desc: 'Analyzes writer’s intent' },
-      { title: 'Fact vs Opinion', type: 'bar', desc: 'Identifies biased content' },
+      { title: 'Critical Text Analysis', type: 'line', desc: 'Analyzes writer intent 40 to 90' },
+      { title: 'Fact vs Opinion', type: 'bar', desc: 'Identifies biased content 30 to 80' },
       { title: 'Activity Completion Rate', type: 'donut', desc: '90% Completed' }
     ],
     activities: [
-      { title: 'Analyzing Bias', time: 'Apr 2, 2025, 8:00AM', score: 91 },
-      { title: 'Fact vs Opinion', time: 'Apr 1, 2025, 9:30AM', score: 89 }
+      {
+        title: 'Kritikal na Pagsusuri ng Teksto',
+        category: 'Kritikal na Pagsusuri',
+        score: 5,
+        total: 5,
+        time: 'Apr 2, 2025, 8:00AM',
+        questions: [
+          { text: 'Ano ang layunin ng manunulat?', correct: true },
+          { text: 'Tama ba ang pagsusuri ng nilalaman?', correct: true },
+          { text: 'May bias ba sa teksto?', correct: true },
+          { text: 'Ang opinyon ba ay suportado ng ebidensya?', correct: true },
+          { text: 'May maling konklusyon ba?', correct: false }
+        ]
+      },
+      {
+        title: 'Pagtukoy ng Layunin ng May-akda',
+        category: 'Layunin ng May-akda',
+        score: 4,
+        total: 5,
+        time: 'Apr 1, 2025, 9:30AM',
+        questions: [
+          { text: 'Ano ang gustong ipahiwatig ng may-akda?', correct: true },
+          { text: 'Ang teksto ba ay nagbibigay impormasyon?', correct: true },
+          { text: 'May impluwensiyang layunin ba?', correct: false },
+          { text: 'Tama ba ang interpretasyon ng mambabasa?', correct: true },
+          { text: 'Tumpak ba ang sagot sa layunin?', correct: true }
+        ]
+      }
     ],
     feedbackHistory: [
       { date: 'Mar 28, 2025', message: 'Sophia excels in text analysis.' }
@@ -156,7 +282,6 @@ const mockData = [
     siblings: [
       { name: 'Mateo Reyes', grade: 2, id: '03223123132', age: 8, readingLevel: 'C' }
     ]
-
   }
 ];
 
@@ -181,6 +306,7 @@ const ViewStudent = () => {
   const handleGroupChange = (e) => setGroupBy(e.target.value);
   const toggleView = () => setIsTableView(prev => !prev);
 
+  // helper
   const groupByKey = (data, keyFn) => {
     return data.reduce((acc, item) => {
       const key = keyFn(item);
@@ -190,20 +316,23 @@ const ViewStudent = () => {
     }, {});
   };
 
+  // 1) Filter by name/parent
+  // 2) Then filter by reading level if readingFilter != 'All'
   const filtered = mockData
     .filter(s =>
       s.name.toLowerCase().includes(search) || s.parent.toLowerCase().includes(search)
     )
     .filter(s => readingFilter === 'All' || s.readingLevel === readingFilter);
 
+  // Group them
   const grouped = groupBy !== 'none'
     ? groupByKey(filtered, s =>
-      groupBy === 'family'
-        ? s.name.split(' ').slice(-1)[0]
-        : groupBy === 'parent'
-          ? s.parent
-          : s.name.split(' ')[0]
-    )
+        groupBy === 'family'
+          ? s.name.split(' ').slice(-1)[0]
+          : groupBy === 'parent'
+            ? s.parent
+            : s.name.split(' ')[0]
+      )
     : { All: filtered };
 
   const handleViewDetails = (student) => {
@@ -212,7 +341,6 @@ const ViewStudent = () => {
 
   return (
     <div className="view-student-container">
-      {/* Header */}
       <div className="view-student-header">
         <div className="header-left">
           <h1>Student Viewer</h1>
@@ -221,8 +349,9 @@ const ViewStudent = () => {
         <div className="header-right">
           <h4>Cradle of Learners Inc. Teacher</h4>
           <div className="teacher-profile-wrapper">
-
-            <div className="teacher-avatar" onClick={() => setShowDropdown(prev => !prev)}>TC</div>
+            <div className="teacher-avatar" onClick={() => setShowDropdown(prev => !prev)}>
+              TC
+            </div>
             {showDropdown && (
               <div className="profile-dropdown">
                 <div className="dropdown-item">My Profile</div>
@@ -267,7 +396,7 @@ const ViewStudent = () => {
         </div>
       </div>
 
-      {/* Conditionally Render View */}
+      {/* Conditionally render */}
       {isTableView ? (
         <div className="view-student-table">
           <table>
@@ -297,7 +426,9 @@ const ViewStudent = () => {
                       <td>{s.studentID}</td>
                       <td>{readingLevelLabels[s.readingLevel]}</td>
                       <td>
-                        <button className="view-btn" onClick={() => handleViewDetails(s)}>View Details</button>
+                        <button className="view-btn" onClick={() => handleViewDetails(s)}>
+                          View Details
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -316,6 +447,12 @@ const ViewStudent = () => {
               {students.map((s) => (
                 <p key={s.id} className="text-row">
                   <strong>{s.name}</strong> | Parent: {s.parent} | ID: {s.studentID} | Antas: {readingLevelLabels[s.readingLevel]}
+                  <button
+                    className="view-btn-inline"
+                    onClick={() => handleViewDetails(s)}
+                  >
+                    View
+                  </button>
                 </p>
               ))}
             </React.Fragment>
