@@ -3,10 +3,8 @@ import "../css/Homepage/Homepage.css";
 import "../css/Homepage/responsive.css";
 
 // widgets reusable
-import Navbar from "../widgets/Navbar";
-import Footer from "../widgets/Footer"; 
-
-
+import Navbar from "../widgets/Homepage/Navbar";
+import Footer from "../widgets/Homepage/Footer"; 
 
 import heroCloud1 from "../assets/images/hero-clouds.png";
 import heroCloud2 from "../assets/images/hero-clouds2.png";
