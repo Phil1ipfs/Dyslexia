@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 
-// ICONS & LOGO
 import literexiaLogo from "../assets/images/LITEREXIA.png";
 import dashboardIcon from "../assets/icons/Dashboard.png";
 import studentProgressIcon from "../assets/icons/Progress.png";
@@ -15,7 +14,7 @@ function Sidebar({ defaultActive = "dashboard" }) {
   const handleClick = (item) => {
     setActive(item);
     setClickedItem(item);
-    setTimeout(() => setClickedItem(""), 300); // Clear bounce after animation
+    setTimeout(() => setClickedItem(""), 300); 
   };
 
   return (
