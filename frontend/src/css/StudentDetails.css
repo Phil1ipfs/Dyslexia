@@ -1,0 +1,195 @@
+.student-details-container {
+    background: #f7f8fa;
+    padding: 2rem;
+    font-family: 'Atkinson Hyperlegible', sans-serif;
+    min-height: 100vh;
+  }
+  
+  .student-details-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  
+  .teacher-name {
+    font-weight: 600;
+    color: #3B4F81;
+  }
+  
+  .teacher-avatar {
+    background: #e3aee8;
+    color: white;
+    font-weight: bold;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.9rem;
+    margin-left: 0.5rem;
+  }
+  
+  .student-profile-box {
+    display: flex;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    gap: 2rem;
+    margin-bottom: 1rem;
+    align-items: flex-start;
+  }
+  
+  .student-avatar {
+    background: #ccc;
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    font-size: 1.4rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .reading-box {
+    flex: 1;
+    background: #f1f3f9;
+    padding: 1rem;
+    border-radius: 10px;
+  }
+  
+  .progress-bar {
+    height: 12px;
+    background: #dcdcdc;
+    border-radius: 8px;
+    margin: 0.5rem 0;
+  }
+  
+  .bar-fill {
+    background: #4b735e;
+    height: 100%;
+    border-radius: 8px;
+  }
+  
+  .student-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .tab-btn {
+    padding: 0.7rem 1.5rem;
+    background: #e6e8ef;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #3B4F81;
+  }
+  
+  .tab-btn.active {
+    background: #3B4F81;
+    color: white;
+  }
+  
+  .tab-content {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+  }
+  
+  .progress-tab {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+  
+  .progress-graph,
+  .recent-activity,
+  .ai-usage,
+  .feedback-box {
+    background: #f6f7fb;
+    padding: 1rem;
+    border-radius: 10px;
+  }
+  
+  .green {
+    color: #2e7d32;
+    font-weight: bold;
+  }
+  
+  .orange {
+    color: #e67e22;
+    font-weight: bold;
+  }
+  
+  .feedback-box textarea {
+    width: 100%;
+    padding: 0.6rem;
+    margin: 0.5rem 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+  
+  .send-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .send-footer button {
+    background: #3B4F81;
+    color: white;
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    border: none;
+    display: flex;
+    gap: 0.5rem;
+    cursor: pointer;
+  }
+  
+  .family-tab .family-info {
+    background: #f2f4fa;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+  }
+  
+  .sibling-card {
+    display: flex;
+    background: white;
+    border: 1px solid #dce0ea;
+    padding: 1rem;
+    border-radius: 10px;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .sibling-avatar {
+    background: #c9c9c9;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .sibling-info {
+    flex: 1;
+    margin-left: 1rem;
+  }
+  
+  .view-btn {
+    background-color: #3B4F81;
+    color: white;
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+  }
+  

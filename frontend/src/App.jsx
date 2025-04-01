@@ -34,6 +34,8 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ViewStudent from './pages/ViewStudent.jsx';
 import Sidebar from './widgets/Sidebar.jsx'; 
+import StudentDetails from './pages/StudentDetails'; 
+
 import './assets/fonts/fonts.css';
 
 
@@ -44,7 +46,7 @@ function App() {
       <div className="main-content">
         <Routes>
           <Route path="/view-student" element={<ViewStudent />} />
-          <Route path="*" element={<Navigate to="/view-student" />} />
+          <Route path="/student-details/:id" element={<StudentDetails />} /> 
         </Routes>
       </div>
     </BrowserRouter>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import '../css/ViewStudent/ViewStudent.css';
+import '../css/ViewStudent.css';
 import { FaSearch, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom'; 
 
 const mockData = [
   { id: 1, name: 'Marco Santos', parent: 'Maria & Juan Santos', studentID: '03223123126', readingLevel: 'A' },

@@ -1,6 +1,6 @@
 import React from "react";
-import "../css/Homepage/Homepage.css";
-import "../css/Homepage/responsive.css";
+import "../css/Homepage.css";
+import "../css/responsive.css";
 
 // widgets reusable
 import Navbar from "../widgets/Homepage/Navbar";
