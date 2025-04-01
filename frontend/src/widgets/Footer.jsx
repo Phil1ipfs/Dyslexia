@@ -1,6 +1,6 @@
 import React from "react";
 import literexiaLogo from "../../assets/images/LITEREXIA.png"; 
-import "../../widgets/Homepage/Footer.css";
+import "../../widgets/Footer.css";
 
 
 
@@ -8,11 +8,8 @@ function Footer() {
   return (
     <footer className="footer-section">
       
-      {/* Wave background is handled by CSS (see Footer.css) */}
-      
       <div className="footer-links-container">
         
-        {/* About column */}
         <div className="footer-column">
           <h4>About</h4>
           <ul>
@@ -23,7 +20,6 @@ function Footer() {
           </ul>
         </div>
 
-        {/* Courses column */}
         <div className="footer-column">
           <h4>Courses</h4>
           <ul>
@@ -34,7 +30,6 @@ function Footer() {
           </ul>
         </div>
 
-        {/* Schools column */}
         <div className="footer-column">
           <h4>Schools</h4>
           <ul>
@@ -45,7 +40,6 @@ function Footer() {
           </ul>
         </div>
 
-        {/* Blog and Help column */}
         <div className="footer-column">
           <h4>Blog</h4>
           <ul>
@@ -64,7 +58,6 @@ function Footer() {
         </div>
 
       </div>
-      {/* Footer Bottom: Logo + Rights text */}
       <div className="footer-bottom">
         <img 
           src={literexiaLogo} 

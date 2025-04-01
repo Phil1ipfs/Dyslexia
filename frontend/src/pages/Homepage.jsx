@@ -3,8 +3,8 @@ import "../css/Homepage/Homepage.css";
 import "../css/Homepage/responsive.css";
 
 // widgets reusable
-import Navbar from "../widgets/Homepage/Navbar";
-import Footer from "../widgets/Homepage/Footer"; 
+import Navbar from "../widgets/Navbar";
+import Footer from "../widgets/Footer"; 
 
 
 

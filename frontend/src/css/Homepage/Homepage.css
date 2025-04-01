@@ -126,9 +126,6 @@ body {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
-/* --- NEW: Animated Clouds & Penguin --- */
-
-/* Wrap your cloud/penguin images in this container */
 .hero-animations {
   position: absolute;
   top: 0;
@@ -139,41 +136,30 @@ body {
   pointer-events: none;
 }
 
-/* Common styling for all clouds */
 .cloud {
   position: absolute;
-  width: 200px;  /* Adjust as needed */
-  opacity: 0.9;  /* Slight transparency if desired */
+  width: 200px;  
+  opacity: 0.9;  
 }
 
-/* 
-  Each cloud has a different position/speed so 
-  they aren’t all in sync.
-  (Tweak top/left to place them where you like.)
-*/
-
-/* CLOUD 1: gentle side-to-side drift */
 .cloud1 {
   top: 30%;
   right: 10%;
   animation: driftCloud1 20s ease-in-out infinite;
 }
 
-/* CLOUD 2 */
 .cloud2 {
   top: 18%;
   left: 55%;
   animation: driftCloud2 20s ease-in-out infinite;
 }
 
-/* CLOUD 3 */
 .cloud3 {
   top: 13%;
   left: 70%;
   animation: driftCloud3 45s ease-in-out infinite;
 }
 
-/* Keyframes for a subtle horizontal + slight vertical drift */
 @keyframes driftCloud1 {
   0%, 100% {
     transform: translate(0, 0);
@@ -374,7 +360,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 1rem 9% 0.7rem; /* 🔽 reduced bottom padding from 4rem to 1rem */
+  padding: 1rem 9% 0.7rem; 
   box-sizing: border-box;
   position: relative;
   z-index: 2;
@@ -546,7 +532,6 @@ body {
   object-fit: contain;
 }
 
-/* Grid for the four items */
 .why-literexia-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
