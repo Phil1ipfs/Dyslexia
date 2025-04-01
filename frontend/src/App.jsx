@@ -36,20 +36,17 @@ import ViewStudent from './pages/ViewStudent.jsx';
 import Sidebar from './widgets/Sidebar.jsx'; 
 import './assets/fonts/fonts.css';
 
+
 function App() {
   return (
     <BrowserRouter>
-      
-        {/* Sidebar fixed on the left */}
-        <Sidebar active="student" />
-
-        {/* Main content area; margin-left should match sidebar width */}
-        <div style={{ marginLeft: '290px', padding: '1rem', flex: 1 }}>
-          <Routes>
-            <Route path="/view-student" element={<ViewStudent />} />
-            <Route path="*" element={<Navigate to="/view-student" />} />
-          </Routes>
-        </div>
+      <Sidebar active="student" />
+      <div className="main-content">
+        <Routes>
+          <Route path="/view-student" element={<ViewStudent />} />
+          <Route path="*" element={<Navigate to="/view-student" />} />
+        </Routes>
+      </div>
     </BrowserRouter>
   );
 }
