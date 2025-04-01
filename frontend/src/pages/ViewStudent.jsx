@@ -3,6 +3,7 @@ import '../css/ViewStudent.css';
 import { FaSearch } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
+// Mock data with unique IDs and full reading/activities details
 const mockData = [
   {
     id: 1,
@@ -18,7 +19,7 @@ const mockData = [
     totalActivities: 20,
     progressCharts: [
       { title: 'Letter Identification', type: 'bar', desc: 'Knows 18 out of 28 letters' },
-      { title: 'Sound Recognition', type: 'line', desc: 'Improved from 30 to 50' },
+      { title: 'Sound Recognition', type: 'line', desc: 'Improved from 30% to 50%' },
       { title: 'Activity Completion', type: 'donut', desc: '50% Completed' }
     ],
     activities: [
@@ -73,8 +74,8 @@ const mockData = [
     activitiesCompleted: 14,
     totalActivities: 20,
     progressCharts: [
-      { title: 'Sight Word Fluency', type: 'bar', desc: 'Reads 30 sight words' },
-      { title: 'Sentence Completion', type: 'line', desc: '85 to 90' },
+      { title: 'Sight Word Fluency', type: 'bar', desc: 'Reads 30 sight words correctly' },
+      { title: 'Sentence Completion', type: 'line', desc: '85% accuracy' },
       { title: 'Activity Rate', type: 'donut', desc: '70% Completed' }
     ],
     activities: [
@@ -129,8 +130,8 @@ const mockData = [
     activitiesCompleted: 28,
     totalActivities: 30,
     progressCharts: [
-      { title: 'Story Sequencing', type: 'line', desc: 'Sequencing 70 to 88' },
-      { title: 'Inference & Summary', type: 'bar', desc: 'Makes accurate summaries 40 to 80' },
+      { title: 'Story Sequencing', type: 'line', desc: 'Sequencing skills 88%' },
+      { title: 'Inference & Summary', type: 'bar', desc: 'Makes accurate summaries' },
       { title: 'Completion Rate', type: 'donut', desc: '93% Completed' }
     ],
     activities: [
@@ -183,8 +184,8 @@ const mockData = [
     activitiesCompleted: 24,
     totalActivities: 30,
     progressCharts: [
-      { title: 'Reading Comprehension Score', type: 'line', desc: 'From 65 to 78' },
-      { title: 'Word Recognition Accuracy', type: 'bar', desc: 'Weekly Pattern Accuracy 30 to 70' }, // <== ADDED NUMBERS
+      { title: 'Reading Comprehension Score', type: 'line', desc: 'From 65% to 78% in 3 weeks' },
+      { title: 'Word Recognition Accuracy', type: 'bar', desc: 'Weekly Pattern Accuracy' },
       { title: 'Activity Completion Rate', type: 'donut', desc: '76% Completed' }
     ],
     activities: [
@@ -240,8 +241,8 @@ const mockData = [
     activitiesCompleted: 27,
     totalActivities: 30,
     progressCharts: [
-      { title: 'Critical Text Analysis', type: 'line', desc: 'Analyzes writer intent 40 to 90' },
-      { title: 'Fact vs Opinion', type: 'bar', desc: 'Identifies biased content 30 to 80' },
+      { title: 'Critical Text Analysis', type: 'line', desc: 'Analyzes writer’s intent' },
+      { title: 'Fact vs Opinion', type: 'bar', desc: 'Identifies biased content' },
       { title: 'Activity Completion Rate', type: 'donut', desc: '90% Completed' }
     ],
     activities: [
@@ -285,6 +286,7 @@ const mockData = [
   }
 ];
 
+// For reading-level labels in table
 const readingLevelLabels = {
   A: 'Antas Uno',
   B: 'Antas Dalawa',
@@ -316,15 +318,12 @@ const ViewStudent = () => {
     }, {});
   };
 
-  // 1) Filter by name/parent
-  // 2) Then filter by reading level if readingFilter != 'All'
   const filtered = mockData
     .filter(s =>
       s.name.toLowerCase().includes(search) || s.parent.toLowerCase().includes(search)
     )
     .filter(s => readingFilter === 'All' || s.readingLevel === readingFilter);
 
-  // Group them
   const grouped = groupBy !== 'none'
     ? groupByKey(filtered, s =>
         groupBy === 'family'
@@ -336,6 +335,7 @@ const ViewStudent = () => {
     : { All: filtered };
 
   const handleViewDetails = (student) => {
+    // navigate to /student-details and pass the student object in "state"
     navigate(`/student-details/${student.id}`, { state: { student } });
   };
 
@@ -349,9 +349,7 @@ const ViewStudent = () => {
         <div className="header-right">
           <h4>Cradle of Learners Inc. Teacher</h4>
           <div className="teacher-profile-wrapper">
-            <div className="teacher-avatar" onClick={() => setShowDropdown(prev => !prev)}>
-              TC
-            </div>
+            <div className="teacher-avatar" onClick={() => setShowDropdown(prev => !prev)}>TC</div>
             {showDropdown && (
               <div className="profile-dropdown">
                 <div className="dropdown-item">My Profile</div>
@@ -396,7 +394,7 @@ const ViewStudent = () => {
         </div>
       </div>
 
-      {/* Conditionally render */}
+      {/* Conditionally Render Table or Text List */}
       {isTableView ? (
         <div className="view-student-table">
           <table>
