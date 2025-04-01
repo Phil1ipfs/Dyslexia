@@ -44,8 +44,7 @@ function App() {
         <Routes>
           <Route path="/view-student" element={<ViewStudent />} />
           <Route path="/student-details/:id" element={<StudentDetails />} />
-          <Route path="*" element={<Navigate to="/view-student" />} />
-        </Routes>
+          </Routes>
       </div>
     </BrowserRouter>
   );

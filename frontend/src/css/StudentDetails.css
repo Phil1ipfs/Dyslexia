@@ -1,195 +1,653 @@
 .student-details-container {
-    background: #f7f8fa;
-    padding: 2rem;
-    font-family: 'Atkinson Hyperlegible', sans-serif;
-    min-height: 100vh;
-  }
-  
-  .student-details-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 1.5rem;
-  }
-  
-  .teacher-name {
-    font-weight: 600;
-    color: #3B4F81;
-  }
-  
-  .teacher-avatar {
-    background: #e3aee8;
-    color: white;
-    font-weight: bold;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 0.9rem;
-    margin-left: 0.5rem;
-  }
-  
-  .student-profile-box {
-    display: flex;
-    background: white;
-    padding: 1.5rem;
-    border-radius: 12px;
-    gap: 2rem;
-    margin-bottom: 1rem;
-    align-items: flex-start;
-  }
-  
-  .student-avatar {
-    background: #ccc;
-    border-radius: 50%;
-    width: 80px;
-    height: 80px;
-    font-size: 1.4rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .reading-box {
-    flex: 1;
-    background: #f1f3f9;
-    padding: 1rem;
-    border-radius: 10px;
-  }
-  
-  .progress-bar {
-    height: 12px;
-    background: #dcdcdc;
-    border-radius: 8px;
-    margin: 0.5rem 0;
-  }
-  
-  .bar-fill {
-    background: #4b735e;
-    height: 100%;
-    border-radius: 8px;
-  }
-  
-  .student-tabs {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
-  
-  .tab-btn {
-    padding: 0.7rem 1.5rem;
-    background: #e6e8ef;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-    color: #3B4F81;
-  }
-  
-  .tab-btn.active {
-    background: #3B4F81;
-    color: white;
-  }
-  
-  .tab-content {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 12px;
-  }
-  
-  .progress-tab {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-  }
-  
-  .progress-graph,
-  .recent-activity,
-  .ai-usage,
-  .feedback-box {
-    background: #f6f7fb;
-    padding: 1rem;
-    border-radius: 10px;
-  }
-  
-  .green {
-    color: #2e7d32;
-    font-weight: bold;
-  }
-  
-  .orange {
-    color: #e67e22;
-    font-weight: bold;
-  }
-  
-  .feedback-box textarea {
-    width: 100%;
-    padding: 0.6rem;
-    margin: 0.5rem 0;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-  }
-  
-  .send-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .send-footer button {
-    background: #3B4F81;
-    color: white;
-    padding: 0.4rem 1rem;
-    border-radius: 20px;
-    border: none;
-    display: flex;
-    gap: 0.5rem;
-    cursor: pointer;
-  }
-  
-  .family-tab .family-info {
-    background: #f2f4fa;
-    padding: 1rem;
-    border-radius: 10px;
-    margin-bottom: 1.5rem;
-  }
-  
-  .sibling-card {
-    display: flex;
-    background: white;
-    border: 1px solid #dce0ea;
-    padding: 1rem;
-    border-radius: 10px;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
-  
-  .sibling-avatar {
-    background: #c9c9c9;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    font-weight: bold;
-    font-size: 1rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .sibling-info {
-    flex: 1;
-    margin-left: 1rem;
-  }
-  
-  .view-btn {
-    background-color: #3B4F81;
-    color: white;
-    padding: 0.4rem 1rem;
-    border-radius: 20px;
-    border: none;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.3s ease;
-  }
-  
+  background: #f7f8fa;
+  padding: 2rem;
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+  min-height: 100vh;
+  margin-left: 260px; /* Sidebar offset */
+  box-sizing: border-box;
+}
+
+/* Header */
+.student-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.header-left h2 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.teacher-name {
+  font-weight: bold;
+  color: #3B4F81;
+}
+
+.teacher-avatar {
+  background: #e3aee8;
+  color: white;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+  cursor: pointer;
+}
+
+/* Profile Card */
+.student-profile-box {
+  display: flex;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  gap: 2rem;
+  margin-bottom: 1rem;
+  align-items: flex-start;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.student-avatar {
+  background: #ccc;
+  margin-top: 40px;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  font-size: 1.4rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  color: #3B4F81;
+}
+
+/* Reading Performance */
+.reading-box {
+  flex: 1;
+  background: #f1f3f9;
+  padding: 1rem;
+  border-radius: 10px;
+}
+
+.progress-bar {
+  height: 12px;
+  background: #dcdcdc;
+  border-radius: 8px;
+  margin: 0.5rem 0;
+  overflow: hidden;
+}
+
+.bar-fill {
+  background: #4b735e;
+  height: 100%;
+  border-radius: 8px;
+  transition: width 0.3s ease;
+}
+
+/* Tabs */
+.student-tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.tab-btn {
+  padding: 0.7rem 1.5rem;
+  background: #e6e8ef;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #3B4F81;
+  transition: background 0.2s ease;
+}
+
+.tab-btn.active {
+  background: #3B4F81;
+  color: white;
+}
+
+/* Tab Content */
+.tab-content {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Progress Tab Grid */
+.progress-tab {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.progress-graph,
+.recent-activity,
+.ai-usage,
+.feedback-box {
+  background: #f6f7fb;
+  padding: 1rem;
+  border-radius: 10px;
+}
+
+.green {
+  color: #2e7d32;
+  font-weight: bold;
+}
+
+.orange {
+  color: #e67e22;
+  font-weight: bold;
+}
+
+/* Feedback Box */
+.feedback-box textarea {
+  width: 100%;
+  height: 100px;;
+  padding: 1.6rem;
+  margin: 0.5rem 0;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-size: 1rem;
+}
+
+.send-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.send-footer button {
+  background: #3B4F81;
+  color: white;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  border: none;
+  display: flex;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.send-footer button:hover {
+  background-color: #2d3e6e;
+}
+
+/* Family Tab */
+.family-tab .family-info {
+  background: #f2f4fa;
+  padding: 1rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+.family-info-card {
+  background-color: #f5f8fc;
+  padding: 1.5rem;
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+  color: #111;
+}
+
+.section-heading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 199rem; /* 🔼 increase this value */
+}
+
+
+.family-grid {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.family-avatar {
+  background-color: #2e3e64;
+  color: white;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.family-grid-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.7rem 2rem;
+  flex: 1;
+}
+
+.info-pair p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+
+.sibling-card {
+  background-color: white;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.sibling-avatar {
+  background-color: #3B4F81;
+  color: white;
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.no-siblings {
+  font-style: italic;
+  color: #ccc;
+  margin-top: 0.5rem;
+}
+
+.view-btn {
+  background-color: #3B4F81;
+  color: white;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.view-btn:hover {
+  background-color: #2d3e6e;
+}
+
+.progress-overview-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  margin-top: 1rem;
+}
+
+.progress-card {
+  background-color: #f5f8fc;
+  border-radius: 12px;
+  padding: 1.2rem;
+  flex: 1 1 250px;
+  min-width: 260px;
+  height: 240px; 
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); 
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.real-chart {
+  margin-top: 0.6rem;
+}
+
+.chart-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.6rem;
+}
+
+.chart-desc {
+  font-size: 0.9rem;
+  color: #4B5563;
+  text-align: center;
+  margin-top: 0.8rem;
+  font-style: italic;
+}
+
+
+.recent-activities {
+  list-style: none;
+  padding: 0;
+}
+
+.activity-item {
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.score-badge {
+  font-weight: bold;
+  padding: 0.4rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+}
+
+.score-badge.green {
+  background: #e0f7e9;
+  color: #2e7d32;
+}
+
+.score-badge.yellow {
+  background: #fff5cc;
+  color: #b68600;
+}
+
+.score-badge.red {
+  background: #ffe5e5;
+  color: #c62828;
+}
+
+.feedback-history li {
+  margin-bottom: 1rem;
+}
+
+.progress-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.progress-card {
+  background: #f6f7fb;
+  padding: 1rem;
+  border-radius: 10px;
+}
+
+.mock-chart {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  border: 2px dashed #ccc;
+  color: #888;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.progress-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.recent-activities-box {
+  background: #f6f7fb;
+  padding: 1rem;
+  border-radius: 10px;
+}
+
+.recent-activities-box .activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.activity-icon {
+  font-size: 1.4rem;
+  background: #e1e6f4;
+  padding: 0.4rem;
+  border-radius: 8px;
+}
+
+.activity-info {
+  flex: 1;
+}
+
+.activity-title {
+  font-weight: bold;
+  margin: 0;
+}
+
+.activity-meta {
+  font-size: 0.85rem;
+  color: #555;
+  margin: 0.2rem 0 0;
+}
+
+.score-badge {
+  font-weight: bold;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+}
+
+.score-badge.green {
+  background-color: #e0f6e9;
+  color: #2e7d32;
+}
+
+.score-badge.yellow {
+  background-color: #fff5da;
+  color: #e67e22;
+}
+
+.score-badge.red {
+  background-color: #ffe0e0;
+  color: #d32f2f;
+}
+
+.feedback-box {
+  background-color: #f5f8fc;
+  padding: 1.5rem;
+  border-radius: 16px;
+  margin-top: 0.2rem;
+  color: #111;
+}
+
+.feedback-toolbar {
+  display: flex;
+  gap: 0.7rem;
+  margin-top: 0.6rem;
+
+  margin-bottom: 0.9rem;
+}
+
+.feedback-toolbar button {
+  background-color: #3B4F81;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.feedback-toolbar button:hover {
+  background-color: #2c3d65;
+}
+
+.feedback-editor {
+  background-color: white;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  padding: 1rem;
+  min-height: 200px; 
+  max-height: 280px;
+  overflow-y: auto;
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  resize: none;
+}
+
+
+.feedback-editor:empty:before {
+  content: attr(placeholder);
+  color: #aaa;
+  font-style: italic;
+  pointer-events: none;
+}
+
+.send-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.recipient-box {
+  background-color: #eef2f8;
+  padding: 1rem 1.2rem;
+  border-radius: 12px;
+  flex-grow: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: inset 0 0 0 1px #d3dce9;
+  margin-right: 1rem;
+}
+
+.recipient-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.recipient-line {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.recipient-line .label {
+  font-weight: 700;
+  color: #1c2b50;
+  min-width: 60px;
+}
+
+.recipient-line .value {
+  font-weight: 500;
+  color: #3B4F81;
+}
+
+.send-btn {
+  background-color: #2e3e64;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 1.5rem 1.2rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.send-btn:hover {
+  background-color: #1f2c4b;
+}
+
+.send-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+}
+
+.send-footer button {
+  background: #3B4F81;
+  color: white;
+  border: none;
+  padding: 1.5rem 2.0rem;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: bold;
+}
+
+
+.activities-result-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  margin-top: 0.5rem;
+}
+
+.activity-category {
+  background: #f3f4f9;
+  padding: 1rem 1.2rem;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.category-title {
+  color: #3B4F81;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.6rem;
+  margin-top: 0.2rem; /* 🔽 reduced top space */
+}
+
+.activity-item-box {
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  background-color: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  margin-bottom: 0.6rem;
+}
+
+.activity-info-full {
+  display: flex;
+  flex-direction: column;
+}
+
+.activity-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.activity-title {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.activity-score {
+  font-weight: bold;
+  color: #3B4F81;
+}
+
+.activity-time {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+
+
+
+
+
+
+

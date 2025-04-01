@@ -56,7 +56,11 @@
   
   /* Header */
   .view-student-header {
-    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 1.5rem;
   }
   
   .view-student-header h1 {
@@ -251,12 +255,15 @@
   .header-right {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
+    gap: 1rem;
   }
   
   .teacher-name {
     font-weight: bold;
     color: white;
+    white-space: nowrap;
+    opacity: 1; 
+    margin-right: 12px; 
   }
   
   .teacher-profile-wrapper {
