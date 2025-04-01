@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import '../css/StudentDetails.css';
 import { FaPaperPlane } from 'react-icons/fa';
+import { useParams } from 'react-router-dom';
 
 const studentData = {
   name: 'Kit Nicholas T. Santiago',
@@ -35,6 +36,7 @@ const studentData = {
 };
 
 const StudentDetails = () => {
+  const { id } = useParams(); // For future dynamic data fetch using the id
   const [activeTab, setActiveTab] = useState('Progress');
   const [feedback, setFeedback] = useState('');
 
@@ -92,22 +94,21 @@ const StudentDetails = () => {
       <div className="tab-content">
         {activeTab === 'Progress' && (
           <div className="progress-tab">
-            <div className="progress-graph">📈 <strong>Monthly Progress</strong> (Chart Placeholder)</div>
-
+            <div className="progress-graph">
+              📈 <strong>Monthly Progress</strong> (Chart Placeholder)
+            </div>
             <div className="recent-activity">
               <strong>Recent Activity Performance</strong>
               <p>Word Recognition: <span className="green">85%</span></p>
               <p>Syllable Structures: <span className="orange">62%</span></p>
               <p>Grammar Tasks: <span className="green">78%</span></p>
             </div>
-
             <div className="ai-usage">
               <strong>AI Chatbot Usage</strong>
               <p>Assistance Requests: {studentData.aiUsage.requests} times</p>
               <p>Most Requested Help: {studentData.aiUsage.mostHelp}</p>
               <p>Last Used: {studentData.aiUsage.lastUsed}</p>
             </div>
-
             <div className="feedback-box">
               <strong>Send Feedback to Parents</strong>
               <textarea
@@ -117,12 +118,13 @@ const StudentDetails = () => {
               />
               <div className="send-footer">
                 <span>To: {studentData.parents}</span>
-                <button onClick={handleFeedbackSubmit}><FaPaperPlane /> Send</button>
+                <button onClick={handleFeedbackSubmit}>
+                  <FaPaperPlane /> Send
+                </button>
               </div>
             </div>
           </div>
         )}
-
         {activeTab === 'Family' && (
           <div className="family-tab">
             <div className="family-info">
@@ -130,12 +132,13 @@ const StudentDetails = () => {
               <p>Parents: {studentData.parents}</p>
               <p>Contact: {studentData.contact} | {studentData.email}</p>
             </div>
-
             <div className="siblings">
               <strong>Siblings</strong>
               {studentData.siblings.map((sibling, i) => (
                 <div key={i} className="sibling-card">
-                  <div className="sibling-avatar">{sibling.name.split(' ')[0][0]}{sibling.name.split(' ')[1]?.[0]}</div>
+                  <div className="sibling-avatar">
+                    {sibling.name.split(' ')[0][0]}{sibling.name.split(' ')[1]?.[0]}
+                  </div>
                   <div className="sibling-info">
                     <p><strong>{sibling.name}</strong></p>
                     <p>Grade: {sibling.grade} | ID: {sibling.id}</p>

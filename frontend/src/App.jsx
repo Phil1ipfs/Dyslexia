@@ -29,24 +29,22 @@
 // export default App;
 
 
-
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ViewStudent from './pages/ViewStudent.jsx';
+import StudentDetails from './pages/StudentDetails.jsx';
 import Sidebar from './widgets/Sidebar.jsx'; 
-import StudentDetails from './pages/StudentDetails'; 
-
 import './assets/fonts/fonts.css';
-
 
 function App() {
   return (
     <BrowserRouter>
-      <Sidebar active="student" />
+      <Sidebar active="view" />
       <div className="main-content">
         <Routes>
           <Route path="/view-student" element={<ViewStudent />} />
-          <Route path="/student-details/:id" element={<StudentDetails />} /> 
+          <Route path="/student-details/:id" element={<StudentDetails />} />
+          <Route path="*" element={<Navigate to="/view-student" />} />
         </Routes>
       </div>
     </BrowserRouter>
@@ -54,4 +52,3 @@ function App() {
 }
 
 export default App;
-

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import literexiaLogo from "../assets/images/LITEREXIA.png";
 import dashboardIcon from "../assets/icons/Dashboard.png";
@@ -8,13 +9,24 @@ import teacherProfileIcon from "../assets/icons/Feedback.png";
 import logoutIcon from "../assets/icons/Logout.png";
 
 function Sidebar({ defaultActive = "dashboard" }) {
+  const navigate = useNavigate();
   const [active, setActive] = useState(defaultActive);
   const [clickedItem, setClickedItem] = useState("");
 
   const handleClick = (item) => {
     setActive(item);
     setClickedItem(item);
-    setTimeout(() => setClickedItem(""), 300); 
+    // Navigate based on the item clicked
+    if (item === "dashboard") {
+      navigate("/dashboard");
+    } else if (item === "progress") {
+      navigate("/progress");
+    } else if (item === "view") {
+      navigate("/view-student");
+    } else if (item === "teacher") {
+      navigate("/teacher");
+    }
+    setTimeout(() => setClickedItem(""), 300);
   };
 
   return (
@@ -23,13 +35,11 @@ function Sidebar({ defaultActive = "dashboard" }) {
         * {
           box-sizing: border-box;
         }
-
         body, html {
           margin: 0;
           padding: 0;
           font-family: 'Atkinson Hyperlegible', sans-serif;
         }
-
         .sidebar {
           position: fixed;
           top: 0;
@@ -43,25 +53,21 @@ function Sidebar({ defaultActive = "dashboard" }) {
           box-shadow: 4px 0 12px rgba(0,0,0,0.3);
           z-index: 999;
         }
-
         .sidebar-logo {
           text-align: center;
           margin-bottom: 2rem;
         }
-
         .sidebar-logo img {
           margin-top: 2rem;
           width: 190px;
           object-fit: contain;
         }
-
         .sidebar-menu {
           list-style: none;
           padding: 0;
           margin-top: 20%;
           flex-grow: 1;
         }
-
         .sidebar-menu li {
           display: flex;
           align-items: center;
@@ -73,34 +79,28 @@ function Sidebar({ defaultActive = "dashboard" }) {
           color: white;
           font-size: 1rem;
         }
-
         .sidebar-menu li img {
           width: 28px;
           margin-right: 0.8rem;
         }
-
         .sidebar-menu li:hover {
           background-color: #F3C922;
           color: #333;
           transform: translateX(6px);
         }
-
         .sidebar-menu li.active {
           background-color: #F3C922;
           color: #333;
           box-shadow: 0 8px 16px rgba(0,0,0,0.15);
         }
-
         .sidebar-menu li.clicked {
           animation: bounceClick 0.3s ease;
         }
-
         @keyframes bounceClick {
           0% { transform: scale(1); }
           50% { transform: scale(0.96) translateY(2px); }
           100% { transform: scale(1); }
         }
-
         .sidebar-logout {
           display: flex;
           align-items: center;
@@ -111,26 +111,21 @@ function Sidebar({ defaultActive = "dashboard" }) {
           color: white;
           font-size: 0.95rem;
         }
-
         .sidebar-logout:hover {
           transform: translateX(6px);
         }
-
         .sidebar-logout img {
           width: 24px;
           margin-right: 0.8rem;
         }
-
         @media (max-width: 768px) {
           .sidebar {
             width: 80px;
             padding: 1.2rem;
           }
-
           .sidebar-logo img {
             width: 50px;
           }
-
           .sidebar-menu li span,
           .sidebar-logout span {
             display: none;
@@ -147,9 +142,7 @@ function Sidebar({ defaultActive = "dashboard" }) {
         {/* Menu Items */}
         <ul className="sidebar-menu">
           <li
-            className={`${active === "dashboard" ? "active" : ""} ${
-              clickedItem === "dashboard" ? "clicked" : ""
-            }`}
+            className={`${active === "dashboard" ? "active" : ""} ${clickedItem === "dashboard" ? "clicked" : ""}`}
             onClick={() => handleClick("dashboard")}
           >
             <img src={dashboardIcon} alt="Dashboard" />
@@ -157,9 +150,7 @@ function Sidebar({ defaultActive = "dashboard" }) {
           </li>
 
           <li
-            className={`${active === "progress" ? "active" : ""} ${
-              clickedItem === "progress" ? "clicked" : ""
-            }`}
+            className={`${active === "progress" ? "active" : ""} ${clickedItem === "progress" ? "clicked" : ""}`}
             onClick={() => handleClick("progress")}
           >
             <img src={studentProgressIcon} alt="Student Progress" />
@@ -167,9 +158,7 @@ function Sidebar({ defaultActive = "dashboard" }) {
           </li>
 
           <li
-            className={`${active === "view" ? "active" : ""} ${
-              clickedItem === "view" ? "clicked" : ""
-            }`}
+            className={`${active === "view" ? "active" : ""} ${clickedItem === "view" ? "clicked" : ""}`}
             onClick={() => handleClick("view")}
           >
             <img src={viewStudentIcon} alt="View Student" />
@@ -177,9 +166,7 @@ function Sidebar({ defaultActive = "dashboard" }) {
           </li>
 
           <li
-            className={`${active === "teacher" ? "active" : ""} ${
-              clickedItem === "teacher" ? "clicked" : ""
-            }`}
+            className={`${active === "teacher" ? "active" : ""} ${clickedItem === "teacher" ? "clicked" : ""}`}
             onClick={() => handleClick("teacher")}
           >
             <img src={teacherProfileIcon} alt="Teacher Profile" />

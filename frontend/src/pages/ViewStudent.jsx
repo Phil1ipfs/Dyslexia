@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import '../css/ViewStudent.css';
 import { FaSearch, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
 
 const mockData = [
   { id: 1, name: 'Marco Santos', parent: 'Maria & Juan Santos', studentID: '03223123126', readingLevel: 'A' },
@@ -20,11 +20,13 @@ const readingLevelLabels = {
 };
 
 const ViewStudent = () => {
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [readingFilter, setReadingFilter] = useState('All');
   const [groupBy, setGroupBy] = useState('family');
   const [currentPage, setCurrentPage] = useState(1);
   const [isTableView, setIsTableView] = useState(true);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const handleSearch = (e) => setSearch(e.target.value.toLowerCase());
   const handleReadingFilter = (e) => setReadingFilter(e.target.value);
@@ -58,8 +60,10 @@ const ViewStudent = () => {
   const handlePageSelect = (n) => setCurrentPage(n);
   const handlePrevPage = () => setCurrentPage(p => Math.max(1, p - 1));
   const handleNextPage = () => setCurrentPage(p => p + 1);
-  const [showDropdown, setShowDropdown] = useState(false);
 
+  const handleViewDetails = (studentId) => {
+    navigate(`/student-details/${studentId}`);
+  };
 
   return (
     <div className="view-student-container">
@@ -68,7 +72,6 @@ const ViewStudent = () => {
           <h1>Student Viewer</h1>
           <p className="subtext">Group students for easier review and comparison.</p>
         </div>
-
         <div className="header-right">
           <div className="teacher-name">Cradle of Learners Inc.</div>
           <div className="teacher-profile-wrapper">
@@ -82,7 +85,6 @@ const ViewStudent = () => {
           </div>
         </div>
       </div>
-
 
       <div className="view-student-filters">
         <div className="search-wrapper">
@@ -146,7 +148,9 @@ const ViewStudent = () => {
                       <td>{s.studentID}</td>
                       <td>{readingLevelLabels[s.readingLevel] || s.readingLevel}</td>
                       <td>
-                        <button className="view-btn" onClick={() => alert(`Viewing ${s.name}`)}>View Details</button>
+                        <button className="view-btn" onClick={() => handleViewDetails(s.id)}>
+                          View Details
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -174,21 +178,13 @@ const ViewStudent = () => {
         <button onClick={handlePrevPage} className="pagination-nav">
           <FaChevronLeft /> <span>Previous</span>
         </button>
-
         {[1, 2, 3].map(n => (
-          <button
-            key={n}
-            onClick={() => handlePageSelect(n)}
-            className={n === currentPage ? 'active' : ''}
-          >
+          <button key={n} onClick={() => handlePageSelect(n)} className={n === currentPage ? 'active' : ''}>
             {n}
           </button>
         ))}
-
         <span className="dots">...</span>
-
         <button onClick={() => handlePageSelect(8)}>8</button>
-
         <button onClick={handleNextPage} className="pagination-nav">
           <span>Next</span> <FaChevronRight />
         </button>
