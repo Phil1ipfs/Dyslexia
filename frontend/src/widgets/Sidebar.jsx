@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
+// Example image/icon imports (you must have these in your project)
 import literexiaLogo from "../assets/images/LITEREXIA.png";
 import dashboardIcon from "../assets/icons/Dashboard.png";
 import studentProgressIcon from "../assets/icons/Progress.png";
@@ -8,15 +9,34 @@ import viewStudentIcon from "../assets/icons/ViewStudent.png";
 import teacherProfileIcon from "../assets/icons/Feedback.png";
 import logoutIcon from "../assets/icons/Logout.png";
 
-function Sidebar({ defaultActive = "dashboard" }) {
+import avatarIcon from "../assets/icons/avatar.png";
+
+
+// Optional: main sidebar CSS
+import "./Sidebar.css";
+
+function Sidebar({ defaultActive = "dashboard", onLogout }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [active, setActive] = useState(defaultActive);
   const [clickedItem, setClickedItem] = useState("");
+
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.includes("/dashboard")) {
+      setActive("dashboard");
+    } else if (path.includes("/progress")) {
+      setActive("progress");
+    } else if (path.includes("/view-student")) {
+      setActive("view");
+    } else if (path.includes("/teacher")) {
+      setActive("teacher");
+    }
+  }, [location]);
 
   const handleClick = (item) => {
     setActive(item);
     setClickedItem(item);
-    // Navigate based on the item clicked
     if (item === "dashboard") {
       navigate("/dashboard");
     } else if (item === "progress") {
@@ -27,6 +47,13 @@ function Sidebar({ defaultActive = "dashboard" }) {
       navigate("/teacher");
     }
     setTimeout(() => setClickedItem(""), 300);
+  };
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout(); // Clears token + sets isAuthenticated(false) in App.jsx
+    }
+    navigate("/login"); // Then navigate to login
   };
 
   return (
@@ -139,26 +166,35 @@ function Sidebar({ defaultActive = "dashboard" }) {
           <img src={literexiaLogo} alt="Literexia Logo" />
         </div>
 
+        <div className="sidebar-user-info">
+          <img
+            src={avatarIcon}
+            alt="User Avatar"
+            className="sidebar-avatar"
+          />
+          <div className="sidebar-user-details">
+            <p className="sidebar-user-name">Madam Jaja</p>
+            <p className="sidebar-user-role">Admin</p>
+          </div>
+          <hr className="sidebar-divider" />
+        </div>
+
         {/* Menu Items */}
         <ul className="sidebar-menu">
           <li
-            className={`${active === "dashboard" ? "active" : ""} ${clickedItem === "dashboard" ? "clicked" : ""}`}
+            className={`${active === "dashboard" ? "active" : ""} ${clickedItem === "dashboard" ? "clicked" : ""
+              }`}
             onClick={() => handleClick("dashboard")}
           >
             <img src={dashboardIcon} alt="Dashboard" />
             <span>Dashboard</span>
           </li>
 
-          <li
-            className={`${active === "progress" ? "active" : ""} ${clickedItem === "progress" ? "clicked" : ""}`}
-            onClick={() => handleClick("progress")}
-          >
-            <img src={studentProgressIcon} alt="Student Progress" />
-            <span>Student Progress</span>
-          </li>
+
 
           <li
-            className={`${active === "view" ? "active" : ""} ${clickedItem === "view" ? "clicked" : ""}`}
+            className={`${active === "view" ? "active" : ""} ${clickedItem === "view" ? "clicked" : ""
+              }`}
             onClick={() => handleClick("view")}
           >
             <img src={viewStudentIcon} alt="View Student" />
@@ -166,7 +202,8 @@ function Sidebar({ defaultActive = "dashboard" }) {
           </li>
 
           <li
-            className={`${active === "teacher" ? "active" : ""} ${clickedItem === "teacher" ? "clicked" : ""}`}
+            className={`${active === "teacher" ? "active" : ""} ${clickedItem === "teacher" ? "clicked" : ""
+              }`}
             onClick={() => handleClick("teacher")}
           >
             <img src={teacherProfileIcon} alt="Teacher Profile" />
@@ -175,7 +212,7 @@ function Sidebar({ defaultActive = "dashboard" }) {
         </ul>
 
         {/* Logout */}
-        <div className="sidebar-logout" onClick={() => alert("Logging out...")}>
+        <div className="sidebar-logout" onClick={handleLogout}>
           <img src={logoutIcon} alt="Logout" />
           <span>Logout</span>
         </div>

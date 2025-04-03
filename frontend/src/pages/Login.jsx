@@ -1,126 +1,168 @@
 import React, { useState } from 'react';
-import '../css/login.css';
-// import waveImage from '../assets/images/wave.png';
-// import logoImage from '../assets/images/LITEREXIA.png';
+import { useNavigate } from 'react-router-dom';
+import '../css/Login.css';
 
-const Login = () => {
-    const [formData, setFormData] = useState({
-      email: '',
-      password: '',
-      userType: 'parent' // default value
-    });
-    
-    const [isLoading, setIsLoading] = useState(false); // Added isLoading state
-    const handleChange = (e) => {
-      const { name, value } = e.target;
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    };
-  
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      setIsLoading(true); // Set isLoading to true when starting to submit the form
+import logo from '../assets/images/LITEREXIA.png';
+import wave from '../assets/images/wave.png';
 
-      try {
-        const response = await fetch('http://localhost:5000/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData),
-        });
+// React Icons (install with: npm install react-icons)
+import { FiMail, FiEye, FiEyeOff } from 'react-icons/fi';
 
-        const data = await response.json();
+const Login = ({ onLogin }) => {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    userType: 'teacher'
+  });
 
-        if (response.ok) {
-          // Store token and user data
-          localStorage.setItem('authToken', data.token);
-          localStorage.setItem('userData', JSON.stringify(data.user));
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-          // Redirect based on user type
-          switch(formData.userType) {
-            case 'admin':
-              window.location.href = '/admin-dashboard';
-              break;
-            case 'teacher':
-              window.location.href = '/teacher-dashboard';
-              break;
-            case 'parent':
-              window.location.href = '/parent-dashboard';
-              break;
-            default:
-              window.location.href = '/';
-          }
-        } else {
-          alert(data.message || 'Login failed');
-        }
-      } catch (error) {
-        console.error('Login error:', error);
-        alert('An error occurred during login');
-      } finally {
-        setIsLoading(false); // Set isLoading to false once the request is done
+  // Handle changes in email/password
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Mock login – replace with a real fetch() call to your MongoDB backend later
+      const response = await mockLogin(formData);
+      const data = await response.json();
+
+      if (response.ok) {
+        // Save token/user in localStorage
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userData', JSON.stringify(data.user));
+
+        // Notify parent component that we are logged in
+        if (onLogin) onLogin();
+
+        // Navigate to dashboard or any route you choose
+        navigate('/dashboard');
+      } else {
+        // Show error from mock or server
+        setError(data.message || 'Login failed');
       }
-    };
-    
 
-    const handleExit = () => {
-      // Logic for exiting the page, for example:
-      window.close();  // This will attempt to close the window
-      // Or you can redirect the user to another page using:
-      // window.location.href = '/'; // Redirect to homepage
-    };
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    return (
-      <div className="login-container">
-         <button className="exit-button" onClick={handleExit}>X</button>  {/* Exit button */}
+  // Mock login function (for demonstration only)
+  const mockLogin = ({ email, password, userType }) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Very basic check
+        if (email && password) {
+          resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              token: 'mock-jwt-token',
+              user: {
+                _id: 'mock-user-id',
+                name: email.split('@')[0],
+                email,
+                userType
+              }
+            })
+          });
+        } else {
+          resolve({
+            ok: false,
+            json: () => Promise.resolve({
+              message: 'Invalid email or password'
+            })
+          });
+        }
+      }, 800);
+    });
+  };
+
+  return (
+    <div className="login-container">
+      {/* Literexia logo in top-left */}
+      <img src={logo} alt="Literexia Logo" className="top-left-logo" />
+
+      {/* Exit button top-right */}
+      <button className="exit-button" onClick={() => navigate("/")}>X</button>
+
+      {/* Main login card */}
       <div className="login-card">
         <h1 className="welcome-text">Maligayang Pag Balik!</h1>
-        <p className="instruction-text">Ilagay ang lyong email at password</p>
+        <p className="instruction-text">ilagay ang iyong email at password</p>
+
+        {/* Error display */}
+        {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
+          {/* Email field with icon */}
+          <div className="form-group icon-input">
             <input
               type="email"
-              id="email"
               name="email"
+              placeholder="Email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Email"
               required
               className="form-input"
             />
+            <FiMail className="input-icon" />
           </div>
 
-          <div className="form-group">
+          {/* Password field with show/hide icon */}
+          <div className="form-group icon-input">
             <input
-              type="password"
-              id="password"
+              type={showPassword ? 'text' : 'password'}
               name="password"
+              placeholder="Password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Password"
               required
               className="form-input"
             />
+            {showPassword ? (
+              <FiEyeOff
+                className="input-icon clickable"
+                onClick={() => setShowPassword(false)}
+              />
+            ) : (
+              <FiEye
+                className="input-icon clickable"
+                onClick={() => setShowPassword(true)}
+              />
+            )}
           </div>
 
-          {/* Button changes based on loading state */}
-          <button 
-            type="submit" 
-            className="signin-button" 
-            disabled={isLoading} // Disable button when loading
-          >
-            {isLoading ? 'Logging in...' : 'Sign in'} {/* Display different text based on loading state */}
+          {/* Login button */}
+          <button type="submit" className="signin-button" disabled={isLoading}>
+            {isLoading ? 'Logging in...' : 'Sign in'}
           </button>
         </form>
 
+        {/* Registration link */}
         <p className="register-text">
-          Wala pang Account? <a href="/register" className="register-link">Mag rehistro</a>
+          Wala pang Account?{' '}
+          <a href="/register" className="register-link">Mag rehistro</a>
         </p>
-        {/* <img src={waveImage} alt="Login Illustration" className="login-image" /> */}
       </div>
+
+      {/* Wave background at bottom */}
+      <img src={wave} alt="Wave Background" className="bottom-wave" />
     </div>
   );
 };

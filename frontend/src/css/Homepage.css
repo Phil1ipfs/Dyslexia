@@ -13,18 +13,20 @@ body {
 /* ---- Navbar styles moved from Navbar.css ---- */
 
 .navbar {
-  position: absolute;
-  top: 3%;
+  position: relative; /* not fixed */
+  top: 0;
   left: 0;
   width: 100%;
   padding: 1.2rem 8%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: transparent;
+  background-color: #3B4F81; /* Literexia blue */
   z-index: 10;
   color: white;
 }
+
+
 
 .nav-left {
   display: flex;
@@ -91,6 +93,8 @@ body {
   padding-left: 8%;
   padding-right: 8%;
   padding-top: 6rem;
+  background-color: transparent;
+
 }
 
 .hero-content {
@@ -268,7 +272,7 @@ body {
 /* ----FEATURES SECTION ------ */
 
 .features-section {
-  background-image: url('../../assets/images/background-2.png');
+  background-image: url('../assets/images/background-2.png');
   background-repeat: no-repeat;
   background-size: 100% 100%;
   background-position: top center;
@@ -416,7 +420,7 @@ body {
 /* ----- TEACHING METHODOLOGY ----- */
 
 .teaching-methodology-section {
-  background-image: url('../../assets/images/Group 4078.png');
+  background-image: url('../assets/images/Group 4078.png');
   background-repeat: no-repeat;
   background-size: 100% 100%;
   background-position: top center;
