@@ -1,0 +1,103 @@
+/* Sidebar.css */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    background-color: #465E98;
+    padding: 2rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 4px 0 12px rgba(0,0,0,0.3);
+    z-index: 999;
+  }
+  
+  .sidebar-logo {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .sidebar-logo img {
+    margin-top: 2rem;
+    width: 190px;
+    object-fit: contain;
+  }
+  
+  .sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin-top: 20%;
+    flex-grow: 1;
+    width: 100%;
+  }
+
+  .sidebar-user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+    padding: 0 1rem;
+  }
+  
+  .sidebar-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid white;
+  }
+  
+  .sidebar-user-details {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .sidebar-user-name {
+    font-weight: 700;
+    color: white;
+    font-size: 1rem;
+  }
+  
+  .sidebar-user-role {
+    color: #ccc;
+    font-size: 0.9rem;
+    font-weight: 400;
+  }
+  
+  .sidebar-divider {
+    border: none;
+    height: 1px;
+    background: white;
+    opacity: 0.5;
+    margin: 1rem 0;
+  }
+  
+  
+  
+  /* ... include all other styles here ... */
+  
+  @media (max-width: 768px) {
+    .sidebar {
+      width: 80px;
+      padding: 1.2rem 0.7rem;
+    }
+    .sidebar-logo img {
+      width: 50px;
+    }
+    .sidebar-menu li span,
+    .sidebar-logout span {
+      display: none;
+    }
+    .sidebar-menu li {
+      justify-content: center;
+    }
+    .sidebar-menu li img,
+    .sidebar-logout img {
+      margin-right: 0;
+    }
+    .main-content {
+      margin-left: 80px;
+    }
+  }
+  

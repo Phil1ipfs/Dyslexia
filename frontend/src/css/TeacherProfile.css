@@ -1,0 +1,133 @@
+.teacher-profile-container {
+    padding: 2rem;
+    font-family: 'Atkinson Hyperlegible', sans-serif;
+  }
+  
+  .page-title {
+    font-size: 2rem;
+    color: #2a3b73;
+    margin-bottom: 1.5rem;
+  }
+  
+  .profile-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .profile-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  
+  .teacher-avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #3B4F81;
+  }
+  
+  .profile-info h2 {
+    margin-bottom: 0.4rem;
+    color: #2a3b73;
+  }
+  
+  .profile-info p {
+    margin: 0.2rem 0;
+    font-size: 0.95rem;
+  }
+  
+  hr {
+    margin: 1.5rem 0;
+    border: 1px solid #eee;
+  }
+  
+  .profile-section {
+    margin-bottom: 2rem;
+  }
+  
+  .profile-section h3 {
+    font-size: 1.2rem;
+    color: #2a3b73;
+    margin-bottom: 1rem;
+  }
+  
+  .two-column {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+  
+  .two-column > div {
+    flex: 1;
+    min-width: 250px;
+  }
+  
+  input {
+    width: 100%;
+    padding: 0.6rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #f9f9f9;
+  }
+  
+  .stats-grid {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  /* .stat-card {
+    flex: 1;
+    min-width: 180px;
+    background: #f2f5fb;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+  } */
+  
+  .stat-card h4 {
+    font-size: 1.5rem;
+    color: #2a3b73;
+    margin-top: 0.5rem;
+  }
+  
+  .certs-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .cert-pill {
+    background: #fef6e4;
+    padding: 0.6rem 1.2rem;
+    border-radius: 40px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: 2px solid #f3c922;
+  }
+  
+  .availability-table .day-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.8rem;
+    gap: 1rem;
+  }
+  
+  .slot-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .slot {
+    background-color: #cfe2f3;
+    padding: 0.5rem 0.9rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  

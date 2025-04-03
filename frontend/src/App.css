@@ -1,0 +1,40 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  /* Remove overflow: hidden so any page can scroll if it’s taller than viewport */
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    /* overflow: hidden; <-- Comment out or remove this */
+    font-family: 'Atkinson Hyperlegible', sans-serif;
+  }
+  
+  /* Main layout */
+  .app-layout {
+    display: flex;
+    /* height: 100vh; <-- you can keep or remove as needed */
+    /* width: 100vw; <-- same note, can keep or remove */
+    /* overflow: hidden; <-- Remove or comment out */
+  }
+  
+  /* Sidebar (stays fixed if you like) */
+  .sidebar {
+    width: 260px;
+    height: 100vh;
+    background-color: #465E98;
+    flex-shrink: 0;
+  }
+  
+  /* Main content can scroll if needed */
+  .main-content-area {
+    flex-grow: 1;
+    overflow-y: auto;
+    /* overflow-x: hidden; // optional for horizontal scrolling */
+    background-color: #f5f7fb; 
+    padding: 0;
+  }
+  

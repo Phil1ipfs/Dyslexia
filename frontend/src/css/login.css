@@ -1,0 +1,212 @@
+/* html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+} */
+
+.login-container {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #3B4F81;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-card {
+  background-color: #3B4F81;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.welcome-text {
+  color: white;
+  margin-right: -20px;
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.instruction-text {
+  color: white;
+  margin-right: -20px;
+  margin-bottom: 2.5rem;
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.form-group {
+  position: relative;
+  margin-bottom: 1.8rem;
+}
+
+.icon-input input {
+  padding-right: 2.8rem; /* space for icon */
+}
+
+.input-icon {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  color: #666;
+  pointer-events: none;
+}
+
+.clickable {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.form-input[type="email"],
+.form-input[type="password"],
+.form-input select {
+  width: 100%;
+  padding: 0.8rem 1.5rem;
+}
+
+
+.form-input {
+  width: 100%;
+  padding: 0.8rem 1.5rem;
+  padding-right: 2.8rem; /* space for icon */
+  border: none;
+  border-radius: 50px; /* ⬅️ This makes it fully rounded */
+  font-size: 15px;
+  background-color: white;
+  color: #333;
+  transition: box-shadow 0.3s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #29ff69; /* optional focus effect */
+}
+
+
+.form-input::placeholder {
+  color: #999;
+}
+
+.form-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #29ff69;
+}
+
+.signin-button {
+  width: 112%;
+  height: 55px;
+  padding: 0.8rem;
+  background-color: #FDE37C;
+  color: rgba(0, 0, 0, 0.74);
+  border: none;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 0.8rem;
+  box-shadow: inset 0 -9px 4px rgba(0, 0, 0, 0.25);
+  /* Inner shadow */
+}
+
+.signin-button:hover {
+  background-color: #E6C965;
+}
+
+.register-text {
+  margin-top: 2rem;
+  margin-right: -20px;
+  color: white;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.register-link {
+  color: #FDE37C;
+  margin-right: -20px;
+  text-decoration: none;
+  font-weight: 500;
+  margin-left: 0.3rem;
+}
+
+.register-link:hover {
+  text-decoration: underline;
+}
+
+.exit-button {
+  position: absolute;
+  top: 50px;
+  right: 50px; /* <-- was left: 70px before */
+  background-color: transparent;
+  border: none;
+  color: #E6C965;
+  font-size: 2.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  width: 55px;
+  height: 55px;
+  transition: background-color 0.3s ease;
+  z-index: 3;
+}
+
+.exit-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.error-message {
+  color: #e74c3c;
+  background-color: #fadbd8;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.form-select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+  background-color: white;
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+
+.user-type {
+  margin-bottom: 10px;
+}
+
+.bottom-wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  max-height: 160px;
+  object-fit: cover;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.top-left-logo {
+  position: absolute;
+  top: 50px;
+  left: 50px;
+  width: 150px;
+  max-width: 160px;
+  height: auto;
+  object-fit: contain;
+  z-index: 2;
+}
+
