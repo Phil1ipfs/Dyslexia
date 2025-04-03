@@ -9,11 +9,10 @@ body {
   overflow-x: hidden;
 }
 
-
 /* ---- Navbar styles moved from Navbar.css ---- */
 
 .navbar {
-  position: relative; /* not fixed */
+  position: relative; 
   top: 0;
   left: 0;
   width: 100%;
@@ -21,7 +20,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #3B4F81; /* Literexia blue */
+  background-color: #3B4F81; 
   z-index: 10;
   color: white;
 }
