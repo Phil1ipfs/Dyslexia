@@ -1,0 +1,133 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  
+  .login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #3B4F81;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    position: relative;
+  }
+  
+  .login-card {
+    background-color: #3B4F81;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+  }
+  
+  .welcome-text {
+    color: white;
+    margin-right: -20px;
+    margin-bottom: 1rem;
+    font-size: 1.8rem;
+    font-weight: 600;
+  }
+  
+  .instruction-text {
+    color: white;
+    margin-right: -20px;
+    margin-bottom: 2.5rem;
+    font-size: 1rem;
+    opacity: 0.9;
+  }
+  
+  .form-group {
+    margin-bottom: 1.8rem;
+  }
+  
+  .form-input {
+    width: 100%;
+    height: 30px;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 50px;
+    font-size: 15px;
+    transition: box-shadow 0.3s;
+    background-color: white;
+    color: #333;
+  }
+  .form-input[type="email"],
+  .form-input[type="password"],
+  .form-input select {
+  /* Ensures all form inputs have consistent styling */
+  width: 100%;
+  padding: 0.8rem 1.5rem;
+  /* Other styles remain the same */
+}
+  
+  .form-input::placeholder {
+    color: #999;
+  }
+  
+  .form-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #29ff69;
+  }
+  
+  .signin-button {
+    width: 112%;
+    height: 55px;
+    padding: 0.8rem;
+    background-color: #FDE37C;
+    color: rgba(0, 0, 0, 0.74);
+    border: none;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 0.8rem;
+    box-shadow: inset 0 -9px 4px rgba(0, 0, 0, 0.25); /* Inner shadow */
+  }
+  
+  .signin-button:hover {
+    background-color: #E6C965;
+  }
+  
+  .register-text {
+    margin-top: 2rem;
+    margin-right: -20px;
+    color: white;
+    text-align: center;
+    font-size: 0.95rem;
+  }
+  
+  .register-link {
+    color: #FDE37C;
+    margin-right: -20px;
+    text-decoration: none;
+    font-weight: 500;
+    margin-left: 0.3rem;
+  }
+  
+  .register-link:hover {
+    text-decoration: underline;
+  }
+
+  .exit-button {
+    position: absolute;
+    top: 70px;
+    left: 70px;
+    background-color: transparent;
+    border: none;
+    color: #E6C965;
+    font-size: 2.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    width: 55px;  /* Set specific width */
+    height: 55px;  /* Set specific height */
+    transition: background-color 0.3s ease;
+  }
+  
+  .exit-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);  /* Optional: Add hover effect */
+  }
+
+  
