@@ -1,8 +1,8 @@
 import React from "react";
-import "../css/TeacherProfilePage.css";
-import avatar from "../assets/icons/avatar.png";
+import "../css/TeacherProfile.css"; // The isolated CSS so it doesn't conflict
 
 function TeacherProfile() {
+  // Mocked teacher data
   const teacher = {
     name: "Madam Jaja",
     position: "Elementary Reading Specialist",
@@ -16,7 +16,7 @@ function TeacherProfile() {
       name: "Roberto Jaja",
       number: "+63 943 210 9876",
     },
-    bio: `I am a dedicated reading specialist with over 10 years of experience working with children who have dyslexia and other reading difficulties.`,
+    bio: "I am a dedicated reading specialist with over 10 years of experience working with children who have dyslexia...",
     specialization: "Reading Comprehension",
     yearsExp: 10,
     stats: {
@@ -41,92 +41,108 @@ function TeacherProfile() {
   };
 
   return (
-    <div className="tp-container">
-      <div className="tp-header">
-        <h2>Teacher Profile</h2>
-      </div>
+    <div className="tp-wrapper">
+      <h2 className="tp-page-title">Teacher Profile</h2>
 
-      <div className="tp-card">
-        <div className="tp-card-header">
-          <img src={avatar} alt="Avatar" className="tp-avatar" />
-          <div className="tp-basic-info">
+      <div className="tp-profile-card">
+        {/* Header with Basic Info */}
+        <div className="tp-header">
+          <div className="tp-initials">MJ</div>
+          <div>
             <h3>{teacher.name}</h3>
             <p><strong>Position:</strong> {teacher.position}</p>
             <p><strong>Employee ID:</strong> {teacher.employeeId}</p>
             <p><strong>Email:</strong> {teacher.email}</p>
           </div>
         </div>
-
+        
         <hr className="tp-divider" />
 
+        {/* Personal Info Grid */}
         <div className="tp-info-grid">
           <div>
             <label>Full Name</label>
-            <input value={teacher.name} disabled />
+            <input type="text" value={teacher.name} readOnly />
           </div>
           <div>
             <label>Contact Number</label>
-            <input value={teacher.contact} disabled />
+            <input type="text" value={teacher.contact} readOnly />
           </div>
           <div>
             <label>Date of Birth</label>
-            <input value={teacher.dob} disabled />
+            <input type="text" value={teacher.dob} readOnly />
           </div>
           <div>
             <label>Gender</label>
-            <input value={teacher.gender} disabled />
+            <input type="text" value={teacher.gender} readOnly />
           </div>
           <div>
             <label>Address</label>
-            <input value={teacher.address} disabled />
+            <input type="text" value={teacher.address} readOnly />
           </div>
           <div>
             <label>Emergency Contact Name</label>
-            <input value={teacher.emergencyContact.name} disabled />
+            <input type="text" value={teacher.emergencyContact.name} readOnly />
           </div>
           <div>
             <label>Emergency Contact Number</label>
-            <input value={teacher.emergencyContact.number} disabled />
+            <input type="text" value={teacher.emergencyContact.number} readOnly />
           </div>
-          <div>
+          <div className="tp-bio-field">
             <label>Brief Bio</label>
-            <textarea rows={4} value={teacher.bio} disabled />
+            <textarea rows={4} value={teacher.bio} readOnly />
           </div>
         </div>
 
-        <h4 className="tp-section-title">Qualifications</h4>
+        {/* Qualifications */}
+        <h4 className="tp-subtitle">Qualifications</h4>
         <div className="tp-info-grid">
           <div>
             <label>Specialization</label>
-            <input value={teacher.specialization} disabled />
+            <input type="text" value={teacher.specialization} readOnly />
           </div>
           <div>
             <label>Years of Experience</label>
-            <input value={teacher.yearsExp} disabled />
+            <input type="text" value={teacher.yearsExp} readOnly />
           </div>
         </div>
 
-        <h4 className="tp-section-title">Teaching Statistics</h4>
+        {/* Teaching Statistics */}
+        <h4 className="tp-subtitle">Teaching Statistics</h4>
         <div className="tp-stat-grid">
-          <div><strong>Active Students</strong><p>{teacher.stats.students}</p></div>
-          <div><strong>Classes Conducted</strong><p>{teacher.stats.classes}</p></div>
-          <div><strong>Student Progress Rate</strong><p>{teacher.stats.progress}</p></div>
-          <div><strong>Activities Created</strong><p>{teacher.stats.activities}</p></div>
+          <div>
+            <strong>Active Students</strong>
+            <p>{teacher.stats.students}</p>
+          </div>
+          <div>
+            <strong>Classes Conducted</strong>
+            <p>{teacher.stats.classes}</p>
+          </div>
+          <div>
+            <strong>Student Progress Rate</strong>
+            <p>{teacher.stats.progress}</p>
+          </div>
+          <div>
+            <strong>Activities Created</strong>
+            <p>{teacher.stats.activities}</p>
+          </div>
         </div>
 
-        <h4 className="tp-section-title">Certifications & Achievements</h4>
-        <div className="tp-badge-container">
-          {teacher.certifications.map((item, idx) => (
-            <span key={idx} className="tp-badge">{item}</span>
+        {/* Certifications */}
+        <h4 className="tp-subtitle">Certifications &amp; Achievements</h4>
+        <div className="tp-tag-container">
+          {teacher.certifications.map((cert, i) => (
+            <span key={i} className="tp-tag">{cert}</span>
           ))}
         </div>
 
-        <h4 className="tp-section-title">Availability Schedule</h4>
-        <div className="tp-availability">
+        {/* Availability */}
+        <h4 className="tp-subtitle">Availability Schedule</h4>
+        <div className="tp-availability-grid">
           {Object.entries(teacher.availability).map(([day, slots]) => (
-            <div key={day}>
+            <div key={day} className="tp-day-col">
               <strong>{day}</strong>
-              <div className="tp-slot-group">
+              <div className="tp-slot-wrap">
                 {slots.map((slot, idx) => (
                   <span key={idx} className="tp-slot">{slot}</span>
                 ))}
@@ -134,6 +150,7 @@ function TeacherProfile() {
             </div>
           ))}
         </div>
+
       </div>
     </div>
   );
