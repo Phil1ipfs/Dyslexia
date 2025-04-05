@@ -2,28 +2,24 @@
 import React, { useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-// LOGIN
+// Public Pages
 import Homepage from "./pages/Teachers/Homepage";
 import ChooseAccountType from "./pages/ChooseAccountType";
 import Login from "./pages/Login";
 
-// Teacher
+// Teacher Pages
 import TeacherDashboard from "./pages/Teachers/TeacherDashboard";
 import ViewStudent from "./pages/Teachers/ViewStudent";
-import StudentDetails from "./pages/Teachers/StudentDetails";
-import TeacherProfile from "./pages/Teachers/TeacherProfile";
 import ManageActivities from "./pages/Teachers/ManageActivities";
+import TeacherProfile from "./pages/Teachers/TeacherProfile";
+import StudentDetails from "./pages/Teachers/StudentDetails";
 
-
-// Parent
+// Parent & Admin (Placeholder)
 const ParentDashboard = () => <div>Parent Dashboard Placeholder</div>;
-
-// Admin
 const AdminDashboard = () => <div>Admin Dashboard Placeholder</div>;
 
-// Teacher Sidebar
-import Sidebar from "./widgets/TeacherPage/Sidebar";
-
+// Teacher Layout
+import TeacherLayout from "./widgets/TeacherPage/TeacherLayout";
 
 import "./App.css";
 
@@ -41,122 +37,55 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="app-layout">
-        {/* Show teacher's sidebar if authenticated (optional) */}
-        {isAuthenticated && <Sidebar onLogout={handleLogout} />}
+      <Routes>
+        {/* Public Routes */}
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? <Navigate to="/teacher/dashboard" /> : <Homepage />
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/teacher/dashboard" />
+            ) : (
+              <Login onLogin={() => setIsAuthenticated(true)} />
+            )
+          }
+        />
+        <Route path="/choose-account" element={<ChooseAccountType />} />
 
-        <div className={isAuthenticated ? "main-content-area" : ""}>
-          <Routes>
-            {/* If authenticated, show teacher dash at "/", else show Homepage */}
-            <Route
-              path="/"
-              element={
-                isAuthenticated ? (
-                  <Navigate to="/teacher-dashboard" />
-                ) : (
-                  <Homepage />
-                )
-              }
-            />
+        {/* ---------Parent & Admin -------*/}
+        <Route
+          path="/parent-dashboard"
+          element={
+            isAuthenticated ? <ParentDashboard /> : <Navigate to="/login" />
+          }
+        />
+        <Route
+          path="/admin-dashboard"
+          element={
+            isAuthenticated ? <AdminDashboard /> : <Navigate to="/login" />
+          }
+        />
 
-            {/* Login Page: If already authenticated, go to teacher dash */}
-            <Route
-              path="/login"
-              element={
-                isAuthenticated ? (
-                  <Navigate to="/teacher-dashboard" />
-                ) : (
-                  <Login onLogin={() => setIsAuthenticated(true)} />
-                )
-              }
-            />
+        {/* Protected Teacher Routes using TeacherLayout */}
+        {isAuthenticated && (
+          <Route path="/teacher/*" element={<TeacherLayout onLogout={handleLogout} />}>
+            <Route path="dashboard" element={<TeacherDashboard />} />
+            <Route path="view-student" element={<ViewStudent />} />
+            <Route path="manage-activities" element={<ManageActivities />} />
+            <Route path="profile" element={<TeacherProfile />} />
+            <Route path="student-details/:id" element={<StudentDetails />} />
+            <Route index element={<Navigate to="dashboard" />} />
+          </Route>
+        )}
 
-            {/* Choose Account Page (no authentication needed in this example) */}
-            <Route
-              path="/choose-account"
-              element={<ChooseAccountType />}
-            />
-
-            {/* Teacher Dashboard (Protected) */}
-            <Route
-              path="/teacher-dashboard"
-              element={
-                isAuthenticated ? (
-                  <TeacherDashboard />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-
-            {/* Parent Dashboard (Protected) */}
-            <Route
-              path="/parent-dashboard"
-              element={
-                isAuthenticated ? (
-                  <ParentDashboard />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-
-            {/* Admin Dashboard (Protected) */}
-            <Route
-              path="/admin-dashboard"
-              element={
-                isAuthenticated ? (
-                  <AdminDashboard />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-
-            {/* Teacher pages */}
-            <Route
-              path="/view-student"
-              element={
-                isAuthenticated ? (
-                  <ViewStudent />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-            <Route
-              path="/student-details/:id"
-              element={
-                isAuthenticated ? (
-                  <StudentDetails />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-
-            <Route
-              path="/manage-activities"
-              element={
-                isAuthenticated ? <ManageActivities /> : <Navigate to="/login" />
-              }
-            />
-            <Route
-              path="/teacher"
-              element={
-                isAuthenticated ? (
-                  <TeacherProfile />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-
-            {/* Catch-all → go Home */}
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </div>
-      </div>
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
     </BrowserRouter>
   );
 }

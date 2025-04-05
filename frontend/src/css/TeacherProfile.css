@@ -1,172 +1,379 @@
-/* Container that respects the sidebar width */
-.tp-wrapper {
-    margin-left: 260px; /* Enough space to avoid overlap with the sidebar */
-    padding: 2rem;
-    font-family: 'Atkinson Hyperlegible', sans-serif;
-    background: #f5f7fb; /* Or your desired background color */
-    min-height: 100vh; /* So it extends to full screen height */
-  }
-  
-  /* Title at the top */
-  .tp-page-title {
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: #2a3b73;
-    margin-bottom: 1.5rem;
-  }
-  
-  /* The main white card */
-  .tp-profile-card {
-    background: #fff;
-    border-radius: 8px;
-    padding: 2rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-  
-  /* Header with name + ID, etc. */
-  .tp-header {
-    display: flex;
-    gap: 1.5rem;
-    align-items: center;
-    margin-bottom: 1.5rem;
-  }
-  
-  /* Placeholder initials bubble */
-  .tp-initials {
-    background: #ccc;
-    color: #2a3b73;
-    font-size: 1.5rem;
-    font-weight: 700;
-    width: 60px;
-    height: 60px;
-    border-radius: 60px;
-    display: grid;
-    place-items: center;
-  }
-  
-  /* Horizontal divider line */
-  .tp-divider {
-    border: none;
-    border-top: 1px solid #ddd;
-    margin: 1.5rem 0;
-  }
-  
-  /* Grid for personal info */
+/* ---------------- Outer Container with Dark Blue Background ---------------- */
+.teacherprofile-outer {
+  background: #3b4f81;
+  min-height: 100vh;
+  padding: 2rem 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+/* ---------------- Centered White Card ---------------- */
+.teacherprofile-card {
+  background: #fff;
+  width: 100%;
+  max-width: 1100px;
+  margin-left: 17.6%; /* Adjust as needed to align with sidebar */
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  padding: 2rem 2.5rem;
+}
+
+/* ---------------- Page Title ---------------- */
+.tp-page-title {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #2a3b73;
+  margin-bottom: 1.5rem;
+}
+
+/* ---------------- Tab Buttons ---------------- */
+.tp-tab-buttons {
+  display: flex;
+  gap: 0.8rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tp-tab-buttons button {
+  background: transparent;
+  border: 2px solid #3b4f81;
+  color: #3b4f81;
+  padding: 0.6rem 1.4rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+  font-size: 0.95rem;
+}
+
+.tp-tab-buttons button:hover {
+  background: #3b4f81;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.tp-tab-buttons button.active {
+  background: #3b4f81;
+  color: #fff;
+}
+
+/* ---------------- Tab Content ---------------- */
+.tp-tab-content {
+  margin-top: 1rem;
+}
+
+/* ---------------- Profile Card (General) ---------------- */
+.tp-profile-card {
+  background: #fdfdfd;
+  border-radius: 8px;
+  padding: 1.8rem 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+  margin-bottom: 2rem;
+}
+
+/* ---------------- PERSONAL INFO: Two-Column Split Layout ---------------- */
+.tp-personal-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-start; 
+}
+
+.tp-avatar-lg {
+  width: 80px;
+  height: 80px;
+  background: #2a3b73;
+  color: white;
+  font-size: 1.8rem;
+  font-weight: bold;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.tp-personal-info {
+  flex: 1;
+}
+
+.tp-teacher-name {
+  margin: 0;
+  font-size: 1.6rem;
+  color: #2a3b73;
+}
+
+.tp-contact-edit-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-top: 0.5rem;
+  max-width: 600px;
+}
+
+.tp-contact-edit-group > div {
+  flex: 1;
+  min-width: 250px;
+}
+
+.tp-contact-edit-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  color: #2a3b73;
+}
+
+.tp-contact-edit-group input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #fafafa;
+  font-size: 0.95rem;
+}
+
+.tp-contact-edit-group input:focus {
+  outline: none;
+  border-color: #3b4f81;
+}
+
+
+/* Edit Profile Button */
+.tp-edit-btn {
+  background-color: #3b4f81;
+  color: white;
+  padding: 1.3rem 2.2rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  align-self: flex-start;
+
+}
+
+.tp-edit-btn:hover {
+  background-color: #2a3b73;
+}
+
+/* Divider */
+.tp-divider {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 1.2rem 0;
+}
+
+/* Subtitle */
+.tp-subtitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #2a3b73;
+  margin: 1.2rem 0 0.8rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 2px solid #2a3b73;
+}
+
+/* ---------------- Info Grid ---------------- */
+.tp-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.tp-info-grid label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.tp-info-grid input,
+.tp-info-grid textarea {
+  width: 100%;
+  margin-top: 0.3rem;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.95rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fafafa;
+  transition: border-color 0.2s ease;
+}
+
+.tp-info-grid input:focus,
+.tp-info-grid textarea:focus {
+  outline: none;
+  border-color: #3b4f81;
+}
+
+/* Bio Field */
+.tp-bio-field {
+  grid-column: span 2;
+}
+
+/* ---------------- Teaching Statistics ---------------- */
+.tp-stats-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.tp-stat-card {
+  background: #f9fbfe;
+  border-radius: 10px;
+  padding: 1.2rem;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-top: 6px solid #3b4f81;
+  transition: transform 0.2s ease;
+}
+
+.tp-stat-card:hover {
+  transform: translateY(-3px);
+}
+
+.tp-stat-card h5 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2a3b73;
+  margin-bottom: 0.6rem;
+}
+
+.tp-stat-card p {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #3b4f81;
+  margin: 0;
+}
+
+/* ---------------- Certifications / Achievements ---------------- */
+.tp-tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.tp-tag {
+  background: #fff8e1;
+  border: 2px solid #f3c922;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.95rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+/* ---------------- Teaching History ---------------- */
+.tp-history-entry {
+  margin-bottom: 1rem;
+}
+.tp-history-entry hr {
+  border: none;
+  border-top: 1px dashed #ddd;
+  margin: 0.7rem 0;
+}
+
+/* ---------------- Activities Created Table ---------------- */
+.tp-activities-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+.tp-activities-table th,
+.tp-activities-table td {
+  border: 1px solid #ccc;
+  padding: 0.8rem;
+  text-align: left;
+  font-size: 0.95rem;
+}
+.tp-activities-table th {
+  background-color: #f3f6ff;
+  color: #2a3b73;
+}
+.tp-activities-table tr:nth-child(even) td {
+  background-color: #fafafa;
+}
+
+/* ---------------- Availability ---------------- */
+.tp-availability-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1.2rem;
+}
+.tp-day-col strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-weight: 700;
+  color: #2a3b73;
+  font-size: 1rem;
+}
+.tp-slot-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.tp-slot {
+  background: #e2ebff;
+  color: #2a3b73;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+/* ---------------- Save Dialog ---------------- */
+.save-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.save-dialog-box {
+  background: #fff;
+  padding: 1.5rem 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-align: center;
+}
+.save-dialog-box p {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  color: #2a3b73;
+}
+.save-dialog-box button {
+  background: #3b4f81;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.save-dialog-box button:hover {
+  background: #2a3b73;
+}
+
+/* ---------------- Responsive Adjustments ---------------- */
+@media (max-width: 768px) {
   .tp-info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1rem 2rem;
-    margin-bottom: 2rem;
-  }
-  
-  /* Fields */
-  .tp-info-grid label {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #333;
-  }
-  
-  .tp-info-grid input,
-  .tp-info-grid textarea {
-    width: 100%;
-    margin-top: 0.4rem;
-    padding: 0.6rem;
-    font-size: 0.95rem;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    background: #f9f9f9;
-  }
-  
-  /* Larger text area for bio if needed */
-  .tp-bio-field textarea {
-    height: auto;
-  }
-  
-  /* Section Subtitles */
-  .tp-subtitle {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #2a3b73;
-    margin: 1.5rem 0 1rem;
-    border-bottom: 2px solid #2a3b73;
-    display: inline-block;
-    padding-bottom: 0.3rem;
-  }
-  
-  /* Stats grid for Teaching Statistics */
-  .tp-stat-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: 1fr;
     gap: 1rem;
-    margin-bottom: 2rem;
-    text-align: center;
   }
-  
-  .tp-stat-grid div {
-    background: #f2f5fb;
-    border-radius: 6px;
-    padding: 1rem;
+  .tp-stat-card-grid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   }
-  
-  .tp-stat-grid strong {
-    font-size: 0.95rem;
-  }
-  
-  .tp-stat-grid p {
-    margin: 0.5rem 0 0;
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #3b4f81;
-  }
-  
-  /* Certifications / achievements tags */
-  .tp-tag-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-    margin-bottom: 2rem;
-  }
-  
-  .tp-tag {
-    background: #fff8e1;
-    border: 2px solid #f3c922;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.95rem;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  }
-  
-  /* Availability schedule */
   .tp-availability-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: 1fr;
   }
-  
-  .tp-day-col strong {
-    display: block;
-    margin-bottom: 0.4rem;
-    font-weight: 600;
-    color: #2a3b73;
+  .tp-personal-header {
+    justify-content: center;
   }
-  
-  .tp-slot-wrap {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-  
-  .tp-slot {
-    background: #d9e9ff;
-    color: #2a3b73;
-    padding: 0.4rem 0.7rem;
-    border-radius: 6px;
-    font-size: 0.9rem;
-  }
-  
-  @media (max-width: 768px) {
-    .tp-wrapper {
-      margin-left: 80px; /* If your sidebar shrinks to 80px on small screens */
-    }
-  }
-  
+}

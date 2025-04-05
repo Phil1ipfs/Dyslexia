@@ -1,3 +1,4 @@
+// src/pages/ChooseAccountType.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/chooseAccount.css';
@@ -25,9 +26,9 @@ const ChooseAccountType = () => {
 
   const handleSelect = (type) => {
     localStorage.setItem('selectedUserType', type);
-
+    // If teacher is selected, navigate to login so teacher can log in first.
     if (type === 'teacher') {
-      navigate('/teacher-dashboard');
+      navigate('/login');
     } else {
       setError(`The "${type}" account type is not available yet.`);
     }
@@ -35,18 +36,12 @@ const ChooseAccountType = () => {
 
   return (
     <div className="choose-container">
-      {/* Error Dialog if needed */}
       {error && <ErrorDialog message={error} onClose={() => setError('')} />}
-
       <img src={logo} alt="Literexia Logo" className="choose-logo" />
-
-      {/* Exit icon → go back to the Homepage */}
       <button className="choose-exit" onClick={() => navigate('/')}>X</button>
-
       <div className="choose-content">
         <h1>Piliin ang Account Type</h1>
         <p>Magsimula sa pagpili ng uri ng account na nababagay sa iyo.</p>
-
         <div className="account-options">
           <div className="account-card" onClick={() => handleSelect('parent')}>
             <img src={parentIcon} alt="Parent" />
@@ -62,8 +57,6 @@ const ChooseAccountType = () => {
           </div>
         </div>
       </div>
-
-      {/* Wave background at bottom */}
       <img src={wave} alt="Wave" className="bottom-wave" />
     </div>
   );

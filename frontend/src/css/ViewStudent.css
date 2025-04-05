@@ -122,11 +122,12 @@
     background-color: #2e3d66;
     color: white;
     border: none;
-    border-radius: 20px;
-    padding: 6px 16px;
+    border-radius: 290px;
+    padding: 6px 160px;
     cursor: pointer;
     font-weight: bold;
     transition: background 0.2s;
+    font-size: 10px;
   }
   
   .view-btn:hover {

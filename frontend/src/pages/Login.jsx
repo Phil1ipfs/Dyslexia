@@ -28,13 +28,11 @@ const Login = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Basic input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Basic password rule: 8+ chars, 1 uppercase, 1 digit
   const isValidPassword = (password) => {
     const regex = /^(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
     return regex.test(password);
@@ -64,7 +62,6 @@ const Login = ({ onLogin }) => {
         localStorage.setItem('userData', JSON.stringify(data.user));
         if (onLogin) onLogin();
 
-        // After successful login, go to Choose Account
         navigate('/choose-account');
       } else {
         setError(data.message || 'Login failed.');
@@ -76,7 +73,6 @@ const Login = ({ onLogin }) => {
     }
   };
 
-  // Mock
   const mockLogin = ({ email, password }) => {
     return new Promise(resolve => {
       setTimeout(() => {

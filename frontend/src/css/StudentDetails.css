@@ -7,17 +7,38 @@
   box-sizing: border-box;
 }
 
-/* Header / Title Bar */
 .student-details-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem; 
+}
+
+.view-btn {
+  background-color: #3B4F81;
+  color: white;
+  padding: 10.6rem 1.2rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.view-btn:hover {
+  background-color: #2d3e6e;
 }
 
 .header-left h2 {
   margin: 0;
   font-size: 2rem;
+  color: #111827;
 }
 
 .teacher-name {
@@ -54,7 +75,7 @@
 
 .student-avatar {
   background: #ccc;
-  margin-top: 40px;
+  margin-top: 10px;
   border-radius: 50%;
   width: 80px;
   height: 80px;
@@ -100,8 +121,13 @@
   margin-bottom: 1rem;
 }
 
+.student-tabs button {
+  font-size: 1rem; 
+}
+
+
 .tab-btn {
-  padding: 0.7rem 1.5rem;
+  padding: 0.7rem 1.9rem;
   background: #e6e8ef;
   border: none;
   border-radius: 8px;
@@ -171,14 +197,12 @@
   margin-top: 2rem;
 }
 
-/* Recent Activities Box in Progress Tab */
 .recent-activities-box {
   background: #f6f7fb;
   padding: 1rem;
   border-radius: 10px;
 }
 
-/* Single Activity item in that box */
 .activity-item {
   background: #f9f9f9;
   border-radius: 8px;
@@ -211,7 +235,31 @@
   margin: 0.2rem 0 0;
 }
 
-/* Score badge color-coded */
+.recommendations-container {
+  background: #ffffff; 
+  padding: 1.2rem 1.5rem;
+  border-radius: 12px;
+  margin-top: 2rem; 
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06); 
+}
+
+.recommendations-container h4 {
+  margin: 0 0 0.5rem 0;         
+  font-size: 1.2rem;
+  color: #3B4F81;        
+}
+
+.recommendations-container ul {
+  list-style: disc;
+  margin-left: 1.5rem;       
+  color: #555;
+  font-style: italic;
+}
+
+.recommendations-container ul li {
+  margin-bottom: 0.4rem;
+}
+
 .score-badge {
   font-weight: bold;
   padding: 0.2rem 0.6rem;
@@ -233,6 +281,7 @@
   background-color: #ffe0e0;
   color: #c62828;
 }
+
 
 /* FEEDBACK BOX */
 .feedback-box {
@@ -354,9 +403,39 @@
 }
 
 /* FEEDBACK HISTORY */
-.feedback-history li {
-  margin-bottom: 1rem;
+.feedback-history {
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0 0;
+  display: grid;
+  grid-gap: 1rem;
 }
+
+/* Each Feedback Card */
+.feedback-history li {
+  background: #ffffff;          
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #3B4F81; 
+}
+
+/* Feedback Date */
+.feedback-history li strong {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  color: #3B4F81;
+}
+
+/* Feedback Message */
+.feedback-history li p {
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0;
+  color: #333;
+}
+
 
 /* FAMILY TAB */
 .family-tab .family-info {
@@ -475,7 +554,7 @@
   font-weight: 600;
   font-size: 1rem;
   margin-bottom: 0.6rem;
-  margin-top: 0.2rem; /* reduce extra top spacing */
+  margin-top: 0.2rem; 
 }
 
 .activity-item-box {
@@ -508,7 +587,6 @@
   margin-top: 0.25rem;
 }
 
-/* Dropdown toggle button for question-level feedback */
 .activity-dropdown .dropdown-toggle {
   margin-top: 0.6rem;
   background: #3B4F81;
@@ -524,7 +602,6 @@
   background: #2d3e6e;
 }
 
-/* Question list inside the dropdown */
 .question-list {
   list-style: none;
   padding: 0.6rem 1rem;
@@ -544,7 +621,6 @@
   margin-right: 1rem;
 }
 
-/* Mark question correctness */
 .question-item.correct .question-result {
   color: #2e7d32;
   font-weight: bold;
