@@ -13,7 +13,7 @@
   background: #fff;
   width: 100%;
   max-width: 1100px;
-  margin-left: 17.6%; /* Adjust as needed to align with sidebar */
+  margin-left: 17.6%; /* Adjust as needed to align with your sidebar */
   border-radius: 12px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   padding: 2rem 2.5rem;
@@ -74,13 +74,13 @@
   margin-bottom: 2rem;
 }
 
-/* ---------------- PERSONAL INFO: Two-Column Split Layout ---------------- */
+/* ---------------- PERSONAL INFO: Header Row ---------------- */
 .tp-personal-header {
   display: flex;
   align-items: flex-start;
   gap: 1.5rem;
-  flex-wrap: wrap;
-  justify-content: flex-start; 
+  margin-bottom: 1.5rem;
+  justify-content: flex-start;
 }
 
 .tp-avatar-lg {
@@ -93,6 +93,7 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
+  flex-shrink: 0;
 }
 
 .tp-personal-info {
@@ -100,17 +101,22 @@
 }
 
 .tp-teacher-name {
-  margin: 0;
+  margin: 0 0 0.3rem 0;
   font-size: 1.6rem;
   color: #2a3b73;
 }
 
+.employee-id {
+  margin: 0 0 0.8rem 0;
+  color: #555;
+}
+
+/* ---------------- Contact & Position Group ---------------- */
 .tp-contact-edit-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2rem;
-  margin-top: 0.5rem;
-  max-width: 600px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
+  margin-top: 0.8rem;
 }
 
 .tp-contact-edit-group > div {
@@ -139,8 +145,54 @@
   border-color: #3b4f81;
 }
 
+/* ---------------- Input Group with Icon ---------------- */
+.tp-input-group {
+  position: relative;
+  margin-bottom: 0.8rem;
+}
 
-/* Edit Profile Button */
+.full-width-input-group {
+  grid-column: span 2;
+}
+
+
+.tp-input-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #3b4f81;
+  font-size: 1.1rem;
+  pointer-events: none; 
+}
+
+.tp-input-group input,
+.tp-input-group textarea {
+  width: 100%;
+  padding: 0.7rem 1.2rem 0.7rem 2.8rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #fafafa;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+
+.tp-input-group input:focus,
+.tp-input-group textarea:focus {
+  outline: none;
+  border-color: #3b4f81;
+  box-shadow: 0 0 0 2px rgba(59, 79, 129, 0.1);
+}
+
+/* ---------------- Action Buttons ---------------- */
+.tp-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  flex-shrink: 0;
+}
+
 .tp-edit-btn {
   background-color: #3b4f81;
   color: white;
@@ -151,21 +203,36 @@
   cursor: pointer;
   transition: background 0.2s ease;
   align-self: flex-start;
-
+  margin-right: 1rem; /* Shift more to the left */
 }
 
 .tp-edit-btn:hover {
   background-color: #2a3b73;
 }
 
-/* Divider */
+.tp-change-password-btn {
+  background-color: #3b4f81;
+  color: white;
+  padding: 1rem 1.8rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.tp-change-password-btn:hover {
+  background-color: #2a3b73;
+}
+
+/* ---------------- Divider ---------------- */
 .tp-divider {
   border: none;
   border-top: 1px solid #ddd;
   margin: 1.2rem 0;
 }
 
-/* Subtitle */
+/* ---------------- Subtitle ---------------- */
 .tp-subtitle {
   font-size: 1.2rem;
   font-weight: 700;
@@ -189,17 +256,11 @@
   color: #333;
 }
 
-.tp-info-grid input,
-.tp-info-grid textarea {
-  width: 100%;
-  margin-top: 0.3rem;
-  padding: 0.55rem 0.8rem;
-  font-size: 0.95rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #fafafa;
-  transition: border-color 0.2s ease;
+.tp-info-grid .tp-input-group input,
+.tp-info-grid .tp-input-group textarea {
+  padding: 0.7rem 1.2rem 0.7rem 2.8rem;
 }
+
 
 .tp-info-grid input:focus,
 .tp-info-grid textarea:focus {
@@ -262,8 +323,50 @@
   padding: 0.4rem 0.8rem;
   border-radius: 20px;
   font-size: 0.95rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
+
+.tp-certifications-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.tp-cert-badge {
+  display: flex;
+  align-items: center;
+  background: #fcfcfc;
+  border-radius: 50px;
+  padding: 0.6rem 1rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f3c922;
+  transition: transform 0.2s ease;
+  min-width: fit-content;
+}
+
+.tp-cert-badge:hover {
+  transform: translateY(-2px);
+}
+
+.tp-cert-icon {
+  background: #fdd835;
+  color: #333;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.2rem;
+  margin-right: 0.6rem;
+}
+
+.tp-cert-text {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #111;
+}
+
 
 /* ---------------- Teaching History ---------------- */
 .tp-history-entry {
@@ -296,33 +399,65 @@
   background-color: #fafafa;
 }
 
-/* ---------------- Availability ---------------- */
-.tp-availability-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 1.2rem;
-}
-.tp-day-col strong {
-  display: block;
-  margin-bottom: 0.2rem;
-  font-weight: 700;
-  color: #2a3b73;
-  font-size: 1rem;
-}
-.tp-slot-wrap {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-.tp-slot {
-  background: #e2ebff;
-  color: #2a3b73;
-  padding: 0.4rem 0.6rem;
-  border-radius: 6px;
+.status-pill {
+  display: inline-block;
+  padding: 0.35rem 0.8rem;
+  border-radius: 20px;
   font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
 }
 
-/* ---------------- Save Dialog ---------------- */
+.status-pill.active {
+  background-color: #d3eefd;
+  color: #0072d9;
+  border: 1px solid #89c9f6;
+}
+
+.status-pill.completed {
+  background-color: #e9f5e7;
+  color: #2d8a51;
+  border: 1px solid #a9d9c2;
+}
+
+
+/* ---------------- Availability ---------------- */
+.tp-availability-table {
+  display: grid;
+  grid-template-rows: auto;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tp-availability-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.tp-availability-cell {
+  padding: 0.8rem 1rem;
+  text-align: center;
+  border: 1px solid #e0e0e0;
+  font-weight: 500;
+  background-color: white;
+}
+
+.tp-availability-row.header .tp-availability-cell {
+  background-color: #f7f9fc;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #2a3b73;
+}
+
+.tp-availability-cell.active {
+  background-color: #e3f0ff;
+  color: #0072d9;
+  font-weight: 700;
+  border: 1px solid #b3d4fc;
+}
+
+/* ---------------- Save Dialog (Success & Error) ---------------- */
 .save-dialog-overlay {
   position: fixed;
   top: 0;
@@ -335,6 +470,7 @@
   align-items: center;
   z-index: 1000;
 }
+
 .save-dialog-box {
   background: #fff;
   padding: 1.5rem 2rem;
@@ -360,6 +496,109 @@
 .save-dialog-box button:hover {
   background: #2a3b73;
 }
+/* Error dialog variant */
+.save-dialog-box.error {
+  border-left: 6px solid #e74c3c;
+}
+.save-dialog-box.error p {
+  color: #e74c3c;
+}
+
+/* ---------------- Change Password Modal ---------------- */
+.password-modal {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 10px;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+}
+
+.password-modal h4 {
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+  color: #2a3b73;
+  text-align: center;
+}
+
+.password-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+
+.password-fields input {
+  padding: 0.65rem 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  background-color: #f9f9f9;
+}
+
+.password-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.password-buttons button {
+  padding: 0.7rem 1.5rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  background-color: #3b4f81;
+  color: white;
+  transition: background 0.2s ease;
+}
+
+.password-buttons .cancel-btn {
+  background-color: #888;
+}
+
+.password-buttons button:hover {
+  background-color: #2a3b73;
+}
+.password-buttons .cancel-btn:hover {
+  background-color: #666;
+}
+
+.password-input-group {
+  position: relative;
+  width: 100%;
+}
+
+.password-input-group input {
+  width: 100%;
+  padding: 0.6rem 2.5rem 0.6rem 2.5rem; /* left & right for icons */
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #f9f9f9;
+  font-size: 0.95rem;
+}
+
+.input-icon-left {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #3b4f81;
+  font-size: 1rem;
+}
+
+.input-icon-right {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #3b4f81;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+
 
 /* ---------------- Responsive Adjustments ---------------- */
 @media (max-width: 768px) {
@@ -367,7 +606,7 @@
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  .tp-stat-card-grid {
+  .tp-stats-card-grid {
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   }
   .tp-availability-grid {

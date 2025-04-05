@@ -1,5 +1,20 @@
 // src/pages/Teachers/TeacherProfile.jsx
 import React, { useState } from "react";
+import {
+  FiUser,
+  FiPhone,
+  FiCalendar,
+  FiMail,
+  FiMapPin,
+  FiUserCheck,
+  FiBookOpen,
+  FiClock,
+  FiBriefcase,
+  FiAward,
+  FiCheckCircle,
+  FiPlayCircle,
+  FiCoffee
+} from "react-icons/fi";
 import "../../css/TeacherProfile.css";
 
 function TeacherProfile() {
@@ -130,6 +145,8 @@ function TeacherProfile() {
 function PersonalInfo({ teacher }) {
   const [isEditing, setIsEditing] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [errorDialog, setErrorDialog] = useState({ show: false, message: "" });
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [formData, setFormData] = useState({ ...teacher });
 
   const handleChange = (e) => {
@@ -144,31 +161,38 @@ function PersonalInfo({ teacher }) {
     }));
   };
 
-  const [errorDialog, setErrorDialog] = useState({ show: false, message: "" });
-
   const toggleEdit = () => {
     if (isEditing) {
-      // Validate inputs before saving
-      if (!formData.name.trim()) return setErrorDialog({ show: true, message: "Full name is required." });
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(formData.dob)) return setErrorDialog({ show: true, message: "Date of birth must be in YYYY-MM-DD format." });
-      if (!/^\+?\d{10,15}$/.test(formData.contact)) return setErrorDialog({ show: true, message: "Invalid contact number format." });
-      if (!/\S+@\S+\.\S+/.test(formData.email)) return setErrorDialog({ show: true, message: "Invalid email address." });
-      if (!formData.address.trim()) return setErrorDialog({ show: true, message: "Address is required." });
-      if (!formData.position.trim()) return setErrorDialog({ show: true, message: "Position is required." });
-      if (!formData.specialization.trim()) return setErrorDialog({ show: true, message: "Specialization is required." });
-      if (!formData.gender.trim()) return setErrorDialog({ show: true, message: "Gender is required." });
+      // Validate inputs
+      if (!formData.name.trim())
+        return setErrorDialog({ show: true, message: "Full name is required." });
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(formData.dob))
+        return setErrorDialog({ show: true, message: "Date of birth must be in YYYY-MM-DD format." });
+      if (!/^\+?\d{10,15}$/.test(formData.contact))
+        return setErrorDialog({ show: true, message: "Invalid contact number format." });
+      if (!/\S+@\S+\.\S+/.test(formData.email))
+        return setErrorDialog({ show: true, message: "Invalid email address." });
+      if (!formData.address.trim())
+        return setErrorDialog({ show: true, message: "Address is required." });
+      if (!formData.position.trim())
+        return setErrorDialog({ show: true, message: "Position is required." });
+      if (!formData.specialization.trim())
+        return setErrorDialog({ show: true, message: "Specialization is required." });
+      if (!formData.gender.trim())
+        return setErrorDialog({ show: true, message: "Gender is required." });
 
-      // All good, simulate save
+      // Simulate saving
       setIsEditing(false);
       setShowSaveDialog(true);
+      // (Call backend API here if needed)
     } else {
       setIsEditing(true);
     }
   };
 
+
   return (
     <div className="tp-profile-card">
-
       {/* Error Dialog */}
       {errorDialog.show && (
         <div className="save-dialog-overlay">
@@ -188,6 +212,12 @@ function PersonalInfo({ teacher }) {
           </div>
         </div>
       )}
+
+      {/* Password Modal */}
+      {showPasswordModal && (
+        <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />
+      )}
+
       {/* Header Row with Avatar & Basic Info */}
       <div className="tp-personal-header">
         <div className="tp-avatar-lg">
@@ -200,36 +230,45 @@ function PersonalInfo({ teacher }) {
         </div>
         <div className="tp-personal-info">
           <h3 className="tp-teacher-name">{formData.name}</h3>
-          <p>
+          <p className="employee-id">
             <strong>Employee ID:</strong> {formData.employeeId}
           </p>
           <div className="tp-contact-edit-group">
-            <div>
-              <label>Email</label>
+            <div className="tp-input-group">
+              <FiMail className="tp-input-icon" />
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 readOnly={!isEditing}
+                placeholder="Enter email"
               />
             </div>
-            <div>
-              <label>Position</label>
+            <div className="tp-input-group">
+              <FiBriefcase className="tp-input-icon" />
               <input
                 type="text"
                 name="position"
                 value={formData.position}
                 onChange={handleChange}
                 readOnly={!isEditing}
+                placeholder="Enter position"
               />
             </div>
           </div>
         </div>
-        <button className="tp-edit-btn" onClick={toggleEdit}>
-          {isEditing ? "Save Profile" : "Edit Profile"}
-        </button>
-
+        <div className="tp-action-buttons">
+          <button className="tp-edit-btn" onClick={toggleEdit}>
+            {isEditing ? "Save Profile" : "Edit Profile"}
+          </button>
+          <button
+            className="tp-change-password-btn"
+            onClick={() => setShowPasswordModal(true)}
+          >
+            Change Password
+          </button>
+        </div>
       </div>
 
       <hr className="tp-divider" />
@@ -237,84 +276,101 @@ function PersonalInfo({ teacher }) {
       {/* Personal Information Section */}
       <h4 className="tp-subtitle">Personal Information</h4>
       <div className="tp-info-grid">
-        <div>
-          <label>Full Name</label>
+        <div className="tp-input-group">
+          <FiUser className="tp-input-icon" />
           <input
             type="text"
             name="name"
             value={formData.name}
             onChange={handleChange}
             readOnly={!isEditing}
+            placeholder="Full Name"
           />
         </div>
-        <div>
-          <label>Contact Number</label>
+        <div className="tp-input-group">
+          <FiPhone className="tp-input-icon" />
           <input
             type="text"
             name="contact"
             value={formData.contact}
             onChange={handleChange}
             readOnly={!isEditing}
+            placeholder="Contact Number"
           />
         </div>
-        <div>
-          <label>Date of Birth</label>
+        <div className="tp-input-group">
+          <FiCalendar className="tp-input-icon" />
           <input
-            type="text"
+            type="date"
             name="dob"
             value={formData.dob}
             onChange={handleChange}
             readOnly={!isEditing}
           />
         </div>
-        <div>
-          <label>Gender</label>
+        <div className="tp-input-group">
+          <FiUser className="tp-input-icon" />
           <input
             type="text"
             name="gender"
             value={formData.gender}
             onChange={handleChange}
             readOnly={!isEditing}
+            placeholder="Gender"
           />
         </div>
-        <div>
-          <label>Address</label>
+        <div className="tp-input-group full-width-input-group">
+          <FiMapPin className="tp-input-icon" />
           <input
             type="text"
             name="address"
             value={formData.address}
             onChange={handleChange}
             readOnly={!isEditing}
+            placeholder="Address"
+            className="full-width-input"
           />
         </div>
-        <div>
-          <label>Emergency Contact Name</label>
+
+      </div>
+
+      <h4 className="tp-subtitle">Emergency Contact</h4>
+      <div className="tp-info-grid">
+        <div className="tp-input-group">
+          <FiUserCheck className="tp-input-icon" />
           <input
             type="text"
             name="emergencyName"
             value={formData.emergencyContact.name}
             onChange={(e) => handleEmergencyChange("name", e.target.value)}
             readOnly={!isEditing}
+            placeholder="Emergency Contact Name"
           />
         </div>
-        <div>
-          <label>Emergency Contact Number</label>
+        <div className="tp-input-group">
+          <FiPhone className="tp-input-icon" />
           <input
             type="text"
             name="emergencyNumber"
             value={formData.emergencyContact.number}
             onChange={(e) => handleEmergencyChange("number", e.target.value)}
             readOnly={!isEditing}
+            placeholder="Emergency Contact Number"
           />
         </div>
-        <div className="tp-bio-field">
-          <label>Brief Bio</label>
+      </div>
+
+      <h4 className="tp-subtitle">Bio</h4>
+      <div className="tp-bio-container">
+        <div className="tp-bio-field tp-input-group">
+          <FiMail className="tp-input-icon" style={{ transform: "rotate(90deg)" }} />
           <textarea
             rows={4}
             name="bio"
             value={formData.bio}
             onChange={handleChange}
             readOnly={!isEditing}
+            placeholder="Brief Bio"
           />
         </div>
       </div>
@@ -322,24 +378,26 @@ function PersonalInfo({ teacher }) {
       {/* Specialization & Experience Section */}
       <h4 className="tp-subtitle">Specialization & Experience</h4>
       <div className="tp-info-grid">
-        <div>
-          <label>Specialization</label>
+        <div className="tp-input-group">
+          <FiBookOpen className="tp-input-icon" />
           <input
             type="text"
             name="specialization"
             value={formData.specialization}
             onChange={handleChange}
             readOnly={!isEditing}
+            placeholder="Specialization"
           />
         </div>
-        <div>
-          <label>Years of Experience</label>
+        <div className="tp-input-group">
+          <FiClock className="tp-input-icon" />
           <input
             type="number"
             name="yearsExp"
             value={formData.yearsExp}
             onChange={handleChange}
             readOnly={!isEditing}
+            placeholder="Years of Experience"
           />
         </div>
       </div>
@@ -367,7 +425,6 @@ function PersonalInfo({ teacher }) {
     </div>
   );
 }
-
 // ---------------- TEACHING HISTORY COMPONENT ---------------- //
 function TeachingHistory({ teacher }) {
   return (
@@ -388,14 +445,23 @@ function TeachingHistory({ teacher }) {
 
 // ---------------- CERTIFICATIONS COMPONENT ---------------- //
 function Certifications({ teacher }) {
+  // Icon mapping (customizable per title)
+  const iconMap = {
+    "Certified Dyslexia Specialist": <FiAward />,
+    "Multi-Sensory Teaching Method": <FiCheckCircle />,
+    "Educational Technology Integration": <FiPlayCircle />,
+    "Reading Intervention Program Creator": <FiCoffee />,
+  };
+
   return (
     <div className="tp-profile-card">
-      <h4 className="tp-subtitle">Certifications & Achievements</h4>
-      <div className="tp-tag-container">
-        {teacher.certifications.map((cert, i) => (
-          <span key={i} className="tp-tag">
-            {cert}
-          </span>
+      <h4 className="tp-subtitle">Teaching Certifications & Achievements</h4>
+      <div className="tp-certifications-list">
+        {teacher.certifications.map((cert, index) => (
+          <div className="tp-cert-badge" key={index}>
+            <div className="tp-cert-icon">{iconMap[cert] || <FiAward />}</div>
+            <span className="tp-cert-text">{cert}</span>
+          </div>
         ))}
       </div>
     </div>
@@ -422,7 +488,15 @@ function ActivitiesCreated({ teacher }) {
               <td>{activity.title}</td>
               <td>{activity.type}</td>
               <td>{activity.date}</td>
-              <td>{activity.status}</td>
+              <td>
+                <span
+                  className={`status-pill ${
+                    activity.status === "Active" ? "active" : "completed"
+                  }`}
+                >
+                  {activity.status}
+                </span>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -431,24 +505,147 @@ function ActivitiesCreated({ teacher }) {
   );
 }
 
+
 // ---------------- AVAILABILITY SCHEDULE COMPONENT ---------------- //
 function AvailabilitySchedule({ teacher }) {
+  const allSlots = [
+    "8:00 - 9:00", "9:00 - 10:00", "10:00 - 11:00",
+    "11:00 - 12:00", "1:00 - 2:00", "2:00 - 3:00"
+  ];
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+
   return (
     <div className="tp-profile-card">
       <h4 className="tp-subtitle">Availability Schedule</h4>
-      <div className="tp-availability-grid">
-        {Object.entries(teacher.availability).map(([day, slots]) => (
-          <div key={day} className="tp-day-col">
-            <strong>{day}</strong>
-            <div className="tp-slot-wrap">
-              {slots.map((slot, idx) => (
-                <span key={idx} className="tp-slot">
+      <div className="tp-availability-table">
+        <div className="tp-availability-row header">
+          {days.map((day) => (
+            <div key={day} className="tp-availability-cell day-header">{day}</div>
+          ))}
+        </div>
+        {allSlots.map((slot, index) => (
+          <div className="tp-availability-row" key={index}>
+            {days.map((day) => {
+              const isAvailable = teacher.availability[day]?.includes(slot);
+              return (
+                <div
+                  key={`${day}-${slot}`}
+                  className={`tp-availability-cell ${isAvailable ? "active" : ""}`}
+                >
                   {slot}
-                </span>
-              ))}
-            </div>
+                </div>
+              );
+            })}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+
+// ---------------- CHANGE PASSWORD MODAL ---------------- //
+
+import { FiLock, FiEye, FiEyeOff } from "react-icons/fi";
+
+
+function ChangePasswordModal({ onClose }) {
+  const [currentPass, setCurrentPass] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
+  const [error, setError] = useState("");
+
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const handleChangePassword = () => {
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+  
+    if (!currentPass || !newPass || !confirmPass) {
+      setError("All password fields are required.");
+      return;
+    }
+  
+    if (newPass !== confirmPass) {
+      setError("New passwords do not match.");
+      return;
+    }
+  
+    if (!passwordRegex.test(newPass)) {
+      setError(
+        "Password must be at least 8 characters long, with uppercase, lowercase, number, and special character."
+      );
+      return;
+    }
+  
+    // All checks passed
+    alert("✅ Password changed successfully!");
+    onClose();
+  };
+  
+
+  return (
+    <div className="save-dialog-overlay">
+      <div className="save-dialog-box password-modal">
+        <h4>Change Password</h4>
+        {error && <p className="error-text">{error}</p>}
+
+        <div className="password-fields">
+          {/* Current Password */}
+          <div className="password-input-group">
+            <FiLock className="input-icon-left" />
+            <input
+              type={showCurrent ? "text" : "password"}
+              placeholder="Current Password"
+              value={currentPass}
+              onChange={(e) => setCurrentPass(e.target.value)}
+            />
+            {showCurrent ? (
+              <FiEyeOff className="input-icon-right" onClick={() => setShowCurrent(false)} />
+            ) : (
+              <FiEye className="input-icon-right" onClick={() => setShowCurrent(true)} />
+            )}
+          </div>
+
+          {/* New Password */}
+          <div className="password-input-group">
+            <FiLock className="input-icon-left" />
+            <input
+              type={showNew ? "text" : "password"}
+              placeholder="New Password"
+              value={newPass}
+              onChange={(e) => setNewPass(e.target.value)}
+            />
+            {showNew ? (
+              <FiEyeOff className="input-icon-right" onClick={() => setShowNew(false)} />
+            ) : (
+              <FiEye className="input-icon-right" onClick={() => setShowNew(true)} />
+            )}
+          </div>
+
+          {/* Confirm Password */}
+          <div className="password-input-group">
+            <FiLock className="input-icon-left" />
+            <input
+              type={showConfirm ? "text" : "password"}
+              placeholder="Confirm New Password"
+              value={confirmPass}
+              onChange={(e) => setConfirmPass(e.target.value)}
+            />
+            {showConfirm ? (
+              <FiEyeOff className="input-icon-right" onClick={() => setShowConfirm(false)} />
+            ) : (
+              <FiEye className="input-icon-right" onClick={() => setShowConfirm(true)} />
+            )}
+          </div>
+        </div>
+
+        <div className="password-buttons">
+          <button onClick={handleChangePassword}>Update Password</button>
+          <button onClick={onClose} className="cancel-btn">Cancel</button>
+        </div>
       </div>
     </div>
   );
