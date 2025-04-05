@@ -11,10 +11,10 @@ import {
   ReferenceLine
 } from 'recharts';
 
-import '../css/TeacherDashboard.css';
-import Sidebar from "../widgets/Sidebar.jsx";
-import students from '../assets/icons/students.png';
-import parent from '../assets/icons/parent.png';
+import '../../css/TeacherDashboard.css';
+import Sidebar from "../../widgets/TeacherPage/Sidebar.jsx";
+import students from '../../assets/icons/students.png';
+import parent from '../../assets/icons/parent.png';
 
 const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');

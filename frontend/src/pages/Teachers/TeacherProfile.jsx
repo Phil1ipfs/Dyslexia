@@ -1,5 +1,5 @@
 import React from "react";
-import "../css/TeacherProfile.css"; // The isolated CSS so it doesn't conflict
+import "../../css/TeacherProfile.css";
 
 function TeacherProfile() {
   // Mocked teacher data

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../css/StudentDetails.css';
+import '../../css/StudentDetails.css';
 import { FaPaperPlane } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -7,7 +7,6 @@ import {
   LineChart, Line, PieChart, Pie, Cell
 } from 'recharts';
 
-// MATATAG-based reading categories (for the Activities Result tab)
 const activityCategories = {
   A: {
     label: 'Panimulang Pagbasa (Emergent Reader)',

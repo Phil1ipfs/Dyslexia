@@ -1,0 +1,9 @@
+.teacher-dashboard-page {
+    background: #f7f8fa;
+    padding: 2rem;
+    font-family: 'Atkinson Hyperlegible', sans-serif;
+    min-height: 100vh;
+    margin-left: 260px; 
+    box-sizing: border-box;
+  }
+  

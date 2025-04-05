@@ -1,116 +1,117 @@
+// src/pages/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../css/Login.css';
+import '../css/login.css';
 
 import logo from '../assets/images/LITEREXIA.png';
 import wave from '../assets/images/wave.png';
-
-// React Icons (install with: npm install react-icons)
 import { FiMail, FiEye, FiEyeOff } from 'react-icons/fi';
+
+function ErrorDialog({ message, onClose }) {
+  return (
+    <div className="error-dialog-overlay fade-in">
+      <div className="error-dialog-box pop-in">
+        <p>{message}</p>
+        <button className="dialog-close-btn" onClick={onClose}>OK</button>
+      </div>
+    </div>
+  );
+}
 
 const Login = ({ onLogin }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
-    userType: 'teacher'
+    password: ''
   });
-
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Handle changes in email/password
+  // Basic input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle form submission
+  // Basic password rule: 8+ chars, 1 uppercase, 1 digit
+  const isValidPassword = (password) => {
+    const regex = /^(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
+    return regex.test(password);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
 
+    if (!formData.email || !formData.password) {
+      return setError('Lahat ng field ay kailangan punan.');
+    }
+    if (!formData.email.includes('@')) {
+      return setError('Gumamit ng wastong email address.');
+    }
+    if (!isValidPassword(formData.password)) {
+      return setError('Password must be 8+ characters, contain 1 uppercase & 1 number.');
+    }
+
+    setIsLoading(true);
     try {
-      // Mock login – replace with a real fetch() call to your MongoDB backend later
       const response = await mockLogin(formData);
       const data = await response.json();
 
       if (response.ok) {
-        // Save token/user in localStorage
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('userData', JSON.stringify(data.user));
-
-        // Notify parent component that we are logged in
         if (onLogin) onLogin();
 
-        // Navigate to dashboard or any route you choose
-        navigate('/dashboard');
+        // After successful login, go to Choose Account
+        navigate('/choose-account');
       } else {
-        // Show error from mock or server
-        setError(data.message || 'Login failed');
+        setError(data.message || 'Login failed.');
       }
-
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Something went wrong. Please try again.');
+    } catch {
+      setError('May nangyaring mali. Subukan muli.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Mock login function (for demonstration only)
-  const mockLogin = ({ email, password, userType }) => {
-    return new Promise((resolve) => {
+  // Mock
+  const mockLogin = ({ email, password }) => {
+    return new Promise(resolve => {
       setTimeout(() => {
-        // Very basic check
         if (email && password) {
           resolve({
             ok: true,
-            json: () => Promise.resolve({
-              token: 'mock-jwt-token',
-              user: {
-                _id: 'mock-user-id',
-                name: email.split('@')[0],
-                email,
-                userType
-              }
-            })
+            json: () =>
+              Promise.resolve({
+                token: 'mock-token',
+                user: { email }
+              })
           });
         } else {
           resolve({
             ok: false,
-            json: () => Promise.resolve({
-              message: 'Invalid email or password'
-            })
+            json: () => Promise.resolve({ message: 'Invalid credentials' })
           });
         }
-      }, 800);
+      }, 700);
     });
   };
 
   return (
     <div className="login-container">
-      {/* Literexia logo in top-left */}
       <img src={logo} alt="Literexia Logo" className="top-left-logo" />
+      {/* X button → go to Choose Account */}
+      <button className="exit-button" onClick={() => navigate('/choose-account')}>X</button>
 
-      {/* Exit button top-right */}
-      <button className="exit-button" onClick={() => navigate("/")}>X</button>
+      {error && <ErrorDialog message={error} onClose={() => setError('')} />}
 
-      {/* Main login card */}
       <div className="login-card">
-        <h1 className="welcome-text">Maligayang Pag Balik!</h1>
-        <p className="instruction-text">ilagay ang iyong email at password</p>
-
-        {/* Error display */}
-        {error && <div className="error-message">{error}</div>}
+        <h1 className="welcome-text">Maligayang Pagbalik!</h1>
+        <p className="instruction-text">Punan ang email at password</p>
 
         <form onSubmit={handleSubmit}>
-          {/* Email field with icon */}
           <div className="form-group icon-input">
             <input
               type="email"
@@ -118,13 +119,11 @@ const Login = ({ onLogin }) => {
               placeholder="Email"
               value={formData.email}
               onChange={handleChange}
-              required
               className="form-input"
             />
             <FiMail className="input-icon" />
           </div>
 
-          {/* Password field with show/hide icon */}
           <div className="form-group icon-input">
             <input
               type={showPassword ? 'text' : 'password'}
@@ -132,7 +131,6 @@ const Login = ({ onLogin }) => {
               placeholder="Password"
               value={formData.password}
               onChange={handleChange}
-              required
               className="form-input"
             />
             {showPassword ? (
@@ -148,21 +146,17 @@ const Login = ({ onLogin }) => {
             )}
           </div>
 
-          {/* Login button */}
-          <button type="submit" className="signin-button" disabled={isLoading}>
+          <button
+            className="signin-button"
+            type="submit"
+            disabled={isLoading}
+          >
             {isLoading ? 'Logging in...' : 'Sign in'}
           </button>
         </form>
-
-        {/* Registration link */}
-        <p className="register-text">
-          Wala pang Account?{' '}
-          <a href="/register" className="register-link">Mag rehistro</a>
-        </p>
       </div>
 
-      {/* Wave background at bottom */}
-      <img src={wave} alt="Wave Background" className="bottom-wave" />
+      <img src={wave} alt="Wave" className="bottom-wave" />
     </div>
   );
 };
