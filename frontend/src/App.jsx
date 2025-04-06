@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Public Pages
-import Homepage from "./pages/Teachers/Homepage";
+import Homepage from "./pages/Homepage";
 import ChooseAccountType from "./pages/ChooseAccountType";
 import Login from "./pages/Login";
 

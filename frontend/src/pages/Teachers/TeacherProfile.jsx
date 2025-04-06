@@ -15,7 +15,7 @@ import {
   FiPlayCircle,
   FiCoffee
 } from "react-icons/fi";
-import "../../css/TeacherProfile.css";
+import "../../css/Teachers/TeacherProfile.css";
 
 function TeacherProfile() {
   const teacherData = {

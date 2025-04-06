@@ -1,6 +1,6 @@
 // src/pages/Teachers/StudentDetails.jsx
 import React, { useState } from 'react';
-import '../../css/StudentDetails.css';
+import '../../css/Teachers/StudentDetails.css';
 import { FaPaperPlane } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {

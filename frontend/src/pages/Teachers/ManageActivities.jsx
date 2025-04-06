@@ -1,6 +1,6 @@
 // src/pages/Teachers/ManageActivities.jsx
 import React, { useState } from "react";
-import "../../css/manageActivity.css";
+import "../../css/Teachers/manageActivity.css";
 
 function ManageActivities() {
   const [showAddActivity, setShowAddActivity] = useState(false);
