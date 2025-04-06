@@ -7,36 +7,36 @@ import "../../css/responsive.css";
 import Navbar from "../../widgets/Homepage/Navbar";
 import Footer from "../../widgets/Homepage/Footer";
 
-import heroCloud1 from "../../assets/images/hero-clouds.png";
-import heroCloud2 from "../../assets/images/hero-clouds2.png";
-import heroCloud3 from "../../assets/images/hero-clouds3.png";
-import heroPenguin from "../../assets/images/hero-penguin.png";
+import heroCloud1 from "../../assets/images/Homepage/hero-clouds.png";
+import heroCloud2 from "../../assets/images/Homepage/hero-clouds2.png";
+import heroCloud3 from "../../assets/images/Homepage/hero-clouds3.png";
+import heroPenguin from "../../assets/images/Homepage/hero-penguin.png";
 
 // Hero
-import heroImage from "../../assets/images/Group 4076.png";
+import heroImage from "../../assets/images/Homepage/Group 4076.png";
 
 // About
-import phones from "../../assets/images/phone.png";
+import phones from "../../assets/images/Homepage/phone.png";
 
 // Features
-import phoneIcon from "../../assets/icons/feature-phone.png";
-import aiIcon from "../../assets/icons/ai.png";
-import flagIcon from "../../assets/icons/flag.png";
-import pathIcon from "../../assets/icons/path.png";
-import bearIcon from "../../assets/icons/bear.png";
+import phoneIcon from "../../assets/icons/Homepage/feature-phone.png";
+import aiIcon from "../../assets/icons/Homepage/ai.png";
+import flagIcon from "../../assets/icons/Homepage/flag.png";
+import pathIcon from "../../assets/icons/Homepage/path.png";
+import bearIcon from "../../assets/icons/Homepage/bear.png";
 
 // Dyslexia Customization
-import preview from "../../assets/images/dyslexia-preview.png";
+import preview from "../../assets/images/Homepage/dyslexia-preview.png";
 
 // Teaching Methodology Icons
-import methodBear from "../../assets/icons/bear-2.png";
-import methodPenguin from "../../assets/icons/penguin.png";
-import methodElephant from "../../assets/icons/elephant.png";
-import methodLion from "../../assets/icons/sealion.png";
+import methodBear from "../../assets/icons/Homepage/bear-2.png";
+import methodPenguin from "../../assets/icons/Homepage/penguin.png";
+import methodElephant from "../../assets/icons/Homepage/elephant.png";
+import methodLion from "../../assets/icons/Homepage/sealion.png";
 
 // Why Choose Us
-import laptopPenguin from "../../assets/icons/laptop.png";
-import starIcon from "../../assets/icons/star.png";
+import laptopPenguin from "../../assets/icons/Homepage/laptop.png";
+import starIcon from "../../assets/icons/Homepage/star.png";
 
 function Homepage() {
   return (

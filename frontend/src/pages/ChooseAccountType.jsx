@@ -3,11 +3,11 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/chooseAccount.css';
 
-import logo from '../assets/images/LITEREXIA.png';
-import parentIcon from '../assets/icons/parent.png';
-import teacherIcon from '../assets/icons/teacher.png';
-import adminIcon from '../assets/icons/admin.png';
-import wave from '../assets/images/wave.png';
+import logo from '../assets/images/Teachers/LITEREXIA.png';
+import parentIcon from '../assets/icons/Teachers/parent.png';
+import teacherIcon from '../assets/icons/Teachers/teacher.png';
+import adminIcon from '../assets/icons/Teachers/admin.png';
+import wave from '../assets/images/Teachers/wave.png';
 
 const ChooseAccountType = () => {
   const navigate = useNavigate();

@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/login.css';
 
-import logo from '../assets/images/LITEREXIA.png';
-import wave from '../assets/images/wave.png';
+import logo from '../assets/images/Teachers/LITEREXIA.png';
+import wave from '../assets/images/Teachers/wave.png';
 import { FiMail, FiEye, FiEyeOff } from 'react-icons/fi';
 
 function ErrorDialog({ message, onClose }) {

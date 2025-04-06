@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import logo from "../../assets/images/LITEREXIA.png";
+import logo from "../../assets/images/Teachers/LITEREXIA.png";
 import "./Navbar.css";
 
 function Navbar() {

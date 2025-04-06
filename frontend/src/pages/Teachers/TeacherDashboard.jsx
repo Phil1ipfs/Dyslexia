@@ -11,8 +11,8 @@ import {
   ReferenceLine
 } from 'recharts';
 import '../../css/TeacherDashboard.css';
-import students from '../../assets/icons/students.png';
-import parent from '../../assets/icons/parent.png';
+import students from '../../assets/icons/Teachers/students.png';
+import parent from '../../assets/icons/Teachers/parent.png';
 
 const TeacherDashboard = () => {
   const [progressType, setProgressType] = useState('phonics');

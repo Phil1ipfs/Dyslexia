@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-import literexiaLogo from "../../assets/images/LITEREXIA.png";
-import dashboardIcon from "../../assets/icons/Dashboard.png";
-import viewStudentIcon from "../../assets/icons/ViewStudent.png";
-import manageActivityIcon from "../../assets/icons/activitymanage.png";
-import teacherProfileIcon from "../../assets/icons/Feedback.png";
-import logoutIcon from "../../assets/icons/Logout.png";
-import avatarIcon from "../../assets/icons/avatar.png";
+import literexiaLogo from "../../assets/images/Teachers/LITEREXIA.png";
+import dashboardIcon from "../../assets/icons/Teachers/Dashboard.png";
+import viewStudentIcon from "../../assets/icons/Teachers/ViewStudent.png";
+import manageActivityIcon from "../../assets/icons/Teachers/activitymanage.png";
+import teacherProfileIcon from "../../assets/icons/Teachers/Feedback.png";
+import logoutIcon from "../../assets/icons/Teachers/Logout.png";
+import avatarIcon from "../../assets/icons/Teachers/avatar.png";
 
 import "./Sidebar.css";
 

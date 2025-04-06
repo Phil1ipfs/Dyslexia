@@ -1,5 +1,5 @@
 import React from "react";
-import literexiaLogo from "../../assets/images/LITEREXIA.png"; 
+import literexiaLogo from "../../assets/images/Teachers/LITEREXIA.png"; 
 import "../../widgets/Homepage/Footer.css";
 
 
