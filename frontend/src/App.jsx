@@ -1,113 +1,106 @@
+// src/App.jsx
 import React, { useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import Sidebar from "./widgets/Sidebar";
-
+// Public Pages
+import Homepage from "./pages/Teachers/Homepage";
+import ChooseAccountType from "./pages/ChooseAccountType";
 import Login from "./pages/Login";
-import Homepage from "./pages/Homepage";
-import TeacherDashboard from "./pages/TeacherDashboard";
-import ViewStudent from "./pages/ViewStudent";
-import StudentDetails from "./pages/StudentDetails";
 
-import TeacherProfile from "./pages/TeacherProfile";
+// Teacher Pages
+import TeacherDashboard from "./pages/Teachers/TeacherDashboard";
+import ViewStudent from "./pages/Teachers/ViewStudent";
+import ManageActivities from "./pages/Teachers/ManageActivities";
+import TeacherProfile from "./pages/Teachers/TeacherProfile";
+import StudentDetails from "./pages/Teachers/StudentDetails";
+
+// Parent Pages
+import ParentDashboard from "./pages/Parents/ParentDashboard";
+
+// Admin Pages
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+
+// Layouts
+import TeacherLayout from "./widgets/TeacherPage/TeacherLayout";
+import ParentLayout from "./widgets/ParentPage/ParentLayout";
+import AdminLayout from "./widgets/AdminPage/AdminLayout";
 
 import "./App.css";
 
 function App() {
-  // Manage authentication state (based on localStorage token)
   const [isAuthenticated, setIsAuthenticated] = useState(
     !!localStorage.getItem("authToken")
   );
 
-  // Clears auth tokens, sets isAuthenticated to false
+  // Determine user type from localStorage; default to "teacher" if not set
+  const userType = localStorage.getItem("userType") || "teacher";
+
   const handleLogout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("userData");
+    localStorage.removeItem("userType");
     setIsAuthenticated(false);
   };
 
   return (
     <BrowserRouter>
-      <div className="app-layout">
-        {/* Show Sidebar only if user is authenticated */}
-        {isAuthenticated && <Sidebar onLogout={handleLogout} />}
+      <Routes>
+        {/* Public Routes */}
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? (
+              <Navigate to={`/${userType}/dashboard`} />
+            ) : (
+              <Homepage />
+            )
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? (
+              <Navigate to={`/${userType}/dashboard`} />
+            ) : (
+              <Login onLogin={() => setIsAuthenticated(true)} />
+            )
+          }
+        />
+        <Route path="/choose-account" element={<ChooseAccountType />} />
 
-        {/* The main content area. If logged in, add padding for the sidebar */}
-        <div className={isAuthenticated ? "main-content-area" : ""}>
-          <Routes>
-            {/* Public Homepage – if user is authenticated, redirect to /dashboard */}
-            <Route
-              path="/"
-              element={
-                isAuthenticated ? <Navigate to="/dashboard" /> : <Homepage />
-              }
-            />
+        {/* Protected Teacher Routes */}
+        {isAuthenticated && userType === "teacher" && (
+          <Route path="/teacher/*" element={<TeacherLayout onLogout={handleLogout} />}>
+            <Route path="dashboard" element={<TeacherDashboard />} />
+            <Route path="view-student" element={<ViewStudent />} />
+            <Route path="manage-activities" element={<ManageActivities />} />
+            <Route path="profile" element={<TeacherProfile />} />
+            <Route path="student-details/:id" element={<StudentDetails />} />
+            <Route index element={<Navigate to="dashboard" />} />
+          </Route>
+        )}
 
-            {/* Login – if user is already authenticated, go to dashboard */}
-            <Route
-              path="/login"
-              element={
-                !isAuthenticated
-                  ? <Login onLogin={() => setIsAuthenticated(true)} />
-                  : <Navigate to="/dashboard" />
-              }
-            />
+        {/* Protected Parent Routes */}
+        {isAuthenticated && userType === "parent" && (
+          <Route path="/parent/*" element={<ParentLayout onLogout={handleLogout} />}>
+            <Route path="dashboard" element={<ParentDashboard />} />
+            {/* Add additional Parent routes here */}
+            <Route index element={<Navigate to="dashboard" />} />
+          </Route>
+        )}
 
-            {/* Teacher Dashboard (Protected) */}
-            <Route
-              path="/dashboard"
-              element={
-                isAuthenticated
-                  ? <TeacherDashboard />
-                  : <Navigate to="/login" />
-              }
-            />
+        {/* Protected Admin Routes */}
+        {isAuthenticated && userType === "admin" && (
+          <Route path="/admin/*" element={<AdminLayout onLogout={handleLogout} />}>
+            <Route path="dashboard" element={<AdminDashboard />} />
+            {/* Add additional Admin routes here */}
+            <Route index element={<Navigate to="dashboard" />} />
+          </Route>
+        )}
 
-            {/* View Student (Protected) */}
-            <Route
-              path="/view-student"
-              element={
-                isAuthenticated
-                  ? <ViewStudent />
-                  : <Navigate to="/login" />
-              }
-            />
-
-            {/* Student Details (Protected) */}
-            <Route
-              path="/student-details/:id"
-              element={
-                isAuthenticated
-                  ? <StudentDetails />
-                  : <Navigate to="/login" />
-              }
-            />
-
-            {/* Progress (Protected) */}
-            <Route
-              path="/progress"
-              element={
-                isAuthenticated
-                  ? <div>Progress Page</div>
-                  : <Navigate to="/login" />
-              }
-            />
-
-            {/* Teacher Profile (Protected) */}
-            <Route
-              path="/teacher"
-              element={
-                isAuthenticated
-                  ? <TeacherProfile />
-                  : <Navigate to="/login" />
-              }
-            />
-
-            {/* Catch-all → Redirect to root */}
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </div>
-      </div>
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
     </BrowserRouter>
   );
 }

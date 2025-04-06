@@ -4,14 +4,11 @@
     background-color: #3B4F81;
     font-family: 'Atkinson Hyperlegible', sans-serif;
     color: white;
-  
-    /* Force content to align with sidebar (240px width) */
     margin-left: 240px;
     padding: 3rem;
     box-sizing: border-box;
   }
   
-  /* Filters Row */
   .view-student-filters {
     display: flex;
     flex-wrap: wrap;
@@ -122,11 +119,12 @@
     background-color: #2e3d66;
     color: white;
     border: none;
-    border-radius: 20px;
-    padding: 6px 16px;
+    border-radius: 290px;
+    padding: 6px 160px;
     cursor: pointer;
     font-weight: bold;
     transition: background 0.2s;
+    font-size: 10px;
   }
   
   .view-btn:hover {

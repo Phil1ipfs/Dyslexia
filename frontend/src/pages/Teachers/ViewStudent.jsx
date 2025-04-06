@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../css/ViewStudent.css';
+import '../../css/ViewStudent.css';
 import { FaSearch } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
@@ -337,14 +337,14 @@ const ViewStudent = () => {
           ? s.name.split(' ').slice(-1)[0]
           : groupBy === 'parent'
             ? s.parent
-            : s.name.split(' ')[0] // group by first name
+            : s.name.split(' ')[0] 
       )
     : { All: filtered };
 
-  const handleViewDetails = (student) => {
-    // navigate to /student-details and pass the student object in "state"
-    navigate(`/student-details/${student.id}`, { state: { student } });
-  };
+    const handleViewDetails = (student) => {
+      navigate(`/teacher/student-details/${student.id}`, { state: { student } });
+    };
+    
 
   return (
     <div className="view-student-container">
