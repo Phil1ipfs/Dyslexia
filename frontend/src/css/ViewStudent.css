@@ -1,0 +1,329 @@
+.view-student-container {
+    position: relative;
+    min-height: 100vh;
+    background-color: #3B4F81;
+    font-family: 'Atkinson Hyperlegible', sans-serif;
+    color: white;
+    margin-left: 240px;
+    padding: 3rem;
+    box-sizing: border-box;
+  }
+  
+  .view-student-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+  }
+  
+  .view-student-filters input {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: none;
+    width: 250px;
+    height: 39px;
+  }
+  
+  .view-student-filters select {
+    padding: 0.75rem 1.2rem;
+    font-size: 1rem;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    width: 100px; 
+    min-width: 180px;
+    height: 30px;  
+  }
+  
+  .search-icon {
+    background-color: white;
+    color: #3B4F81;
+    padding: 0.5rem;
+    border-radius: 50%;
+    
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .search-icon:hover {
+    background-color: #eee;
+  }
+  
+  /* Header */
+  .view-student-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 1.5rem;
+  }
+  
+  .view-student-header h1 {
+    margin: 0;
+    font-size: 2rem;
+  }
+  
+  .subtext {
+    font-size: 0.9rem;
+    color: #dcdcdc;
+  }
+  
+  /* Table */
+  .view-student-table {
+    width: 100%;
+    margin-top: 1rem;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
+  }
+  
+  .view-student-table table {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  
+  .view-student-table th {
+    background-color: #2e3d66;
+    color: white;
+    padding: 12px;
+    text-align: left;
+  }
+  
+  .view-student-table td {
+    padding: 14px 12px;
+    color: #2c2c2c;
+    font-size: 15px;
+  }
+  
+  .view-student-table tbody tr:nth-child(odd) {
+    background-color: #f4f6fc;
+  }
+  
+  .view-student-table tbody tr:nth-child(even) {
+    background-color: #e6eaf4;
+  }
+  
+  .group-row td {
+    background-color: #d3d9e8;
+    font-weight: bold;
+    padding: 10px;
+    color: #2e3d66;
+  }
+  
+  .view-btn {
+    background-color: #2e3d66;
+    color: white;
+    border: none;
+    border-radius: 290px;
+    padding: 6px 160px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+    font-size: 10px;
+  }
+  
+  .view-btn:hover {
+    background-color: #1f2b4d;
+  }
+  
+  /* Pagination */
+  .pagination {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  
+  .pagination button {
+    background-color: white;
+    color: #3B4F81;
+    border: none;
+    padding: 0.4rem 0.9rem;
+    border-radius: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .pagination button:hover {
+    background-color: #eaeaea;
+    transform: scale(1.05);
+  }
+  
+  .pagination button.active {
+    background-color: #3B4F81;
+    color: white;
+    border: 2px solid white;
+  }
+  
+  .pagination .dots {
+    color: white;
+    font-size: 1.2rem;
+  }
+  
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 1rem 0.3rem 0.3rem;
+    border-radius: 25px;
+    background-color: white;
+    color: #3B4F81;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  
+  .toggle-switch .circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #3B4F81;
+    transition: transform 0.3s ease;
+  }
+  
+  .toggle-switch.active {
+    background-color: #3B4F81;
+    color: white;
+  }
+  
+  .toggle-switch.active .circle {
+    background-color: white;
+    transform: translateX(80px);
+  }
+  
+  .text-list-view {
+    margin-top: 1rem;
+  }
+  
+  .text-group-label {
+    font-weight: bold;
+    color: #f5f5f5;
+    margin-bottom: 0.5rem;
+    margin-top: 1.2rem;
+  }
+  
+  .text-row {
+    color: white;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+.search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 260px;
+  }
+  
+  .search-wrapper input {
+    padding: 0.5rem 1rem 0.5rem 2.5rem;
+    border-radius: 8px;
+    border: none;
+    width: 100%;
+    height: 40px;
+    font-size: 0.95rem;
+  }
+  
+  .search-inline-icon {
+    position: absolute;
+    left: 10px;
+    color: #3B4F81;
+    font-size: 1rem;
+    pointer-events: none;
+  }
+  
+  .view-student-table table {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+
+  .view-student-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .header-left h1 {
+    margin: 0;
+    font-size: 2rem;
+  }
+  
+  .subtext {
+    font-size: 0.9rem;
+    color: #dcdcdc;
+  }
+  
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .teacher-name {
+    font-weight: bold;
+    color: white;
+    white-space: nowrap;
+    opacity: 1; 
+    margin-right: 12px; 
+  }
+  
+  .teacher-profile-wrapper {
+    position: relative;
+  }
+  
+  .teacher-avatar {
+    width: 40px;
+    height: 40px;
+    background-color: #e5a8e0;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    font-family: 'Atkinson Hyperlegible', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .teacher-avatar:hover {
+    filter: brightness(1.1);
+  }
+  
+  .profile-dropdown {
+    position: absolute;
+    top: 48px;
+    right: 0;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    z-index: 10;
+    min-width: 140px;
+  }
+  
+  .dropdown-item {
+    padding: 0.7rem 1rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #3B4F81;
+    transition: background 0.2s ease;
+  }
+  
+  .dropdown-item:hover {
+    background-color: #f2f2f2;
+  }
+  
