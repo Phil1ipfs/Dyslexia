@@ -9,7 +9,6 @@ function Navbar() {
   const [activeSection, setActiveSection] = useState("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  // Handle scroll events to update navbar appearance
   useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY;

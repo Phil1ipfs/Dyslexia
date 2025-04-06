@@ -11,7 +11,7 @@
   .hamburger-btn {
     position: fixed;
     top: 20px;
-    left: 280px; /* Position next to sidebar */
+    left: 280px;
     background: #3B4F81;
     color: white;
     border: none;
@@ -26,12 +26,12 @@
   .main-content {
     flex: 1;
     padding: 20px;
-    margin-left: 260px; /* Match sidebar width */
+    margin-left: 260px; 
     transition: margin-left 0.3s ease;
   }
   
   .main-content.sidebar-closed {
-    margin-left: 80px; /* Match collapsed sidebar width */
+    margin-left: 80px; 
   }
   
   /* Dashboard Content */
@@ -70,15 +70,15 @@
   
   /* Different background colors */
   .total-students {
-    background: #00A8DD; /* Dark Blue */
+    background: #00A8DD;
   }
   
   .active-students {
-    background: #28A745; /* Green */
+    background: #28A745; 
   }
   
   .pending-feedback {
-    background: #FDB185; /* Yellow */
+    background: #FDB185; 
   }
   
   .stat-card h3 {
@@ -254,7 +254,7 @@
   .x-axis-label {
     font-size: 16px;
     font-weight: bold;
-    fill: white; /* Yellow accent */
+    fill: white; 
     text-transform: uppercase;
     margin-top: 50px;
     letter-spacing: 1px;
@@ -262,7 +262,7 @@
   }
   
   .x-axis-label:hover {
-    fill: white; /* Lighter yellow on hover */
+    fill: white; 
     transition: 0.3s ease-in-out;
   }
   
@@ -320,18 +320,17 @@
   .recharts-legend-item-text {
     fill: white !important;
   }
-  /* teacher.css */
   /* Vertical Grid Enhancements */
   .recharts-cartesian-grid-vertical line {
     transition: stroke-opacity 0.3s ease;
   }
   
   .recharts-cartesian-grid-vertical line:nth-child(odd) {
-    stroke: rgba(255, 255, 255, 0.4) !important; /* Primary vertical */
+    stroke: rgba(255, 255, 255, 0.4) !important; 
   }
   
   .recharts-cartesian-grid-vertical line:nth-child(even) {
-    stroke: rgba(255, 255, 255, 0.2) !important; /* Secondary vertical */
+    stroke: rgba(255, 255, 255, 0.2) !important; 
     stroke-dasharray: 3, 3 !important;
   }
   
@@ -340,7 +339,6 @@
     stroke-opacity: 0.6 !important;
   }
   
-  /* teacher.css */
   /* Grid Layer Styling */
   .recharts-cartesian-grid-vertical line {
     mix-blend-mode: screen;

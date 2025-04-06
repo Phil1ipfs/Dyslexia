@@ -62,7 +62,11 @@ const Login = ({ onLogin }) => {
         localStorage.setItem('userData', JSON.stringify(data.user));
         if (onLogin) onLogin();
 
-        navigate('/choose-account');
+        // Read the user type from localStorage (set previously via ChooseAccountType)
+        // Default to 'teacher' if not found.
+        const userType = localStorage.getItem('userType') || 'teacher';
+        // Redirect to the appropriate dashboard based on user type.
+        navigate(`/${userType}/dashboard`);
       } else {
         setError(data.message || 'Login failed.');
       }
@@ -73,6 +77,7 @@ const Login = ({ onLogin }) => {
     }
   };
 
+  // Simulated login function.
   const mockLogin = ({ email, password }) => {
     return new Promise(resolve => {
       setTimeout(() => {
@@ -98,7 +103,7 @@ const Login = ({ onLogin }) => {
   return (
     <div className="login-container">
       <img src={logo} alt="Literexia Logo" className="top-left-logo" />
-      {/* X button → go to Choose Account */}
+      {/* Exit button to return to Choose Account page */}
       <button className="exit-button" onClick={() => navigate('/choose-account')}>X</button>
 
       {error && <ErrorDialog message={error} onClose={() => setError('')} />}

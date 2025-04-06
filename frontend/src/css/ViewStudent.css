@@ -4,14 +4,11 @@
     background-color: #3B4F81;
     font-family: 'Atkinson Hyperlegible', sans-serif;
     color: white;
-  
-    /* Force content to align with sidebar (240px width) */
     margin-left: 240px;
     padding: 3rem;
     box-sizing: border-box;
   }
   
-  /* Filters Row */
   .view-student-filters {
     display: flex;
     flex-wrap: wrap;

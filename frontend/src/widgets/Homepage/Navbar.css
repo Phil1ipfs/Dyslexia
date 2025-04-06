@@ -1,7 +1,7 @@
 html {
     scroll-behavior: smooth;
-    scroll-padding-top: 80px; /* Ensures scrolled sections aren't hidden behind navbar */
-  }
+    scroll-padding-top: 80px; 
+}
   
   body {
     font-family: 'Atkinson Hyperlegible', sans-serif;

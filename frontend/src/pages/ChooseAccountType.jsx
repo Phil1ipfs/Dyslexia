@@ -1,5 +1,5 @@
 // src/pages/ChooseAccountType.jsx
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/chooseAccount.css';
 
@@ -9,34 +9,18 @@ import teacherIcon from '../assets/icons/teacher.png';
 import adminIcon from '../assets/icons/admin.png';
 import wave from '../assets/images/wave.png';
 
-function ErrorDialog({ message, onClose }) {
-  return (
-    <div className="error-dialog-overlay">
-      <div className="error-dialog-box">
-        <p>{message}</p>
-        <button onClick={onClose}>OK</button>
-      </div>
-    </div>
-  );
-}
-
 const ChooseAccountType = () => {
   const navigate = useNavigate();
-  const [error, setError] = useState('');
 
   const handleSelect = (type) => {
-    localStorage.setItem('selectedUserType', type);
-    // If teacher is selected, navigate to login so teacher can log in first.
-    if (type === 'teacher') {
-      navigate('/login');
-    } else {
-      setError(`The "${type}" account type is not available yet.`);
-    }
+    // Save the selected user type in localStorage using a consistent key.
+    localStorage.setItem('userType', type);
+    // Navigate to login where the role will be read and used for redirection.
+    navigate('/login');
   };
 
   return (
     <div className="choose-container">
-      {error && <ErrorDialog message={error} onClose={() => setError('')} />}
       <img src={logo} alt="Literexia Logo" className="choose-logo" />
       <button className="choose-exit" onClick={() => navigate('/')}>X</button>
       <div className="choose-content">
