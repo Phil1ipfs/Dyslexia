@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
   ReferenceLine
 } from 'recharts';
-import '../../css/TeacherDashboard.css';
+import '../../css/Teachers/TeacherDashboard.css';
 import students from '../../assets/icons/Teachers/students.png';
 import parent from '../../assets/icons/Teachers/parent.png';
 

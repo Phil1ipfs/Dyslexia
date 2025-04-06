@@ -1,42 +1,42 @@
 // src/pages/Teachers/Homepage.jsx
 import React from "react";
-import "../../css/Homepage.css";
-import "../../css/responsive.css";
+import "../css/Homepage.css";
+import "../css/Teachers/responsive.css";
 
 // widgets reusable
-import Navbar from "../../widgets/Homepage/Navbar";
-import Footer from "../../widgets/Homepage/Footer";
+import Navbar from "../widgets/Homepage/Navbar";
+import Footer from "../widgets/Homepage/Footer";
 
-import heroCloud1 from "../../assets/images/Homepage/hero-clouds.png";
-import heroCloud2 from "../../assets/images/Homepage/hero-clouds2.png";
-import heroCloud3 from "../../assets/images/Homepage/hero-clouds3.png";
-import heroPenguin from "../../assets/images/Homepage/hero-penguin.png";
+import heroCloud1 from "../assets/images/Homepage/hero-clouds.png";
+import heroCloud2 from "../assets/images/Homepage/hero-clouds2.png";
+import heroCloud3 from "../assets/images/Homepage/hero-clouds3.png";
+import heroPenguin from "../assets/images/Homepage/hero-penguin.png";
 
 // Hero
-import heroImage from "../../assets/images/Homepage/Group 4076.png";
+import heroImage from "../assets/images/Homepage/Group 4076.png";
 
 // About
-import phones from "../../assets/images/Homepage/phone.png";
+import phones from "../assets/images/Homepage/phone.png";
 
 // Features
-import phoneIcon from "../../assets/icons/Homepage/feature-phone.png";
-import aiIcon from "../../assets/icons/Homepage/ai.png";
-import flagIcon from "../../assets/icons/Homepage/flag.png";
-import pathIcon from "../../assets/icons/Homepage/path.png";
-import bearIcon from "../../assets/icons/Homepage/bear.png";
+import phoneIcon from "../assets/icons/Homepage/feature-phone.png";
+import aiIcon from "../assets/icons/Homepage/ai.png";
+import flagIcon from "../assets/icons/Homepage/flag.png";
+import pathIcon from "../assets/icons/Homepage/path.png";
+import bearIcon from "../assets/icons/Homepage/bear.png";
 
 // Dyslexia Customization
-import preview from "../../assets/images/Homepage/dyslexia-preview.png";
+import preview from "../assets/images/Homepage/dyslexia-preview.png";
 
 // Teaching Methodology Icons
-import methodBear from "../../assets/icons/Homepage/bear-2.png";
-import methodPenguin from "../../assets/icons/Homepage/penguin.png";
-import methodElephant from "../../assets/icons/Homepage/elephant.png";
-import methodLion from "../../assets/icons/Homepage/sealion.png";
+import methodBear from "../assets/icons/Homepage/bear-2.png";
+import methodPenguin from "../assets/icons/Homepage/penguin.png";
+import methodElephant from "../assets/icons/Homepage/elephant.png";
+import methodLion from "../assets/icons/Homepage/sealion.png";
 
 // Why Choose Us
-import laptopPenguin from "../../assets/icons/Homepage/laptop.png";
-import starIcon from "../../assets/icons/Homepage/star.png";
+import laptopPenguin from "../assets/icons/Homepage/laptop.png";
+import starIcon from "../assets/icons/Homepage/star.png";
 
 function Homepage() {
   return (
