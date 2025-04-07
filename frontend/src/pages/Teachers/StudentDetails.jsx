@@ -288,7 +288,7 @@ const StudentDetails = () => {
           )}
           {activeTab === 'Activities Result' && (
             <>
-              <h3 className="activity-header">
+              <h3 className="activity-head">
                 {activityCategories[mockStudent.readingLevel]?.label || 'Reading Category'}
               </h3>
               <div className="activities-result-section">

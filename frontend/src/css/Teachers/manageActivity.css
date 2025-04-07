@@ -108,24 +108,20 @@
 /* Table Header */
 .table-header {
   display: flex;
-  padding: 0.75rem 0;
+  justify-content: space-between;
+  background: #2d3a4f;
+  padding: 0.8rem 1rem;
+  border-radius: 8px 8px 0 0;
   font-weight: bold;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.9);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ccc;
 }
 
 .col-reading-level {
-  flex: 3;
-}
-
-.col-details {
   flex: 2;
-  text-align: center;
 }
-
+.col-details,
 .col-action {
-  flex: 2;
+  flex: 1;
   text-align: center;
 }
 
@@ -713,4 +709,68 @@ textarea {
   padding: 0.5rem 1rem;
   margin-top: 1rem;
   cursor: pointer;
+}
+
+/* New: Activity Option Selector */
+.activity-option-screen {
+  background: #273142;
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.select-title {
+  font-size: 1.4rem;
+  color: white;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.activity-option-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.activity-option-card {
+  background: #354469;
+  width: 230px;
+  padding: 1.5rem 1rem;
+  border-radius: 12px;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.activity-option-card:hover {
+  background: #3f5379;
+  transform: translateY(-5px);
+}
+
+.option-icon {
+  width: 70px;
+  height: 70px;
+  margin-bottom: 1rem;
+}
+
+.back-to-options {
+  background: transparent;
+  color: #fff;
+  border: none;
+  font-size: 1rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+}
+
+.back-to-options:hover {
+  text-decoration: underline;
 }

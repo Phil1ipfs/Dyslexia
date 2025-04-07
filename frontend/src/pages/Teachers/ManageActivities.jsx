@@ -1,109 +1,116 @@
-// src/pages/Teachers/ManageActivities.jsx
 import React, { useState } from "react";
 import "../../css/Teachers/manageActivity.css";
 
+import ponetikoIcon from "../../assets/icons/Teachers/admin.png";
+import salitaIcon from "../../assets/icons/Teachers/admin.png";
+import pantigIcon from "../../assets/icons/Teachers/admin.png";
+
+const readingLevels = [
+  "Antas Una",
+  "Antas Pangalawa",
+  "Antas Pangatlo",
+  "Antas Apat",
+  "Antas Lima"
+];
+
+const activityStructure = {
+  ponetiko: {
+    title: "Ehersisyong Ponetiko",
+    icon: ponetikoIcon,
+    categories: [
+      "Pagtukoy ng Tunog",
+      "Pag-uugnay ng Tunog at Letra",
+      "Pagbasa ng Pantig"
+    ]
+  },
+  salita: {
+    title: "Pagkilala sa mga Salita",
+    icon: salitaIcon,
+    categories: [
+      "Pagbasa ng Salita",
+      "Pag-unawa sa Salita",
+      "Pagpili ng Tamang Salita"
+    ]
+  },
+  pantig: {
+    title: "Estruktura ng Pantig",
+    icon: pantigIcon,
+    categories: [
+      "Pagbuo ng Pantig",
+      "Paghahati ng Pantig",
+      "Pagsusuri ng Pantig"
+    ]
+  }
+};
+
 function ManageActivities() {
-  const [showAddActivity, setShowAddActivity] = useState(false);
-  const [activeLevel, setActiveLevel] = useState("Antas Una");
-  const [showPonetiko, setShowPonetiko] = useState(true); // State to control the dropdown
+  const [selectedActivity, setSelectedActivity] = useState(null);
+  const [expandedLevel, setExpandedLevel] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
 
-  const readingLevels = [
-    {
-      level: "Antas Una",
-      activities: [
-        { title: "Unang Tanong", type: "tanong" },
-        { title: "Pangalawang Tanong", type: "tanong" },
-        { title: "Pangatlong Tanong", type: "tanong" }
-      ]
-    },
-    {
-      level: "Antas Pangalawa",
-      activities: [
-        { title: "Unang Tanong", type: "tanong" },
-        { title: "Pangalawang Tanong", type: "tanong" },
-        { title: "Pangatlong Tanong", type: "tanong" }
-      ]
-    },
-    {
-      level: "Antas Pangatlo",
-      activities: [
-        { title: "Unang Tanong", type: "tanong" },
-        { title: "Pangalawang Tanong", type: "tanong" },
-        { title: "Pangatlong Tanong", type: "tanong" }
-      ]
-    }
-  ];
-
-  const handleAddActivity = () => {
-    setShowAddActivity(true);
-  };
-
-  const handleCancel = () => {
-    setShowAddActivity(false);
-  };
-
-  const handleLevelSelect = (level) => {
-    setActiveLevel(level);
-  };
-
-  const togglePonetiko = () => {
-    setShowPonetiko(!showPonetiko);
+  const toggleLevel = (level) => {
+    setExpandedLevel(expandedLevel === level ? "" : level);
   };
 
   return (
     <div className="prefed-activities-container">
       <div className="prefed-activities-card">
-        <div className="header-section">
-          <h1 className="main-title">Manage Activities</h1>
-          <p className="sub-title">Add, Edit and Modify Activities</p>
-          <div className="header-illustration">
-            <img src="/path/to/your/illustration.png" alt="" className="illustration-img" />
-          </div>
-        </div>
+        <h1 className="main-title">Manage Activities</h1>
+        <p className="sub-title">Add, Edit in the Pre-fed and Modified Activities</p>
 
-        {/* Ehersisyong Ponetiko Container with Dropdown */}
-        <div className="ponetiko-container">
-          <div className="ponetiko-header" onClick={togglePonetiko}>
-            <div className="activity-icon-container">
-              <img src="/path/to/book-icon.png" alt="" className="book-icon" />
-            </div>
-            <h2 className="ponetiko-title">Ehersisyong Ponetiko</h2>
-            <div className="ponetiko-dropdown-icon">
-              <i className={`fas fa-chevron-${showPonetiko ? 'up' : 'down'}`}></i>
+        {!selectedActivity && (
+          <div className="activity-option-screen">
+            <h2 className="select-title">Select Activity Option :</h2>
+            <div className="activity-option-list">
+              {Object.entries(activityStructure).map(([key, { title, icon }]) => (
+                <div key={key} className="activity-option-card" onClick={() => setSelectedActivity(key)}>
+                  <img src={icon} alt={title} className="option-icon" />
+                  <span>{title}</span>
+                </div>
+              ))}
             </div>
           </div>
+        )}
 
-          {showPonetiko && (
-            <div className="activity-content">
+        {selectedActivity && (
+          <>
+            <button className="back-to-options" onClick={() => setSelectedActivity(null)}>
+              ⬅ Balik sa Mga Aktibidad
+            </button>
+
+            <div className="activity-title-header">
+              <img src={activityStructure[selectedActivity].icon} alt="" />
+              <h2>{activityStructure[selectedActivity].title}</h2>
+            </div>
+
+            <div className="activity-table">
               <div className="table-header">
                 <div className="col-reading-level">READING ASSESSMENT LEVEL</div>
                 <div className="col-details">VIEW DETAILS</div>
                 <div className="col-action">ACTION</div>
               </div>
 
-              {readingLevels.map((level, index) => (
-                <div className="level-section">
-                  <div className="level-header" onClick={() => handleLevelSelect(level.level)}>
-                    <div className="level-name">{level.level}</div>
-                    <div className="dropdown-icon">
-                      <i className={`fas fa-chevron-${activeLevel === level.level ? 'up' : 'down'}`}></i>
-                    </div>
+              {readingLevels.map((level) => (
+                <div key={level} className="level-section">
+                  <div className="level-header" onClick={() => toggleLevel(level)}>
+                    <div className="level-name">{level}</div>
+                    <i className={`fas fa-chevron-${expandedLevel === level ? "up" : "down"}`}></i>
                   </div>
 
-                  {activeLevel === level.level && (
+                  {expandedLevel === level && (
                     <div className="level-content-v2">
                       <div className="level-actions-row">
                         <button className="view-details-btn">View Details</button>
-                        <button className="add-more-activity-btn" onClick={handleAddActivity}>
+                        <button className="add-more-activity-btn" onClick={() => setShowAddModal(true)}>
                           <i className="fas fa-plus"></i> Add More Activity
                         </button>
                       </div>
 
-                      {level.activities.map((activity, actIndex) => (
-                        <div key={actIndex} className="activity-row">
+                      {activityStructure[selectedActivity].categories.map((category, index) => (
+                        <div key={index} className="activity-row">
                           <div className="activity-left">
                             <i className="fas fa-grip-vertical grip-icon" />
-                            <span className="activity-titlee">{activity.title}</span>
+                            <span className="activity-titlee">{category}</span>
                           </div>
                           <div className="activity-right">
                             <button className="modify-btn">
@@ -117,118 +124,24 @@ function ManageActivities() {
                       ))}
                     </div>
                   )}
-
-
                 </div>
-
               ))}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
-      {showAddActivity && (
+      {showAddModal && (
         <div className="modal-overlay">
           <div className="add-activity-modal">
             <div className="modal-header">
-              <h2>Antas Una</h2>
-              <h3>Ehersisyong Ponetiko</h3>
-            </div>
-
-            <div className="progress-bar">
-              <div className="progress-fill" style={{ width: "100%" }}></div>
-              <div className="progress-text">4/4</div>
-            </div>
-
-            <div className="activity-form">
-              <div className="form-row">
-                <label>Ang Tanong</label>
-                <input type="text" placeholder="***************" />
-              </div>
-
-              <div className="form-row">
-                <label>GIF/ Imahe sa Tanong</label>
-                <div className="file-upload">
-                  <button className="browse-btn">Browse File</button>
-                  <span className="file-status">No file selected</span>
-                </div>
-              </div>
-
-              <div className="options-section">
-                <div className="option-item">
-                  <div className="option-label">
-                    <span className="option-number">1</span>
-                    <span>Unang Pagpipilian</span>
-                  </div>
-                  <div className="file-upload">
-                    <button className="browse-btn">Browse File</button>
-                    <span className="file-status">No file selected</span>
-                  </div>
-                </div>
-
-                <div className="option-item">
-                  <div className="option-label">
-                    <span className="option-number">2</span>
-                    <span>Pangalawang Pagpipilian</span>
-                  </div>
-                  <div className="file-upload">
-                    <button className="browse-btn">Browse File</button>
-                    <span className="file-status">No file selected</span>
-                  </div>
-                </div>
-
-                <div className="option-item">
-                  <div className="option-label">
-                    <span className="option-number">3</span>
-                    <span>Pangatlong na Pagpipilian</span>
-                  </div>
-                  <div className="file-upload">
-                    <button className="browse-btn">Browse File</button>
-                    <span className="file-status">No file selected</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="options-actions">
-                <button className="remove-option-btn">-Magbawas ng Pagpipilian</button>
-                <button className="add-option-btn">+ Magdagdag pa ng Pagpipilian</button>
-              </div>
-
-              <div className="hints-section">
-                <div className="hints-dropdown">
-                  <div className="dropdown-header">
-                    <span>Hints Explanations</span>
-                    <i className="fas fa-chevron-down"></i>
-                  </div>
-                  <textarea placeholder="Hint Explanation"></textarea>
-                </div>
-
-                <div className="correct-answer-section">
-                  <div className="dropdown-header correct-answer">
-                    <span>Ang Tamang Sagot</span>
-                    <i className="fas fa-chevron-down"></i>
-                  </div>
-                  <div className="correct-options">
-                    <div className="correct-option">
-                      <input type="radio" name="correctAnswer" id="opt1" />
-                      <label htmlFor="opt1">Unang Pagpipilian</label>
-                    </div>
-                    <div className="correct-option">
-                      <input type="radio" name="correctAnswer" id="opt2" />
-                      <label htmlFor="opt2">Pangalawa Pagpipilian</label>
-                    </div>
-                    <div className="correct-option">
-                      <input type="radio" name="correctAnswer" id="opt3" />
-                      <label htmlFor="opt3">Pangatlo Pagpipilian</label>
-                    </div>
-                  </div>
-                  <button className="preview-btn">View Sample Preview</button>
-                </div>
-              </div>
-
+              <h2>Add Activity</h2>
+              <p style={{ color: "#ccc" }}>
+                Placeholder modal. Add activity form here.
+              </p>
               <div className="modal-actions">
-                <button className="cancel-btn" onClick={handleCancel}>Cancel</button>
-                <button className="add-activity-btn">Add Activity</button>
+                <button className="cancel-btn" onClick={() => setShowAddModal(false)}>Cancel</button>
+                <button className="add-activity-btn">Confirm</button>
               </div>
             </div>
           </div>
