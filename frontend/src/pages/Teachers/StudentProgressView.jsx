@@ -4,23 +4,22 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import "../../css/Teachers/studentProgressView.css";
 import * as Dialog from "@radix-ui/react-dialog";
 
-
 /* ─────────────────────────────────────────────────────────────── */
-/*  SERVICE LAYER – swap for real Mongo queries later             */
+/*  SERVICE LAYER – future implementation will connect to MongoDB */
 /* ─────────────────────────────────────────────────────────────── */
 class PracticeModuleService {
   static getTemplatesForConcept(concept) {
-    // MOCK: return [] to simulate “no template” for most concepts
+    // In a future implementation, this would perform an API call to MongoDB.
+    // For now, we use a MOCK which simply returns an array
     const MOCK = {
-      "Vowel Sound": [{ id: "tpl‑1", title: "Vowel Drill A‑E", itemCount: 10 }]
+      "Vowel Sound": [{ id: "tpl-1", title: "Vowel Drill A-E", itemCount: 10 }]
     };
     return MOCK[concept] ?? [];
   }
 }
 
-
 /* ─────────────────────────────────────────────────────────────── */
-/*  SMALL DIALOG – shown when “Assign Practice Module” is pressed */
+/*  SMALL DIALOG – for Assigning Practice Module */
 /* ─────────────────────────────────────────────────────────────── */
 class AssignPracticeModuleDialog extends Component {
   constructor(props) {
@@ -32,9 +31,7 @@ class AssignPracticeModuleDialog extends Component {
   componentDidUpdate(prev) {
     if (prev.concept !== this.props.concept) {
       this.setState({
-        templates: PracticeModuleService.getTemplatesForConcept(
-          this.props.concept
-        )
+        templates: PracticeModuleService.getTemplatesForConcept(this.props.concept)
       });
     }
   }
@@ -44,7 +41,6 @@ class AssignPracticeModuleDialog extends Component {
     if (!isOpen) return null;
 
     return (
-
       <Dialog.Root open={isOpen} onOpenChange={onClose}>
         <Dialog.Portal>
           <Dialog.Overlay className="dialog-overlay" />
@@ -53,17 +49,18 @@ class AssignPracticeModuleDialog extends Component {
               Assign Practice Module<br />
               <span className="concept-title">– {concept}</span>
             </Dialog.Title>
-
             {templates.length === 0 ? (
               <div className="assign-empty-state">
-                <p className="empty-message">No ready-made templates found for this concept.</p>
+                <p className="empty-message">
+                  No ready-made templates found for this concept.
+                </p>
                 <button className="btn btn-create" onClick={onCreate}>
                   Create Practice Module
                 </button>
               </div>
             ) : (
               <ul className="assign-template-list">
-                {templates.map(t => (
+                {templates.map((t) => (
                   <li key={t.id} className="assign-template-item">
                     <div className="template-info">
                       <strong>{t.title}</strong>
@@ -71,7 +68,10 @@ class AssignPracticeModuleDialog extends Component {
                     </div>
                     <button
                       className="btn btn-assign"
-                      onClick={() => onAssign(t)}
+                      onClick={() => {
+                        onAssign(t);
+                        onClose(); // manually close after assigning
+                      }}
                     >
                       Assign
                     </button>
@@ -82,23 +82,16 @@ class AssignPracticeModuleDialog extends Component {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-
     );
   }
 }
 
-
 /**
- * Utility function that maps category name to a color class
+ * Instead of mapping specific category names, we now return a default style.
+ * In the future, you could modify this function to fetch dynamic styling info from MongoDB.
  */
-const getCategoryColorClass = (categoryName) => {
-  const colorMap = {
-    ponetiko: "ponetiko",
-    pagpapantig: "pagpapantig",
-    salita: "salita",
-    "pag-unawa": "pag-unawa",
-  };
-  return colorMap[categoryName.toLowerCase()] || "default-skill-bar";
+const getCategoryColorClass = (/* categoryName */) => {
+  return "default-skill-bar";
 };
 
 /* ------------------------------------------
@@ -156,7 +149,6 @@ class ReadingProgressCard extends Component {
             ({progressPercentage}%)
           </span>
         </div>
-
         <div
           className="progress-bar-container"
           onMouseEnter={this.togglePercentage}
@@ -169,7 +161,6 @@ class ReadingProgressCard extends Component {
             />
           </div>
         </div>
-
         <div className="detail-item">
           <span>Aralin Completed:</span> {completed}/{total}
         </div>
@@ -183,15 +174,13 @@ class ReadingProgressCard extends Component {
 
 /* ------------------------------------------
    COMPONENT: VisualizationSection
-   - Skill Mastery Breakdown w/ Collapsible
-   - Activity Scores Over Time w/ Dot Click 
 ------------------------------------------ */
 class VisualizationSection extends Component {
   constructor(props) {
     super(props);
     this.state = {
       chartAnimated: false,
-      selectedCategory: "Ponetiko",
+      selectedCategory: "", // now dynamic (you may want to pass in a category field)
       filter: "month",
       showDetailDate: null,
       hoveredBar: null,
@@ -201,6 +190,7 @@ class VisualizationSection extends Component {
   }
 
   componentDidMount() {
+    // Simulate an animation delay (e.g. chart animation)
     setTimeout(() => this.setState({ chartAnimated: true }), 500);
   }
 
@@ -210,23 +200,14 @@ class VisualizationSection extends Component {
     }));
   };
 
-  toggleChartDetail = (dateStr) => {
-    // if same date => close; else show
-    this.setState((prev) => ({
-      showDetailDate: prev.showDetailDate === dateStr ? null : dateStr,
-    }));
-  };
-
   getActiveData() {
     const { categorizedActivityScores } = this.props;
     const { selectedCategory, filter } = this.state;
-
+    // Instead of relying on fixed names, assume the data is dynamic
     const catObj = categorizedActivityScores.find(
       (c) => c.category === selectedCategory
     );
     if (!catObj) return [];
-
-    // Filter by week or month
     const now = new Date();
     const cutoff = new Date();
     if (filter === "week") {
@@ -242,56 +223,32 @@ class VisualizationSection extends Component {
 
   render() {
     const { skillData } = this.props;
-    const {
-      chartAnimated,
-      selectedCategory,
-      filter,
-      openSkillIndex,
-      showDetailDate,
-    } = this.state;
-
-
+    const { chartAnimated, selectedCategory, filter, openSkillIndex, showDetailDate } =
+      this.state;
     const activeData = this.getActiveData();
 
     return (
-
       <div className="visualization-section">
-
-        <div className="visualization-header-box">
-          <div className="header-side left" />
-          <div className="visualization-header-text">
-            <span className="visualization-header-text">
-              Progress Report: {this.props.student.readingLevel}
-            </span>  </div>
-          <div className="header-side right" />
-        </div>
-
-
         <div className="visualization-content">
-
-
-
-          {/* Left: Skill Mastery (collapsible) */}
+          {/* Left: Dynamic Skill Mastery */}
           <div className="skill-progress">
             <h4 className="score-results-heading">Score Results</h4>
             <div className="skill-bars">
               {skillData.map((item, idx) => {
                 const barWidth = chartAnimated ? `${item.value}%` : "0%";
                 const isOpen = openSkillIndex === idx;
-
-                // demo sub-skill questions
                 const subSkillQuestions = [
                   {
-                    question: "Which vowel is 'a'?",
-                    studentAnswer: "e",
-                    correctAnswer: "a",
-                    isCorrect: false,
+                    question: "Sample Question 1?",
+                    studentAnswer: "Answer 1",
+                    correctAnswer: "Answer 1",
+                    isCorrect: true,
                   },
                   {
-                    question: "Recognize consonant 'b'",
-                    studentAnswer: "b",
-                    correctAnswer: "b",
-                    isCorrect: true,
+                    question: "Sample Question 2?",
+                    studentAnswer: "Answer 2",
+                    correctAnswer: "Answer 3",
+                    isCorrect: false,
                   },
                 ];
 
@@ -309,16 +266,14 @@ class VisualizationSection extends Component {
                             Score Result: {item.completedCount} / {item.totalCount}
                           </span>
                         )}
-
                       </div>
                       <div className="skill-bar-container">
                         <div
-                          className={`skill-bar-fill ${getCategoryColorClass(item.label)}`}
+                          className={`skill-bar-fill ${getCategoryColorClass()}`}
                           style={{ width: barWidth }}
                         />
                       </div>
                     </div>
-
                     <div className="view-questions-btn-container">
                       <button
                         className="btn-view-questions"
@@ -327,9 +282,7 @@ class VisualizationSection extends Component {
                         {isOpen ? "Hide Questions" : "View Questions"}
                         <span className="dropdown-icon">{isOpen ? "▲" : "▼"}</span>
                       </button>
-
                     </div>
-
                     {isOpen && (
                       <div className="skill-question-collapse">
                         <h5>Questions Breakdown</h5>
@@ -338,10 +291,7 @@ class VisualizationSection extends Component {
                             <div className="question-text">
                               <strong>Q{i + 1}:</strong> {q.question}
                             </div>
-                            <div
-                              className={`answer-status ${q.isCorrect ? "correct" : "incorrect"
-                                }`}
-                            >
+                            <div className={`answer-status ${q.isCorrect ? "correct" : "incorrect"}`}>
                               {q.isCorrect ? "Correct" : "Incorrect"}
                             </div>
                           </div>
@@ -349,13 +299,12 @@ class VisualizationSection extends Component {
                       </div>
                     )}
                   </div>
-
                 );
               })}
             </div>
           </div>
 
-          {/* Right: Activity Scores Over Time */}
+          {/* Right: Activity Scores (unchanged for now) */}
           <div className="activity-chart">
             <h4>Activity Scores Progress</h4>
             <div className="filter-controls">
@@ -369,8 +318,6 @@ class VisualizationSection extends Component {
                 <option value="month">This Month</option>
               </select>
             </div>
-
-            {/* Category Tabs */}
             <div className="category-tabs">
               {this.props.categorizedActivityScores.map((cat, i) => (
                 <button
@@ -382,27 +329,19 @@ class VisualizationSection extends Component {
                 </button>
               ))}
             </div>
-
             <div className="chart-container" ref={this.chartRef}>
-              {/* Grid Lines */}
               <div className="chart-grid-lines">
                 {[100, 80, 60, 40, 20].map((val, idx) => (
-                  <div
-                    key={idx}
-                    className="chart-grid-line"
-                    style={{ bottom: `${val}%` }}
-                  >
+                  <div key={idx} className="chart-grid-line" style={{ bottom: `${val}%` }}>
                     <span className="chart-grid-label">{val}%</span>
                   </div>
                 ))}
               </div>
-
               <div className="chart-line">
                 {activeData.map((point, index) => {
                   const leftPos = `${(index * 100) / (activeData.length - 1)}%`;
                   const bottomPos = `${point.score}%`;
                   const isOpen = showDetailDate === point.date;
-
                   return (
                     <div
                       key={index}
@@ -411,54 +350,40 @@ class VisualizationSection extends Component {
                         left: leftPos,
                         bottom: bottomPos,
                         opacity: chartAnimated ? 1 : 0,
-                        transform: chartAnimated ? "translateY(0)" : "translateY(20px)",
+                        transform: chartAnimated ? "translateY(0)" : "translateY(20px)"
                       }}
                       onClick={() =>
                         this.props.openActivityModal({
                           date: point.date,
                           category: selectedCategory,
                           score: point.score,
-                          feedback: "Isabella struggles with vowels 'a' and 'e'.",
+                          feedback: "Sample feedback text.",
                           questions: [
-                            { text: "Identify vowel 'a'", studentAnswer: "e", correctAnswer: "a", correct: false },
-                            { text: "Identify consonant 'p'", studentAnswer: "p", correctAnswer: "p", correct: true },
-                            { text: "Blend syllables 'ba-na-na'", studentAnswer: "banana", correctAnswer: "banana", correct: true },
-                            { text: "Identify vowel 'i'", studentAnswer: "i", correctAnswer: "i", correct: true },
-                            { text: "Identify vowel 'e'", studentAnswer: "a", correctAnswer: "e", correct: false },
+                            { text: "Sample Q1", studentAnswer: "A", correctAnswer: "A", correct: true },
+                            { text: "Sample Q2", studentAnswer: "B", correctAnswer: "C", correct: false }
                           ]
                         })
                       }
                     >
                       <div className="chart-point-dot" />
-                      {/* Hover label */}
-                      <div className="chart-point-hover">
-                        {point.date} – {point.score}%
-                      </div>
-
-                      {/* On click detail panel */}
+                      <div className="chart-point-hover">{point.date} – {point.score}%</div>
                       {isOpen && (
                         <div className="chart-detail-panel">
                           <h5>{point.date} Details</h5>
                           <p>Score: {point.score}%</p>
-
-                          {/* Example question breakdown */}
                           <div className="sub-question-item">
-                            <strong>Question:</strong> Identify vowel 'a'
-                            <br />
-                            <strong>Answer:</strong> i <span style={{ color: "red" }}>✘</span>
+                            <strong>Question:</strong> Sample Question 1<br />
+                            <strong>Answer:</strong> A <span style={{ color: "red" }}>✘</span>
                           </div>
                           <div className="sub-question-item">
-                            <strong>Question:</strong> Blend syllable 'ma-ga'
-                            <br />
-                            <strong>Answer:</strong> maga <span style={{ color: "green" }}>✔</span>
+                            <strong>Question:</strong> Sample Question 2<br />
+                            <strong>Answer:</strong> B <span style={{ color: "green" }}>✔</span>
                           </div>
                         </div>
                       )}
                     </div>
                   );
                 })}
-
-                {/* Lines between points */}
                 <svg
                   className="chart-lines"
                   width="100%"
@@ -472,7 +397,6 @@ class VisualizationSection extends Component {
                         const y1 = `${100 - point.score}%`;
                         const x2 = `${((idx + 1) * 100) / (activeData.length - 1)}%`;
                         const y2 = `${100 - activeData[idx + 1].score}%`;
-
                         return (
                           <line
                             key={idx}
@@ -490,7 +414,6 @@ class VisualizationSection extends Component {
                     })}
                 </svg>
               </div>
-
               <div className="chart-labels">
                 {activeData.map((point, idx) => (
                   <div
@@ -499,7 +422,7 @@ class VisualizationSection extends Component {
                     style={{
                       left: `${(idx * 100) / (activeData.length - 1)}%`,
                       opacity: chartAnimated ? 1 : 0,
-                      transform: chartAnimated ? "translateY(0)" : "translateY(10px)",
+                      transform: chartAnimated ? "translateY(0)" : "translateY(10px)"
                     }}
                   >
                     {point.date}
@@ -512,11 +435,10 @@ class VisualizationSection extends Component {
       </div>
     );
   }
-}
+};
 
 const ActivityDetailModal = ({ isOpen, onClose, activity }) => {
   if (!activity) return null;
-
   return (
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
       <Dialog.Portal>
@@ -526,7 +448,6 @@ const ActivityDetailModal = ({ isOpen, onClose, activity }) => {
             Activity Details: {activity.date}
           </Dialog.Title>
           <p><strong>{activity.category} Score:</strong> {activity.score}%</p>
-
           <table className="activity-table">
             <thead>
               <tr>
@@ -549,8 +470,6 @@ const ActivityDetailModal = ({ isOpen, onClose, activity }) => {
                 </tr>
               ))}
             </tbody>
-
-
           </table>
         </Dialog.Content>
       </Dialog.Portal>
@@ -573,12 +492,13 @@ class AnalysisCard extends Component {
       onAssignModule,
       onCreateModule,
     } = this.props;
-
     return (
-      <div className="analysis-card">
+      <div className={`analysis-card ${getCategoryColorClass()}`}>
         <div className="card-header">
           <h4>{title}</h4>
-          <div className={`status-badge ${status.toLowerCase()}`}>{status}</div>
+          <div className={`status-badge ${status.toLowerCase().replace(/\s+/g, "-")}`}>
+            {status}
+          </div>
         </div>
         <div className="card-content">
           <div className="detail-item">
@@ -621,21 +541,17 @@ class PracticeModuleCard extends Component {
       status,
       onViewModule,
     } = this.props;
-
     return (
       <div className="module-card">
         <div className="module-info">
           <h4>{title}</h4>
           <div className="detail-item">
-            <span>Linked Concept:</span> {concept} • Category: {category} • Antas:{" "}
-            {antas}
+            <span>Linked Concept:</span> {concept} • Category: {category} • Antas: {antas}
           </div>
           <div className="detail-item">
             <span>Assigned Date:</span> {assignedDate}
           </div>
-          <div
-            className={`status-badge ${status.toLowerCase().replace(" ", "-")}`}
-          >
+          <div className={`status-badge ${status.toLowerCase().replace(" ", "-")}`}>
             {status}
           </div>
         </div>
@@ -666,14 +582,12 @@ class ActivityCard extends Component {
       actionText,
       onAction,
     } = this.props;
-
     return (
       <div className="activity-card">
         <div className="activity-info">
           <h4>{title}</h4>
           <div className="detail-item">
-            <span>Linked Concept:</span> {concept} • Category: {category} • Antas:{" "}
-            {antas}
+            <span>Linked Concept:</span> {concept} • Category: {category} • Antas: {antas}
           </div>
           <div className="detail-item">
             <span>Assigned Date:</span> {assignedDate}{" "}
@@ -720,23 +634,18 @@ class ApprovalCard extends Component {
   };
 
   render() {
-    const { title, concept, category, antas, submissionDate, status } =
-      this.props;
-    const { isApproved } = this.state;
-
+    const { title, concept, category, antas, submissionDate, status } = this.props;
     return (
       <div className="approval-card">
         <div className="approval-info">
           <h4>{title}</h4>
           <div className="detail-item">
-            <span>Linked Concept:</span> {concept} • Category: {category} • Antas:{" "}
-            {antas}
+            <span>Linked Concept:</span> {concept} • Category: {category} • Antas: {antas}
           </div>
           <div className="detail-item">
             <span>Submission Date:</span> {submissionDate}
           </div>
           <div className={`status-badge ${status.toLowerCase()}`}>{status}</div>
-
           {status.toLowerCase() === "pending" ? (
             <div className="notification-box warning">
               <p>Please wait for the Admin to approve the edited activity</p>
@@ -745,11 +654,10 @@ class ApprovalCard extends Component {
           ) : (
             <div className="notification-box info">
               <p>
-                Admin has approved the activity. The student can now take the
-                activity again with edited information.
+                Admin has approved the activity. The student can now take the activity again with edited information.
               </p>
               <p>
-                Customize the assessment to verify mastery of specific concepts.
+                Customize to verify mastery of specific concepts.
               </p>
             </div>
           )}
@@ -769,9 +677,9 @@ class ApprovalCard extends Component {
 }
 
 /* ------------------------------------------
-   MAIN: StudentProgressViewContent
+   MAIN COMPONENT: StudentProgressViewContent
    TABBED LAYOUT (progress/modules/admin)
-   w/ sub-skill + chart detail expansions
+   with collapsible headers for the Progress Report and Prescriptive Analysis
 ------------------------------------------ */
 class StudentProgressViewContent extends Component {
   constructor(props) {
@@ -780,8 +688,13 @@ class StudentProgressViewContent extends Component {
       activeTab: "progress",
       selectedActivity: null,
       isModalOpen: false,
-
-      // Student summary
+      // Collapsible states
+      showProgressReport: true,
+      showAnalysisReport: true,
+      showModules: true,
+      showReassessment: true,
+      showAdminApproval: true,
+      // Student summary (will eventually come from database)
       student: {
         id: "999",
         name: "Isabella Cruz",
@@ -792,36 +705,14 @@ class StudentProgressViewContent extends Component {
         totalActivities: 15,
         lastActivityDate: "April 1, 2025",
       },
-
-      // Skill Mastery Data
+      // Skill Mastery Data – dynamic from database later
       skillData: [
-        {
-          label: "Ponetiko",
-          value: 45,
-          completedCount: 4,
-          totalCount: 10,
-        },
-        {
-          label: "Pagpapantig",
-          value: 65,
-          completedCount: 7,
-          totalCount: 10,
-        },
-        {
-          label: "Salita",
-          value: 75,
-          completedCount: 6,
-          totalCount: 8,
-        },
-        {
-          label: "Pag-unawa",
-          value: 90,
-          completedCount: 9,
-          totalCount: 10,
-        },
+        { label: "Vowel Sound", value: 45, completedCount: 4, totalCount: 10 },
+        { label: "Syllable Blending", value: 65, completedCount: 7, totalCount: 10 },
+        { label: "Word Recognition", value: 75, completedCount: 6, totalCount: 8 },
+        { label: "Reading Comprehension", value: 90, completedCount: 9, totalCount: 10 },
       ],
-
-      // Original single-line array
+      // Legacy overview scores (if needed)
       activityScores: [
         { date: "Mar 1", score: 62 },
         { date: "Mar 8", score: 68 },
@@ -830,11 +721,10 @@ class StudentProgressViewContent extends Component {
         { date: "Mar 29", score: 78 },
         { date: "Apr 1", score: 85 },
       ],
-
-      // Multi-line data for each category
+      // Categorized data – dynamic by category from database in the future
       categorizedActivityScores: [
         {
-          category: "Ponetiko",
+          category: "Vowel Sound",
           data: [
             { date: "Mar 8", score: 45 },
             { date: "Mar 19", score: 11 },
@@ -845,7 +735,7 @@ class StudentProgressViewContent extends Component {
           ],
         },
         {
-          category: "Pagpapantig",
+          category: "Syllable Blending",
           data: [
             { date: "Mar 1", score: 55 },
             { date: "Mar 15", score: 70 },
@@ -856,7 +746,7 @@ class StudentProgressViewContent extends Component {
           ],
         },
         {
-          category: "Salita",
+          category: "Word Recognition",
           data: [
             { date: "Mar 1", score: 68 },
             { date: "Mar 8", score: 75 },
@@ -867,7 +757,7 @@ class StudentProgressViewContent extends Component {
           ],
         },
         {
-          category: "Pagunawa",
+          category: "Reading Comprehension",
           data: [
             { date: "Mar 5", score: 89 },
             { date: "Mar 15", score: 80 },
@@ -878,14 +768,65 @@ class StudentProgressViewContent extends Component {
           ],
         },
       ],
-
+      analysisCards: [
+        {
+          id: 1,
+          title: "Vowel Sound Identification",
+          concept: "Vowel Sound",
+          status: "Pending",
+          lesson: "Elementary Activity 1",
+          score: 38,
+          note: "Student struggles with vowel recognition. Targeted practice is recommended.",
+          recommendation: "Assign vowel-sound drill",
+        },
+        {
+          id: 2,
+          title: "Syllable Blending",
+          concept: "Syllable Blending",
+          status: "Completed",
+          lesson: "Activity 2",
+          score: 45,
+          note: "Difficulty blending syllables observed.",
+          recommendation: "Practice syllable combinations",
+        },
+        {
+          id: 3,
+          title: "Word Recognition",
+          concept: "Word Recognition",
+          status: "Pending",
+          lesson: "Activity 3",
+          score: 50,
+          note: "Assistance needed for high-frequency word identification.",
+          recommendation: "Assign word recognition tasks",
+        },
+        {
+          id: 4,
+          title: "Reading Comprehension",
+          concept: "Reading Comprehension",
+          status: "Pending",
+          lesson: "Activity 4",
+          score: 40,
+          note: "Struggles with comprehension questions.",
+          recommendation: "Assign reading comprehension drills",
+        },
+      ],
+      assignedModules: [],
       adminApprovalStatus: "pending",
+      assignDialogOpen: false,
+      dialogConcept: null,
+      assignCardId: null,
     };
-
   }
 
-  /* ── Activity modal ─────────────────────────── */
+  handleAssignPractice = (cardId, concept) => {
+    this.setState({
+      assignDialogOpen: true,
+      dialogConcept: concept,
+      assignCardId: cardId,
+    });
+  };
 
+  // ── Activity modal ───────────────────────────
   openActivityModal = (activity) => {
     this.setState({ selectedActivity: activity, isModalOpen: true });
   };
@@ -893,39 +834,55 @@ class StudentProgressViewContent extends Component {
     this.setState({ selectedActivity: null, isModalOpen: false });
   };
 
-  /* ── Assign dialog ──────────────────────────── */
-  openAssignDialog = (concept) => {
-    this.setState({ assignDialogOpen: true, dialogConcept: concept });
-  };
-
-
-
-  closeAssignDialog = () =>
+  // ── Assign dialog ────────────────────────────
+  closeAssignDialog = () => {
     this.setState({ assignDialogOpen: false, dialogConcept: null });
-  handleAssignTemplate = tpl => {
-    alert(`Template «${tpl.title}» assigned!`);
-    this.closeAssignDialog();
   };
-  handleCreateModule = concept => {
-    this.props.navigate("/teachers/create-practice-module", {
-      state: { concept }
+
+  handleAssignTemplate = (tpl) => {
+    const { assignCardId, student, dialogConcept } = this.state;
+    // Determine the module category dynamically (this mapping can later be removed
+    // in favor of dynamic data from MongoDB)
+    const getCategoryForConcept = (concept) => {
+      // In a dynamic solution, this field should come from the database.
+      return concept; // Simply return the concept as the category for now.
+    };
+    const assignedModule = {
+      id: assignCardId,
+      title: tpl.title,
+      concept: dialogConcept,
+      category: getCategoryForConcept(dialogConcept),
+      antas: student.readingLevel.split(" ")[1],
+      assignedDate: new Date().toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }),
+      status: "In Progress",
+    };
+    this.setState((prev) => ({
+      analysisCards: prev.analysisCards.map((card) =>
+        card.id === assignCardId ? { ...card, status: "In Progress" } : card
+      ),
+      assignedModules: [...prev.assignedModules, assignedModule],
+      assignDialogOpen: false,
+      dialogConcept: null,
+      assignCardId: null,
+    }));
+  };
+
+  handleCreateModule = (concept) => {
+    // Navigate to the Create Practice Module page (see below)
+    this.props.navigate("/teacher/create-practice-module", {
+      state: { concept },
     });
     this.closeAssignDialog();
   };
 
-
-
-  componentDidMount() {
-    // In real code, fetch from DB or API
-  }
-
-  /* misc */
-  setTab = t => this.setState({ activeTab: t });
-
+  setTab = (t) => this.setState({ activeTab: t });
   toggleApprovalStatus = () => {
     this.setState((prev) => ({
-      adminApprovalStatus:
-        prev.adminApprovalStatus === "pending" ? "approved" : "pending",
+      adminApprovalStatus: prev.adminApprovalStatus === "pending" ? "approved" : "pending",
     }));
   };
 
@@ -942,7 +899,6 @@ class StudentProgressViewContent extends Component {
       categorizedActivityScores,
       adminApprovalStatus,
     } = this.state;
-
     return (
       <div className="student-progress-container">
         <div className="student-progress-view">
@@ -950,212 +906,255 @@ class StudentProgressViewContent extends Component {
           <div className="progress-header">
             <h1>Student Progress & Prescriptive Analysis</h1>
             <p>
-              Track individual student progress, system recommendations,
-              and personalized interventions
+              Track individual student progress, system recommendations, and personalized interventions
             </p>
           </div>
 
-          {/* TAB CONTENT */}
+          {/* Top Profile and Tabs */}
+          <div className="top-cards-container">
+            <StudentInfoCard student={student} />
+            <ReadingProgressCard student={student} />
+          </div>
+          <div className="tab-navigation" style={{ padding: "0 20px" }}>
+            <button
+              className={`btn-tab ${activeTab === "progress" ? "active-tab" : ""}`}
+              onClick={() => this.setTab("progress")}
+            >
+              Progress
+            </button>
+            <button
+              className={`btn-tab ${activeTab === "modules" ? "active-tab" : ""}`}
+              onClick={() => this.setTab("modules")}
+            >
+              Edit Modules
+            </button>
+            <button
+              className={`btn-tab ${activeTab === "admin" ? "active-tab" : ""}`}
+              onClick={() => this.setTab("admin")}
+            >
+              Admin Approval
+            </button>
+          </div>
+
+          {/* Conditional Content */}
           {activeTab === "progress" && (
-            <>
-              {/* Student Profile + Reading Progress */}
-              <div className="top-cards-container">
-                <StudentInfoCard student={student} />
-                <ReadingProgressCard student={student} />
+            <div>
+              {/* Collapsible Progress Report */}
+              <div
+                className="visualization-header-box"
+                onClick={() =>
+                  this.setState((prev) => ({
+                    showProgressReport: !prev.showProgressReport
+                  }))
+                }
+                style={{ cursor: "pointer", padding: "20px", marginTop: "20px" }}
+              >
+                <div className="header-side"></div>
+                <h2 className="visualization-header-text">
+                  Progress Report: {student.readingLevel} {this.state.showProgressReport ? "▲" : "▼"}
+                </h2>
+                <div className="header-side right"></div>
               </div>
-
-
-              {/* Tab Navigation */}
-              <div className="tab-navigation" style={{ padding: "0 20px" }}>
-                <button
-                  className={`btn-tab ${activeTab === "progress" ? "active-tab" : ""}`}
-                  onClick={() => this.setTab("progress")}
-                >
-                  Progress
-                </button>
-                <button
-                  className={`btn-tab ${activeTab === "modules" ? "active-tab" : ""}`}
-                  onClick={() => this.setTab("modules")}
-                >
-                  Edit Modules
-                </button>
-                <button
-                  className={`btn-tab ${activeTab === "admin" ? "active-tab" : ""}`}
-                  onClick={() => this.setTab("admin")}
-                >
-                  Admin Approval
-                </button>
+              {this.state.showProgressReport && (
+                <VisualizationSection
+                  student={student}
+                  skillData={skillData}
+                  activityScores={activityScores}
+                  categorizedActivityScores={categorizedActivityScores}
+                  openActivityModal={this.openActivityModal}
+                />
+              )}
+              {/* Collapsible Prescriptive Analysis */}
+              <div
+                className="analysis-section-header-box"
+                onClick={() =>
+                  this.setState((prev) => ({
+                    showAnalysisReport: !prev.showAnalysisReport
+                  }))
+                }
+                style={{ cursor: "pointer", padding: "20px" }}
+              >
+                <div className="analysis-header-side"></div>
+                <h2 className="analysis-header-text">
+                  Prescriptive Analysis {this.state.showAnalysisReport ? "▲" : "▼"}
+                </h2>
+                <div className="analysis-header-side right"></div>
               </div>
-
-              {/* Visualization (Skill + line chart) */}
-              <VisualizationSection
-                student={student}
-                skillData={skillData}
-                activityScores={activityScores}
-                categorizedActivityScores={categorizedActivityScores}
-                openActivityModal={this.openActivityModal}
-              />
-
-              {/* Prescriptive Analysis */}
-              <div style={{ padding: "20px" }}>
-                <div className="analysis-section-header-box">
-                  <div className="analysis-header-side" />
-                  <div className="analysis-header-text">Prescriptive Analysis</div>
-                  <div className="analysis-header-side right" />
+              {this.state.showAnalysisReport && (
+                <div className="analysis-container" style={{ padding: "0 20px" }}>
+                  {this.state.analysisCards.map((card) => (
+                    <AnalysisCard
+                      key={card.id}
+                      title={card.title}
+                      status={card.status}
+                      lesson={card.lesson}
+                      score={card.score}
+                      note={card.note}
+                      recommendation={card.recommendation}
+                      onAssignModule={() => this.handleAssignPractice(card.id, card.concept)}
+                      onCreateModule={() => this.handleCreateModule(card.concept)}
+                    />
+                  ))}
                 </div>
-                <div className="analysis-container">
-                  <AnalysisCard
-                    title="Vowel Sound Identification"
-                    status="Pending"
-                    lesson="Elementary Ponetiko"
-                    score={38}
-                    note="Isabella struggles with vowel (a-e-i-o-u) recognition. Assign targeted vowel sound activities to improve phonetic skills."
-                    recommendation="Assign vowel-sound drill"
-                    onAssignModule={() => this.openAssignDialog("Vowel Sound")}   // ✅ Actual dialog!
-                    onCreateModule={() => this.handleCreateModule("Vowel Sound")}
-                  />
-
-                  <AnalysisCard
-                    title="Syllable Blending"
-                    status="Completed"
-                    lesson="Pagpapantig Gawain 3"
-                    score={45}
-                    note="Isabella has difficulty blending 'ng' syllables."
-                    recommendation="Practice syllable combinations"
-                    onAssignModule={() =>
-                      this.openAssignDialog("Assign syllable practice")
-                    }
-                    onCreateModule={() =>
-                      this.handleCreateModule("Create syllable module")
-                    }
-                  />
-                </div>
-              </div>
-            </>
+              )}
+            </div>
           )}
-
           {activeTab === "modules" && (
             <div style={{ padding: "20px" }}>
-
-              <h2>Assigned Practice Modules</h2>
-              <PracticeModuleCard
-                title="Vowel Drill A-E"
-                concept="Vowel Sound"
-                category="Ponetiko"
-                antas="Una"
-                assignedDate="March 15, 2025"
-                status="In Progress"
-                onViewModule={() => this.handleAction("View vowel drill module")}
-              />
-
-              <h2 style={{ marginTop: "30px" }}>
-                Edit Activity for Reassessment
-              </h2>
-              <ActivityCard
-                title="Syllable Blending Practice"
-                concept="Syllable Blending"
-                category="Pagpapantig"
-                antas="Dalawa"
-                assignedDate="March 22, 2025"
-                score="90%"
-                status="Completed"
-                notification={{
-                  type: "success",
-                  messages: [
-                    "Student passed the practice module. You may edit the original activity before reassessment.",
-                    "Customize to verify mastery of specific concepts.",
-                  ],
-                }}
-                actionText="Edit Activity Instance"
-                onAction={() => this.handleAction("Edit activity")}
-              />
+              {/* Collapsible Assigned Practice Modules */}
+              <div
+                className="visualization-header-box"
+                onClick={() =>
+                  this.setState((prev) => ({ showModules: !prev.showModules }))
+                }
+                style={{ cursor: "pointer" }}
+              >
+                <div className="header-side"></div>
+                <h2 className="visualization-header-text">
+                  Assigned Practice Modules {this.state.showModules ? "▲" : "▼"}
+                </h2>
+                <div className="header-side right"></div>
+              </div>
+              {this.state.showModules &&
+                this.state.assignedModules.map((mod, index) => (
+                  <PracticeModuleCard
+                    key={index}
+                    title={mod.title}
+                    concept={mod.concept}
+                    category={mod.category}
+                    antas={mod.antas}
+                    assignedDate={mod.assignedDate}
+                    status={mod.status}
+                    onViewModule={() => this.handleAction(`View module for ${mod.title}`)}
+                  />
+                ))}
+              {/* Collapsible Edit Activity for Reassessment */}
+              <div
+                className="visualization-header-box"
+                onClick={() =>
+                  this.setState((prev) => ({ showReassessment: !prev.showReassessment }))
+                }
+                style={{ cursor: "pointer", marginTop: "20px" }}
+              >
+                <div className="header-side"></div>
+                <h2 className="visualization-header-text">
+                  Edit Activity for Reassessment {this.state.showReassessment ? "▲" : "▼"}
+                </h2>
+                <div className="header-side right"></div>
+              </div>
+              {this.state.showReassessment && (
+                <ActivityCard
+                  title="Syllable Blending Practice"
+                  concept="Syllable Blending"
+                  category="Standard"  // now a generic category instead of a hardcoded name
+                  antas="Dalawa"
+                  assignedDate="March 22, 2025"
+                  score="90%"
+                  status="Completed"
+                  notification={{
+                    type: "success",
+                    messages: [
+                      "Student passed the practice module. You may edit the original activity before reassessment.",
+                      "Customize to verify mastery of specific concepts.",
+                    ],
+                  }}
+                  actionText="Edit Activity Instance"
+                  onAction={() => this.handleAction("Edit activity")}
+                />
+              )}
             </div>
           )}
-
           {activeTab === "admin" && (
             <div style={{ padding: "20px" }}>
-              <h2>Admin Approval with Edit Activity</h2>
-              <ApprovalCard
-                title="Syllable Blending Practice"
-                concept="Syllable Blending"
-                category="Pagpapantig"
-                antas="Dalawa"
-                submissionDate="April 8, 2025"
-                status={adminApprovalStatus}
-                onReassessment={() => this.handleAction("Start reassessment")}
-              />
-
-              <div className="demo-controls">
-                <button
-                  className="btn btn-secondary"
-                  onClick={this.toggleApprovalStatus}
-                >
-                  Toggle Approval Status (Demo)
+              {/* Collapsible Admin Approval */}
+              <div
+                className="visualization-header-box"
+                onClick={() =>
+                  this.setState((prev) => ({ showAdminApproval: !prev.showAdminApproval }))
+                }
+                style={{ cursor: "pointer" }}
+              >
+                <div className="header-side"></div>
+                <h2 className="visualization-header-text">
+                  Admin Approval with Edit Activity {this.state.showAdminApproval ? "▲" : "▼"}
+                </h2>
+                <div className="header-side right"></div>
+              </div>
+              {this.state.showAdminApproval && (
+                <>
+                  <ApprovalCard
+                    title="Syllable Blending Practice"
+                    concept="Syllable Blending"
+                    category="Standard" // generic now
+                    antas="Dalawa"
+                    submissionDate="April 8, 2025"
+                    status={adminApprovalStatus}
+                    onReassessment={() => this.handleAction("Start reassessment")}
+                  />
+                  <div className="demo-controls">
+                    <button className="btn btn-secondary" onClick={this.toggleApprovalStatus}>
+                      Toggle Approval Status (Demo)
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          {/* Activity Detail Modal */}
+          {this.state.isModalOpen && this.state.selectedActivity && (
+            <div className="custom-modal-overlay">
+              <div className="custom-modal">
+                <button className="modal-close-btn" onClick={this.closeActivityModal}>
+                  ×
                 </button>
+                <h2>Activity Details: {this.state.selectedActivity.date}</h2>
+                <p>
+                  <strong>{this.state.selectedActivity.category} Score:</strong> {this.state.selectedActivity.score}%
+                </p>
+                <table className="modal-table">
+                  <thead>
+                    <tr>
+                      <th>Question</th>
+                      <th>Student Answer</th>
+                      <th>Correct Answer</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {this.state.selectedActivity.questions.map((q, idx) => (
+                      <tr key={idx}>
+                        <td>{q.text}</td>
+                        <td className={`student-answer ${q.correct ? "correct" : "incorrect"}`}>
+                          {q.studentAnswer}
+                        </td>
+                        <td className={`correct-answer ${q.correct ? "highlight" : ""}`}>
+                          {q.correctAnswer}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="feedback-box">
+                  <h4>Feedback</h4>
+                  <p>{this.state.selectedActivity.feedback}</p>
+                </div>
               </div>
             </div>
           )}
+          {/* Assign‑Practice‑Module Dialog */}
+          <AssignPracticeModuleDialog
+            isOpen={this.state.assignDialogOpen}
+            concept={this.state.dialogConcept}
+            onAssign={this.handleAssignTemplate}
+            onCreate={() => this.handleCreateModule(this.state.dialogConcept)}
+            onClose={this.closeAssignDialog}
+          />
         </div>
-
-        {this.state.isModalOpen && this.state.selectedActivity && (
-          <div className="custom-modal-overlay">
-            <div className="custom-modal">
-              <button className="modal-close-btn" onClick={this.closeActivityModal}>×</button>
-              <h2>Activity Details: {this.state.selectedActivity.date}</h2>
-              <p><strong>{this.state.selectedActivity.category} Score:</strong> {this.state.selectedActivity.score}%</p>
-
-              <table className="modal-table">
-                <thead>
-                  <tr>
-                    <th>Question</th>
-                    <th>Student Answer</th>
-                    <th>Correct Answer</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {this.state.selectedActivity.questions.map((q, idx) => (
-                    <tr key={idx}>
-                      <td>{q.text}</td>
-                      <td className={`student-answer ${q.correct ? "correct" : "incorrect"}`}>
-                        {q.studentAnswer}
-                      </td>
-                      <td className={`correct-answer ${q.correct ? "highlight" : ""}`}>
-                        {q.correctAnswer}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <div className="feedback-box">
-                <h4>LOLL</h4>
-                <p>{this.state.selectedActivity.feedback}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Assign‑Practice‑Module dialog */}
-        <AssignPracticeModuleDialog
-          isOpen={this.state.assignDialogOpen}
-          concept={this.state.dialogConcept}
-          onAssign={this.handleAssignTemplate}
-          onCreate={() => this.handleCreateModule(this.state.dialogConcept)}
-          onClose={this.closeAssignDialog}
-        />
       </div>
-
-
-
-
     );
   }
-
-
 }
 
-
-/* Wrapper: so we can use route params if needed */
+/* Wrapper to use route params */
 const StudentProgressView = () => {
   const { id } = useParams();
   const navigate = useNavigate();

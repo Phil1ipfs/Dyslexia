@@ -15,6 +15,8 @@ import TeacherProfile from "./pages/Teachers/TeacherProfile";
 import StudentDetails from "./pages/Teachers/StudentDetails";
 import ManageProgress from "./pages/Teachers/ManageProgress";
 import StudentProgressView from "./pages/Teachers/StudentProgressView";
+import CreatePracticeModule from "./pages/Teachers/CreatePracticeModule";
+
 
 // Parent Pages
 import ParentDashboard from "./pages/Parents/ParentDashboard";
@@ -80,6 +82,8 @@ function App() {
             <Route path="manage-progress" element={<ManageProgress />} />
             <Route path="student-progress/:id" element={<StudentProgressView />} />
             <Route path="student-details/:id" element={<StudentDetails />} />
+            <Route path="create-practice-module" element={<CreatePracticeModule />} /> {/* ✅ ADD THIS */}
+
             <Route index element={<Navigate to="dashboard" />} />
           </Route>
         )}
