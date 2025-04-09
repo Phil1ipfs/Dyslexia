@@ -13,6 +13,8 @@ import ViewStudent from "./pages/Teachers/ViewStudent";
 import ManageActivities from "./pages/Teachers/ManageActivities";
 import TeacherProfile from "./pages/Teachers/TeacherProfile";
 import StudentDetails from "./pages/Teachers/StudentDetails";
+import ManageProgress from "./pages/Teachers/ManageProgress";
+import StudentProgressView from "./pages/Teachers/StudentProgressView";
 
 // Parent Pages
 import ParentDashboard from "./pages/Parents/ParentDashboard";
@@ -75,6 +77,8 @@ function App() {
             <Route path="view-student" element={<ViewStudent />} />
             <Route path="manage-activities" element={<ManageActivities />} />
             <Route path="profile" element={<TeacherProfile />} />
+            <Route path="manage-progress" element={<ManageProgress />} />
+            <Route path="student-progress/:id" element={<StudentProgressView />} />
             <Route path="student-details/:id" element={<StudentDetails />} />
             <Route index element={<Navigate to="dashboard" />} />
           </Route>

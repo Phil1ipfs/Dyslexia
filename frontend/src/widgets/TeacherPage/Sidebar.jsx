@@ -8,6 +8,7 @@ import manageActivityIcon from "../../assets/icons/Teachers/activitymanage.png";
 import teacherProfileIcon from "../../assets/icons/Teachers/Feedback.png";
 import logoutIcon from "../../assets/icons/Teachers/Logout.png";
 import avatarIcon from "../../assets/icons/Teachers/avatar.png";
+import manageProgressIcon from "../../assets/icons/Teachers/progress.png"; // ✅ make sure this icon exists
 
 import "./Sidebar.css";
 
@@ -24,6 +25,8 @@ function Sidebar({ defaultActive = "dashboard", onLogout }) {
       setActive("view-student");
     } else if (path.includes("/teacher/manage-activities")) {
       setActive("manage-activities");
+    } else if (path.includes("/teacher/manage-progress")) {
+      setActive("manage-progress");
     } else if (path.includes("/teacher/profile")) {
       setActive("profile");
     } else {
@@ -39,6 +42,8 @@ function Sidebar({ defaultActive = "dashboard", onLogout }) {
       navigate("/teacher/view-student");
     } else if (item === "manage-activities") {
       navigate("/teacher/manage-activities");
+    } else if (item === "manage-progress") {
+      navigate("/teacher/manage-progress");
     } else if (item === "profile") {
       navigate("/teacher/profile");
     }
@@ -73,11 +78,15 @@ function Sidebar({ defaultActive = "dashboard", onLogout }) {
         </li>
         <li className={active === "view-student" ? "active" : ""} onClick={() => handleClick("view-student")}>
           <img src={viewStudentIcon} alt="View Student" />
-          <span>View Student</span>
+          <span> Student Details and Feedback</span>
         </li>
         <li className={active === "manage-activities" ? "active" : ""} onClick={() => handleClick("manage-activities")}>
           <img src={manageActivityIcon} alt="Manage Activities" />
           <span>Manage Activities</span>
+        </li>
+        <li className={active === "manage-progress" ? "active" : ""} onClick={() => handleClick("manage-progress")}>
+          <img src={manageProgressIcon} alt="Manage Progress" />
+          <span>Manage Progress</span>
         </li>
         <li className={active === "profile" ? "active" : ""} onClick={() => handleClick("profile")}>
           <img src={teacherProfileIcon} alt="Teacher Profile" />

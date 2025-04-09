@@ -403,7 +403,7 @@ function PersonalInfo({ teacher }) {
       </div>
 
       {/* Teaching Statistics */}
-      <h4 className="tp-subtitle">Teaching Statistics</h4>
+      {/* <h4 className="tp-subtitle">Teaching Statistics</h4>
       <div className="tp-stats-card-grid">
         <div className="tp-stat-card">
           <h5>Active Students</h5>
@@ -421,7 +421,7 @@ function PersonalInfo({ teacher }) {
           <h5>Activities Created</h5>
           <p>{formData.stats.activities}</p>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
