@@ -1,4 +1,3 @@
-// src/widgets/ParentPage/ParentLayout.jsx
 import { Outlet } from "react-router-dom";
 
 const ParentLayout = () => (
