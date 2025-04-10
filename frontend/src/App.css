@@ -16,7 +16,12 @@
   .app-layout {
     display: flex;
   }
+<<<<<<< Updated upstream
     
+=======
+  
+ 
+>>>>>>> Stashed changes
   .main-content-area {
     flex-grow: 1;
     overflow-y: auto;
