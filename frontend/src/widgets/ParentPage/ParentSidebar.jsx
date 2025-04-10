@@ -31,9 +31,9 @@ const ParentSidebar = ({ defaultActive = "dashboard", onLogout }) => {
     if (item === "dashboard") {
       navigate("/parent/dashboard");
     } else if (item === "feedback") {
-      navigate("/parent/feedback");  // Corrected path to /parent/feedback
+      navigate("/parent/feedback");  
     } else if (item === "progress") {
-      navigate("/parent/progress");  // Corrected path to /parent/progress
+      navigate("/parent/progress");  
     }
   };
 
@@ -50,7 +50,7 @@ const ParentSidebar = ({ defaultActive = "dashboard", onLogout }) => {
         <img src={literexiaLogo} alt="Literexia Logo" />
       </div>
       <ul className="sidebar-menu">
-        <li className={active === "profile" ? "active" : ""} onClick={() => handleClick("profile")}>
+        <li className={active === "profile" ? "active" : ""} onClick={() => handleClick("dashboard")}>
         <img src={profileIcon} alt="Literexia Logo" />
           <span>Profile</span>
         </li>
