@@ -1,21 +1,39 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/Sidebar.css';
 
-const Sidebar = ({ 
-  activeSection, 
-  expandedSections, 
-  onSectionClick, 
+const Sidebar = ({
+  activeSection,
+  expandedSections,
+  onSectionClick,
   onToggleExpand,
   navItems,
   isMobile,
-  isOpen
+  isOpen,
+  handleLogout // Accept the logout handler from parent
 }) => {
+  const navigate = useNavigate();
+
+  // Use the passed logout handler if available, otherwise use local implementation
+  const onLogoutClick = () => {
+    if (handleLogout) {
+      // Use the parent component's logout handler if provided
+      handleLogout();
+    } else {
+      // Fallback to local implementation
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userType');
+      localStorage.removeItem('userData');
+      navigate('/');
+    }
+  };
+
   return (
     <div className={`sidebar ${isMobile && isOpen ? 'open' : ''}`}>
       <div className="brand">
         <h1>LITEREXIA</h1>
       </div>
-      
+
       <div className="admin-profile">
         <div className="avatar">
           <img src="/api/placeholder/48/48" alt="Admin Avatar" />
@@ -25,13 +43,13 @@ const Sidebar = ({
           <p>Administrator</p>
         </div>
       </div>
-      
+
       <nav className="nav-menu">
         {/* Main Sections */}
         <div className="nav-section">
           {navItems.main.map(item => (
             <React.Fragment key={item}>
-              <div 
+              <div
                 className={`nav-item ${activeSection === item ? 'active' : ''}`}
                 onClick={() => onSectionClick(item)}
               >
@@ -46,7 +64,7 @@ const Sidebar = ({
                 </div>
                 <span>{item}</span>
                 {item === 'Dashboard' && (
-                  <span 
+                  <span
                     className={`expand-icon ${expandedSections.includes('Dashboard') ? 'expanded' : ''}`}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -57,12 +75,12 @@ const Sidebar = ({
                   </span>
                 )}
               </div>
-              
+
               {item === 'Dashboard' && expandedSections.includes('Dashboard') && (
                 <div className="sub-menu">
                   {navItems.dashboardSubItems.map(subItem => (
-                    <div 
-                      key={subItem} 
+                    <div
+                      key={subItem}
                       className={`nav-item child-item ${activeSection === subItem ? 'active' : ''}`}
                       onClick={() => onSectionClick(subItem)}
                     >
@@ -77,10 +95,10 @@ const Sidebar = ({
             </React.Fragment>
           ))}
         </div>
-        
+
         {/* User Lists Section */}
         <div className="nav-section user-lists-section">
-          <div 
+          <div
             className={`nav-item parent-item ${activeSection.startsWith('User Lists') || navItems.userLists.includes(activeSection) ? 'active' : ''}`}
             onClick={() => {
               onSectionClick('User Lists');
@@ -91,18 +109,18 @@ const Sidebar = ({
               <i className="icon-users">👥</i>
             </div>
             <span>User Lists</span>
-            <span 
+            <span
               className={`expand-icon ${expandedSections.includes('User Lists') ? 'expanded' : ''}`}
             >
               {expandedSections.includes('User Lists') ? '▼' : '►'}
             </span>
           </div>
-          
+
           {expandedSections.includes('User Lists') && (
             <div className="sub-menu">
               {navItems.userLists.map(item => (
-                <div 
-                  key={item} 
+                <div
+                  key={item}
                   className={`nav-item child-item ${activeSection === item ? 'active' : ''}`}
                   onClick={() => onSectionClick(item)}
                 >
@@ -116,7 +134,7 @@ const Sidebar = ({
           )}
         </div>
       </nav>
-      
+
       <div className="sidebar-footer">
         <div className="nav-item">
           <div className="nav-icon">
@@ -124,7 +142,7 @@ const Sidebar = ({
           </div>
           <span>Settings</span>
         </div>
-        <div className="nav-item">
+        <div className="nav-item" onClick={onLogoutClick} style={{ cursor: "pointer" }}>
           <div className="nav-icon">
             <i className="icon-logout">⊘</i>
           </div>

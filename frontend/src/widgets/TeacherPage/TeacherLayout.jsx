@@ -3,6 +3,12 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import "./teacherLayout.css";
 
+
+const handleSidebarLogout = () => {
+  // You might want to do additional cleanup here
+  onLogout(); // This will call the logout function from App.jsx
+};
+
 function TeacherLayout({ onLogout }) {
   return (
     <div className="teacher-layout-container">
