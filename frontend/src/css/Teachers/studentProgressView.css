@@ -41,6 +41,8 @@ html {
     min-height: 100vh;
     background-color: var(--primary-color);
     padding: 3rem;
+    margin-left: 240px; 
+
     box-sizing: border-box;
     color: white;
     

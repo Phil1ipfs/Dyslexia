@@ -6,6 +6,8 @@ import StandardForm from "../../widgets/TeacherPage/StandardPracticeForm";
 import { AudioPracticeForm } from "../../widgets/TeacherPage/AudioPracticeForm.jsx";
 import { ReadingComprehensionForm } from "../../widgets/TeacherPage/ReadingPracticeForm";
 
+import "../../css/Teachers/PracticeModule.css"; // Import the CSS file for styling
+
 const CreatePracticeModule = () => {
   const location = useLocation();
   const concept = location.state?.concept || "";

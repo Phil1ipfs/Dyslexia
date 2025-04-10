@@ -4,6 +4,8 @@
   min-height: 100vh;
   padding: 5rem 5rem 2rem 1rem;
   display: flex;
+  margin-left: 240px; 
+
   justify-content: center;
   align-items: flex-start;
 }

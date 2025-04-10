@@ -3,6 +3,8 @@
     background: #3b4f81;
     min-height: 100vh;
     padding: 2rem 2rem 3rem;
+    margin-left: 240px; 
+
     box-sizing: border-box;
   }
   
