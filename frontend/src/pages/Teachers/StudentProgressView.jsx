@@ -4,6 +4,8 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import "../../css/Teachers/studentProgressView.css";
 import * as Dialog from "@radix-ui/react-dialog";
 
+
+
 /* ─────────────────────────────────────────────────────────────── */
 /*  SERVICE LAYER – future implementation will connect to MongoDB */
 /* ─────────────────────────────────────────────────────────────── */
@@ -90,9 +92,21 @@ class AssignPracticeModuleDialog extends Component {
  * Instead of mapping specific category names, we now return a default style.
  * In the future, you could modify this function to fetch dynamic styling info from MongoDB.
  */
-const getCategoryColorClass = (/* categoryName */) => {
-  return "default-skill-bar";
+const getCategoryColorClass = (category) => {
+  switch (category) {
+    case "Vowel Sound":
+      return "ponetiko";
+    case "Syllable Blending":
+      return "pagpapantig";
+    case "Word Recognition":
+      return "salita";
+    case "Reading Comprehension":
+      return "pag-unawa";
+    default:
+      return "default-skill-bar";
+  }
 };
+
 
 /* ------------------------------------------
    COMPONENT: StudentInfoCard 
@@ -268,11 +282,13 @@ class VisualizationSection extends Component {
                         )}
                       </div>
                       <div className="skill-bar-container">
-                        <div
-                          className={`skill-bar-fill ${getCategoryColorClass()}`}
-                          style={{ width: barWidth }}
-                        />
-                      </div>
+  <div
+    className={`skill-bar-fill ${getCategoryColorClass(item.label)}`}
+    style={{ width: barWidth }}
+  />
+</div>
+
+                    
                     </div>
                     <div className="view-questions-btn-container">
                       <button
@@ -492,6 +508,22 @@ class AnalysisCard extends Component {
       onAssignModule,
       onCreateModule,
     } = this.props;
+
+    const getCategoryColorClass = (category) => {
+  switch (category) {
+    case "Vowel Sound":
+      return "ponetiko";
+    case "Syllable Blending":
+      return "pagpapantig";
+    case "Word Recognition":
+      return "salita";
+    case "Reading Comprehension":
+      return "pag-unawa";
+    default:
+      return "default-skill-bar";
+  }
+};
+
     return (
       <div className={`analysis-card ${getCategoryColorClass()}`}>
         <div className="card-header">

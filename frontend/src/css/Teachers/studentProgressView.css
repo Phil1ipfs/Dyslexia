@@ -270,7 +270,6 @@ html {
     justify-content: space-between;
     background-color: rgba(3, 70, 238, 0.05);
     padding: 14px 0;
-    margin-top: 10rem;
     margin: 0px 0 20px;
     border-radius: 6px;
 }
@@ -837,9 +836,11 @@ html {
 }
 
 .recommendation-label {
-    font-weight: 800;
+    font-weight: 600;
+    font-family: 'Atkinson Hyperlegible', sans-serif;
     margin-bottom: 10px;
-    color: #EF5350;
+    font-size: 14px;
+    color: #0b7cd3;
 }
 
 .action-buttons {
