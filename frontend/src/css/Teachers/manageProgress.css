@@ -1,0 +1,197 @@
+.manage-progress__container {
+    position: relative;
+    background: #3b4f81;
+    min-height: 100vh;
+    padding: 2rem 2rem 3rem;
+    margin-left: 240px; 
+
+    box-sizing: border-box;
+  }
+  
+  .manage-progress-page {
+    background: #3b4f81;
+    color: white;
+    font-family: 'Atkinson Hyperlegible', sans-serif;
+  }
+  
+  /* Header */
+  .manage-progress-header h1 {
+    font-size: 2rem;
+    margin-bottom: 0.2rem;
+  }
+  
+  .manage-progress-header p {
+    color: #d0d0d0;
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Filters */
+  .progress-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+  }
+  
+  .search-wrapper {
+    position: relative;
+    width: 320px;
+  }
+  
+  .search-icon {
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 2.2rem;
+    pointer-events: none;
+    color: #5a5a5a;
+  }
+  
+  .search-input {
+    width: 100%;
+    padding: 0.6rem 0.9rem 0.6rem 2.8rem;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.95rem;
+  }
+  
+  .progress-filters select {
+    padding: 0.6rem 0.9rem;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.95rem;
+    min-width: 160px;
+  }
+  
+  /* Table container */
+  .progress-table-wrapper {
+    background-color: white;
+    border-radius: 10px;
+    overflow-x: auto;
+    box-shadow: 10px 4px 10px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+  }
+  
+  .progress-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .progress-table th,
+  .progress-table td {
+    border: 1px solid #e0e0e0;
+    padding: 14px;
+    font-size: 0.95rem;
+    text-align: left;
+    color: #2c2c2c;
+  }
+  
+  .progress-table th {
+    background-color: #2e3d66;
+    color: white;
+  }
+  
+  .progress-table tbody tr:hover {
+    background-color: #f5f8ff;
+  }
+  
+  .no-data {
+    text-align: center;
+    padding: 2rem;
+    font-style: italic;
+    color: #555;
+  }
+  
+  /* View button */
+  .btn-details {
+    background-color: #1c74d4;
+    color: white;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  
+  .btn-details:hover {
+    background-color: #145a9c;
+  }
+  
+  /* Pagination */
+  .custom-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .custom-pagination__arrow {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background-color: #2e3d66;
+    color: white;
+    border: none;
+    border-radius: 18px;
+    padding: 6px 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  .custom-pagination__arrow:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .custom-pagination__arrow:hover:not(:disabled) {
+    background-color: #162345;
+  }
+  
+  .custom-pagination__page {
+    background-color: #2e3d66;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.3s ease;
+  }
+  
+  .custom-pagination__page:hover {
+    background-color: #162345;
+  }
+  
+  .custom-pagination__page--active {
+    background-color: white;
+    color: #2e3d66;
+  }
+  
+  /* Sync Button */
+  .sync-btn-wrapper {
+    display: flex;
+    justify-content: flex-end;
+  }
+  
+  .btn-sync {
+    background-color: #00b894;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  .btn-sync:hover {
+    background-color: #019875;
+  }
+  

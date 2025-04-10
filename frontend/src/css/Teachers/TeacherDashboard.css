@@ -1,371 +1,262 @@
+/* edu-teacher-dashboard.css */
+.edu-dashboard {
+  padding: 2rem;
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+  min-height: 100vh;
+  margin-left: 240px; 
+  box-sizing: border-box;
+}
 
-  .dashboard-container {
-    display: flex;
-    min-height: 100vh;
-    background-color: #3B4F81;
-    color: white;
-    position: relative;
-  }
-  
-  /* Hamburger Button */
-  .hamburger-btn {
-    position: fixed;
-    top: 20px;
-    left: 280px;
-    background: #3B4F81;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 10px;
-    cursor: pointer;
-    z-index: 1000;
-    transition: left 0.3s ease;
-  }
-  
-  /* Main Content */
-  .main-content {
-    flex: 1;
-    padding: 20px;
-    margin-left: 260px; 
-    transition: margin-left 0.3s ease;
-  }
-  
-  .main-content.sidebar-closed {
-    margin-left: 80px; 
-  }
-  
-  /* Dashboard Content */
-  .page-title {
-    color: #3B4F81;
-    margin: 20px 0 30px;
-    font-size: 1.8rem;
-  }
-  .page-title {
-    color: white;
-  }
-  
-  .stats-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
-  }
-  
-  .stat-card {
-    padding: 20px;
-    border-radius: 8px;
-    text-align: center;
-    color: white;
-    display: flex;
+/* Main Content */
+.edu-dashboard__content {
+  flex: 1;
+  padding: 20px;
+  transition: margin-left 0.3s ease;
+}
+
+/* Dashboard Title */
+.edu-dashboard__title {
+  color: white;
+  margin: 20px 0 30px;
+  font-size: 1.8rem;
+}
+
+/* Stats Cards Grid */
+.edu-dashboard__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+/* Individual Stat Card */
+.edu-stat-card {
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: inset 0 -9px 4px rgba(0, 0, 0, 0.15);
+}
+
+.edu-stat-card__icon {
+  width: 40px; 
+  height: 40px;
+  margin-bottom: 10px;
+}
+
+.edu-stat-card__heading {
+  font-size: 1rem;
+}
+
+.edu-stat-card__value {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+/* Card Variations */
+.edu-stat-card--students {
+  background: #00A8DD;
+}
+
+.edu-stat-card--parents {
+  background: #FDB185; 
+}
+
+/* Chart Section */
+.edu-dashboard__chart-section {
+  background: transparent;
+  padding: 0;
+}
+
+.edu-chart__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.edu-chart__title {
+  color: white;
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.edu-chart__controls {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.edu-chart__container {
+  background-color: rgba(59, 79, 129, 0.2);
+  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  height: 520px;
+  width: 100%;
+}
+
+/* Timeframe Toggle Button */
+.edu-timeframe-btn {
+  background: #f0f0f0;
+  color: #3B4F81;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.edu-timeframe-btn:hover {
+  background: #e0e0e0;
+}
+
+/* Dropdown Styles */
+.edu-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.edu-dropdown__trigger {
+  background-color: whitesmoke;
+  color: #2c3d6b;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.edu-dropdown__trigger:hover {
+  background: #e0e0e0;
+}
+
+.edu-dropdown__arrow {
+  font-size: 10px;
+  transition: transform 0.3s ease;
+}
+
+.edu-dropdown__arrow--open {
+  transform: rotate(180deg);
+}
+
+.edu-dropdown__menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: white;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px rgba(0,0,0,0.1);
+  border-radius: 4px;
+  z-index: 1;
+  margin-top: 5px;
+}
+
+.edu-dropdown__item {
+  color: #333;
+  padding: 10px 16px;
+  text-decoration: none;
+  display: block;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.edu-dropdown__item:hover {
+  background-color: #f5f5f5;
+}
+
+.edu-dropdown__item--active {
+  background-color: #e6e6e6;
+  font-weight: 500;
+}
+
+/* Chart Customizations */
+/* Vertical Grid Enhancements */
+.recharts-cartesian-grid-vertical line {
+  transition: stroke-opacity 0.3s ease;
+}
+
+.recharts-cartesian-grid-vertical line:nth-child(odd) {
+  stroke: rgba(255, 255, 255, 0.4) !important; 
+}
+
+.recharts-cartesian-grid-vertical line:nth-child(even) {
+  stroke: rgba(255, 255, 255, 0.2) !important; 
+  stroke-dasharray: 3, 3 !important;
+}
+
+/* Hover Effects */
+.recharts-wrapper:hover .recharts-cartesian-grid-vertical line {
+  stroke-opacity: 0.6 !important;
+}
+
+/* Legend and Axis Styling */
+.recharts-legend-item-text {
+  fill: white !important;
+  color: white !important;
+}
+
+.recharts-cartesian-axis-tick-value {
+  fill: white;
+}
+
+/* Area and Line Styling */
+.recharts-area-curve {
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.recharts-wrapper:hover .recharts-area-curve {
+  opacity: 1;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .edu-chart__header {
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    box-shadow: inset 0 -9px 4px rgba(0, 0, 0, 0.15);
+    align-items: flex-start;
+    gap: 15px;
   }
   
-  .stat-card i {
-    font-size: 2rem;
+  .edu-chart__controls {
+    width: 100%;
+    justify-content: space-between;
   }
   
-  /* Different background colors */
-  .total-students {
-    background: #00A8DD;
+  .recharts-cartesian-axis-label {
+    font-size: 12px;
   }
-  
-  .active-students {
-    background: #28A745; 
-  }
-  
-  .pending-feedback {
-    background: #FDB185; 
-  }
-  
-  .stat-card h3 {
-    font-size: 1rem;
-  }
-  
-  .stat-card p {
-    font-size: 2rem;
-    font-weight: bold;
-  }
-  
-  
-  /* Chart Section */
-  .chart-section {
-    background: transparent;
-    padding: 0;
-  }
-  
-  .chart-title {
-    color: white;
-    margin: 0 0 20px 0;
-  }
-  
-  .chart-section h2 {
-    color: #3B4F81;
-    margin-left: 700px;
-    margin-bottom: 20px;
-    font-size: 1.4rem;
-  }
-  
-  .chart-container {
-    height: 520px;
+}
+
+@media (max-width: 600px) {
+  .edu-dropdown {
     width: 100%;
   }
   
-  /* Responsive Adjustments */
-  @media (max-width: 768px) {
-    .main-content {
-      margin-left: 80px;
-      padding-top: 70px;
-    }
-    
-    .hamburger-btn {
-      left: 100px;
-    }
-  }
-  .dropdown-container {
-    position: relative;
-    display: inline-block;
-  }
-  
-  .dropdown-button {
-    background-color: whitesmoke;
-    color: #2c3d6b;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 50px;
-    cursor: pointer;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: background-color 0.3s ease;
-  }
-  
-  .dropdown-button:hover {
-    background: #e0e0e0;
-  }
-  
-  .dropdown-arrow {
-    font-size: 10px;
-    transition: transform 0.3s ease;
-  }
-  
-  .dropdown-arrow.open {
-    transform: rotate(180deg);
-  }
-  
-  .dropdown-menu {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background-color: white;
-    min-width: 160px;
-    box-shadow: 0px 8px 16px rgba(0,0,0,0.1);
-    border-radius: 4px;
-    z-index: 1;
-    margin-top: 5px;
-  }
-  
-  .dropdown-item {
-    color: #333;
-    padding: 10px 16px;
-    text-decoration: none;
-    display: block;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .dropdown-item:hover {
-    background-color: #f5f5f5;
-  }
-  
-  .dropdown-item.active {
-    background-color: #e6e6e6;
-    font-weight: 500;
-  }
-  
-  /* Chart Header Styles */
-  .chart-header {
-    display: flex;
+  .edu-dropdown__trigger {
+    width: 100%;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 15px;
-  }
-  .chart-header h2 {
-    color: white;
-    margin: 0;
-    font-size: 1.4rem;
   }
   
-  /* Responsive adjustments */
-  @media (max-width: 600px) {
-    .chart-header {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    
-    .dropdown-container {
-      width: 100%;
-    }
-    
-    .dropdown-button {
-      width: 100%;
-      justify-content: space-between;
-    }
-    
-    .dropdown-menu {
-      width: 100%;
-    }
+  .edu-dropdown__menu {
+    width: 100%;
   }
   
-  .timeframe-toggle {
-    background: #f0f0f0;
-    color: #3B4F81;
-    border: none;
-    padding: 8px 15px;
-    margin-right: 10px;
-    border-radius: 50px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    font-size: 14px;
+  .edu-timeframe-btn {
+    width: 100%;
   }
-  
-  .timeframe-toggle:hover {
-    background: #e0e0e0;
-  }
-  
-  /* Tooltip customizations */
-  .recharts-legend-item-text {
-    fill: white !important;
-    color: white !important;
-  }
-  
-  .recharts-cartesian-axis-tick-value {
-    fill: white;
-  }
-  
-  
-  .x-axis-label {
-    font-size: 16px;
-    font-weight: bold;
-    fill: white; 
-    text-transform: uppercase;
-    margin-top: 50px;
-    letter-spacing: 1px;
-    text-anchor: middle;
-  }
-  
-  .x-axis-label:hover {
-    fill: white; 
-    transition: 0.3s ease-in-out;
-  }
-  
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .recharts-cartesian-axis-label {
-      font-size: 12px;
-    }
-  }
-  
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .chart-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 15px;
-    }
-    
-    .chart-controls {
-      display: flex;
-      gap: 15px;
-      align-items: center;
-    }
-  }
-  
-  recharts-wrapper {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-  }
-  
-  .recharts-surface {
-    overflow: visible;
-  }
-  
-  /* Enhanced Grid Styles */
-  /* teacher.css */
-  .recharts-cartesian-grid line {
-    shape-rendering: crispEdges;
-  }
-  
-  /* Axis Styling */
-  .recharts-xAxis .recharts-cartesian-axis-line,
-  .recharts-yAxis .recharts-cartesian-axis-line {
-    stroke-width: 2px !important;
-  }
-  
-  /* Tick Styling */
-  .recharts-cartesian-axis-tick line {
-    stroke: white !important;
-    stroke-width: 1px !important;
-  }
-  
-  /* Legend Styling */
-  .recharts-legend-item-text {
-    fill: white !important;
-  }
-  /* Vertical Grid Enhancements */
-  .recharts-cartesian-grid-vertical line {
-    transition: stroke-opacity 0.3s ease;
-  }
-  
-  .recharts-cartesian-grid-vertical line:nth-child(odd) {
-    stroke: rgba(255, 255, 255, 0.4) !important; 
-  }
-  
-  .recharts-cartesian-grid-vertical line:nth-child(even) {
-    stroke: rgba(255, 255, 255, 0.2) !important; 
-    stroke-dasharray: 3, 3 !important;
-  }
-  
-  /* Hover Effects */
-  .recharts-wrapper:hover .recharts-cartesian-grid-vertical line {
-    stroke-opacity: 0.6 !important;
-  }
-  
-  /* Grid Layer Styling */
-  .recharts-cartesian-grid-vertical line {
-    mix-blend-mode: screen;
-    pointer-events: none;
-  }
-  
-  /* Animation for Grid Appearance */
-  @keyframes gridAppear {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  
-  .recharts-cartesian-grid {
-    animation: gridAppear 0.8s ease-out forwards;
-  }
-  
-  .stat-icon {
-    width: 40px; 
-    height: 40px;
-    margin-bottom: 10px;
-  }
-  
-  .recharts-area-curve {
-    opacity: 0.8;
-    transition: opacity 0.3s ease;
-  }
-  
-  .recharts-wrapper:hover .recharts-area-curve {
-    opacity: 1;
-  }
+}

@@ -1,0 +1,274 @@
+.parent-dashboard-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  height: 100%;
+  background-color: #3B4F81;
+  overflow: hidden; 
+  box-sizing: border-box;
+}
+
+/* Parent Profile Section (Only the content part should be split) */
+.parent-profile {
+  display: flex;
+  flex-direction: row; /* Split into two columns */
+  justify-content: space-between;
+  background-color: #354469;
+  padding: 20px;
+  width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  max-width: 1000px; /* Set max width for the profile */
+  margin-top: 20px;
+  min-height: auto; /* Let it adjust to content */
+  height: auto; /* Auto adjust height to content */
+}
+
+/* Left Column for Profile Information */
+.profile-left {
+  width: 48%;
+  display: flex;
+  flex-direction: column;
+  margin-right: 4%; /* Space between the columns */
+  flex-grow: 1; /* Ensure this column grows to take available height */
+}
+
+/* Right Column for Children Information */
+.profile-right {
+  width: 48%;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* Ensure this column grows to take available height */
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.parent-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin-right: 20px;
+}
+
+.profile-info h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #E4E4E4; /* Lighter text color */
+}
+
+.profile-details {
+  margin-top: 20px;
+}
+
+.profile-item {
+  margin-bottom: 15px;
+}
+
+.profile-item label {
+  font-weight: bold;
+  color: #D1D1D1; /* Slightly darker text for labels */
+}
+
+.profile-item input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  margin-top: 5px;
+  font-size: 1rem;
+  background-color: #fafafa;
+  color: #333; /* Darker text for inputs */
+  transition: background-color 0.3s;
+}
+
+.profile-item input[readonly] {
+  background-color: #f0f0f0; /* Grey background for readonly fields */
+}
+
+.profile-item input:focus {
+  outline: none;
+  border-color: #F3C922; /* Yellow border on focus */
+  background-color: #ffffff;
+}
+
+.children-enrolled {
+  margin-top: 30px;
+}
+
+.child-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.child-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  margin-right: 15px;
+}
+
+.child-details {
+  font-size: 1rem;
+  color: #E4E4E4; /* Light text color for child details */
+}
+
+/* Edit and Save Button */
+.profile-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+button {
+  padding: 12px 20px;
+  border: none;
+  background-color: #3b4f81;
+  color: white;
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+button:hover {
+  background-color: #f3c922;
+  transform: scale(1.05);
+}
+
+button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(243, 201, 34, 0.5);
+}
+
+.success-message {
+  position: fixed; /* Fix it to the top */
+  top: 20px;  /* Adjust the space from the top */
+  left: 50%;
+  transform: translateX(-50%); /* Center it horizontally */
+  background-color: #4caf50; /* Green background */
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  text-align: center;
+  font-weight: bold;
+  z-index: 1000; /* Ensure it's on top of other elements */
+  width: auto;
+  max-width: 90%;
+  box-sizing: border-box;
+  transition: opacity 0.5s ease;
+}
+
+/* Sidebar Styles */
+.parent-sidebar {
+  width: 250px;
+  background-color: #3b4f81;
+  color: white;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.sidebar-header h2 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.sidebar-menu {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.sidebar-menu li {
+  padding: 15px 0;
+  cursor: pointer;
+}
+
+.sidebar-menu li.active {
+  background-color: #f3c922;
+  color: #333;
+}
+
+.sidebar-menu li a {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.sidebar-footer {
+  padding-top: 20px;
+  cursor: pointer;
+  color: #f3c922;
+  text-align: center;
+}
+
+/* Profile Header */
+.profile-header-container {
+  display: flex;
+  justify-content: space-between; /* Spread the items across the header */
+  align-items: center;
+  background-color: #3b4f81; /* Header background color */
+  color: white;
+  padding: 15px 20px;  /* Adjusted padding for a cleaner look */
+  border-radius: 8px;
+  width: 100%; /* Ensure the header takes the full available width */
+  box-sizing: border-box; /* Make sure padding is included in the width */
+}
+
+.profile-header-info {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; /* Align text and icon to the right side */
+  flex-grow: 1;
+}
+
+.cradle-of-learners {
+  font-size: 1.2rem;
+  color: white;
+  margin-right: 10px; /* Space between text and icon */
+  text-align: right;
+}
+
+.profile-icon-container {
+  width: 40px; /* Icon size */
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.profile-circle-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+h1 {
+  font-size: 1.8rem;
+  color: white;
+}
+
+/* Profile Labels */
+.profile-info p {
+  color: #E4E4E4; /* Lighter text color for better readability */
+  font-size: 1.1rem; /* Slightly bigger text for better readability */
+}
+
+/* Labels for "Parent ID" and "Children Enrolled" */
+.profile-info p span, .children-enrolled h4 {
+  color: #E4E4E4; /* Light text color */
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+/* Make the children enrolled section readable */
+.children-enrolled {
+  color: #E4E4E4; /* Light text color */
+  font-size: 1rem;
+}
