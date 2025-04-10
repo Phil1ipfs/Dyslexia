@@ -1,426 +1,410 @@
 // src/pages/Teachers/StudentDetails.jsx
 import React, { useState } from 'react';
-import '../../css/Teachers/StudentDetails.css';
-import { FaPaperPlane } from 'react-icons/fa';
+import { FaPaperPlane, FaUser, FaEnvelope, FaPhone, FaCalendarAlt, FaBook, FaHome, FaUsers } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip,
-  LineChart, Line, PieChart, Pie, Cell, Area,
-  CartesianGrid, ReferenceLine, ResponsiveContainer
-} from 'recharts';
+import '../../css/Teachers/StudentDetails.css';
 
-const activityCategories = {
-  A: {
-    label: 'Panimulang Pagbasa (Emergent Reader)',
-    categories: ['Alpabeto at Tunog', 'Pagkilala ng Larawan', 'Pakikinig sa Kwento']
-  },
-  B: {
-    label: 'Maagang Yugto ng Pagbasa (Early Reader)',
-    categories: ['Sight Words', 'Simpleng Pangungusap', 'Kwento ng Pamilya']
-  },
-  C: {
-    label: 'Nagpapaunlad na Yugto (Developing Reader)',
-    categories: ['Pangunahing Ideya', 'Detalye ng Talata', 'Paggamit ng Konteksto']
-  },
-  D: {
-    label: 'Malayang Pagbasa (Fluent Reader)',
-    categories: ['Paglalagom', 'Paghinuha', 'Pagkasunod-sunod ng Kwento']
-  },
-  E: {
-    label: 'Mahusay na Mambabasa (Proficient Reader)',
-    categories: ['Kritikal na Pagsusuri', 'Layunin ng May-akda', 'Tekstong Impormatibo']
-  }
-};
+/* ====================================================
+   Sub-Components
+   ==================================================== */
 
-const StudentDetails = () => {
-  const [expandedItems, setExpandedItems] = useState({});
-  const [localFeedback, setLocalFeedback] = useState([]);
-  const [activeTab, setActiveTab] = useState('Progress');
-  const location = useLocation();
-  const navigate = useNavigate();
-  const mockStudent = location.state?.student;
+// Header component
+const StudentHeader = ({ onBack, teacherName, teacherAvatar }) => (
+  <div className="std-header">
+    <div className="std-header-left">
+      <button onClick={onBack} className="std-back-btn">
+        <span>←</span>
+      </button>
+      <h2>Student Details</h2>
+    </div>
+    <div className="std-header-right">
+      <div className="std-teacher-name">{teacherName}</div>
+      <div className="std-teacher-avatar">{teacherAvatar}</div>
+    </div>
+  </div>
+);
 
-  // If no student data is found, show an error message and a button to go back.
-  if (!mockStudent) {
-    return (
-      <div className="student-details-container">
-        <h2>No student data found</h2>
-        <p>Please access this page by clicking "View Details" from the View Student page.</p>
-        <button onClick={() => navigate('/teacher/view-student')} className="view-btn">
-          Back to Students
-        </button>
-      </div>
-    );
-  }
-
-  const combinedFeedback = [...(mockStudent.feedbackHistory || []), ...localFeedback];
-
-  const renderChart = (chart) => {
-    switch (chart.type) {
-      case 'bar': {
-        const match = chart.desc.match(/\d+/);
-        const barValue = match ? parseInt(match[0], 10) : 0;
-        return (
-          <BarChart width={220} height={120} data={[{ name: 'Progress', value: barValue }]}>
-            <XAxis dataKey="name" hide />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="value" fill="#3B4F81" radius={[6, 6, 0, 0]} />
-          </BarChart>
-        );
-      }
-      case 'line': {
-        const lineMatches = chart.desc.match(/\d+/g);
-        if (!lineMatches || lineMatches.length < 2) {
-          return <p style={{ fontStyle: 'italic', color: '#999' }}>No numeric data provided.</p>;
-        }
-        return (
-          <LineChart
-            width={220}
-            height={120}
-            data={[
-              { name: 'Start', value: parseInt(lineMatches[0]) },
-              { name: 'Now', value: parseInt(lineMatches[1]) }
-            ]}
-          >
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey="value" stroke="#3B4F81" strokeWidth={2} />
-          </LineChart>
-        );
-      }
-      case 'donut': {
-        const match = chart.desc.match(/\d+/);
-        const percent = match ? parseInt(match[0], 10) : 0;
-        return (
-          <PieChart width={220} height={120}>
-            <Pie
-              data={[
-                { name: 'Completed', value: percent },
-                { name: 'Remaining', value: 100 - percent },
-              ]}
-              cx="50%"
-              cy="50%"
-              innerRadius={35}
-              outerRadius={50}
-              dataKey="value"
-            >
-              <Cell fill="#3B4F81" />
-              <Cell fill="#ddd" />
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        );
-      }
-      default:
-        return <div style={{ color: 'gray' }}>Chart Unavailable</div>;
-    }
-  };
-
-  const sendFeedback = () => {
-    const message = document.getElementById('feedbackInput').innerHTML.trim();
-    if (!message) {
-      alert('Please enter feedback before sending.');
-      return;
-    }
-    const newFeedback = {
-      date: new Date().toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }),
-      message
-    };
-    setLocalFeedback(prev => [...prev, newFeedback]);
-    alert(`Sending feedback to ${mockStudent.parent} at ${mockStudent.email}:\n\n${message}`);
-    document.getElementById('feedbackInput').innerHTML = '';
-  };
-
-  const studentInitials = mockStudent.name
+// Student Profile Card Component
+const StudentProfileCard = ({ student }) => {
+  const studentInitials = student.name
     .split(' ')
     .map(part => part[0])
     .join('')
     .toUpperCase();
 
   return (
-    <>
-      <div className="student-details-container">
-        <div className="student-details-header">
-          <div className="header-left">
-            <button onClick={() => navigate('/teacher/view-student')} className="view-btn">
-              ←
-            </button>
-            <h2>Student Details</h2>
-          </div>
-          <div className="header-right">
-            <div className="teacher-name">Cradle of Learners Inc.</div>
-            <div className="teacher-avatar">TC</div>
-          </div>
+    <div className="std-profile-container">
+      <div className="std-profile-header">
+        <h3>Personal Information</h3>
+      </div>
+      
+      <div className="std-profile-content">
+        <div className="std-avatar-section">
+          <div className="std-student-avatar">{studentInitials}</div>
+          <h2 className="std-student-name">{student.name}</h2>
+          <span className="std-student-id">ID: {student.id || 'STD-' + Math.floor(1000 + Math.random() * 9000)}</span>
         </div>
-  
-        <div className="student-profile-box">
-          <div className="student-avatar">{studentInitials}</div>
-          <div className="student-info">
-            <h3>{mockStudent.name}</h3>
-            <p>Age: {mockStudent.age}</p>
-            <p>Reading Level: {mockStudent.readingLevel}</p>
-            <p>Parent(s): {mockStudent.parent}</p>
-          </div>
-          <div className="reading-box">
-            <strong>Reading Performance</strong>
-            <div className="progress-bar">
-              <div
-                className="bar-fill"
-                style={{ width: `${mockStudent.readingPerformance}%` }}
-              />
-            </div>
-            <p>
-              Activities Completed: {mockStudent.activitiesCompleted}/{mockStudent.totalActivities}
-            </p>
-            <p>Last Activity: {mockStudent.lastActivity}</p>
-          </div>
-        </div>
-  
-        <div className="student-tabs">
-          {['Progress', 'Activities Result', 'Feedback History', 'Family'].map(tab => (
-            <button
-              key={tab}
-              className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-  
-        <div className="tab-content">
-          {activeTab === 'Progress' && (
-            <>
-              <h3>Reading Progress Overview</h3>
-              <div className="progress-overview-grid">
-                {mockStudent.progressCharts.map((chart, i) => (
-                  <div key={i} className="progress-card">
-                    <strong className="chart-title">{chart.title}</strong>
-                    <div className="real-chart">{renderChart(chart)}</div>
-                    <p className="chart-desc">{chart.desc}</p>
-                  </div>
-                ))}
+        
+        <div className="std-info-section">
+          <div className="std-info-row">
+            <div className="std-info-item">
+              <div className="std-info-icon">
+                <FaCalendarAlt />
               </div>
-              <div className="recommendations-container">
-                <h4>Prescriptive Recommendations</h4>
-                <ul>
-                  <li>Practice letter-sound associations daily</li>
-                  <li>Short reading drills after class</li>
-                  <li>Encourage reading simple stories at home</li>
-                </ul>
-              </div>
-              <div className="progress-bottom-grid">
-                <div className="recent-activities-box">
-                  <strong className="section-title">Recent Activity Performance</strong>
-                  {mockStudent.activities.map((activity, index) => {
-                    const percentScore = Math.round((activity.score / activity.total) * 100);
-                    return (
-                      <div key={index} className="activity-item">
-                        <div className="activity-icon">📘</div>
-                        <div className="activity-info">
-                          <p className="activity-title">{activity.title}</p>
-                          <p className="activity-meta">
-                            {activity.time} | Score:
-                            <span
-                              className={`score-badge ${
-                                percentScore >= 80 ? 'green'
-                                : percentScore >= 70 ? 'yellow'
-                                : 'red'
-                              }`}
-                            >
-                              {percentScore}%
-                            </span>
-                          </p>
-                          <div className="progress-bar">
-                            <div
-                              className="bar-fill"
-                              style={{
-                                width: `${percentScore}%`,
-                                background:
-                                  percentScore >= 80 ? '#2e7d32'
-                                  : percentScore >= 70 ? '#e67e22'
-                                  : '#c62828'
-                              }}
-                            ></div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="feedback-box">
-                  <strong className="section-heading">Send Feedback to Parents</strong>
-                  <div className="feedback-toolbar">
-                    <button onClick={() => document.execCommand('bold')}><strong>B</strong></button>
-                    <button onClick={() => document.execCommand('italic')}><em>I</em></button>
-                    <button onClick={() => document.execCommand('underline')}><u>U</u></button>
-                    <button onClick={() => document.execCommand('insertUnorderedList')}>• List</button>
-                    <button onClick={() => (document.getElementById('feedbackInput').innerHTML = '')}>🧹 Clear</button>
-                  </div>
-                  <div
-                    id="feedbackInput"
-                    className="feedback-editor"
-                    contentEditable
-                    placeholder="Write feedback message..."
-                  />
-                  <div className="send-footer">
-                    <div className="recipient-box">
-                      <div className="recipient-details">
-                        <div className="recipient-line">
-                          <span className="label">To:</span>
-                          <span className="value">{mockStudent.parent}</span>
-                        </div>
-                        <div className="recipient-line">
-                          <span className="label">Email:</span>
-                          <span className="value">{mockStudent.email}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <button className="send-btn" onClick={sendFeedback}>
-                      <FaPaperPlane /> Send
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-          {activeTab === 'Activities Result' && (
-            <>
-              <h3 className="activity-head">
-                {activityCategories[mockStudent.readingLevel]?.label || 'Reading Category'}
-              </h3>
-              <div className="activities-result-section">
-                {activityCategories[mockStudent.readingLevel]?.categories.map((cat, catIndex) => {
-                  const activitiesInCategory = mockStudent.activities.filter(
-                    act => act.category === cat
-                  );
-                  return (
-                    <div key={catIndex} className="activity-category">
-                      <h4 className="category-title">{cat}</h4>
-                      {activitiesInCategory.length > 0 ? (
-                        activitiesInCategory.map((act, idx) => {
-                          const percent = Math.round((act.score / act.total) * 100);
-                          const barColor =
-                            percent >= 80 ? '#2e7d32'
-                            : percent >= 60 ? '#e67e22'
-                            : '#c62828';
-                          const dropdownKey = `${cat}-${idx}`;
-                          const isExpanded = expandedItems[dropdownKey] || false;
-                          return (
-                            <div key={idx} className="activity-item-box">
-                              <div className="activity-info-full">
-                                <div className="activity-head">
-                                  <p className="activity-title">{act.title}</p>
-                                  <p className="activity-score">
-                                    <strong>{act.score}/{act.total}</strong>
-                                  </p>
-                                </div>
-                                <p className="activity-time">{act.time}</p>
-                                <div className="progress-bar mt-1">
-                                  <div
-                                    className="bar-fill"
-                                    style={{ width: `${percent}%`, backgroundColor: barColor }}
-                                  />
-                                </div>
-                                {act.questions && (
-                                  <div className="activity-dropdown">
-                                    <button
-                                      className="dropdown-toggle"
-                                      onClick={() => {
-                                        setExpandedItems(prev => ({
-                                          ...prev,
-                                          [dropdownKey]: !isExpanded
-                                        }));
-                                      }}
-                                    >
-                                      {isExpanded ? '▲ Collapse Questions' : '▼ Show Questions'}
-                                    </button>
-                                    {isExpanded && (
-                                      <ul className="question-list">
-                                        {act.questions.map((q, i) => (
-                                          <li key={i} className={`question-item ${q.correct ? 'correct' : 'incorrect'}`}>
-                                            <span className="question-text">{q.text}</span>
-                                            <span className="question-result">
-                                              {q.correct ? '✔ Correct' : '✘ Incorrect'}
-                                            </span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <p className="no-activity">No activities listed for this category.</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-          {activeTab === 'Feedback History' && (
-            <>
-              <h3>Feedback History</h3>
-              <ul className="feedback-history">
-                {combinedFeedback.map((fb, i) => (
-                  <li key={i}>
-                    <strong>{fb.date}</strong>
-                    <p>{fb.message}</p>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-          {activeTab === 'Family' && (
-            <div className="family-tab">
-              <strong>Family Information</strong>
-              <div className="family-info-card">
-                <div className="family-grid">
-                  <div className="family-avatar">
-                    {mockStudent.parent.split(' ').map(word => word[0]).join('').toUpperCase()}
-                  </div>
-                  <div className="family-grid-details">
-                    <div className="info-pair">
-                      <p><strong>Parents:</strong> {mockStudent.parent}</p>
-                      <p><strong>Contact:</strong> {mockStudent.contact}</p>
-                    </div>
-                    <div className="info-pair">
-                      <p><strong>Email:</strong> {mockStudent.email}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="siblings">
-                <strong>Siblings</strong>
-                {mockStudent.siblings && mockStudent.siblings.length > 0 ? (
-                  mockStudent.siblings.map((sib, i) => (
-                    <div key={i} className="sibling-card">
-                      <div className="sibling-avatar">
-                        {sib.name.split(' ').map(w => w[0]).join('').toUpperCase()}
-                      </div>
-                      <div className="sibling-info">
-                        <p><strong>{sib.name}</strong></p>
-                        <p>Grade: {sib.grade} | ID: {sib.id}</p>
-                        <p>Age: {sib.age} | Reading Level: {sib.readingLevel}</p>
-                      </div>
-                      <button className="view-btn">View Details</button>
-                    </div>
-                  ))
-                ) : (
-                  <p className="no-siblings">No siblings listed for this student.</p>
-                )}
+              <div className="std-info-content">
+                <span className="std-info-label">Age</span>
+                <span className="std-info-value">{student.age} years old</span>
               </div>
             </div>
-          )}
+            
+            <div className="std-info-item">
+              <div className="std-info-icon">
+                <FaBook />
+              </div>
+              <div className="std-info-content">
+                <span className="std-info-label">Reading Level</span>
+                <span className="std-info-value">{student.readingLevel}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="std-info-row">
+            <div className="std-info-item">
+              <div className="std-info-icon">
+                <FaHome />
+              </div>
+              <div className="std-info-content">
+                <span className="std-info-label">Address</span>
+                <span className="std-info-value">{student.address || 'Not provided'}</span>
+              </div>
+            </div>
+            
+            <div className="std-info-item">
+              <div className="std-info-icon">
+                <FaUsers />
+              </div>
+              <div className="std-info-content">
+                <span className="std-info-label">Class/Section</span>
+                <span className="std-info-value">{student.classSection || 'Not assigned'}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </>
+    </div>
+  );
+};
+
+// Tab buttons component
+const StudentTabs = ({ activeTab, setActiveTab }) => {
+  const tabs = ['Family Information', 'Feedback History'];
+  
+  return (
+    <div className="std-tabs">
+      {tabs.map(tab => (
+        <button
+          key={tab}
+          className={`std-tab-btn ${activeTab === tab ? 'active' : ''}`}
+          onClick={() => setActiveTab(tab)}
+        >
+          {tab}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+// Family Information Tab component
+const FamilyTab = ({ student }) => {
+  const parentInitials = student.parent
+    ? student.parent.split(' ').map(word => word[0]).join('').toUpperCase()
+    : 'P';
+    
+  return (
+    <div className="std-family-tab">
+      <div className="std-parent-section">
+        <h3 className="std-section-title">Parent Information</h3>
+        <div className="std-parent-card">
+          <div className="std-parent-avatar">{parentInitials}</div>
+          <div className="std-parent-details">
+            <div className="std-parent-info-grid">
+              <div className="std-parent-info-item">
+                <div className="std-info-icon"><FaUser /></div>
+                <div className="std-info-content">
+                  <span className="std-info-label">Name</span>
+                  <span className="std-info-value">{student.parent}</span>
+                </div>
+              </div>
+              
+              <div className="std-parent-info-item">
+                <div className="std-info-icon"><FaPhone /></div>
+                <div className="std-info-content">
+                  <span className="std-info-label">Contact</span>
+                  <span className="std-info-value">{student.contact}</span>
+                </div>
+              </div>
+              
+              <div className="std-parent-info-item">
+                <div className="std-info-icon"><FaEnvelope /></div>
+                <div className="std-info-content">
+                  <span className="std-info-label">Email</span>
+                  <span className="std-info-value">{student.email}</span>
+                </div>
+              </div>
+              
+              <div className="std-parent-info-item">
+                <div className="std-info-icon"><FaHome /></div>
+                <div className="std-info-content">
+                  <span className="std-info-label">Address</span>
+                  <span className="std-info-value">{student.address || 'Same as student'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="std-siblings-section">
+        <h3 className="std-section-title">Siblings</h3>
+        {student.siblings && student.siblings.length > 0 ? (
+          <div className="std-siblings-list">
+            {student.siblings.map((sib, i) => {
+              const sibInitials = sib.name.split(' ').map(w => w[0]).join('').toUpperCase();
+              return (
+                <div key={i} className="std-sibling-card">
+                  <div className="std-sibling-avatar">{sibInitials}</div>
+                  <div className="std-sibling-info">
+                    <p className="std-sibling-name">{sib.name}</p>
+                    <div className="std-sibling-details">
+                      <span>Grade: {sib.grade}</span>
+                      <span>Age: {sib.age}</span>
+                      <span>Reading Level: {sib.readingLevel}</span>
+                      <span>ID: {sib.id}</span>
+                    </div>
+                  </div>
+                  <button className="std-view-sibling-btn">View</button>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="std-no-siblings">No siblings registered in the system.</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Feedback Tab components
+const FeedbackHistoryItem = ({ feedback }) => (
+  <div className="std-feedback-item">
+    <div className="std-feedback-item-header">
+      <span className="std-feedback-date">{feedback.date}</span>
+      <span className={`std-feedback-type ${feedback.type || 'general'}`}>
+        {feedback.type || 'General'}
+      </span>
+    </div>
+    <div className="std-feedback-content">
+      {feedback.message}
+    </div>
+    <div className="std-feedback-meta">
+      <span className="std-feedback-sender">Sent by: {feedback.sender || 'Teacher'}</span>
+      {feedback.response && (
+        <div className="std-feedback-response">
+          <strong>Parent Response:</strong> {feedback.response}
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+const FeedbackBox = ({ student }) => {
+  const [feedbackType, setFeedbackType] = useState('academic');
+  const [localFeedback, setLocalFeedback] = useState([]);
+  
+  const sendFeedback = () => {
+    const feedbackElement = document.getElementById('std-feedbackInput');
+    const message = feedbackElement.innerHTML.trim();
+    
+    if (!message) {
+      alert('Please enter feedback before sending.');
+      return;
+    }
+    
+    const newFeedback = {
+      date: new Date().toLocaleDateString('en-PH', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      }),
+      type: feedbackType,
+      message,
+      sender: 'Teacher'
+    };
+    
+    setLocalFeedback(prev => [...prev, newFeedback]);
+    alert(`Sending feedback to ${student.parent} at ${student.email}:\n\n${message}`);
+    feedbackElement.innerHTML = '';
+  };
+  
+  return (
+    <div className="std-feedback-box">
+      <h3 className="std-section-title">Send Feedback</h3>
+      
+      <div className="std-feedback-type-selector">
+        <span className="std-feedback-type-label">Feedback type:</span>
+        <div className="std-feedback-type-options">
+          <button 
+            className={`std-feedback-type-btn ${feedbackType === 'academic' ? 'active' : ''}`}
+            onClick={() => setFeedbackType('academic')}
+          >
+            Academic
+          </button>
+          <button 
+            className={`std-feedback-type-btn ${feedbackType === 'behavioral' ? 'active' : ''}`}
+            onClick={() => setFeedbackType('behavioral')}
+          >
+            Behavioral
+          </button>
+          <button 
+            className={`std-feedback-type-btn ${feedbackType === 'concern' ? 'active' : ''}`}
+            onClick={() => setFeedbackType('concern')}
+          >
+            Concern
+          </button>
+          <button 
+            className={`std-feedback-type-btn ${feedbackType === 'positive' ? 'active' : ''}`}
+            onClick={() => setFeedbackType('positive')}
+          >
+            Positive
+          </button>
+        </div>
+      </div>
+      
+      <div className="std-feedback-toolbar">
+        <button onClick={() => document.execCommand('bold')}><strong>B</strong></button>
+        <button onClick={() => document.execCommand('italic')}><em>I</em></button>
+        <button onClick={() => document.execCommand('underline')}><u>U</u></button>
+        <button onClick={() => document.execCommand('insertUnorderedList')}>• List</button>
+        <button onClick={() => (document.getElementById('std-feedbackInput').innerHTML = '')}>Clear</button>
+      </div>
+      
+      <div
+        id="std-feedbackInput"
+        className="std-feedback-editor"
+        contentEditable
+        placeholder="Write feedback message to parent..."
+      />
+      
+      <div className="std-send-footer">
+        <div className="std-recipient-box">
+          <div className="std-recipient-avatar">{student.parent ? student.parent[0] : 'P'}</div>
+          <div className="std-recipient-details">
+            <div className="std-recipient-name">{student.parent}</div>
+            <div className="std-recipient-email">{student.email}</div>
+          </div>
+        </div>
+        <button className="std-send-btn" onClick={sendFeedback}>
+          <FaPaperPlane /> Send Feedback
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const FeedbackHistory = ({ localFeedback, studentFeedback = [] }) => {
+  const combinedFeedback = [...studentFeedback, ...localFeedback];
+  
+  // Group feedback by month
+  const groupedFeedback = combinedFeedback.reduce((groups, item) => {
+    const date = new Date(item.date);
+    const month = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+    
+    if (!groups[month]) {
+      groups[month] = [];
+    }
+    
+    groups[month].push(item);
+    return groups;
+  }, {});
+  
+  return (
+    <div className="std-feedback-history-container">
+      <h3 className="std-section-title">Feedback History</h3>
+      
+      {Object.keys(groupedFeedback).length > 0 ? (
+        Object.entries(groupedFeedback).map(([month, feedbacks]) => (
+          <div key={month} className="std-feedback-month-group">
+            <h4 className="std-feedback-month-title">{month}</h4>
+            <div className="std-feedback-items">
+              {feedbacks.map((feedback, index) => (
+                <FeedbackHistoryItem key={index} feedback={feedback} />
+              ))}
+            </div>
+          </div>
+        ))
+      ) : (
+        <div className="std-no-feedback">
+          <p>No feedback history available for this student.</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const FeedbackTab = ({ student }) => {
+  const [localFeedback, setLocalFeedback] = useState([]);
+  
+  return (
+    <div className="std-feedback-tab">
+      <FeedbackBox student={student} setLocalFeedback={setLocalFeedback} />
+      <FeedbackHistory 
+        localFeedback={localFeedback} 
+        studentFeedback={student.feedbackHistory} 
+      />
+    </div>
+  );
+};
+
+/* ====================================================
+   Main Component: StudentDetails
+   ==================================================== */
+const StudentDetails = () => {
+  const [activeTab, setActiveTab] = useState('Family Information');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const student = location.state?.student;
+
+  // If no student data is found, return an error view
+  if (!student) {
+    return (
+      <div className="std-container">
+        <h2>No student data found</h2>
+        <p>Please access this page by clicking "View Details" from the Students page.</p>
+        <button onClick={() => navigate('/teacher/view-student')} className="std-back-btn">
+          Back to Students
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="std-container">
+      <StudentHeader
+        onBack={() => navigate('/teacher/view-student')}
+        teacherName="Cradle of Learners Inc."
+        teacherAvatar="TC"
+      />
+      
+      <StudentProfileCard student={student} />
+      
+      <StudentTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+      
+      <div className="std-tab-content">
+        {activeTab === 'Family Information' && <FamilyTab student={student} />}
+        {activeTab === 'Feedback History' && <FeedbackTab student={student} />}
+      </div>
+    </div>
   );
 };
 

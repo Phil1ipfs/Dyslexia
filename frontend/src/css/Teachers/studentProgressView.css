@@ -40,7 +40,6 @@ html {
     position: relative;
     min-height: 100vh;
     background-color: var(--primary-color);
-    margin-left: 240px;
     padding: 3rem;
     box-sizing: border-box;
     color: white;

@@ -2,7 +2,7 @@
 .prefed-activities-container {
   background: #3b4f81;
   min-height: 100vh;
-  padding: 2rem 0;
+  padding: 5rem 5rem 2rem 1rem;
   display: flex;
   justify-content: center;
   align-items: flex-start;
