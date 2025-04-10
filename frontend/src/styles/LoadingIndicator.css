@@ -1,0 +1,34 @@
+.loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px 0;
+    color: #666;
+    font-size: 14px;
+  }
+  
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 3px solid rgba(59, 130, 246, 0.2);
+    border-top-color: #3B82F6;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .content-placeholder {
+      padding: 20px;
+    }
+    
+    .content-placeholder h2 {
+      font-size: 20px;
+    }
+  }
