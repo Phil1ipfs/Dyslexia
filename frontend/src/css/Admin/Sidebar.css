@@ -1,0 +1,38 @@
+.sidebar {
+    width: 240px;
+    background: #111c44;
+    color: white;
+    height: 100vh;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .logo {
+    font-weight: bold;
+    margin-bottom: 2rem;
+    font-size: 20px;
+  }
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+  .user-info img {
+    width: 40px;
+    border-radius: 50%;
+  }
+  .menu li {
+    list-style: none;
+    padding: 0.5rem;
+    cursor: pointer;
+  }
+  .menu .active {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+  }
+  .bottom-menu p {
+    cursor: pointer;
+    margin: 10px 0;
+  }

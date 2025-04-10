@@ -23,12 +23,6 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
   "browserslist": {
     "production": [
       ">0.2%",
@@ -43,6 +37,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.2.4"
+    "eslint": "^5.16.0",
+    "eslint-plugin-react": "^7.37.5",
+    "vite": "^6.2.6"
   }
 }

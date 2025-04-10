@@ -18,12 +18,13 @@ import StudentDetails from "./pages/Teachers/StudentDetails";
 import ParentDashboard from "./pages/Parents/ParentDashboard";
 
 // Admin Pages
-import AdminDashboard from "./pages/Admin/AdminDashboard";
+import AdminDashboard from "./components/AdminDashboard";
 
 // Layouts
 import TeacherLayout from "./widgets/TeacherPage/TeacherLayout";
 import ParentLayout from "./widgets/ParentPage/ParentLayout";
 import AdminLayout from "./widgets/AdminPage/AdminLayout";
+
 
 import "./App.css";
 

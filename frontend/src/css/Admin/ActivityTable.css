@@ -1,0 +1,27 @@
+.activity-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .activity-table th, .activity-table td {
+    padding: 1rem;
+    text-align: left;
+  }
+  .activity-table thead {
+    background: #ccc;
+  }
+  .dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 10px;
+  }
+  .approved {
+    color: green;
+    font-weight: bold;
+  }
+  .link {
+    color: #00f;
+    cursor: pointer;
+  }
+  
