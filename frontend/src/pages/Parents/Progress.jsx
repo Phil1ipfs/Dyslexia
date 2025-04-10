@@ -12,7 +12,6 @@ import week4Icon from "../../assets/images/Parents/phonics.png"; // Icon for Wee
 import { Bar, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, LineElement } from 'chart.js';
 
-// Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement,  Title, Tooltip, Legend);
 
 const Progress = () => {
@@ -22,7 +21,7 @@ const Progress = () => {
       week: 1,
       progress: 60,
       level: "Beginner",
-      icon: week1Icon,  // Assign icon to the week
+      icon: week1Icon,  
       details: [
         "Score: 85/100",
         "Time spent: 50 minutes",
