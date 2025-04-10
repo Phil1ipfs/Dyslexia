@@ -93,6 +93,7 @@
   background-color: #F3C922;
   color: #333;
   transform: translateX(6px);
+  padding-left: 1rem;
 }
 
 .sidebar-logout {

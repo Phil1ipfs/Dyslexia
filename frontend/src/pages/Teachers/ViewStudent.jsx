@@ -300,11 +300,11 @@ const ViewStudent = () => {
 
   // For reading-level labels in table
   const readingLevelLabels = {
-    A: 'Antas Uno',
-    B: 'Antas Dalawa',
-    C: 'Antas Tatlo',
-    D: 'Antas Apat',
-    E: 'Antas Lima'
+    A: 'Unang Antas',
+    B: 'Ikalawang Antas',
+    C: 'Ikatlong Antas',
+    D: 'Ikaapat na Antas',
+    E: 'Ikalimang Antas'
   };
 
   const handleSearch = (e) => setSearch(e.target.value.toLowerCase());

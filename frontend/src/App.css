@@ -9,19 +9,18 @@
   html, body, #root {
     height: 100%;
     width: 100%;
+    background: transparent; 
     font-family: 'Atkinson Hyperlegible', sans-serif;
   }
   
   .app-layout {
     display: flex;
   }
-  
-
-  
+    
   .main-content-area {
     flex-grow: 1;
     overflow-y: auto;
-    background-color: #f5f7fb; 
+    background-color: transparent; 
     padding: 0;
   }
   

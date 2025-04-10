@@ -20,7 +20,7 @@ import CreatePracticeModule from "./pages/Teachers/CreatePracticeModule";
 
 // Parent Pages
 import ParentDashboard from "./pages/Parents/ParentDashboard";
-import Feedback from "./pages/Parents/Feedback";  // Assuming this component exists
+import Feedback from "./pages/Parents/Feedback";  
 import Progress from "./pages/Parents/Progress"; 
 
 // Admin Pages

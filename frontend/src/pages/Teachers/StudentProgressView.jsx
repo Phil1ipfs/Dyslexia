@@ -345,8 +345,8 @@ class VisualizationSection extends Component {
                 </button>
               ))}
             </div>
-            <div className="chart-container" ref={this.chartRef}>
-              <div className="chart-grid-lines">
+            <div className="activity-score-chart-container" ref={this.chartRef}>
+            <div className="chart-grid-lines">
                 {[100, 80, 60, 40, 20].map((val, idx) => (
                   <div key={idx} className="chart-grid-line" style={{ bottom: `${val}%` }}>
                     <span className="chart-grid-label">{val}%</span>

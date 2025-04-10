@@ -25,14 +25,16 @@
   }
   
   .view-student-filters select {
-    padding: 0.75rem 1.2rem;
+    padding: 0.6rem 1.2rem;
     font-size: 1rem;
     border-radius: 10px;
     border: none;
     cursor: pointer;
-    width: 100px; 
-    min-width: 180px;
-    height: 30px;  
+    /* Remove the fixed width & height */
+    /* width: 100px; */
+    min-width: 180px; /* keep or adjust as needed */
+    /* height: 30px; */
+    height: auto;      /* let the padding define the height */
   }
   
   .search-icon {
@@ -77,7 +79,6 @@
     border-spacing: 0;
     border-radius: 12px;
     overflow: hidden;
-    background: white;
   }
   
   .view-student-table table {
@@ -119,7 +120,7 @@
     color: white;
     border: none;
     border-radius: 290px;
-    padding: 6px 160px;
+    padding: 6px 16px;
     cursor: pointer;
     font-weight: bold;
     transition: background 0.2s;
