@@ -48,6 +48,9 @@ function App() {
     setIsAuthenticated(false);
   };
 
+  console.log("Authenticated?", isAuthenticated);
+console.log("User type:", userType);
+
   return (
     <BrowserRouter>
       <Routes>

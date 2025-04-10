@@ -16,6 +16,7 @@ import {
   FiCoffee
 } from "react-icons/fi";
 import "../../css/Teachers/TeacherProfile.css";
+import { FiLock, FiEye, FiEyeOff } from "react-icons/fi";
 
 function TeacherProfile() {
   const teacherData = {
@@ -545,8 +546,7 @@ function AvailabilitySchedule({ teacher }) {
 
 
 // ---------------- CHANGE PASSWORD MODAL ---------------- //
-
-import { FiLock, FiEye, FiEyeOff } from "react-icons/fi";
+// (Removed as it has been moved to the top)
 
 
 function ChangePasswordModal({ onClose }) {

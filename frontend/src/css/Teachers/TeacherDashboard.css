@@ -1,11 +1,10 @@
 /* edu-teacher-dashboard.css */
 .edu-dashboard {
-  background: #3b4f81;
-    min-height: 100vh;
-    padding: 1.5rem;
-    box-sizing: border-box;
-    font-family: 'Atkinson Hyperglible', sans-serif;
-    color: #333;
+  padding: 2rem;
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+  min-height: 100vh;
+  margin-left: 240px; 
+  box-sizing: border-box;
 }
 
 /* Main Content */
