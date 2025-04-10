@@ -1,0 +1,55 @@
+/* ParentLayout CSS */
+.parent-layout-container {
+  min-height: 100vh;  /* Make sure the layout takes up at least the full height of the viewport */
+  display: flex;
+  background-color: #3B4F81;
+  position: relative;
+}
+
+.parent-sidebar {
+  width: 250px;  /* Set a fixed width for the sidebar */
+  background-color: #3b4f81;
+  color: white;
+  padding: 20px;
+  border-radius: 8px;
+  position: fixed;  /* Make sure sidebar is fixed on the left */
+  top: 0;
+  left: 0;
+  height: 100%;  /* Make the sidebar span the full height of the screen */
+  z-index: 1000;  /* Ensure the sidebar stays on top */
+}
+
+.main-content-area {
+  margin-left: 250px;  /* Offset the main content to the right so it doesn't overlap the sidebar */
+  padding: 20px;
+  width: calc(100% - 250px);  /* Make sure the content area fills the remaining width */
+  background-color: #f5f7fb;  /* Light background color for the content */
+  box-sizing: border-box;  /* Ensure the padding is included in the width calculation */
+  transition: margin-left 0.3s ease;  /* Smooth transition if sidebar is toggled */
+}
+
+.sidebar-menu li {
+  padding: 15px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-menu li a {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.sidebar-footer {
+  padding-top: 20px;
+  cursor: pointer;
+  color: #f3c922;
+  text-align: center;
+}
+
+.sidebar-menu li.active {
+  background-color: #f3c922;
+  color: #333;
+  transition: background-color 0.3s ease;
+}
