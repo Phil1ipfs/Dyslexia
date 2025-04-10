@@ -16,6 +16,8 @@ import StudentDetails from "./pages/Teachers/StudentDetails";
 
 // Parent Pages
 import ParentDashboard from "./pages/Parents/ParentDashboard";
+import Feedback from "./pages/Parents/Feedback";  // Assuming this component exists
+import Progress from "./pages/Parents/Progress"; 
 
 // Admin Pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
@@ -83,10 +85,10 @@ function App() {
         {/* Protected Parent Routes */}
         {isAuthenticated && userType === "parent" && (
           <Route path="/parent/*" element={<ParentLayout onLogout={handleLogout} />}>
-            <Route path="dashboard" element={<ParentDashboard />} />
-            {/* Add additional Parent routes here */}
-            <Route index element={<Navigate to="dashboard" />} />
-          </Route>
+          <Route path="dashboard" element={<ParentDashboard />} />
+          <Route path="feedback" element={<Feedback />} />
+          <Route path="progress" element={<Progress />} />
+        </Route>
         )}
 
         {/* Protected Admin Routes */}
