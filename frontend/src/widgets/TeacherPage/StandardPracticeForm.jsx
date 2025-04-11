@@ -4,6 +4,7 @@ import {
   FaPlus, FaTrash, FaArrowLeft, FaSave, 
   FaCheck, FaTimes, FaImage, FaQuestionCircle, 
   FaChevronLeft, FaChevronRight, FaInfoCircle 
+
 } from "react-icons/fa";
 import "../../widgets/TeacherPage/StandardPracticeForm.css";
 
@@ -42,20 +43,20 @@ const StandardPracticeForm = ({ concept, studentId }) => {
 
   // Form completion progress
   const calculateProgress = () => {
-    let totalFields = 2; // Title and description
+    let totalFields = 2; 
     let completedFields = 0;
     
     if (moduleTitle.trim()) completedFields++;
     if (moduleDescription.trim()) completedFields++;
     
     questions.forEach(question => {
-      totalFields += 2; // Question text and correct answer selection
+      totalFields += 2;
       if (question.questionText.trim()) completedFields++;
       if (question.hasSetCorrectAnswer) completedFields++;
       
       // Count filled choices
       const filledChoices = question.choices.filter(c => c.text.trim());
-      totalFields += 2; // Need at least 2 choices
+      totalFields += 2; 
       if (filledChoices.length >= 2) completedFields += 2;
       else if (filledChoices.length === 1) completedFields += 1;
     });
@@ -67,7 +68,6 @@ const StandardPracticeForm = ({ concept, studentId }) => {
   const handleImageUpload = (e, questionIndex) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (limit to 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setValidationErrors(prev => {
           const newErrors = { ...prev };
