@@ -19,6 +19,7 @@ import ParentDashboard from "./pages/Parents/ParentDashboard";
 
 // Admin Pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
+import VisualChartsPage from "./pages/Admin/VisualChartsPage";
 
 // Layouts
 import TeacherLayout from "./widgets/TeacherPage/TeacherLayout";
@@ -93,8 +94,11 @@ function App() {
         {isAuthenticated && userType === "admin" && (
           <Route path="/admin/*" element={<AdminLayout onLogout={handleLogout} />}>
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="visual-charts" element={<VisualChartsPage />} />
+            
             {/* Add additional Admin routes here */}
             <Route index element={<Navigate to="dashboard" />} />
+            
           </Route>
         )}
 
