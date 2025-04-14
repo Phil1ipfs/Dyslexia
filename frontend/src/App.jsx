@@ -13,9 +13,15 @@ import ViewStudent from "./pages/Teachers/ViewStudent";
 import ManageActivities from "./pages/Teachers/ManageActivities";
 import TeacherProfile from "./pages/Teachers/TeacherProfile";
 import StudentDetails from "./pages/Teachers/StudentDetails";
+import ManageProgress from "./pages/Teachers/ManageProgress";
+import StudentProgressView from "./pages/Teachers/StudentProgressView";
+import CreatePracticeModule from "./pages/Teachers/CreatePracticeModule";
+
 
 // Parent Pages
 import ParentDashboard from "./pages/Parents/ParentDashboard";
+import Feedback from "./pages/Parents/Feedback";  
+import Progress from "./pages/Parents/Progress"; 
 
 // Admin Pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
@@ -42,6 +48,9 @@ function App() {
     localStorage.removeItem("userType");
     setIsAuthenticated(false);
   };
+
+  console.log("Authenticated?", isAuthenticated);
+console.log("User type:", userType);
 
   return (
     <BrowserRouter>
@@ -76,7 +85,11 @@ function App() {
             <Route path="view-student" element={<ViewStudent />} />
             <Route path="manage-activities" element={<ManageActivities />} />
             <Route path="profile" element={<TeacherProfile />} />
+            <Route path="manage-progress" element={<ManageProgress />} />
+            <Route path="student-progress/:id" element={<StudentProgressView />} />
             <Route path="student-details/:id" element={<StudentDetails />} />
+            <Route path="create-practice-module" element={<CreatePracticeModule />} /> {/* ✅ ADD THIS */}
+
             <Route index element={<Navigate to="dashboard" />} />
           </Route>
         )}
@@ -84,10 +97,10 @@ function App() {
         {/* Protected Parent Routes */}
         {isAuthenticated && userType === "parent" && (
           <Route path="/parent/*" element={<ParentLayout onLogout={handleLogout} />}>
-            <Route path="dashboard" element={<ParentDashboard />} />
-            {/* Add additional Parent routes here */}
-            <Route index element={<Navigate to="dashboard" />} />
-          </Route>
+          <Route path="dashboard" element={<ParentDashboard />} />
+          <Route path="feedback" element={<Feedback />} />
+          <Route path="progress" element={<Progress />} />
+        </Route>
         )}
 
         {/* Protected Admin Routes */}

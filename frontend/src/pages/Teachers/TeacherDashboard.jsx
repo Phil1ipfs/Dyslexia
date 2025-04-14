@@ -10,11 +10,11 @@ import {
   ResponsiveContainer,
   ReferenceLine
 } from 'recharts';
-import '../../css/Teachers/TeacherDashboard.css';
 import students from '../../assets/icons/Teachers/students.png';
 import parent from '../../assets/icons/Teachers/parent.png';
+import '../../css/Teachers/TeacherDashboard.css'; // Using a specific CSS filename
 
-const TeacherDashboard = () => {
+const EduTeacherDashboard = () => {
   const [progressType, setProgressType] = useState('phonics');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [timeFrame, setTimeFrame] = useState('week');
@@ -68,51 +68,51 @@ const TeacherDashboard = () => {
   };
 
   return (
-    <div className="dashboard-container">
-      <main className="main-content">
-        <h1 className="page-title">Dashboard Overview</h1>
+    <div className="edu-dashboard">
+      <main className="edu-dashboard__content">
+        <h1 className="edu-dashboard__title">Dashboard Overview</h1>
         
-        <div className="stats-cards">
-          <div className="stat-card total-students">
-            <img src={students} alt="Total Students" className="stat-icon" />
-            <h3>Total Students</h3>
-            <p>25</p>
+        <div className="edu-dashboard__stats">
+          <div className="edu-stat-card edu-stat-card--students">
+            <img src={students} alt="Total Students" className="edu-stat-card__icon" />
+            <h3 className="edu-stat-card__heading">Total Students</h3>
+            <p className="edu-stat-card__value">25</p>
           </div>
-          <div className="stat-card pending-feedback">
-            <img src={parent} alt="Total Parent" className="stat-icon" />
-            <h3>Total Parent</h3>
-            <p>15</p>
+          <div className="edu-stat-card edu-stat-card--parents">
+            <img src={parent} alt="Total Parent" className="edu-stat-card__icon" />
+            <h3 className="edu-stat-card__heading">Total Parent</h3>
+            <p className="edu-stat-card__value">15</p>
           </div>
         </div>
 
-        <div className="chart-section">
-          <div className="chart-header">
-            <h2>{timeFrame === 'week' ? 'Weekly' : 'Daily'} Progress</h2>
-            <div className="chart-controls">
+        <div className="edu-dashboard__chart-section">
+          <div className="edu-chart__header">
+            <h2 className="edu-chart__title">{timeFrame === 'week' ? 'Weekly' : 'Daily'} Progress</h2>
+            <div className="edu-chart__controls">
               <button 
-                className="timeframe-toggle"
+                className="edu-timeframe-btn"
                 onClick={toggleTimeFrame}
               >
                 {timeFrame === 'week' ? 'Show Daily' : 'Show Weekly'}
               </button>
-              <div className="dropdown-container">
+              <div className="edu-dropdown">
                 <button 
-                  className="dropdown-button"
+                  className="edu-dropdown__trigger"
                   onClick={toggleDropdown}
                 >
                   {progressType === 'phonics' ? 'Phonics' : 'Word Recognition'}
-                  <span className={`dropdown-arrow ${isDropdownOpen ? 'open' : ''}`}>▼</span>
+                  <span className={`edu-dropdown__arrow ${isDropdownOpen ? 'edu-dropdown__arrow--open' : ''}`}>▼</span>
                 </button>
                 {isDropdownOpen && (
-                  <div className="dropdown-menu">
+                  <div className="edu-dropdown__menu">
                     <div 
-                      className={`dropdown-item ${progressType === 'phonics' ? 'active' : ''}`}
+                      className={`edu-dropdown__item ${progressType === 'phonics' ? 'edu-dropdown__item--active' : ''}`}
                       onClick={() => selectProgressType('phonics')}
                     >
                       Phonics
                     </div>
                     <div 
-                      className={`dropdown-item ${progressType === 'wordRecognition' ? 'active' : ''}`}
+                      className={`edu-dropdown__item ${progressType === 'wordRecognition' ? 'edu-dropdown__item--active' : ''}`}
                       onClick={() => selectProgressType('wordRecognition')}
                     >
                       Word Recognition
@@ -123,13 +123,7 @@ const TeacherDashboard = () => {
             </div>
           </div>
 
-          <div className="chart-container" style={{
-              backgroundColor: 'rgba(59, 79, 129, 0.2)',
-              borderRadius: '10px',
-              padding: '20px',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-          }}>
+          <div className="edu-chart__container">
             <ResponsiveContainer width="100%" height={500}>
               <LineChart 
                 data={progressData[progressType][timeFrame]}
@@ -161,7 +155,7 @@ const TeacherDashboard = () => {
                   tickFormatter={(value) => `${value}%`}
                 />
                 <defs>
-                  <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="eduAreaFill" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3B4F81" stopOpacity={0.8}/>
                     <stop offset="95%" stopColor="#3B4F81" stopOpacity={0.1}/>
                   </linearGradient>
@@ -169,7 +163,7 @@ const TeacherDashboard = () => {
                 <Area
                   type="monotone"
                   dataKey="progress"
-                  fill="url(#areaFill)"
+                  fill="url(#eduAreaFill)"
                   stroke="none"
                   activeDot={false}
                 />
@@ -217,4 +211,4 @@ const TeacherDashboard = () => {
   );
 };
 
-export default TeacherDashboard;
+export default EduTeacherDashboard;

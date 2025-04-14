@@ -1,0 +1,21 @@
+.dialog-overlay {
+    background-color: rgba(0, 0, 0, 0.5);
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+  }
+  
+  .dialog-content.narrow {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 500px;
+    margin: auto;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  }
+  
