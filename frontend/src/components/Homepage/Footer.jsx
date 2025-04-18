@@ -1,6 +1,6 @@
 import React from "react";
 import literexiaLogo from "../../assets/images/Teachers/LITEREXIA.png"; 
-import "../../widgets/Homepage/Footer.css";
+import "../../components/Homepage/Footer.css";
 
 
 

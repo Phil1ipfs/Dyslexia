@@ -25,11 +25,12 @@ import Progress from "./pages/Parents/Progress";
 
 // Admin Pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
+import VisualChartsPage from "./pages/Admin/VisualChartsPage";
 
 // Layouts
-import TeacherLayout from "./widgets/TeacherPage/TeacherLayout";
-import ParentLayout from "./widgets/ParentPage/ParentLayout";
-import AdminLayout from "./widgets/AdminPage/AdminLayout";
+import TeacherLayout from "./components/TeacherPage/TeacherLayout";
+import ParentLayout from "./components/ParentPage/ParentLayout";
+import AdminLayout from "./components/Admin/AdminLayout";
 
 import "./App.css";
 
@@ -106,8 +107,11 @@ console.log("User type:", userType);
         {isAuthenticated && userType === "admin" && (
           <Route path="/admin/*" element={<AdminLayout onLogout={handleLogout} />}>
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="visual-charts" element={<VisualChartsPage />} />
+            
             {/* Add additional Admin routes here */}
             <Route index element={<Navigate to="dashboard" />} />
+            
           </Route>
         )}
 

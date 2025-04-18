@@ -6,7 +6,7 @@ import {
   FaChevronLeft, FaChevronRight, FaInfoCircle 
 
 } from "react-icons/fa";
-import "../../widgets/TeacherPage/StandardPracticeForm.css";
+import "../../components/TeacherPage/StandardPracticeForm.css";
 
 const StandardPracticeForm = ({ concept, studentId }) => {
   const navigate = useNavigate();
