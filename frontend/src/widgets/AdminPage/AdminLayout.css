@@ -1,0 +1,23 @@
+/* src/components/Layout/AdminLayout.css */
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
+  }
+  
+  .admin-content {
+    flex: 1;
+    /* Add left margin to prevent overlap with the sidebar */
+    margin-left: 250px; /* Adjust this based on your sidebar width */
+    padding: 20px;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+  }
+  
+  /* Mobile responsiveness */
+  @media (max-width: 768px) {
+    .admin-content {
+      margin-left: 0;
+      padding: 15px;
+      padding-top: 70px; /* Add padding for mobile navbar */
+    }
+  }

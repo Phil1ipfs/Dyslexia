@@ -1,13 +1,10 @@
 // src/pages/Admin/AdminDashboard.jsx
 import React from 'react';
+import DashboardComponent from '../../components/Admin/Dashboard/AdminDashboard';
+
 
 const AdminDashboard = () => {
-  return (
-    <div>
-      <h1>Admin Dashboard</h1>
-      <p>Welcome to the Admin Dashboard. Here you can manage users, view reports, and configure the system.</p>
-    </div>
-  );
+  return <DashboardComponent />;
 };
 
 export default AdminDashboard;

@@ -17,7 +17,6 @@ import ManageProgress from "./pages/Teachers/ManageProgress";
 import StudentProgressView from "./pages/Teachers/StudentProgressView";
 import CreatePracticeModule from "./pages/Teachers/CreatePracticeModule";
 
-
 // Parent Pages
 import ParentDashboard from "./pages/Parents/ParentDashboard";
 import Feedback from "./pages/Parents/Feedback";  
@@ -25,6 +24,12 @@ import Progress from "./pages/Parents/Progress";
 
 // Admin Pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
+import VisualChartsPage from "./pages/Admin/VisualChartsPage";
+import SubmissionOverview from "./pages/Admin/SubmissionOverview";
+import StudentOverviewPage from './pages/Admin/StudentOverviewPage';
+import TeacherListPage from './pages/Admin/TeacherListPage';
+import ParentListPage from './pages/Admin/ParentListPage';
+import AddAccountPage from './pages/Admin/AddAccountPage';
 
 // Layouts
 import TeacherLayout from "./widgets/TeacherPage/TeacherLayout";
@@ -84,8 +89,7 @@ function App() {
             <Route path="manage-progress" element={<ManageProgress />} />
             <Route path="student-progress/:id" element={<StudentProgressView />} />
             <Route path="student-details/:id" element={<StudentDetails />} />
-            <Route path="create-practice-module" element={<CreatePracticeModule />} /> {/* ✅ ADD THIS */}
-
+            <Route path="create-practice-module" element={<CreatePracticeModule />} />
             <Route index element={<Navigate to="dashboard" />} />
           </Route>
         )}
@@ -93,17 +97,26 @@ function App() {
         {/* Protected Parent Routes */}
         {isAuthenticated && userType === "parent" && (
           <Route path="/parent/*" element={<ParentLayout onLogout={handleLogout} />}>
-          <Route path="dashboard" element={<ParentDashboard />} />
-          <Route path="feedback" element={<Feedback />} />
-          <Route path="progress" element={<Progress />} />
-        </Route>
+            <Route path="dashboard" element={<ParentDashboard />} />
+            <Route path="feedback" element={<Feedback />} />
+            <Route path="progress" element={<Progress />} />
+            <Route index element={<Navigate to="dashboard" />} />
+          </Route>
         )}
 
         {/* Protected Admin Routes */}
         {isAuthenticated && userType === "admin" && (
           <Route path="/admin/*" element={<AdminLayout onLogout={handleLogout} />}>
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="visual-charts" element={<VisualChartsPage />} />
+            <Route path="submission-overview" element={<SubmissionOverview />} />
             {/* Add additional Admin routes here */}
+
+          <Route path="user-lists" element={<StudentOverviewPage />} />
+          <Route path="user-lists/student-list" element={<StudentOverviewPage />} />
+          <Route path="user-lists/teacher-list" element={<TeacherListPage />} />
+          <Route path="user-lists/parent-list" element={<ParentListPage />} />
+          <Route path="user-lists/add-account" element={<AddAccountPage />} />
             <Route index element={<Navigate to="dashboard" />} />
           </Route>
         )}
