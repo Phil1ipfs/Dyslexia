@@ -2,9 +2,9 @@
 
 import React from "react";
 import { useLocation } from "react-router-dom";
-import StandardForm from "../../widgets/TeacherPage/StandardPracticeForm";
-import { AudioPracticeForm } from "../../widgets/TeacherPage/AudioPracticeForm.jsx";
-import { ReadingComprehensionForm } from "../../widgets/TeacherPage/ReadingPracticeForm";
+import StandardForm from "../../components/TeacherPage/StandardPracticeForm";
+import { AudioPracticeForm } from "../../components/TeacherPage/AudioPracticeForm.jsx";
+import { ReadingComprehensionForm } from "../../components/TeacherPage/ReadingPracticeForm";
 
 import "../../css/Teachers/PracticeModule.css"; // Import the CSS file for styling
 

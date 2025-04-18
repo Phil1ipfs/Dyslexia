@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
-import './AdminDashboard.css';
+import '../../../css/Admin/Dashboard/AdminDashboard.css';
 
 // Dashboard Card Component
 const DashboardCard = ({ label, value, icon, iconClass }) => (

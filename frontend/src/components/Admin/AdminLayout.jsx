@@ -1,8 +1,8 @@
-// src/widgets/AdminPage/AdminLayout.jsx
+// src/components/Layout/AdminLayout.jsx
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import NavigationBar from '../../components/Layout/NavigationBar/NavigationBar';
-import '../../components/Layout/AdminLayout.css';
+import NavigationBar from './Layout/NavigationBar/NavigationBar';
+import './AdminLayout.css';
 
 const AdminLayout = ({ onLogout }) => {
   return (

@@ -1,6 +1,7 @@
 // src/components/Admin/Dashboard/DashboardCards.jsx
 import React from 'react';
-import './DashboardCards.css';
+import '../../../css/Admin/Dashboard/DashboardCards.css';
+
 
 // Icon components
 const UsersIcon = () => (

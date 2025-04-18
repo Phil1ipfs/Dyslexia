@@ -3,9 +3,9 @@ import React from "react";
 import "../css/Homepage.css";
 import "../css/Teachers/responsive.css";
 
-// widgets reusable
-import Navbar from "../widgets/Homepage/Navbar";
-import Footer from "../widgets/Homepage/Footer";
+// components reusable
+import Navbar from "../components/Homepage/Navbar";
+import Footer from "../components/Homepage/Footer";
 
 import heroCloud1 from "../assets/images/Homepage/hero-clouds.png";
 import heroCloud2 from "../assets/images/Homepage/hero-clouds2.png";

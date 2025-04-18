@@ -28,9 +28,9 @@ import AdminDashboard from "./pages/Admin/AdminDashboard";
 import VisualChartsPage from "./pages/Admin/VisualChartsPage";
 
 // Layouts
-import TeacherLayout from "./widgets/TeacherPage/TeacherLayout";
-import ParentLayout from "./widgets/ParentPage/ParentLayout";
-import AdminLayout from "./widgets/AdminPage/AdminLayout";
+import TeacherLayout from "./components/TeacherPage/TeacherLayout";
+import ParentLayout from "./components/ParentPage/ParentLayout";
+import AdminLayout from "./components/Admin/AdminLayout";
 
 import "./App.css";
 

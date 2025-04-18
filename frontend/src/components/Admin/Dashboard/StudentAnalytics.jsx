@@ -1,7 +1,7 @@
 // src/components/Admin/Dashboard/StudentAnalytics.jsx
 import React, { useState } from 'react';
 import StudentCard from '../StudentCard/StudentCard';
-import './StudentAnalytics.css';
+import '../../../css/Admin/Dashboard/StudentAnalytics.css';
 
 const StudentAnalytics = () => {
   const [searchTerm, setSearchTerm] = useState('');

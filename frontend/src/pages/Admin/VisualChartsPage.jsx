@@ -7,7 +7,7 @@ import {
   UserTypeChart,
   UserStatusChart,
   ChartCard // Added this import
-} from '../../components/Charts';
+} from '../../components/Admin/Charts';
 import useChartData from '../../hooks/useChartData';
 import {
   fetchActivityCompletionData,
@@ -17,7 +17,7 @@ import {
   fetchUserStatusData
 } from '../../services/chartDataService';
 
-import "../../components/Admin/Dashboard/VisualChartsPage.css";
+import "../../css/Admin/Dashboard/VisualChartsPage.css";
 
 const VisualChartsPage = () => {
   // Use our custom hook to fetch each chart's data
