@@ -16,7 +16,10 @@ import StudentDetails from "./pages/Teachers/StudentDetails";
 import ManageProgress from "./pages/Teachers/ManageProgress";
 import StudentProgressView from "./pages/Teachers/StudentProgressView";
 import CreatePracticeModule from "./pages/Teachers/CreatePracticeModule";
-
+// Import new activity-related pages
+import CreateActivity from "./pages/Teachers/CreateActivity";
+import EditActivity from "./pages/Teachers/EditActivity";
+import PreviewActivity from "./pages/Teachers/PreviewActivity";
 
 // Parent Pages
 import ParentDashboard from "./pages/Parents/ParentDashboard";
@@ -48,9 +51,6 @@ function App() {
     localStorage.removeItem("userType");
     setIsAuthenticated(false);
   };
-
-  console.log("Authenticated?", isAuthenticated);
-console.log("User type:", userType);
 
   return (
     <BrowserRouter>
@@ -88,7 +88,12 @@ console.log("User type:", userType);
             <Route path="manage-progress" element={<ManageProgress />} />
             <Route path="student-progress/:id" element={<StudentProgressView />} />
             <Route path="student-details/:id" element={<StudentDetails />} />
-            <Route path="create-practice-module" element={<CreatePracticeModule />} /> {/* ✅ ADD THIS */}
+            <Route path="create-practice-module" element={<CreatePracticeModule />} />
+            
+            {/* New Activity Routes */}
+            <Route path="create-activity" element={<CreateActivity />} />
+            <Route path="edit-activity/:id" element={<EditActivity />} />
+            <Route path="preview-activity/:id" element={<PreviewActivity />} />
 
             <Route index element={<Navigate to="dashboard" />} />
           </Route>
@@ -97,10 +102,10 @@ console.log("User type:", userType);
         {/* Protected Parent Routes */}
         {isAuthenticated && userType === "parent" && (
           <Route path="/parent/*" element={<ParentLayout onLogout={handleLogout} />}>
-          <Route path="dashboard" element={<ParentDashboard />} />
-          <Route path="feedback" element={<Feedback />} />
-          <Route path="progress" element={<Progress />} />
-        </Route>
+            <Route path="dashboard" element={<ParentDashboard />} />
+            <Route path="feedback" element={<Feedback />} />
+            <Route path="progress" element={<Progress />} />
+          </Route>
         )}
 
         {/* Protected Admin Routes */}
@@ -111,7 +116,6 @@ console.log("User type:", userType);
             
             {/* Add additional Admin routes here */}
             <Route index element={<Navigate to="dashboard" />} />
-            
           </Route>
         )}
 

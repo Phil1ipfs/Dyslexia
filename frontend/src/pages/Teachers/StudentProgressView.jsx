@@ -5,20 +5,11 @@ import "../../css/Teachers/studentProgressView.css";
 import * as Dialog from "@radix-ui/react-dialog";
 
 
-
 /* ─────────────────────────────────────────────────────────────── */
 /*  SERVICE LAYER – future implementation will connect to MongoDB */
 /* ─────────────────────────────────────────────────────────────── */
-class PracticeModuleService {
-  static getTemplatesForConcept(concept) {
-    // In a future implementation, this would perform an API call to MongoDB.
-    // For now, we use a MOCK which simply returns an array
-    const MOCK = {
-      "Vowel Sound": [{ id: "tpl-1", title: "Vowel Drill A-E", itemCount: 10 }]
-    };
-    return MOCK[concept] ?? [];
-  }
-}
+import PracticeModuleService from "../../services/PracticeModuleService";
+
 
 /* ─────────────────────────────────────────────────────────────── */
 /*  SMALL DIALOG – for Assigning Practice Module */
@@ -217,6 +208,7 @@ class VisualizationSection extends Component {
   getActiveData() {
     const { categorizedActivityScores } = this.props;
     const { selectedCategory, filter } = this.state;
+    
     // Instead of relying on fixed names, assume the data is dynamic
     const catObj = categorizedActivityScores.find(
       (c) => c.category === selectedCategory
@@ -282,13 +274,13 @@ class VisualizationSection extends Component {
                         )}
                       </div>
                       <div className="skill-bar-container">
-  <div
-    className={`skill-bar-fill ${getCategoryColorClass(item.label)}`}
-    style={{ width: barWidth }}
-  />
-</div>
+                        <div
+                          className={`skill-bar-fill ${getCategoryColorClass(item.label)}`}
+                          style={{ width: barWidth }}
+                        />
+                      </div>
 
-                    
+
                     </div>
                     <div className="view-questions-btn-container">
                       <button
@@ -346,7 +338,7 @@ class VisualizationSection extends Component {
               ))}
             </div>
             <div className="activity-score-chart-container" ref={this.chartRef}>
-            <div className="chart-grid-lines">
+              <div className="chart-grid-lines">
                 {[100, 80, 60, 40, 20].map((val, idx) => (
                   <div key={idx} className="chart-grid-line" style={{ bottom: `${val}%` }}>
                     <span className="chart-grid-label">{val}%</span>
@@ -510,19 +502,19 @@ class AnalysisCard extends Component {
     } = this.props;
 
     const getCategoryColorClass = (category) => {
-  switch (category) {
-    case "Vowel Sound":
-      return "ponetiko";
-    case "Syllable Blending":
-      return "pagpapantig";
-    case "Word Recognition":
-      return "salita";
-    case "Reading Comprehension":
-      return "pag-unawa";
-    default:
-      return "default-skill-bar";
-  }
-};
+      switch (category) {
+        case "Vowel Sound":
+          return "ponetiko";
+        case "Syllable Blending":
+          return "pagpapantig";
+        case "Word Recognition":
+          return "salita";
+        case "Reading Comprehension":
+          return "pag-unawa";
+        default:
+          return "default-skill-bar";
+      }
+    };
 
     return (
       <div className={`analysis-card ${getCategoryColorClass()}`}>
@@ -753,6 +745,8 @@ class StudentProgressViewContent extends Component {
         { date: "Mar 29", score: 78 },
         { date: "Apr 1", score: 85 },
       ],
+    
+      
       // Categorized data – dynamic by category from database in the future
       categorizedActivityScores: [
         {
@@ -800,6 +794,9 @@ class StudentProgressViewContent extends Component {
           ],
         },
       ],
+
+
+      
       analysisCards: [
         {
           id: 1,
