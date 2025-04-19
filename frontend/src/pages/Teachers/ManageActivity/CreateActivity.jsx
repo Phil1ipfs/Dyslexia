@@ -20,7 +20,7 @@ import {
   readingLevels, 
   categories, 
   activityStructures 
-} from '../../data/Teachers/activityData';
+} from '../../../data/Teachers/activityData';
 
 const CreateActivity = () => {
   const navigate = useNavigate();
