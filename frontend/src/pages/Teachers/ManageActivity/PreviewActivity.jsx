@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faEdit, faSpinner, faVolumeUp } from '@fortawesome/free-solid-svg-icons';
-import '../../css/Teachers/PreviewActivity.css';
+import '../../../css/Teachers/PreviewActivity.css';
 
 const PreviewActivity = () => {
   const navigate = useNavigate();

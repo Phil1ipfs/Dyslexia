@@ -12,11 +12,11 @@
   
   .view-student-filters {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 1rem;
-    margin-bottom: 1.5rem;
     align-items: center;
   }
+  
   
   .view-student-filters input {
     padding: 0.5rem 1rem;
@@ -27,16 +27,13 @@
   }
   
   .view-student-filters select {
-    padding: 0.6rem 1.2rem;
-    font-size: 1rem;
+    width: 220px;
+    height: 40px;
+    padding: 0.5rem 1rem;
     border-radius: 10px;
+    font-size: 1rem;
     border: none;
     cursor: pointer;
-    /* Remove the fixed width & height */
-    /* width: 100px; */
-    min-width: 180px; /* keep or adjust as needed */
-    /* height: 30px; */
-    height: auto;      /* let the padding define the height */
   }
   
   .search-icon {
@@ -169,41 +166,7 @@
     font-size: 1.2rem;
   }
   
-.toggle-switch {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.3rem 1rem 0.3rem 0.3rem;
-    border-radius: 25px;
-    background-color: white;
-    color: #3B4F81;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-  }
-  
-  .toggle-switch .circle {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background-color: #3B4F81;
-    transition: transform 0.3s ease;
-  }
-  
-  .toggle-switch.active {
-    background-color: #3B4F81;
-    color: white;
-  }
-  
-  .toggle-switch.active .circle {
-    background-color: white;
-    transform: translateX(80px);
-  }
-  
-  .text-list-view {
-    margin-top: 1rem;
-  }
+
   
   .text-group-label {
     font-weight: bold;
@@ -218,29 +181,60 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
   
-.search-wrapper {
-    position: relative;
+  .search-wrapper {
     display: flex;
     align-items: center;
-    width: 260px;
+    gap: 12.5rem;
   }
   
   .search-wrapper input {
-    padding: 0.5rem 1rem 0.5rem 2.5rem;
-    border-radius: 8px;
-    border: none;
     width: 100%;
     height: 40px;
+    padding: 0.5rem 1rem 0.5rem 2.3rem;
+    padding-left: 10%;
+    border-radius: 8px;
+    border: none;
     font-size: 0.95rem;
   }
   
   .search-inline-icon {
     position: absolute;
-    left: 10px;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
     color: #3B4F81;
     font-size: 1rem;
     pointer-events: none;
   }
+
+  .custom-select-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 250px;
+  }
+  
+  .custom-select-wrapper select {
+    width: 100%;
+    padding: 0.6rem 1.2rem;
+    padding-right: 2.5rem;
+    font-size: 1rem;
+    border-radius: 12px;
+    border: none;
+    appearance: none;
+    background-color: white;
+    cursor: pointer;
+  }
+  
+  .select-icon {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #3B4F81;
+    pointer-events: none;
+  }
+  
+  
   
   .view-student-table table {
     background-color: white;

@@ -25,16 +25,7 @@
     --transition-speed: 0.3s;
 }
 
-/* 
-    PAGE CONTAINER
-  */
-body,
-html {
-    margin: 0;
-    padding: 0;
-    font-family: 'Atkinson Hyperlegible', sans-serif;
-    background-color: var(--primary-color);
-}
+
 
 .student-progress-container {
     position: relative;
@@ -83,7 +74,6 @@ html {
     font-size: 16px;
     text-align: left;
 }
-
 
 /* 
     TAB NAVIGATION

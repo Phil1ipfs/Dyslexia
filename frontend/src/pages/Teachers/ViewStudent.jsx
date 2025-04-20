@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import '../../css/Teachers/ViewStudent.css';
 import { FaSearch } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import { FaChevronDown } from 'react-icons/fa';
+
 
 const ViewStudent = () => {
   const navigate = useNavigate();
@@ -10,6 +12,8 @@ const ViewStudent = () => {
   const [groupBy, setGroupBy] = useState('family');
   const [isTableView, setIsTableView] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [gradeFilter, setGradeFilter] = useState('All');
+
 
   // ===================
   //  STUDENT DATA HERE
@@ -328,23 +332,24 @@ const ViewStudent = () => {
       s.name.toLowerCase().includes(search) ||
       s.parent.toLowerCase().includes(search)
     )
-    .filter(s => readingFilter === 'All' || s.readingLevel === readingFilter);
-
+    .filter(s => readingFilter === 'All' || s.readingLevel === readingFilter)
+    .filter(s => gradeFilter === 'All' || s.grade.toString() === gradeFilter);
+    
   // Grouping logic
   const grouped = groupBy !== 'none'
     ? groupByKey(filtered, s =>
-        groupBy === 'family'
-          ? s.name.split(' ').slice(-1)[0]
-          : groupBy === 'parent'
-            ? s.parent
-            : s.name.split(' ')[0] 
-      )
+      groupBy === 'family'
+        ? s.name.split(' ').slice(-1)[0]
+        : groupBy === 'parent'
+          ? s.parent
+          : s.name.split(' ')[0]
+    )
     : { All: filtered };
 
-    const handleViewDetails = (student) => {
-      navigate(`/teacher/student-details/${student.id}`, { state: { student } });
-    };
-    
+  const handleViewDetails = (student) => {
+    navigate(`/teacher/student-details/${student.id}`, { state: { student } });
+  };
+
 
   return (
     <div className="view-student-container">
@@ -379,27 +384,43 @@ const ViewStudent = () => {
           />
         </div>
 
-        <select value={readingFilter} onChange={handleReadingFilter}>
-          <option value="All">Antas ng Pagbasa</option>
-          <option value="A">Antas Uno</option>
-          <option value="B">Antas Dalawa</option>
-          <option value="C">Antas Tatlo</option>
-          <option value="D">Antas Apat</option>
-          <option value="E">Antas Lima</option>
-        </select>
+        <div className="custom-select-wrapper">
 
-        <select value={groupBy} onChange={handleGroupChange}>
-          <option value="family">Group by Family</option>
-          <option value="parent">Group by Parent</option>
-          <option value="name">Group by First Name</option>
-          <option value="none">No Grouping</option>
-        </select>
+          <select value={readingFilter} onChange={handleReadingFilter}>
+            <option value="All">Antas ng Pagbasa</option>
+            <option value="A">Antas Uno</option>
+            <option value="B">Antas Dalawa</option>
+            <option value="C">Antas Tatlo</option>
+            <option value="D">Antas Apat</option>
+            <option value="E">Antas Lima</option>
+          </select>
+          <FaChevronDown className="select-icon" />
+        </div>
 
-        <div className={`toggle-switch ${isTableView ? 'active' : ''}`} onClick={toggleView}>
-          <div className="circle" />
-          <span>{isTableView ? 'Table' : 'Text'}</span>
+        <div className="custom-select-wrapper">
+
+          <select value={groupBy} onChange={handleGroupChange}>
+            <option value="family">Group by Family</option>
+            <option value="parent">Group by Parent</option>
+            <option value="name">Group by First Name</option>
+            <option value="none">No Grouping</option>
+          </select>
+          <FaChevronDown className="select-icon" />
+
+        </div>
+
+        <div className="custom-select-wrapper">
+          <select value={gradeFilter} onChange={(e) => setGradeFilter(e.target.value)}>
+            <option value="All">Grade Level</option>
+            <option value="K">Kindergarten</option>
+            <option value="1">Grade 1</option>
+            <option value="2">Grade 2</option>
+            <option value="3">Grade 3</option>
+          </select>
+          <FaChevronDown className="select-icon" />
         </div>
       </div>
+
 
       {/* Conditionally Render Table or Text List */}
       {isTableView ? (
@@ -412,6 +433,7 @@ const ViewStudent = () => {
                 <th>Parent</th>
                 <th>Student ID</th>
                 <th>Reading Level</th>
+                <th>Grade</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -420,7 +442,7 @@ const ViewStudent = () => {
                 <React.Fragment key={group}>
                   {groupBy !== 'name' && group !== 'All' && (
                     <tr className="group-row">
-                      <td colSpan="6">Group: {group}</td>
+                      <td colSpan="7">Group: {group}</td>
                     </tr>
                   )}
                   {students.map((s) => (
@@ -430,6 +452,7 @@ const ViewStudent = () => {
                       <td>{s.parent}</td>
                       <td>{s.studentID}</td>
                       <td>{readingLevelLabels[s.readingLevel]}</td>
+                      <td>{`Grade ${s.grade}`}</td>
                       <td>
                         <button className="view-btn" onClick={() => handleViewDetails(s)}>
                           View Details
@@ -440,6 +463,7 @@ const ViewStudent = () => {
                 </React.Fragment>
               ))}
             </tbody>
+
           </table>
         </div>
       ) : (

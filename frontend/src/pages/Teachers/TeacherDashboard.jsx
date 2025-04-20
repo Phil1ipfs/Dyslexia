@@ -165,18 +165,28 @@ const TeacherDashboard = () => {
                   formatter={(value) => [`${value}%`, 'Score']}
                   contentStyle={{
                     background: '#3B4F81',
-                    border: '1px solid rgba(255,255,255,0.2)',
+                    border: '1px solid #F3C922',
                     color: 'white',
-                    borderRadius: '4px'
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    lineHeight: '1.5',
                   }}
-                  cursor={{ fill: 'transparent' }}  // ✅ THIS REMOVES THE GRAY HIGHLIGHT
+                  labelStyle={{
+                    color: 'white',
+                    fontWeight: 500,
+                  }}
+                  itemStyle={{
+                    color: 'white',
+                    fontWeight: 500,
+                  }}
+                  cursor={{ fill: 'transparent' }}
                 />
 
                 <ReferenceLine y={70} stroke="#F3C922" strokeWidth={1} strokeDasharray="3 3" />
 
                 <Bar dataKey="score" radius={[4, 4, 0, 0]}>
                   {studentScores.map((entry, i) => {
-                    const student = studentsNeedingAttention[i]; // match by index
+                    const student = studentsNeedingAttention[i];
                     const fillColor = getAntasColor(student.antasLevel);
                     return (
                       <Cell
@@ -262,7 +272,7 @@ const TeacherDashboard = () => {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value) => [`${value}%`, 'Score']}
+                        formatter={(value, name, props) => [`${value} students`, name]}
                         contentStyle={{
                           background: '#3B4F81',
                           border: '2px solid #F3C922',
@@ -272,9 +282,8 @@ const TeacherDashboard = () => {
                           boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
                         }}
                         itemStyle={{ color: 'white' }}
-                        cursor={{ fill: 'transparent' }} 
+                        cursor={{ fill: 'transparent' }}
                       />
-
 
                     </PieChart>
                   </ResponsiveContainer>
@@ -301,6 +310,8 @@ const TeacherDashboard = () => {
               </div>
             </div>
           </div>
+
+
 
           {/* Top-right cell: Progress Chart */}
           <div className="edu-dashboard__grid-cell">
@@ -491,49 +502,49 @@ const TeacherDashboard = () => {
             </div>
           </div>
 
-         
+
         </div>
 
-       {/* Full-width Admin Approval Notifications */}
-<div className="edu-dashboard__full-width">
-  <div className="edu-card edu-approval-card">
-    <h2 className="edu-card__title">Admin Approval Notifications</h2>
-    <div className="edu-approval-list">
-      {notifications.map((notification, index) => (
-        <div key={index} className="edu-notification-item">
-          <div className="edu-notification-status">
-            <span className={`edu-status-dot edu-status-${notification.status.toLowerCase()}`}></span>
+        {/* Full-width Admin Approval Notifications */}
+        <div className="edu-dashboard__full-width">
+          <div className="edu-card edu-approval-card">
+            <h2 className="edu-card__title">Admin Approval Notifications</h2>
+            <div className="edu-approval-list">
+              {notifications.map((notification, index) => (
+                <div key={index} className="edu-notification-item">
+                  <div className="edu-notification-status">
+                    <span className={`edu-status-dot edu-status-${notification.status.toLowerCase()}`}></span>
+                  </div>
+                  <div className="edu-notification-content">
+                    <p className="edu-notification-message">{notification.message}</p>
+                    <span className="edu-notification-time">{notification.time}</span>
+                  </div>
+                  {notification.status === 'pending' && (
+                    <button className="edu-track-button">Track</button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="edu-notification-content">
-            <p className="edu-notification-message">{notification.message}</p>
-            <span className="edu-notification-time">{notification.time}</span>
-          </div>
-          {notification.status === 'pending' && (
-            <button className="edu-track-button">Track</button>
-          )}
         </div>
-      ))}
-    </div>
-  </div>
-</div>
 
-{/* Full-width Activity Log Below */}
-<div className="edu-dashboard__full-width">
-  <div className="edu-card edu-activity-log-card">
-    <h2 className="edu-card__title">Activity Log</h2>
-    <div className="edu-activity-log">
-      {activityLog.map((log, index) => (
-        <div key={index} className="edu-log-item">
-          <div className="edu-log-time">{log.time}</div>
-          <div
-            className="edu-log-content"
-            dangerouslySetInnerHTML={{ __html: log.content }}
-          ></div>
+        {/* Full-width Activity Log Below */}
+        <div className="edu-dashboard__full-width">
+          <div className="edu-card edu-activity-log-card">
+            <h2 className="edu-card__title">Activity Log</h2>
+            <div className="edu-activity-log">
+              {activityLog.map((log, index) => (
+                <div key={index} className="edu-log-item">
+                  <div className="edu-log-time">{log.time}</div>
+                  <div
+                    className="edu-log-content"
+                    dangerouslySetInnerHTML={{ __html: log.content }}
+                  ></div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      ))}
-    </div>
-  </div>
-</div>
 
       </main>
 

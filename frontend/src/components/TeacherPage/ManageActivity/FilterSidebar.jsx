@@ -1,6 +1,14 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faSearch, 
+  faTimes, 
+  faFilter, 
+  faSort,
+  faLayerGroup,
+  faList,
+  faCheck
+} from '@fortawesome/free-solid-svg-icons';
 import './FilterSidebar.css';
 
 const FilterSidebar = ({
@@ -11,64 +19,106 @@ const FilterSidebar = ({
   setSelectedCategory,
   sortOption,
   setSortOption,
+  statusFilter,
+  setStatusFilter,
   searchQuery,
   setSearchQuery,
   readingLevels,
   categories,
   sortOptions,
+  statusOptions,
+  clearFilters,
   closeMobileFilters
 }) => {
   return (
     <div className={`filters-sidebar ${className}`}>
       <div className="sidebar-header">
-        <h2 className="filters-title">Filters</h2>
+        <h2 className="filters-title">
+          <FontAwesomeIcon icon={faFilter} className="filter-icon" /> Filters
+        </h2>
         <button className="close-filters-btn" onClick={closeMobileFilters}>
           <FontAwesomeIcon icon={faTimes} />
         </button>
       </div>
       
+      {/* Antas Level Filter */}
       <div className="filter-group">
-        <label className="filter-label">Antas Level</label>
-        <select 
-          className="filter-select" 
-          value={selectedLevel}
-          onChange={(e) => setSelectedLevel(e.target.value)}
-        >
-          {readingLevels.map((level, index) => (
-            <option key={index} value={level}>{level}</option>
-          ))}
-        </select>
+        <label className="filter-label">
+          <FontAwesomeIcon icon={faLayerGroup} className="filter-label-icon" /> Antas Level
+        </label>
+        <div className="select-wrapper">
+          <select 
+            className="filter-select" 
+            value={selectedLevel}
+            onChange={(e) => setSelectedLevel(e.target.value)}
+          >
+            {readingLevels.map((level, index) => (
+              <option key={index} value={level}>{level}</option>
+            ))}
+          </select>
+        </div>
       </div>
       
+      {/* Category Filter */}
       <div className="filter-group">
-        <label className="filter-label">Category</label>
-        <select 
-          className="filter-select"
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-        >
-          {categories.map((category, index) => (
-            <option key={index} value={category}>{category}</option>
-          ))}
-        </select>
+        <label className="filter-label">
+          <FontAwesomeIcon icon={faList} className="filter-label-icon" /> Category
+        </label>
+        <div className="select-wrapper">
+          <select 
+            className="filter-select"
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+          >
+            {categories.map((category, index) => (
+              <option key={index} value={category}>{category}</option>
+            ))}
+          </select>
+        </div>
       </div>
       
+      {/* Status Filter - New */}
       <div className="filter-group">
-        <label className="filter-label">Sort By</label>
-        <select 
-          className="filter-select"
-          value={sortOption}
-          onChange={(e) => setSortOption(e.target.value)}
-        >
-          {sortOptions.map((option, index) => (
-            <option key={index} value={option}>{option}</option>
-          ))}
-        </select>
+        <label className="filter-label">
+          <FontAwesomeIcon icon={faCheck} className="filter-label-icon" /> Status
+        </label>
+        <div className="select-wrapper">
+          <select 
+            className="filter-select"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            {statusOptions.map((status, index) => (
+              <option key={index} value={status}>{status}</option>
+            ))}
+          </select>
+        </div>
       </div>
       
+      {/* Sort Filter */}
       <div className="filter-group">
-        <label className="filter-label">Search</label>
-        <div className="search-container">
+        <label className="filter-label">
+          <FontAwesomeIcon icon={faSort} className="filter-label-icon" /> Sort By
+        </label>
+        <div className="select-wrapper">
+          <select 
+            className="filter-select"
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value)}
+          >
+            {sortOptions.map((option, index) => (
+              <option key={index} value={option}>{option}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      
+      {/* Search Filter */}
+      <div className="filter-group">
+        <label className="filter-label">
+          <FontAwesomeIcon icon={faSearch} className="filter-label-icon" /> Search
+        </label>
+        <div className="search-containerr">
           <input 
             type="text" 
             className="search-input" 
@@ -80,19 +130,13 @@ const FilterSidebar = ({
         </div>
       </div>
       
-      <div className="filter-actions">
-        <button 
-          className="clear-filters-btn"
-          onClick={() => {
-            setSelectedLevel("All Levels");
-            setSelectedCategory("All Categories");
-            setSortOption("Newest First");
-            setSearchQuery("");
-          }}
-        >
-          Clear Filters
-        </button>
-      </div>
+      {/* Clear Filters Button */}
+      <button 
+        className="clear-filters-btn"
+        onClick={clearFilters}
+      >
+        Clear All Filters
+      </button>
     </div>
   );
 };

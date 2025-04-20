@@ -33,40 +33,55 @@
   }
   
   .filter-group {
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.75rem; 
   }
   
   .filter-label {
     font-size: 0.9rem;
     font-weight: 500;
     color: #6c757d;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.95rem;    
     display: block;
   }
   
   .filter-select {
-    width: 100%;
-    padding: 0.65rem;
-    border: 1px solid #e1e5eb;
-    border-radius: 6px;
-    background-color: white;
-    color: #495057;
-    font-size: 0.9rem;
     appearance: none;
+    -webkit-appearance: none; 
+    -moz-appearance: none;   
+  
+    width: 100%;
+    padding: 0.65rem 2.5rem 0.65rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    background-color: white;
+    color: #1f2937;
+    font-size: 0.95rem;
+    font-weight: 500;
+    font-family: 'Poppins', sans-serif;
+  
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%233b4f81' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: calc(100% - 12px) center;
+    background-position: right 0.65rem center;
+    background-size: 14px;
     cursor: pointer;
   }
+  
+  
+  .filter-select:focus {
+    border-color: #3b4f81;
+    box-shadow: 0 0 0 3px rgba(59, 79, 129, 0.15);
+    outline: none;
+  }
+  
   
   .search-container {
     position: relative;
   }
   
-  .search-input {
+  .search-inputt {
     width: 100%;
     padding: 0.65rem;
-    padding-right: 2.5rem;
+    padding-left: 22.5rem;
     border: 1px solid #e1e5eb;
     border-radius: 6px;
     background-color: white;

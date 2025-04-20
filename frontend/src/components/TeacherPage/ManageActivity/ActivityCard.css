@@ -1,187 +1,319 @@
 /* ActivityCard.css */
 .activity-card {
-    border-radius: 10px;
-    overflow: hidden;
-    background: white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: 10px;
+  overflow: hidden;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-left: 4px solid #e0e0e0;
+}
 
-  }
-  
-  .activity-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-  
-  /* Card header */
+.activity-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Card types - based on status */
+.activity-card.primary {
+  border-left-color: #3b4f81;
+}
+
+.activity-card.assessment {
+  border-left-color: #3b4f81;
+}
+
+.activity-card.practice {
+  border-left-color: #4caf50;
+}
+
+.activity-card.success, 
+.activity-card.approved {
+  border-left-color: #4caf50;
+}
+
+.activity-card.warning, 
+.activity-card.pending {
+  border-left-color: #ffc107;
+}
+
+.activity-card.locked {
+  border-left-color: #868e96;
+}
+
+.activity-card.rejected {
+  border-left-color: #dc3545;
+}
+
+/* Card header */
+.activity-card-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e9f2;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background-color: #f8f9fa;
+}
+
+.activity-title-area {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 70%;
+}
+
+.activity-icon {
+  color: #3b4f81;
+  font-size: 1.25rem;
+  padding: 0.5rem;
+  background: rgba(59, 79, 129, 0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activity-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: #343a40;
+  line-height: 1.4;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+}
+
+.status-badge.approved {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-badge.pending {
+  background-color: #fff3cd;
+  color: #856404;
+  animation: pulse 2s infinite;
+}
+
+.status-badge.locked {
+  background-color: #e9ecef;
+  color: #495057;
+}
+
+.status-badge.rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
+}
+
+/* Card body */
+.activity-card-body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Metadata */
+.activity-metadata {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.metadata-row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.metadata-label {
+  font-weight: 600;
+  color: #6c757d;
+  font-size: 0.85rem;
+  min-width: 80px;
+}
+
+.metadata-value {
+  color: #495057;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+/* Category tags */
+.category-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.category-tag {
+  background-color: #f1f3f9;
+  border: 1px solid #e9ecef;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #495057;
+}
+
+/* Description section */
+.description-section {
+  margin-top: 0.5rem;
+}
+
+.description-text {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: #495057;
+  line-height: 1.5;
+}
+
+/* Status message boxes */
+.status-message-box {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.status-message-box.pending {
+  background-color: #fff8e1;
+  border: 1px solid #ffe082;
+}
+
+.status-message-box.rejected {
+  background-color: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-left: 4px solid #dc3545;
+}
+
+.status-message-box.locked {
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+}
+
+.status-message-box.approved {
+  background-color: #e8f5e9;
+  border: 1px solid #c8e6c9;
+}
+
+.status-message-icon {
+  font-size: 1.5rem;
+  color: #ffc107;
+}
+
+.status-message-box.rejected .status-message-icon {
+  color: #dc3545;
+}
+
+.status-message-box.locked .status-message-icon {
+  color: #868e96;
+}
+
+.status-message-box.approved .status-message-icon {
+  color: #4caf50;
+}
+
+.status-message-content h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.status-message-content p {
+  font-size: 0.85rem;
+  margin: 0;
+  color: #666;
+}
+
+/* Action buttons */
+.activity-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.preview-btn,
+.edit-btn,
+.delete-btn {
+  padding: 0.65rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.preview-btn {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  color: #495057;
+}
+
+.preview-btn:hover {
+  background-color: #e9ecef;
+}
+
+.edit-btn {
+  background-color: #3b4f81;
+  color: white;
+}
+
+.edit-btn:hover {
+  background-color: #344269;
+}
+
+.delete-btn {
+  background-color: #fff;
+  border: 1px solid #dc3545;
+  color: #dc3545;
+}
+
+.delete-btn:hover {
+  background-color: #f8d7da;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
   .activity-card-header {
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid #e5e9f2;
-    position: relative;
-  }
-  
-  .activity-title {
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0;
-    color: #343a40;
-    line-height: 1.4;
-    padding-right: 24px; /* Space for the lock/pending icon */
-  }
-  
-  /* Card types */
-  .activity-card.primary .activity-card-header {
-    border-left: 4px solid #3b4f81;
-  }
-  
-  .activity-card.assessment .activity-card-header {
-    border-left: 4px solid #3b4f81;
-  }
-  
-  .activity-card.practice .activity-card-header {
-    border-left: 4px solid #4caf50;
-  }
-  
-  .activity-card.success .activity-card-header {
-    border-left: 4px solid #4caf50;
-  }
-  
-  .activity-card.warning .activity-card-header {
-    border-left: 4px solid #f0ad4e;
-  }
-  
-  .activity-card.locked .activity-card-header {
-    border-left: 4px solid #868e96;
-  }
-  
-  /* Card body */
-  .activity-card-body {
-    padding: 1.25rem;
-    display: flex;
     flex-direction: column;
-    gap: 1rem;
-  }
-  
-  /* Metadata */
-  .activity-metadata {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .metadata-label {
-    font-weight: 600;
-    color: #6c757d;
-    font-size: 0.85rem;
-    margin-right: 0.5rem;
-  }
-  
-  .metadata-value {
-    color: #495057;
-    font-size: 0.9rem;
-  }
-  
-  /* Category tags */
-  .category-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.25rem;
-  }
-  
-  .category-tag {
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    color: #495057;
-  }
-  
-  /* Activity structure */
-  .activity-structure {
-    border-top: 1px solid #e9ecef;
-    padding-top: 1rem;
-  }
-  
-  .structure-info {
-    display: flex;
-    align-items: center;
     gap: 0.75rem;
   }
   
-  .structure-icon {
-    color: #3b4f81;
-    font-size: 1.25rem;
+  .activity-title-area {
+    max-width: 100%;
   }
   
-  .structure-title {
-    font-weight: 600;
-    color: #343a40;
-    font-size: 0.95rem;
-  }
-  
-  /* Action buttons */
   .activity-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
+    flex-direction: column;
   }
   
-  .btn {
-    padding: 0.4rem 0.75rem;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    text-decoration: none;
-    border: none;
+  .preview-btn,
+  .edit-btn,
+  .delete-btn {
+    width: 100%;
   }
-  
-  .btn-preview {
-    background-color: #e9ecef;
-    color: #495057;
-    border: 1px solid #ced4da;
-  }
-  
-  .btn-edit {
-    background-color: #3b4f81;
-    color: white;
-  }
-  
-  .btn-delete {
-    background-color: #fff;
-    color: #dc3545;
-    border: 1px solid #dc3545;
-  }
-  
-  /* Status indicators */
-  .locked-indicator,
-  .pending-indicator {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    font-size: 1rem;
-  }
-  
-  .locked-indicator {
-    color: #868e96;
-  }
-  
-  .pending-indicator {
-    color: #f0ad4e;
-  }
-  
-  /* Animation for pending indicator */
-  @keyframes pulse {
-    0% { opacity: 0.6; }
-    50% { opacity: 1; }
-    100% { opacity: 0.6; }
-  }
-  
-  .pending-indicator {
-    animation: pulse 2s infinite;
-  }
+}

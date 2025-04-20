@@ -12,6 +12,7 @@ const TabNavigation = ({ tabs, activeTab, setActiveTab }) => {
             onClick={() => setActiveTab(tab.id)}
           >
             {tab.label}
+            {tab.count > 0 && <span className="tab-count">{tab.count}</span>}
           </div>
         ))}
       </div>

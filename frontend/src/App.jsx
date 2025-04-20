@@ -10,16 +10,16 @@ import Login from "./pages/Login";
 // Teacher Pages
 import TeacherDashboard from "./pages/Teachers/TeacherDashboard";
 import ViewStudent from "./pages/Teachers/ViewStudent";
-import ManageActivities from "./pages/Teachers/ManageActivities";
+import ManageActivities from "./pages/Teachers/ManageActivity/ManageActivities";
 import TeacherProfile from "./pages/Teachers/TeacherProfile";
 import StudentDetails from "./pages/Teachers/StudentDetails";
 import ManageProgress from "./pages/Teachers/ManageProgress";
 import StudentProgressView from "./pages/Teachers/StudentProgressView";
 import CreatePracticeModule from "./pages/Teachers/CreatePracticeModule";
 // Import new activity-related pages
-import CreateActivity from "./pages/Teachers/CreateActivity";
-import EditActivity from "./pages/Teachers/EditActivity";
-import PreviewActivity from "./pages/Teachers/PreviewActivity";
+import CreateActivity from "./pages/Teachers/ManageActivity/CreateActivity";
+import EditActivity from "./pages/Teachers/ManageActivity/EditActivity";
+import PreviewActivity from "./pages/Teachers/ManageActivity/PreviewActivity";
 
 // Parent Pages
 import ParentDashboard from "./pages/Parents/ParentDashboard";

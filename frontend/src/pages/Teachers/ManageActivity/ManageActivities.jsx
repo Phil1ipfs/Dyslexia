@@ -1,0 +1,355 @@
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faList } from '@fortawesome/free-solid-svg-icons';
+
+
+import { 
+  faSearch, 
+  faPlus, 
+  faFilter,
+  faFileAlt
+} from '@fortawesome/free-solid-svg-icons';
+import FilterSidebar from "../../../components/TeacherPage/ManageActivity/FilterSidebar";
+import TabNavigation from "../../../components/TeacherPage/ManageActivity/TabNavigation";
+import ActivityCard from "../../../components/TeacherPage/ManageActivity/ActivityCard";
+import AddActivityModal from "../../../components/TeacherPage/ManageActivity/AddActivityModal";
+import "../../../css/Teachers/ManageActivity.css";
+
+// Import data sources
+import { 
+  readingLevels, 
+  categories, 
+  sortOptions
+} from "../../../data/Teachers/activityData";
+
+function ManageActivities() {
+  // State variables
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedLevel, setSelectedLevel] = useState("All Levels");
+  const [selectedCategory, setSelectedCategory] = useState("All Categories");
+  const [sortOption, setSortOption] = useState("Newest First");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("templates");
+  const [statusFilter, setStatusFilter] = useState("All Statuses");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(2); // Show only 2 items per page as requested
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [activityToDelete, setActivityToDelete] = useState(null);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  
+  // Define tabs with counts
+  const [tabs, setTabs] = useState([
+    { id: "templates", label: "Activity Templates", count: 0 },
+    { id: "assessments", label: "Pre-Assessments", count: 0 },
+    { id: "practice", label: "Practice Modules", count: 0 },
+    { id: "pending", label: "Pending Approval", count: 0 },
+  ]);
+
+  // Status options for filters
+  const statusOptions = [
+    "All Statuses",
+    "Approved",
+    "Pending",
+    "Locked",
+    "Rejected"
+  ];
+
+  // Fetch activities (simulated)
+  useEffect(() => {
+    // Clear any existing activities
+    setActivities([]);
+    
+    import("../../../data/Teachers/activitiesMockData").then(module => {
+      // Add levels property to each activity
+      const activitiesWithLevels = module.default.map(activity => ({
+        ...activity,
+        levels: Array.from({ length: Math.floor(Math.random() * 3) + 1 }, (_, i) => ({
+          id: i + 1,
+          levelName: `Level ${i + 1}`,
+          questions: Array.from({ length: Math.floor(Math.random() * 5) + 3 }, (_, j) => ({
+            id: j + 1,
+            contentType: ['reading', 'image', 'voice'][Math.floor(Math.random() * 3)]
+          }))
+        }))
+      }));
+      
+      setActivities(activitiesWithLevels);
+      
+      // Update tab counts
+      setTabs(prevTabs => prevTabs.map(tab => {
+        let count = 0;
+        
+        if (tab.id === 'templates') {
+          count = activitiesWithLevels.filter(a => a.type === 'template').length;
+        } else if (tab.id === 'assessments') {
+          count = activitiesWithLevels.filter(a => a.type === 'assessment').length;
+        } else if (tab.id === 'practice') {
+          count = activitiesWithLevels.filter(a => a.type === 'practice').length;
+        } else if (tab.id === 'pending') {
+          count = activitiesWithLevels.filter(a => a.status === 'pending').length;
+        }
+        
+        return { ...tab, count };
+      }));
+      
+      setLoading(false);
+    });
+  }, []);
+
+  // Filter activities based on current filters
+  const filteredActivities = activities.filter(activity => {
+    if (activeTab === "templates" && activity.type !== "template") return false;
+    if (activeTab === "assessments" && activity.type !== "assessment") return false;
+    if (activeTab === "practice" && activity.type !== "practice") return false;
+    if (activeTab === "pending" && activity.status !== "pending") return false;
+    if (selectedLevel !== "All Levels" && activity.level !== selectedLevel) return false;
+    if (selectedCategory !== "All Categories" && !activity.categories.includes(selectedCategory)) return false;
+    if (statusFilter !== "All Statuses") {
+      if (statusFilter === "Approved" && activity.status !== "approved") return false;
+      if (statusFilter === "Pending" && activity.status !== "pending") return false;
+      if (statusFilter === "Locked" && activity.status !== "locked") return false;
+      if (statusFilter === "Rejected" && activity.status !== "rejected") return false;
+    }
+    if (searchQuery && !activity.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  });
+
+  // Sort filtered activities
+  const sortedActivities = [...filteredActivities].sort((a, b) => {
+    if (sortOption === "Newest First") return new Date(b.createdAt) - new Date(a.createdAt);
+    if (sortOption === "Oldest First") return new Date(a.createdAt) - new Date(b.createdAt);
+    if (sortOption === "Alphabetical A-Z") return a.title.localeCompare(b.title);
+    if (sortOption === "Alphabetical Z-A") return b.title.localeCompare(a.title);
+    return 0;
+  });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(sortedActivities.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentActivities = sortedActivities.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Generate page numbers
+  const pageNumbers = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pageNumbers.push(i);
+  }
+
+  // Handlers
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setCurrentPage(1); // Reset to first page when changing tabs
+  };
+
+  const handleAddActivity = () => {
+    setAddModalOpen(true);
+  };
+
+  const openDeleteModal = activity => { 
+    setActivityToDelete(activity); 
+    setDeleteModalOpen(true); 
+  };
+  
+  const closeDeleteModal = () => { 
+    setActivityToDelete(null); 
+    setDeleteModalOpen(false); 
+  };
+  
+  const handleDeleteActivity = () => {
+    if (activityToDelete) {
+      setActivities(prev => prev.filter(a => a.id !== activityToDelete.id));
+      closeDeleteModal();
+    }
+  };
+
+  const getCreateLink = () => {
+    if (activeTab === "templates") return "/teacher/create-activity?type=template";
+    if (activeTab === "assessments") return "/teacher/create-activity?type=assessment";
+    if (activeTab === "practice") return "/teacher/create-activity?type=practice";
+    return "/teacher/create-activity";
+  };
+
+  const clearFilters = () => {
+    setSelectedLevel("All Levels");
+    setSelectedCategory("All Categories");
+    setSortOption("Newest First");
+    setStatusFilter("All Statuses");
+    setSearchQuery("");
+    setCurrentPage(1);
+  };
+
+  const toggleMobileFilters = () => {
+    setShowMobileFilters(!showMobileFilters);
+  };
+
+  return (
+    <div className="manage-activities-page">
+    <header className="manage-activities-header">
+  <div className="header-left">
+    <h1>
+      <FontAwesomeIcon icon={faList} className="header-icon" />
+      Manage Activities
+    </h1>
+    <p className="page-subtitle">Create, edit, and manage activities for students</p>
+  </div>
+</header>
+
+
+
+      <div className="manage-activities-container">
+    
+        {/* Filters Panel */}
+        <FilterSidebar
+          className={showMobileFilters ? "mobile-visible" : ""}
+          selectedLevel={selectedLevel}
+          setSelectedLevel={setSelectedLevel}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          sortOption={sortOption}
+          setSortOption={setSortOption}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          readingLevels={readingLevels}
+          categories={categories}
+          sortOptions={sortOptions}
+          statusOptions={statusOptions}
+          closeMobileFilters={() => setShowMobileFilters(false)}
+          clearFilters={clearFilters}
+        />
+
+        {/* Main Content */}
+        <section className="content-area">
+          <TabNavigation 
+            tabs={tabs} 
+            activeTab={activeTab} 
+            setActiveTab={handleTabChange} 
+          />
+
+          <div className="tab-content">
+            <div className="tab-header">
+              <h2 className="content-title">
+                {activeTab === "templates" && "Activity Templates"}
+                {activeTab === "assessments" && "Pre-Assessment Activities"}
+                {activeTab === "practice" && "Practice Module Templates"}
+                {activeTab === "pending" && "Activities Pending Approval"}
+              </h2>
+              {activeTab !== "pending" && (
+          <Link to={getCreateLink()} className="add-activity-btn">
+            <FontAwesomeIcon icon={faPlus} />
+            <span>Add New {activeTab === "templates" ? "Activity Template" : 
+                          activeTab === "assessments" ? "Pre-Assessment" : 
+                          "Practice Module"}</span>
+          </Link>
+        )}
+            </div>
+
+            {/* Loading State */}
+            {loading ? (
+              <div className="loading-state">
+                <div className="spinner" />
+                <p>Loading activities...</p>
+              </div>
+            ) : currentActivities.length === 0 ? (
+              <div className="empty-state">
+                <FontAwesomeIcon icon={faFileAlt} size="3x" className="empty-illustration" />
+                <h3>No Activities Found</h3>
+                <p>No activities match your current filters.</p>
+                <button className="clear-filters-btn" onClick={clearFilters}>Clear Filters</button>
+                {activeTab !== "pending" && (
+                  <Link to={getCreateLink()} className="create-new-btn">Create New Activity</Link>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="activity-count-info">
+                  Showing {currentActivities.length} of {sortedActivities.length} activities
+                </div>
+                <div className={`activities-grid ${activeTab === "pending" ? "pending-grid" : ""}`}>
+                  {currentActivities.map(activity => (
+                    <ActivityCard 
+                      key={activity.id} 
+                      activity={activity} 
+                      onDelete={openDeleteModal} 
+                    />
+                  ))}
+                </div>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="pagination">
+
+                    
+                    <button 
+                      className="pagination-arrow" 
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                    >
+                      &lt; Prev
+                    </button>
+                    
+                    <div className="page-numbers">
+                      {pageNumbers.map(number => (
+                        <button
+                          key={number}
+                          onClick={() => setCurrentPage(number)}
+                          className={currentPage === number ? 'active' : ''}
+                        >
+                          {number}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <button 
+                      className="pagination-arrow" 
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next &gt;
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && activityToDelete && (
+        <div className="modal-overlay">
+          <div className="delete-modal">
+            <h3>Delete Activity</h3>
+            <p>Are you sure you want to delete <strong>{activityToDelete.title}</strong>?</p>
+            <p>This action cannot be undone.</p>
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={closeDeleteModal}>Cancel</button>
+              <button className="delete-confirm-btn" onClick={handleDeleteActivity}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Activity Modal */}
+      {addModalOpen && (
+        <AddActivityModal 
+          onClose={() => setAddModalOpen(false)}
+          readingLevels={readingLevels}
+          categories={categories}
+          activityTypes={[
+            { id: "template", name: "Activity Template" },
+            { id: "assessment", name: "Pre-Assessment" },
+            { id: "practice", name: "Practice Module" }
+          ]}
+        />
+      )}
+    </div>
+  );
+}
+
+export default ManageActivities;
+
