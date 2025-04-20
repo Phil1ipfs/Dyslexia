@@ -1,7 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faEdit, faSpinner, faVolumeUp } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faArrowLeft, 
+  faEdit, 
+  faSpinner, 
+  faVolumeUp,
+  faInfoCircle,
+  faExclamationTriangle,
+  faCheckCircle,
+  faLayerGroup,
+  faChevronRight,
+  faChevronLeft,
+  faFont,
+  faImage,
+  faMicrophone,
+  faBookOpen
+} from '@fortawesome/free-solid-svg-icons';
 import '../../../css/Teachers/PreviewActivity.css';
 
 const PreviewActivity = () => {
@@ -11,23 +26,40 @@ const PreviewActivity = () => {
   const [activity, setActivity] = useState(null);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('student');
+  const [activeLevel, setActiveLevel] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
   
   // Fetch activity data when component mounts
   useEffect(() => {
     const fetchActivity = async () => {
       setLoading(true);
       try {
-        // In a real app, you would fetch from your API
-        // For now, let's simulate with mock data from our import
-        const mockResponse = await import('../../../data/Teachers/activitiesMockData.js');
-        const activities = mockResponse.default;
-        const activity = activities.find(a => a.id === parseInt(id));
+        // First, check if we have any newly added activities in localStorage
+        const newlyAddedActivities = JSON.parse(localStorage.getItem('mockActivities') || '[]');
+        const newActivity = newlyAddedActivities.find(a => a.id === parseInt(id));
         
-        if (!activity) {
-          throw new Error('Activity not found');
+        if (newActivity) {
+          setActivity(newActivity);
+          setActiveLevel(0);
+          if (newActivity.levels && newActivity.levels.length > 0) {
+            setCurrentQuestion(0);
+          }
+        } else {
+          // If not found in localStorage, check the mock data import
+          const mockResponse = await import('../../../data/Teachers/activitiesMockData.js');
+          const activities = mockResponse.default;
+          const foundActivity = activities.find(a => a.id === parseInt(id));
+          
+          if (!foundActivity) {
+            throw new Error('Activity not found');
+          }
+          
+          setActivity(foundActivity);
+          setActiveLevel(0);
+          if (foundActivity.levels && foundActivity.levels.length > 0) {
+            setCurrentQuestion(0);
+          }
         }
-        
-        setActivity(activity);
       } catch (err) {
         console.error('Error fetching activity:', err);
         setError(err.message);
@@ -39,6 +71,56 @@ const PreviewActivity = () => {
     fetchActivity();
   }, [id]);
 
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    } catch (e) {
+      return 'Invalid date';
+    }
+  };
+
+  // Handle level change
+  const handleLevelChange = (levelIndex) => {
+    setActiveLevel(levelIndex);
+    setCurrentQuestion(0);
+  };
+
+  // Navigate between questions
+  const nextQuestion = () => {
+    if (!activity?.levels || !activity.levels[activeLevel]?.questions) return;
+    
+    const questions = activity.levels[activeLevel].questions;
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+    }
+  };
+
+  const prevQuestion = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(currentQuestion - 1);
+    }
+  };
+
+  // Get content type icon
+  const getContentTypeIcon = (contentType) => {
+    switch(contentType?.toLowerCase()) {
+      case 'text': return faFont;
+      case 'image': return faImage;
+      case 'audio': 
+      case 'voice': return faMicrophone;
+      default: return faFont;
+    }
+  };
+
+  // Loading state
   if (loading) {
     return (
       <div className="preview-activity-container">
@@ -50,10 +132,12 @@ const PreviewActivity = () => {
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="preview-activity-container">
         <div className="error-state">
+          <FontAwesomeIcon icon={faExclamationTriangle} className="error-icon" />
           <h2>Error Loading Activity</h2>
           <p>{error}</p>
           <button 
@@ -69,60 +153,27 @@ const PreviewActivity = () => {
 
   if (!activity) return null;
 
-  // Sample text passages for reading content
-  const samplePassages = [
-    {
-      id: 1,
-      text: "Si Mang Jose ay nagtanim ng gulay sa kanyang hardin.",
-      audio: "#",
-      image: "https://via.placeholder.com/400x300?text=Garden+Scene"
-    },
-    {
-      id: 2,
-      text: "Maraming uri ng gulay ang kanyang itinanim tulad ng talong, kamatis, at kalabasa.",
-      audio: "#",
-      image: "https://via.placeholder.com/400x300?text=Vegetables"
-    },
-    {
-      id: 3,
-      text: "Araw-araw ay dinidiligan niya ang mga ito upang lumaki ng maayos.",
-      audio: "#",
-      image: "https://via.placeholder.com/400x300?text=Watering+Plants"
-    }
-  ];
+  // Get current level based on active level index
+  const currentLevel = activity.levels && activity.levels.length > activeLevel 
+    ? activity.levels[activeLevel] 
+    : null;
 
-  // Sample questions for the activity
-  const sampleQuestions = [
-    {
-      id: 1,
-      question: "Ano ang itinanim ni Mang Jose?",
-      options: ["Bulaklak", "Gulay", "Puno", "Palay"],
-      correctAnswer: "Gulay"
-    },
-    {
-      id: 2,
-      question: "Anu-anong uri ng gulay ang itinanim ni Mang Jose?",
-      options: ["Talong, kamatis, at kalabasa", "Sibuyas, bawang, at luya", "Repolyo, patatas, at karot", "Kangkong, kamote, at labanos"],
-      correctAnswer: "Talong, kamatis, at kalabasa"
-    },
-    {
-      id: 3,
-      question: "Bakit dinidiligan ni Mang Jose ang mga tanim?",
-      options: ["Upang lumaki ng maayos", "Upang maging matamis", "Upang maging masarap", "Upang maging malaki"],
-      correctAnswer: "Upang lumaki ng maayos"
-    }
-  ];
+  // Get current question
+  const question = currentLevel?.questions && currentLevel.questions.length > currentQuestion
+    ? currentLevel.questions[currentQuestion]
+    : null;
 
   return (
     <div className="preview-activity-container">
       <div className="preview-header">
-        <div>
+        <div className="preview-title-area">
           <h1 className="preview-title">{activity.title}</h1>
           <p className="preview-subtitle">
-            {activity.level} | {activity.categories.join(', ')} | 
+            {activity.level} | {activity.categories?.join(', ') || 'No category'} | 
             {activity.type === 'template' && ' Activity Template'}
             {activity.type === 'assessment' && ' Pre-Assessment'}
             {activity.type === 'practice' && ' Practice Module'}
+            {activity.status === 'pending' && ' (Pending Approval)'}
           </p>
         </div>
         <div className="preview-actions">
@@ -132,20 +183,31 @@ const PreviewActivity = () => {
           >
             <FontAwesomeIcon icon={faArrowLeft} /> Back
           </button>
-          <button 
-            className="btn-edit"
-            onClick={() => navigate(`/teacher/edit-activity/${activity.id}`)}
-          >
-            <FontAwesomeIcon icon={faEdit} /> Edit
-          </button>
+          {activity.status !== 'pending' && activity.status !== 'locked' && (
+            <button 
+              className="btn-edit"
+              onClick={() => navigate(`/teacher/edit-activity/${activity.id}`)}
+            >
+              <FontAwesomeIcon icon={faEdit} /> Edit
+            </button>
+          )}
         </div>
       </div>
 
+      {/* Status indicator for pending activities */}
+      {activity.status === 'pending' && (
+        <div className="pending-notice">
+          <FontAwesomeIcon icon={faInfoCircle} className="notice-icon" />
+          <p>This activity is currently pending admin approval and cannot be edited until approved.</p>
+        </div>
+      )}
+
       <div className="preview-description">
         <h2>Activity Description</h2>
-        <p>{activity.description}</p>
+        <p>{activity.description || 'No description provided.'}</p>
       </div>
 
+      {/* Tabs for Student/Teacher views */}
       <div className="preview-tabs">
         <button 
           className={`tab-button ${activeTab === 'student' ? 'active' : ''}`}
@@ -161,73 +223,165 @@ const PreviewActivity = () => {
         </button>
       </div>
 
+      {/* Level navigation if multiple levels exist */}
+      {activity.levels && activity.levels.length > 1 && (
+        <div className="level-navigation">
+          <h3 className="section-title">
+            <FontAwesomeIcon icon={faLayerGroup} /> Levels
+          </h3>
+          <div className="level-tabs">
+            {activity.levels.map((level, index) => (
+              <button
+                key={index}
+                className={`level-tab ${index === activeLevel ? 'active' : ''}`}
+                onClick={() => handleLevelChange(index)}
+              >
+                {level.levelName || `Level ${index + 1}`}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="preview-content">
         {activeTab === 'student' ? (
           <div className="student-view">
-            <h2>Reading Passage</h2>
-            
-            <div className="reading-passage">
-              {activity.contentType === 'Reading' || activity.contentType === 'Text' ? (
-                // Reading passage
-                <div className="passages-container">
-                  {samplePassages.map(passage => (
-                    <div key={passage.id} className="passage-item">
-                      <div className="passage-media">
-                        <img src={passage.image} alt="Supporting visual" />
+            {/* Reading passage section */}
+            {activity.hasReadingPassage !== false && currentLevel?.passage?.text && (
+              <div className="passage-section">
+                <h2>
+                  <FontAwesomeIcon icon={faBookOpen} /> Reading Passage
+                </h2>
+                
+                <div className="reading-passage">
+                  <div className="passage-content">
+                    <p className="passage-text">{currentLevel.passage.text}</p>
+                    
+                    {currentLevel.passage.syllables && (
+                      <div className="passage-syllables">
+                        <h4>Syllable Breakdown:</h4>
+                        <p>{currentLevel.passage.syllables}</p>
                       </div>
-                      <div className="passage-text">
-                        <p>{passage.text}</p>
-                        <button className="audio-button">
-                          <FontAwesomeIcon icon={faVolumeUp} /> Listen
-                        </button>
+                    )}
+                    
+                    {currentLevel.passage.translation && (
+                      <div className="passage-translation">
+                        <h4>Translation/Notes:</h4>
+                        <p>{currentLevel.passage.translation}</p>
                       </div>
+                    )}
+                    
+                    <button className="audio-button">
+                      <FontAwesomeIcon icon={faVolumeUp} /> Listen
+                    </button>
+                  </div>
+                  
+                  {currentLevel.passage.imagePreview && (
+                    <div className="passage-media">
+                      <img 
+                        src={currentLevel.passage.imagePreview} 
+                        alt="Supporting visual" 
+                        className="passage-image"
+                      />
                     </div>
-                  ))}
+                  )}
                 </div>
-              ) : activity.contentType === 'Image' ? (
-                // Image based content
-                <div className="image-content">
-                  <div className="image-display">
-                    <img src="https://via.placeholder.com/800x400?text=Image+Activity" alt="Activity visual" />
-                  </div>
-                  <div className="image-caption">
-                    <p>This is a sample image-based activity for {activity.title}</p>
-                  </div>
-                </div>
-              ) : (
-                // Voice to text content
-                <div className="voice-content">
-                  <div className="voice-prompt">
-                    <h3>Read the following sentence aloud:</h3>
-                    <p className="prompt-text">"Ang mga bata ay masayang naglalaro sa parke."</p>
-                    <button className="record-button">
-                      <FontAwesomeIcon icon={faVolumeUp} /> Listen to Sample
+              </div>
+            )}
+            
+            {/* Questions section */}
+            {currentLevel?.questions && currentLevel.questions.length > 0 && (
+              <div className="questions-section">
+                <h2>Questions</h2>
+                
+                <div className="question-navigation">
+                  <span className="question-counter">
+                    Question {currentQuestion + 1} of {currentLevel.questions.length}
+                  </span>
+                  <div className="question-nav-buttons">
+                    <button 
+                      className="nav-button"
+                      onClick={prevQuestion}
+                      disabled={currentQuestion === 0}
+                    >
+                      <FontAwesomeIcon icon={faChevronLeft} />
+                    </button>
+                    <button 
+                      className="nav-button"
+                      onClick={nextQuestion}
+                      disabled={currentQuestion === currentLevel.questions.length - 1}
+                    >
+                      <FontAwesomeIcon icon={faChevronRight} />
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
-            
-            <h2>Questions</h2>
-            <div className="questions-container">
-              {sampleQuestions.map(question => (
-                <div key={question.id} className="question-item">
-                  <h3 className="question-text">{question.question}</h3>
-                  <div className="options-list">
-                    {question.options.map((option, index) => (
-                      <div key={index} className="option-item">
-                        <input 
-                          type="radio" 
-                          id={`q${question.id}_opt${index}`} 
-                          name={`question${question.id}`} 
+                
+                {question && (
+                  <div className="question-card">
+                    <div className="question-type-indicator">
+                      <FontAwesomeIcon icon={getContentTypeIcon(question.contentType)} />
+                      <span>
+                        {question.contentType === 'text' && 'Text Question'}
+                        {question.contentType === 'image' && 'Image Question'}
+                        {(question.contentType === 'audio' || question.contentType === 'voice') && 'Audio Question'}
+                      </span>
+                    </div>
+                    
+                    <h3 className="question-text">{question.questionText}</h3>
+                    
+                    {/* Content based on question type */}
+                    {question.contentType === 'image' && question.imagePreview && (
+                      <div className="question-media">
+                        <img 
+                          src={question.imagePreview} 
+                          alt="Question visual"
+                          className="question-image" 
                         />
-                        <label htmlFor={`q${question.id}_opt${index}`}>{option}</label>
                       </div>
-                    ))}
+                    )}
+                    
+                    {(question.contentType === 'audio' || question.contentType === 'voice') && (
+                      <div className="question-media">
+                        <button className="audio-button large">
+                          <FontAwesomeIcon icon={faVolumeUp} /> Play Audio
+                        </button>
+                      </div>
+                    )}
+                    
+                    <div className="options-container">
+                      {question.options.map((option, idx) => (
+                        <div 
+                          key={idx} 
+                          className={`option-item ${idx === question.correctAnswer ? 'correct' : ''}`}
+                        >
+                          <input 
+                            type="radio" 
+                            id={`opt${idx}`} 
+                            name="question-option" 
+                            defaultChecked={idx === question.correctAnswer}
+                          />
+                          <label htmlFor={`opt${idx}`}>
+                            {option}
+                            {idx === question.correctAnswer && activeTab === 'teacher' && (
+                              <span className="correct-answer-indicator">
+                                <FontAwesomeIcon icon={faCheckCircle} />
+                              </span>
+                            )}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {activeTab === 'teacher' && question.hint && (
+                      <div className="question-hint">
+                        <h4>Hint/Explanation:</h4>
+                        <p>{question.hint}</p>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <div className="teacher-view">
@@ -239,30 +393,48 @@ const PreviewActivity = () => {
                 <div className="detail-grid">
                   <div className="detail-item">
                     <span className="detail-label">Created By:</span>
-                    <span className="detail-value">{activity.creator}</span>
+                    <span className="detail-value">{activity.creator || 'Unknown'}</span>
                   </div>
                   <div className="detail-item">
                     <span className="detail-label">Creation Date:</span>
-                    <span className="detail-value">
-                      {new Date(activity.createdAt).toLocaleDateString('en-US', { 
-                        year: 'numeric', month: 'long', day: 'numeric' 
-                      })}
-                    </span>
+                    <span className="detail-value">{formatDate(activity.createdAt)}</span>
                   </div>
                   {activity.lastModified && (
                     <div className="detail-item">
                       <span className="detail-label">Last Modified:</span>
-                      <span className="detail-value">
-                        {new Date(activity.lastModified).toLocaleDateString('en-US', { 
-                          year: 'numeric', month: 'long', day: 'numeric' 
-                        })}
-                      </span>
+                      <span className="detail-value">{formatDate(activity.lastModified)}</span>
+                    </div>
+                  )}
+                  {activity.submittedAt && (
+                    <div className="detail-item">
+                      <span className="detail-label">Submitted for Approval:</span>
+                      <span className="detail-value">{formatDate(activity.submittedAt)}</span>
                     </div>
                   )}
                   <div className="detail-item">
                     <span className="detail-label">Status:</span>
                     <span className={`detail-value status-${activity.status}`}>
-                      {activity.status.charAt(0).toUpperCase() + activity.status.slice(1)}
+                      {activity.status?.charAt(0).toUpperCase() + activity.status?.slice(1) || 'Unknown'}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Structure:</span>
+                    <span className="detail-value">
+                      {activity.hasReadingPassage === false 
+                        ? 'Questions Only'
+                        : 'Reading Passage with Questions'}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Levels:</span>
+                    <span className="detail-value">
+                      {activity.levels?.length || 1} level(s)
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Total Questions:</span>
+                    <span className="detail-value">
+                      {activity.levels?.reduce((sum, level) => sum + (level.questions?.length || 0), 0) || 0}
                     </span>
                   </div>
                 </div>
@@ -272,27 +444,61 @@ const PreviewActivity = () => {
                 <h3>Usage Guidelines</h3>
                 <div className="guidelines">
                   <p>This activity is designed for students at {activity.level} reading level. 
-                  It focuses on {activity.categories.join(', ')} skills and should be 
+                  It focuses on {activity.categories?.join(', ') || 'various'} skills and should be 
                   administered in a quiet environment without distractions.</p>
                   
                   <p>For best results, ensure students understand the instructions thoroughly before 
                   beginning. Allow approximately 15-20 minutes for completion.</p>
+                  
+                  {activity.hasReadingPassage !== false && (
+                    <p>Since this activity includes a reading passage, make sure to give students adequate 
+                    time to read and comprehend the text before answering the questions.</p>
+                  )}
+                  
+                  {activity.levels?.some(level => 
+                    level.questions?.some(q => 
+                      q.contentType === 'audio' || q.contentType === 'voice'
+                    )
+                  ) && (
+                    <p>This activity includes audio components. Ensure students have access to 
+                    headphones or speakers and a quiet environment for the listening tasks.</p>
+                  )}
                 </div>
               </div>
               
               <div className="detail-section">
                 <h3>Correct Answers</h3>
-                <div className="answers-list">
-                  {sampleQuestions.map(question => (
-                    <div key={question.id} className="answer-item">
-                      <div className="question">{question.question}</div>
-                      <div className="answer">
-                        <span className="answer-label">Answer:</span>
-                        <span className="answer-value">{question.correctAnswer}</span>
+                {currentLevel?.questions && (
+                  <div className="answers-list">
+                    {currentLevel.questions.map((q, idx) => (
+                      <div key={idx} className="answer-item">
+                        <div className="question">
+                          <span className="question-number">Q{idx + 1}:</span> {q.questionText}
+                          <span className="question-type">
+                            <FontAwesomeIcon icon={getContentTypeIcon(q.contentType)} />
+                            {q.contentType === 'text' && 'Text'}
+                            {q.contentType === 'image' && 'Image'}
+                            {(q.contentType === 'audio' || q.contentType === 'voice') && 'Audio'}
+                          </span>
+                        </div>
+                        <div className="answer">
+                          <span className="answer-label">Answer:</span>
+                          <span className="answer-value">
+                            {q.options && q.options[q.correctAnswer] 
+                              ? q.options[q.correctAnswer] 
+                              : 'No answer specified'}
+                          </span>
+                        </div>
+                        {q.hint && (
+                          <div className="hint">
+                            <span className="hint-label">Hint:</span>
+                            <span className="hint-value">{q.hint}</span>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

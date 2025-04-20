@@ -21,7 +21,9 @@ import {
   faExclamationTriangle,
   faBookOpen,
   faList,
-  faLanguage
+  faLanguage,
+  faMicrophone,
+  faTextHeight
 } from '@fortawesome/free-solid-svg-icons';
 import "../../../css/Teachers/CreateActivity.css";
 
@@ -49,7 +51,8 @@ const CreateActivity = () => {
     level: readingLevels[1] || '', // Skip "All Levels"
     category: categories[1] || '',  // Skip "All Categories"
     type: typeFromQuery,
-    description: ''
+    description: '',
+    hasReadingPassage: true // Default to true for reading passage
   });
 
   // State for levels with flexible question types
@@ -57,7 +60,7 @@ const CreateActivity = () => {
     {
       id: 1,
       levelName: 'Level 1',
-      // Main story/passage for the level
+      // Reading passage section
       passage: {
         text: '',
         translation: '',
@@ -116,6 +119,14 @@ const CreateActivity = () => {
         [name]: null
       });
     }
+  };
+
+  // Handle reading passage toggle
+  const handleReadingPassageToggle = (hasPassage) => {
+    setBasicInfo({
+      ...basicInfo,
+      hasReadingPassage: hasPassage
+    });
   };
 
   // Get current level
@@ -451,8 +462,8 @@ const CreateActivity = () => {
         return false;
       }
 
-      // Validate passage
-      if (!currentLevelObj.passage.text.trim()) {
+      // Validate passage if hasReadingPassage is true
+      if (basicInfo.hasReadingPassage && !currentLevelObj.passage.text.trim()) {
         newErrors.passage = 'Passage text is required';
       }
 
@@ -515,8 +526,36 @@ const CreateActivity = () => {
         };
 
         console.log('Submitting form data:', formData);
+        
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // In a real implementation, you would post this data to your backend
+        // But for this example, we'll mock adding it to the list of activities
+        
+        // Create a new activity entry
+        const newActivity = {
+          id: Date.now(), // Generate a temp ID
+          title: basicInfo.title,
+          level: basicInfo.level,
+          categories: [basicInfo.category],
+          type: basicInfo.type,
+          contentType: basicInfo.hasReadingPassage ? "Reading" : "Interactive",
+          description: basicInfo.description,
+          creator: "Current Teacher",
+          status: "pending",
+          createdAt: new Date().toISOString(),
+          submittedAt: new Date().toISOString(),
+          levels: formData.levels
+        };
+        
+        // In a real app, you would save this to your database
+        // For now, we'll just log it
+        console.log("New activity created:", newActivity);
+        
+        // Update mock data in localStorage for demo purposes
+        const existingActivities = JSON.parse(localStorage.getItem('mockActivities') || '[]');
+        localStorage.setItem('mockActivities', JSON.stringify([...existingActivities, newActivity]));
 
         setSubmitSuccess(true);
 
@@ -581,7 +620,7 @@ const CreateActivity = () => {
         </h1>
         <p className="page-subtitle">
           {currentStep === 1 ? 'Provide basic information about the activity' :
-            currentStep === 2 ? 'Add passage and questions for this level' :
+            currentStep === 2 ? 'Add content and questions for this level' :
               'Review all levels and submit activity for approval'}
         </p>
       </div>
@@ -716,6 +755,41 @@ const CreateActivity = () => {
                 ></textarea>
               </div>
 
+              <div className="content-structure-selection">
+                <h3 className="section-title">
+                  <FontAwesomeIcon icon={faLayerGroup} /> Activity Structure
+                  <InfoTooltip text="Choose if your activity has a reading passage followed by questions, or just questions." />
+                </h3>
+
+                <div className="structure-options">
+                  <div 
+                    className={`structure-option ${basicInfo.hasReadingPassage ? 'active' : ''}`}
+                    onClick={() => handleReadingPassageToggle(true)}
+                  >
+                    <div className="structure-icon">
+                      <FontAwesomeIcon icon={faBookOpen} />
+                    </div>
+                    <div className="structure-content">
+                      <h4>Reading Passage with Questions</h4>
+                      <p>Includes a reading passage or story followed by comprehension questions</p>
+                    </div>
+                  </div>
+
+                  <div 
+                    className={`structure-option ${!basicInfo.hasReadingPassage ? 'active' : ''}`}
+                    onClick={() => handleReadingPassageToggle(false)}
+                  >
+                    <div className="structure-icon">
+                      <FontAwesomeIcon icon={faList} />
+                    </div>
+                    <div className="structure-content">
+                      <h4>Questions Only</h4>
+                      <p>Contains only question-based activities without a reading passage</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="level-configuration">
                 <h3 className="section-title">
                   <FontAwesomeIcon icon={faLayerGroup} /> Activity Levels
@@ -771,145 +845,149 @@ const CreateActivity = () => {
                 </div>
               </div>
 
-              {/* Passage configuration */}
-              <div className="passage-section">
-                <h3 className="section-title">
-                  <FontAwesomeIcon icon={faBookOpen} /> Reading Passage
-                  <InfoTooltip text="Create the main reading passage for this level. This is what students will read before answering questions." />
-                </h3>
+              {/* Reading Passage (if applicable) */}
+              {basicInfo.hasReadingPassage && (
+                <div className="passage-section">
+                  <h3 className="section-title">
+                    <FontAwesomeIcon icon={faBookOpen} /> Reading Passage
+                    <InfoTooltip text="Create the main reading passage for this level. This is what students will read before answering questions." />
+                  </h3>
 
-                {errors.passage && <div className="error-message section-error">{errors.passage}</div>}
+                  {errors.passage && <div className="error-message section-error">{errors.passage}</div>}
 
-                <div className="form-group">
-                  <label>
-                    Passage Text <span className="required">*</span>
-                    <InfoTooltip text="Enter the main text passage that students will read. Keep it appropriate for the selected reading level." />
-                  </label>
-                  <textarea
-                    value={getCurrentLevel()?.passage?.text || ''}
-                    onChange={(e) => handlePassageChange('text', e.target.value)}
-                    placeholder="Enter the reading passage text..."
-                    rows="4"
-                    className={errors.passage ? 'error' : ''}
-                  ></textarea>
-                </div>
+                  <div className="passage-item-grid">
+                    <div className="passage-label">
+                      <h3>Passage Text</h3>
+                    </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>
-                      Syllable Breakdown
-                      <InfoTooltip text="Break down words into syllables to help with pronunciation (e.g., 'ka-mi-ting')." />
-                    </label>
-                    <textarea
-                      value={getCurrentLevel()?.passage?.syllables || ''}
-                      onChange={(e) => handlePassageChange('syllables', e.target.value)}
-                      placeholder="Break down words by syllables (e.g., 'ka-mi-ting')"
-                      rows="2"
-                    ></textarea>
-                  </div>
+                    <div className="passage-fields">
+                      <label>
+                        Text Content <span className="required">*</span>
+                        <InfoTooltip text="Enter the main text passage that students will read. Keep it appropriate for the selected reading level." />
+                      </label>
+                      <textarea
+                        value={getCurrentLevel()?.passage?.text || ''}
+                        onChange={(e) => handlePassageChange('text', e.target.value)}
+                        placeholder="Enter the reading passage text..."
+                        rows="4"
+                        className={errors.passage ? 'error' : ''}
+                      ></textarea>
+                    </div>
 
-                  <div className="form-group">
-                    <label>
-                      Translation/Notes
-                      <InfoTooltip text="Optional: Provide English translation or notes about the passage for teachers." />
-                    </label>
-                    <textarea
-                      value={getCurrentLevel()?.passage?.translation || ''}
-                      onChange={(e) => handlePassageChange('translation', e.target.value)}
-                      placeholder="Optional: Provide translation or notes"
-                      rows="2"
-                    ></textarea>
-                  </div>
-                </div>
+                    <div className="passage-fields">
+                      <label>
+                        Syllable Breakdown
+                        <InfoTooltip text="Break down words into syllables to help with pronunciation (e.g., 'ka-mi-ting')." />
+                      </label>
+                      <textarea
+                        value={getCurrentLevel()?.passage?.syllables || ''}
+                        onChange={(e) => handlePassageChange('syllables', e.target.value)}
+                        placeholder="Break down words by syllables (e.g., 'ka-mi-ting')"
+                        rows="2"
+                      ></textarea>
+                    </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>
-                      Supporting Image
-                      <InfoTooltip text="Upload an image that illustrates the passage to aid comprehension." />
-                    </label>
-                    <div className="image-upload-container">
-                      {getCurrentLevel()?.passage?.imagePreview ? (
-                        <div className="image-preview">
-                          <img src={getCurrentLevel().passage.imagePreview} alt="Preview" />
-                          <button
-                            type="button"
-                            className="remove-image-btn"
-                            onClick={() => {
-                              handlePassageChange('imageFile', null);
-                              handlePassageChange('imagePreview', null);
-                            }}
-                          >
-                            <FontAwesomeIcon icon={faTrash} />
-                          </button>
+                    <div className="passage-fields">
+                      <label>
+                        Translation/Notes
+                        <InfoTooltip text="Optional: Provide English translation or notes about the passage for teachers." />
+                      </label>
+                      <textarea
+                        value={getCurrentLevel()?.passage?.translation || ''}
+                        onChange={(e) => handlePassageChange('translation', e.target.value)}
+                        placeholder="Optional: Provide translation or notes"
+                        rows="2"
+                      ></textarea>
+                    </div>
+
+                    <div className="media-row-vertical">
+                      <div className="upload-block">
+                        <label>
+                          Supporting Image
+                          <InfoTooltip text="Upload an image that illustrates the passage to aid comprehension." />
+                        </label>
+                        <div className="image-upload-container">
+                          {getCurrentLevel()?.passage?.imagePreview ? (
+                            <div className="image-preview">
+                              <img src={getCurrentLevel().passage.imagePreview} alt="Preview" />
+                              <button
+                                type="button"
+                                className="remove-image-btn"
+                                onClick={() => {
+                                  handlePassageChange('imageFile', null);
+                                  handlePassageChange('imagePreview', null);
+                                }}
+                              >
+                                <FontAwesomeIcon icon={faTrash} />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="upload-placeholder">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                id="passage-image"
+                                onChange={handlePassageImageUpload}
+                                className="file-input"
+                              />
+                              <label htmlFor="passage-image" className="file-label">
+                                <FontAwesomeIcon icon={faImage} />
+                                <span>Choose Image</span>
+                              </label>
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="upload-placeholder">
+                      </div>
+
+                      <div className="upload-block">
+                        <label>
+                          Audio Recording
+                          <InfoTooltip text="Upload an audio recording of the passage to help with pronunciation." />
+                        </label>
+                        <div className="audio-upload-container">
                           <input
                             type="file"
-                            accept="image/*"
-                            id="passage-image"
-                            onChange={handlePassageImageUpload}
+                            accept="audio/*"
+                            id="passage-audio"
                             className="file-input"
+                            onChange={handlePassageAudioUpload}
                           />
-                          <label htmlFor="passage-image" className="file-label">
-                            <FontAwesomeIcon icon={faImage} />
-                            <span>Choose Image</span>
+                          <label htmlFor="passage-audio" className="file-label">
+                            <FontAwesomeIcon icon={faHeadphones} />
+                            <span>Upload Audio</span>
                           </label>
                         </div>
-                      )}
-                    </div>
-                  </div>
 
-                  <div className="form-group">
-                    <label>
-                      Audio Recording
-                      <InfoTooltip text="Upload an audio recording of the passage to help with pronunciation." />
-                    </label>
-                    <div className="audio-upload-container">
-                      <input
-                        type="file"
-                        accept="audio/*"
-                        id="passage-audio"
-                        className="file-input"
-                        onChange={handlePassageAudioUpload}
-                      />
-                      <label htmlFor="passage-audio" className="file-label">
-                        <FontAwesomeIcon icon={faHeadphones} />
-                        <span>Upload Audio</span>
-                      </label>
-                    </div>
-
-                    {getCurrentLevel()?.passage?.audioFile && (
-                      <div className="audio-preview">
-                        <span className="audio-filename">{getCurrentLevel().passage.audioFile.name}</span>
-                        <button
-                          type="button"
-                          className="remove-audio-btn"
-                          onClick={() => handlePassageChange('audioFile', null)}
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
+                        {getCurrentLevel()?.passage?.audioFile && (
+                          <div className="audio-preview">
+                            <span className="audio-filename">{getCurrentLevel().passage.audioFile.name}</span>
+                            <button
+                              type="button"
+                              className="remove-audio-btn"
+                              onClick={() => handlePassageChange('audioFile', null)}
+                            >
+                              <FontAwesomeIcon icon={faTrash} />
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Questions section */}
-              <div className="section-divider"></div>
-
-              <div className="section-title-bar">
-                <h3 className="section-title">
-                  <FontAwesomeIcon icon={faList} /> Questions
-                  <InfoTooltip text="Create questions to test comprehension of the passage. Questions can be text-based, image-based, or audio-based." />
-                </h3>
-              </div>
-
-              {errors.questions && <div className="error-message section-error">{errors.questions}</div>}
-              {errors.options && <div className="error-message section-error">{errors.options}</div>}
-
               <div className="questions-section">
+                <div className="section-title-bar">
+                  <h3 className="section-title">
+                    <FontAwesomeIcon icon={faList} /> Questions
+                    <InfoTooltip text="Create questions to test comprehension. Questions can be text-based, image-based, or audio-based." />
+                  </h3>
+                </div>
+
+                {errors.questions && <div className="error-message section-error">{errors.questions}</div>}
+                {errors.options && <div className="error-message section-error">{errors.options}</div>}
+
                 {getCurrentLevel()?.questions.map((question, qIndex) => (
                   <div className="question-card" key={question.id}>
                     <div className="item-header">
@@ -952,7 +1030,7 @@ const CreateActivity = () => {
                           className={`content-type-button ${question.contentType === 'audio' ? 'active' : ''}`}
                           onClick={() => handleQuestionContentTypeChange(question.id, 'audio')}
                         >
-                          <FontAwesomeIcon icon={faVolumeUp} />
+                          <FontAwesomeIcon icon={faMicrophone} />
                           <span>Audio</span>
                         </button>
                       </div>
@@ -1110,350 +1188,177 @@ const CreateActivity = () => {
                               <FontAwesomeIcon icon={faTrash} />
                             </button>
                           )}
-
-                          
                         </div>
                       ))}
                     </div>
+                  </div>
+                ))}
 
-                    // Continuation from where we left off - finishing the CreateActivity.jsx component
+                <button
+                  type="button"
+                  className="add-question-btn"
+                  onClick={addQuestion}
+                >
+                  <FontAwesomeIcon icon={faPlus} /> Add Another Question
+                </button>
+              </div>
+            </div>
+          )}
 
-// Content type buttons (completing this section)
-<button
-  type="button"
-  className={`content-type-button ${question.contentType === 'text' ? 'active' : ''}`}
-  onClick={() => handleQuestionContentTypeChange(question.id, 'text')}
->
-  <FontAwesomeIcon icon={faFont} />
-  <span>Text</span>
-</button>
-<button
-  type="button"
-  className={`content-type-button ${question.contentType === 'image' ? 'active' : ''}`}
-  onClick={() => handleQuestionContentTypeChange(question.id, 'image')}
->
-  <FontAwesomeIcon icon={faImage} />
-  <span>Image</span>
-</button>
-<button
-  type="button"
-  className={`content-type-button ${question.contentType === 'audio' ? 'active' : ''}`}
-  onClick={() => handleQuestionContentTypeChange(question.id, 'audio')}
->
-  <FontAwesomeIcon icon={faVolumeUp} />
-  <span>Audio</span>
-</button>
-</div>
-</div>
+          {/* Step 3: Review & Submit */}
+          {currentStep === 3 && (
+            <div className="review-section">
+              <div className="review-notice">
+                <FontAwesomeIcon icon={faInfoCircle} className="notice-icon" />
+                <p>Please review your activity before submitting. Once submitted, it will be sent for admin approval.</p>
+              </div>
+              
+              <div className="review-card">
+                <h3>Basic Information</h3>
+                <div className="review-item">
+                  <span className="review-label">Title:</span>
+                  <span className="review-value">{basicInfo.title}</span>
+                </div>
+                <div className="review-item">
+                  <span className="review-label">Reading Level:</span>
+                  <span className="review-value">{basicInfo.level}</span>
+                </div>
+                <div className="review-item">
+                  <span className="review-label">Category:</span>
+                  <span className="review-value">{basicInfo.category}</span>
+                </div>
+                <div className="review-item">
+                  <span className="review-label">Activity Type:</span>
+                  <span className="review-value">
+                    {basicInfo.type === 'template' ? 'Activity Template' :
+                      basicInfo.type === 'assessment' ? 'Pre-Assessment' : 'Practice Module'}
+                  </span>
+                </div>
+                <div className="review-item">
+                  <span className="review-label">Structure:</span>
+                  <span className="review-value">
+                    {basicInfo.hasReadingPassage ? 'Reading Passage with Questions' : 'Questions Only'}
+                  </span>
+                </div>
+                {basicInfo.description && (
+                  <div className="review-item">
+                    <span className="review-label">Description:</span>
+                    <span className="review-value">{basicInfo.description}</span>
+                  </div>
+                )}
+              </div>
 
-<div className="form-group">
-  <label>
-    Question Text <span className="required">*</span>
-    <InfoTooltip text="Enter the question that will be presented to the student." />
-  </label>
-  <textarea
-    value={question.questionText}
-    onChange={(e) => handleQuestionChange(question.id, 'questionText', e.target.value)}
-    placeholder="Enter your question text here..."
-    rows="2"
-    className={errors.questions ? 'error' : ''}
-  ></textarea>
-</div>
-
-{/* Content based on question type */}
-{question.contentType === 'image' && (
-  <div className="form-group">
-    <label>
-      Question Image
-      <InfoTooltip text="Upload an image that will be shown with this question." />
-    </label>
-    <div className="image-upload-container">
-      {question.imagePreview ? (
-        <div className="image-preview">
-          <img src={question.imagePreview} alt="Question visual" />
-          <button
-            type="button"
-            className="remove-image-btn"
-            onClick={() => {
-              handleQuestionChange(question.id, 'imageFile', null);
-              handleQuestionChange(question.id, 'imagePreview', null);
-            }}
-          >
-            <FontAwesomeIcon icon={faTrash} />
-          </button>
-        </div>
-      ) : (
-        <div className="upload-placeholder">
-          <input
-            type="file"
-            accept="image/*"
-            id={`question-image-${question.id}`}
-            onChange={(e) => handleQuestionImageUpload(question.id, e)}
-            className="file-input"
-          />
-          <label htmlFor={`question-image-${question.id}`} className="file-label">
-            <FontAwesomeIcon icon={faImage} />
-            <span>Choose Image</span>
-          </label>
-        </div>
-      )}
-    </div>
-  </div>
-)}
-
-{question.contentType === 'audio' && (
-  <div className="form-group">
-    <label>
-      Question Audio
-      <InfoTooltip text="Upload an audio file that will be played with this question." />
-    </label>
-    <div className="audio-upload-container">
-      <input
-        type="file"
-        accept="audio/*"
-        id={`question-audio-${question.id}`}
-        className="file-input"
-        onChange={(e) => handleQuestionAudioUpload(question.id, e)}
-      />
-      <label htmlFor={`question-audio-${question.id}`} className="file-label">
-        <FontAwesomeIcon icon={faHeadphones} />
-        <span>Upload Audio</span>
-      </label>
-    </div>
-
-    {question.audioFile && (
-      <div className="audio-preview">
-        <span className="audio-filename">{question.audioFile.name}</span>
-        <button
-          type="button"
-          className="remove-audio-btn"
-          onClick={() => handleQuestionChange(question.id, 'audioFile', null)}
-        >
-          <FontAwesomeIcon icon={faTrash} />
-        </button>
-      </div>
-    )}
-  </div>
-)}
-
-<div className="form-group">
-  <label>
-    Hint (optional)
-    <InfoTooltip text="Provide a hint that can be shown to the student if they're having trouble." />
-  </label>
-  <input
-    type="text"
-    value={question.hint}
-    onChange={(e) => handleQuestionChange(question.id, 'hint', e.target.value)}
-    placeholder="Enter a hint to help students (optional)"
-  />
-</div>
-
-<div className="options-container">
-  <div className="options-header">
-    <label>
-      Answer Options <span className="required">*</span>
-      <InfoTooltip text="Create multiple choice options. Mark one as the correct answer." />
-    </label>
-    {question.options.length < 4 && (
-      <button
-        type="button"
-        className="add-option-btn"
-        onClick={() => addOption(question.id)}
-      >
-        <FontAwesomeIcon icon={faPlus} /> Add Option
-      </button>
-    )}
-  </div>
-
-  {question.options.map((option, oIndex) => (
-    <div className="option-row" key={oIndex}>
-      <div className="radio-container">
-        <input
-          type="radio"
-          id={`q${question.id}-o${oIndex}`}
-          name={`q${question.id}-correct`}
-          checked={question.correctAnswer === oIndex}
-          onChange={() => handleCorrectAnswerChange(question.id, oIndex)}
-        />
-        <label htmlFor={`q${question.id}-o${oIndex}`}>Correct</label>
-      </div>
-
-      <div className="option-input">
-        <input
-          type="text"
-          value={option}
-          onChange={(e) => handleOptionChange(question.id, oIndex, e.target.value)}
-          placeholder={`Option ${oIndex + 1}`}
-          className={errors.options ? 'error' : ''}
-        />
-      </div>
-
-      {question.options.length > 2 && (
-        <button
-          type="button"
-          className="remove-option-btn"
-          onClick={() => removeOption(question.id, oIndex)}
-        >
-          <FontAwesomeIcon icon={faTrash} />
-        </button>
-      )}
-    </div>
-  ))}
-</div>
-</div>
-))}
-
-<button
-  type="button"
-  className="add-question-btn"
-  onClick={addQuestion}
->
-  <FontAwesomeIcon icon={faPlus} /> Add Another Question
-</button>
-</div>
-</div>
-)}
-
-{/* Step 3: Review & Submit */}
-{currentStep === 3 && (
-  <div className="review-section">
-    <div className="review-notice">
-      <FontAwesomeIcon icon={faInfoCircle} className="notice-icon" />
-      <p>Please review your activity before submitting. Once submitted, it will be sent for admin approval.</p>
-    </div>
-    
-    <div className="review-card">
-      <h3>Basic Information</h3>
-      <div className="review-item">
-        <span className="review-label">Title:</span>
-        <span className="review-value">{basicInfo.title}</span>
-      </div>
-      <div className="review-item">
-        <span className="review-label">Reading Level:</span>
-        <span className="review-value">{basicInfo.level}</span>
-      </div>
-      <div className="review-item">
-        <span className="review-label">Category:</span>
-        <span className="review-value">{basicInfo.category}</span>
-      </div>
-      <div className="review-item">
-        <span className="review-label">Activity Type:</span>
-        <span className="review-value">
-          {basicInfo.type === 'template' ? 'Activity Template' :
-            basicInfo.type === 'assessment' ? 'Pre-Assessment' : 'Practice Module'}
-        </span>
-      </div>
-      {basicInfo.description && (
-        <div className="review-item">
-          <span className="review-label">Description:</span>
-          <span className="review-value">{basicInfo.description}</span>
-        </div>
-      )}
-    </div>
-
-    <div className="review-card">
-      <h3>Activity Structure</h3>
-      <div className="review-item">
-        <span className="review-label">Number of Levels:</span>
-        <span className="review-value">{levels.length}</span>
-      </div>
-    </div>
-
-    {levels.map(level => (
-      <div className="review-card level-review" key={level.id}>
-        <h3>{level.levelName}</h3>
-        
-        <div className="review-item">
-          <span className="review-label">Passage:</span>
-          <span className="review-value passage-preview">
-            {level.passage.text.length > 100 ? level.passage.text.substring(0, 100) + '...' : level.passage.text}
-          </span>
-        </div>
-        
-        <div className="review-item">
-          <span className="review-label">Questions:</span>
-          <span className="review-value">{level.questions.length}</span>
-        </div>
-        
-        <div className="review-item questions-preview">
-          <span className="review-label">Questions Preview:</span>
-          <div className="questions-list">
-            {level.questions.slice(0, 3).map((q, idx) => (
-              <div key={idx} className="question-preview">
-                <p><strong>Q{idx+1}:</strong> {q.questionText}</p>
-                <div className="question-type-tag">
-                  <FontAwesomeIcon icon={getContentTypeIcon(q.contentType)} />
-                  <span>{q.contentType.charAt(0).toUpperCase() + q.contentType.slice(1)}</span>
+              <div className="review-card">
+                <h3>Activity Structure</h3>
+                <div className="review-item">
+                  <span className="review-label">Number of Levels:</span>
+                  <span className="review-value">{levels.length}</span>
                 </div>
               </div>
-            ))}
-            {level.questions.length > 3 && (
-              <p className="more-questions">...and {level.questions.length - 3} more questions</p>
-            )}
+
+              {levels.map(level => (
+                <div className="review-card level-review" key={level.id}>
+                  <h3>{level.levelName}</h3>
+                  
+                  {basicInfo.hasReadingPassage && (
+                    <div className="review-item">
+                      <span className="review-label">Passage:</span>
+                      <span className="review-value passage-preview">
+                        {level.passage.text.length > 100 ? level.passage.text.substring(0, 100) + '...' : level.passage.text}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="review-item">
+                    <span className="review-label">Questions:</span>
+                    <span className="review-value">{level.questions.length}</span>
+                  </div>
+                  
+                  <div className="review-item questions-preview">
+                    <span className="review-label">Questions Preview:</span>
+                    <div className="questions-list">
+                      {level.questions.slice(0, 3).map((q, idx) => (
+                        <div key={idx} className="question-preview">
+                          <p><strong>Q{idx+1}:</strong> {q.questionText}</p>
+                          <div className="question-type-tag">
+                            <FontAwesomeIcon icon={getContentTypeIcon(q.contentType)} />
+                            <span>{q.contentType.charAt(0).toUpperCase() + q.contentType.slice(1)}</span>
+                          </div>
+                        </div>
+                      ))}
+                      {level.questions.length > 3 && (
+                        <p className="more-questions">...and {level.questions.length - 3} more questions</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <button
+                    type="button"
+                    className="edit-level-btn"
+                    onClick={() => {
+                      setCurrentLevel(level.id);
+                      setCurrentStep(2);
+                      window.scrollTo(0, 0);
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faEdit} /> Edit Level
+                  </button>
+                </div>
+              ))}
+              
+              <div className="approval-info">
+                <h3>Submission Process</h3>
+                <p>When you submit this activity:</p>
+                <ul>
+                  <li>It will be sent to administrators for review</li>
+                  <li>You'll be able to view its status in the "Pending Approval" tab</li>
+                  <li>Once approved, it can be assigned to students</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Form Navigation */}
+          <div className="form-navigation">
+            <button
+              type="button"
+              className="back-btn"
+              onClick={handleBack}
+            >
+              <FontAwesomeIcon icon={faArrowLeft} /> Back
+            </button>
+
+            <button
+              type="submit"
+              className="submit-btn"
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <FontAwesomeIcon icon={faSpinner} className="fa-spin" />
+                  {currentStep === 3 ? 'Submitting...' : 'Saving...'}
+                </>
+              ) : (
+                <>
+                  {currentStep === 1 ? 'Next' :
+                    currentStep === 2 ? (
+                      levels.length > 1 && currentLevel < totalLevels ? (
+                        <>Next Level <FontAwesomeIcon icon={faArrowRight} /></>
+                      ) : (
+                        <>Review <FontAwesomeIcon icon={faArrowRight} /></>
+                      )
+                    ) : 'Submit Activity for Approval'}
+                  {currentStep < 3 && currentStep === 2 && levels.length > 1 && currentLevel >= totalLevels && <FontAwesomeIcon icon={faArrowRight} />}
+                  {currentStep < 3 && currentStep === 1 && <FontAwesomeIcon icon={faArrowRight} />}
+                  {currentStep === 3 && <FontAwesomeIcon icon={faCloudUploadAlt} />}
+                </>
+              )}
+            </button>
           </div>
-        </div>
-        
-        <button
-          type="button"
-          className="edit-level-btn"
-          onClick={() => {
-            setCurrentLevel(level.id);
-            setCurrentStep(2);
-            window.scrollTo(0, 0);
-          }}
-        >
-          <FontAwesomeIcon icon={faEdit} /> Edit Level
-        </button>
+        </form>
       </div>
-    ))}
-    
-    <div className="approval-info">
-      <h3>Submission Process</h3>
-      <p>When you submit this activity:</p>
-      <ul>
-        <li>It will be sent to administrators for review</li>
-        <li>You'll be able to view its status in the "Pending Approval" tab</li>
-        <li>Once approved, it can be assigned to students</li>
-      </ul>
     </div>
-  </div>
-)}
-
-{/* Form Navigation */}
-<div className="form-navigation">
-  <button
-    type="button"
-    className="back-btn"
-    onClick={handleBack}
-  >
-    <FontAwesomeIcon icon={faArrowLeft} /> Back
-  </button>
-
-  <button
-    type="submit"
-    className="submit-btn"
-    disabled={submitting}
-  >
-    {submitting ? (
-      <>
-        <FontAwesomeIcon icon={faSpinner} className="fa-spin" />
-        {currentStep === 3 ? 'Submitting...' : 'Saving...'}
-      </>
-    ) : (
-      <>
-        {currentStep === 1 ? 'Next' :
-          currentStep === 2 ? 'Next' : 'Submit Activity for Approval'}
-        {currentStep < 3 && <FontAwesomeIcon icon={faArrowRight} />}
-        {currentStep === 3 && <FontAwesomeIcon icon={faSave} />}
-      </>
-    )}
-  </button>
-</div>
-</form>
-</div>
-</div>
-);
+  );
 };
 
 export default CreateActivity;

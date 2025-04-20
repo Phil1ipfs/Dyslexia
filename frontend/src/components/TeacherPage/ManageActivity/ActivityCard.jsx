@@ -1,4 +1,3 @@
-// Updated ActivityCard.jsx with enhanced functionality
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -14,7 +13,10 @@ import {
   faFileAlt,
   faImage,
   faVolumeUp,
-  faBookReader
+  faBookReader,
+  faMicrophone,
+  faFont,
+  faLayerGroup
 } from '@fortawesome/free-solid-svg-icons';
 import './ActivityCard.css';
 
@@ -31,11 +33,16 @@ const ActivityCard = ({ activity, onDelete }) => {
 
   // Get icon based on content type
   const getContentTypeIcon = () => {
-    switch(activity.contentType?.toLowerCase()) {
-      case 'reading': return faFileAlt;
+    if (!activity.contentType) return faFileAlt;
+    
+    const contentType = activity.contentType.toLowerCase();
+    switch(contentType) {
+      case 'reading': return faBookReader;
       case 'image': return faImage;
-      case 'voice': return faVolumeUp;
-      default: return faBookReader;
+      case 'voice': 
+      case 'audio': return faVolumeUp;
+      case 'interactive': return faLayerGroup;
+      default: return faFileAlt;
     }
   };
 
@@ -156,6 +163,45 @@ const ActivityCard = ({ activity, onDelete }) => {
     return "No levels defined";
   };
 
+  // Get question types summary
+  const getQuestionTypesSummary = () => {
+    if (!activity.levels || !Array.isArray(activity.levels) || activity.levels.length === 0) {
+      return "No questions";
+    }
+
+    // Collect all questions from all levels
+    const allQuestions = activity.levels.flatMap(level => level.questions || []);
+    
+    if (allQuestions.length === 0) return "No questions";
+    
+    // Count question types
+    const typeCounts = {
+      text: 0,
+      image: 0,
+      audio: 0,
+      voice: 0
+    };
+    
+    allQuestions.forEach(question => {
+      const type = question.contentType?.toLowerCase() || 'text';
+      typeCounts[type] = (typeCounts[type] || 0) + 1;
+    });
+    
+    // Create summary string
+    const parts = [];
+    
+    if (typeCounts.text) parts.push(`${typeCounts.text} text`);
+    if (typeCounts.image) parts.push(`${typeCounts.image} image`);
+    if (typeCounts.audio || typeCounts.voice) {
+      const audioCount = (typeCounts.audio || 0) + (typeCounts.voice || 0);
+      parts.push(`${audioCount} audio`);
+    }
+    
+    return parts.length > 0 
+      ? `${allQuestions.length} questions (${parts.join(', ')})`
+      : `${allQuestions.length} questions`;
+  };
+
   return (
     <div className={`activity-card ${getCardType()}`}>
       <div className="activity-card-header">
@@ -192,13 +238,22 @@ const ActivityCard = ({ activity, onDelete }) => {
           </div>
           
           <div className="metadata-row">
-            <span className="metadata-label">Content Type:</span>
-            <span className="metadata-value">{activity.contentType}</span>
+            <span className="metadata-label">Structure:</span>
+            <span className="metadata-value">
+              {(activity.contentType === 'Reading' || activity.hasReadingPassage) 
+                ? 'Reading passage with questions' 
+                : 'Question-based activity'}
+            </span>
           </div>
           
           <div className="metadata-row">
             <span className="metadata-label">Levels:</span>
             <span className="metadata-value">{getLevelsInfo()}</span>
+          </div>
+          
+          <div className="metadata-row">
+            <span className="metadata-label">Questions:</span>
+            <span className="metadata-value">{getQuestionTypesSummary()}</span>
           </div>
           
           <div className="metadata-row">
@@ -236,10 +291,11 @@ const ActivityCard = ({ activity, onDelete }) => {
           )}
           
           {activity.status === 'rejected' && (
-            <button className="delete-btn" onClick={() => onDelete(activity)}>
-              <FontAwesomeIcon icon={faTrash} /> Delete
-            </button>
-          )}
+  <button className="delete-btn" onClick={() => onDelete(activity)}>
+    <FontAwesomeIcon icon={faTrash} /> Delete
+  </button>
+)}
+
         </div>
       </div>
     </div>

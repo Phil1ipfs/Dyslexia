@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faList } from '@fortawesome/free-solid-svg-icons';
-
-
 import { 
+  faList,
   faSearch, 
   faPlus, 
   faFilter,
-  faFileAlt
+  faFileAlt,
+  faExclamationTriangle 
 } from '@fortawesome/free-solid-svg-icons';
+
 import FilterSidebar from "../../../components/TeacherPage/ManageActivity/FilterSidebar";
 import TabNavigation from "../../../components/TeacherPage/ManageActivity/TabNavigation";
 import ActivityCard from "../../../components/TeacherPage/ManageActivity/ActivityCard";
@@ -62,41 +62,63 @@ function ManageActivities() {
     // Clear any existing activities
     setActivities([]);
     
-    import("../../../data/Teachers/activitiesMockData").then(module => {
-      // Add levels property to each activity
-      const activitiesWithLevels = module.default.map(activity => ({
-        ...activity,
-        levels: Array.from({ length: Math.floor(Math.random() * 3) + 1 }, (_, i) => ({
-          id: i + 1,
-          levelName: `Level ${i + 1}`,
-          questions: Array.from({ length: Math.floor(Math.random() * 5) + 3 }, (_, j) => ({
-            id: j + 1,
-            contentType: ['reading', 'image', 'voice'][Math.floor(Math.random() * 3)]
-          }))
-        }))
-      }));
-      
-      setActivities(activitiesWithLevels);
-      
-      // Update tab counts
-      setTabs(prevTabs => prevTabs.map(tab => {
-        let count = 0;
+    // First, get any newly added activities from localStorage
+    const newlyAddedActivities = JSON.parse(localStorage.getItem('mockActivities') || '[]');
+    
+    const fetchActivities = async () => {
+      try {
+        // Import mock activities
+        const module = await import("../../../data/Teachers/activitiesMockData");
+        const mockData = module.default;
         
-        if (tab.id === 'templates') {
-          count = activitiesWithLevels.filter(a => a.type === 'template').length;
-        } else if (tab.id === 'assessments') {
-          count = activitiesWithLevels.filter(a => a.type === 'assessment').length;
-        } else if (tab.id === 'practice') {
-          count = activitiesWithLevels.filter(a => a.type === 'practice').length;
-        } else if (tab.id === 'pending') {
-          count = activitiesWithLevels.filter(a => a.status === 'pending').length;
-        }
+        // Add levels property to each activity if it doesn't have one
+        const activitiesWithLevels = mockData.map(activity => {
+          if (!activity.levels) {
+            return {
+              ...activity,
+              levels: Array.from({ length: Math.floor(Math.random() * 3) + 1 }, (_, i) => ({
+                id: i + 1,
+                levelName: `Level ${i + 1}`,
+                questions: Array.from({ length: Math.floor(Math.random() * 5) + 3 }, (_, j) => ({
+                  id: j + 1,
+                  contentType: ['reading', 'image', 'voice'][Math.floor(Math.random() * 3)]
+                }))
+              }))
+            };
+          }
+          return activity;
+        });
         
-        return { ...tab, count };
-      }));
-      
-      setLoading(false);
-    });
+        // Combine mock data with newly added activities
+        const combinedActivities = [...activitiesWithLevels, ...newlyAddedActivities];
+        
+        setActivities(combinedActivities);
+        
+        // Update tab counts
+        setTabs(prevTabs => prevTabs.map(tab => {
+          let count = 0;
+          
+          if (tab.id === 'templates') {
+            count = combinedActivities.filter(a => a.type === 'template').length;
+          } else if (tab.id === 'assessments') {
+            count = combinedActivities.filter(a => a.type === 'assessment').length;
+          } else if (tab.id === 'practice') {
+            count = combinedActivities.filter(a => a.type === 'practice').length;
+          } else if (tab.id === 'pending') {
+            count = combinedActivities.filter(a => a.status === 'pending').length;
+          }
+          
+          return { ...tab, count };
+        }));
+      } catch (error) {
+        console.error("Error loading activities:", error);
+        setActivities([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchActivities();
   }, []);
 
   // Filter activities based on current filters
@@ -106,7 +128,7 @@ function ManageActivities() {
     if (activeTab === "practice" && activity.type !== "practice") return false;
     if (activeTab === "pending" && activity.status !== "pending") return false;
     if (selectedLevel !== "All Levels" && activity.level !== selectedLevel) return false;
-    if (selectedCategory !== "All Categories" && !activity.categories.includes(selectedCategory)) return false;
+    if (selectedCategory !== "All Categories" && !activity.categories?.includes(selectedCategory)) return false;
     if (statusFilter !== "All Statuses") {
       if (statusFilter === "Approved" && activity.status !== "approved") return false;
       if (statusFilter === "Pending" && activity.status !== "pending") return false;
@@ -161,6 +183,12 @@ function ManageActivities() {
   const handleDeleteActivity = () => {
     if (activityToDelete) {
       setActivities(prev => prev.filter(a => a.id !== activityToDelete.id));
+      
+      // Also remove from localStorage if it exists there
+      const storedActivities = JSON.parse(localStorage.getItem('mockActivities') || '[]');
+      const updatedStored = storedActivities.filter(a => a.id !== activityToDelete.id);
+      localStorage.setItem('mockActivities', JSON.stringify(updatedStored));
+      
       closeDeleteModal();
     }
   };
@@ -187,19 +215,24 @@ function ManageActivities() {
 
   return (
     <div className="manage-activities-page">
-    <header className="manage-activities-header">
-  <div className="header-left">
-    <h1>
-      <FontAwesomeIcon icon={faList} className="header-icon" />
-      Manage Activities
-    </h1>
-    <p className="page-subtitle">Create, edit, and manage activities for students</p>
-  </div>
-</header>
-
-
+      <header className="manage-activities-header">
+        <div className="header-left">
+          <h1>
+            <FontAwesomeIcon icon={faList} className="header-icon" />
+            Manage Activities
+          </h1>
+          <p className="page-subtitle">Create, edit, and manage activities for students</p>
+        </div>
+      </header>
 
       <div className="manage-activities-container">
+        {/* Mobile filter toggle button - Only shown on small screens */}
+        <button 
+          className="mobile-filters-toggle" 
+          onClick={toggleMobileFilters}
+        >
+          <FontAwesomeIcon icon={faFilter} /> Filter Activities
+        </button>
     
         {/* Filters Panel */}
         <FilterSidebar
@@ -239,13 +272,13 @@ function ManageActivities() {
                 {activeTab === "pending" && "Activities Pending Approval"}
               </h2>
               {activeTab !== "pending" && (
-          <Link to={getCreateLink()} className="add-activity-btn">
-            <FontAwesomeIcon icon={faPlus} />
-            <span>Add New {activeTab === "templates" ? "Activity Template" : 
-                          activeTab === "assessments" ? "Pre-Assessment" : 
-                          "Practice Module"}</span>
-          </Link>
-        )}
+                <Link to={getCreateLink()} className="add-activity-btn">
+                  <FontAwesomeIcon icon={faPlus} />
+                  <span>Add New {activeTab === "templates" ? "Activity Template" : 
+                            activeTab === "assessments" ? "Pre-Assessment" : 
+                            "Practice Module"}</span>
+                </Link>
+              )}
             </div>
 
             {/* Loading State */}
@@ -282,8 +315,6 @@ function ManageActivities() {
                 {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="pagination">
-
-                    
                     <button 
                       className="pagination-arrow" 
                       onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -352,4 +383,3 @@ function ManageActivities() {
 }
 
 export default ManageActivities;
-

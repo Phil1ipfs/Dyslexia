@@ -121,6 +121,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
+
 }
 
 .content-title {
@@ -229,43 +230,7 @@
   line-height: 1.4;
 }
 
-/* Status badges */
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  padding: 0.35rem 0.75rem;
-  border-radius: 4px;
-}
 
-.status-badge.approved {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.status-badge.pending {
-  background-color: #fff3cd;
-  color: #856404;
-  animation: pulse 2s infinite;
-}
-
-.status-badge.locked {
-  background-color: #e9ecef;
-  color: #495057;
-}
-
-.status-badge.rejected {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-
-@keyframes pulse {
-  0% { opacity: 0.8; }
-  50% { opacity: 1; }
-  100% { opacity: 0.8; }
-}
 
 .activity-card-body {
   padding: 1.25rem;
@@ -468,7 +433,6 @@
 .waiting-icon {
   font-size: 1.75rem;
   color: #ffc107;
-  animation: pulse 2s infinite;
 }
 
 .waiting-message p {
@@ -497,9 +461,7 @@
   font-size: 0.9rem;
 }
 
-.pending-icon {
-  animation: pulse 2s infinite;
-}
+
 
 /* Loading & Empty States */
 .loading-state, 
@@ -519,7 +481,6 @@
   border-left-color: #3b4f81;
   border-radius: 50%;
   margin-bottom: 1.5rem;
-  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {

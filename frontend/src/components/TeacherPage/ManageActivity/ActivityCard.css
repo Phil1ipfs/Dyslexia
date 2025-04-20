@@ -46,21 +46,21 @@
 
 /* Card header */
 .activity-card-header {
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e5e9f2;
-  position: relative;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  position: relative;
+  padding: 1.25rem;
   background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .activity-title-area {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  max-width: 70%;
+  flex: 1;
 }
+
 
 .activity-icon {
   color: #3b4f81;
@@ -85,10 +85,9 @@
 .status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  margin-left: 0.5rem;   
   font-size: 0.85rem;
   font-weight: 500;
-  padding: 0.35rem 0.75rem;
   border-radius: 4px;
 }
 
@@ -100,7 +99,7 @@
 .status-badge.pending {
   background-color: #fff3cd;
   color: #856404;
-  animation: pulse 2s infinite;
+
 }
 
 .status-badge.locked {
@@ -113,11 +112,7 @@
   color: #721c24;
 }
 
-@keyframes pulse {
-  0% { opacity: 0.8; }
-  50% { opacity: 1; }
-  100% { opacity: 0.8; }
-}
+
 
 /* Card body */
 .activity-card-body {
