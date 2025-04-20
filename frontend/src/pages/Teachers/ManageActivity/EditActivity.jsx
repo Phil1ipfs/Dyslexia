@@ -8,7 +8,7 @@ import '../../css/Teachers/CreateActivity.css'; // Reusing the same styles
 import { 
   readingLevels, 
   categories 
-} from '../../data/Teachers/activityData.js';
+} from '../../../data/Teachers/activityData.js';
 
 const EditActivity = () => {
   const navigate = useNavigate();
@@ -24,7 +24,7 @@ const EditActivity = () => {
       try {
         // In a real app, you would fetch from your API
         // For now, let's simulate with mock data from our import
-        const mockResponse = await import('../../data/Teachers/activitiesMockData.js');
+        const mockResponse = await import('../../../data/Teachers/activitiesMockData.js');
         const activities = mockResponse.default;
         const activity = activities.find(a => a.id === parseInt(id));
         

@@ -19,7 +19,7 @@ const PreviewActivity = () => {
       try {
         // In a real app, you would fetch from your API
         // For now, let's simulate with mock data from our import
-        const mockResponse = await import('../../data/Teachers/activitiesMockData.js');
+        const mockResponse = await import('../../../data/Teachers/activitiesMockData.js');
         const activities = mockResponse.default;
         const activity = activities.find(a => a.id === parseInt(id));
         
