@@ -612,8 +612,10 @@ const CreateActivity = () => {
 
   return (
     <div className="create-activity-container">
+          <div className="header-container">
+
       <div className="create-activity-header">
-        <h1 className="page-title">
+        <h1 className="page-header">
           {currentStep === 1 ? 'Create New Activity' :
             currentStep === 2 ? `Configure ${getCurrentLevel()?.levelName || 'Level'} Content` :
               'Review & Submit'}
@@ -623,6 +625,7 @@ const CreateActivity = () => {
             currentStep === 2 ? 'Add content and questions for this level' :
               'Review all levels and submit activity for approval'}
         </p>
+        </div>
       </div>
 
       {/* Steps indicator */}
