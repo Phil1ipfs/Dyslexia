@@ -182,14 +182,12 @@
   gap: 0.75rem;
 }
 
-
-
 .metadata-valuee {
   color: var(--gray-800);
-  font-size: 1rem;
+  font-size: 0.95rem;
+  font-family: 'Poppins', sans-serif;
   flex: 1;
-  font-weight: 600;
-
+  font-weight: 500;
 }
 
 /* Category tags */

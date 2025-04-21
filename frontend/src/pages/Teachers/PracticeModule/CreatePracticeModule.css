@@ -76,6 +76,7 @@
     transition: var(--transition-fast);
   }
   
+  
   .edit-level-btn:hover {
     background-color: var(--primary-bg);
   }
