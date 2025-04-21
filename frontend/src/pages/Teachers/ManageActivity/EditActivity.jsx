@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// import { faTimesCircle, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 
 import {
   faArrowLeft,
@@ -11,7 +10,8 @@ import {
   faInfoCircle,
   faExclamationTriangle,
   faCheck,
-  faEdit,             
+  faHourglassStart,
+  faEdit,
   faTrash,
   faPlus,
   faImage,
@@ -56,23 +56,18 @@ const EditActivity = () => {
   // Content type definitions with icons and descriptions
   const contentTypes = [
     {
+      id: 'image',
+      name: 'Question with Image or Audio Based',
+      icon: faImage,
+      description: 'Visually-driven activities with supporting captions and questions with audio or texts or images'
+    },
+    {
       id: 'reading',
       name: 'Reading Passages',
       icon: faBookOpen,
       description: 'Text-based activities with syllable breakdowns and supporting visuals'
     },
-    {
-      id: 'image',
-      name: 'Image Based',
-      icon: faImage,
-      description: 'Visually-driven activities with supporting captions and questions'
-    },
-    {
-      id: 'voice',
-      name: 'Voice to Text',
-      icon: faVolumeUp,
-      description: 'Pronunciation and speaking activities with audio samples'
-    }
+
   ];
 
   // ──── Helper Functions ────────────────────────────────────────────────────────
@@ -128,14 +123,61 @@ const EditActivity = () => {
   const defaultQuestion = () => ({
     id: Date.now(),
     questionText: '',
-    contentType: 'text', // Default question type
+    contentType: 'image',
     options: ['', ''],
     correctAnswer: 0,
     hint: '',
     imageFile: null,
     imagePreview: null,
-    audioFile: null
+    audioFile: null,
+    optionAudioFiles: [null, null],
+    optionAudioUrls: [null, null],
+    optionAudioFiles: [null, null],
+    optionAudioUrls: [null, null],
   });
+
+
+  // Upload/replace one option’s audio
+  const handleOptionAudioUpload = (questionIndex, optionIndex, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+
+    setLevels(prev =>
+      prev.map(level =>
+        level.id !== currentLevel
+          ? level
+          : {
+            ...level,
+            questions: level.questions.map((q, qi) =>
+              qi !== questionIndex
+                ? q
+                : {
+                  ...q,
+                  optionAudioFiles: q.optionAudioFiles.map((f, idx) => idx === optionIndex ? file : f),
+                  optionAudioUrls: q.optionAudioUrls.map((u, idx) => idx === optionIndex ? url : u),
+                }
+            ),
+          }
+      )
+    );
+  };
+  
+  // Add this effect to enforce default content type
+  useEffect(() => {
+    if (currentLevel) {
+      const level = getCurrentLevel();
+      if (level && !level.contentType) {
+        setLevels(prevLevels =>
+          prevLevels.map(lvl =>
+            lvl.id === currentLevel
+              ? { ...lvl, contentType: 'image' }
+              : lvl
+          )
+        );
+      }
+    }
+  }, [currentLevel]);
 
   // ──── Data Loading ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -189,7 +231,7 @@ const EditActivity = () => {
             questions: level.questions.map(q => ({
               id: q.id || Date.now(),
               questionText: q.questionText || '',
-              contentType: q.contentType || 'text',
+              contentType: q.contentType || 'image', // Default to image here too
               options: q.options || ['', ''],
               correctAnswer: q.correctAnswer || 0,
               hint: q.hint || '',
@@ -200,7 +242,7 @@ const EditActivity = () => {
           setCurrentLevel(activity.levels[0].id);
         } else {
           // Create default level with content type based on activity
-          const defaultContentType = activity.contentType?.toLowerCase() || 'reading';
+          const defaultContentType = 'image';
           const newLevel = {
             id: 1,
             levelName: 'Level 1',
@@ -327,21 +369,25 @@ const EditActivity = () => {
 
   // ──── Content Item Management ────────────────────────────────────────────────
   // Add a content item
+  // ──── Content Item Management ────────────────────────────────────────────────
   const addContent = () => {
-    const currentLevelObj = getCurrentLevel();
-    if (!currentLevelObj) return;
-
-    setLevels(prevLevels =>
-      prevLevels.map(level =>
-        level.id === currentLevel
+    setLevels(prev =>
+      prev.map(lvl =>
+        lvl.id === currentLevel
           ? {
-            ...level,
-            content: [...level.content, defaultContent(level.contentType)]
+            ...lvl,
+            content: [
+              // if lvl.content is missing or not an array, use []
+              ...(Array.isArray(lvl.content) ? lvl.content : []),
+              defaultContent(lvl.contentType),
+            ],
           }
-          : level
+          : lvl
       )
     );
   };
+
+
 
   // Remove a content item
   const removeContent = contentId => {
@@ -539,6 +585,30 @@ const EditActivity = () => {
       )
     );
   };
+
+  // Clears out that one option’s audio:
+
+  const removeOptionAudio = (questionIndex, optionIndex) => {
+    setLevels(prev =>
+      prev.map(level =>
+        level.id !== currentLevel
+          ? level
+          : {
+            ...level,
+            questions: level.questions.map((q, qi) =>
+              qi !== questionIndex
+                ? q
+                : {
+                  ...q,
+                  optionAudioFiles: q.optionAudioFiles.map((f, idx) => idx === optionIndex ? null : f),
+                  optionAudioUrls: q.optionAudioUrls.map((u, idx) => idx === optionIndex ? null : u),
+                }
+            ),
+          }
+      )
+    );
+  };
+
 
   // Remove an option from a question
   const removeOption = (questionIndex, optionIndex) => {
@@ -1145,7 +1215,7 @@ const EditActivity = () => {
         {/* Step 2: Content Configuration */}
         {currentStep === 2 && (
           <div className="content-config-section">
-            {/* Level navigation */}
+            {/* ─── Level navigation ─────────────────────────────────────────── */}
             <div className="level-navigation">
               <h3 className="section-title">
                 <FontAwesomeIcon icon={faLayerGroup} /> Configure Level:
@@ -1158,22 +1228,18 @@ const EditActivity = () => {
                     className={`level-tab ${level.id === currentLevel ? 'active' : ''}`}
                     onClick={() => setCurrentLevel(level.id)}
                   >
-                    {level.levelName || `Level ${level.id}`}
+                    {level.levelName}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Content Type Selection */}
+            {/* ─── Content Type Selection ─────────────────────────────────────── */}
             {getCurrentLevel() && (
               <div className="content-type-selection">
                 <h3 className="section-title">
                   <FontAwesomeIcon icon={faFileAlt} /> Content Type
                 </h3>
-                <p className="helper-text">
-                  Select the type of content for this level. Note: For rejected activities, you should maintain the original content type.
-                </p>
-
                 <div className="content-type-options">
                   {contentTypes.map(type => (
                     <div
@@ -1188,313 +1254,114 @@ const EditActivity = () => {
                         <div className="content-type-name">{type.name}</div>
                         <div className="content-type-description">{type.description}</div>
                       </div>
-
-                      {/* Show a lock icon for rejected activities if this wasn't the original type */}
-                      {activityData.status === 'rejected' &&
-                        originalActivity &&
-                        originalActivity.levels?.find(l => l.id === currentLevel)?.contentType !== type.id && (
-                          <div className="content-type-lock">
-                            <FontAwesomeIcon icon={faLock} />
-                          </div>
-                        )}
                     </div>
                   ))}
                 </div>
-
-                {validationErrors.content && (
-                  <div className="error-message section-error">
-                    <FontAwesomeIcon icon={faExclamationTriangle} />
-                    <span>{validationErrors.content}</span>
-                  </div>
-                )}
               </div>
             )}
 
-            {/* Content Items */}
-            {getCurrentLevel() && (
+            {/* ─── Reading‑only Content Items ───────────────────────────────────── */}
+            {getCurrentLevel().contentType === 'reading' && (
               <div className="content-items-section">
                 <h3 className="section-title">
-                  <FontAwesomeIcon
-                    icon={
-                      getCurrentLevel().contentType === 'reading' ? faBookOpen :
-                        getCurrentLevel().contentType === 'image' ? faImage :
-                          faVolumeUp
-                    }
-                  />
-                  {getCurrentLevel().contentType === 'reading' ? 'Reading Passages' :
-                    getCurrentLevel().contentType === 'image' ? 'Image Content' :
-                      'Voice Prompts'}
+                  <FontAwesomeIcon icon={faBookOpen} /> Reading Passages
                 </h3>
 
-                {(getCurrentLevel()?.content ?? []).map((item, index) => (
+                {getCurrentLevel().content.map((item, idx) => (
                   <div key={item.id} className="content-item">
                     <div className="item-header">
-                      <h4>
-                        {getCurrentLevel().contentType === 'reading' ? 'Reading Passage' :
-                          getCurrentLevel().contentType === 'image' ? 'Image Content' :
-                            'Voice Prompt'} {index + 1}
-                      </h4>
+                      <h4>Passage {idx + 1}</h4>
                       <button
                         type="button"
                         className="remove-item-btn"
                         onClick={() => removeContent(item.id)}
                         disabled={getCurrentLevel().content.length <= 1}
-                        aria-label="Remove content item"
                       >
-                        <FontAwesomeIcon icon={faTrash} /> Remove
+                        <FontAwesomeIcon icon={faTrash} />
                       </button>
                     </div>
 
-                    {/* Reading content */}
-                    {getCurrentLevel().contentType === 'reading' && (
-                      <>
-                        <div className="form-group">
-                          <label>
-                            Passage Text <span className="required">*</span>
+                    <div className="form-group">
+                      <label>Text <span className="required">*</span></label>
+                      <textarea
+                        rows="4"
+                        value={item.text}
+                        onChange={e => updateContent(idx, 'text', e.target.value)}
+                        placeholder="Enter passage text..."
+                      />
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Syllables</label>
+                        <textarea
+                          rows="2"
+                          value={item.syllables}
+                          onChange={e => updateContent(idx, 'syllables', e.target.value)}
+                          placeholder="ka-mi-ting"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Notes</label>
+                        <textarea
+                          rows="2"
+                          value={item.translation}
+                          onChange={e => updateContent(idx, 'translation', e.target.value)}
+                          placeholder="Optional notes..."
+                        />
+                      </div>
+                    </div>
+
+                    <div className="media-row">
+                      <div className="media-column">
+                        <label>Image</label>
+                        {item.imagePreview ? (
+                          <div className="image-preview">
+                            <img src={item.imagePreview} alt="" />
+                            <button type="button" onClick={() => {
+                              updateContent(idx, 'imageFile', null);
+                              updateContent(idx, 'imagePreview', null);
+                            }}>
+                              <FontAwesomeIcon icon={faTrash} />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="upload-placeholder">
+                            <FontAwesomeIcon icon={faImage} /> Choose Image
+                            <input type="file" accept="image/*" onChange={e => handleImageUpload(idx, e)} />
                           </label>
-                          <textarea
-                            value={item.text || ''}
-                            onChange={(e) => updateContent(index, 'text', e.target.value)}
-                            placeholder="Enter the reading passage text..."
-                            rows="4"
-                            className={validationErrors.content ? 'error' : ''}
-                          ></textarea>
-                        </div>
+                        )}
+                      </div>
 
-                        <div className="form-row">
-                          <div className="form-group">
-                            <label>Syllable Breakdown</label>
-                            <textarea
-                              value={item.syllables || ''}
-                              onChange={(e) => updateContent(index, 'syllables', e.target.value)}
-                              placeholder="Break down words by syllables (e.g., 'ka-mi-ting')"
-                              rows="2"
-                            ></textarea>
+                      <div className="media-column">
+                        <label>Audio</label>
+                        {item.audioUrl ? (
+                          <div className="audio-preview">
+                            <audio controls src={item.audioUrl} />
+                            <button type="button" onClick={() => {
+                              updateContent(idx, 'audioFile', null);
+                              updateContent(idx, 'audioUrl', null);
+                            }}>
+                              <FontAwesomeIcon icon={faTrash} />
+                            </button>
                           </div>
-
-                          <div className="form-group">
-                            <label>Translation/Notes</label>
-                            <textarea
-                              value={item.translation || ''}
-                              onChange={(e) => updateContent(index, 'translation', e.target.value)}
-                              placeholder="Optional: Provide translation or teacher notes"
-                              rows="2"
-                            ></textarea>
-                          </div>
-                        </div>
-
-                        <div className="media-row">
-                          <div className="media-column">
-                            <label>Supporting Image</label>
-                            <div className="upload-container">
-                              {item.imagePreview ? (
-                                <div className="image-preview">
-                                  <img
-                                    src={item.imagePreview}
-                                    alt="Preview"
-                                    className="preview-image"
-                                  />
-                                  <button
-                                    type="button"
-                                    className="remove-media-btn"
-                                    onClick={() => {
-                                      updateContent(index, 'imageFile', null);
-                                      updateContent(index, 'imagePreview', null);
-                                    }}
-                                    aria-label="Remove image"
-                                  >
-                                    <FontAwesomeIcon icon={faTrash} />
-                                  </button>
-                                </div>
-                              ) : (
-                                <label className="upload-placeholder">
-                                  <FontAwesomeIcon icon={faImage} className="upload-icon" />
-                                  <span>Choose Image</span>
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => handleImageUpload(index, e)}
-                                    className="file-input"
-                                  />
-                                </label>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="media-column">
-                            <label>Audio Recording</label>
-                            <div className="upload-container">
-                              {item.audioUrl ? (
-                                <div className="audio-preview">
-                                  <audio
-                                    controls
-                                    src={item.audioUrl}
-                                    className="audio-player"
-                                  ></audio>
-                                  <button
-                                    type="button"
-                                    className="remove-media-btn"
-                                    onClick={() => {
-                                      updateContent(index, 'audioFile', null);
-                                      updateContent(index, 'audioUrl', null);
-                                    }}
-                                    aria-label="Remove audio"
-                                  >
-                                    <FontAwesomeIcon icon={faTrash} />
-                                  </button>
-                                </div>
-                              ) : (
-                                <label className="upload-placeholder">
-                                  <FontAwesomeIcon icon={faHeadphones} className="upload-icon" />
-                                  <span>Upload Audio</span>
-                                  <input
-                                    type="file"
-                                    accept="audio/*"
-                                    onChange={(e) => handleAudioUpload(index, e)}
-                                    className="file-input"
-                                  />
-                                </label>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    {/* Image content */}
-                    {getCurrentLevel().contentType === 'image' && (
-                      <>
-                        <div className="form-group">
-                          <label>
-                            Image <span className="required">*</span>
+                        ) : (
+                          <label className="upload-placeholder">
+                            <FontAwesomeIcon icon={faHeadphones} /> Upload Audio
+                            <input type="file" accept="audio/*" onChange={e => handleAudioUpload(idx, e)} />
                           </label>
-                          <div className="upload-container">
-                            {item.imagePreview ? (
-                              <div className="image-preview">
-                                <img
-                                  src={item.imagePreview}
-                                  alt="Preview"
-                                  className="preview-image"
-                                />
-                                <button
-                                  type="button"
-                                  className="remove-media-btn"
-                                  onClick={() => {
-                                    updateContent(index, 'imageFile', null);
-                                    updateContent(index, 'imagePreview', null);
-                                  }}
-                                  aria-label="Remove image"
-                                >
-                                  <FontAwesomeIcon icon={faTrash} />
-                                </button>
-                              </div>
-                            ) : (
-                              <label className="upload-placeholder">
-                                <FontAwesomeIcon icon={faImage} className="upload-icon" />
-                                <span>Choose Image</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(e) => handleImageUpload(index, e)}
-                                  className="file-input"
-                                />
-                              </label>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="form-group">
-                          <label>Caption</label>
-                          <textarea
-                            value={item.caption || ''}
-                            onChange={(e) => updateContent(index, 'caption', e.target.value)}
-                            placeholder="Enter a caption or description for this image"
-                            rows="2"
-                          ></textarea>
-                        </div>
-                      </>
-                    )}
-
-                    {/* Voice content */}
-                    {getCurrentLevel().contentType === 'voice' && (
-                      <>
-                        <div className="form-group">
-                          <label>
-                            Text Prompt <span className="required">*</span>
-                          </label>
-                          <textarea
-                            value={item.text || ''}
-                            onChange={(e) => updateContent(index, 'text', e.target.value)}
-                            placeholder="Enter text for students to read aloud or respond to"
-                            rows="3"
-                            className={validationErrors.content ? 'error' : ''}
-                          ></textarea>
-                        </div>
-
-                        <div className="form-group">
-                          <label>Pronunciation Guide</label>
-                          <textarea
-                            value={item.pronunciation || ''}
-                            onChange={(e) => updateContent(index, 'pronunciation', e.target.value)}
-                            placeholder="Provide pronunciation guide for teachers (optional)"
-                            rows="2"
-                          ></textarea>
-                        </div>
-
-                        <div className="form-group">
-                          <label>Sample Audio</label>
-                          <div className="upload-container">
-                            {item.audioUrl ? (
-                              <div className="audio-preview">
-                                <audio
-                                  controls
-                                  src={item.audioUrl}
-                                  className="audio-player"
-                                ></audio>
-                                <button
-                                  type="button"
-                                  className="remove-media-btn"
-                                  onClick={() => {
-                                    updateContent(index, 'audioFile', null);
-                                    updateContent(index, 'audioUrl', null);
-                                  }}
-                                  aria-label="Remove audio"
-                                >
-                                  <FontAwesomeIcon icon={faTrash} />
-                                </button>
-                              </div>
-                            ) : (
-                              <label className="upload-placeholder">
-                                <FontAwesomeIcon icon={faHeadphones} className="upload-icon" />
-                                <span>Upload Audio</span>
-                                <input
-                                  type="file"
-                                  accept="audio/*"
-                                  onChange={(e) => handleAudioUpload(index, e)}
-                                  className="file-input"
-                                />
-                              </label>
-                            )}
-                          </div>
-                        </div>
-                      </>
-                    )}
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
 
-                <button
-                  type="button"
-                  className="add-item-btn"
-                  onClick={addContent}
-                >
-                  <FontAwesomeIcon icon={faPlus} /> Add {
-                    getCurrentLevel().contentType === 'reading' ? 'Reading Passage' :
-                      getCurrentLevel().contentType === 'image' ? 'Image' :
-                        'Voice Prompt'
-                  }
+                <button type="button" className="add-item-btn" onClick={addContent}>
+                  <FontAwesomeIcon icon={faPlus} /> Add Passage
                 </button>
               </div>
             )}
+
 
             {/* Questions */}
             {getCurrentLevel() && (
@@ -1673,6 +1540,8 @@ const EditActivity = () => {
                       </div>
 
                       {question.options.map((option, oIndex) => (
+
+
                         <div key={oIndex} className="option-row">
                           <div className="option-radio">
                             <input
@@ -1695,6 +1564,40 @@ const EditActivity = () => {
                             className={validationErrors.options ? 'error' : ''}
                           />
 
+                          {/* Add this new section for option audio */}
+                          <div className="option-audio-controls">
+                            {question.optionAudioUrls && question.optionAudioUrls[oIndex] ? (
+                              <div className="audio-preview">
+                                <audio
+                                  controls
+                                  src={question.optionAudioUrls[oIndex]}
+                                  className="audio-player"
+                                ></audio>
+                                <button
+                                  type="button"
+                                  className="remove-media-btn"
+                                  onClick={() => removeOptionAudio(qIndex, oIndex)}
+                                  aria-label="Remove audio"
+                                >
+                                  <FontAwesomeIcon icon={faTrash} />
+                                </button>
+                              </div>
+                            ) : (
+                              <label className="option-audio-upload">
+                                <FontAwesomeIcon icon={faHeadphones} />
+                                <span>Add Audio</span>
+                                <input
+                                  type="file"
+                                  accept="audio/*"
+                                  onChange={(e) => handleOptionAudioUpload(qIndex, oIndex, e)}
+                                  className="file-input"
+                                />
+                              </label>
+                            )}
+                          </div>
+                          {/* End of new section */}
+
+
                           {question.options.length > 2 && (
                             <button
                               type="button"
@@ -1707,6 +1610,8 @@ const EditActivity = () => {
                           )}
                         </div>
                       ))}
+
+
                     </div>
 
                     <div className="form-group">
@@ -1734,23 +1639,25 @@ const EditActivity = () => {
                 >
                   <FontAwesomeIcon icon={faPlus} /> Add New Question
                 </button>
-              </div>
-            )}
 
-            {/* Admin approval notice */}
-            <div className="admin-approval-notice">
-              <FontAwesomeIcon icon={faInfoCircle} className="notice-icon" />
-              <div className="notice-content">
-                <p>
-                  <strong>Remember:</strong> After submission, this activity will need admin approval before it becomes available to students.
-                </p>
-                {activityData.status === 'rejected' && (
-                  <p className="rejected-note">
-                    This activity was previously rejected. Please review and address all feedback before resubmitting.
-                  </p>
-                )}
+                {/* Admin approval notice */}
+                <div className="admin-approval-notice">
+                  <FontAwesomeIcon icon={faInfoCircle} className="notice-icon" />
+                  <div className="notice-content">
+                    <p>
+                      <strong>Remember:</strong> After submission, this activity will need admin approval before it becomes available to students.
+                    </p>
+                    {activityData.status === 'rejected' && (
+                      <p className="rejected-note">
+                        This activity was previously rejected. Please review and address all feedback before resubmitting.
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
+
+
+            )}
           </div>
         )}
 

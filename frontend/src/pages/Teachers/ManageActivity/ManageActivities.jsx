@@ -196,7 +196,7 @@ function ManageActivities() {
   const getCreateLink = () => {
     if (activeTab === "templates") return "/teacher/create-activity?type=template";
     if (activeTab === "assessments") return "/teacher/create-activity?type=assessment";
-    if (activeTab === "practice") return "/teacher/create-activity?type=practice";
+    if (activeTab === "practice")    return "/teacher/create-practice-module";         // ← here!
     return "/teacher/create-activity";
   };
 
