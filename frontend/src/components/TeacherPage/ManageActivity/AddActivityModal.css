@@ -716,7 +716,6 @@
 .status-badge.pending {
   background-color: #fff3cd;
   color: #856404;
-  animation: pulse 2s infinite;
 }
 
 .status-badge.locked {

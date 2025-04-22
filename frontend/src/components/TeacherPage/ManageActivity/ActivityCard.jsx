@@ -82,7 +82,6 @@ const ActivityCard = ({ activity, onDelete }) => {
       default:
         // Default types based on activity type
         if (activity.type === 'assessment') return 'assessment';
-        if (activity.type === 'practice') return 'practice';
         return 'primary';
     }
   };
@@ -131,7 +130,7 @@ const ActivityCard = ({ activity, onDelete }) => {
             <div className="status-message-content">
               <h4>Waiting for admin approval</h4>
               <p>This activity cannot be edited while pending approval</p>
-              <p className="status-message-date">
+              <p className="status-message-datee">
                 <FontAwesomeIcon icon={faCalendarAlt} /> Submitted: {formatDate(activity.submittedAt)}
               </p>
             </div>
@@ -186,7 +185,7 @@ const ActivityCard = ({ activity, onDelete }) => {
             <div className="status-message-content">
               <h4>Approved & Locked</h4>
               <p>This activity is locked and cannot be edited</p>
-              <p className="status-message-date">
+              <p className="status-message-datee">
                 <FontAwesomeIcon icon={faCalendarAlt} /> Approved: {formatDate(activity.lastModified)}
               </p>
             </div>
@@ -201,7 +200,7 @@ const ActivityCard = ({ activity, onDelete }) => {
             <div className="status-message-content">
               <h4>Approved</h4>
               <p>This activity is approved and ready to use</p>
-              <p className="status-message-date">
+              <p className="status-message-datee">
                 <FontAwesomeIcon icon={faCalendarAlt} /> Approved: {formatDate(activity.lastModified)}
               </p>
             </div>
@@ -413,19 +412,13 @@ const ActivityCard = ({ activity, onDelete }) => {
             <span className="metadata-valuee">{activity.level}</span>
           </div>
 
-          <div className="metadata-row">
-            <span className="metadata-label">Categories:</span>
-            <div className="category-tags">
-              {renderCategoryTags(activity.categories)}
-            </div>
-          </div>
+         
 
           <div className="metadata-row">
             <span className="metadata-label">Type:</span>
             <span className="metadata-valuee">
               {activity.type === 'template' && 'Activity Template'}
               {activity.type === 'assessment' && 'Pre-Assessment'}
-              {activity.type === 'practice' && 'Practice Module'}
             </span>
           </div>
 
@@ -463,7 +456,7 @@ const ActivityCard = ({ activity, onDelete }) => {
           {activity.description && (
             <div className="description-section">
               <span className="metadata-label">Description:</span>
-              <p className="description-text">
+              <p className="description-textt">
                 {expanded || activity.description.length <= 120
                   ? activity.description
                   : `${activity.description.substring(0, 120)}...`}

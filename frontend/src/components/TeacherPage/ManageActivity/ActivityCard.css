@@ -184,8 +184,8 @@
 
 .metadata-valuee {
   color: var(--gray-800);
-  font-size: 0.95rem;
-  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+  /* font-family: 'Poppins', sans-serif; */
   flex: 1;
   font-weight: 500;
 }
@@ -211,9 +211,9 @@
   margin-top: 0.5rem;
 }
 
-.description-text {
+.description-textt {
   margin: 0.5rem 0;
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: var(--gray-700);
   line-height: 1.5;
 }
@@ -480,14 +480,14 @@
   color: var(--error);
 }
 
-.status-message-date {
+.status-message-datee {
   font-size: 0.8rem !important;
   color: var(--gray-600) !important;
   display: flex;
-  margin-top: 1000px;
+  margin-top: 0.75rem !important;
   align-items: center;
   gap: 0.35rem;
-  margin-top: 1rem;
+  margin-top: 100rem;
 
 }
 

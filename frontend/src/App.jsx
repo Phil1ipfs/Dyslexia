@@ -15,13 +15,11 @@ import TeacherProfile from "./pages/Teachers/TeacherProfile";
 import StudentDetails from "./pages/Teachers/StudentDetails";
 import ManageProgress from "./pages/Teachers/ManageProgress";
 import StudentProgressView from "./pages/Teachers/StudentProgressView";
-import PracticeModuleList from "./pages/Teachers/PracticeModule/PracticeModuleList";
 
 // Import activity-related pages
 import CreateActivity from "./pages/Teachers/ManageActivity/CreateActivity";
 import EditActivity from "./pages/Teachers/ManageActivity/EditActivity";
 import PreviewActivity from "./pages/Teachers/ManageActivity/PreviewActivity";
-import CreatePracticeModule from "./pages/Teachers/PracticeModule/CreatePracticeModule";
 
 // Parent Pages
 import ParentDashboard from "./pages/Parents/ParentDashboard";
@@ -97,12 +95,6 @@ function App() {
             <Route path="edit-activity/:id" element={<EditActivity />} />
             <Route path="preview-activity/:id" element={<PreviewActivity />} />
 
-            {/* Practice Module Routes */}
-            <Route path="practice-modules" element={<PracticeModuleList />} />
-            <Route path="create-practice-module" element={<CreatePracticeModule />} />
-            <Route path="create-practice-module/:activityId" element={<CreatePracticeModule />} />
-            <Route path="create-practice-module/:activityId/:studentId" element={<CreatePracticeModule />} />
-
             <Route index element={<Navigate to="dashboard" />} />
           </Route>
         )}
@@ -113,15 +105,6 @@ function App() {
             <Route path="dashboard" element={<ParentDashboard />} />
             <Route path="feedback" element={<Feedback />} />
             <Route path="progress" element={<Progress />} />
-          </Route>
-        )}
-
-        {/* Protected Student Routes */}
-        {isAuthenticated && userType === "student" && (
-          <Route path="/student/*" element={<StudentLayout onLogout={handleLogout} />}>
-            <Route path="dashboard" element={<StudentDashboard />} />
-            <Route path="practice/:id" element={<StudentPracticeView />} />
-            <Route index element={<Navigate to="dashboard" />} />
           </Route>
         )}
 

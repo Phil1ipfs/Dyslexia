@@ -48,11 +48,11 @@ const CreateActivity = () => {
   // Basic activity information
   const [basicInfo, setBasicInfo] = useState({
     title: '',
-    level: readingLevels[1] || '', // Skip "All Levels"
-    category: categories[1] || '',  // Skip "All Categories"
+    level: readingLevels[1] || '', 
+    category: categories[1] || '',  
     type: typeFromQuery,
     description: '',
-    hasReadingPassage: true // Default to true for reading passage
+    hasReadingPassage: true 
   });
 
   // State for levels with flexible question types
@@ -725,7 +725,7 @@ const CreateActivity = () => {
               <div className="form-group">
                 <label htmlFor="type">
                   Activity Type <span className="required">*</span>
-                  <InfoTooltip text="Select whether this is a template, assessment, or practice module. Templates can be reused, assessments are for evaluation, and practice modules are for skill development." />
+                  <InfoTooltip text="Select whether this is a template, assessment. Templates can be reused, assessments are for evaluation are for skill development." />
                 </label>
                 <div className="custom-select">
                   <select
@@ -737,7 +737,6 @@ const CreateActivity = () => {
                   >
                     <option value="template">Activity Template</option>
                     <option value="assessment">Pre-Assessment</option>
-                    <option value="practice">Practice Module</option>
                   </select>
                 </div>
                 {errors.type && <div className="error-message">{errors.type}</div>}
@@ -746,7 +745,7 @@ const CreateActivity = () => {
               <div className="form-group">
                 <label htmlFor="description">
                   Description
-                  <InfoTooltip text="Provide a brief description of what students will learn or practice in this activity." />
+                  <InfoTooltip text="Provide a brief description of what students will learn in this activity." />
                 </label>
                 <textarea
                   id="description"

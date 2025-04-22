@@ -1,13 +1,13 @@
 // Updated AddActivityModal with multi-level support
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faTimes, 
-  faPlus, 
-  faArrowLeft, 
-  faInfoCircle, 
-  faFont, 
-  faImage, 
+import {
+  faTimes,
+  faPlus,
+  faArrowLeft,
+  faInfoCircle,
+  faFont,
+  faImage,
   faVolumeUp,
   faLayerGroup,
   faCheck
@@ -33,23 +33,23 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
         { id: 1, text: '', syllables: '', translation: '', image: null, imagePreview: null }
       ],
       questions: [
-        { 
-          id: 1, 
-          questionText: '', 
-          options: ['', '', '', ''], 
+        {
+          id: 1,
+          questionText: '',
+          options: ['', '', '', ''],
           correctAnswer: 0,
-          hint: '' 
+          hint: ''
         }
       ]
     }
   ]);
   const [currentLevel, setCurrentLevel] = useState(1);
-  
+
   // Reset form error when inputs change
   useEffect(() => {
     if (formError) setFormError('');
   }, [title, selectedLevel, selectedCategory, selectedType]);
-  
+
   // Add a new level
   const addNewLevel = () => {
     const newLevelId = Math.max(...levels.map(l => l.id), 0) + 1;
@@ -63,23 +63,23 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
           { id: Date.now(), text: '', syllables: '', translation: '', image: null, imagePreview: null }
         ],
         questions: [
-          { 
-            id: Date.now(), 
-            questionText: '', 
-            options: ['', '', '', ''], 
+          {
+            id: Date.now(),
+            questionText: '',
+            options: ['', '', '', ''],
             correctAnswer: 0,
-            hint: '' 
+            hint: ''
           }
         ]
       }
     ]);
   };
-  
+
   // Remove a level
   const removeLevel = (levelId) => {
     if (levels.length <= 1) return;
     setLevels(prevLevels => prevLevels.filter(level => level.id !== levelId));
-    
+
     // If we're removing the current level, switch to the first one
     if (currentLevel === levelId) {
       const remainingLevels = levels.filter(level => level.id !== levelId);
@@ -88,39 +88,39 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
       }
     }
   };
-  
+
   // Handle form submission for first step
   const handleStepOneSubmit = (e) => {
     e.preventDefault();
-    
+
     // Validate form
     if (!title.trim()) {
       setFormError('Please enter an activity title');
       return;
     }
-    
+
     // Proceed to next step
     setStep(2);
   };
-  
+
   // Handle content type change
   const handleContentTypeChange = (type) => {
     setContentType(type);
-    
+
     // Update the current level's content type
-    setLevels(prevLevels => 
-      prevLevels.map(level => 
-        level.id === currentLevel 
-          ? {...level, contentType: type} 
+    setLevels(prevLevels =>
+      prevLevels.map(level =>
+        level.id === currentLevel
+          ? { ...level, contentType: type }
           : level
       )
     );
   };
-  
+
   // Handle form submission for second step
   const handleStepTwoSubmit = (e) => {
     e.preventDefault();
-    
+
     // Here you would submit the complete form data
     console.log({
       title,
@@ -130,16 +130,16 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
       description,
       levels
     });
-    
+
     // Close the modal
     onClose();
   };
-  
+
   // Go back to first step
   const goBack = () => {
     setStep(1);
   };
-  
+
   return (
     <div className="modal-overlay">
       <div className="modal-container">
@@ -151,7 +151,7 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
             <FontAwesomeIcon icon={faTimes} />
           </button>
         </div>
-        
+
         {/* Form steps indicator */}
         <div className="form-steps">
           <div className={`step-indicator ${step >= 1 ? 'active' : ''}`}>
@@ -164,7 +164,7 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
             <div className="step-label">Content Configuration</div>
           </div>
         </div>
-        
+
         {step === 1 ? (
           <form onSubmit={handleStepOneSubmit}>
             <div className="modal-body">
@@ -173,22 +173,22 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                   <FontAwesomeIcon icon={faInfoCircle} /> {formError}
                 </div>
               )}
-              
+
               <div className="form-group">
                 <label className="form-label" htmlFor="activity-title">Activity Title</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   id="activity-title"
-                  className="form-control" 
+                  className="form-control"
                   placeholder="Enter a descriptive title..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />
               </div>
-              
+
               <div className="form-group">
                 <label className="form-label" htmlFor="reading-level">Reading Level</label>
-                <select 
+                <select
                   id="reading-level"
                   className="form-control"
                   value={selectedLevel}
@@ -199,10 +199,10 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                   ))}
                 </select>
               </div>
-              
+
               <div className="form-group">
                 <label className="form-label" htmlFor="category">Category</label>
-                <select 
+                <select
                   id="category"
                   className="form-control"
                   value={selectedCategory}
@@ -213,33 +213,39 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                   ))}
                 </select>
               </div>
-              
+
               <div className="form-group">
                 <label className="form-label" htmlFor="activity-type">Activity Type</label>
-                <select 
+                <select
                   id="activity-type"
                   className="form-control"
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value)}
                 >
-                  {activityTypes.map((type) => (
-                    <option key={type.id} value={type.id}>{type.name}</option>
-                  ))}
+
+
+                  {activityTypes
+                    .filter(type => type.id !== 'practice')
+                    .map((type) => (
+                      <option key={type.id} value={type.id}>{type.name}</option>
+                    ))
+                  }
+
                 </select>
               </div>
-              
+
               <div className="form-group">
                 <label className="form-label" htmlFor="description">Description</label>
-                <textarea 
+                <textarea
                   id="description"
-                  className="form-control" 
-                  rows="3" 
+                  className="form-control"
+                  rows="3"
                   placeholder="Enter activity description..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 ></textarea>
               </div>
-              
+
               <div className="level-management">
                 <h3 className="section-title">
                   <FontAwesomeIcon icon={faLayerGroup} /> Activity Levels
@@ -247,13 +253,13 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                 <p className="helper-text">
                   You can create multiple levels for this activity. Each level can have different content types and questions.
                 </p>
-                
+
                 <div className="level-list">
                   {levels.map(level => (
                     <div key={level.id} className="level-item">
                       <span className="level-name">{level.levelName}</span>
                       {levels.length > 1 && (
-                        <button 
+                        <button
                           type="button"
                           className="remove-level-btn"
                           onClick={() => removeLevel(level.id)}
@@ -263,8 +269,8 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                       )}
                     </div>
                   ))}
-                  
-                  <button 
+
+                  <button
                     type="button"
                     className="btn-add-level"
                     onClick={addNewLevel}
@@ -274,7 +280,7 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                 </div>
               </div>
             </div>
-            
+
             <div className="modal-footer">
               <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
               <button type="submit" className="btn-next">Next</button>
@@ -298,12 +304,12 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                   ))}
                 </div>
               </div>
-              
+
               <div className="content-type-selection">
                 <h3 className="section-title">Choose Content Type</h3>
-                
+
                 <div className="content-type-options">
-                  <div 
+                  <div
                     className={`content-type-option ${contentType === 'reading' ? 'active' : ''}`}
                     onClick={() => handleContentTypeChange('reading')}
                   >
@@ -313,8 +319,8 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                     <div className="content-type-label">Text Reading</div>
                     <div className="content-type-desc">Reading passages with questions</div>
                   </div>
-                  
-                  <div 
+
+                  <div
                     className={`content-type-option ${contentType === 'image' ? 'active' : ''}`}
                     onClick={() => handleContentTypeChange('image')}
                   >
@@ -324,8 +330,8 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                     <div className="content-type-label">Image Based</div>
                     <div className="content-type-desc">Activities with visual elements</div>
                   </div>
-                  
-                  <div 
+
+                  <div
                     className={`content-type-option ${contentType === 'voice' ? 'active' : ''}`}
                     onClick={() => handleContentTypeChange('voice')}
                   >
@@ -337,7 +343,7 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                   </div>
                 </div>
               </div>
-              
+
               <div className="content-type-details">
                 {contentType === 'reading' && (
                   <div className="text-content-form">
@@ -347,17 +353,17 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                     </p>
                     <div className="form-group">
                       <label className="form-label">Passage Text</label>
-                      <textarea 
-                        className="form-control" 
-                        rows="4" 
+                      <textarea
+                        className="form-control"
+                        rows="4"
                         placeholder="Enter reading passage text..."
                       ></textarea>
                     </div>
                     <div className="form-group">
                       <label className="form-label">Syllable Breakdown</label>
-                      <input 
-                        type="text" 
-                        className="form-control" 
+                      <input
+                        type="text"
+                        className="form-control"
                         placeholder="Ex: A-so ni Li-za (hyphenated syllables)"
                       />
                     </div>
@@ -366,7 +372,7 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                     </button>
                   </div>
                 )}
-                
+
                 {contentType === 'image' && (
                   <div className="image-content-form">
                     <h3 className="section-title">Image Based Content</h3>
@@ -385,9 +391,9 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                     </div>
                     <div className="form-group">
                       <label className="form-label">Image Caption</label>
-                      <input 
-                        type="text" 
-                        className="form-control" 
+                      <input
+                        type="text"
+                        className="form-control"
                         placeholder="Enter caption or description of the image..."
                       />
                     </div>
@@ -396,7 +402,7 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                     </button>
                   </div>
                 )}
-                
+
                 {contentType === 'voice' && (
                   <div className="voice-content-form">
                     <h3 className="section-title">Voice to Text Content</h3>
@@ -405,9 +411,9 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                     </p>
                     <div className="form-group">
                       <label className="form-label">Text to Read</label>
-                      <textarea 
-                        className="form-control" 
-                        rows="3" 
+                      <textarea
+                        className="form-control"
+                        rows="3"
                         placeholder="Enter text for students to read aloud..."
                       ></textarea>
                     </div>
@@ -427,59 +433,59 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                   </div>
                 )}
               </div>
-              
+
               {/* Questions Section */}
               <div className="questions-section">
                 <h3 className="section-title">Questions</h3>
                 <p className="helper-text">
                   Create questions to test understanding of the content. Each question should have multiple choices.
                 </p>
-                
+
                 <div className="question-item">
                   <div className="form-group">
                     <label className="form-label">Question Text</label>
-                    <textarea 
-                      className="form-control" 
-                      rows="2" 
+                    <textarea
+                      className="form-control"
+                      rows="2"
                       placeholder="Enter question text..."
                     ></textarea>
                   </div>
-                  
+
                   <div className="options-container">
                     <label className="form-label">Answer Options</label>
                     {[0, 1, 2, 3].map(index => (
                       <div key={index} className="option-row">
-                        <input 
-                          type="radio" 
-                          id={`option-${index}`} 
-                          name="correct-answer" 
-                          className="option-radio" 
+                        <input
+                          type="radio"
+                          id={`option-${index}`}
+                          name="correct-answer"
+                          className="option-radio"
                         />
-                        <input 
-                          type="text" 
-                          className="form-control" 
-                          placeholder={`Option ${index + 1}`} 
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder={`Option ${index + 1}`}
                         />
                       </div>
                     ))}
                   </div>
-                  
+
                   <div className="form-group">
                     <label className="form-label">Hint/Explanation</label>
-                    <textarea 
-                      className="form-control" 
-                      rows="2" 
+                    <textarea
+                      className="form-control"
+                      rows="2"
                       placeholder="Provide a hint or explanation that will be shown if the student answers incorrectly..."
                     ></textarea>
                   </div>
                 </div>
-                
+
                 <button type="button" className="btn-add-section">
                   <FontAwesomeIcon icon={faPlus} /> Add Another Question
                 </button>
               </div>
             </div>
-            
+
             <div className="modal-footer">
               <button type="button" className="btn-back" onClick={goBack}>
                 <FontAwesomeIcon icon={faArrowLeft} /> Back
