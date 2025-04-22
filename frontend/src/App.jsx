@@ -20,6 +20,7 @@ import StudentProgressView from "./pages/Teachers/StudentProgressView";
 import CreateActivity from "./pages/Teachers/ManageActivity/CreateActivity";
 import EditActivity from "./pages/Teachers/ManageActivity/EditActivity";
 import PreviewActivity from "./pages/Teachers/ManageActivity/PreviewActivity";
+import CreatePreAssessment from "./pages/Teachers/PreAssessment/CreatePreAssessment"; 
 
 // Parent Pages
 import ParentDashboard from "./pages/Parents/ParentDashboard";
@@ -94,6 +95,9 @@ function App() {
             <Route path="create-activity" element={<CreateActivity />} />
             <Route path="edit-activity/:id" element={<EditActivity />} />
             <Route path="preview-activity/:id" element={<PreviewActivity />} />
+            
+            {/* Pre-Assessment Routes - New */}
+            <Route path="create-pre-assessment" element={<CreatePreAssessment />} />
 
             <Route index element={<Navigate to="dashboard" />} />
           </Route>

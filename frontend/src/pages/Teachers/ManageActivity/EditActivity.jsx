@@ -132,8 +132,6 @@ const EditActivity = () => {
     audioFile: null,
     optionAudioFiles: [null, null],
     optionAudioUrls: [null, null],
-    optionAudioFiles: [null, null],
-    optionAudioUrls: [null, null],
   });
 
 
