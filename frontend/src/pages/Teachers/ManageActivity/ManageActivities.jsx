@@ -33,7 +33,7 @@ function ManageActivities() {
   const [activeTab, setActiveTab] = useState("templates");
   const [statusFilter, setStatusFilter] = useState("All Statuses");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(2); // Show only 2 items per page
+  const [itemsPerPage] = useState(2);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [activityToDelete, setActivityToDelete] = useState(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
