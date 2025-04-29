@@ -1,3 +1,4 @@
+// src/components/TeacherPage/Sidebar.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -8,7 +9,8 @@ import manageActivityIcon from "../../assets/icons/Teachers/activitymanage.png";
 import teacherProfileIcon from "../../assets/icons/Teachers/Feedback.png";
 import logoutIcon from "../../assets/icons/Teachers/Logout.png";
 import avatarIcon from "../../assets/icons/Teachers/avatar.png";
-import manageProgressIcon from "../../assets/icons/Teachers/progress.png"; // ✅ make sure this icon exists
+import manageProgressIcon from "../../assets/icons/Teachers/progress.png";
+import chatbotIcon from "../../assets/icons/Teachers/chatbot.png"; // You'll need to add this icon
 
 import "./Sidebar.css";
 
@@ -29,6 +31,8 @@ function Sidebar({ defaultActive = "dashboard", onLogout }) {
       setActive("manage-progress");
     } else if (path.includes("/teacher/profile")) {
       setActive("profile");
+    } else if (path.includes("/teacher/chatbot")) {
+      setActive("chatbot");
     } else {
       setActive("");
     }
@@ -46,6 +50,8 @@ function Sidebar({ defaultActive = "dashboard", onLogout }) {
       navigate("/teacher/manage-progress");
     } else if (item === "profile") {
       navigate("/teacher/profile");
+    } else if (item === "chatbot") {
+      navigate("/teacher/chatbot");
     }
   };
 
@@ -78,7 +84,7 @@ function Sidebar({ defaultActive = "dashboard", onLogout }) {
         </li>
         <li className={active === "view-student" ? "active" : ""} onClick={() => handleClick("view-student")}>
           <img src={viewStudentIcon} alt="View Student" />
-          <span> Student Details and Feedback</span>
+          <span>Student Details and Feedback</span>
         </li>
         <li className={active === "manage-activities" ? "active" : ""} onClick={() => handleClick("manage-activities")}>
           <img src={manageActivityIcon} alt="Manage Activities" />
@@ -87,6 +93,10 @@ function Sidebar({ defaultActive = "dashboard", onLogout }) {
         <li className={active === "manage-progress" ? "active" : ""} onClick={() => handleClick("manage-progress")}>
           <img src={manageProgressIcon} alt="Manage Progress" />
           <span>Manage Progress</span>
+        </li>
+        <li className={active === "chatbot" ? "active" : ""} onClick={() => handleClick("chatbot")}>
+          <img src={chatbotIcon} alt="Teaching Assistant" />
+          <span>Chatbot Assistant</span>
         </li>
         <li className={active === "profile" ? "active" : ""} onClick={() => handleClick("profile")}>
           <img src={teacherProfileIcon} alt="Teacher Profile" />

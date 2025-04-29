@@ -15,6 +15,7 @@ import TeacherProfile from "./pages/Teachers/TeacherProfile";
 import StudentDetails from "./pages/Teachers/StudentDetails";
 import ManageProgress from "./pages/Teachers/ManageProgress";
 import StudentProgressView from "./pages/Teachers/StudentProgressView";
+import TeacherChatbot from "./pages/Teachers/TeacherChatbot"; // Add the new chatbot page
 
 // Import activity-related pages
 import CreateActivity from "./pages/Teachers/ManageActivity/CreateActivity";
@@ -90,6 +91,7 @@ function App() {
             <Route path="manage-progress" element={<ManageProgress />} />
             <Route path="student-progress/:id" element={<StudentProgressView />} />
             <Route path="student-details/:id" element={<StudentDetails />} />
+            <Route path="chatbot" element={<TeacherChatbot />} /> {/* Add route for chatbot */}
             
             {/* Activity Management Routes */}
             <Route path="create-activity" element={<CreateActivity />} />

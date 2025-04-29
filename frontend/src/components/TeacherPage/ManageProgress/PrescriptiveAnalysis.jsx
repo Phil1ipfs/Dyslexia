@@ -227,16 +227,6 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
                 </div>
               </div>
               
-              {rec.questions && rec.questions.length > 0 && (
-                <div className="literexia-intervention-questions">
-                  <div className="literexia-questions-preview-header" onClick={() => {
-                    // This would toggle questions visibility in a real implementation
-                  }}>
-                    <h5>Preview ng mga Tanong sa Aktibidad</h5>
-                    <span className="literexia-preview-toggle">Ipakita</span>
-                  </div>
-                </div>
-              )}
             </div>
           ))}
         </div>

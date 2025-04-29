@@ -318,7 +318,6 @@ const notifications = [
   }
 ];
 
-// Export all data for the dashboard
 export default {
   studentsByAntasLevel,
   metrics,
