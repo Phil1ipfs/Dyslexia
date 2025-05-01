@@ -1,495 +1,440 @@
-import React, { useState } from 'react';
-import '../../../css/Teachers/ViewStudent.css';
-import { FaSearch } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
-import { FaChevronDown } from 'react-icons/fa';
+// Handle view student details
+const handleViewDetails = (student) => {
+  navigate(`/teacher/student-details/${student.id}`, { state: { student } });
+};
 
+// Get grouped students
+const getGroupedStudents = () => {
+  if (groupBy === 'none') {
+    return { 'All Students': filteredStudents };
+  }
+
+  return filteredStudents.reduce((groups, student) => {
+    let key;
+    
+    switch (groupBy) {
+      case 'grade':
+        key = student.gradeLevel;
+        break;
+      case 'reading':
+        key = student.readingLevel;
+        break;
+      case 'section':
+        key = student.section;
+        break;
+      default:
+        key = 'All Students';
+    }
+
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+
+    groups[key].push(student);
+    return groups;
+  }, {});
+};
+
+// Reading level descriptions
+const readingLevelDescriptions = {
+  'Antas 1': 'Nag-uumpisang Matuto',
+  'Antas 2': 'Pa-unlad na Nag-aaral',
+  'Antas 3': 'Sanay na Mag-aaral',
+  'Antas 4': 'Maalam na Mag-aaral',
+  'Antas 5': 'Mahusay na Mag-aaral'
+};// src/pages/Teachers/ViewStudent.jsx
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+FaSearch, 
+FaFilter, 
+FaChevronDown, 
+FaSortAmountDown, 
+FaUserGraduate,
+FaChild,
+FaBookReader,
+FaCalendarAlt
+} from 'react-icons/fa';
+// Import dummy data service
+import { getStudents } from '../../../services/StudentDataService';
+import '../../../css/Teachers/ViewStudent.css';
 
 const ViewStudent = () => {
-  const navigate = useNavigate();
-  const [search, setSearch] = useState('');
-  const [readingFilter, setReadingFilter] = useState('All');
-  const [groupBy, setGroupBy] = useState('family');
-  const [isTableView, setIsTableView] = useState(true);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [gradeFilter, setGradeFilter] = useState('All');
+const navigate = useNavigate();
+const [searchQuery, setSearchQuery] = useState('');
+const [readingLevelFilter, setReadingLevelFilter] = useState('all');
+const [gradeFilter, setGradeFilter] = useState('all');
+const [classFilter, setClassFilter] = useState('all');
+const [sortBy, setSortBy] = useState('name');
+const [groupBy, setGroupBy] = useState('none');
+const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+const [students, setStudents] = useState([]);
+const [filteredStudents, setFilteredStudents] = useState([]);
+const [loading, setLoading] = useState(true);
 
-
-  // ===================
-  //  STUDENT DATA HERE
-  // ===================
-  const mockData = [
-    {
-      id: 1,
-      name: 'Isabella Cruz',
-      parent: 'Maricel & Ramon Cruz',
-      studentID: '03223123120',
-      readingLevel: 'A',
-      grade: 'K',
-      age: 5,
-      lastActivity: 'Apr 1, 2025',
-      readingPerformance: 45,
-      activitiesCompleted: 10,
-      totalActivities: 20,
-      progressCharts: [
-        { title: 'Letter Identification', type: 'bar', desc: 'Knows 18 out of 28 letters' },
-        { title: 'Sound Recognition', type: 'line', desc: 'Improved from 30% to 50%' },
-        { title: 'Activity Completion', type: 'donut', desc: '50% Completed' }
-      ],
-      activities: [
-        {
-          title: 'Letter Matching A–Z',
-          category: 'Alpabeto at Tunog',
-          score: 4,
-          total: 5,
-          time: 'Apr 1, 2025, 9:00AM',
-          questions: [
-            { text: 'Ano ang tamang letra ng "aso"?', correct: true },
-            { text: 'Ano ang tunog ng "ba"?', correct: false },
-            { text: 'Ano ang titik para sa "gabi"?', correct: true },
-            { text: 'Alin ang larawan ng "lobo"?', correct: true },
-            { text: 'Ano ang unang tunog sa "ilaw"?', correct: false }
-          ]
-        },
-        {
-          title: 'Sound Recognition (M)',
-          category: 'Alpabeto at Tunog',
-          score: 3,
-          total: 5,
-          time: 'Mar 30, 2025, 10:30AM',
-          questions: [
-            { text: 'Alin ang tamang tunog ng "M"?', correct: true },
-            { text: 'Ano ang tunog ng "Ma"?', correct: true },
-            { text: 'Ang "M" ba ay tunog ng aso?', correct: false },
-            { text: 'Ano ang tunog ng titik "M"?', correct: true },
-            { text: 'Ang "M" ay huling tunog sa "gamot"?', correct: false }
-          ]
-        }
-      ],
-      feedbackHistory: [
-        { date: 'Mar 29, 2025', message: 'Improving on letter sounds' }
-      ],
-      contact: '+63 912 222 3344',
-      email: 'cruz_family@email.com',
-      siblings: [
-        { name: 'Miguel Cruz', grade: 2, id: '03223123126', age: 7, readingLevel: 'B' }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Luis Ramirez',
-      parent: 'Ana Ramirez',
-      studentID: '03223123121',
-      readingLevel: 'B',
-      grade: 1,
-      age: 6,
-      lastActivity: 'Mar 29, 2025',
-      readingPerformance: 60,
-      activitiesCompleted: 14,
-      totalActivities: 20,
-      progressCharts: [
-        { title: 'Sight Word Fluency', type: 'bar', desc: 'Reads 30 sight words correctly' },
-        { title: 'Sentence Completion', type: 'line', desc: 'Improved from 60% to 85%' },
-        { title: 'Activity Rate', type: 'donut', desc: '70% Completed' }
-      ],
-      activities: [
-        {
-          title: 'Sight Word Matching',
-          category: 'Sight Words',
-          score: 4,
-          total: 5,
-          time: 'Mar 29, 2025, 10:00AM',
-          questions: [
-            { text: 'Piliin ang tamang salita para sa larawan ng aso.', correct: true },
-            { text: 'Alin ang salitang "nanay"?', correct: true },
-            { text: 'Ang "mesa" ba ay hayop?', correct: false },
-            { text: 'Tama ba ang salitang "bahay"?', correct: true },
-            { text: 'Ang salitang "mangga" ay kulay asul?', correct: false }
-          ]
-        },
-        {
-          title: 'Pagsunod sa Simpleng Pangungusap',
-          category: 'Simpleng Pangungusap',
-          score: 3,
-          total: 5,
-          time: 'Mar 27, 2025, 8:45AM',
-          questions: [
-            { text: 'Basahin: Si Ana ay kumain ng ___.', correct: true },
-            { text: 'Alin ang tamang pagkakasunod ng salita?', correct: true },
-            { text: 'Tama ba ang pangungusap: "Ako takbo bahay"?', correct: false },
-            { text: 'Tama ba: "Ang bata ay masaya."', correct: true },
-            { text: 'Ang "pusa ay aso" ba ay tama?', correct: false }
-          ]
-        }
-      ],
-      feedbackHistory: [
-        { date: 'Mar 25, 2025', message: 'Struggles with sentence endings' }
-      ],
-      contact: '+63 913 333 1234',
-      email: 'ramirez_family@email.com',
-      siblings: [
-        { name: 'Lucia Ramirez', grade: 3, id: '03223123127', age: 9, readingLevel: 'D' }
-      ]
-    },
-    {
-      id: 3,
-      name: 'Juan Carlos Dela Rosa',
-      parent: 'Nina & Carlos Dela Rosa',
-      studentID: '03223123130',
-      readingLevel: 'D',
-      grade: 3,
-      age: 9,
-      lastActivity: 'Apr 2, 2025',
-      readingPerformance: 88,
-      activitiesCompleted: 28,
-      totalActivities: 30,
-      progressCharts: [
-        { title: 'Story Sequencing', type: 'line', desc: 'Sequencing skills 88%' },
-        { title: 'Inference & Summary', type: 'bar', desc: 'Makes accurate summaries (80%)' },
-        { title: 'Completion Rate', type: 'donut', desc: '93% Completed' }
-      ],
-      activities: [
-        {
-          title: 'Paglalagom ng Talata',
-          category: 'Paglalagom',
-          score: 5,
-          total: 5,
-          time: 'Apr 2, 2025, 8:00AM',
-          questions: [
-            { text: 'Ano ang pangunahing ideya ng talata?', correct: true },
-            { text: 'Tama ba ang pagbibigay ng buod?', correct: true },
-            { text: 'Nabanggit ba ang mga tauhan?', correct: true },
-            { text: 'Tama ba ang pagkakasunod ng pangyayari?', correct: true },
-            { text: 'May maling detalye sa buod?', correct: false }
-          ]
-        },
-        {
-          title: 'Paghinuha Mula sa Kwento',
-          category: 'Paghinuha',
-          score: 4,
-          total: 5,
-          time: 'Mar 30, 2025, 2:30PM',
-          questions: [
-            { text: 'Ano ang damdamin ng tauhan?', correct: true },
-            { text: 'Ano ang dahilan sa likod ng aksyon?', correct: true },
-            { text: 'May patunay ba sa sagot?', correct: false },
-            { text: 'Ang hinuha ba ay lohikal?', correct: true },
-            { text: 'Naintindihan ba ang konteksto?', correct: true }
-          ]
-        }
-      ],
-      feedbackHistory: [],
-      contact: '+63 922 334 5678',
-      email: 'delarosa_family@email.com',
-      siblings: [
-        { name: 'Maria Dela Rosa', grade: 2, id: '03223123131', age: 8, readingLevel: 'C' }
-      ]
-    },
-    {
-      id: 4,
-      name: 'Kit Nicholas T. Santiago',
-      parent: 'Teresa & Roberto Santiago',
-      studentID: '03223123122',
-      readingLevel: 'C',
-      grade: 2,
-      age: 8,
-      lastActivity: 'Feb 28, 2025',
-      readingPerformance: 72,
-      activitiesCompleted: 24,
-      totalActivities: 30,
-      progressCharts: [
-        { title: 'Reading Comprehension Score', type: 'line', desc: 'From 65% to 78% in 3 weeks' },
-        { title: 'Word Recognition Accuracy', type: 'bar', desc: 'Weekly Pattern Accuracy (70%)' },
-        { title: 'Activity Completion Rate', type: 'donut', desc: '76% Completed' }
-      ],
-      activities: [
-        {
-          title: 'Talata: Pangunahing Ideya',
-          category: 'Pangunahing Ideya',
-          score: 4,
-          total: 5,
-          time: 'Apr 2, 2025, 9:00AM',
-          questions: [
-            { text: 'Ano ang pangunahing ideya?', correct: true },
-            { text: 'Tama ba ang detalyeng ibinigay?', correct: true },
-            { text: 'May hindi kaugnay na detalye?', correct: false },
-            { text: 'Malinaw ba ang pagkakasulat?', correct: true },
-            { text: 'Tama ang sagot sa tanong?', correct: true }
-          ]
-        },
-        {
-          title: 'Paggamit ng Konteksto',
-          category: 'Paggamit ng Konteksto',
-          score: 3,
-          total: 5,
-          time: 'Mar 31, 2025, 1:30PM',
-          questions: [
-            { text: 'Naintindihan ba ang salita gamit ang konteksto?', correct: true },
-            { text: 'Tama ba ang kahulugan ng "masigla"?', correct: false },
-            { text: 'Gamitin ang "mabango" sa pangungusap.', correct: true },
-            { text: 'Tama ba ang pagkakagamit ng "mabait"?', correct: true },
-            { text: 'Alin ang maling kahulugan?', correct: false }
-          ]
-        }
-      ],
-      feedbackHistory: [
-        { date: 'March 25, 2025', message: 'Kit improved in paragraph comprehension.' },
-        { date: 'March 20, 2025', message: 'Struggles with context clues—needs support.' }
-      ],
-      contact: '+63 912 345 6789',
-      email: 'santiago_family@email.com',
-      siblings: [
-        { name: 'Anna Santiago', grade: 3, id: '03223123125', age: 9, readingLevel: 'D' }
-      ]
-    },
-    {
-      id: 5,
-      name: 'Sophia Reyes',
-      parent: 'Ana Reyes',
-      studentID: '03223123129',
-      readingLevel: 'E',
-      grade: 3,
-      age: 9,
-      lastActivity: 'Mar 25, 2025',
-      readingPerformance: 90,
-      activitiesCompleted: 27,
-      totalActivities: 30,
-      // Updated so the bar/line charts have numeric references
-      progressCharts: [
-        { title: 'Critical Text Analysis', type: 'line', desc: 'From 75% to 85%' },
-        { title: 'Fact vs Opinion', type: 'bar', desc: 'Identifies 60% biased content' },
-        { title: 'Activity Completion Rate', type: 'donut', desc: '90% Completed' }
-      ],
-      activities: [
-        {
-          title: 'Kritikal na Pagsusuri ng Teksto',
-          category: 'Kritikal na Pagsusuri',
-          score: 5,
-          total: 5,
-          time: 'Apr 2, 2025, 8:00AM',
-          questions: [
-            { text: 'Ano ang layunin ng manunulat?', correct: true },
-            { text: 'Tama ba ang pagsusuri ng nilalaman?', correct: true },
-            { text: 'May bias ba sa teksto?', correct: true },
-            { text: 'Ang opinyon ba ay suportado ng ebidensya?', correct: true },
-            { text: 'May maling konklusyon ba?', correct: false }
-          ]
-        },
-        {
-          title: 'Pagtukoy ng Layunin ng May-akda',
-          category: 'Layunin ng May-akda',
-          score: 4,
-          total: 5,
-          time: 'Apr 1, 2025, 9:30AM',
-          questions: [
-            { text: 'Ano ang gustong ipahiwatig ng may-akda?', correct: true },
-            { text: 'Ang teksto ba ay nagbibigay impormasyon?', correct: true },
-            { text: 'May impluwensiyang layunin ba?', correct: false },
-            { text: 'Tama ba ang interpretasyon ng mambabasa?', correct: true },
-            { text: 'Tumpak ba ang sagot sa layunin?', correct: true }
-          ]
-        }
-      ],
-      feedbackHistory: [
-        { date: 'Mar 28, 2025', message: 'Sophia excels in text analysis.' }
-      ],
-      contact: '+63 923 456 7890',
-      email: 'reyes_family@email.com',
-      siblings: [
-        { name: 'Mateo Reyes', grade: 2, id: '03223123132', age: 8, readingLevel: 'C' }
-      ]
+// Load data from service
+useEffect(() => {
+  const fetchStudents = async () => {
+    try {
+      const data = await getStudents();
+      setStudents(data);
+      setFilteredStudents(data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      setLoading(false);
     }
-  ];
-  // ========== END DATA ==========
-
-  // For reading-level labels in table
-  const readingLevelLabels = {
-    A: 'Unang Antas',
-    B: 'Ikalawang Antas',
-    C: 'Ikatlong Antas',
-    D: 'Ikaapat na Antas',
-    E: 'Ikalimang Antas'
   };
+  
+  fetchStudents();
+}, []);
 
-  const handleSearch = (e) => setSearch(e.target.value.toLowerCase());
-  const handleReadingFilter = (e) => setReadingFilter(e.target.value);
-  const handleGroupChange = (e) => setGroupBy(e.target.value);
-  const toggleView = () => setIsTableView(prev => !prev);
+// Filter and sort students when any filter or search changes
+useEffect(() => {
+  filterAndSortStudents();
+}, [searchQuery, readingLevelFilter, gradeFilter, classFilter, sortBy, students]);
 
-  // helper
-  const groupByKey = (data, keyFn) => {
-    return data.reduce((acc, item) => {
-      const key = keyFn(item);
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(item);
-      return acc;
-    }, {});
-  };
+// Function to filter and sort students
+const filterAndSortStudents = () => {
+  let filtered = [...students];
 
-  // Filter logic
-  const filtered = mockData
-    .filter(s =>
-      s.name.toLowerCase().includes(search) ||
-      s.parent.toLowerCase().includes(search)
-    )
-    .filter(s => readingFilter === 'All' || s.readingLevel === readingFilter)
-    .filter(s => gradeFilter === 'All' || s.grade.toString() === gradeFilter);
+  // Apply search filter
+  if (searchQuery) {
+    const query = searchQuery.toLowerCase();
+    filtered = filtered.filter(student => 
+      student.name.toLowerCase().includes(query) ||
+      student.parent.toLowerCase().includes(query) ||
+      student.id.toLowerCase().includes(query)
+    );
+  }
+
+  // Apply reading level filter
+  if (readingLevelFilter !== 'all') {
+    filtered = filtered.filter(student => student.readingLevel === readingLevelFilter);
+  }
+
+  // Apply grade filter
+  if (gradeFilter !== 'all') {
+    filtered = filtered.filter(student => student.gradeLevel === gradeFilter);
+  }
+
+  // Apply class filter
+  if (classFilter !== 'all') {
+    filtered = filtered.filter(student => student.section === classFilter);
+  }
+
+  // Apply sorting
+  filtered.sort((a, b) => {
+    switch (sortBy) {
+      case 'name':
+        return a.name.localeCompare(b.name);
+      case 'grade':
+        return a.gradeLevel.localeCompare(b.gradeLevel);
+      case 'reading':
+        return a.readingLevel.localeCompare(b.readingLevel);
+      case 'recent':
+        return new Date(b.lastActivityDate) - new Date(a.lastActivityDate);
+      default:
+        return a.name.localeCompare(b.name);
+    }
+  });
+
+  setFilteredStudents(filtered);
+};
+
+// Handle view student details
+const handleViewDetails = (student) => {
+  navigate(`/teacher/student-details/${student.id}`, { state: { student } });
+};
+
+// Get grouped students
+const getGroupedStudents = () => {
+  if (groupBy === 'none') {
+    return { 'All Students': filteredStudents };
+  }
+
+  return filteredStudents.reduce((groups, student) => {
+    let key;
     
-  // Grouping logic
-  const grouped = groupBy !== 'none'
-    ? groupByKey(filtered, s =>
-      groupBy === 'family'
-        ? s.name.split(' ').slice(-1)[0]
-        : groupBy === 'parent'
-          ? s.parent
-          : s.name.split(' ')[0]
-    )
-    : { All: filtered };
+    switch (groupBy) {
+      case 'grade':
+        key = student.gradeLevel;
+        break;
+      case 'reading':
+        key = student.readingLevel;
+        break;
+      case 'section':
+        key = student.section;
+        break;
+      default:
+        key = 'All Students';
+    }
 
-  const handleViewDetails = (student) => {
-    navigate(`/teacher/student-details/${student.id}`, { state: { student } });
-  };
+    if (!groups[key]) {
+      groups[key] = [];
+    }
 
+    groups[key].push(student);
+    return groups;
+  }, {});
+};
 
-  return (
-    <div className="view-student-container">
-      <div className="view-student-header">
-        <div className="header-left">
-          <h1>Student Viewer</h1>
-          <p className="subtext">Group students for easier review and comparison.</p>
+// Reading level descriptions
+const readingLevelDescriptions = {
+  'Antas 1': 'Nag-uumpisang Matuto',
+  'Antas 2': 'Pa-unlad na Nag-aaral',
+  'Antas 3': 'Sanay na Mag-aaral',
+  'Antas 4': 'Maalam na Mag-aaral',
+  'Antas 5': 'Mahusay na Mag-aaral'
+};
+
+// Get reading level CSS class
+const getReadingLevelClass = (level) => {
+  switch (level) {
+    case 'Antas 1': return 'vs-level-1';
+    case 'Antas 2': return 'vs-level-2';
+    case 'Antas 3': return 'vs-level-3';
+    case 'Antas 4': return 'vs-level-4';
+    case 'Antas 5': return 'vs-level-5';
+    default: return '';
+  }
+};
+
+// Get progress CSS class
+const getProgressClass = (progress) => {
+  if (progress >= 85) return 'vs-progress-excellent';
+  if (progress >= 70) return 'vs-progress-good';
+  if (progress >= 50) return 'vs-progress-average';
+  return 'vs-progress-needs-improvement';
+};
+
+// Format date
+const formatDate = (dateString) => {
+  const options = { year: 'numeric', month: 'short', day: 'numeric' };
+  return new Date(dateString).toLocaleDateString('en-US', options);
+};
+
+  const groupedStudents = getGroupedStudents();
+
+return (
+  <div className="vs-container">
+    {/* Header */}
+    <div className="vs-header">
+      <div className="vs-title-section">
+        <h1 className="vs-title">Listahan ng mga Mag-aaral</h1>
+        <p className="vs-subtitle">Tingnan at pamahalaan ang mga detalye ng mag-aaral</p>
+      </div>
+      
+      <div className="vs-search-container">
+        <div className="vs-search-wrapper">
+          <FaSearch className="vs-search-icon" />
+          <input
+            type="text"
+            placeholder="Maghanap ng mag-aaral..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="vs-search-input"
+          />
         </div>
-        <div className="header-right">
-          <h4>Cradle of Learners Inc. Teacher</h4>
-          <div className="teacher-profile-wrapper">
-            <div className="teacher-avatar" onClick={() => setShowDropdown(prev => !prev)}>TC</div>
-            {showDropdown && (
-              <div className="profile-dropdown">
-                <div className="dropdown-item">My Profile</div>
-                <div className="dropdown-item" onClick={() => alert('Logging out...')}>Logout</div>
-              </div>
-            )}
+        
+        <button 
+          className="vs-filter-toggle" 
+          onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+        >
+          <FaFilter /> Mga Filter
+          <FaChevronDown className={`vs-chevron ${isFiltersOpen ? 'vs-rotate' : ''}`} />
+        </button>
+      </div>
+    </div>
+    
+    {/* Filters Section */}
+    <div className={`vs-filters-section ${isFiltersOpen ? 'vs-filters-open' : ''}`}>
+      <div className="vs-filter-row">
+        <div className="vs-filter-group">
+          <label className="vs-filter-label">Antas ng Pagbasa:</label>
+          <div className="vs-select-wrapper">
+            <select
+              value={readingLevelFilter}
+              onChange={(e) => setReadingLevelFilter(e.target.value)}
+              className="vs-select"
+            >
+              <option value="all">Lahat ng Antas</option>
+              <option value="Antas 1">Antas 1: Nag-uumpisang Matuto</option>
+              <option value="Antas 2">Antas 2: Pa-unlad na Nag-aaral</option>
+              <option value="Antas 3">Antas 3: Sanay na Mag-aaral</option>
+              <option value="Antas 4">Antas 4: Maalam na Mag-aaral</option>
+              <option value="Antas 5">Antas 5: Mahusay na Mag-aaral</option>
+            </select>
+            <FaChevronDown className="vs-select-icon" />
+          </div>
+        </div>
+        
+        <div className="vs-filter-group">
+          <label className="vs-filter-label">Baitang:</label>
+          <div className="vs-select-wrapper">
+            <select
+              value={gradeFilter}
+              onChange={(e) => setGradeFilter(e.target.value)}
+              className="vs-select"
+            >
+              <option value="all">Lahat ng Baitang</option>
+              <option value="Kindergarten">Kindergarten</option>
+              <option value="Grade 1">Grade 1</option>
+              <option value="Grade 2">Grade 2</option>
+              <option value="Grade 3">Grade 3</option>
+            </select>
+            <FaChevronDown className="vs-select-icon" />
+          </div>
+        </div>
+        
+        <div className="vs-filter-group">
+          <label className="vs-filter-label">Seksiyon:</label>
+          <div className="vs-select-wrapper">
+            <select
+              value={classFilter}
+              onChange={(e) => setClassFilter(e.target.value)}
+              className="vs-select"
+            >
+              <option value="all">Lahat ng Seksiyon</option>
+              <option value="Sampaguita">Sampaguita</option>
+              <option value="Rosal">Rosal</option>
+              <option value="Lily">Lily</option>
+              <option value="Orchid">Orchid</option>
+            </select>
+            <FaChevronDown className="vs-select-icon" />
+          </div>
+        </div>
+        
+        <div className="vs-filter-group">
+          <label className="vs-filter-label">Pagkakabukod:</label>
+          <div className="vs-select-wrapper">
+            <select
+              value={groupBy}
+              onChange={(e) => setGroupBy(e.target.value)}
+              className="vs-select"
+            >
+              <option value="none">Walang Pagkakabukod</option>
+              <option value="grade">Ayon sa Baitang</option>
+              <option value="reading">Ayon sa Antas ng Pagbasa</option>
+              <option value="section">Ayon sa Seksiyon</option>
+            </select>
+            <FaChevronDown className="vs-select-icon" />
+          </div>
+        </div>
+        
+        <div className="vs-filter-group">
+          <label className="vs-filter-label">Ayusin ayon sa:</label>
+          <div className="vs-select-wrapper">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="vs-select"
+            >
+              <option value="name">Pangalan</option>
+              <option value="grade">Baitang</option>
+              <option value="reading">Antas ng Pagbasa</option>
+            </select>
+            <FaChevronDown className="vs-select-icon" />
           </div>
         </div>
       </div>
-
-      {/* Filters */}
-      <div className="view-student-filters">
-        <div className="search-wrapper">
-          <FaSearch className="search-inline-icon" />
-          <input
-            type="text"
-            placeholder="Search student or parent"
-            value={search}
-            onChange={handleSearch}
-          />
+    </div>
+    
+    {/* Results Summary */}
+    <div className="vs-results-summary">
+      <span className="vs-results-count">
+        Natagpuan: <strong>{filteredStudents.length}</strong> (na) mag-aaral
+      </span>
+      <span className="vs-results-sort">
+        <FaSortAmountDown /> Nakaayos ayon sa: <strong>{sortBy === 'name' ? 'Pangalan' : 
+          sortBy === 'grade' ? 'Baitang' : 
+          sortBy === 'reading' ? 'Antas ng Pagbasa' : 
+          'Huling Aktibidad'}</strong>
+      </span>
+    </div>
+    
+    {/* Students List */}
+    <div className="vs-students-list">
+      {loading ? (
+        <div className="vs-loading">
+          <div className="vs-loading-spinner"></div>
+          <p>Naglo-load ng mga datos...</p>
         </div>
-
-        <div className="custom-select-wrapper">
-
-          <select value={readingFilter} onChange={handleReadingFilter}>
-            <option value="All">Antas ng Pagbasa</option>
-            <option value="A">Antas Uno</option>
-            <option value="B">Antas Dalawa</option>
-            <option value="C">Antas Tatlo</option>
-            <option value="D">Antas Apat</option>
-            <option value="E">Antas Lima</option>
-          </select>
-          <FaChevronDown className="select-icon" />
-        </div>
-
-        <div className="custom-select-wrapper">
-
-          <select value={groupBy} onChange={handleGroupChange}>
-            <option value="family">Group by Family</option>
-            <option value="parent">Group by Parent</option>
-            <option value="name">Group by First Name</option>
-            <option value="none">No Grouping</option>
-          </select>
-          <FaChevronDown className="select-icon" />
-
-        </div>
-
-        <div className="custom-select-wrapper">
-          <select value={gradeFilter} onChange={(e) => setGradeFilter(e.target.value)}>
-            <option value="All">Grade Level</option>
-            <option value="K">Kindergarten</option>
-            <option value="1">Grade 1</option>
-            <option value="2">Grade 2</option>
-            <option value="3">Grade 3</option>
-          </select>
-          <FaChevronDown className="select-icon" />
-        </div>
-      </div>
-
-
-      {/* Conditionally Render Table or Text List */}
-      {isTableView ? (
-        <div className="view-student-table">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Parent</th>
-                <th>Student ID</th>
-                <th>Reading Level</th>
-                <th>Grade</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(grouped).map(([group, students]) => (
-                <React.Fragment key={group}>
-                  {groupBy !== 'name' && group !== 'All' && (
-                    <tr className="group-row">
-                      <td colSpan="7">Group: {group}</td>
-                    </tr>
-                  )}
-                  {students.map((s) => (
-                    <tr key={s.id}>
-                      <td>{s.id}</td>
-                      <td>{s.name}</td>
-                      <td>{s.parent}</td>
-                      <td>{s.studentID}</td>
-                      <td>{readingLevelLabels[s.readingLevel]}</td>
-                      <td>{`Grade ${s.grade}`}</td>
-                      <td>
-                        <button className="view-btn" onClick={() => handleViewDetails(s)}>
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </React.Fragment>
-              ))}
-            </tbody>
-
-          </table>
+      ) : filteredStudents.length === 0 ? (
+        <div className="vs-no-results">
+          <p>Walang natagpuang mag-aaral na tumutugma sa mga filter.</p>
         </div>
       ) : (
-        <div className="text-list-view">
-          {Object.entries(grouped).map(([group, students]) => (
-            <React.Fragment key={group}>
-              {groupBy !== 'name' && group !== 'All' && (
-                <p className="text-group-label">Group: {group}</p>
-              )}
-              {students.map((s) => (
-                <p key={s.id} className="text-row">
-                  <strong>{s.name}</strong> | Parent: {s.parent} | ID: {s.studentID} | Antas: {readingLevelLabels[s.readingLevel]}
-                  <button
-                    className="view-btn-inline"
-                    onClick={() => handleViewDetails(s)}
-                  >
-                    View
-                  </button>
-                </p>
+        Object.entries(groupedStudents).map(([group, students]) => (
+          <div key={group} className="vs-group-section">
+            {group !== 'All Students' && (
+              <h2 className="vs-group-title">{group}</h2>
+            )}
+            
+            <div className="vs-cards-grid">
+              {students.map(student => (
+                <div key={student.id} className="vs-student-card">
+                  <div className="vs-card-header">
+                    <div className="vs-student-avatar">
+                      {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </div>
+                    <div className="vs-student-basic-info">
+                      <h3 className="vs-student-name">{student.name}</h3>
+                      <span className="vs-student-id">{student.id}</span>
+                    </div>
+                    <div className={`vs-reading-level ${getReadingLevelClass(student.readingLevel)}`}>
+                      {student.readingLevel}
+                    </div>
+                  </div>
+                  
+                  <div className="vs-card-details">
+                    <div className="vs-detail-row">
+                      <div className="vs-detail-item">
+                        <FaUserGraduate className="vs-detail-icon" />
+                        <span className="vs-detail-text">{student.gradeLevel}</span>
+                      </div>
+                      <div className="vs-detail-item">
+                        <FaChild className="vs-detail-icon" />
+                        <span className="vs-detail-text">{student.age} taong gulang</span>
+                      </div>
+                    </div>
+                    
+                    <div className="vs-detail-row">
+                      <div className="vs-detail-item">
+                        <FaBookReader className="vs-detail-icon" />
+                        <span className="vs-detail-text">{readingLevelDescriptions[student.readingLevel]}</span>
+                      </div>
+                  
+                    </div>
+                    
+                    <div className="vs-progress-section">
+                      <div className="vs-progress-header">
+                      
+                      </div>
+                     
+                    </div>
+                    
+                    <div className="vs-parent-info">
+                      <span className="vs-parent-label">Magulang/Tagapag-alaga:</span>
+                      <span className="vs-parent-name">{student.parent}</span>
+                    </div>
+                    
+                    <button 
+                      className="vs-view-details-btn"
+                      onClick={() => handleViewDetails(student)}
+                    >
+                      Tingnan ang Detalye
+                    </button>
+                  </div>
+                </div>
               ))}
-            </React.Fragment>
-          ))}
-        </div>
+            </div>
+          </div>
+        ))
       )}
     </div>
-  );
+  </div>
+);
 };
 
 export default ViewStudent;
