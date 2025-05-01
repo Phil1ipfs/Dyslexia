@@ -1,6 +1,6 @@
 // src/services/StudentService.js
 // =============================================================================
-// Mock service for Student Progress View
+// Enhanced service for Teacher Dashboard and Student Progress View
 // (details, assessments, progress, lesson assignment, prescriptive flow)
 // =============================================================================
 
@@ -13,7 +13,14 @@
 const mockStudents = [
   { id: '101', name: 'Juan dela Cruz',  age: 7, gradeLevel: 'Grade 1',  gender: 'Lalaki', section: 'Sampaguita' },
   { id: '102', name: 'Maria Santos',    age: 6, gradeLevel: 'Kindergarten', gender: 'Babae',  section: 'Rosal'     },
-  { id: '103', name: 'Pedro Reyes',     age: 8, gradeLevel: 'Grade 2',  gender: 'Lalaki', section: 'Orchid'    }
+  { id: '103', name: 'Pedro Reyes',     age: 8, gradeLevel: 'Grade 2',  gender: 'Lalaki', section: 'Orchid'    },
+  { id: '104', name: 'Ana Gomez',       age: 6, gradeLevel: 'Kindergarten', gender: 'Babae',  section: 'Rosal'     },
+  { id: '105', name: 'Carlos Mendoza',  age: 7, gradeLevel: 'Grade 1',  gender: 'Lalaki', section: 'Sampaguita' },
+  { id: '106', name: 'Sofia Cruz',      age: 6, gradeLevel: 'Kindergarten', gender: 'Babae',  section: 'Rosal'     },
+  { id: '107', name: 'Miguel Lim',      age: 8, gradeLevel: 'Grade 2',  gender: 'Lalaki', section: 'Orchid'    },
+  { id: '108', name: 'Isabella Garcia', age: 7, gradeLevel: 'Grade 1',  gender: 'Babae',  section: 'Sampaguita' },
+  { id: '109', name: 'Jose Bautista',   age: 9, gradeLevel: 'Grade 3',  gender: 'Lalaki', section: 'Sampaguita' },
+  { id: '110', name: 'Gabriela Torres', age: 9, gradeLevel: 'Grade 3',  gender: 'Babae',  section: 'Rosal'     }
 ];
 
 // -----------------------------------------------------------------------------
@@ -126,6 +133,90 @@ const mockPreAssessmentResults = {
       }
     ],
     focusAreas: 'pag-unawa sa binasa'
+  },
+  
+  // ── Ana ────────────────────────────────────────────────────────────────
+  '104': {
+    studentId: '104',
+    readingLevel: 'Antas 1',
+    recommendedLevel: 'Antas 1',
+    assessmentDate: 'April 14, 2025',
+    scores: { patinig: 50, pantig: 45, pagkilalaNgSalita: 40, pagUnawaSaBinasa: 35 },
+    skillDetails: [
+      {
+        category: 'Patinig',
+        score: 50,
+        analysis: 'Si Ana ay may pangunahing kaalaman sa patinig ngunit nahihirapan sa pagkilala ng tunog.',
+        sampleQuestions: []
+      }
+    ],
+    focusAreas: 'pagkilala ng mga patinig at tunog'
+  },
+  
+  // ── Carlos ──────────────────────────────────────────────────────────────
+  '105': {
+    studentId: '105',
+    readingLevel: 'Antas 2',
+    recommendedLevel: 'Antas 2',
+    assessmentDate: 'April 16, 2025',
+    scores: { patinig: 68, pantig: 65, pagkilalaNgSalita: 62, pagUnawaSaBinasa: 58 },
+    skillDetails: [],
+    focusAreas: 'pagkilala ng mga salita at pag-unawa'
+  },
+  
+  // ── Sofia ───────────────────────────────────────────────────────────────
+  '106': {
+    studentId: '106',
+    readingLevel: 'Antas 1',
+    recommendedLevel: 'Antas 1',
+    assessmentDate: 'April 13, 2025',
+    scores: { patinig: 48, pantig: 43, pagkilalaNgSalita: 38, pagUnawaSaBinasa: 33 },
+    skillDetails: [],
+    focusAreas: 'direksyong pakaliwa-pakanan at pagkilala ng tunog'
+  },
+  
+  // ── Miguel ──────────────────────────────────────────────────────────────
+  '107': {
+    studentId: '107',
+    readingLevel: 'Antas 3',
+    recommendedLevel: 'Antas 3',
+    assessmentDate: 'April 11, 2025',
+    scores: { patinig: 82, pantig: 78, pagkilalaNgSalita: 76, pagUnawaSaBinasa: 72 },
+    skillDetails: [],
+    focusAreas: 'diptonggo at klaster'
+  },
+  
+  // ── Isabella ────────────────────────────────────────────────────────────
+  '108': {
+    studentId: '108',
+    readingLevel: 'Antas 2',
+    recommendedLevel: 'Antas 2',
+    assessmentDate: 'April 15, 2025',
+    scores: { patinig: 70, pantig: 67, pagkilalaNgSalita: 65, pagUnawaSaBinasa: 60 },
+    skillDetails: [],
+    focusAreas: 'pang-abay na pamaraan'
+  },
+  
+  // ── Jose ────────────────────────────────────────────────────────────────
+  '109': {
+    studentId: '109',
+    readingLevel: 'Antas 4',
+    recommendedLevel: 'Antas 4',
+    assessmentDate: 'April 10, 2025',
+    scores: { patinig: 90, pantig: 88, pagkilalaNgSalita: 85, pagUnawaSaBinasa: 82 },
+    skillDetails: [],
+    focusAreas: 'panghalip panao'
+  },
+  
+  // ── Gabriela ────────────────────────────────────────────────────────────
+  '110': {
+    studentId: '110',
+    readingLevel: 'Antas 4',
+    recommendedLevel: 'Antas 4',
+    assessmentDate: 'April 11, 2025',
+    scores: { patinig: 92, pantig: 90, pagkilalaNgSalita: 88, pagUnawaSaBinasa: 85 },
+    skillDetails: [],
+    focusAreas: 'kayarian ng pangngalan'
   }
 };
 
@@ -186,10 +277,10 @@ const mockProgressData = {
       { id: 'act202', title: 'Pagbuo ng Payak na Pantig',   category: 'Pantig',  date: '2025-04-15T09:30:00Z', score: 48, timeSpent: 12 }
     ],
     skillMasteryOverTime: {
-      patinig: [ { date: '2025-04-13', score: 50 } ],
-      pantig:  [ { date: '2025-04-15', score: 48 } ],
-      pagkilalaNgSalita: [],
-      pagUnawaSaBinasa: []
+      patinig: [ { date: '2025-04-13', score: 50 }, { date: '2025-04-20', score: 52 } ],
+      pantig:  [ { date: '2025-04-15', score: 48 }, { date: '2025-04-22', score: 50 } ],
+      pagkilalaNgSalita: [ { date: '2025-04-18', score: 38 }, { date: '2025-04-25', score: 40 } ],
+      pagUnawaSaBinasa: [ { date: '2025-04-19', score: 33 }, { date: '2025-04-26', score: 35 } ]
     }
   },
 
@@ -204,10 +295,116 @@ const mockProgressData = {
       { id: 'act301', title: 'Tekstong Deskriptibo', category: 'Pag-unawa sa Binasa', date: '2025-04-11T10:00:00Z', score: 75, timeSpent: 25 }
     ],
     skillMasteryOverTime: {
-      patinig: [ { date: '2025-04-05', score: 88 }, { date: '2025-04-11', score: 90 } ],
-      pantig:  [ { date: '2025-04-05', score: 82 }, { date: '2025-04-11', score: 85 } ],
-      pagkilalaNgSalita: [ { date: '2025-04-11', score: 80 } ],
-      pagUnawaSaBinasa:  [ { date: '2025-04-11', score: 75 } ]
+      patinig: [ { date: '2025-04-05', score: 88 }, { date: '2025-04-11', score: 90 }, { date: '2025-04-18', score: 92 }, { date: '2025-04-25', score: 93 } ],
+      pantig:  [ { date: '2025-04-05', score: 82 }, { date: '2025-04-11', score: 85 }, { date: '2025-04-18', score: 87 }, { date: '2025-04-25', score: 89 } ],
+      pagkilalaNgSalita: [ { date: '2025-04-11', score: 80 }, { date: '2025-04-18', score: 82 }, { date: '2025-04-25', score: 85 } ],
+      pagUnawaSaBinasa:  [ { date: '2025-04-11', score: 75 }, { date: '2025-04-18', score: 78 }, { date: '2025-04-25', score: 80 } ]
+    }
+  },
+  
+  // Add basic progress data for all students
+  '104': {
+    studentId: '104',
+    activitiesCompleted: 6,
+    totalActivities: 18,
+    totalTimeSpent: 150,
+    scores: { patinig: 51, pantig: 46, pagkilalaNgSalita: 42, pagUnawaSaBinasa: 36 },
+    recentActivities: [],
+    skillMasteryOverTime: {
+      patinig: [ { date: '2025-04-14', score: 49 }, { date: '2025-04-21', score: 51 } ],
+      pantig:  [ { date: '2025-04-14', score: 44 }, { date: '2025-04-21', score: 46 } ],
+      pagkilalaNgSalita: [ { date: '2025-04-14', score: 40 }, { date: '2025-04-21', score: 42 } ],
+      pagUnawaSaBinasa: [ { date: '2025-04-14', score: 35 }, { date: '2025-04-21', score: 36 } ]
+    }
+  },
+  
+  '105': {
+    studentId: '105',
+    activitiesCompleted: 13,
+    totalActivities: 25,
+    totalTimeSpent: 280,
+    scores: { patinig: 70, pantig: 67, pagkilalaNgSalita: 63, pagUnawaSaBinasa: 59 },
+    recentActivities: [],
+    skillMasteryOverTime: {
+      patinig: [ { date: '2025-04-11', score: 66 }, { date: '2025-04-18', score: 68 }, { date: '2025-04-25', score: 70 } ],
+      pantig:  [ { date: '2025-04-11', score: 64 }, { date: '2025-04-18', score: 65 }, { date: '2025-04-25', score: 67 } ],
+      pagkilalaNgSalita: [ { date: '2025-04-11', score: 60 }, { date: '2025-04-18', score: 62 }, { date: '2025-04-25', score: 63 } ],
+      pagUnawaSaBinasa: [ { date: '2025-04-11', score: 56 }, { date: '2025-04-18', score: 58 }, { date: '2025-04-25', score: 59 } ]
+    }
+  },
+  
+  '106': {
+    studentId: '106',
+    activitiesCompleted: 7,
+    totalActivities: 20,
+    totalTimeSpent: 170,
+    scores: { patinig: 49, pantig: 45, pagkilalaNgSalita: 40, pagUnawaSaBinasa: 36 },
+    recentActivities: [],
+    skillMasteryOverTime: {
+      patinig: [ { date: '2025-04-13', score: 47 }, { date: '2025-04-20', score: 49 } ],
+      pantig:  [ { date: '2025-04-13', score: 43 }, { date: '2025-04-20', score: 45 } ],
+      pagkilalaNgSalita: [ { date: '2025-04-13', score: 38 }, { date: '2025-04-20', score: 40 } ],
+      pagUnawaSaBinasa: [ { date: '2025-04-13', score: 34 }, { date: '2025-04-20', score: 36 } ]
+    }
+  },
+  
+  '107': {
+    studentId: '107',
+    activitiesCompleted: 20,
+    totalActivities: 28,
+    totalTimeSpent: 420,
+    scores: { patinig: 84, pantig: 80, pagkilalaNgSalita: 78, pagUnawaSaBinasa: 74 },
+    recentActivities: [],
+    skillMasteryOverTime: {
+      patinig: [ { date: '2025-04-07', score: 80 }, { date: '2025-04-14', score: 82 }, { date: '2025-04-21', score: 84 } ],
+      pantig:  [ { date: '2025-04-07', score: 76 }, { date: '2025-04-14', score: 78 }, { date: '2025-04-21', score: 80 } ],
+      pagkilalaNgSalita: [ { date: '2025-04-07', score: 74 }, { date: '2025-04-14', score: 76 }, { date: '2025-04-21', score: 78 } ],
+      pagUnawaSaBinasa: [ { date: '2025-04-07', score: 70 }, { date: '2025-04-14', score: 72 }, { date: '2025-04-21', score: 74 } ]
+    }
+  },
+  
+  '108': {
+    studentId: '108',
+    activitiesCompleted: 14,
+    totalActivities: 25,
+    totalTimeSpent: 300,
+    scores: { patinig: 72, pantig: 69, pagkilalaNgSalita: 67, pagUnawaSaBinasa: 62 },
+    recentActivities: [],
+    skillMasteryOverTime: {
+      patinig: [ { date: '2025-04-08', score: 68 }, { date: '2025-04-15', score: 70 }, { date: '2025-04-22', score: 72 } ],
+      pantig:  [ { date: '2025-04-08', score: 65 }, { date: '2025-04-15', score: 67 }, { date: '2025-04-22', score: 69 } ],
+      pagkilalaNgSalita: [ { date: '2025-04-08', score: 63 }, { date: '2025-04-15', score: 65 }, { date: '2025-04-22', score: 67 } ],
+      pagUnawaSaBinasa: [ { date: '2025-04-08', score: 58 }, { date: '2025-04-15', score: 60 }, { date: '2025-04-22', score: 62 } ]
+    }
+  },
+  
+  '109': {
+    studentId: '109',
+    activitiesCompleted: 26,
+    totalActivities: 30,
+    totalTimeSpent: 520,
+    scores: { patinig: 92, pantig: 90, pagkilalaNgSalita: 87, pagUnawaSaBinasa: 84 },
+    recentActivities: [],
+    skillMasteryOverTime: {
+      patinig: [ { date: '2025-04-03', score: 86 }, { date: '2025-04-10', score: 89 }, { date: '2025-04-17', score: 91 }, { date: '2025-04-24', score: 92 } ],
+      pantig:  [ { date: '2025-04-03', score: 84 }, { date: '2025-04-10', score: 87 }, { date: '2025-04-17', score: 89 }, { date: '2025-04-24', score: 90 } ],
+      pagkilalaNgSalita: [ { date: '2025-04-03', score: 81 }, { date: '2025-04-10', score: 84 }, { date: '2025-04-17', score: 86 }, { date: '2025-04-24', score: 87 } ],
+      pagUnawaSaBinasa: [ { date: '2025-04-03', score: 78 }, { date: '2025-04-10', score: 81 }, { date: '2025-04-17', score: 83 }, { date: '2025-04-24', score: 84 } ]
+    }
+  },
+  
+  '110': {
+    studentId: '110',
+    activitiesCompleted: 28,
+    totalActivities: 30,
+    totalTimeSpent: 540,
+    scores: { patinig: 94, pantig: 92, pagkilalaNgSalita: 90, pagUnawaSaBinasa: 88 },
+    recentActivities: [],
+    skillMasteryOverTime: {
+      patinig: [ { date: '2025-04-04', score: 88 }, { date: '2025-04-11', score: 91 }, { date: '2025-04-18', score: 93 }, { date: '2025-04-25', score: 94 } ],
+      pantig:  [ { date: '2025-04-04', score: 86 }, { date: '2025-04-11', score: 89 }, { date: '2025-04-18', score: 91 }, { date: '2025-04-25', score: 92 } ],
+      pagkilalaNgSalita: [ { date: '2025-04-04', score: 84 }, { date: '2025-04-11', score: 87 }, { date: '2025-04-18', score: 89 }, { date: '2025-04-25', score: 90 } ],
+      pagUnawaSaBinasa: [ { date: '2025-04-04', score: 82 }, { date: '2025-04-11', score: 85 }, { date: '2025-04-18', score: 87 }, { date: '2025-04-25', score: 88 } ]
     }
   }
 };
@@ -254,28 +451,287 @@ const mockRecommendedLessons = {
 // -----------------------------------------------------------------------------
 const mockPrescriptiveRecommendations = {
   '101': [
-    { id: 'rec101', title: 'Karagdagang Gawain: Diptonggo', category: 'Patinig', rationale: 'Mahina ang marka sa mga tunog /aw/ at /iw/.', status: 'draft' }
+    { id: 'rec101', title: 'Karagdagang Gawain: Diptonggo', category: 'Patinig', rationale: 'Mahina ang marka sa mga tunog /aw/ at /iw/.', status: 'draft' },
+    { id: 'rec102', title: 'Mga Interactive na Laro: Pantig', category: 'Pantig', rationale: 'Nahihirapan sa pagbuo ng mga komplikadong pantig.', status: 'draft' }
   ],
-  '102': [],
-  '103': []
+  '102': [
+    { id: 'rec201', title: 'Patinig Flashcards', category: 'Patinig', rationale: 'Kailangan ng higit na pagsasanay sa pagkilala ng patinig.', status: 'draft' }
+  ],
+  '103': [
+    { id: 'rec301', title: 'Komprehensyon sa Pagbasa', category: 'Pag-unawa sa Binasa', rationale: 'Dapat palakasin ang kakayahang maghinuha mula sa binasa.', status: 'draft' }
+  ],
+  '104': [
+    { id: 'rec401', title: 'Tunog ng mga Patinig', category: 'Patinig', rationale: 'Magbigay ng higit na pagsasanay sa pagkilala ng tunog ng mga patinig.', status: 'draft' }
+  ],
+  '105': [
+    { id: 'rec501', title: 'Pagbasa ng Salita', category: 'Pagkilala ng Salita', rationale: 'Kailangan ng karagdagang pagsasanay sa pagkilala ng salita.', status: 'draft' }
+  ],
+  '106': [
+    { id: 'rec601', title: 'Direksyong Pakaliwa-Pakanan', category: 'Pagkilala ng Salita', rationale: 'Tulungan sa pagbasa ng direksyon mula kaliwa papuntang kanan.', status: 'draft' }
+  ],
+  '107': [
+    { id: 'rec701', title: 'Diptonggo at Klaster', category: 'Patinig', rationale: 'Palakasin ang pagkilala sa mga diptonggo at klaster.', status: 'draft' }
+  ],
+  '108': [
+    { id: 'rec801', title: 'Pang-abay na Pamaraan', category: 'Pagkilala ng Salita', rationale: 'Bigyang pansin ang paggamit ng pang-abay na pamaraan.', status: 'draft' }
+  ],
+  '109': [],
+  '110': []
 };
 
-// -----------------------------------------------------------------------------
-// F. ADMIN APPROVAL QUEUE
-// -----------------------------------------------------------------------------
-const mockAdminApprovals = { '101': [], '102': [], '103': [] };
-
 /* -------------------------------------------------------------------------- */
-/*  2.  HELPER “API” FUNCTIONS                                                */
+/*  2.  HELPER "API" FUNCTIONS                                                */
 /* -------------------------------------------------------------------------- */
-const apiDelay = (ms = 400) => new Promise(res => setTimeout(res, ms));
+const apiDelay = (ms = 0) => new Promise(res => setTimeout(res, ms));
 
+// Export all required functions
 export async function getStudentDetails(id)              { await apiDelay(); return mockStudents.find(s => s.id === id) || null; }
 export async function getPreAssessmentResults(id)        { await apiDelay(); return mockPreAssessmentResults[id] || null; }
 export async function getProgressData(id)                { await apiDelay(); return mockProgressData[id] || null; }
 export async function getRecommendedLessons(id)          { await apiDelay(); return mockRecommendedLessons[id] || []; }
 export async function getPrescriptiveRecommendations(id) { await apiDelay(); return mockPrescriptiveRecommendations[id] || []; }
-export async function getAdminApprovals(id)              { await apiDelay(); return mockAdminApprovals[id] || []; }
+
+// Get all students (useful for dashboard)
+export async function getAllStudents() {
+  await apiDelay();
+  return mockStudents;
+}
+
+// Get list of student IDs
+export async function getStudentIds() {
+  await apiDelay();
+  return mockStudents.map(student => student.id);
+}
+
+// Calculate overall metrics for dashboard
+export async function getDashboardMetrics() {
+  await apiDelay();
+  const studentIds = await getStudentIds();
+  
+  let totalActivities = 0;
+  let completedActivities = 0;
+  let pendingActivities = 0;
+  
+  for (const id of studentIds) {
+    const progress = mockProgressData[id];
+    const prescriptiveRecs = mockPrescriptiveRecommendations[id];
+    
+    if (progress) {
+      totalActivities += progress.totalActivities;
+      completedActivities += progress.activitiesCompleted;
+    }
+    
+    if (prescriptiveRecs) {
+      pendingActivities += prescriptiveRecs.filter(rec => rec.status === 'draft').length;
+    }
+  }
+  
+  return {
+    totalStudents: studentIds.length,
+    totalActivities,
+    completedActivities,
+    completionRate: totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0,
+    pendingEdits: pendingActivities
+  };
+}
+
+// Find students needing attention (lowest performing)
+export async function getStudentsNeedingAttention(limit = 5) {
+  await apiDelay();
+  const studentIds = await getStudentIds();
+  const studentsWithScores = [];
+  
+  for (const id of studentIds) {
+    const details = await getStudentDetails(id);
+    const assessment = await getPreAssessmentResults(id);
+    const progress = await getProgressData(id);
+    
+    if (details && assessment && progress) {
+      const avgScore = Math.round(
+        Object.values(progress.scores).reduce((a, b) => a + b, 0) / 
+        Object.values(progress.scores).length
+      );
+      
+      studentsWithScores.push({
+        ...details,
+        readingLevel: assessment.readingLevel,
+        lastScore: avgScore,
+        completionRate: progress.totalActivities > 0 ? 
+          Math.round((progress.activitiesCompleted / progress.totalActivities) * 100) : 0,
+        difficulty: assessment.focusAreas
+      });
+    }
+  }
+  
+  // Sort by score (ascending) and take the lowest scoring students
+  return studentsWithScores.sort((a, b) => a.lastScore - b.lastScore).slice(0, limit);
+}
+
+// Get student distribution by Antas level
+export async function getAntasDistribution() {
+  await apiDelay();
+  const studentIds = await getStudentIds();
+  const distribution = {};
+  const antasColors = {
+    'Antas 1': '#FF6B8A', // Nag-uumpisang Matuto (Kindergarten)
+    'Antas 2': '#FF9E40', // Pa-unlad na Nag-aaral (Grade 1)
+    'Antas 3': '#FFCD56', // Sanay na Mag-aaral (Grade 2)
+    'Antas 4': '#4BC0C0'  // Maalam at Mapanuring Mag-aaral (Grade 3)
+  };
+  
+  for (const id of studentIds) {
+    const assessment = await getPreAssessmentResults(id);
+    
+    if (assessment) {
+      const level = assessment.readingLevel;
+      if (!distribution[level]) {
+        distribution[level] = {
+          name: level,
+          value: 0,
+          color: antasColors[level] || '#4BC0C0'
+        };
+      }
+      distribution[level].value += 1;
+    }
+  }
+  
+  return Object.values(distribution);
+}
+
+// Get progress data for all Antas levels
+export async function getProgressByAntas() {
+  await apiDelay();
+  const studentIds = await getStudentIds();
+  const progressByAntas = {};
+  
+  for (const id of studentIds) {
+    const assessment = await getPreAssessmentResults(id);
+    const progress = await getProgressData(id);
+    
+    if (assessment && progress) {
+      const level = assessment.readingLevel;
+      if (!progressByAntas[level]) {
+        progressByAntas[level] = {
+          week: [],
+          day: []
+        };
+      }
+      
+      // Add skill mastery data to week data
+      const skillMastery = progress.skillMasteryOverTime;
+      if (skillMastery) {
+        const weekData = {};
+        
+        Object.values(skillMastery).forEach(skills => {
+          skills.forEach(entry => {
+            const date = new Date(entry.date);
+            const weekNum = Math.ceil((date.getDate()) / 7);
+            const weekKey = weekNum.toString();
+            
+            if (!weekData[weekKey]) {
+              weekData[weekKey] = { name: weekKey, progress: 0, count: 0 };
+            }
+            
+            weekData[weekKey].progress += entry.score;
+            weekData[weekKey].count += 1;
+          });
+        });
+        
+        // Calculate average progress per week
+        const weekArray = Object.values(weekData).map(week => ({
+          name: week.name,
+          progress: Math.round(week.progress / week.count)
+        }));
+        
+        // Sort by week number
+        weekArray.sort((a, b) => parseInt(a.name) - parseInt(b.name));
+        
+        // Merge with existing data
+        progressByAntas[level].week = weekArray;
+      }
+    }
+  }
+  
+  return progressByAntas;
+}
+
+// Get prescriptive analytics data
+export async function getPrescriptiveAnalytics() {
+  await apiDelay();
+  const distribution = await getAntasDistribution();
+  const prescriptiveData = [];
+  
+  for (const antas of distribution) {
+    const studentsInAntas = [];
+    
+    for (const student of mockStudents) {
+      const assessment = await getPreAssessmentResults(student.id);
+      if (assessment && assessment.readingLevel === antas.name) {
+        studentsInAntas.push({
+          id: student.id,
+          name: student.name,
+          difficulty: assessment.focusAreas
+        });
+      }
+    }
+    
+    // Group by difficulty areas
+    const difficultyAreas = {};
+    studentsInAntas.forEach(student => {
+      const difficulties = student.difficulty.split(' at ');
+      
+      difficulties.forEach(diff => {
+        const trimmedDiff = diff.trim();
+        if (trimmedDiff) {
+          if (!difficultyAreas[trimmedDiff]) {
+            difficultyAreas[trimmedDiff] = { issue: trimmedDiff, count: 0 };
+          }
+          difficultyAreas[trimmedDiff].count += 1;
+        }
+      });
+    });
+    
+    prescriptiveData.push({
+      antasLevel: antas.name,
+      students: antas.value,
+      issues: Object.values(difficultyAreas).sort((a, b) => b.count - a.count),
+      broadAnalysis: `${antas.value} mag-aaral sa ${antas.name} ay nangangailangan ng tulong sa ${Object.values(difficultyAreas)[0]?.issue || 'pagbasa'}.`
+    });
+  }
+  
+  return prescriptiveData;
+}
+
+// Get pending activity modifications
+export async function getPendingActivities() {
+  await apiDelay();
+  
+  const activities = [];
+  
+  for (const id in mockPrescriptiveRecommendations) {
+    const recommendations = mockPrescriptiveRecommendations[id];
+    const student = await getStudentDetails(id);
+    const assessment = await getPreAssessmentResults(id);
+    
+    if (recommendations && recommendations.length > 0 && student && assessment) {
+      for (const rec of recommendations) {
+        if (rec.status === 'draft') {
+          activities.push({
+            id: rec.id,
+            type: 'Activity Modification',
+            studentName: student.name,
+            date: new Date().toISOString().split('T')[0],
+            status: 'Pending',
+            antasLevel: assessment.readingLevel,
+            details: rec.rationale
+          });
+        }
+      }
+    }
+  }
+  
+  return activities;
+}
 
 // Assign lessons to a student (mark as assigned and unlock next flow)
 export async function assignLessonsToStudent(studentId, lessonIds = []) {
@@ -293,4 +749,3 @@ export async function updateActivity(activityId, payload) {
   }
   return { success: false, message: 'Activity not found' };
 }
-

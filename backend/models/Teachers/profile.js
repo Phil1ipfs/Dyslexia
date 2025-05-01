@@ -10,15 +10,15 @@ const EmergencyContactSchema = new mongoose.Schema({
 // Profile image schema with support for storing images directly in MongoDB
 const ProfileImageSchema = new mongoose.Schema({
   data: {
-    type: Buffer,  // Store the binary image data
+    type: Buffer,  
     required: false
   },
   contentType: {
-    type: String,   // Store the MIME type (e.g., 'image/jpeg')
+    type: String,   
     required: false
   },
   filename: {
-    type: String,   // Original filename
+    type: String,   
     required: false
   },
   uploadDate: {
@@ -90,13 +90,12 @@ const TeacherProfileSchema = new mongoose.Schema({
   },
   passwordHash: {
     type: String,
-    required: false // can be added later
+    required: false 
   },
-  // Add audit fields for tracking changes
   createdAt: {
     type: Date,
     default: Date.now,
-    immutable: true // Once set, can't be changed
+    immutable: true 
   },
   updatedAt: {
     type: Date,
