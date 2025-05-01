@@ -1,102 +1,158 @@
 // src/services/teacherService.js
+import axios from 'axios';
+
+// Setup axios defaults for API calls
+const api = axios.create({
+  baseURL: '/api',
+  timeout: 30000, // 30 second timeout
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest' // Helps identify AJAX requests
+  }
+});
+
+// Add a request interceptor for logging
+api.interceptors.request.use(
+  config => {
+    console.log(`API Request: ${config.method.toUpperCase()} ${config.url}`);
+    return config;
+  },
+  error => {
+    console.error('API Request Error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add a response interceptor for error handling
+api.interceptors.response.use(
+  response => {
+    return response;
+  },
+  error => {
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error('API Error:', error.response.status, error.response.data);
+      
+      // Handle common errors
+      if (error.response.status === 401) {
+        // Unauthorized - redirect to login
+        window.location.href = '/login';
+      }
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('API No Response:', error.request);
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.error('API Request Setup Error:', error.message);
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 /**
- * Service module for teacher-related API operations
- * This file contains functions for fetching, updating, and managing teacher data
- * In a production environment, these would make actual API calls to a backend
+ * Fetch teacher profile data from API
+ * @returns {Promise<Object>} The teacher profile data
  */
+export const fetchTeacherProfile = async () => {
+  try {
+    const { data } = await api.get('/teachers/profile');
+    return data;
+  } catch (error) {
+    console.error('Error fetching teacher profile:', error);
+    throw error;
+  }
+};
 
-// Mock data for development - would be replaced with API calls to MongoDB
-const mockTeacherData = {
-    name: "Madam Jaja",
-    position: "Elementary Reading Specialist",
-    employeeId: "TCR-2023-0104",
-    email: "jaja@literexia.edu.ph",
-    contact: "+63 912 345 6789",
-    gender: "Female",
-    dob: "  1985-09-15", 
-    address: "  123 Maharlika St., Los Baños, Laguna",
-    emergencyContact: {
-      name: "  Roberto Jaja",
-      number: "  +63 943 210 9876",
-    }
-  };
+/**
+ * Update teacher profile data
+ * @param {Object} profile - The updated profile data
+ * @returns {Promise<Object>} The updated teacher profile
+ */
+export const updateTeacherProfile = async (profile) => {
+  // Validate required fields on client side
+  if (!profile.firstName?.trim() || !profile.email?.trim() || !profile.contact?.trim()) {
+    throw new Error('Missing required fields');
+  }
   
-  /**
-   * Fetches teacher profile information
-   * @returns {Promise<Object>} Teacher profile data
-   */
-  export const fetchTeacherProfile = async () => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
+  try {
+    const { data } = await api.put('/teachers/profile', profile);
+    return data.teacher;
+  } catch (error) {
+    console.error('Error updating teacher profile:', error);
+    throw error;
+  }
+};
+
+/**
+ * Upload profile image
+ * @param {File} file - The image file to upload
+ * @param {Function} onProgress - Progress callback function
+ * @returns {Promise<Object>} Upload result
+ */
+export const uploadProfileImage = async (file, onProgress) => {
+  // Create form data
+  const formData = new FormData();
+  formData.append('profileImage', file);
+  
+  try {
+    const { data } = await api.post('/teachers/profile/image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        if (onProgress) {
+          onProgress(percentCompleted);
+        }
+      },
+    });
     
-    // In a real app, this would be a fetch call to an API endpoint
-    // return fetch('/api/teachers/profile').then(res => res.json());
-    
-    // For now, return mock data
-    return { ...mockTeacherData };
-  };
+    return data; // { success: true, imageUrl: '...' }
+  } catch (error) {
+    console.error('Error uploading profile image:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete profile image
+ * @returns {Promise<Object>} Delete result
+ */
+export const deleteProfileImage = async () => {
+  try {
+    const { data } = await api.delete('/teachers/profile/image');
+    return data; // { success: true, message: '...' }
+  } catch (error) {
+    console.error('Error deleting profile image:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update teacher password
+ * @param {string} currentPassword - The current password
+ * @param {string} newPassword - The new password
+ * @returns {Promise<Object>} Success message
+ */
+export const updateTeacherPassword = async (currentPassword, newPassword) => {
+  // Validate password complexity on client side
+  const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+  if (!strongPasswordRegex.test(newPassword)) {
+    throw new Error('Password does not meet requirements');
+  }
   
-  /**
-   * Updates teacher profile information
-   * @param {Object} profileData - Updated profile data
-   * @returns {Promise<Object>} Updated teacher profile
-   */
-  export const updateTeacherProfile = async (profileData) => {
-    // Validate required fields
-    if (!profileData.name || !profileData.email || !profileData.contact) {
-      throw new Error('Missing required fields');
+  try {
+    const { data } = await api.post('/teachers/password', { currentPassword, newPassword });
+    return data;
+  } catch (error) {
+    // If server returns specific error code, preserve it
+    if (error.response && error.response.data && error.response.data.error === 'INCORRECT_PASSWORD') {
+      const customError = new Error('INCORRECT_PASSWORD');
+      throw customError;
     }
-  
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(profileData.email)) {
-      throw new Error('Invalid email format');
-    }
-  
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  
-    // In a real app, this would be a fetch call to an API endpoint
-    // return fetch('/api/teachers/profile', {
-    //   method: 'PUT',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(profileData)
-    // }).then(res => res.json());
-    
-    // For now, update mock data and return
-    Object.assign(mockTeacherData, profileData);
-    return { ...mockTeacherData };
-  };
-  
-  /**
-   * Updates teacher password
-   * @param {string} currentPassword - Current password
-   * @param {string} newPassword - New password
-   * @returns {Promise<Object>} Success response
-   */
-  export const updateTeacherPassword = async (currentPassword, newPassword) => {
-    // Validate password requirements
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
-    if (!passwordRegex.test(newPassword)) {
-      throw new Error('Password does not meet requirements');
-    }
-  
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  
-    // Mock validation - in a real app, this would be done server-side
-    if (currentPassword !== 'password123') { // Just a mock check
-      throw new Error('INCORRECT_PASSWORD');
-    }
-  
-    // In a real app, this would be a fetch call to an API endpoint
-    // return fetch('/api/teachers/change-password', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ currentPassword, newPassword })
-    // }).then(res => res.json());
-    
-    // For now, just return success
-    return { success: true, message: 'Password updated successfully' };
-  };
+    console.error('Error updating password:', error);
+    throw error;
+  }
+};
