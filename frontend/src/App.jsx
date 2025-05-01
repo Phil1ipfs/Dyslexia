@@ -9,13 +9,13 @@ import Login from "./pages/Login";
 
 // Teacher Pages
 import TeacherDashboard from "./pages/Teachers/TeacherDashboard";
-import ViewStudent from "./pages/Teachers/ViewStudent";
+import ViewStudent from "./pages/Teachers/StudentDetails/ViewStudent";
 import ManageActivities from "./pages/Teachers/ManageActivity/ManageActivities";
 import TeacherProfile from "./pages/Teachers/TeacherProfile";
-import StudentDetails from "./pages/Teachers/StudentDetails";
-import ManageProgress from "./pages/Teachers/ManageProgress";
-import StudentProgressView from "./pages/Teachers/StudentProgressView";
-import TeacherChatbot from "./pages/Teachers/TeacherChatbot"; // Add the new chatbot page
+import StudentDetails from "./pages/Teachers/StudentDetails/StudentDetails";
+import ManageProgress from "./pages/Teachers/ManageProgress/ManageProgress";
+import StudentProgressView from "./pages/Teachers/ManageProgress/StudentProgressView";
+import TeacherChatbot from "./pages/Teachers/Chatbot/TeacherChatbot"; 
 
 // Import activity-related pages
 import CreateActivity from "./pages/Teachers/ManageActivity/CreateActivity";

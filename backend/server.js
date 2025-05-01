@@ -1,31 +1,18 @@
-import expresss from 'express';
-import dotev from 'dotenv';
-import {connectDB} from './config/db.js';
+const express   = require('express');
+const cors      = require('cors');
+require('dotenv').config();
+const connectDB = require('./config/db');
 
-dotev.config();
+const app = express();               
+app.use(cors());
+app.use(express.json());
 
-const app = expresss(); 
-app.use(expresss.json());
+connectDB();                          
 
-app.post("/api/ ", async (req, res) => {
-    const home = req.body; 
+// mount routes
+app.use('/api/teachers', require('./routes/Teachers/teacherProfile'));
 
-    if (!home.email || !home.role || !home.profile || !home.preferences) {
-        return res.status(400).json({ message:false, message: "Home data is required" });
-    }
-    
-    const newHome = new Home(home);
+app.get('/', (_req, res) => res.send('API is running...'));
 
-    try {
-        await newHome.save();
-        res.status(201).json({ message: true, data: newHome });
-    } catch (error) {
-        console.error("Error in Create home", error,message);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
-});
-
-app.listen(5000, () => {
-    connectDB();
-    console.log('Server started at http://localhost:5000');
-});
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
