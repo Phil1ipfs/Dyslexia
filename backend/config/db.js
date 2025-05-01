@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI, {
-      dbName: 'LiterexiaDraft', // ✅ Explicitly set DB name
+      dbName: 'LiterexiaDraft', 
     });
     console.log('MongoDB Connected');
   } catch (err) {

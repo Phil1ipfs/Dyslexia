@@ -227,7 +227,6 @@ return (
       
       <div className="vs-search-container">
         <div className="vs-search-wrapper">
-          <FaSearch className="vs-search-icon" />
           <input
             type="text"
             placeholder="Maghanap ng mag-aaral..."
