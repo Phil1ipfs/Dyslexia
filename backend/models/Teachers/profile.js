@@ -1,5 +1,6 @@
 // models/Teachers/profile.js
 const mongoose = require('mongoose');
+const { Schema } = mongoose;
 
 // Schema for emergency contact information
 const EmergencyContactSchema = new mongoose.Schema({
@@ -7,27 +8,7 @@ const EmergencyContactSchema = new mongoose.Schema({
   number: String
 }, { _id: false });
 
-// Profile image schema with support for storing images directly in MongoDB
-const ProfileImageSchema = new mongoose.Schema({
-  data: {
-    type: Buffer,  
-    required: false
-  },
-  contentType: {
-    type: String,   
-    required: false
-  },
-  filename: {
-    type: String,   
-    required: false
-  },
-  uploadDate: {
-    type: Date,
-    default: Date.now
-  }
-}, { _id: false });
-
-// Main teacher profile schema with integrated profile image
+// Main teacher profile schema with S3 image URL
 const TeacherProfileSchema = new mongoose.Schema({
   firstName: {
     type: String,
@@ -43,7 +24,10 @@ const TeacherProfileSchema = new mongoose.Schema({
     required: [true, 'Last name is required'],
     trim: true
   },
-
+  name: {
+    type: String,
+    trim: true
+  },
   position: {
     type: String,
     trim: true
@@ -68,9 +52,10 @@ const TeacherProfileSchema = new mongoose.Schema({
     type: String,
     enum: ['Male', 'Female', 'Non-binary', 'Prefer not to say', '']
   },
-
-  civilStatus: { type: String, enum: ['Single','Married',''] },
-
+  civilStatus: {
+    type: String,
+    enum: ['Single', 'Married', '']
+  },
   dob: {
     type: String,
     trim: true
@@ -79,10 +64,24 @@ const TeacherProfileSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  // Using the profile image schema to store the image data in MongoDB
+  profileImageUrl: {
+    type: String,
+    default: null,
+    get: function(value) {
+      // Convert "null" string to actual null value
+      return value === "null" ? null : value;
+    },
+    set: function(value) {
+      // Convert null to null string (for compatibility)
+      return value === null ? null : value;
+    }
+  },
+  // Legacy image storage (for backward compatibility)
   profileImage: {
-    type: ProfileImageSchema,
-    default: null
+    data: Buffer,
+    contentType: String,
+    filename: String,
+    uploadDate: Date
   },
   emergencyContact: {
     type: EmergencyContactSchema,
@@ -90,12 +89,12 @@ const TeacherProfileSchema = new mongoose.Schema({
   },
   passwordHash: {
     type: String,
-    required: false 
+    required: false
   },
   createdAt: {
     type: Date,
     default: Date.now,
-    immutable: true 
+    immutable: true
   },
   updatedAt: {
     type: Date,
@@ -124,21 +123,38 @@ TeacherProfileSchema.pre('save', function(next) {
     this.lastPasswordChange = Date.now();
   }
   
+  // Ensure name is always up to date
+  if (this.isModified('firstName') || this.isModified('middleName') || this.isModified('lastName')) {
+    this.name = [this.firstName, this.middleName, this.lastName]
+      .filter(part => part && part.trim())
+      .join(' ');
+  }
+  
   next();
 });
 
-// Virtual property to get profile image URL for the frontend
-TeacherProfileSchema.virtual('profileImageUrl').get(function () {
-  // we check contentType instead of data, because contentType is kept
-  if (this.profileImage && this.profileImage.contentType) {
-    return `/api/teachers/profile/image/${this._id}`;
+// Ensure virtuals are included when converting to JSON
+TeacherProfileSchema.set('toJSON', { 
+  virtuals: true,
+  transform: function(doc, ret) {
+    // Convert "null" string to actual null for profileImageUrl
+    if (ret.profileImageUrl === "null") {
+      ret.profileImageUrl = null;
+    }
+    return ret;
   }
-  return null;
 });
 
-// Ensure virtuals are included when converting to JSON
-TeacherProfileSchema.set('toJSON', { virtuals: true });
-TeacherProfileSchema.set('toObject', { virtuals: true });
+TeacherProfileSchema.set('toObject', { 
+  virtuals: true,
+  transform: function(doc, ret) {
+    // Convert "null" string to actual null for profileImageUrl
+    if (ret.profileImageUrl === "null") {
+      ret.profileImageUrl = null;
+    }
+    return ret;
+  }
+});
 
-// Explicitly use collection name 'profile'
-module.exports = mongoose.model('profile', TeacherProfileSchema, 'profile');
+// IMPORTANT: Specify the collection name explicitly
+module.exports = mongoose.model('TeacherProfile', TeacherProfileSchema, 'profile');

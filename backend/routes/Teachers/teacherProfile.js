@@ -1,36 +1,14 @@
-// routes/teacher.js
+// backend/routes/Teachers/teacherProfile.js
 const express = require('express');
+const multer = require('multer');
+const { Upload } = require('@aws-sdk/lib-storage');
+const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const s3Client = require('../../config/s3');
+const Teacher = require('../../models/Teachers/profile');
 const bcrypt = require('bcrypt');
 const router = express.Router();
-const Teacher = require('../../models/Teachers/profile');
-const multer = require('multer');
-const { v4: uuidv4 } = require('uuid');
 
-// Sanitize input helper function to prevent NoSQL injection
-const sanitizeInput = (obj) => {
-  if (!obj) return obj;
-
-  const sanitized = {};
-
-  Object.keys(obj).forEach(key => {
-    if (typeof obj[key] === 'object' && obj[key] !== null) {
-      sanitized[key] = sanitizeInput(obj[key]);
-    } else if (typeof obj[key] === 'string') {
-      // Remove potential NoSQL injection patterns
-      sanitized[key] = obj[key]
-        .replace(/\$/g, '')
-        .replace(/\.\./g, '')
-        .replace(/\{/g, '')
-        .replace(/\}/g, '');
-    } else {
-      sanitized[key] = obj[key];
-    }
-  });
-
-  return sanitized;
-};
-
-// Configure multer for memory storage (we'll save to MongoDB instead of disk)
+// Configure multer for memory storage
 const storage = multer.memoryStorage();
 
 // File type filter
@@ -51,6 +29,26 @@ const upload = multer({
   }
 });
 
+// Sanitize input helper function
+const sanitizeInput = (obj) => {
+  if (!obj) return obj;
+  const sanitized = {};
+  Object.keys(obj).forEach(key => {
+    if (typeof obj[key] === 'object' && obj[key] !== null) {
+      sanitized[key] = sanitizeInput(obj[key]);
+    } else if (typeof obj[key] === 'string') {
+      sanitized[key] = obj[key]
+        .replace(/\$/g, '')
+        .replace(/\.\./g, '')
+        .replace(/\{/g, '')
+        .replace(/\}/g, '');
+    } else {
+      sanitized[key] = obj[key];
+    }
+  });
+  return sanitized;
+};
+
 // Logging middleware
 const logActivity = (req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - User: ${req.ip}`);
@@ -66,68 +64,85 @@ router.get('/profile', async (req, res) => {
     const teacher = await Teacher.findOne().select('-profileImage.data -passwordHash'); // Don't send binary data or password hash
     if (!teacher) return res.status(404).json({ error: 'No teacher profile found.' });
 
-    // If we have a profile image, include the URL
-    if (teacher.profileImage && teacher.profileImage.contentType) {
-      // The URL is added through the virtual property
-      res.json(teacher);
-    } else {
-      // Make sure we have a consistent response format
-      const teacherObj = teacher.toObject({ virtuals: true });
-      teacherObj.profileImageUrl = null;
+    // Create response object with profile data
+    const teacherObj = teacher.toObject({ virtuals: true });
+    
+    // If name fields aren't populated yet but name is available, split it
+    if (teacher.name && (!teacher.firstName && !teacher.middleName && !teacher.lastName)) {
+      const nameParts = teacher.name.split(' ');
       
-      // If name fields aren't populated yet but name is available, split it
-      if (teacher.name && (!teacher.firstName && !teacher.middleName && !teacher.lastName)) {
-        const nameParts = teacher.name.split(' ');
-        
-        if (nameParts.length === 1) {
-          teacherObj.firstName = nameParts[0];
-          teacherObj.middleName = '';
-          teacherObj.lastName = '';
-        } else if (nameParts.length === 2) {
-          teacherObj.firstName = nameParts[0];
-          teacherObj.middleName = '';
-          teacherObj.lastName = nameParts[1];
-        } else {
-          teacherObj.firstName = nameParts[0];
-          teacherObj.lastName = nameParts[nameParts.length - 1];
-          teacherObj.middleName = nameParts.slice(1, nameParts.length - 1).join(' ');
-        }
+      if (nameParts.length === 1) {
+        teacherObj.firstName = nameParts[0];
+        teacherObj.middleName = '';
+        teacherObj.lastName = '';
+      } else if (nameParts.length === 2) {
+        teacherObj.firstName = nameParts[0];
+        teacherObj.middleName = '';
+        teacherObj.lastName = nameParts[1];
+      } else {
+        teacherObj.firstName = nameParts[0];
+        teacherObj.lastName = nameParts[nameParts.length - 1];
+        teacherObj.middleName = nameParts.slice(1, nameParts.length - 1).join(' ');
       }
-      
-      res.json(teacherObj);
     }
+    
+    // Transform profileImageUrl from "null" string to actual null
+    if (teacherObj.profileImageUrl === "null") {
+      teacherObj.profileImageUrl = null;
+    }
+    
+    res.json(teacherObj);
   } catch (err) {
     console.error('Error fetching profile:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// ───────────────────────── GET profile image
-// GET /api/teachers/profile/image/:id
-router.get('/profile/image/:id', async (req, res) => {
+// ───────────────────────── CREATE new profile
+// POST /api/teachers/profile
+router.post('/profile', async (req, res) => {
   try {
-    console.log(`Attempting to fetch image for ID: ${req.params.id}`);
-    const teacher = await Teacher.findById(req.params.id);
-    if (!teacher) {
-      console.log(`No teacher found with ID: ${req.params.id}`);
-      return res.status(404).json({ error: 'No teacher profile found.' });
-    }
-    if (!teacher.profileImage || !teacher.profileImage.data) {
-      console.log(`Teacher found but no profile image data exists for ID: ${req.params.id}`);
-      return res.status(404).json({ error: 'No profile image found.' });
+    // Sanitize input data
+    const sanitizedData = sanitizeInput(req.body);
+
+    // Validate required fields
+    if (!sanitizedData.firstName || !sanitizedData.email) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Set the appropriate content type
-    res.set('Content-Type', teacher.profileImage.contentType);
-    // Set cache control headers
-    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.set('Pragma', 'no-cache');
-    // Send the binary data
-    res.send(teacher.profileImage.data);
-    console.log(`Successfully served image for ID: ${req.params.id}`);
+    // Check if profile already exists
+    const existingTeacher = await Teacher.findOne();
+    if (existingTeacher) {
+      return res.status(400).json({ error: 'Teacher profile already exists. Use PUT to update.' });
+    }
+
+    // Create a new teacher profile
+    const teacher = new Teacher({
+      ...sanitizedData,
+      passwordHash: await bcrypt.hash("DefaultPassword123!", 10), // Set default password
+      profileImageUrl: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    // Generate full name from parts
+    teacher.name = [teacher.firstName, teacher.middleName, teacher.lastName]
+      .filter(part => part && part.trim())
+      .join(' ');
+
+    await teacher.save();
+
+    // Log the creation action
+    console.log(`[${new Date().toISOString()}] Created new profile for ${teacher.name}`);
+
+    // Return the new teacher without sensitive data
+    const returnData = teacher.toObject({ virtuals: true });
+    delete returnData.passwordHash;
+    
+    res.status(201).json({ message: 'Profile created!', teacher: returnData });
   } catch (err) {
-    console.error(`Error fetching profile image for ID ${req.params.id}:`, err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error creating profile:', err);
+    res.status(500).json({ error: 'Failed to create profile' });
   }
 });
 
@@ -156,10 +171,18 @@ router.put('/profile', async (req, res) => {
       return res.status(400).json({ error: 'Invalid phone number format' });
     }
 
-    const teacher = await Teacher.findOne();
-    if (!teacher) return res.status(404).json({ error: 'No teacher profile found.' });
+    // Find existing or create new teacher profile
+    let teacher = await Teacher.findOne();
+    if (!teacher) {
+      // Create new profile if not exists
+      teacher = new Teacher({
+        passwordHash: await bcrypt.hash("DefaultPassword123!", 10), // Set default password
+        profileImageUrl: null,
+        createdAt: new Date()
+      });
+    }
 
-    // Only update allowed fields, don't allow passwordHash or profileImage modification
+    // Only update allowed fields
     const updatableFields = [
       'firstName', 'middleName', 'lastName', 'position', 'email', 
       'contact', 'gender', 'civilStatus', 'dob', 'address', 'emergencyContact'
@@ -176,6 +199,7 @@ router.put('/profile', async (req, res) => {
       .filter(part => part && part.trim())
       .join(' ');
 
+    teacher.updatedAt = new Date();
     await teacher.save();
 
     // Log the update action
@@ -185,11 +209,54 @@ router.put('/profile', async (req, res) => {
     const returnData = teacher.toObject({ virtuals: true });
     delete returnData.passwordHash;
     delete returnData.profileImage?.data; // Don't send binary data
+    
+    // Transform profileImageUrl from "null" string to actual null
+    if (returnData.profileImageUrl === "null") {
+      returnData.profileImageUrl = null;
+    }
 
     res.json({ message: 'Profile updated!', teacher: returnData });
   } catch (err) {
     console.error('Error updating profile:', err);
     res.status(500).json({ error: 'Update failed' });
+  }
+});
+
+
+// GET /api/teachers/profile/image/current
+router.get('/profile/image/current', async (req, res) => {
+  try {
+    console.log(`Attempting to fetch current teacher profile image`);
+    
+    // Always use findOne without ID parameters
+    const teacher = await Teacher.findOne();
+    
+    if (!teacher) {
+      console.log('No teacher profile found');
+      return res.status(404).json({ error: 'No teacher profile found.' });
+    }
+    
+    // Check if we have an S3 URL - if yes, redirect to it
+    if (teacher.profileImageUrl && teacher.profileImageUrl !== "null") {
+      console.log(`Teacher has S3 URL, redirecting to: ${teacher.profileImageUrl}`);
+      return res.redirect(teacher.profileImageUrl);
+    }
+    
+    // Fall back to binary data in MongoDB if no S3 URL
+    if (!teacher.profileImage || !teacher.profileImage.data) {
+      console.log(`Teacher found but no profile image data exists`);
+      return res.status(404).json({ error: 'No profile image found.' });
+    }
+
+    // Serve from MongoDB (legacy support)
+    res.set('Content-Type', teacher.profileImage.contentType);
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.send(teacher.profileImage.data);
+    console.log(`Successfully served image from MongoDB`);
+  } catch (err) {
+    console.error(`Error fetching profile image:`, err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -214,15 +281,15 @@ router.post('/password', async (req, res) => {
       return res.status(404).json({ error: 'Profile not found.' });
     }
 
-    // Special case: Check if we have the initial unhashed "HelloWorld" password
-    const isInitialPassword = teacher.passwordHash === "HelloWorld";
+    // Special case: Check if we have the initial unhashed "DefaultPassword123!" password
+    const isInitialPassword = teacher.passwordHash === "DefaultPassword123!";
 
     // For regular case, verify current password using bcrypt
     let passwordIsValid = false;
 
     if (isInitialPassword) {
       // For initial password, just compare directly
-      passwordIsValid = sanitizedCurrentPassword === "HelloWorld";
+      passwordIsValid = sanitizedCurrentPassword === "DefaultPassword123!";
     } else if (teacher.passwordHash) {
       // For properly hashed passwords, use bcrypt to compare
       passwordIsValid = await bcrypt.compare(sanitizedCurrentPassword, teacher.passwordHash);
@@ -236,6 +303,7 @@ router.post('/password', async (req, res) => {
 
     // Hash and save new password
     teacher.passwordHash = await bcrypt.hash(sanitizedNewPassword, 10);
+    teacher.lastPasswordChange = new Date();
     await teacher.save();
 
     // Log successful password change
@@ -256,32 +324,134 @@ router.post('/profile/image', upload.single('profileImage'), async (req, res) =>
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const teacher = await Teacher.findOne();
+    console.log('Processing image upload: file size =', req.file.size, 'bytes');
+    console.log('MIME type =', req.file.mimetype);
+
+    // First, get the teacher profile
+    let teacher = await Teacher.findOne();
     if (!teacher) {
-      return res.status(404).json({ error: 'No teacher profile found.' });
+      // Create new teacher profile if not exists
+      console.log('Creating new teacher profile for image upload');
+      teacher = new Teacher({
+        firstName: "Unknown",
+        lastName: "User", 
+        email: "unknown@example.com",
+        contact: "09000000000",
+        passwordHash: await bcrypt.hash("DefaultPassword123!", 10),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      // Save the new teacher to get an _id
+      await teacher.save();
+      console.log('Created new teacher profile with ID:', teacher._id);
     }
 
-    // Store image directly in MongoDB
+    // First try MongoDB-only storage as a safe approach
+    console.log('Storing image in MongoDB first as a fallback');
     teacher.profileImage = {
       data: req.file.buffer,
       contentType: req.file.mimetype,
       filename: req.file.originalname,
       uploadDate: new Date()
     };
-
+    
+    // Save to MongoDB first to ensure we have a backup
+    teacher.updatedAt = new Date();
     await teacher.save();
+    console.log('Image saved to MongoDB successfully');
 
-    // Log image upload
-    console.log(`[${new Date().toISOString()}] Profile image uploaded for ${teacher.name}`);
+    // Now try S3 storage
+    try {
+      // Check if S3 config exists before proceeding
+      if (!process.env.AWS_BUCKET_NAME || !process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+        throw new Error('Missing S3 credentials in environment variables');
+      }
+      
+      // Delete existing image from S3 if it exists
+      if (teacher.profileImageUrl && teacher.profileImageUrl !== "null") {
+        try {
+          console.log('Attempting to delete previous S3 image:', teacher.profileImageUrl);
+          
+          // Extract key from URL
+          const urlParts = teacher.profileImageUrl.split('/');
+          const key = urlParts.slice(3).join('/'); // Skip the https://bucket-name.s3.region part
+          
+          console.log('Extracted S3 key:', key);
+          
+          const deleteCommand = new DeleteObjectCommand({
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: key
+          });
+          
+          await s3Client.send(deleteCommand);
+          console.log(`[${new Date().toISOString()}] Successfully deleted old image from S3: ${key}`);
+        } catch (deleteError) {
+          console.error(`[${new Date().toISOString()}] Error deleting old S3 image:`, deleteError);
+          // Continue with upload even if deletion fails
+        }
+      }
 
-    res.json({
-      success: true,
-      message: 'Profile image uploaded successfully',
-      imageUrl: teacher.profileImageUrl // Virtual property that gives the URL
-    });
+      // Generate a unique filename with proper sanitization
+      const sanitizedFirstName = (teacher.firstName || 'user').replace(/[^a-zA-Z0-9]/g, '');
+      const sanitizedLastName = (teacher.lastName || 'profile').replace(/[^a-zA-Z0-9]/g, '');
+      const timestamp = Date.now();
+      const filename = `${timestamp}-${sanitizedFirstName}-${sanitizedLastName}.jpg`;
+      const key = `uploads/${filename}`;
+      
+      console.log('S3 upload - bucket:', process.env.AWS_BUCKET_NAME);
+      console.log('S3 upload - key:', key);
+      console.log('Request buffer size:', req.file.buffer.length);
+
+      // Upload to S3
+      const uploader = new Upload({
+        client: s3Client,
+        params: {
+          Bucket: process.env.AWS_BUCKET_NAME,
+          Key: key,
+          Body: req.file.buffer,
+          ACL: 'public-read',
+          ContentType: req.file.mimetype
+        }
+      });
+
+      console.log('Starting S3 upload...');
+      const uploadResult = await uploader.done();
+      console.log('S3 upload successful:', uploadResult.Location);
+      
+      // Update teacher with S3 URL
+      teacher.profileImageUrl = uploadResult.Location;
+      teacher.updatedAt = new Date();
+      await teacher.save();
+      console.log('Teacher profile updated with new image URL:', teacher.profileImageUrl);
+
+      return res.json({
+        success: true,
+        message: 'Profile image uploaded successfully to S3',
+        imageUrl: teacher.profileImageUrl
+      });
+    } catch (s3Error) {
+      console.error('S3 upload failed with error:', s3Error);
+      console.error('Error details:', s3Error.stack);
+      
+      // Return success with MongoDB URL since we already saved it there
+      const mongoUrl = `/api/teachers/profile/image/${teacher._id}?noCache=${Date.now()}`;
+      console.log('Using MongoDB fallback URL:', mongoUrl);
+      
+      return res.json({
+        success: true,
+        message: 'Profile image uploaded to MongoDB (S3 upload failed)',
+        imageUrl: mongoUrl,
+        error: s3Error.message
+      });
+    }
   } catch (err) {
-    console.error('Error uploading profile image:', err);
-    res.status(500).json({ error: 'Failed to upload image' });
+    console.error('Detailed error uploading profile image:', err);
+    console.error('Error stack:', err.stack);
+    res.status(500).json({ 
+      error: 'Failed to upload image', 
+      details: err.message 
+    });
   }
 });
 
@@ -294,26 +464,49 @@ router.delete('/profile/image', async (req, res) => {
       return res.status(404).json({ error: 'No teacher profile found.' });
     }
 
-    // If there's an existing image, remove it
-    if (teacher.profileImage && teacher.profileImage.data) {
-      // Clear profile image data
-      teacher.profileImage = null;
-      await teacher.save();
-
-      // Log image deletion
-      console.log(`[${new Date().toISOString()}] Profile image deleted for ${teacher.name}`);
-
-      return res.json({
-        success: true,
-        message: 'Profile image deleted successfully'
-      });
-    } else {
-      return res.status(404).json({ error: 'No profile image to delete' });
+    // Check if we have an S3 URL to delete
+    if (teacher.profileImageUrl && teacher.profileImageUrl !== "null") {
+      try {
+        // Extract key from URL
+        const urlParts = teacher.profileImageUrl.split('/');
+        const key = urlParts.slice(3).join('/'); // Skip the https://bucket-name.s3.region part
+        
+        const deleteCommand = new DeleteObjectCommand({
+          Bucket: process.env.AWS_BUCKET_NAME,
+          Key: key
+        });
+        
+        await s3Client.send(deleteCommand);
+        console.log(`[${new Date().toISOString()}] Deleted image from S3: ${key}`);
+      } catch (deleteError) {
+        console.error(`[${new Date().toISOString()}] Error deleting S3 image:`, deleteError);
+        // Continue with database update even if S3 deletion fails
+      }
     }
+
+    // Reset the profileImageUrl field to null, not "null" string
+    teacher.profileImageUrl = null;
+    
+    // Also remove MongoDB image data if it exists
+    if (teacher.profileImage && teacher.profileImage.data) {
+      teacher.profileImage = null;
+    }
+    
+    teacher.updatedAt = new Date();
+    await teacher.save();
+
+    // Log image deletion
+    console.log(`[${new Date().toISOString()}] Profile image deleted for ${teacher.name}`);
+
+    return res.json({
+      success: true,
+      message: 'Profile image deleted successfully'
+    });
   } catch (err) {
     console.error('Error deleting profile image:', err);
     res.status(500).json({ error: 'Failed to delete image' });
   }
 });
 
+// Export the router
 module.exports = router;

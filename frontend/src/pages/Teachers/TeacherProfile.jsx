@@ -35,6 +35,12 @@ function TeacherProfile() {
   // Refs for file input
   const fileInputRef = useRef(null);
 
+
+  
+  
+  // Add a state for image refresh trigger
+  const [imageRefreshKey, setImageRefreshKey] = useState(Date.now());
+
   // Effect to fetch profile data
   useEffect(() => {
     const getTeacherData = async () => {
@@ -43,7 +49,11 @@ function TeacherProfile() {
         // Fetch profile data from API
         const data = await fetchTeacherProfile();
         console.log("Profile data received:", data); // Debug log
-        console.log("Profile image URL:", data.profileImageUrl); // Debug log for image URL
+        if (data.profileImageUrl) {
+          console.log("Profile image URL:", data.profileImageUrl); // Debug log for image URL
+        } else {
+          console.log("No profile image URL found.");
+        }
         setFormData(data);
         setIsLoading(false);
       } catch (error) {
@@ -90,6 +100,7 @@ function TeacherProfile() {
       number: ""
     }
   });
+  
   // Handle input changes with sanitization
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -183,6 +194,9 @@ function TeacherProfile() {
           profileImageUrl: result.imageUrl
         };
       });
+      
+      // Force image refresh
+      setImageRefreshKey(Date.now());
 
       setLastAction({
         type: 'success',
@@ -192,11 +206,19 @@ function TeacherProfile() {
 
       // Hide controls after successful upload
       setShowImageControls(false);
+      
+      // Force reload of profile data to ensure we have the latest state
+      try {
+        const refreshedData = await fetchTeacherProfile();
+        setFormData(refreshedData);
+      } catch (refreshError) {
+        console.warn("Could not refresh profile data after image upload:", refreshError);
+      }
     } catch (error) {
       console.error("Error uploading image:", error);
       setErrorDialog({
         show: true,
-        message: "Failed to upload profile image. Please try again."
+        message: error.response?.data?.error || "Failed to upload profile image. Please try again."
       });
 
       setLastAction({
@@ -226,6 +248,9 @@ function TeacherProfile() {
         ...prev,
         profileImageUrl: null
       }));
+      
+      // Force image refresh
+      setImageRefreshKey(Date.now());
 
       setLastAction({
         type: 'success',
@@ -257,7 +282,6 @@ function TeacherProfile() {
       if (!formData.firstName.trim() || !formData.lastName.trim()) {
         return setErrorDialog({ show: true, message: "First and last name are required." });
       }
-      
 
       if (!formData.email.trim()) {
         return setErrorDialog({ show: true, message: "Email is required." });
@@ -277,10 +301,15 @@ function TeacherProfile() {
           message: "Please enter a valid Philippine phone number (e.g., +63 912 345 6789 or 0912 345 6789)."
         });
       }
-
       try {
         // Send data to API
-        await updateTeacherProfile(formData);
+        const updateResult = await updateTeacherProfile(formData);
+        
+        // If the API returns updated data, use it to refresh our form
+        if (updateResult && updateResult.teacher) {
+          setFormData(updateResult.teacher);
+        }
+        
         setIsEditing(false);
         setShowSaveDialog(true);
         // Hide image controls when exiting edit mode
@@ -336,7 +365,6 @@ function TeacherProfile() {
   }
 
   // Get initials for avatar if no profile image exists
-  // Get initials for avatar if no profile image exists
   const getInitials = () => {
     const first = formData.firstName?.charAt(0) || '';
     const last = formData.lastName?.charAt(0) || '';
@@ -346,9 +374,15 @@ function TeacherProfile() {
   // Generate a random cache-busting parameter for the image URL
   const getCacheBustedImageUrl = (url) => {
     if (!url) return null;
-    // Add a timestamp parameter to prevent browser caching
-    const timestamp = new Date().getTime();
-    return `${url}?t=${timestamp}`;
+    // Check if the URL is a direct S3 URL or a local API URL
+    if (url.startsWith('http')) {
+      // For S3 URLs, add a timestamp parameter to prevent browser caching
+      const timestamp = imageRefreshKey || Date.now();
+      return `${url}?t=${timestamp}`;
+    } else {
+      // For local API URLs, they already have the nocache parameter
+      return url;
+    }
   };
 
   return (
@@ -395,14 +429,20 @@ function TeacherProfile() {
             >
               {formData.profileImageUrl ? (
                 <img
+                  key={imageRefreshKey} // Add key for forcing re-render
                   src={getCacheBustedImageUrl(formData.profileImageUrl)}
                   alt="Profile"
                   className="lit-profile-image"
                   onError={(e) => {
                     console.error("Failed to load image:", e);
-                    // On error, hide the image and show initials instead
-                    e.target.style.display = 'none';
-                    e.target.parentNode.textContent = getInitials();
+                    if (e.target && e.target.parentNode) {
+                      e.target.style.display = 'none';
+                      try {
+                        e.target.parentNode.textContent = getInitials();
+                      } catch (err) {
+                        console.error("Error setting initials:", err);
+                      }
+                    }
                   }}
                 />
               ) : (
@@ -956,4 +996,5 @@ function ChangePasswordModal({ onClose, onActionLog }) {
     </div>
   );
 }
+
 export default TeacherProfile;
