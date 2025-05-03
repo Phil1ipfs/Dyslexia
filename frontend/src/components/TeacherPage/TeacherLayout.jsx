@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
-import { fetchTeacherProfile } from "../../services/teacherService"; // make sure this path is correct
+import { fetchTeacherProfile } from "../../services/teacherService"; 
 import "./teacherLayout.css";
 
 function TeacherLayout({ onLogout }) {
@@ -30,4 +30,4 @@ function TeacherLayout({ onLogout }) {
   );
 }
 
-export default TeacherLayout;
+export default TeacherLayout; // ← make sure this exists!
