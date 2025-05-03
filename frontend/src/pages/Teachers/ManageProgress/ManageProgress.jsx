@@ -53,7 +53,7 @@ const ManageProgress = () => {
         // For this mockup, we'll use the student IDs from StudentService
         const studentIds = ['101', '102', '103']; // Use mock student IDs from service
         const studentDataPromises = studentIds.map(async (id) => {
-          const studentDetails = await getStudentDetails(id);
+          const studentDetails = await getStudentDetails(id)
           const assessmentResults = await getPreAssessmentResults(id);
           const progressData = await getProgressData(id);
           
@@ -238,7 +238,6 @@ const ManageProgress = () => {
         
         <div className="mp-search-container">
           <div className="mp-search-wrapper">
-            {/* <FaSearch className="mp-search-icon" /> */}
             <input
               type="text"
               placeholder="Maghanap ng mag-aaral..."

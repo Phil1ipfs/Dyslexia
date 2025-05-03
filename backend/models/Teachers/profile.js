@@ -140,5 +140,5 @@ TeacherProfileSchema.virtual('profileImageUrl').get(function () {
 TeacherProfileSchema.set('toJSON', { virtuals: true });
 TeacherProfileSchema.set('toObject', { virtuals: true });
 
-// Explicitly use collection name 'Profile'
+// Explicitly use collection name 'profile'
 module.exports = mongoose.model('profile', TeacherProfileSchema, 'profile');
