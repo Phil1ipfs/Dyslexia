@@ -141,4 +141,4 @@ TeacherProfileSchema.set('toJSON', { virtuals: true });
 TeacherProfileSchema.set('toObject', { virtuals: true });
 
 // Explicitly use collection name 'Profile'
-module.exports = mongoose.model('Profile', TeacherProfileSchema, 'Profile');
+module.exports = mongoose.model('profile', TeacherProfileSchema, 'profile');
