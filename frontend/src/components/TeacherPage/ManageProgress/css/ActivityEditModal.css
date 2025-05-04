@@ -1,463 +1,1033 @@
 /* ActivityEditModal Component Styles */
 
 .literexia-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
-    overflow-y: auto;
-  }
-  
-  .literexia-activity-edit-modal {
-    background-color: white;
-    border-radius: 12px;
-    width: 100%;
-    max-width: 900px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    animation: literexiaZoomIn 0.3s ease-out;
-  }
-  
-  @keyframes literexiaZoomIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-  
-  .literexia-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.25rem 1.5rem;
-    background-color: #3B4F81;
-    background-image: linear-gradient(135deg, #3B4F81 0%, #2C3E70 100%);
-    color: white;
-    border-radius: 12px 12px 0 0;
-  }
-  
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.literexia-activity-edit-modal {
+  background-color: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  animation: literexiaZoomIn 0.3s ease-out;
+}
+
+@keyframes literexiaZoomIn {
+  from {
+    opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+}
+
+.literexia-info-tooltip:hover .literexia-tooltip-content {
+  opacity: 1;
+  visibility: visible;
+}
+
+.literexia-add-question-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #3B4F81;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.literexia-add-question-btn:hover {
+  background-color: #2C3E70;
+  transform: translateY(-2px);
+}
+
+/* Review step */
+.literexia-review-section {
+  margin-bottom: 2rem;
+}
+
+.literexia-review-section h3 {
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  font-size: 1.2rem;
+  color: #333;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.literexia-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background-color: #e3f2fd;
+  color: #1565c0;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.literexia-info-banner svg {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.literexia-review-card {
+  background-color: #f9f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.literexia-review-card h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.literexia-review-details {
+  margin-bottom: 1rem;
+}
+
+.literexia-review-item {
+  display: flex;
+  margin-bottom: 0.5rem;
+}
+
+.literexia-review-label {
+  font-weight: 600;
+  min-width: 120px;
+  color: #555;
+}
+
+.literexia-review-value {
+  flex: 1;
+  color: #333;
+}
+
+.literexia-edit-step-btn {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #f5f5f5;
+  color: #666;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.literexia-edit-step-btn:hover {
+  background-color: #3B4F81;
+  color: white;
+}
+
+.literexia-review-summary {
+  color: #333;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.literexia-text-preview {
+  display: block;
+  margin-top: 0.5rem;
+  font-style: italic;
+  color: #666;
+}
+
+.literexia-questions-summary {
+  list-style-type: none;
+  padding: 0;
+  margin: 0.5rem 0 0 0;
+}
+
+.literexia-questions-summary li {
+  margin-bottom: 0.5rem;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.literexia-questions-summary li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #3B4F81;
+}
+
+.literexia-question-type {
+  font-size: 0.85rem;
+  color: #666;
+  margin-left: 0.5rem;
+}
+
+.literexia-push-mobile-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  background-color: #e8f5e9;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-top: 2rem;
+}
+
+.literexia-notice-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #4CAF50;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.literexia-notice-content h4 {
+  margin: 0 0 0.5rem 0;
+  color: #2E7D32;
+}
+
+.literexia-notice-content p {
+  margin: 0;
+  color: #333;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* Form actions */
+.literexia-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 1.5rem;
+}
+
+.literexia-cancel-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: #f5f5f5;
+  color: #333;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.literexia-cancel-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.literexia-save-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.literexia-save-btn:hover:not(:disabled) {
+  background-color: #388E3C;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+.literexia-save-btn:disabled {
+  background-color: #9E9E9E;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.literexia-spinner {
+  animation: literexiaSpin 1s linear infinite;
+}
+
+@keyframes literexiaSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
   .literexia-modal-title {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-  
-  .literexia-modal-title h2 {
-    margin: 0;
-    font-size: 1.35rem;
-    font-weight: 600;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
   
   .literexia-student-badge {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    background-color: rgba(255, 255, 255, 0.2);
-    padding: 0.35rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    font-weight: 500;
+    align-self: flex-start;
   }
   
-  .literexia-close-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
-    border: none;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    font-size: 1.1rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
+  .literexia-steps-indicator {
+    overflow-x: auto;
+    padding: 1.25rem 1rem;
   }
   
-  .literexia-close-button:hover {
-    background-color: rgba(255, 255, 255, 0.25);
-    transform: rotate(90deg);
+  .literexia-step-label {
+    font-size: 0.75rem;
   }
   
-  .literexia-error-banner {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    background-color: #ffebee;
-    color: #d32f2f;
-    padding: 1rem 1.5rem;
-    font-weight: 500;
+  .literexia-content-type-options {
+    flex-direction: column;
   }
   
-  .literexia-modal-info-banner {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    background-color: #e3f2fd;
-    color: #1565c0;
-    padding: 1rem 1.5rem;
-    font-size: 0.95rem;
-    line-height: 1.5;
+  .literexia-media-row {
+    flex-direction: column;
   }
   
-  .literexia-modal-info-banner svg {
-    margin-top: 0.2rem;
-    flex-shrink: 0;
-  }
-  
-  .literexia-edit-form {
-    padding: 1.5rem;
-  }
-  
-  .literexia-form-section {
-    margin-bottom: 2rem;
-    border: 1px solid #e0e0e0;
-    border-radius: 10px;
-    padding: 1.5rem;
-    background-color: #f9f9f9;
-  }
-  
-  .literexia-form-section h3 {
-    margin-top: 0;
-    margin-bottom: 1.25rem;
-    font-size: 1.2rem;
-    color: #333;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e0e0e0;
-  }
-  
-  .literexia-form-group {
-    margin-bottom: 1.25rem;
-  }
-  
-  .literexia-form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    color: #333;
-    font-size: 0.95rem;
-  }
-  
-  .literexia-required {
-    color: #F44336;
-    margin-left: 0.25rem;
-  }
-  
-  .literexia-form-group input,
-  .literexia-form-group textarea,
-  .literexia-form-group select {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    font-family: inherit;
-    color: #333;
-    background-color: white;
-  }
-  
-  .literexia-form-group input:focus,
-  .literexia-form-group textarea:focus,
-  .literexia-form-group select:focus {
-    outline: none;
-    border-color: #3B4F81;
-    box-shadow: 0 0 0 2px rgba(59, 79, 129, 0.2);
-  }
-  
-  .literexia-form-group input.literexia-error,
-  .literexia-form-group textarea.literexia-error {
-    border-color: #F44336;
-    background-color: #fff8f8;
-  }
-  
-  .literexia-error-message {
-    color: #F44336;
-    font-size: 0.85rem;
-    margin-top: 0.4rem;
-  }
-  
-  .literexia-section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e0e0e0;
-  }
-  
-  .literexia-section-header h3 {
-    margin: 0;
-    padding: 0;
-    border: none;
-  }
-  
-  .literexia-add-question-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 0.6rem 1rem;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  
-  .literexia-add-question-btn:hover {
-    background-color: #43A047;
-    transform: translateY(-2px);
-  }
-  
-  .literexia-question-card {
-    background-color: white;
-    border-radius: 8px;
-    border: 1px solid #e0e0e0;
-    padding: 1.25rem;
-    margin-bottom: 1.25rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  }
-  
-  .literexia-question-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
-  
-  .literexia-question-header h4 {
-    margin: 0;
-    font-size: 1.1rem;
-    color: #333;
-  }
-  
-  .literexia-remove-question-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #f5f5f5;
-    color: #757575;
-    border: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  
-  .literexia-remove-question-btn:hover:not(:disabled) {
-    background-color: #F44336;
-    color: white;
-  }
-  
-  .literexia-remove-question-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  .literexia-options-container {
-    margin-bottom: 1.25rem;
-  }
-  
-  .literexia-options-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
-  
-  .literexia-options-header label {
-    margin-bottom: 0;
-  }
-  
-  .literexia-add-option-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background-color: #3B4F81;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  
-  .literexia-add-option-btn:hover {
-    background-color: #2C3E70;
-  }
-  
-  .literexia-option-row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-  
-  .literexia-option-index {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background-color: #f0f0f0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    color: #333;
-    font-size: 0.9rem;
-    flex-shrink: 0;
-  }
-  
-  .literexia-option-input {
-    flex: 1;
-  }
-  
-  .literexia-option-actions {
-    display: flex;
-    align-items: center;
+  .literexia-form-row {
+    flex-direction: column;
     gap: 1rem;
   }
   
-  .literexia-correct-option {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    cursor: pointer;
-    font-size: 0.9rem;
-    color: #333;
+  .literexia-option-row {
+    flex-wrap: wrap;
   }
   
-  .literexia-correct-option input {
-    width: auto;
-    cursor: pointer;
-  }
-  
-  .literexia-remove-option-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    color: #757575;
-    border: none;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  
-  .literexia-remove-option-btn:hover:not(:disabled) {
-    color: #F44336;
-  }
-  
-  .literexia-remove-option-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  .literexia-options-error {
+  .literexia-option-audio-controls {
+    width: 100%;
     margin-top: 0.5rem;
   }
   
   .literexia-form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 2rem;
+    flex-direction: column-reverse;
   }
   
-  .literexia-cancel-btn {
-    padding: 0.75rem 1.5rem;
-    background-color: #f5f5f5;
-    color: #333;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  
-  .literexia-cancel-btn:hover {
-    background-color: #e0e0e0;
-  }
-  
+  .literexia-cancel-btn,
   .literexia-save-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    width: 100%;
+    justify-content: center;
   }
-  
-  .literexia-save-btn:hover {
-    background-color: #43A047;
-    transform: translateY(-2px);
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes literexiaZoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
   }
-  
-  /* Responsive styles */
-  @media (max-width: 768px) {
-    .literexia-modal-title {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
-    }
-    
-    .literexia-section-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.75rem;
-    }
-    
-    .literexia-options-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.75rem;
-    }
-    
-    .literexia-option-row {
-      flex-wrap: wrap;
-    }
-    
-    .literexia-option-actions {
-      width: 100%;
-      margin-top: 0.5rem;
-      justify-content: flex-start;
-    }
-    
-    .literexia-form-actions {
-      flex-direction: column-reverse;
-    }
-    
-    .literexia-cancel-btn,
-    .literexia-save-btn {
-      width: 100%;
-      justify-content: center;
-    }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
+}
+
+/* Modal Header */
+.literexia-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  background-color: #3B4F81;
+  background-image: linear-gradient(135deg, #3B4F81 0%, #2C3E70 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+}
+
+.literexia-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.literexia-modal-title h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.literexia-student-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.literexia-close-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.literexia-close-button:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+  transform: rotate(90deg);
+}
+
+/* Steps Indicator */
+.literexia-steps-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.literexia-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.literexia-step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #777;
+  margin-bottom: 0.5rem;
+}
+
+.literexia-step.active .literexia-step-number {
+  background-color: #3B4F81;
+  color: white;
+}
+
+.literexia-step-label {
+  font-size: 0.85rem;
+  color: #777;
+}
+
+.literexia-step.active .literexia-step-label {
+  color: #3B4F81;
+  font-weight: 600;
+}
+
+.literexia-step-connector {
+  height: 2px;
+  background-color: #e0e0e0;
+  flex: 1;
+  margin: 0 0.5rem;
+  position: relative;
+  top: -16px;
+}
+
+/* Error and Info Banners */
+.literexia-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: #ffebee;
+  color: #d32f2f;
+  padding: 1rem 1.5rem;
+  font-weight: 500;
+}
+
+.literexia-modal-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background-color: #e3f2fd;
+  color: #1565c0;
+  padding: 1rem 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.literexia-modal-info-banner svg {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+/* Form */
+.literexia-edit-form {
+  padding: 1.5rem;
+}
+
+.literexia-form-section {
+  margin-bottom: 2rem;
+}
+
+.literexia-form-section h3 {
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  font-size: 1.2rem;
+  color: #333;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.literexia-form-group {
+  margin-bottom: 1.25rem;
+}
+
+.literexia-form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.literexia-required {
+  color: #F44336;
+  margin-left: 0.25rem;
+}
+
+.literexia-form-group input,
+.literexia-form-group textarea,
+.literexia-form-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: #333;
+  background-color: white;
+}
+
+.literexia-form-group input:focus,
+.literexia-form-group textarea:focus,
+.literexia-form-group select:focus {
+  outline: none;
+  border-color: #3B4F81;
+  box-shadow: 0 0 0 2px rgba(59, 79, 129, 0.2);
+}
+
+.literexia-form-group input.literexia-error,
+.literexia-form-group textarea.literexia-error,
+.literexia-form-group select.literexia-error {
+  border-color: #F44336;
+  background-color: #fff8f8;
+}
+
+.literexia-error-message {
+  color: #F44336;
+  font-size: 0.85rem;
+  margin-top: 0.4rem;
+}
+
+.literexia-form-row {
+  display: flex;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.literexia-form-row .literexia-form-group {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* Content Type Selection */
+.literexia-content-type-selection {
+  margin-top: 2rem;
+}
+
+.literexia-content-type-options {
+  display: flex;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.literexia-content-type-option {
+  flex: 1;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  display: flex;
+  gap: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.literexia-content-type-option:hover {
+  border-color: #3B4F81;
+  background-color: #f5f7fa;
+}
+
+.literexia-content-type-option.active {
+  border-color: #3B4F81;
+  background-color: rgba(59, 79, 129, 0.05);
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.1);
+}
+
+.literexia-content-type-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: #3B4F81;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.literexia-content-type-details {
+  flex: 1;
+}
+
+.literexia-content-type-name {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.literexia-content-type-description {
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.4;
+}
+
+/* Content Items */
+.literexia-content-items-section {
+  margin-bottom: 2rem;
+}
+
+.literexia-content-items-section h3 {
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  font-size: 1.2rem;
+  color: #333;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.literexia-content-item {
+  background-color: #f9f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.literexia-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.literexia-item-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.literexia-remove-item-btn {
+  background-color: #f5f5f5;
+  color: #666;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.literexia-remove-item-btn:hover:not(:disabled) {
+  background-color: #F44336;
+  color: white;
+}
+
+.literexia-remove-item-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.literexia-media-row {
+  display: flex;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.literexia-media-column {
+  flex: 1;
+}
+
+.literexia-media-column label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.literexia-upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 2rem 1rem;
+  color: #666;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.literexia-upload-placeholder:hover {
+  border-color: #3B4F81;
+  background-color: rgba(59, 79, 129, 0.05);
+}
+
+.literexia-upload-placeholder svg {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+  color: #3B4F81;
+}
+
+.literexia-upload-placeholder input {
+  display: none;
+}
+
+.literexia-image-preview {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.literexia-image-preview img {
+  width: 100%;
+  display: block;
+  max-height: 200px;
+  object-fit: contain;
+}
+
+.literexia-image-preview button,
+.literexia-audio-preview button {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.literexia-image-preview button:hover,
+.literexia-audio-preview button:hover {
+  background-color: #F44336;
+}
+
+.literexia-audio-preview {
+  position: relative;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  background-color: white;
+}
+
+.literexia-audio-preview audio {
+  width: 100%;
+}
+
+.literexia-add-item-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #3B4F81;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.literexia-add-item-btn:hover {
+  background-color: #2C3E70;
+  transform: translateY(-2px);
+}
+
+/* Questions */
+.literexia-questions-section {
+  margin-bottom: 2rem;
+}
+
+.literexia-questions-section h3 {
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  font-size: 1.2rem;
+  color: #333;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.literexia-question-card {
+  background-color: #f9f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.literexia-question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.literexia-question-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.literexia-remove-question-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #f5f5f5;
+  color: #666;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.literexia-remove-question-btn:hover:not(:disabled) {
+  background-color: #F44336;
+  color: white;
+}
+
+.literexia-remove-question-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.literexia-question-type-selection {
+  margin-bottom: 1.25rem;
+}
+
+.literexia-type-buttons {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.literexia-type-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.literexia-type-button.active {
+  background-color: #3B4F81;
+  color: white;
+  border-color: #3B4F81;
+}
+
+.literexia-question-media {
+  margin-bottom: 1.25rem;
+}
+
+.literexia-upload-container {
+  margin-top: 0.5rem;
+}
+
+.literexia-preview-image {
+  max-height: 150px;
+  object-fit: contain;
+}
+
+.literexia-audio-player {
+  width: 100%;
+}
+
+/* Options */
+.literexia-options-container {
+  margin-bottom: 1.25rem;
+}
+
+.literexia-options-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.literexia-add-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.literexia-add-option-btn:hover {
+  background-color: #388E3C;
+}
+
+.literexia-option-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.literexia-option-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 80px;
+}
+
+.literexia-option-radio input {
+  margin: 0;
+}
+
+.literexia-option-audio-controls {
+  display: flex;
+  align-items: center;
+  min-width: 120px;
+}
+
+.literexia-option-audio-upload {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #f5f5f5;
+  color: #666;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.literexia-option-audio-upload:hover {
+  background-color: #3B4F81;
+  color: white;
+}
+
+.literexia-option-audio-upload input {
+  display: none;
+}
+
+.literexia-remove-option-btn {
+  background: none;
+  color: #666;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.literexia-remove-option-btn:hover:not(:disabled) {
+  color: #F44336;
+}
+
+.literexia-remove-option-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.literexia-info-tooltip {
+  display: inline-block;
+  position: relative;
+  margin-left: 0.5rem;
+}
+
+.literexia-tooltip-icon {
+  color: #3B4F81;
+  font-size: 0.9rem;
+  cursor: help;
+}
+
+.literexia-tooltip-content {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #333;
+  color: white;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  width: 250px;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+}

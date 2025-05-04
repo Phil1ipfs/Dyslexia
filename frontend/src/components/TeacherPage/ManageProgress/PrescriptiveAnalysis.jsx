@@ -9,17 +9,18 @@ import {
   FaArrowRight,
   FaBrain,
   FaChalkboardTeacher,
-  FaHandsHelping
+  FaHandsHelping,
+  FaMobile
 } from 'react-icons/fa';
-import '../ManageProgress/css/PrescriptiveAnalysis.css';
+import './css/PrescriptiveAnalysis.css';
 
 const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
   if (!recommendations || recommendations.length === 0) {
     return (
       <div className="literexia-empty-state">
         <FaExclamationTriangle className="literexia-empty-icon" />
-        <h3>Walang Rekomendasyong Natagpuan</h3>
-        <p>Kailangan munang kumpletuhin ang paunang pagsusuri upang makabuo ng mga personalized na rekomendasyon.</p>
+        <h3>No Recommendations Found</h3>
+        <p>The initial assessment needs to be completed first to generate personalized recommendations.</p>
       </div>
     );
   }
@@ -27,12 +28,16 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
   // Get category color class
   const getCategoryColorClass = (category) => {
     switch (category) {
+      case 'Vowel Sound':
       case 'Patinig':
         return 'literexia-patinig';
+      case 'Syllable Blending':
       case 'Pantig':
         return 'literexia-pantig';
+      case 'Word Recognition':
       case 'Pagkilala ng Salita':
         return 'literexia-salita';
+      case 'Reading Comprehension':
       case 'Pag-unawa sa Binasa':
         return 'literexia-pag-unawa';
       default:
@@ -40,40 +45,33 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
     }
   };
   
-  // Get status class and text
+  // Get status info
   const getStatusInfo = (status) => {
     switch (status) {
-      case 'pending_approval':
-        return { class: 'literexia-pending', text: 'Nakabinbin ang Pag-apruba' };
+      case 'pushed_to_mobile':
+        return { class: 'literexia-mobile', text: 'Pushed to Mobile' };
       case 'completed':
-        return { class: 'literexia-completed', text: 'Nakumpleto' };
+        return { class: 'literexia-completed', text: 'Completed' };
       case 'in_progress':
-        return { class: 'literexia-in-progress', text: 'Kasalukuyang Ginagawa' };
+        return { class: 'literexia-in-progress', text: 'In Progress' };
       default:
         return { class: 'literexia-draft', text: 'Draft' };
     }
   };
-
-  // Text shortening utility
-  const shortenText = (text, maxLength = 100) => {
-    if (!text || text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
   
   return (
     <div className="literexia-prescriptive-container">
-      {/* Header with explanation */}
+      {/* Header Section */}
       <div className="literexia-prescriptive-header">
         <div className="literexia-header-icon">
           <FaBrain />
         </div>
         <div className="literexia-head-content">
-          <h3>AI-Generated na mga Rekomendasyon para sa Pag-aaral</h3>
+          <h3>AI-Generated Learning Recommendations</h3>
           <p>
-            Batay sa resulta ng pagtatasa at patuloy na pagganap ng mag-aaral, 
-            ang aming system ay nakakita ng partikular na mga learning gaps 
-            at gumawa ng mga targeted na rekomendasyon upang mapabuti ang 
-            kanilang mga kasanayan sa pagbasa.
+            Based on assessment results and the student's ongoing performance, 
+            our system has identified specific learning gaps and generated 
+            targeted recommendations to improve their reading skills.
           </p>
         </div>
       </div>
@@ -82,23 +80,22 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
       <div className="literexia-summary-section">
         <div className="literexia-summary-header">
           <FaLightbulb className="literexia-summary-icon" />
-          <h3>Buod ng mga Natuklasan</h3>
+          <h3>Summary of Findings</h3>
         </div>
         <div className="literexia-summary-content">
           <p>
-            Ang pagsusuri sa data ng pag-unlad ni {student?.name} ay nagpapahiwatig na may 
-            kahirapan siya sa <strong>pagkilala ng diptonggo</strong> at <strong>kumplikadong 
-            pattern ng pantig</strong>. Ang kanyang performance sa mga aktibidad na 
-            nangangailangan ng mga kasanayang ito ay patuloy na nasa mababang antas, 
-            na may pattern ng mga pagkakamali na nagmumungkahi ng mga hamon sa phonological 
-            processing na karaniwan sa mga mag-aaral na may dyslexia.
+            Analysis of {student?.name}'s progress data indicates difficulties with 
+            <strong> diphthong recognition</strong> and <strong>complex syllable patterns</strong>. 
+            Their performance in activities requiring these skills has consistently been 
+            below average, with a pattern of errors suggesting phonological 
+            processing challenges common in students with dyslexia.
           </p>
           <p>
-            Batay sa kanyang kasalukuyang antas ng pagbasa ({recommendations[0]?.readingLevel || 'Antas 2'}) 
-            at sa kanyang mga partikular na pattern ng pagganap, ang system ay bumuo ng mga 
-            personalized na rekomendasyon para sa pag-aaral upang matugunan ang mga gaps na ito. 
-            Ang mga aktibidad sa ibaba ay partikular na idinisenyo upang tukuyin ang kanyang 
-            mga kahinaan habang itinataguyod ang kanyang mga kasalukuyang kalakasan.
+            Based on their current reading level ({recommendations[0]?.readingLevel || 'Level 2'}) 
+            and their specific performance patterns, the system has generated 
+            personalized learning recommendations to address these gaps. 
+            The activities below are specifically designed to target their 
+            weaknesses while building on their existing strengths.
           </p>
         </div>
       </div>
@@ -107,12 +104,12 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
       <div className="literexia-teaching-guide">
         <div className="literexia-guide-header">
           <FaChalkboardTeacher className="literexia-guide-icon" />
-          <h3>Gabay sa Pagtuturo sa Harap-harapan</h3>
+          <h3>In-Person Teaching Guide</h3>
         </div>
         <div className="literexia-guide-content">
           <p>
-            Habang gumagamit ng mga digital na aktibidad, inirerekomenda na suportahan si {student?.name} 
-            gamit ang mga sumusunod na estratehiya:
+            While using the digital activities, we recommend supporting {student?.name} 
+            with the following strategies:
           </p>
           <div className="literexia-strategy-list">
             <div className="literexia-strategy">
@@ -120,11 +117,10 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
                 <FaHandsHelping />
               </div>
               <div className="literexia-strategy-content">
-                <h4>Multi-sensory na Pagtuturo</h4>
+                <h4>Multi-sensory Instruction</h4>
                 <p>
-                  Gumamit ng mga pisikal na letter tiles o cards kapag 
-                  nagtatrabaho sa mga diptonggo, na nagbibigay-daan kay {student?.name} na makita, 
-                  mahawakan, at marinig ang mga tunog nang sabay-sabay.
+                  Use physical letter tiles or cards when working on diphthongs, allowing {student?.name} to see, 
+                  touch, and hear the sounds simultaneously.
                 </p>
               </div>
             </div>
@@ -136,8 +132,8 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
               <div className="literexia-strategy-content">
                 <h4>Syllable Tapping</h4>
                 <p>
-                  Turuan si {student?.name} na i-tap ang mga pantig gamit ang kanyang mga daliri 
-                  habang nagbabasa, na pinatitibay ang pisikal na koneksyon sa mga pattern ng pantig.
+                  Teach {student?.name} to tap syllables with their fingers while reading, 
+                  reinforcing the physical connection to syllable patterns.
                 </p>
               </div>
             </div>
@@ -149,23 +145,23 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
               <div className="literexia-strategy-content">
                 <h4>Chunking Strategy</h4>
                 <p>
-                  Ipakita kung paano hatiin ang mas mahahabang salita sa mga makakayanan parts, 
-                  at unti-unting bawasan ang suporta habang tumataas ang kumpiyansa ni {student?.name}.
+                  Demonstrate how to break longer words into manageable parts, 
+                  gradually reducing support as {student?.name}'s confidence increases.
                 </p>
               </div>
             </div>
           </div>
           
           <div className="literexia-monitoring-note">
-            <strong>Pag-monitor ng Progreso:</strong> Pagkatapos ipatupad ang mga interbensiyon na ito 
-            sa loob ng 2-3 linggo, suriin ang progreso ni {student?.name} at ayusin ang mga estratehiya kung kinakailangan.
+            <strong>Progress Monitoring:</strong> After implementing these interventions for 2-3 weeks, 
+            review {student?.name}'s progress and adjust strategies as needed.
           </div>
         </div>
       </div>
       
       {/* Recommended Activities/Interventions */}
       <div className="literexia-interventions">
-        <h3 className="literexia-interventions-title">Mga Inirerekomendang Interbensyon</h3>
+        <h3 className="literexia-interventions-title">Recommended Interventions</h3>
         
         <div className="literexia-interventions-list">
           {recommendations.map((rec) => (
@@ -185,48 +181,53 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
               
               <div className="literexia-intervention-metrics">
                 <div className="literexia-metric">
-                  <div className="literexia-metric-label">Kasalukuyang Iskor</div>
-                  <div className="literexia-metric-value">{rec.score}%</div>
+                  <div className="literexia-metric-label">Current Score</div>
+                  <div className="literexia-metric-value">{rec.score || 60}%</div>
                 </div>
                 <div className="literexia-metric-arrow">
                   <FaArrowRight />
                 </div>
                 <div className="literexia-metric">
-                  <div className="literexia-metric-label">Target na Iskor</div>
-                  <div className="literexia-metric-value">{rec.targetScore}%</div>
+                  <div className="literexia-metric-label">Target Score</div>
+                  <div className="literexia-metric-value">{rec.targetScore || 75}%</div>
                 </div>
                 <div className="literexia-metric literexia-success-probability">
-                  <div className="literexia-metric-label">Posibilidad ng Tagumpay</div>
-                  <div className="literexia-metric-value">{rec.successProbability || '85'}%</div>
+                  <div className="literexia-metric-label">Success Probability</div>
+                  <div className="literexia-metric-value">{rec.successProbability || 85}%</div>
                 </div>
               </div>
               
               <div className="literexia-intervention-details">
                 <div className="literexia-intervention-analysis">
-                  <h5>Pagsusuri</h5>
-                  <p>{rec.analysis || 'Walang partikular na pagsusuri na ibinigay.'}</p>
+                  <h5>Analysis</h5>
+                  <p>{rec.analysis || rec.rationale || 'No specific analysis provided.'}</p>
                 </div>
                 
                 <div className="literexia-intervention-recommendation">
-                  <h5><FaCheckCircle /> Rekomendasyon</h5>
-                  <p>{rec.recommendation}</p>
+                  <h5><FaCheckCircle /> Recommendation</h5>
+                  <p>{rec.recommendation || 'Provide additional practice activities focusing on this skill area, with immediate feedback and opportunities for correction.'}</p>
                 </div>
                 
                 <div className="literexia-intervention-actions">
-                  <div className="literexia-action-note">
-                    <FaInfoCircle />
-                    <span>Ang pag-edit ng aktibidad na ito ay gagawa ng custom version para sa partikular na pangangailangan ng mag-aaral na ito.</span>
-                  </div>
+                  {rec.status === 'pushed_to_mobile' ? (
+                    <div className="literexia-mobile-status">
+                      <FaMobile />
+                      <span>This activity has been pushed to the student's mobile device</span>
+                    </div>
+                  ) : (
+                    <div className="literexia-action-note">
+                      <FaInfoCircle />
+                      <span>Editing this activity will create a custom version for this student's specific needs.</span>
+                    </div>
+                  )}
                   <button
                     className="literexia-edit-activity-btn"
                     onClick={() => onEditActivity(rec)}
-                    disabled={rec.status === 'pending_approval'}
                   >
-                    <FaEdit /> {rec.status === 'pending_approval' ? 'Naghihintay ng Pag-apruba' : 'I-edit ang Aktibidad'}
+                    <FaEdit /> {rec.status === 'pushed_to_mobile' ? 'Edit Activity' : 'Customize & Push to Mobile'}
                   </button>
                 </div>
               </div>
-              
             </div>
           ))}
         </div>
