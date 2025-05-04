@@ -18,6 +18,8 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [active, setActive] = useState(defaultActive);
+  // Add a state for image refresh key
+  const [imageRefreshKey, setImageRefreshKey] = useState(Date.now());
 
   const {
     firstName = "",
@@ -31,9 +33,14 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
     .filter(Boolean)
     .join(" ");
 
-  // cache-busting to force reload when updated
+  // Update the refresh key whenever teacherInfo changes
+  useEffect(() => {
+    setImageRefreshKey(Date.now());
+  }, [teacherInfo, profileImageUrl]);
+
+  // cache-busting with the refresh key instead of Date.now()
   const avatarSrc = profileImageUrl
-    ? `${profileImageUrl}?t=${Date.now()}`
+    ? `${profileImageUrl}?t=${imageRefreshKey}`
     : avatarFallback;
 
   useEffect(() => {
@@ -69,6 +76,7 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
           onError={e => { e.currentTarget.src = avatarFallback; }}
           alt="User Avatar"
           className="sidebar-avatar"
+          key={imageRefreshKey} // Add key to force re-render when image changes
         />
         <div className="sidebar-user-details">
           <p className="sidebar-user-name">{fullName || "Teacher"}</p>

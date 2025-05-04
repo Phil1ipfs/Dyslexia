@@ -103,9 +103,25 @@ export const updateTeacherProfile = async (profile) => {
   // Create a copy of the profile data to normalize
   const normalizedProfile = { ...profile };
 
-  // Ensure profileImageUrl is null, not "null" string
-  if (normalizedProfile.profileImageUrl === "null") {
+  // Ensure profileImageUrl is handled correctly
+  if (normalizedProfile.profileImageUrl === "null" || normalizedProfile.profileImageUrl === undefined) {
     normalizedProfile.profileImageUrl = null;
+  }
+  
+  // Make sure all fields are properly formatted
+  if (!normalizedProfile.middleName) normalizedProfile.middleName = '';
+  if (!normalizedProfile.position) normalizedProfile.position = '';
+  if (!normalizedProfile.gender) normalizedProfile.gender = '';
+  if (!normalizedProfile.civilStatus) normalizedProfile.civilStatus = '';
+  if (!normalizedProfile.dob) normalizedProfile.dob = '';
+  if (!normalizedProfile.address) normalizedProfile.address = '';
+  
+  // Ensure emergencyContact is properly structured
+  if (!normalizedProfile.emergencyContact) {
+    normalizedProfile.emergencyContact = { name: '', number: '' };
+  } else if (typeof normalizedProfile.emergencyContact === 'object') {
+    if (!normalizedProfile.emergencyContact.name) normalizedProfile.emergencyContact.name = '';
+    if (!normalizedProfile.emergencyContact.number) normalizedProfile.emergencyContact.number = '';
   }
 
   try {
@@ -147,6 +163,8 @@ export const updateTeacherProfile = async (profile) => {
  * @param {Function} onProgress - Progress callback function
  * @returns {Promise<Object>} Upload result
  */
+// Improved uploadProfileImage function in teacherService.js
+// Improved uploadProfileImage function in teacherService.js
 export const uploadProfileImage = async (file, onProgress) => {
   // Create form data
   const formData = new FormData();
@@ -172,7 +190,26 @@ export const uploadProfileImage = async (file, onProgress) => {
     
     console.log('Upload completed successfully:', data);
     
-    return data; // { success: true, imageUrl: imageUrl }
+    // Handle various response formats
+    if (data && typeof data === 'object') {
+      // If response contains success flag, return it directly
+      if ('success' in data) {
+        return data;
+      }
+      // Normalize response format
+      return { 
+        success: true, 
+        imageUrl: data.imageUrl || data.url || null,
+        message: data.message || 'Upload successful'
+      };
+    }
+    
+    // Fallback for unexpected response format
+    return { 
+      success: true, 
+      imageUrl: null,
+      message: 'Upload completed but no URL returned'
+    };
   } catch (error) {
     console.error('Error uploading profile image:', error);
     
@@ -182,7 +219,10 @@ export const uploadProfileImage = async (file, onProgress) => {
     }
     
     // Create a more informative error
-    const errorMessage = error.response?.data?.details || error.message || 'Unknown error';
+    const errorMessage = error.response?.data?.details || 
+                         error.response?.data?.error || 
+                         error.message || 
+                         'Unknown error';
     const enhancedError = new Error(`Failed to upload image: ${errorMessage}`);
     
     // Add original error for debugging
@@ -191,6 +231,9 @@ export const uploadProfileImage = async (file, onProgress) => {
     throw enhancedError;
   }
 };
+
+
+
 /**
  * Delete profile image from S3
  * @returns {Promise<Object>} Delete result
