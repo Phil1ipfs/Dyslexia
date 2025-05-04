@@ -4,6 +4,7 @@ import {
   FaBookOpen, 
   FaChartLine, 
   FaCheckCircle, 
+  FaBrain,
   FaEdit, 
   FaSave,
   FaCalendarAlt,
@@ -11,8 +12,8 @@ import {
   FaTrophy
 } from 'react-icons/fa';
 
-import SkillsOverviewSection from '../ManageProgress/SkillsOverviewSection';
-import '../ManageProgress/css/ProgressReport.css';
+import SkillsOverviewSection from './SkillsOverviewSection';
+import './css/ProgressReport.css';
 
 const ProgressReport = ({ progressData, assignedLessons }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -20,7 +21,7 @@ const ProgressReport = ({ progressData, assignedLessons }) => {
   const [editingFeedback, setEditingFeedback] = useState({});
   const [tempFeedback, setTempFeedback] = useState({});
 
-  // Initialize learningObjectives using the assignedLessons prop
+  // Initialize learning objectives using the assignedLessons prop
   const [learningObjectives, setLearningObjectives] = useState(
     assignedLessons.map(lesson => ({
       id: lesson.id,
@@ -31,7 +32,7 @@ const ProgressReport = ({ progressData, assignedLessons }) => {
     }))
   );
 
-  // Update learningObjectives when assignedLessons changes
+  // Update learning objectives when assignedLessons changes
   useEffect(() => {
     // Make sure we don't overwrite existing data for lessons that are already in learningObjectives
     const updatedObjectives = assignedLessons.map(lesson => {
@@ -50,14 +51,15 @@ const ProgressReport = ({ progressData, assignedLessons }) => {
       }
     });
     
+    setLearningObjectives(updatedObjectives);
   }, [assignedLessons]);
   
   if (!progressData) {
     return (
       <div className="literexia-empty-state">
         <FaInfoCircle size={40} />
-        <h3>Walang Datos ng Pag-unlad</h3>
-        <p>Walang available na datos ng pag-unlad para sa mag-aaral na ito. Maaaring hindi pa siya nakakatapos ng anumang aralin.</p>
+        <h3>No Progress Data</h3>
+        <p>No progress data available for this student. They may not have completed any lessons yet.</p>
       </div>
     );
   }
@@ -112,17 +114,17 @@ const ProgressReport = ({ progressData, assignedLessons }) => {
   // Get CSS class for skill category
   const getCategoryClass = (category) => {
     switch(category) {
-      case 'Patinig':
       case 'Vowel Sound':
+      case 'Patinig':
         return 'literexia-patinig';
-      case 'Pantig':
       case 'Syllable Blending':
+      case 'Pantig':
         return 'literexia-pantig';
-      case 'Pagkilala ng Salita':
       case 'Word Recognition':
+      case 'Pagkilala ng Salita':
         return 'literexia-salita';
-      case 'Pag-unawa sa Binasa':
       case 'Reading Comprehension':
+      case 'Pag-unawa sa Binasa':
         return 'literexia-pag-unawa';
       default:
         return '';
@@ -216,12 +218,18 @@ const ProgressReport = ({ progressData, assignedLessons }) => {
       {/* Progress info section */}
       <div className="literexia-progress-info">
         <div className="literexia-progress-info-icon">
-          <FaInfoCircle />
+          <FaBrain />
         </div>
         <div className="literexia-progress-info-text">
           <p>
-            Ang seksyong ito ay nagpapakita ng progreso ng mag-aaral sa kanilang mga aktibidad sa pagbasa. 
-            Maaari mong tingnan ang kanilang performance sa paglipas ng panahon at sa iba't ibang kategorya ng kasanayan sa pagbasa.
+            
+          <h3>Progress REPORRTT</h3>
+            This section shows the student's progress in their reading activities.
+            This section shows the student's progress in their reading activities.
+            This section shows the student's progress in their reading activities.
+            This section shows the student's progress in their reading activities.
+            This section shows the student's progress in their reading activities.
+            You can view their performance over time and across different reading skill categories.
           </p>
         </div>
       </div>
@@ -235,7 +243,7 @@ const ProgressReport = ({ progressData, assignedLessons }) => {
             </div>
             <div className="literexia-card-value">{completionRate}%</div>
           </div>
-          <div className="literexia-card-label">Nakumpletong Aralin</div>
+          <div className="literexia-card-label">Lessons Completed</div>
         </div>
         
         <div className="literexia-summary-card">
@@ -245,7 +253,7 @@ const ProgressReport = ({ progressData, assignedLessons }) => {
             </div>
             <div className="literexia-card-value">{averageScore}%</div>
           </div>
-          <div className="literexia-card-label">Karaniwang Iskor</div>
+          <div className="literexia-card-label">Average Score</div>
         </div>
         
         <div className="literexia-summary-card">
@@ -255,142 +263,15 @@ const ProgressReport = ({ progressData, assignedLessons }) => {
             </div>
             <div className="literexia-card-value">{progressData.activitiesCompleted || 0}</div>
           </div>
-          <div className="literexia-card-label">Nakumpletong Aktibidad</div>
+          <div className="literexia-card-label">Activities Completed</div>
         </div>
       </div>
       
-      {/* Skills Overview Section - New enhanced component */}
-      <SkillsOverviewSection scores={progressData.scores} />
-      
-      {/* Learning Objectives Table integrated with activities */}
-      <div className="literexia-combined-section">
-        <h3 className="literexia-section-title">
-          <FaCheckCircle className="literexia-section-icon" /> Mga Aralin at Aktibidad
-        </h3>
-        
-        <div className="literexia-filters">
-          <div className="literexia-filter-group">
-            <label htmlFor="timeRangeFilter">Panahon:</label>
-            <select
-              id="timeRangeFilter"
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="literexia-filter-select"
-            >
-              <option value="week">Nakaraang Linggo</option>
-              <option value="month">Nakaraang Buwan</option>
-              <option value="quarter">Nakaraang 3 Buwan</option>
-            </select>
-          </div>
-          
-          <div className="literexia-filter-group">
-            <label htmlFor="categoryFilter">Kategorya:</label>
-            <select
-              id="categoryFilter"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="literexia-filter-select"
-            >
-              <option value="all">Lahat ng Kategorya</option>
-              <option value="Patinig">Patinig</option>
-              <option value="Pantig">Pantig</option>
-              <option value="Pagkilala ng Salita">Pagkilala ng Salita</option>
-              <option value="Pag-unawa sa Binasa">Pag-unawa sa Binasa</option>
-            </select>
-          </div>
-        </div>
-        
-        {/* Learning Objectives Table */}
-        <div className="literexia-learning-objectives">
-          <h4 className="literexia-subsection-title">Pag-unlad sa Mga Aralin</h4>
-          
-          <div className="literexia-table-container">
-            <table className="literexia-objectives-table">
-              <thead>
-                <tr>
-                  <th rowSpan="2">Aralin</th>
-                  <th rowSpan="2">Nakumpleto</th>
-                  <th colSpan="3">Antas ng Pag-unlad</th>
-                  <th rowSpan="2">Mga Puna</th>
-                </tr>
-                <tr>
-                  <th>Minimal na tulong</th>
-                  <th>Katamtamang tulong</th>
-                  <th>Malaking tulong</th>
-                </tr>
-              </thead>
-              <tbody>
-                {learningObjectives.map((objective) => (
-                  <tr key={objective.id}>
-                    <td>{objective.title}</td>
-                    <td className="literexia-completion-cell">
-                      {filteredActivities.some(act => act.title.includes(objective.title.substring(0, 5))) ? (
-                        <span className="literexia-completed"><FaCheckCircle /></span>
-                      ) : (
-                        <span className="literexia-not-completed">Hindi pa</span>
-                      )}
-                    </td>
-                    <td className="literexia-assistance-cell">
-                      <div 
-                        className={`literexia-checkbox ${objective.assistance === 'minimal' ? 'literexia-selected' : ''}`}
-                        onClick={() => handleAssistanceChange(objective.id, 'minimal')}
-                      >
-                        {objective.assistance === 'minimal' && <FaCheckCircle />}
-                      </div>
-                    </td>
-                    <td className="literexia-assistance-cell">
-                      <div 
-                        className={`literexia-checkbox ${objective.assistance === 'moderate' ? 'literexia-selected' : ''}`}
-                        onClick={() => handleAssistanceChange(objective.id, 'moderate')}
-                      >
-                        {objective.assistance === 'moderate' && <FaCheckCircle />}
-                      </div>
-                    </td>
-                    <td className="literexia-assistance-cell">
-                      <div 
-                        className={`literexia-checkbox ${objective.assistance === 'maximal' ? 'literexia-selected' : ''}`}
-                        onClick={() => handleAssistanceChange(objective.id, 'maximal')}
-                      >
-                        {objective.assistance === 'maximal' && <FaCheckCircle />}
-                      </div>
-                    </td>
-                    <td className="literexia-remarks-cell">
-                      {objective.isEditingRemarks ? (
-                        <div className="literexia-remarks-edit">
-                          <textarea
-                            value={objective.remarks}
-                            onChange={(e) => handleRemarksChange(objective.id, e.target.value)}
-                            placeholder="Magdagdag ng mga puna..."
-                            className="literexia-remarks-textarea"
-                          />
-                          <button 
-                            className="literexia-save-remarks-btn"
-                            onClick={() => toggleRemarksEditing(objective.id)}
-                          >
-                            <FaSave />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="literexia-remarks-view">
-                          <p>{objective.remarks || 'Walang puna pa.'}</p>
-                          <button 
-                            className="literexia-edit-remarks-btn"
-                            onClick={() => toggleRemarksEditing(objective.id)}
-                          >
-                            <FaEdit />
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      {/* Skills Overview Section */}
+      <SkillsOverviewSection scores={progressData.scores} /> 
       </div>
-    </div>
   );
 };
 
 export default ProgressReport;
+                       
