@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const connectDB = require('./config/teacher/db');
+const s3Client = require('./config/s3');
 const app = express();
 
 // Enhanced logging middleware to debug route issues
@@ -18,6 +19,19 @@ app.use(requestLogger);
 
 // Connect to MongoDB
 connectDB();
+
+// Test S3 connection
+if (s3Client.testS3Connection) {
+  s3Client.testS3Connection()
+    .then(success => {
+      if (success) {
+        console.log('S3 bucket configuration is working correctly');
+      } else {
+        console.warn('S3 bucket connection failed - image uploads may not work');
+      }
+    })
+    .catch(err => console.error('Error testing S3 connection:', err));
+}
 
 // Test route to verify server is running
 app.get('/api/test', (req, res) => {

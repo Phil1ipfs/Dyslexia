@@ -1,11 +1,13 @@
+// src/components/TeacherPage/TeacherLayout.jsx
 import React, { useEffect, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import { fetchTeacherProfile } from "../../services/teacherService"; 
 import "./teacherLayout.css";
 
 function TeacherLayout({ onLogout }) {
   const [teacherInfo, setTeacherInfo] = useState(null);
+  const location = useLocation();
 
   useEffect(() => {
     const loadTeacher = async () => {
@@ -18,7 +20,7 @@ function TeacherLayout({ onLogout }) {
     };
 
     loadTeacher();
-  }, []);
+  }, [location]); // Reload whenever the location changes
 
   return (
     <div className="teacher-layout-container">
@@ -30,4 +32,4 @@ function TeacherLayout({ onLogout }) {
   );
 }
 
-export default TeacherLayout; // ← make sure this exists!
+export default TeacherLayout;

@@ -36,8 +36,8 @@ function TeacherProfile() {
   const fileInputRef = useRef(null);
 
 
-  
-  
+
+
   // Add a state for image refresh trigger
   const [imageRefreshKey, setImageRefreshKey] = useState(Date.now());
 
@@ -100,7 +100,7 @@ function TeacherProfile() {
       number: ""
     }
   });
-  
+
   // Handle input changes with sanitization
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -150,91 +150,97 @@ function TeacherProfile() {
   };
 
   // Process the selected image file
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+// Improved handleFileChange in TeacherProfile.jsx
+const handleFileChange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    // Validate file type
-    const validImageTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    if (!validImageTypes.includes(file.type)) {
-      setErrorDialog({
-        show: true,
-        message: "Please upload a valid image file (JPEG, PNG, or GIF)."
-      });
-      return;
+  // Validate file type
+  const validImageTypes = ['image/jpeg', 'image/png', 'image/gif'];
+  if (!validImageTypes.includes(file.type)) {
+    setErrorDialog({
+      show: true,
+      message: "Please upload a valid image file (JPEG, PNG, or GIF)."
+    });
+    return;
+  }
+
+  // Validate file size (limit to 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    setErrorDialog({
+      show: true,
+      message: "File size exceeds 5MB. Please upload a smaller image."
+    });
+    return;
+  }
+
+  try {
+    setIsUploadingImage(true);
+    setUploadProgress(0);
+
+    // Progress callback function
+    const onProgress = (percent) => {
+      setUploadProgress(percent);
+    };
+
+    // After successful upload
+    const result = await uploadProfileImage(file, onProgress);
+    console.log("Upload result:", result);
+
+    if (!result.success) {
+      throw new Error(result.error || "Upload failed");
     }
 
-    // Validate file size (limit to 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorDialog({
-        show: true,
-        message: "File size exceeds 5MB. Please upload a smaller image."
-      });
-      return;
-    }
-
-    try {
-      setIsUploadingImage(true);
-      setUploadProgress(0);
-
-      // Progress callback function
-      const onProgress = (percent) => {
-        setUploadProgress(percent);
+    // Update form data with new image URL
+    setFormData(prev => {
+      console.log("Updating form data with new image URL:", result.imageUrl);
+      return {
+        ...prev,
+        profileImageUrl: result.imageUrl
       };
+    });
+    
+    // Force image refresh
+    setImageRefreshKey(Date.now());
 
-      // After successful upload
-      const result = await uploadProfileImage(file, onProgress);
-      console.log("Upload result:", result); // Debug log
+    setLastAction({
+      type: 'success',
+      message: 'Profile image updated successfully',
+      timestamp: new Date()
+    });
 
-      // Update form data with new image URL
-      setFormData(prev => {
-        console.log("Updating form data with new image URL:", result.imageUrl);
-        return {
-          ...prev,
-          profileImageUrl: result.imageUrl
-        };
-      });
-      
-      // Force image refresh
-      setImageRefreshKey(Date.now());
-
-      setLastAction({
-        type: 'success',
-        message: 'Profile image updated successfully',
-        timestamp: new Date()
-      });
-
-      // Hide controls after successful upload
-      setShowImageControls(false);
-      
-      // Force reload of profile data to ensure we have the latest state
-      try {
-        const refreshedData = await fetchTeacherProfile();
-        setFormData(refreshedData);
-      } catch (refreshError) {
-        console.warn("Could not refresh profile data after image upload:", refreshError);
-      }
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      setErrorDialog({
-        show: true,
-        message: error.response?.data?.error || "Failed to upload profile image. Please try again."
-      });
-
-      setLastAction({
-        type: 'error',
-        message: `Failed to upload image: ${error.message || 'Unknown error'}`,
-        timestamp: new Date()
-      });
-    } finally {
-      setIsUploadingImage(false);
-      setUploadProgress(0);
-      // Reset the file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+    // Hide controls after successful upload
+    setShowImageControls(false);
+    
+    // Force reload of profile data to ensure we have the latest state
+    try {
+      const refreshedData = await fetchTeacherProfile();
+      setFormData(refreshedData);
+    } catch (refreshError) {
+      console.warn("Could not refresh profile data after image upload:", refreshError);
     }
-  };
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    setErrorDialog({
+      show: true,
+      message: error.message || "Failed to upload profile image. Please try again."
+    });
+
+    setLastAction({
+      type: 'error',
+      message: `Failed to upload image: ${error.message || 'Unknown error'}`,
+      timestamp: new Date()
+    });
+  } finally {
+    setIsUploadingImage(false);
+    setUploadProgress(0);
+    // Reset the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }
+};
+
 
   // Handle profile image deletion
   const handleDeleteImage = async () => {
@@ -248,7 +254,7 @@ function TeacherProfile() {
         ...prev,
         profileImageUrl: null
       }));
-      
+
       // Force image refresh
       setImageRefreshKey(Date.now());
 
@@ -276,67 +282,83 @@ function TeacherProfile() {
   };
 
   // Toggle edit mode with validation
-  const toggleEdit = async () => {
-    if (isEditing) {
-      // Form validation
-      if (!formData.firstName.trim() || !formData.lastName.trim()) {
-        return setErrorDialog({ show: true, message: "First and last name are required." });
-      }
-
-      if (!formData.email.trim()) {
-        return setErrorDialog({ show: true, message: "Email is required." });
-      }
-
-      if (!isValidEmail(formData.email)) {
-        return setErrorDialog({ show: true, message: "Please enter a valid email address." });
-      }
-
-      if (!formData.contact.trim()) {
-        return setErrorDialog({ show: true, message: "Contact number is required." });
-      }
-
-      if (!isValidPhoneNumber(formData.contact)) {
-        return setErrorDialog({
-          show: true,
-          message: "Please enter a valid Philippine phone number (e.g., +63 912 345 6789 or 0912 345 6789)."
-        });
-      }
-      try {
-        // Send data to API
-        const updateResult = await updateTeacherProfile(formData);
-        
-        // If the API returns updated data, use it to refresh our form
-        if (updateResult && updateResult.teacher) {
-          setFormData(updateResult.teacher);
-        }
-        
-        setIsEditing(false);
-        setShowSaveDialog(true);
-        // Hide image controls when exiting edit mode
-        setShowImageControls(false);
-
-        setLastAction({
-          type: 'success',
-          message: 'Profile updated successfully',
-          timestamp: new Date()
-        });
-      } catch (error) {
-        console.error("Error updating profile:", error);
-        setErrorDialog({
-          show: true,
-          message: "Failed to update profile. Please try again later."
-        });
-
-        setLastAction({
-          type: 'error',
-          message: `Failed to update profile: ${error.message || 'Unknown error'}`,
-          timestamp: new Date()
-        });
-      }
-    } else {
-      setIsEditing(true);
+// Toggle edit mode with validation
+const toggleEdit = async () => {
+  if (isEditing) {
+    // Form validation
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+      return setErrorDialog({ show: true, message: "First and last name are required." });
     }
-  };
+
+    if (!formData.email.trim()) {
+      return setErrorDialog({ show: true, message: "Email is required." });
+    }
+
+    if (!isValidEmail(formData.email)) {
+      return setErrorDialog({ show: true, message: "Please enter a valid email address." });
+    }
+
+    if (!formData.contact.trim()) {
+      return setErrorDialog({ show: true, message: "Contact number is required." });
+    }
+
+    if (!isValidPhoneNumber(formData.contact)) {
+      return setErrorDialog({
+        show: true,
+        message: "Please enter a valid Philippine phone number (e.g., +63 912 345 6789 or 0912 345 6789)."
+      });
+    }
+    try {
+      // Create a copy of the form data to normalize
+      const updateData = { ...formData };
+      
+      // Ensure we're not sending undefined or invalid values
+      if (!updateData.middleName) updateData.middleName = '';
+      if (!updateData.gender) updateData.gender = '';
+      if (!updateData.civilStatus) updateData.civilStatus = '';
+      if (!updateData.dob) updateData.dob = '';
+      if (!updateData.address) updateData.address = '';
+      
+      // Make sure emergency contact is properly formatted
+      if (!updateData.emergencyContact) {
+        updateData.emergencyContact = { name: '', number: '' };
+      }
+      
+      // Send data to API
+      const updateResult = await updateTeacherProfile(updateData);
+      
+      // If the API returns updated data, use it to refresh our form
+      if (updateResult && updateResult.teacher) {
+        setFormData(updateResult.teacher);
+      }
+      
+      setIsEditing(false);
+      setShowSaveDialog(true);
+      // Hide image controls when exiting edit mode
+      setShowImageControls(false);
+
+      setLastAction({
+        type: 'success',
+        message: 'Profile updated successfully',
+        timestamp: new Date()
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      setErrorDialog({
+        show: true,
+        message: error.response?.data?.error || "Failed to update profile. Please try again later."
+      });
+
+      setLastAction({
+        type: 'error',
+        message: `Failed to update profile: ${error.message || 'Unknown error'}`,
+        timestamp: new Date()
+      });
+    }
+  } else {
+    setIsEditing(true);
+  }
+};
 
   // Render loading state
   if (isLoading) {
@@ -374,16 +396,22 @@ function TeacherProfile() {
   // Generate a random cache-busting parameter for the image URL
   const getCacheBustedImageUrl = (url) => {
     if (!url) return null;
-    // Check if the URL is a direct S3 URL or a local API URL
+
+    // Add a cache-busting parameter
+    const timestamp = imageRefreshKey || Date.now();
+
     if (url.startsWith('http')) {
-      // For S3 URLs, add a timestamp parameter to prevent browser caching
-      const timestamp = imageRefreshKey || Date.now();
+      // For S3 URLs
       return `${url}?t=${timestamp}`;
+    } else if (url.startsWith('/api')) {
+      // For local API URLs
+      return `${url}&t=${timestamp}`;
     } else {
-      // For local API URLs, they already have the nocache parameter
-      return url;
+      // For any other URLs
+      return `${url}?t=${timestamp}`;
     }
   };
+
 
   return (
     <div className="lit-teacherprofile-container">
@@ -429,25 +457,21 @@ function TeacherProfile() {
             >
               {formData.profileImageUrl ? (
                 <img
-                  key={imageRefreshKey} // Add key for forcing re-render
+                  key={imageRefreshKey}
                   src={getCacheBustedImageUrl(formData.profileImageUrl)}
                   alt="Profile"
                   className="lit-profile-image"
                   onError={(e) => {
                     console.error("Failed to load image:", e);
-                    if (e.target && e.target.parentNode) {
-                      e.target.style.display = 'none';
-                      try {
-                        e.target.parentNode.textContent = getInitials();
-                      } catch (err) {
-                        console.error("Error setting initials:", err);
-                      }
-                    }
+                    e.target.style.display = 'none';
+                    e.target.parentNode.textContent = getInitials();
                   }}
                 />
               ) : (
                 getInitials()
               )}
+
+
               {/* Show edit indicator when in edit mode */}
               {isEditing && (
                 <div className="lit-avatar-overlay">

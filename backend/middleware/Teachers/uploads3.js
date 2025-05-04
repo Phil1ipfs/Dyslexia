@@ -1,7 +1,7 @@
 // backend/middleware/uploads3.js
 const multer       = require('multer');
 const { Upload }   = require('@aws-sdk/lib-storage');
-const s3Client     = require('../config/s3');
+const s3Client     = require('../../config/s3');
 const { PassThrough } = require('stream');
 
 const uploadParser = multer().single('file');

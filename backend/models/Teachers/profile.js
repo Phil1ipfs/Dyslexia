@@ -67,13 +67,19 @@ const TeacherProfileSchema = new mongoose.Schema({
   profileImageUrl: {
     type: String,
     default: null,
-    get: function(value) {
-      // Convert "null" string to actual null value
-      return value === "null" ? null : value;
+    get: function (value) {
+      // Handle various null-like values
+      if (value === null || value === undefined || value === "null" || value === "undefined") {
+        return null;
+      }
+      return value;
     },
-    set: function(value) {
-      // Convert null to null string (for compatibility)
-      return value === null ? null : value;
+    set: function (value) {
+      // Handle various null-like values for input
+      if (value === null || value === undefined || value === "null" || value === "undefined") {
+        return null;
+      }
+      return value;
     }
   },
   // Legacy image storage (for backward compatibility)
@@ -107,16 +113,22 @@ const TeacherProfileSchema = new mongoose.Schema({
 });
 
 // Add a virtual property for the full name
-TeacherProfileSchema.virtual('fullName').get(function() {
+TeacherProfileSchema.virtual('fullName').get(function () {
   if (this.middleName) {
     return `${this.firstName} ${this.middleName} ${this.lastName}`;
   }
   return `${this.firstName} ${this.lastName}`;
 });
 
-// Pre-save middleware to update the updatedAt timestamp
-TeacherProfileSchema.pre('save', function(next) {
+// Pre-save middleware to update timestamps and handle data normalization
+TeacherProfileSchema.pre('save', function (next) {
+  // Update timestamp
   this.updatedAt = Date.now();
+  
+  // Ensure profileImageUrl is properly set
+  if (this.profileImageUrl === "null" || this.profileImageUrl === "undefined") {
+    this.profileImageUrl = null;
+  }
   
   // If passwordHash is modified, update lastPasswordChange
   if (this.isModified('passwordHash')) {
