@@ -1,27 +1,80 @@
 // backend/server.js
 const express = require('express');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const loginRoutes = require('./routes/loginRoutes');
-
-dotenv.config(); // Load environment variables from .env file
-
+const cors = require('cors');
+require('dotenv').config();
+const connectDB = require('./config/teacher/db');
+const s3Client = require('./config/s3');
 const app = express();
 
-// Middleware
-app.use(express.json());
+// Enhanced logging middleware to debug route issues
+const requestLogger = (req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+};
 
-// Routes
-app.use('/api', loginRoutes); // Add login route
+// Apply middlewares
+app.use(cors());
+app.use(express.json());
+app.use(requestLogger);
 
 // Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('Connected to MongoDB'))
-  .catch((err) => console.error('MongoDB connection error:', err));
+connectDB();
 
-// Start the server
-const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+// Test S3 connection
+if (s3Client.testS3Connection) {
+  s3Client.testS3Connection()
+    .then(success => {
+      if (success) {
+        console.log('S3 bucket configuration is working correctly');
+      } else {
+        console.warn('S3 bucket connection failed - image uploads may not work');
+      }
+    })
+    .catch(err => console.error('Error testing S3 connection:', err));
+}
+
+// Test route to verify server is running
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working!' });
 });
+
+// Apply routes with explicit logging
+console.log('Registering routes for /api/teachers');
+app.use('/api/teachers', require('./routes/Teachers/teacherProfile')); // 1st
+// app.use('/api/teachers', require('./routes/Teachers/uploadFile'));     // 2nd
+
+app.use('/api/chatbot', require('./routes/Teachers/chatbot'));
+
+// Simple home route
+app.get('/', (_req, res) => res.send('API is running…'));
+
+// List all registered routes for debugging
+app._router.stack.forEach((middleware) => {
+  if(middleware.route) { // Routes registered directly on the app
+    console.log(`Route: ${Object.keys(middleware.route.methods).join(',')} ${middleware.route.path}`);
+  } else if(middleware.name === 'router') { // Router middleware
+    middleware.handle.stack.forEach((handler) => {
+      if(handler.route) {
+        const path = handler.route.path;
+        const methods = Object.keys(handler.route.methods).join(',');
+        console.log(`Route: ${methods} ${middleware.regexp} ${path}`);
+      }
+    });
+  }
+});
+
+// Handle 404 errors
+app.use((req, res) => {
+  console.log(`[404] Route not found: ${req.method} ${req.url}`);
+  res.status(404).json({ error: 'Route not found' });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(`[ERROR] ${err.message}`);
+  res.status(500).json({ error: 'Server error', message: err.message });
+});
+
+// Start server on the specified port
+const PORT = process.env.PORT || 5002;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

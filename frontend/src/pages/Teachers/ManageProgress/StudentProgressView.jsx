@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FaArrowLeft, FaChartLine, FaBook, FaLightbulb, FaListAlt, FaLock, 
-  FaCheck, FaExclamationTriangle, FaEdit, FaCheckCircle, FaSpinner, FaUser } from 'react-icons/fa';
+import {
+  FaArrowLeft, FaChartLine, FaBook, FaLightbulb, FaListAlt,
+  FaCheck, FaExclamationTriangle, FaEdit, FaCheckCircle, FaSpinner, FaUser, FaSave
+} from 'react-icons/fa';
 
 // Import components
 import StudentProfileCard from '../../../components/TeacherPage/ManageProgress/StudentProfileCard';
@@ -10,21 +12,20 @@ import AssessmentResults from '../../../components/TeacherPage/ManageProgress/As
 import ProgressReport from '../../../components/TeacherPage/ManageProgress/ProgressReport';
 import LessonAssignment from '../../../components/TeacherPage/ManageProgress/LessonAssignment';
 import PrescriptiveAnalysis from '../../../components/TeacherPage/ManageProgress/PrescriptiveAnalysis';
-import AdminApprovalSection from '../../../components/TeacherPage/ManageProgress/AdminApprovalSection';
 import ActivityEditModal from '../../../components/TeacherPage/ManageProgress/ActivityEditModal';
 import LoadingSpinner from '../../../components/TeacherPage/ManageProgress/common/LoadingSpinner';
 import ErrorMessage from '../../../components/TeacherPage/ManageProgress/common/ErrorMessage';
 
 import '../../../css/Teachers/studentProgressView.css';
+import '../../../components/TeacherPage/ManageProgress/css/LessonProgress.css';
 
 // Import services
-import { 
-  getStudentDetails, 
-  getAssessmentResults, 
+import {
+  getStudentDetails,
+  getAssessmentResults,
   getRecommendedLessons,
   getProgressData,
   getPrescriptiveRecommendations,
-  getAdminApprovals,
   assignLessonsToStudent,
   updateActivity
 } from '../../../services/ProgressService';
@@ -41,48 +42,58 @@ const StudentProgressView = () => {
   const [recommendedLessons, setRecommendedLessons] = useState([]);
   const [selectedLessons, setSelectedLessons] = useState([]);
   const [prescriptiveRecommendations, setPrescriptiveRecommendations] = useState([]);
-  const [adminApprovals, setAdminApprovals] = useState([]);
   const [editingActivity, setEditingActivity] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [assignmentSuccess, setAssignmentSuccess] = useState(false);
   const [lessonsAssigned, setLessonsAssigned] = useState(false);
+  const [pushToMobileSuccess, setPushToMobileSuccess] = useState(false);
+  const [learningObjectives, setLearningObjectives] = useState([]);
+  const [editingFeedback, setEditingFeedback] = useState({});
+  const [tempFeedback, setTempFeedback] = useState({});
 
   // Fetch student data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Get student details
         const studentData = await getStudentDetails(id);
         setStudent(studentData);
-        
+
         // Get assessment data
         const assessment = await getAssessmentResults(id);
         setAssessmentData(assessment);
-        
+
         // Get progress data
         const progress = await getProgressData(id);
         setProgressData(progress);
-        
+
         // Get recommended lessons
         const lessons = await getRecommendedLessons(id);
         setRecommendedLessons(lessons);
-        
+
         // Check if any lessons are already assigned
         const hasAssignedLessons = lessons.some(lesson => lesson.assigned);
         setLessonsAssigned(hasAssignedLessons);
-        
-        // If lessons are assigned, get prescription and approvals
+
+        // Initialize learning objectives
+        const assignedLessons = lessons.filter(lesson => lesson.assigned);
+        setLearningObjectives(assignedLessons.map(lesson => ({
+          id: lesson.id,
+          title: lesson.title,
+          assistance: null, // null, 'minimal', 'moderate', 'maximal'
+          remarks: '',
+          isEditingRemarks: false
+        })));
+
+        // If lessons are assigned, get prescription
         if (hasAssignedLessons) {
           const recommendations = await getPrescriptiveRecommendations(id);
           setPrescriptiveRecommendations(recommendations);
-          
-          const approvals = await getAdminApprovals(id);
-          setAdminApprovals(approvals);
         }
-        
+
         setLoading(false);
       } catch (err) {
         console.error('Error loading student data:', err);
@@ -90,16 +101,16 @@ const StudentProgressView = () => {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [id]);
 
   // Handle lesson selection
   const handleLessonSelect = (lesson) => {
     if (lesson.assigned) return;
-    
+
     const isSelected = selectedLessons.some(l => l.id === lesson.id);
-    
+
     if (isSelected) {
       setSelectedLessons(selectedLessons.filter(l => l.id !== lesson.id));
     } else {
@@ -110,12 +121,12 @@ const StudentProgressView = () => {
   // Handle lesson assignment
   const handleAssignLessons = async () => {
     if (selectedLessons.length === 0) return;
-    
+
     try {
       setLoading(true);
       const lessonIds = selectedLessons.map(lesson => lesson.id);
       const result = await assignLessonsToStudent(id, lessonIds);
-      
+
       if (result.success) {
         // Update assigned lessons
         const updatedLessons = recommendedLessons.map(lesson => {
@@ -124,27 +135,24 @@ const StudentProgressView = () => {
           }
           return lesson;
         });
-        
+
         setRecommendedLessons(updatedLessons);
         setSelectedLessons([]);
         setAssignmentSuccess(true);
-        
-        // Get prescriptive recommendations and admin approvals
+
+        // Get prescriptive recommendations
         const recommendations = await getPrescriptiveRecommendations(id);
         setPrescriptiveRecommendations(recommendations);
-        
-        const approvals = await getAdminApprovals(id);
-        setAdminApprovals(approvals);
-        
+
         // Unlock the other tabs
         setLessonsAssigned(true);
-        
+
         // Reset success message after 3 seconds
         setTimeout(() => {
           setAssignmentSuccess(false);
         }, 3000);
       }
-      
+
       setLoading(false);
     } catch (err) {
       console.error('Error assigning lessons:', err);
@@ -158,33 +166,58 @@ const StudentProgressView = () => {
     setEditingActivity(activity);
   };
 
-  // Handle saving edited activity
+  // Handle learning objective assistance level
+  const handleAssistanceChange = (lessonId, level) => {
+    setLearningObjectives(prev =>
+      prev.map(obj =>
+        obj.id === lessonId ? { ...obj, assistance: level } : obj
+      )
+    );
+  };
+
+  // Handle remarks editing
+  const toggleRemarksEditing = (lessonId) => {
+    setLearningObjectives(prev =>
+      prev.map(obj =>
+        obj.id === lessonId
+          ? { ...obj, isEditingRemarks: !obj.isEditingRemarks }
+          : obj
+      )
+    );
+  };
+
+  const handleRemarksChange = (lessonId, remarks) => {
+    setLearningObjectives(prev =>
+      prev.map(obj =>
+        obj.id === lessonId ? { ...obj, remarks } : obj
+      )
+    );
+  };
+
+  // Handle saving edited activity and pushing to mobile
   const handleSaveActivity = async (updatedActivity) => {
     try {
       setLoading(true);
       const result = await updateActivity(updatedActivity.id, updatedActivity);
-      
+
       if (result.success) {
         // Update recommendations
         const updatedRecommendations = prescriptiveRecommendations.map(rec => {
           if (rec.id === updatedActivity.id) {
-            return { ...rec, ...updatedActivity, status: 'pending_approval' };
+            // Mark as pushed to mobile directly
+            return { ...rec, ...updatedActivity, status: 'pushed_to_mobile' };
           }
           return rec;
         });
-        
+
         setPrescriptiveRecommendations(updatedRecommendations);
-        
-        // Add to admin approvals
-        setAdminApprovals([...adminApprovals, {
-          ...updatedActivity,
-          submittedAt: new Date().toISOString()
-        }]);
-        
-        // Switch to admin approvals tab
-        setActiveTab('approvals');
+        setPushToMobileSuccess(true);
+
+        setTimeout(() => {
+          setPushToMobileSuccess(false);
+        }, 3000);
       }
-      
+
       setEditingActivity(null);
       setLoading(false);
     } catch (err) {
@@ -214,8 +247,11 @@ const StudentProgressView = () => {
     }
   };
 
+  // Calculate assigned lessons for use in rendering
+  const assignedLessons = recommendedLessons.filter(lesson => lesson.assigned);
+
   if (loading && !student) {
-    return <LoadingSpinner message="Naglo-load ng datos ng mag-aaral..." />;
+    return <LoadingSpinner message="Loading student data..." />;
   }
 
   if (error && !student) {
@@ -227,131 +263,281 @@ const StudentProgressView = () => {
       {/* Header */}
       <div className="literexia-profile-header">
         <div className="literexia-header-content">
-          <h1>Profail at Pagsusuri ng Mag-aaral</h1>
-          <p>Suriin ang resulta ng pagsusuri at magtakda ng mga aralin batay sa antas ng kasanayan sa pagbasa.</p>
+          <h1>Student Profile and Assessment</h1>
+          <p>Review assessment results and assign lessons based on reading skill level.</p>
         </div>
         <button className="literexia-btn-back" onClick={goBack}>
-          <FaArrowLeft /> Bumalik sa Listahan ng mga Mag-aaral
+          <FaArrowLeft /> Back to Students List
         </button>
       </div>
-      
+
+      {/* Success message for push to mobile */}
+      {pushToMobileSuccess && (
+        <div className="literexia-success-alert">
+          <FaCheckCircle />
+          Activity was successfully updated and pushed to student's mobile device!
+        </div>
+      )}
+
       {/* Top cards */}
       <div className="literexia-top-cards">
         {student && <StudentProfileCard student={student} />}
         {assessmentData && <AssessmentSummaryCard assessmentData={assessmentData} />}
       </div>
-      
+
       {/* Tabs */}
       <div className="literexia-tabs-navigation">
-        <button 
+        <button
           className={`literexia-tab-button ${activeTab === 'assessment' ? 'active' : ''}`}
           onClick={() => handleTabClick('assessment')}
         >
-          <FaChartLine /> Resulta ng Pagsusuri
+          <FaChartLine /> Assessment Results
         </button>
-        
-        <button 
+
+        <button
           className={`literexia-tab-button ${activeTab === 'lessons' ? 'active' : ''}`}
           onClick={() => handleTabClick('lessons')}
         >
-          <FaBook /> Pagtatakda ng Aralin
+          <FaBook /> Lesson Assignment
         </button>
-        
-        <button 
+
+        <button
           className={`literexia-tab-button ${activeTab === 'progress' ? 'active' : ''} ${isTabLocked('progress') ? 'locked' : ''}`}
           onClick={() => handleTabClick('progress')}
         >
-          {isTabLocked('progress') && <FaLock className="literexia-lock-icon" />}
-          <FaChartLine /> Talaan ng Pag-unlad
+          <FaChartLine /> Progress Report
         </button>
-        
-        <button 
+
+        <button
           className={`literexia-tab-button ${activeTab === 'prescriptive' ? 'active' : ''} ${isTabLocked('prescriptive') ? 'locked' : ''}`}
           onClick={() => handleTabClick('prescriptive')}
         >
-          {isTabLocked('prescriptive') && <FaLock className="literexia-lock-icon" />}
-          <FaLightbulb /> Pagsusuring Prescriptive
+          <FaLightbulb /> Personalized Activities
         </button>
-        
-        <button 
-          className={`literexia-tab-button ${activeTab === 'approvals' ? 'active' : ''} ${isTabLocked('approvals') ? 'locked' : ''}`}
-          onClick={() => handleTabClick('approvals')}
+        <button
+          className={`literexia-tab-button ${activeTab === 'lessonProgress' ? 'active' : ''} ${isTabLocked('lessonProgress') ? 'locked' : ''}`}
+          onClick={() => handleTabClick('lessonProgress')}
         >
-          {isTabLocked('approvals') && <FaLock className="literexia-lock-icon" />}
-          <FaListAlt /> Mga Nakabinbing Pag-apruba
+          <FaCheckCircle /> Individuaized Education Progress
         </button>
+
+
       </div>
-      
+
       {/* Tab content */}
-      <div className="literexia-tab-content">
-        {activeTab === 'assessment' && (
-          <div className="literexia-tab-panel">
-            <div className="literexia-panel-header">
-              <h2>Resulta ng Paunang Pagsusuri (CRLA)</h2>
+        <div className="literexia-tab-content">
+          {activeTab === 'assessment' && (
+            <div className="literexia-tab-panel">
+          <div className="literexia-panel-header">
+            <h2>Assessment Results (CRLA)</h2>
+          </div>
+          <div className="literexia-panel-content">
+            {assessmentData ? (
+              <AssessmentResults assessmentData={assessmentData} />
+            ) : (
+              <div className="literexia-empty-state">
+            <FaExclamationTriangle />
+            <p>No assessment data available for this student.</p>
+              </div>
+            )}
+          </div>
             </div>
-            <div className="literexia-panel-content">
-              {assessmentData ? (
-                <AssessmentResults assessmentData={assessmentData} />
-              ) : (
-                <div className="literexia-empty-state">
-                  <FaExclamationTriangle />
-                  <p>Walang available na datos ng pagsusuri para sa mag-aaral na ito.</p>
-                </div>
-              )}
+          )}
+
+          {activeTab === 'lessons' && (
+            <div className="literexia-tab-panel">
+          <div className="literexia-panel-header">
+            <h2>Assign Lessons</h2>
+          </div>
+          <div className="literexia-panel-content">
+            <h3>Recommended Lessons for {student?.name}</h3>
+            {recommendedLessons.length > 0 ? (
+              <LessonAssignment
+            lessons={recommendedLessons}
+            selectedLessons={selectedLessons}
+            onLessonSelect={handleLessonSelect}
+            onAssign={handleAssignLessons}
+            assignmentSuccess={assignmentSuccess}
+              />
+            ) : (
+              <div className="literexia-empty-state">
+            <FaExclamationTriangle />
+            <p>No lessons available for this student at this time.</p>
+              </div>
+            )}
+          </div>
+            </div>
+          )}
+
+          {activeTab === 'progress' && !isTabLocked('progress') && (
+            <div className="literexia-tab-panel">
+          <div className="literexia-panel-header">
+            <h2>Progress Report</h2>
+          </div>
+          <div className="literexia-panel-content">
+            {progressData ? (
+              <ProgressReport
+            progressData={progressData}
+            assignedLessons={recommendedLessons.filter(lesson => lesson.assigned)}
+            learningObjectives={learningObjectives}
+            setLearningObjectives={setLearningObjectives}
+              />
+            ) : (
+              <div className="literexia-empty-state">
+            <FaExclamationTriangle />
+            <p>No progress data available for this student. They may not have completed any lessons yet.</p>
+              </div>
+            )}
+          </div>
+            </div>
+          )}
+
+          {activeTab === 'lessonProgress' && !isTabLocked('lessonProgress') && (
+            <div className="literexia-tab-panel">
+
+          {/* Progress info section */}
+          <div className="literexia-progress-info" style={{ marginBottom: '30px' }}>
+            {/* <div className="literexia-progress-info-icon">
+            <FaBrain />
+          </div> */}
+            <div className="literexia-progress-info-text">
+              <p>
+
+            <h3>Individual Progress</h3>
+            This section shows the student's progress in their reading activities.
+            This section shows the student's progress in their reading activities.
+            This section shows the student's progress in their reading activities.
+            This section shows the student's progress in their reading activities.
+            This section shows the student's progress in their reading activities.
+              </p>
+            </div>
+          </div>
+          
+          {/* Adding a spacer div for extra spacing */}
+          <div style={{ height: '20px' }}></div>
+
+          <div className="literexia-panel-header">
+            <h2>Individuaized Education Progress</h2>
+          </div>
+          <div className="literexia-panel-content">
+            <div className="lesson-progress-container">
+              {assignedLessons.length > 0 ? (
+            <div className="lesson-progress-table-container">
+              <table className="lesson-progress-table">
+                <thead>
+              <tr>
+                <th>Lesson</th>
+                <th>Completed</th>
+                <th colSpan="3">Assistance Level</th>
+                <th>Remarks</th>
+              </tr>
+              <tr className="assistance-level-header">
+                <th></th>
+                <th></th>
+                <th>Minimal</th>
+                <th>Moderate</th>
+                <th>Substantial</th>
+                <th></th>
+              </tr>
+                </thead>
+                <tbody>
+              {assignedLessons.map(lesson => {
+                          // Find if there's any activity associated with this lesson
+                          const isCompleted = progressData?.recentActivities?.some(
+                            activity => activity.title.includes(lesson.title.substring(0, 5))
+                          );
+
+                          const existingObjective = learningObjectives?.find(obj => obj.id === lesson.id);
+
+                          return (
+                            <tr key={lesson.id}>
+                              <td>{lesson.title}</td>
+                              <td className="completion-cell">
+                                {isCompleted ? (
+                                  <span className="completed"><FaCheckCircle /></span>
+                                ) : (
+                                  <span className="not-completed">Not yet</span>
+                                )}
+                              </td>
+                              <td className="assistance-cell">
+                                <div
+                                  className={`assistance-checkbox ${existingObjective?.assistance === 'minimal' ? 'selected' : ''}`}
+                                  onClick={() => handleAssistanceChange(lesson.id, 'minimal')}
+                                >
+                                  {existingObjective?.assistance === 'minimal' && <FaCheckCircle />}
+                                </div>
+                              </td>
+                              <td className="assistance-cell">
+                                <div
+                                  className={`assistance-checkbox ${existingObjective?.assistance === 'moderate' ? 'selected' : ''}`}
+                                  onClick={() => handleAssistanceChange(lesson.id, 'moderate')}
+                                >
+                                  {existingObjective?.assistance === 'moderate' && <FaCheckCircle />}
+                                </div>
+                              </td>
+                              <td className="assistance-cell">
+                                <div
+                                  className={`assistance-checkbox ${existingObjective?.assistance === 'maximal' ? 'selected' : ''}`}
+                                  onClick={() => handleAssistanceChange(lesson.id, 'maximal')}
+                                >
+                                  {existingObjective?.assistance === 'maximal' && <FaCheckCircle />}
+                                </div>
+                              </td>
+                              <td className="notes-cell">
+                                {existingObjective?.isEditingRemarks ? (
+                                  <div className="notes-edit">
+                                    <textarea
+                                      value={existingObjective.remarks}
+                                      onChange={(e) => handleRemarksChange(lesson.id, e.target.value)}
+                                      placeholder="Add notes..."
+                                      className="notes-textarea"
+                                    />
+                                    <button
+                                      className="save-notes-btn"
+                                      onClick={() => toggleRemarksEditing(lesson.id)}
+                                    >
+                                      <FaSave />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="notes-view">
+                                    <p>{existingObjective?.remarks || 'No notes yet.'}</p>
+                                    <button
+                                      className="edit-notes-btn"
+                                      onClick={() => toggleRemarksEditing(lesson.id)}
+                                    >
+                                      <FaEdit />
+                                    </button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="literexia-empty-state">
+                    <FaExclamationTriangle />
+                    <p>No lessons have been assigned to this student yet.</p>
+                    <button
+                      className="goto-lessons-btn"
+                      onClick={() => setActiveTab('lessons')}
+                    >
+                      Go to Lesson Assignment
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
-        
-        {activeTab === 'lessons' && (
-          <div className="literexia-tab-panel">
-            <div className="literexia-panel-header">
-              <h2>Magtakda ng mga Aralin</h2>
-            </div>
-            <div className="literexia-panel-content">
-              <h3>Mga Inirerekomendang Aralin para kay {student?.name}</h3>
-              {recommendedLessons.length > 0 ? (
-                <LessonAssignment 
-                  lessons={recommendedLessons}
-                  selectedLessons={selectedLessons}
-                  onLessonSelect={handleLessonSelect}
-                  onAssign={handleAssignLessons}
-                  assignmentSuccess={assignmentSuccess}
-                />
-              ) : (
-                <div className="literexia-empty-state">
-                  <FaExclamationTriangle />
-                  <p>Walang available na aralin para sa mag-aaral na ito.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        
-        {activeTab === 'progress' && !isTabLocked('progress') && (
-          <div className="literexia-tab-panel">
-            <div className="literexia-panel-header">
-              <h2>Talaan ng Pag-unlad</h2>
-            </div>
-            <div className="literexia-panel-content">
-              {progressData ? (
-                <ProgressReport 
-                  progressData={progressData} 
-                  assignedLessons={recommendedLessons.filter(lesson => lesson.assigned)}
-                />
-              ) : (
-                <div className="literexia-empty-state">
-                  <FaExclamationTriangle />
-                  <p>Walang datos ng pag-unlad para sa mag-aaral na ito. Maaaring hindi pa siya nakakatapos ng anumang aralin.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        
+
         {activeTab === 'prescriptive' && !isTabLocked('prescriptive') && (
           <div className="literexia-tab-panel">
             <div className="literexia-panel-header">
-              <h2>Pagsusuring Prescriptive</h2>
+              <h2>Personalized Activities</h2>
             </div>
             <div className="literexia-panel-content">
               <PrescriptiveAnalysis
@@ -362,45 +548,34 @@ const StudentProgressView = () => {
             </div>
           </div>
         )}
-        
-        {activeTab === 'approvals' && !isTabLocked('approvals') && (
-          <div className="literexia-tab-panel">
-            <div className="literexia-panel-header">
-              <h2>Mga Nakabinbing Pag-apruba</h2>
-            </div>
-            <div className="literexia-panel-content">
-              <AdminApprovalSection recommendations={adminApprovals} />
-            </div>
-          </div>
-        )}
-        
+
         {isTabLocked(activeTab) && activeTab !== 'assessment' && activeTab !== 'lessons' && (
           <div className="literexia-locked-content">
-            <FaLock className="literexia-lock-large" />
-            <h3>Naka-lock ang seksyong ito</h3>
-            <p>Kailangan mo munang magtakda ng mga aralin upang ma-unlock ang feature na ito.</p>
-            <button 
-              className="literexia-btn-goto-assign" 
+            <FaLightbulb className="literexia-lock-large" />
+            <h3>This section is locked</h3>
+            <p>You need to assign lessons first to unlock this feature.</p>
+            <button
+              className="literexia-btn-goto-assign"
               onClick={() => setActiveTab('lessons')}
             >
-              Pumunta sa Pagtatakda ng Aralin
+              Go to Lesson Assignment
             </button>
           </div>
         )}
       </div>
-      
+
       {/* Activity edit modal */}
       {editingActivity && (
-        <ActivityEditModal 
-          activity={editingActivity} 
-          onClose={() => setEditingActivity(null)} 
-          onSave={handleSaveActivity} 
+        <ActivityEditModal
+          activity={editingActivity}
+          onClose={() => setEditingActivity(null)}
+          onSave={handleSaveActivity}
           student={student}
         />
       )}
-      
+
       {/* Loading overlay */}
-      {loading && student && <LoadingSpinner overlay message="Ina-update ang datos..." />}
+      {loading && student && <LoadingSpinner overlay message="Updating data..." />}
     </div>
   );
 };

@@ -112,6 +112,14 @@
   color: #3B4F81;
 }
 
+/* Add this to your StudentDetails.css */
+.sdx-modal-body,
+.sdx-report-body,
+.sdx-container {
+  height: auto !important;
+  overflow: visible !important;   /* html2canvas can capture full height */
+}
+
 .sdx-student-id {
   display: flex;
   align-items: center;
@@ -693,6 +701,24 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+}
+
+.sdx-scroll-wrapper {
+  flex: 1 1 auto;                /* fill remaining space */
+  overflow: auto;                /* keeps scrollbar visible */
+  padding-right: .5rem;          /* optional space for scrollbar */
+}
+
+/* The element that html2canvas captures */
+.sdx-report-printable {
+  width: 100%;
+  height: auto;                  /* allow full natural height */
+}
+
+/* When html2canvas runs we don’t want clipping */
+.sdx-report-printable,
+.sdx-scroll-wrapper {
+  overscroll-behavior: contain;
 }
 
 .sdx-modal-header {
