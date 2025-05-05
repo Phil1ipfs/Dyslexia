@@ -411,12 +411,16 @@ function TeacherProfile() {
   // Generate a random cache-busting parameter for the image URL
   const getCacheBustedImageUrl = (url) => {
     if (!url) return null;
-
-    // Add a cache-busting parameter
-    const timestamp = imageRefreshKey || Date.now();
-
-    if (url.startsWith('http')) {
+  
+    // Add a timestamp for cache busting
+    const timestamp = Date.now();
+  
+    // Make sure the URL is properly formatted
+    if (url.includes('amazonaws.com')) {
       // For S3 URLs
+      if (!url.startsWith('http')) {
+        url = 'https://' + url;
+      }
       return `${url}?t=${timestamp}`;
     } else if (url.startsWith('/api')) {
       // For local API URLs

@@ -319,7 +319,6 @@ export const updateTeacherPassword = async (currentPassword, newPassword) => {
     console.error('Error updating password:', error);
     throw error;
   }
-
   
 };
 

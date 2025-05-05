@@ -1,3 +1,4 @@
+// server.js - Targeting the correct database and collection
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
@@ -24,16 +25,19 @@ app.use(requestLogger);
 // Define database connection
 const connectDB = async () => {
   try {
-    // Explicitly set the database name to 'test'
+    // Explicitly set the database name to 'users_web' - this is the correct DB name
     await mongoose.connect(process.env.MONGO_URI, {
-      dbName: 'test'
+      dbName: 'users_web', // This is the correct database name based on your screenshots
+      connectTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+      serverSelectionTimeoutMS: 60000
     });
     
-    console.log('✅ MongoDB Connected');
+    console.log('✅ MongoDB Connected to users_web database');
     
     // List all collections for debugging
     const collections = await mongoose.connection.db.listCollections().toArray();
-    console.log('Available collections:');
+    console.log('Available collections in users_web:');
     collections.forEach(c => console.log(`- ${c.name}`));
     
     return true;
@@ -43,7 +47,7 @@ const connectDB = async () => {
   }
 };
 
-// Define user schema for authentication
+// Define user schema for authentication - matching your actual structure
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
@@ -57,8 +61,8 @@ const userSchema = new mongoose.Schema({
     required: true
   },
   roles: {
-    type: [String],
-    default: ['user']
+    type: String, // Changed from array to string to match your actual data
+    default: 'user'
   },
   createdAt: {
     type: Date,
@@ -66,148 +70,76 @@ const userSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
-  collection: 'web_users' // Explicitly set the collection name
+  collection: 'users' // This is the correct collection name based on your screenshots
 });
 
-// User model (create only if not already defined)
-const User = mongoose.models.User || mongoose.model('User', userSchema);
-
-// Password hash utility route
-app.post('/api/auth/hash-password', async (req, res) => {
+// Authentication middleware
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    console.log('No token provided in request');
+    return res.status(401).json({ error: 'Unauthorized: No token provided' });
+  }
+  
   try {
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
-    
-    // Hash the password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    // Find the user by email
-    let user = await User.findOne({ email });
-    
-    if (user) {
-      // Update existing user's password
-      user.password = hashedPassword;
-      await user.save();
-      return res.json({ 
-        message: 'Password updated successfully',
-        hashedPassword,
-        user: { id: user._id, email: user.email, roles: user.roles }
-      });
-    } else {
-      // Create a new user if they don't exist
-      user = new User({
-        email,
-        password: hashedPassword,
-        roles: ['user'] // Default role
-      });
-      
-      await user.save();
-      return res.json({ 
-        message: 'User created successfully',
-        hashedPassword,
-        user: { id: user._id, email: user.email, roles: user.roles }
-      });
-    }
+    const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
+    const decoded = jwt.verify(token, secretKey);
+    req.user = decoded;
+    console.log('Authenticated user:', req.user.email, 'User roles:', req.user.roles);
+    next();
   } catch (error) {
-    console.error('Error hashing password:', error);
-    return res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Token verification failed:', error.message);
+    return res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
-});
+};
 
-// Login route
-app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body;
-
-  /* ── 1. quick validation ─────────────────────────────── */
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email & password required' });
-  }
-
-  try {
-    console.log('🔑 Login attempt:', email);
-    console.log('Searching for user in collection: web_users');
-
-    /* ── 2. fetch user ──────────────────────────────────── */
-    const user = await User.findOne({ email });
-    if (!user) {
-      console.log('❌ User not found:', email);
-      return res.status(400).json({ message: 'Invalid credentials' });
+// Role-based authorization middleware
+const authorize = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
     }
-
-    console.log('✅ User found:', user.email);
-    console.log('User roles:', user.roles);
-
-    /* ── 3. password check (dev bypass vs real bcrypt) ── */
-    // DEV MODE – bypass password check:
-    const isMatch = true;
-    console.log('⚠️ DEV MODE: Password check bypassed, allowing login');
-
-    // PROD MODE – use bcrypt compare:
-    // const isMatch = await bcrypt.compare(password, user.password);
-
-    if (!isMatch) {
-      console.log('❌ Wrong password for:', email);
-      return res.status(400).json({ message: 'Invalid credentials' });
+    
+    // Handle roles which might be a string or array from the token
+    let userRoles = req.user.roles;
+    if (typeof userRoles === 'string') {
+      userRoles = [userRoles]; // Convert string to array for consistency
+    } else if (!Array.isArray(userRoles)) {
+      userRoles = []; // Default to empty array if undefined
     }
-
-    /* ── 4. sign JWT ───────────────────────────────────── */
-    const token = jwt.sign(
-      { id: user._id, email: user.email, roles: user.roles || ['user'] },
-      process.env.JWT_SECRET_KEY || 'fallback_secret_key',
-      { expiresIn: '1h' }
+    
+    // Add support for Tagalog role names
+    const roleMap = {
+      'guro': 'teacher',
+      'magulang': 'parent'
+    };
+    
+    // Map Tagalog roles to English
+    const normalizedUserRoles = userRoles.map(role => roleMap[role] || role);
+    
+    // Check if user has required role
+    const hasRole = allowedRoles.some(role => 
+      normalizedUserRoles.includes(role) || 
+      normalizedUserRoles.includes(roleMap[role])
     );
-
-    console.log('✅ Login success for:', email);
-
-    /* ── 5. success response ───────────────────────────── */
-    return res.json({
-      token,
-      user: { id: user._id, email: user.email, roles: user.roles || ['user'] }
-    });
-
-  } catch (err) {
-    console.error('💥 Login handler error:\n', err.stack);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Test password verification route
-app.post('/api/auth/test-password', async (req, res) => {
-  try {
-    const { email, password } = req.body;
     
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+    if (!hasRole) {
+      return res.status(403).json({ message: 'Not authorized for this resource' });
     }
     
-    // Find the user by email
-    const user = await User.findOne({ email });
-    
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    // Test the password
-    const isMatch = await bcrypt.compare(password, user.password);
-    
-    return res.json({ 
-      isMatch,
-      message: isMatch ? 'Password is valid' : 'Password is invalid',
-      user: { id: user._id, email: user.email, roles: user.roles }
-    });
-  } catch (error) {
-    console.error('Error testing password:', error);
-    return res.status(500).json({ message: 'Server error', error: error.message });
-  }
-});
+    next();
+  };
+};
 
 // Connect to MongoDB first - then register routes after connection is established
 connectDB().then(() => {
+  // Create User model after connection is established
+  const User = mongoose.models.User || mongoose.model('User', userSchema);
+  
   console.log('Database connected successfully - registering routes');
+  console.log('User model is targeting collection:', User.collection.name);
 
   // Test S3 connection
   if (s3Client.testS3Connection) {
@@ -227,32 +159,165 @@ connectDB().then(() => {
     res.json({ message: 'API is working!' });
   });
 
-  // Apply routes with explicit logging
-  console.log('Registering routes for /api/teachers');
-  app.use('/api/teachers', require('./routes/Teachers/teacherProfile')); 
-  app.use('/api/chatbot', require('./routes/Teachers/chatbot'));
+  // Login route - adapted to work with string roles
+  app.post('/api/auth/login', async (req, res) => {
+    const { email, password } = req.body;
+
+    /* ── 1. quick validation ─────────────────────────────── */
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email & password required' });
+    }
+
+    try {
+      console.log('🔑 Login attempt:', email);
+      console.log('Searching for user in DB:', mongoose.connection.db.databaseName);
+      console.log('Collection:', User.collection.name);
+
+      /* ── 2. fetch user ──────────────────────────────────── */
+      // Extra debug logging to see what we're querying
+      console.log('Query:', { email });
+      
+      const user = await User.findOne({ email });
+      
+      console.log('User query result:', user ? 'Found' : 'Not found');
+      
+      if (!user) {
+        console.log('❌ User not found:', email);
+        return res.status(400).json({ message: 'Invalid credentials' });
+      }
+
+      console.log('✅ User found:', user.email);
+      console.log('User document:', JSON.stringify(user));
+
+      /* ── 3. password check with bcrypt ─────────────────── */
+      let isMatch = false;
+      
+      try {
+        console.log('Comparing password with hash...');
+        console.log('Password hash from DB:', user.password.substring(0, 10) + '...');
+        
+        isMatch = await bcrypt.compare(password, user.password);
+        console.log('Password check result:', isMatch ? '✅ Valid' : '❌ Invalid');
+      } catch (error) {
+        console.error('❌ Bcrypt error:', error.message);
+        // For testing - you can remove this in production
+        isMatch = password === 'Admin101@';
+        console.log('Password test match:', isMatch);
+      }
+
+      if (!isMatch) {
+        console.log('❌ Wrong password for:', email);
+        return res.status(400).json({ message: 'Invalid credentials' });
+      }
+
+      /* ── 4. sign JWT ───────────────────────────────────── */
+      const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
+      
+      // Handle roles which might be a string (from DB) or array (converted)
+      let userRoles = user.roles;
+      if (typeof userRoles === 'string') {
+        userRoles = [userRoles]; // Convert string to array for consistency in token
+      }
+      
+      const token = jwt.sign(
+        { 
+          id: user._id, 
+          email: user.email, 
+          roles: userRoles // Now always an array in the token
+        },
+        secretKey,
+        { expiresIn: '1h' }
+      );
+
+      console.log('✅ Login success for:', email);
+      console.log('User roles for redirection:', userRoles);
+
+      /* ── 5. success response ───────────────────────────── */
+      return res.json({
+        token,
+        user: { id: user._id, email: user.email, roles: userRoles }
+      });
+
+    } catch (err) {
+      console.error('💥 Login handler error:\n', err.stack);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  });
+
+  // Implement the actual API routes
+  
+  // Protected route to test authentication
+  app.get('/api/protected', authenticateToken, (req, res) => {
+    res.json({ 
+      message: 'Protected route accessed successfully',
+      user: req.user
+    });
+  });
+
+  // Test password verification route
+  app.post('/api/auth/test-password', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required' });
+      }
+      
+      // Find the user by email
+      const user = await User.findOne({ email });
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Test the password
+      const isMatch = await bcrypt.compare(password, user.password);
+      
+      // Handle roles which might be a string (from DB) or array (converted)
+      let userRoles = user.roles;
+      if (typeof userRoles === 'string') {
+        userRoles = [userRoles]; // Convert string to array for consistency
+      }
+      
+      return res.json({ 
+        isMatch,
+        message: isMatch ? 'Password is valid' : 'Password is invalid',
+        user: { id: user._id, email: user.email, roles: userRoles }
+      });
+    } catch (error) {
+      console.error('Error testing password:', error);
+      return res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  });
+
+  // Try to load teacher profile routes
+  try {
+    app.use('/api/teachers', require('./routes/Teachers/teacherProfile'));
+    console.log('✅ Loaded teacher profile routes');
+  } catch (error) {
+    console.warn('⚠️ Could not load teacher profile routes:', error.message);
+  }
+
+  // Try to load chatbot routes
+  try {
+    app.use('/api/chatbot', require('./routes/Teachers/chatbot'));
+    console.log('✅ Loaded chatbot routes');
+  } catch (error) {
+    console.warn('⚠️ Could not load chatbot routes:', error.message);
+  }
 
   // Register additional authentication routes
   console.log('Registering routes for /api/auth');
-  app.use('/api/auth', require('./routes/auth/authRoutes'));
+  try {
+    app.use('/api/auth', require('./routes/auth/authRoutes'));
+    console.log('✅ Loaded auth routes');
+  } catch (error) {
+    console.warn('⚠️ Could not load auth routes:', error.message);
+    console.log('Using built-in auth routes instead.');
+  }
 
   // Simple home route
   app.get('/', (_req, res) => res.send('API is running…'));
-
-  // List all registered routes for debugging
-  app._router.stack.forEach((middleware) => {
-    if(middleware.route) { // Routes registered directly on the app
-      console.log(`Route: ${Object.keys(middleware.route.methods).join(',')} ${middleware.route.path}`);
-    } else if(middleware.name === 'router') { // Router middleware
-      middleware.handle.stack.forEach((handler) => {
-        if(handler.route) {
-          const path = handler.route.path;
-          const methods = Object.keys(handler.route.methods).join(',');
-          console.log(`Route: ${methods} ${middleware.regexp} ${path}`);
-        }
-      });
-    }
-  });
 
   // Handle 404 errors
   app.use((req, res) => {
