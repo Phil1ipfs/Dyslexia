@@ -1,0 +1,652 @@
+/* ActivityCard.css - Enhanced version */
+
+:root {
+  --primary: #3B4F81;
+  --primary-light: #4C62A1;
+  --primary-dark: #2A3C6A;
+  --primary-bg: rgba(59, 79, 129, 0.05);
+  
+  --secondary: #4CAF50;
+  --secondary-light: #6BC16E;
+  --secondary-dark: #3D8C40;
+  
+  --error: #dc3545;
+  --error-bg: #f8d7da;
+  --error-border: #f5c2c7;
+  
+  --warning: #ffc107;
+  --warning-bg: #fff3cd;
+  --warning-border: #ffecb5;
+  
+  --info: #0dcaf0;
+  --info-bg: #cff4fc;
+  --info-border: #b6effb;
+  
+  --success: #28a745;
+  --success-bg: #d1e7dd;
+  --success-border: #badbcc;
+  
+  --gray-100: #f8f9fa;
+  --gray-200: #e9ecef;
+  --gray-300: #dee2e6;
+  --gray-400: #ced4da;
+  --gray-500: #adb5bd;
+  --gray-600: #6c757d;
+  --gray-700: #495057;
+  --gray-800: #343a40;
+  --gray-900: #212529;
+  
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  
+  --transition-fast: all 0.15s ease;
+  --transition-normal: all 0.3s ease;
+}
+
+.activity-card {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: white;
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-normal);
+  border-left: 5px solid var(--gray-300);
+  margin-bottom: 1.5rem;
+}
+
+.activity-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Card types - based on status */
+.activity-card.primary {
+  border-left-color: var(--primary);
+}
+
+.activity-card.assessment {
+  border-left-color: var(--primary);
+}
+
+.activity-card.practice {
+  border-left-color: var(--secondary);
+}
+
+.activity-card.success, 
+.activity-card.approved {
+  border-left-color: var(--success);
+}
+
+.activity-card.warning, 
+.activity-card.pending {
+  border-left-color: var(--warning);
+}
+
+.activity-card.locked {
+  border-left-color: var(--gray-600);
+}
+
+.activity-card.rejected {
+  border-left-color: var(--error);
+}
+
+/* Card header */
+.activity-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem;
+  background-color: var(--gray-100);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.activity-title-area {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.activity-icon {
+  color: var(--primary);
+  font-size: 1.25rem;
+  padding: 0.75rem;
+  background: rgba(59, 79, 129, 0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activity-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.status-badge svg {
+  margin-right: 0.35rem;
+}
+
+.status-badge.approved {
+  background-color: var(--success-bg);
+  color: var(--success-dark);
+  border: 1px solid var(--success-border);
+}
+
+.status-badge.pending {
+  background-color: var(--warning-bg);
+  color: #856404;
+  border: 1px solid var(--warning-border);
+}
+
+.status-badge.locked {
+  background-color: var(--gray-100);
+  color: var(--gray-700);
+  border: 1px solid var(--gray-300);
+}
+
+.status-badge.rejected {
+  background-color: var(--error-bg);
+  color: var(--error);
+  border: 1px solid var(--error-border);
+}
+
+/* Card body */
+.activity-card-body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Metadata */
+.activity-metadata {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.metadata-valuee {
+  color: var(--gray-800);
+  font-size: 1rem;
+  /* font-family: 'Poppins', sans-serif; */
+  flex: 1;
+  font-weight: 500;
+}
+
+/* Category tags */
+.category-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.category-tag {
+  background-color: var(--gray-100);
+  border: 1px solid var(--gray-200);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  color: var(--gray-700);
+}
+
+/* Description section */
+.description-section {
+  margin-top: 0.5rem;
+}
+
+.description-textt {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  color: var(--gray-700);
+  line-height: 1.5;
+}
+
+.expand-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  cursor: pointer;
+  margin-top: 0.25rem;
+}
+
+.expand-btn:hover {
+  text-decoration: underline;
+}
+
+/* Content Type Breakdown */
+.content-types-section {
+  margin-top: 0.5rem;
+}
+
+.content-type-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.content-type-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background-color: var(--primary-bg);
+  color: var(--primary);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+}
+
+.content-type-count {
+  background-color: var(--primary);
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Level Previews */
+.level-previews {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.level-preview-item {
+  background-color: var(--gray-100);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--gray-200);
+  overflow: hidden;
+}
+
+.level-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--primary-bg);
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.level-name {
+  font-weight: 600;
+  color: var(--primary);
+  font-size: 0.85rem;
+}
+
+.level-type {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--gray-700);
+}
+
+.level-preview-content {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.passage-preview, .questions-count {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.preview-label {
+  font-weight: 600;
+  color: var(--gray-700);
+  min-width: 70px;
+}
+
+.preview-text {
+  color: var(--gray-800);
+}
+
+/* Status message boxes */
+.status-message-box {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  margin-top: 1rem;
+  border: 1px solid transparent;
+}
+
+.status-message-box.pending {
+  background-color: var(--warning-bg);
+  border-color: var(--warning-border);
+}
+
+.status-message-box.rejected {
+  background-color: #fdecea;           
+  border-left: 4px solid #dc3545;     
+  border-radius: var(--radius-md);    
+  padding: 1rem 1.5rem;                
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;                           
+}
+
+
+.status-message-box.locked {
+  background-color: var(--gray-100);
+  border-color: var(--gray-300);
+}
+
+.status-message-box.approved {
+  background-color: var(--success-bg);
+  border-color: var(--success-border);
+}
+
+.status-message-icon {
+  font-size: 1.75rem;
+  color: var(--warning);
+  flex-shrink: 0;
+}
+
+.status-message-box.rejected .status-message-icon {
+  font-size: 2rem;                     
+  color: #dc3545;                      
+  flex-shrink: 0;                      
+}
+
+.status-message-box.rejected .status-message-content {
+  flex: 1;
+}
+
+.status-message-box.rejected .status-message-content h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;                 /* slightly larger heading */
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.status-message-box.rejected .status-message-content p {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: #5a1a1a;                      
+  line-height: 1.4;
+}
+
+.status-message-box.rejected .toggle-details-btn {
+  display: inline-block;
+  margin-top: 0.25rem;
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.status-message-box.rejected .rejection-details {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: white;
+  border: 1px solid var(--error-border);
+  border-radius: var(--radius-sm);
+}
+
+.status-message-box.rejected .rejection-date {
+  font-size: 0.85rem;
+  color: var(--gray-600);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.status-message-box.rejected .rejection-reason h5 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0.5rem 0 0.25rem;
+  color: #b71c1c;                      
+}
+
+.status-message-box.rejected .rejection-reason p {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: var(--gray-800);
+}
+
+.status-message-box.rejected .rejection-instructions {
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.status-message-box.rejected .rejection-instructions li {
+  margin-bottom: 0.35rem;
+  color: var(--gray-700);
+}
+
+
+
+.status-message-box.locked .status-message-icon {
+  color: var(--gray-600);
+}
+
+.status-message-box.approved .status-message-icon {
+  color: var(--success);
+}
+
+.status-message-content {
+  flex: 1;
+}
+
+.status-message-content h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.status-message-content p {
+  margin: 0 0 0.5rem;
+  color: var(--gray-700);
+  font-size: 0.9rem;
+}
+
+.status-message-box.rejected p {
+  color: var(--error);
+}
+
+.status-message-datee {
+  font-size: 0.8rem !important;
+  color: var(--gray-600) !important;
+  display: flex;
+  margin-top: 0.75rem !important;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 100rem;
+
+}
+
+.toggle-details-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.85rem;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-top: 0.25rem;
+}
+
+.rejection-details {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background-color: white;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--error-border);
+}
+
+.rejection-date {
+  font-size: 0.85rem;
+  color: var(--gray-600);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.rejection-reason h5 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0.5rem 0 0.25rem;
+  color: var(--error);
+}
+
+.rejection-reason p {
+  margin: 0 0 0.5rem !important;
+  color: var(--gray-700) !important;
+  font-size: 0.85rem !important;
+}
+
+.rejection-instructions {
+  font-size: 0.85rem;
+}
+
+.rejection-instructions ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.rejection-instructions li {
+  margin-bottom: 0.25rem;
+  color: var(--gray-700);
+}
+
+/* Action buttons */
+.activity-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.preview-btn,
+.edit-btn,
+.delete-btn {
+  padding: 0.65rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: var(--transition-normal);
+  border: none;
+  cursor: pointer;
+}
+
+.preview-btn {
+  background-color: var(--gray-100);
+  border: 1px solid var(--gray-300);
+  color: var(--gray-700);
+}
+
+.preview-btn:hover {
+  background-color: var(--gray-200);
+}
+
+.edit-btn {
+  background-color: var(--primary);
+  color: white;
+}
+
+.edit-btn:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.delete-btn {
+  background-color: white;
+  border: 1px solid var(--error);
+  color: var(--error);
+}
+
+.delete-btn:hover {
+  background-color: var(--error-bg);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .activity-card-header {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  
+  .status-badge {
+    margin-top: 0.25rem;
+  }
+  
+  .activity-title-area {
+    max-width: 100%;
+  }
+  
+  .metadata-row {
+    flex-direction: column;
+  }
+  
+  .metadata-label {
+    margin-bottom: 0.25rem;
+  }
+  
+  .activity-actions {
+    flex-direction: column;
+  }
+  
+  .preview-btn,
+  .edit-btn,
+  .delete-btn {
+    width: 100%;
+  }
+  
+  .level-preview-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .status-message-box {
+    flex-direction: column;
+  }
+  
+  .status-message-icon {
+    margin-bottom: 0.5rem;
+  }
+}

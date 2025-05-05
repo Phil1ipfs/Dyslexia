@@ -1,10 +1,18 @@
+// src/index.js or src/index.jsx
 import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App.jsx';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+import AppProviders from './AppProviders';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+// Create a root
+const container = document.getElementById('root');
+const root = createRoot(container);
+
+// Render app to root
 root.render(
   <React.StrictMode>
-    <App />
+    <AppProviders>
+      <App />
+    </AppProviders>
   </React.StrictMode>
 );

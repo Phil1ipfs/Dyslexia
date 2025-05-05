@@ -9,21 +9,36 @@ import Login from "./pages/Login";
 
 // Teacher Pages
 import TeacherDashboard from "./pages/Teachers/TeacherDashboard";
-import ViewStudent from "./pages/Teachers/ViewStudent";
-import ManageActivities from "./pages/Teachers/ManageActivities";
+import ViewStudent from "./pages/Teachers/StudentDetails/ViewStudent";
+import ManageActivities from "./pages/Teachers/ManageActivity/ManageActivities";
 import TeacherProfile from "./pages/Teachers/TeacherProfile";
-import StudentDetails from "./pages/Teachers/StudentDetails";
+import StudentDetails from "./pages/Teachers/StudentDetails/StudentDetails";
+import ManageProgress from "./pages/Teachers/ManageProgress/ManageProgress";
+import StudentProgressView from "./pages/Teachers/ManageProgress/StudentProgressView";
+import TeacherChatbot from "./pages/Teachers/Chatbot/TeacherChatbot"; 
+import StudentProgressPDF from './pages/Teachers/StudentProgressPDF';
+
+
+// Import activity-related pages
+import CreateActivity from "./pages/Teachers/ManageActivity/CreateActivity";
+import EditActivity from "./pages/Teachers/ManageActivity/EditActivity";
+import PreviewActivity from "./pages/Teachers/ManageActivity/PreviewActivity";
+import CreatePreAssessment from "./pages/Teachers/PreAssessment/CreatePreAssessment"; 
 
 // Parent Pages
 import ParentDashboard from "./pages/Parents/ParentDashboard";
+import Feedback from "./pages/Parents/Feedback";  
+import Progress from "./pages/Parents/Progress"; 
+
 
 // Admin Pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
+import VisualChartsPage from "./pages/Admin/VisualChartsPage";
 
 // Layouts
-import TeacherLayout from "./widgets/TeacherPage/TeacherLayout";
-import ParentLayout from "./widgets/ParentPage/ParentLayout";
-import AdminLayout from "./widgets/AdminPage/AdminLayout";
+import TeacherLayout from "./components/TeacherPage/TeacherLayout";
+import ParentLayout from "./components/ParentPage/ParentLayout";
+import AdminLayout from "./components/Admin/AdminLayout";
 
 import "./App.css";
 
@@ -75,7 +90,21 @@ function App() {
             <Route path="view-student" element={<ViewStudent />} />
             <Route path="manage-activities" element={<ManageActivities />} />
             <Route path="profile" element={<TeacherProfile />} />
+            <Route path="manage-progress" element={<ManageProgress />} />
+            <Route path="student-progress/:id" element={<StudentProgressView />} />
             <Route path="student-details/:id" element={<StudentDetails />} />
+            <Route path="chatbot" element={<TeacherChatbot />} /> {/* Add route for chatbot */}
+            <Route path="student-report" element={<StudentProgressPDF />} />
+
+            
+            {/* Activity Management Routes */}
+            <Route path="create-activity" element={<CreateActivity />} />
+            <Route path="edit-activity/:id" element={<EditActivity />} />
+            <Route path="preview-activity/:id" element={<PreviewActivity />} />
+            
+            {/* Pre-Assessment Routes - New */}
+            <Route path="create-pre-assessment" element={<CreatePreAssessment />} />
+
             <Route index element={<Navigate to="dashboard" />} />
           </Route>
         )}
@@ -84,8 +113,8 @@ function App() {
         {isAuthenticated && userType === "parent" && (
           <Route path="/parent/*" element={<ParentLayout onLogout={handleLogout} />}>
             <Route path="dashboard" element={<ParentDashboard />} />
-            {/* Add additional Parent routes here */}
-            <Route index element={<Navigate to="dashboard" />} />
+            <Route path="feedback" element={<Feedback />} />
+            <Route path="progress" element={<Progress />} />
           </Route>
         )}
 
@@ -93,7 +122,7 @@ function App() {
         {isAuthenticated && userType === "admin" && (
           <Route path="/admin/*" element={<AdminLayout onLogout={handleLogout} />}>
             <Route path="dashboard" element={<AdminDashboard />} />
-            {/* Add additional Admin routes here */}
+            <Route path="visual-charts" element={<VisualChartsPage />} />
             <Route index element={<Navigate to="dashboard" />} />
           </Route>
         )}

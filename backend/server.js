@@ -1,31 +1,66 @@
-import expresss from 'express';
-import dotev from 'dotenv';
-import {connectDB} from './config/db.js';
+// backend/server.js
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
+const connectDB = require('./config/teacher/db');
+const app = express();
 
-dotev.config();
+// Enhanced logging middleware to debug route issues
+const requestLogger = (req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+};
 
-const app = expresss(); 
-app.use(expresss.json());
+// Apply middlewares
+app.use(cors());
+app.use(express.json());
+app.use(requestLogger);
 
-app.post("/api/ ", async (req, res) => {
-    const home = req.body; 
+// Connect to MongoDB
+connectDB();
 
-    if (!home.email || !home.role || !home.profile || !home.preferences) {
-        return res.status(400).json({ message:false, message: "Home data is required" });
-    }
-    
-    const newHome = new Home(home);
-
-    try {
-        await newHome.save();
-        res.status(201).json({ message: true, data: newHome });
-    } catch (error) {
-        console.error("Error in Create home", error,message);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
+// Test route to verify server is running
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working!' });
 });
 
-app.listen(5000, () => {
-    connectDB();
-    console.log('Server started at http://localhost:5000');
+// Apply routes with explicit logging
+console.log('Registering routes for /api/teachers');
+app.use('/api/teachers', require('./routes/Teachers/teacherProfile')); // 1st
+// app.use('/api/teachers', require('./routes/Teachers/uploadFile'));     // 2nd
+
+app.use('/api/chatbot', require('./routes/Teachers/chatbot'));
+
+// Simple home route
+app.get('/', (_req, res) => res.send('API is running…'));
+
+// List all registered routes for debugging
+app._router.stack.forEach((middleware) => {
+  if(middleware.route) { // Routes registered directly on the app
+    console.log(`Route: ${Object.keys(middleware.route.methods).join(',')} ${middleware.route.path}`);
+  } else if(middleware.name === 'router') { // Router middleware
+    middleware.handle.stack.forEach((handler) => {
+      if(handler.route) {
+        const path = handler.route.path;
+        const methods = Object.keys(handler.route.methods).join(',');
+        console.log(`Route: ${methods} ${middleware.regexp} ${path}`);
+      }
+    });
+  }
 });
+
+// Handle 404 errors
+app.use((req, res) => {
+  console.log(`[404] Route not found: ${req.method} ${req.url}`);
+  res.status(404).json({ error: 'Route not found' });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(`[ERROR] ${err.message}`);
+  res.status(500).json({ error: 'Server error', message: err.message });
+});
+
+// Start server on the specified port
+const PORT = process.env.PORT || 5002;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

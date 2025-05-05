@@ -1,635 +1,1062 @@
-.student-details-container {
-  background: #f7f8fa;
+/* src/css/Teachers/StudentDetails.css */
+
+/* Main Container */
+.sdx-container {
+  font-family: 'Atkinson Hyperlegible', 'Arial', sans-serif;
+  background-color: #f8f9fc;
   padding: 2rem;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
   min-height: 100vh;
-  margin-left: 240px; 
-  box-sizing: border-box;
+  margin-left: 240px; /* For sidebar navigation */
+  color: #333;
+  line-height: 1.6;
 }
 
-.student-details-header {
+/* Header Styles */
+.sdx-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
+  background-color: #ffffff;
+  padding: 1rem 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
-.header-left {
+.sdx-back-btn {
   display: flex;
   align-items: center;
-  gap: 1rem; 
-}
-
-.view-btn {
+  gap: 0.5rem;
   background-color: #3B4F81;
   color: white;
-  padding: 10.6rem 1.2rem;
-  font-weight: bold;
   border: none;
-  border-radius: 999px;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.2s ease;
 }
 
-.view-btn:hover {
+.sdx-back-btn:hover {
   background-color: #2d3e6e;
 }
 
-.header-left h2 {
+.sdx-title {
+  font-size: 1.7rem;
+  color: #3B4F81;
   margin: 0;
-  font-size: 2rem;
-  color: #111827;
+  font-weight: 600;
 }
 
-.teacher-name {
-  font-weight: bold;
-  color: #3B4F81;
+.sdx-actions {
+  display: flex;
+  gap: 0.8rem;
 }
 
-.teacher-avatar {
-  background: #e3aee8;
+.sdx-view-report-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #4CAF50;
   color: white;
-  font-weight: bold;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 0.9rem;
-  margin-left: 0.5rem;
-  cursor: pointer;
-}
-
-/* Profile Card */
-.student-profile-box {
-  display: flex;
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  gap: 2rem;
-  margin-bottom: 1rem;
-  align-items: flex-start;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-}
-
-.student-avatar {
-  background: #ccc;
-  margin-top: 10px;
-  border-radius: 50%;
-  width: 80px;
-  height: 80px;
-  font-size: 1.4rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: bold;
-  color: #3B4F81;
-}
-
-.student-info h3 {
-  margin-top: 0;
-}
-
-/* Reading Performance Box */
-.reading-box {
-  flex: 1;
-  background: #f1f3f9;
-  padding: 1rem;
-  border-radius: 10px;
-}
-
-.progress-bar {
-  height: 12px;
-  background: #dcdcdc;
+  border: none;
   border-radius: 8px;
-  margin: 0.5rem 0;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sdx-view-report-btn:hover {
+  background-color: #3f9142;
+}
+
+/* Profile Card Styles */
+.sdx-profile-card {
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
   overflow: hidden;
 }
 
-.bar-fill {
-  background: #4b735e;
-  height: 100%;
-  border-radius: 8px;
-  transition: width 0.3s ease;
-}
-
-/* Tabs at the top: Progress, Activities Result, etc. */
-.student-tabs {
+.sdx-profile-header {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.student-tabs button {
-  font-size: 1rem; 
-}
-
-
-.tab-btn {
-  padding: 0.7rem 1.9rem;
-  background: #e6e8ef;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  color: #3B4F81;
-  transition: background 0.2s ease;
-}
-
-.tab-btn.active {
-  background: #3B4F81;
-  color: white;
-}
-
-/* Main Content / Tab Body */
-.tab-content {
-  background: white;
+  align-items: center;
+  gap: 1.5rem;
   padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid #eaeaea;
 }
 
-/* PROGRESS TAB Layout */
-.progress-overview-grid {
+.sdx-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #3B4F81;
+  color: white;
   display: flex;
-  flex-wrap: wrap;
-  gap: 1.2rem;
-  margin-top: 1rem;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: bold;
+  flex-shrink: 0;
 }
 
-.progress-card {
-  background-color: #f5f8fc;
-  border-radius: 12px;
-  padding: 1.2rem;
-  flex: 1 1 250px;
-  min-width: 260px;
-  height: 240px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.chart-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #111827;
-  margin-bottom: 0.6rem;
-}
-
-.real-chart {
-  margin-top: 0.6rem;
-}
-
-.chart-desc {
-  font-size: 0.9rem;
-  color: #4B5563;
-  text-align: center;
-  margin-top: 0.8rem;
-  font-style: italic;
-}
-
-.progress-bottom-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  margin-top: 2rem;
-}
-
-.recent-activities-box {
-  background: #f6f7fb;
-  padding: 1rem;
-  border-radius: 10px;
-}
-
-.activity-item {
-  background: #f9f9f9;
-  border-radius: 8px;
-  padding: 0.8rem 1rem;
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.8rem;
-}
-
-.activity-icon {
-  font-size: 1.4rem;
-  background: #e1e6f4;
-  padding: 0.4rem;
-  border-radius: 8px;
-}
-
-.activity-info {
+.sdx-profile-info {
   flex: 1;
 }
 
-.activity-title {
-  font-weight: bold;
-  margin: 0;
+.sdx-student-name {
+  font-size: 1.4rem;
+  margin: 0 0 0.3rem 0;
   color: #3B4F81;
-
 }
 
-.activity-meta {
-  font-size: 0.85rem;
-  color: #555;
-  margin: 0.2rem 0 0;
+/* Add this to your StudentDetails.css */
+.sdx-modal-body,
+.sdx-report-body,
+.sdx-container {
+  height: auto !important;
+  overflow: visible !important;   /* html2canvas can capture full height */
 }
 
-.recommendations-container {
-  background: #ffffff; 
-  padding: 1.2rem 1.5rem;
-  border-radius: 12px;
-  margin-top: 2rem; 
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06); 
-}
-
-.recommendations-container h4 {
-  margin: 0 0 0.5rem 0;         
-  font-size: 1.2rem;
-  color: #3B4F81;        
-}
-
-.recommendations-container ul {
-  list-style: disc;
-  margin-left: 1.5rem;       
-  color: #555;
-  font-style: italic;
-}
-
-.recommendations-container ul li {
-  margin-bottom: 0.4rem;
-}
-
-.score-badge {
-  font-weight: bold;
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  margin-left: 0.25rem;
-}
-
-.score-badge.green {
-  background-color: #e0f6e9;
-  color: #2e7d32;
-}
-
-.score-badge.yellow {
-  background-color: #fff5da;
-  color: #e67e22;
-}
-
-.score-badge.red {
-  background-color: #ffe0e0;
-  color: #c62828;
-}
-
-
-/* FEEDBACK BOX */
-.feedback-box {
-  background-color: #f5f8fc;
-  padding: 1.5rem;
-  border-radius: 16px;
-  margin-top: 0.2rem;
-  color: #111;
-}
-
-.section-title {
-  font-weight: bold;
-  margin-bottom: 1rem;
-}
-
-.feedback-toolbar {
+.sdx-student-id {
   display: flex;
-  gap: 0.7rem;
-  margin: 0.6rem 0 0.9rem;
+  align-items: center;
+  gap: 0.5rem;
+  color: #777;
+  font-size: 0.9rem;
 }
 
-.feedback-toolbar button {
-  background-color: #3B4F81;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 0.3rem 0.6rem;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: 1rem;
+.sdx-profile-details {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 1.5rem;
+  gap: 1.5rem;
+}
+
+.sdx-details-column {
+  flex: 1;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sdx-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  background-color: #f8f9fc;
+  border-radius: 8px;
   transition: all 0.2s ease;
 }
-.feedback-toolbar button:hover {
-  background-color: #2c3d65;
+
+.sdx-detail-item:hover {
+  background-color: #f0f2f8;
 }
 
-/* contentEditable feedback editor */
-.feedback-editor {
-  background-color: white;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  padding: 1rem;
-  min-height: 200px;
-  max-height: 280px;
-  overflow-y: auto;
-  font-family: 'Atkinson Hyperlegible', sans-serif;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  resize: none;
-}
-
-.feedback-editor:empty:before {
-  content: attr(placeholder);
-  color: #aaa;
-  font-style: italic;
-  pointer-events: none;
-}
-
-/* Footer with "To:" and "Email:" */
-.send-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 1rem;
-  flex-wrap: wrap;
-  gap: 0.8rem;
-}
-
-.recipient-box {
-  background-color: #eef2f8;
-  padding: 1rem 1.2rem;
-  border-radius: 12px;
-  flex-grow: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: inset 0 0 0 1px #d3dce9;
-  margin-right: 1rem;
-}
-
-.recipient-details {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.recipient-line {
-  display: flex;
-  gap: 0.5rem;
-  font-size: 0.95rem;
-}
-
-.recipient-line .label {
-  font-weight: 700;
-  color: #1c2b50;
-  min-width: 60px;
-}
-
-.recipient-line .value {
-  font-weight: 500;
+.sdx-detail-icon {
   color: #3B4F81;
-}
-
-.send-btn {
-  background-color: #2e3e64;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  padding: 1.5rem 1.2rem;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-.send-btn:hover {
-  background-color: #1f2c4b;
-}
-
-/* FEEDBACK HISTORY */
-.feedback-history {
-  list-style: none;
-  padding: 0;
-  margin: 2rem 0 0;
-  display: grid;
-  grid-gap: 1rem;
-}
-
-/* Each Feedback Card */
-.feedback-history li {
-  background: #ffffff;          
-  border-radius: 8px;
-  padding: 1rem 1.2rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid #3B4F81; 
-}
-
-/* Feedback Date */
-.feedback-history li strong {
-  display: block;
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-  color: #3B4F81;
-}
-
-/* Feedback Message */
-.feedback-history li p {
-  font-size: 1rem;
-  line-height: 1.5;
-  margin: 0;
-  color: #333;
-}
-
-
-/* FAMILY TAB */
-.family-tab .family-info {
-  background: #f2f4fa;
-  padding: 1rem;
-  border-radius: 10px;
-  margin-bottom: 1.5rem;
-}
-
-.family-info-card {
-  background-color: #f5f8fc;
-  padding: 1.5rem;
-  border-radius: 16px;
-  margin-bottom: 1.5rem;
-  color: #111;
-}
-
-.family-grid {
-  display: flex;
-  gap: 1.5rem;
-  align-items: flex-start;
-}
-
-.family-avatar {
-  background-color: #2e3e64;
-  color: white;
-  font-weight: bold;
+  font-size: 2.9rem;
+  background-color: rgba(59, 79, 129, 0.1);
+  padding: 0.5rem;
   border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  font-size: 1.1rem;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.family-grid-details {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.7rem 2rem;
+.sdx-detail-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.sdx-detail-label {
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.sdx-detail-value {
+  font-weight: 500;
+  color: #333;
+}
+
+/* Parent Card Styles */
+.sdx-parent-card {
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+}
+
+.sdx-section-title {
+  font-size: 1.2rem;
+  color: #3B4F81;
+  margin: 0 0 1rem 0;
+  font-weight: 600;
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+
+.sdx-section-title:after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background-color: #3B4F81;
+  border-radius: 1.5px;
+}
+
+.sdx-parent-details {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.sdx-parent-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #e3aee8;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.sdx-parent-info {
   flex: 1;
 }
 
-.info-pair p {
-  margin: 0;
-  line-height: 1.5;
-}
-
-.siblings {
-  margin-top: 1rem;
-}
-
-.sibling-card {
-  background-color: white;
-  border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 1rem;
+.sdx-parent-name {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 0 0 0.5rem 0;
   color: #333;
+}
+
+.sdx-parent-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.sdx-contact-item {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
 }
 
-.sibling-avatar {
+.sdx-contact-icon {
+  color: #3B4F81;
+}
+
+/* Siblings Card */
+.sdx-siblings-card {
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+}
+
+.sdx-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.sdx-toggle-btn {
+  background-color: #eaeaea;
+  border: none;
+  border-radius: 4px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sdx-toggle-btn:hover {
+  background-color: #d5d5d5;
+}
+
+.sdx-siblings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sdx-sibling-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #f8f9fc;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.sdx-sibling-item:hover {
+  background-color: #f0f2f8;
+}
+
+.sdx-sibling-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   background-color: #3B4F81;
   color: white;
-  border-radius: 50%;
-  width: 45px;
-  height: 45px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
   font-size: 1rem;
+  font-weight: bold;
+  flex-shrink: 0;
 }
 
-.no-siblings {
+.sdx-sibling-details {
+  flex: 1;
+}
+
+.sdx-sibling-name {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.sdx-sibling-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.sdx-sibling-info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: #666;
+  background-color: rgba(59, 79, 129, 0.05);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.sdx-sibling-icon {
+  color: #3B4F81;
+  font-size: 0.8rem;
+}
+
+.sdx-no-siblings {
+  text-align: center;
+  padding: 1rem;
+  color: #888;
   font-style: italic;
-  color: #ccc;
-  margin-top: 0.5rem;
 }
 
-/* "View Details" button for siblings */
-.view-btn {
+.sdx-add-sibling-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: #f0f2f8;
+  color: #3B4F81;
+  border: 1px dashed #3B4F81;
+  border-radius: 8px;
+  padding: 0.8rem;
+  margin-top: 0.5rem;
+  width: 100%;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sdx-add-sibling-btn:hover {
+  background-color: #e0e5f0;
+}
+
+/* Activities Card */
+.sdx-activities-card {
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+}
+
+.sdx-activities-table {
+  width: 100%;
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.sdx-table-header {
+  display: flex;
   background-color: #3B4F81;
   color: white;
-  padding: 0.4rem 1rem;
-  border-radius: 20px;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.3s ease;
+  font-weight: 600;
 }
-.view-btn:hover {
+
+.sdx-header-cell {
+  padding: 0.8rem;
+  text-align: center;
+}
+
+.sdx-activity-name {
+  flex: 2;
+  text-align: left;
+}
+
+.sdx-activity-completed {
+  flex: 1;
+}
+
+.sdx-activity-progress-label {
+  flex: 3;
+}
+
+.sdx-activity-remarks {
+  flex: 3;
+  text-align: left;
+}
+
+.sdx-table-subheader {
+  display: flex;
+  background-color: #eaeef4;
+  color: #555;
+  font-size: 0.8rem;
+}
+
+.sdx-subheader-cell {
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.sdx-placeholder {
+  flex: 1;
+}
+
+.sdx-support-level {
+  flex: 1;
+}
+
+.sdx-table-row {
+  display: flex;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.sdx-table-row:last-child {
+  border-bottom: none;
+}
+
+.sdx-cell {
+  padding: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sdx-activity-name {
+  flex: 2;
+  justify-content: flex-start;
+  font-weight: 500;
+}
+
+.sdx-activity-completed {
+  flex: 1;
+}
+
+.sdx-activity-support {
+  flex: 1;
+}
+
+.sdx-activity-remarks {
+  flex: 3;
+  justify-content: flex-start;
+  text-align: left;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.sdx-checkbox {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #3B4F81;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sdx-checkbox.checked {
+  background-color: #3B4F81;
+}
+
+.sdx-checkmark {
+  color: white;
+  font-weight: bold;
+}
+
+/* Send Report Section */
+
+
+
+.sdx-send-report-section {
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.sdx-message-box {
+  background-color: #f8f9fc;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #eaeaea;
+  font-family: 'Poppins';
+}
+
+.sdx-message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.sdx-message-subject {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 45rem;
+
+}
+
+.sdx-subject-input {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.sdx-message-recipient {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #490505;
+}
+
+.sdx-recipient-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background-color: #f0f2f5; /* Light neutral background */
+  color: #333;                
+  border-radius: 30px;
+  padding: 0.3rem 0.8rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  border: 1px solid #ccc;     
+}
+
+
+.sdx-recipient-icon {
+  font-size: 0.8rem;
+}
+
+.sdx-message-content {
+  margin-bottom: 1rem;
+}
+
+.sdx-message-textarea {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.sdx-message-text {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* Include Report Checkbox */
+.sdx-include-report {
+  margin-bottom: 1.5rem;
+}
+
+.sdx-include-report-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.sdx-include-report-checkbox {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.sdx-checkbox-icon {
+  font-size: 1.2rem;
+  color: #ccc;
+}
+
+.sdx-checkbox-icon.checked {
+  color: #4CAF50;
+}
+
+.sdx-message-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.sdx-edit-btn, 
+.sdx-save-btn,
+.sdx-send-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sdx-edit-btn {
+  background-color: #3B4F81;
+  color: white;
+}
+
+.sdx-edit-btn:hover {
   background-color: #2d3e6e;
 }
 
-/* ACTIVITIES RESULT TAB */
-.activities-result-section {
+.sdx-save-btn {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.sdx-save-btn:hover {
+  background-color: #3f9142;
+}
+
+.sdx-send-btn {
+  background-color: #1c9424;
+  color: white;
+}
+
+.sdx-send-btn:hover {
+  background-color: #075a0d;
+}
+
+.sdx-send-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Modal for Progress Report */
+.sdx-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
-  margin-top: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 
-.activity-category {
-  background: #f3f4f9;
-  padding: 1rem 1.2rem;
-  border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.category-title {
-  color: #3B4F81;
-  font-weight: 600;
-  font-size: 1rem;
-  margin-bottom: 0.6rem;
-  margin-top: 0.2rem; 
-}
-
-.activity-item-box {
-  padding: 0.6rem 1rem;
-  border-radius: 10px;
+.sdx-modal-content {
   background-color: white;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  margin-bottom: 0.6rem;
-}
-
-.activity-info-full {
+  border-radius: 10px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
 }
 
-.activity-head {
+.sdx-scroll-wrapper {
+  flex: 1 1 auto;                /* fill remaining space */
+  overflow: auto;                /* keeps scrollbar visible */
+  padding-right: .5rem;          /* optional space for scrollbar */
+}
+
+/* The element that html2canvas captures */
+.sdx-report-printable {
+  width: 100%;
+  height: auto;                  /* allow full natural height */
+}
+
+/* When html2canvas runs we don’t want clipping */
+.sdx-report-printable,
+.sdx-scroll-wrapper {
+  overscroll-behavior: contain;
+}
+
+.sdx-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-
+  padding: 1.5rem;
+  border-bottom: 1px solid #eaeaea;
 }
 
-.activity-score {
-  font-weight: bold;
+.sdx-modal-title {
+  font-size: 1.4rem;
+  margin: 0;
   color: #3B4F81;
 }
 
-.activity-time {
-  font-size: 0.85rem;
-  color: #666;
-  margin-top: 0.25rem;
+.sdx-modal-actions {
+  display: flex;
+  gap: 0.8rem;
 }
 
-.activity-dropdown .dropdown-toggle {
-  margin-top: 0.6rem;
-  background: #3B4F81;
+.sdx-export-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #4CAF50;
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 0.4rem 0.8rem;
-  cursor: pointer;
-  font-size: 0.85rem;
-}
-
-.activity-dropdown .dropdown-toggle:hover {
-  background: #2d3e6e;
-}
-
-.question-list {
-  list-style: none;
-  padding: 0.6rem 1rem;
-  margin-top: 0.5rem;
-  background: #f9f9f9;
   border-radius: 6px;
-  border: 1px solid #ddd;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.question-item {
+.sdx-export-btn:hover {
+  background-color: #3f9142;
+}
+
+.sdx-close-btn {
+  background-color: #f0f0f0;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   display: flex;
-  justify-content: space-between;
-  padding: 0.4rem 0;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.question-text {
-  margin-right: 1rem;
+.sdx-close-btn:hover {
+  background-color: #e0e0e0;
+  color: #333;
 }
 
-.question-item.correct .question-result {
-  color: #2e7d32;
+.sdx-modal-body {
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+/* Progress Report Styles in Modal */
+.sdx-report-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.sdx-report-logo {
+  width: 100px;
+  height: auto;
+}
+
+.sdx-report-school-info {
+  flex: 1;
+}
+
+.sdx-report-school-name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 0.3rem 0;
+  color: #3B4F81;
+}
+
+.sdx-report-school-tagline,
+.sdx-report-school-address,
+.sdx-report-school-contact {
+  font-size: 0.85rem;
+  margin: 0 0 0.3rem 0;
+  color: #666;
+}
+
+.sdx-report-title-section {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #3B4F81;
+}
+
+.sdx-report-main-title {
+  font-size: 1.4rem;
+  margin: 0 0 0.5rem 0;
+  color: #3B4F81;
+  font-weight: 700;
+}
+
+.sdx-report-school-year {
+  font-size: 1rem;
+  margin: 0;
+  color: #555;
+}
+
+.sdx-report-student-info {
+  margin-bottom: 2rem;
+}
+
+.sdx-report-info-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sdx-report-info-item {
+  flex: 1;
+  min-width: 200px;
+}
+
+.sdx-report-progress-table {
+  margin-bottom: 2rem;
+}
+
+.sdx-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.sdx-report-th {
+  background-color: #3B4F81;
+  color: white;
+  padding: 0.8rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.sdx-report-th-aralin {
+  width: 20%;
+  text-align: left;
+}
+
+.sdx-report-th-nakumpleto {
+  width: 10%;
+}
+
+.sdx-report-th-antas {
+  width: 30%;
+}
+
+.sdx-report-th-puna {
+  width: 40%;
+  text-align: left;
+}
+
+.sdx-report-th-level {
+  background-color: #5370ac;
+  color: white;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  text-align: center;
+  width: 10%;
+}
+
+.sdx-report-th-empty {
+  background-color: #3B4F81;
+  color: white;
+}
+
+.sdx-report-tr:nth-child(odd) {
+  background-color: #f8f9fc;
+}
+
+.sdx-report-td {
+  padding: 0.8rem;
+  text-align: center;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.sdx-report-td-aralin {
+  text-align: left;
+  font-weight: 500;
+}
+
+.sdx-report-td-support {
   font-weight: bold;
 }
 
-.question-item.incorrect .question-result {
-  color: #c62828;
-  font-weight: bold;
+.sdx-report-td-puna {
+  text-align: left;
+  line-height: 1.4;
+  font-size: 0.9rem;
+}
+
+.sdx-report-recommendations {
+  margin-bottom: 2rem;
+}
+
+.sdx-report-section-title {
+  font-size: 1.1rem;
+  color: #3B4F81;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.sdx-report-rec-list {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.sdx-report-rec-item {
+  margin-bottom: 0.8rem;
+  line-height: 1.5;
+}
+
+.sdx-report-signatures {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 3rem;
+}
+
+.sdx-report-signature {
+  width: 200px;
+  text-align: center;
+}
+
+.sdx-report-sign-line {
+  border-top: 1px solid #333;
+  margin-bottom: 0.5rem;
+}
+
+.sdx-report-sign-name {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .sdx-container {
+    padding: 1rem;
+    margin-left: 0;
+  }
+
+  .sdx-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .sdx-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .sdx-view-report-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sdx-profile-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .sdx-parent-details {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .sdx-activities-table {
+    overflow-x: auto;
+  }
+
+  .sdx-table-header,
+  .sdx-table-subheader,
+  .sdx-table-row {
+    min-width: 800px;
+  }
+
+  .sdx-message-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sdx-message-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .sdx-edit-btn, 
+  .sdx-save-btn,
+  .sdx-send-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sdx-modal-content {
+    width: 95%;
+    height: 95vh;
+  }
+
+  .sdx-report-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .sdx-report-logo {
+    width: 80px;
+  }
+
+  .sdx-report-progress-table {
+    overflow-x: auto;
+  }
+
+  .sdx-report-table {
+    min-width: 800px;
+  }
+
+  .sdx-report-signatures {
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
 }
