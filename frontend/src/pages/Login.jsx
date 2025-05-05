@@ -32,7 +32,6 @@ const Login = ({ onLogin }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // FIXED: Corrected the regex syntax error - escape sequence was improperly formatted
   const isValidPassword = (password) => {
     // For testing purposes, make this always return true to bypass validation
     return true;
@@ -45,73 +44,90 @@ const Login = ({ onLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
+  
+    // Basic client‑side checks
     if (!formData.email || !formData.password) {
       return setError('Lahat ng field ay kailangan punan.');
     }
-    if (!formData.email.includes('@')) {
-      return setError('Gumamit ng wastong email address.');
-    }
-    
-    // Temporarily comment out password validation for testing
-    // if (!isValidPassword(formData.password)) {
-    //   return setError('Password must be 8+ characters, contain 1 uppercase & 1 number.');
-    // }
-
+  
     setIsLoading(true);
+    
     try {
-      // Debugging: Log the email and password sent to the backend
-      console.log('Email:', formData.email);
-      console.log('Password:', formData.password);
-
-      // Real login API call to validate the user
-      const response = await fetch('/api/login', {
+      /* ----------  API URL  ---------- */
+      // VITE_API_BASE_URL is optional; fallback to localhost:5002 in dev
+      const BASE =
+        import.meta.env.VITE_API_BASE_URL ||
+        (import.meta.env.DEV ? 'http://localhost:5002' : '');
+  
+      console.log(`Attempting login to ${BASE}/api/auth/login`);
+      
+      const res = await fetch(`${BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
+        credentials: 'include', // keep if you later use cookies
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Debugging: Log the backend response
-        console.log('Login response:', data);
-
-        // Save the token and user data to localStorage
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userData', JSON.stringify(data.user));
-
-        // Trigger the onLogin callback if provided
-        if (onLogin) onLogin();
-
-        // FIXED: Handle roles as a string instead of an array
-        const userRole = data.user.roles; // No longer accessing as array element
-
-        // Debugging: Log the user role received
-        console.log('User role:', userRole);
-
-        // Redirect to the appropriate dashboard based on the role
-        if (userRole === 'parent' || userRole === 'magulang') {
-          console.log('Redirecting to parent dashboard...');
-          navigate('/parent/dashboard');
-        } else if (userRole === 'teacher' || userRole === 'guro') {
-          console.log('Redirecting to teacher dashboard...');
-          navigate('/teacher/dashboard');
-        } else if (userRole === 'admin') {
-          console.log('Redirecting to admin dashboard...');
-          navigate('/admin/dashboard');
+  
+      if (!res.ok) {
+        // Try to read server message
+        const { message } = await res.json().catch(() => ({}));
+        throw new Error(message || `HTTP ${res.status}`);
+      }
+  
+      // Handle successful login
+      const { token, user } = await res.json();
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('userData', JSON.stringify(user));
+      console.log('Login successful, user data:', user);
+      
+      // Store auth data
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('userData', JSON.stringify(user));
+      
+      // Call the onLogin function from props to update App state
+      onLogin();
+  
+      /* ----------  Role‑based redirection  ---------- */
+      // roles can be string OR array; normalize to array
+      const roles = Array.isArray(user.roles) ? user.roles : [user.roles];
+      console.log('User roles:', roles);
+      
+      // Set userType based on roles
+      if (roles.includes('parent') || roles.includes('magulang')) {
+        localStorage.setItem('userType', 'parent');
+        navigate('/parent/dashboard');
+      }
+      
+      
+      else if (roles.includes('teacher') || roles.includes('guro')) {
+        localStorage.setItem('userType', 'teacher');
+        try {
+          const teacherService = await import('../services/teacherService');
+          await teacherService.initializeTeacherProfile();
+        } catch (error) {
+          console.warn('Failed to initialize teacher profile:', error);
         }
+        
+        navigate('/teacher/dashboard');
+
+
+        
+      } else if (roles.includes('admin')) {
+        localStorage.setItem('userType', 'admin');
+        navigate('/admin/dashboard');
       } else {
-        console.error('Login failed:', data.message);
-        setError(data.message || 'Login failed.');
+        // If no recognized role, default to user
+        localStorage.setItem('userType', 'user');
+        navigate('/'); // fallback
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError('May nangyaring mali. Subukan muli.');
+      setError(err.message || 'May nangyaring mali. Subukan muli.');
     } finally {
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div className="login-container">

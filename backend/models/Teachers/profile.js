@@ -10,6 +10,12 @@ const EmergencyContactSchema = new mongoose.Schema({
 
 // Main teacher profile schema with S3 image URL
 const TeacherProfileSchema = new mongoose.Schema({
+  // Add userId field to link with authenticated user
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',  // Reference to your authentication User model
+    index: true   // Create an index for better query performance
+  },
   firstName: {
     type: String,
     required: [true, 'First name is required'],
