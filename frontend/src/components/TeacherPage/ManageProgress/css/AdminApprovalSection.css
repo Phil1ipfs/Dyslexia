@@ -1,0 +1,358 @@
+/* AdminApprovalSection Component Styles */
+
+.literexia-approval-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+  
+  .literexia-approval-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    background-color: #f1f7ff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border-left: 4px solid #3B4F81;
+  }
+  
+  .literexia-info-icon {
+    font-size: 2rem;
+    color: #3B4F81;
+    flex-shrink: 0;
+  }
+  
+  .literexia-info-text h3 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.2rem;
+    color: #3B4F81;
+  }
+  
+  .literexia-info-text p {
+    margin: 0 0 0.75rem 0;
+    color: #555;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  
+  .literexia-info-text p:last-child {
+    margin-bottom: 0;
+  }
+  
+  .literexia-approval-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .literexia-approval-item {
+    display: flex;
+    gap: 1.25rem;
+    background-color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+    border: 1px solid #eee;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .literexia-approval-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+  }
+  
+  .literexia-approval-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+  
+  .literexia-approval-icon.literexia-patinig {
+    background-color: #EF5350;
+  }
+  
+  .literexia-approval-icon.literexia-pantig {
+    background-color: #FFCA28;
+  }
+  
+  .literexia-approval-icon.literexia-salita {
+    background-color: #66BB6A;
+  }
+  
+  .literexia-approval-icon.literexia-pag-unawa {
+    background-color: #42A5F5;
+  }
+  
+  .literexia-approval-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  
+  .literexia-approval-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  
+  .literexia-approval-title-container {
+    flex: 1;
+  }
+  
+  .literexia-approval-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+    color: #333;
+    font-weight: 600;
+  }
+  
+  .literexia-approval-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  
+  .literexia-category-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background-color: #f5f5f5;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    color: #555;
+  }
+  
+  .literexia-approval-date {
+    font-size: 0.9rem;
+    color: #666;
+  }
+  
+  .literexia-status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background-color: #FF9800;
+    color: white;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  
+  .literexia-skill-bar-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .literexia-skill-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.95rem;
+  }
+  
+  .literexia-skill-score {
+    font-weight: 600;
+    color: #333;
+  }
+  
+  .literexia-skill-bar-wrapper {
+    height: 12px;
+    background-color: #e0e0e0;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  
+  .literexia-skill-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 1s ease-in-out;
+  }
+  
+  .literexia-skill-bar-fill.literexia-patinig {
+    background: linear-gradient(90deg, #FFB74D, #EF5350);
+  }
+  
+  .literexia-skill-bar-fill.literexia-pantig {
+    background: linear-gradient(90deg, #FFE082, #FFCA28);
+  }
+  
+  .literexia-skill-bar-fill.literexia-salita {
+    background: linear-gradient(90deg, #A5D6A7, #66BB6A);
+  }
+  
+  .literexia-skill-bar-fill.literexia-pag-unawa {
+    background: linear-gradient(90deg, #90CAF9, #42A5F5);
+  }
+  
+  .literexia-changes-section {
+    background-color: #f9f9f9;
+    padding: 1.25rem;
+    border-radius: 8px;
+  }
+  
+  .literexia-changes-title {
+    margin: 0 0 1rem 0;
+    font-size: 1.05rem;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .literexia-changes-list {
+    margin: 0;
+    padding: 0 0 0 1.5rem;
+    list-style-type: disc;
+  }
+  
+  .literexia-change-item {
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+    color: #444;
+  }
+  
+  .literexia-change-item:last-child {
+    margin-bottom: 0;
+  }
+  
+  .literexia-approval-actions {
+    background-color: #f5f5f5;
+    padding: 1.25rem;
+    border-radius: 8px;
+  }
+  
+  .literexia-actions-title {
+    margin: 0 0 1rem 0;
+    font-size: 1.05rem;
+    color: #333;
+  }
+  
+  .literexia-action-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .literexia-approve-btn,
+  .literexia-reject-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .literexia-approve-btn {
+    background-color: #4CAF50;
+    color: white;
+  }
+  
+  .literexia-approve-btn:hover {
+    background-color: #43A047;
+    transform: translateY(-2px);
+  }
+  
+  .literexia-reject-btn {
+    background-color: #F44336;
+    color: white;
+  }
+  
+  .literexia-reject-btn:hover {
+    background-color: #E53935;
+    transform: translateY(-2px);
+  }
+  
+  .literexia-status-message {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+  }
+  
+  .literexia-status-message.literexia-approving {
+    background-color: rgba(76, 175, 80, 0.1);
+    color: #43A047;
+  }
+  
+  .literexia-status-message.literexia-rejecting {
+    background-color: rgba(244, 67, 54, 0.1);
+    color: #E53935;
+  }
+  
+  .literexia-status-message.literexia-completed {
+    background-color: #e8f5e9;
+    color: #43A047;
+  }
+  
+  .literexia-spinner {
+    animation: literexiaSpin 1s linear infinite;
+  }
+  
+  @keyframes literexiaSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Empty state */
+  .literexia-empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #666;
+  }
+  
+  .literexia-empty-icon {
+    font-size: 3rem;
+    color: #9e9e9e;
+    margin-bottom: 1rem;
+  }
+  
+  .literexia-empty-state h3 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.25rem;
+    color: #333;
+  }
+  
+  .literexia-empty-state p {
+    margin: 0;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 768px) {
+    .literexia-approval-info {
+      flex-direction: column;
+    }
+    
+    .literexia-approval-item {
+      flex-direction: column;
+    }
+    
+    .literexia-approval-icon {
+      align-self: flex-start;
+    }
+    
+    .literexia-action-buttons {
+      flex-direction: column;
+    }
+    
+    .literexia-approve-btn,
+    .literexia-reject-btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }

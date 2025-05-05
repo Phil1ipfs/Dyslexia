@@ -1,0 +1,363 @@
+/* Additional styles for ActivityPreviewModal - Should be added to CreatePreAssessmentRevised.css */
+
+.pre-assess-activity-preview {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+  
+  .pre-assess-level-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--pre-assess-gray-100);
+    border-bottom: 1px solid var(--pre-assess-gray-200);
+  }
+  
+  .pre-assess-level-nav-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    color: var(--pre-assess-gray-700);
+    border: 1px solid var(--pre-assess-gray-300);
+    border-radius: var(--pre-assess-radius-md);
+    cursor: pointer;
+    transition: var(--pre-assess-transition-fast);
+  }
+  
+  .pre-assess-level-nav-btn:hover:not(:disabled) {
+    background-color: var(--pre-assess-gray-200);
+    color: var(--pre-assess-primary);
+  }
+  
+  .pre-assess-level-nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .pre-assess-level-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .pre-assess-level-label {
+    font-weight: 600;
+    color: var(--pre-assess-primary);
+    font-size: 1.1rem;
+  }
+  
+  .pre-assess-level-count {
+    font-size: 0.875rem;
+    color: var(--pre-assess-gray-600);
+  }
+  
+  .pre-assess-passage-preview {
+    background-color: var(--pre-assess-gray-50);
+    border-radius: var(--pre-assess-radius-md);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    border: 1px solid var(--pre-assess-gray-200);
+  }
+  
+  .pre-assess-passage-header {
+    background-color: var(--pre-assess-primary-bg);
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--pre-assess-gray-200);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .pre-assess-passage-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--pre-assess-primary);
+  }
+  
+  .pre-assess-passage-header svg {
+    color: var(--pre-assess-primary);
+  }
+  
+  .pre-assess-passage-content {
+    padding: 1.25rem;
+  }
+  
+  .pre-assess-passage-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--pre-assess-gray-800);
+    margin-top: 0;
+    margin-bottom: 1.25rem;
+  }
+  
+  .pre-assess-passage-syllables,
+  .pre-assess-passage-translation {
+    margin-bottom: 1rem;
+  }
+  
+  .pre-assess-passage-syllables h4,
+  .pre-assess-passage-translation h4 {
+    font-size: 0.925rem;
+    font-weight: 600;
+    color: var(--pre-assess-gray-700);
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+  }
+  
+  .pre-assess-passage-syllables p,
+  .pre-assess-passage-translation p {
+    margin: 0;
+    color: var(--pre-assess-gray-600);
+    line-height: 1.5;
+    font-size: 0.925rem;
+  }
+  
+  .pre-assess-passage-media {
+    padding: 0 1.25rem 1.25rem;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .pre-assess-passage-image {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: var(--pre-assess-radius-md);
+    box-shadow: var(--pre-assess-shadow-sm);
+  }
+  
+  .pre-assess-questions-preview {
+    background-color: white;
+    border-radius: var(--pre-assess-radius-md);
+    border: 1px solid var(--pre-assess-gray-200);
+    overflow: hidden;
+  }
+  
+  .pre-assess-questions-header {
+    padding: 0.75rem 1.25rem;
+    background-color: var(--pre-assess-gray-100);
+    border-bottom: 1px solid var(--pre-assess-gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .pre-assess-questions-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .pre-assess-questions-title h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--pre-assess-gray-800);
+  }
+  
+  .pre-assess-questions-title svg {
+    color: var(--pre-assess-secondary);
+  }
+  
+  .pre-assess-questions-count {
+    font-size: 0.875rem;
+    color: var(--pre-assess-gray-600);
+    background-color: var(--pre-assess-gray-200);
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+  }
+  
+  .pre-assess-no-content {
+    padding: 2rem;
+    text-align: center;
+    color: var(--pre-assess-gray-500);
+  }
+  
+  .pre-assess-questions-list-preview {
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  
+  .pre-assess-question-item {
+    background-color: var(--pre-assess-gray-50);
+    border: 1px solid var(--pre-assess-gray-200);
+    border-radius: var(--pre-assess-radius-md);
+    overflow: hidden;
+    transition: var(--pre-assess-transition-fast);
+  }
+  
+  .pre-assess-question-item:hover {
+    border-color: var(--pre-assess-gray-400);
+    box-shadow: var(--pre-assess-shadow-sm);
+  }
+  
+  .pre-assess-question-selected {
+    border-color: var(--pre-assess-secondary);
+    background-color: rgba(76, 175, 80, 0.05);
+  }
+  
+  .pre-assess-question-item-header {
+    padding: 0.75rem 1rem;
+    background-color: white;
+    border-bottom: 1px solid var(--pre-assess-gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .pre-assess-question-item-number {
+    font-weight: 600;
+    color: var(--pre-assess-gray-800);
+  }
+  
+  .pre-assess-question-type-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    background-color: var(--pre-assess-gray-100);
+    color: var(--pre-assess-gray-700);
+    border-radius: var(--pre-assess-radius-sm);
+  }
+  
+  .pre-assess-selection-checkbox {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--pre-assess-radius-sm);
+    overflow: hidden;
+  }
+  
+  .pre-assess-selected-mark {
+    width: 100%;
+    height: 100%;
+    background-color: var(--pre-assess-secondary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .pre-assess-unselected-mark {
+    width: 100%;
+    height: 100%;
+    border: 2px solid var(--pre-assess-gray-300);
+    border-radius: var(--pre-assess-radius-sm);
+    background-color: white;
+  }
+  
+  .pre-assess-question-item-content {
+    padding: 1.25rem;
+  }
+  
+  .pre-assess-question-item-text {
+    font-size: 1rem;
+    color: var(--pre-assess-gray-800);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+  }
+  
+  .pre-assess-question-item-media {
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .pre-assess-question-image {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: var(--pre-assess-radius-md);
+    box-shadow: var(--pre-assess-shadow-sm);
+  }
+  
+  .pre-assess-answer-options {
+    background-color: white;
+    border-radius: var(--pre-assess-radius-md);
+    padding: 1rem;
+    border: 1px solid var(--pre-assess-gray-200);
+  }
+  
+  .pre-assess-options-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--pre-assess-gray-700);
+    margin-bottom: 0.75rem;
+  }
+  
+  .pre-assess-options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+  }
+  
+  .pre-assess-option-item {
+    background-color: var(--pre-assess-gray-50);
+    border: 1px solid var(--pre-assess-gray-300);
+    border-radius: var(--pre-assess-radius-sm);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.925rem;
+    color: var(--pre-assess-gray-700);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .pre-assess-option-correct {
+    border-color: var(--pre-assess-success);
+    background-color: rgba(40, 167, 69, 0.05);
+  }
+  
+  .pre-assess-option-check {
+    color: var(--pre-assess-success);
+  }
+  
+  .pre-assess-btn-tertiary {
+    background-color: var(--pre-assess-gray-200);
+    color: var(--pre-assess-gray-700);
+    border: none;
+    border-radius: var(--pre-assess-radius-md);
+    padding: 0.65rem 1.25rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--pre-assess-transition-fast);
+  }
+  
+  .pre-assess-btn-tertiary:hover {
+    background-color: var(--pre-assess-gray-300);
+  }
+  
+  .pre-assess-btn-selection {
+    background-color: var(--pre-assess-primary);
+    color: white;
+    border: none;
+    border-radius: var(--pre-assess-radius-md);
+    padding: 0.65rem 1.25rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--pre-assess-transition-fast);
+  }
+  
+  .pre-assess-btn-selection:hover {
+    background-color: var(--pre-assess-primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--pre-assess-shadow-sm);
+  }
+  
+  .pre-assess-btn-active {
+    background-color: var(--pre-assess-secondary);
+  }
+  
+  .pre-assess-btn-active:hover {
+    background-color: var(--pre-assess-secondary-dark);
+  }
