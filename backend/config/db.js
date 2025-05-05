@@ -35,7 +35,6 @@ const connectTeachersDB = async () => {
     // First, ensure we have a basic connection
     await connectDB();
     
-    // Get the MongoDB URI
     const mongoUri = process.env.MONGO_URI;
     
     // Create a separate connection specifically for teachers database
