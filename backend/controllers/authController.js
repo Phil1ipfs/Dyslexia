@@ -1,6 +1,7 @@
 // controllers/authController.js
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+// Use your existing User model
 const User = require('../models/userModel');
 
 exports.login = async (req, res) => {
@@ -25,22 +26,25 @@ exports.login = async (req, res) => {
 
     console.log('✅ User found:', user.email);
     console.log('User roles:', user.roles);
-    console.log('Password in DB:', user.password ? 'Hash present' : 'No password');
 
-    /* ── 3. password check (dev bypass vs real bcrypt) ── */
-    // DEV MODE – bypass password check (this works for testing):
-    const isMatch = true;
-    console.log('⚠️ DEV MODE: Password check bypassed, allowing login');
-
-    // PROD MODE – use bcrypt compare (uncomment for production):
-    // let isMatch = false;
-    // try {
-    //   isMatch = await bcrypt.compare(password, user.password);
-    //   console.log('Password check result:', isMatch ? '✅ Valid' : '❌ Invalid');
-    // } catch (error) {
-    //   console.error('❌ Bcrypt error:', error.message);
-    //   return res.status(500).json({ message: 'Password verification error' });
-    // }
+    /* ── 3. password check with bcrypt ─────────────────── */
+    // FOR TESTING ONLY - Make sure password check is working properly
+    // Remove this in production or set to false
+    const bypassPasswordCheck = false;
+    
+    let isMatch = bypassPasswordCheck;
+    
+    if (!bypassPasswordCheck) {
+      try {
+        isMatch = await bcrypt.compare(password, user.password);
+        console.log('Password check result:', isMatch ? '✅ Valid' : '❌ Invalid');
+      } catch (error) {
+        console.error('❌ Bcrypt error:', error.message);
+        return res.status(500).json({ message: 'Password verification error' });
+      }
+    } else {
+      console.log('⚠️ DEV MODE: Password check bypassed, allowing login');
+    }
 
     if (!isMatch) {
       console.log('❌ Wrong password for:', email);
@@ -49,10 +53,13 @@ exports.login = async (req, res) => {
 
     /* ── 4. sign JWT ───────────────────────────────────── */
     const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
-    console.log(`Using JWT Secret: ${secretKey.substring(0, 3)}...`);
     
     const token = jwt.sign(
-      { id: user._id, email: user.email, roles: user.roles || ['user'] },
+      { 
+        id: user._id, 
+        email: user.email, 
+        roles: user.roles || ['user'] 
+      },
       secretKey,
       { expiresIn: '1h' }
     );
@@ -69,5 +76,56 @@ exports.login = async (req, res) => {
   } catch (err) {
     console.error('💥 Login handler error:\n', err.stack);
     return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Register new user
+exports.register = async (req, res) => {
+  try {
+    const { email, password, role } = req.body;
+
+    // Basic validation
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Validate role
+    const validRoles = ['parent', 'teacher', 'admin', 'user', 'magulang', 'guro'];
+    const userRole = validRoles.includes(role) ? role : 'user';
+    
+    // Create new user
+    const newUser = new User({
+      email,
+      password: hashedPassword,
+      roles: [userRole]
+    });
+
+    await newUser.save();
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: newUser._id, email: newUser.email, roles: newUser.roles },
+      process.env.JWT_SECRET_KEY || 'fallback_secret_key',
+      { expiresIn: '1h' }
+    );
+
+    res.status(201).json({
+      message: 'User registered successfully',
+      token,
+      user: { id: newUser._id, email: newUser.email, roles: newUser.roles }
+    });
+  } catch (err) {
+    console.error('Register error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };

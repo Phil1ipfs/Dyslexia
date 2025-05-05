@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-// Define the schema with collection targeting
+// Define the schema with collection targeting to match your database structure
 const userSchema = new Schema({
   email: {
     type: String,
@@ -16,8 +16,8 @@ const userSchema = new Schema({
     required: true
   },
   roles: {
-    type: [String],
-    default: ['user']
+    type: String, // String roles as shown in your database
+    default: 'user'
   },
   createdAt: {
     type: Date,
@@ -25,8 +25,8 @@ const userSchema = new Schema({
   }
 }, {
   timestamps: true,
-  // IMPORTANT: Make sure the collection name matches what's in your database
-  collection: 'web_users' // Explicitly set the collection name
+  // IMPORTANT: This matches your actual collection shown in screenshots
+  collection: 'users'
 });
 
 // Check if model already exists to prevent duplicate model errors
