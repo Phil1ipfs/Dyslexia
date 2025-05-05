@@ -1,38 +1,35 @@
-// // backend/models/userModel.js
-// const mongoose = require('mongoose');
-
-// const userSchema = new mongoose.Schema(
-//   {
-//     email: { type: String, required: true, unique: true },
-//     password: { type: String, required: true },
-//     roles: { type: String, required: true },
-//   },
-//   { timestamps: true }
-// );
-
-// module.exports = mongoose.model('User', userSchema, 'web_users');
-
-// backend/models/userModel.js 
+// models/userModel.js
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-const userSchema = new mongoose.Schema(
-  {
-    email: {
-      type: String,
-      required: true,
-      unique: true
-    },
-    password: {
-      type: String,
-      required: true
-    },
-    roles: {
-      type: String,
-      required: true
-    },
+// Define the schema with collection targeting
+const userSchema = new Schema({
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true
   },
-  { timestamps: true }
-);
+  password: {
+    type: String,
+    required: true
+  },
+  roles: {
+    type: [String],
+    default: ['user']
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}, {
+  timestamps: true,
+  // IMPORTANT: Make sure the collection name matches what's in your database
+  collection: 'web_users' // Explicitly set the collection name
+});
 
-// Explicitly set the collection name to "web_users" 
-module.exports = mongoose.model('user', userSchema, 'web_users');
+// Check if model already exists to prevent duplicate model errors
+const User = mongoose.models.User || mongoose.model('User', userSchema);
+
+module.exports = User;

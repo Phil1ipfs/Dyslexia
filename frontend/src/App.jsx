@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Public Pages
@@ -18,7 +18,6 @@ import StudentProgressView from "./pages/Teachers/ManageProgress/StudentProgress
 import TeacherChatbot from "./pages/Teachers/Chatbot/TeacherChatbot"; 
 import StudentProgressPDF from './pages/Teachers/StudentProgressPDF';
 
-
 // Import activity-related pages
 import CreateActivity from "./pages/Teachers/ManageActivity/CreateActivity";
 import EditActivity from "./pages/Teachers/ManageActivity/EditActivity";
@@ -29,7 +28,6 @@ import CreatePreAssessment from "./pages/Teachers/PreAssessment/CreatePreAssessm
 import ParentDashboard from "./pages/Parents/ParentDashboard";
 import Feedback from "./pages/Parents/Feedback";  
 import Progress from "./pages/Parents/Progress"; 
-
 
 // Admin Pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
@@ -42,19 +40,70 @@ import AdminLayout from "./components/Admin/AdminLayout";
 
 import "./App.css";
 
+// Protected Route Component
+const ProtectedRoute = ({ userRole, children }) => {
+  const isAuth = !!localStorage.getItem("authToken");
+  const userType = localStorage.getItem("userType");
+  
+  if (!isAuth) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (userRole && userType !== userRole) {
+    return <Navigate to={`/${userType}/dashboard`} />;
+  }
+  
+  return children;
+};
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
     !!localStorage.getItem("authToken")
   );
+  const [userType, setUserType] = useState(
+    localStorage.getItem("userType") || "teacher"
+  );
 
-  // Determine user type from localStorage; default to "teacher" if not set
-  const userType = localStorage.getItem("userType") || "teacher";
+  // Verify authentication and user role on app load
+  useEffect(() => {
+    // Check if auth token exists
+    const token = localStorage.getItem("authToken");
+    
+    // If no token, not authenticated
+    if (!token) {
+      setIsAuthenticated(false);
+      return;
+    }
+    
+    // Get user data
+    const userData = JSON.parse(localStorage.getItem("userData") || '{}');
+    const roles = userData.roles || [];
+    
+    // Make sure userType matches actual role
+    if (Array.isArray(roles)) {
+      let newUserType = "user";
+      
+      if (roles.includes('parent') || roles.includes('magulang')) {
+        newUserType = "parent";
+      } else if (roles.includes('teacher') || roles.includes('guro')) {
+        newUserType = "teacher";
+      } else if (roles.includes('admin')) {
+        newUserType = "admin";
+      }
+      
+      localStorage.setItem('userType', newUserType);
+      setUserType(newUserType);
+    }
+    
+    setIsAuthenticated(true);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("userData");
     localStorage.removeItem("userType");
     setIsAuthenticated(false);
+    setUserType("teacher"); // Reset to default
   };
 
   return (
@@ -84,48 +133,62 @@ function App() {
         <Route path="/choose-account" element={<ChooseAccountType />} />
 
         {/* Protected Teacher Routes */}
-        {isAuthenticated && userType === "teacher" && (
-          <Route path="/teacher/*" element={<TeacherLayout onLogout={handleLogout} />}>
-            <Route path="dashboard" element={<TeacherDashboard />} />
-            <Route path="view-student" element={<ViewStudent />} />
-            <Route path="manage-activities" element={<ManageActivities />} />
-            <Route path="profile" element={<TeacherProfile />} />
-            <Route path="manage-progress" element={<ManageProgress />} />
-            <Route path="student-progress/:id" element={<StudentProgressView />} />
-            <Route path="student-details/:id" element={<StudentDetails />} />
-            <Route path="chatbot" element={<TeacherChatbot />} /> {/* Add route for chatbot */}
-            <Route path="student-report" element={<StudentProgressPDF />} />
-
-            
-            {/* Activity Management Routes */}
-            <Route path="create-activity" element={<CreateActivity />} />
-            <Route path="edit-activity/:id" element={<EditActivity />} />
-            <Route path="preview-activity/:id" element={<PreviewActivity />} />
-            
-            {/* Pre-Assessment Routes - New */}
-            <Route path="create-pre-assessment" element={<CreatePreAssessment />} />
-
-            <Route index element={<Navigate to="dashboard" />} />
-          </Route>
-        )}
+        <Route
+          path="/teacher/*"
+          element={
+            <ProtectedRoute userRole="teacher">
+              <TeacherLayout onLogout={handleLogout} />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="dashboard" element={<TeacherDashboard />} />
+          <Route path="view-student" element={<ViewStudent />} />
+          <Route path="manage-activities" element={<ManageActivities />} />
+          <Route path="profile" element={<TeacherProfile />} />
+          <Route path="manage-progress" element={<ManageProgress />} />
+          <Route path="student-progress/:id" element={<StudentProgressView />} />
+          <Route path="student-details/:id" element={<StudentDetails />} />
+          <Route path="chatbot" element={<TeacherChatbot />} />
+          <Route path="student-report" element={<StudentProgressPDF />} />
+          
+          {/* Activity Management Routes */}
+          <Route path="create-activity" element={<CreateActivity />} />
+          <Route path="edit-activity/:id" element={<EditActivity />} />
+          <Route path="preview-activity/:id" element={<PreviewActivity />} />
+          
+          {/* Pre-Assessment Routes */}
+          <Route path="create-pre-assessment" element={<CreatePreAssessment />} />
+          <Route index element={<Navigate to="dashboard" />} />
+        </Route>
 
         {/* Protected Parent Routes */}
-        {isAuthenticated && userType === "parent" && (
-          <Route path="/parent/*" element={<ParentLayout onLogout={handleLogout} />}>
-            <Route path="dashboard" element={<ParentDashboard />} />
-            <Route path="feedback" element={<Feedback />} />
-            <Route path="progress" element={<Progress />} />
-          </Route>
-        )}
+        <Route
+          path="/parent/*"
+          element={
+            <ProtectedRoute userRole="parent">
+              <ParentLayout onLogout={handleLogout} />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="dashboard" element={<ParentDashboard />} />
+          <Route path="feedback" element={<Feedback />} />
+          <Route path="progress" element={<Progress />} />
+          <Route index element={<Navigate to="dashboard" />} />
+        </Route>
 
         {/* Protected Admin Routes */}
-        {isAuthenticated && userType === "admin" && (
-          <Route path="/admin/*" element={<AdminLayout onLogout={handleLogout} />}>
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="visual-charts" element={<VisualChartsPage />} />
-            <Route index element={<Navigate to="dashboard" />} />
-          </Route>
-        )}
+        <Route
+          path="/admin/*"
+          element={
+            <ProtectedRoute userRole="admin">
+              <AdminLayout onLogout={handleLogout} />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="visual-charts" element={<VisualChartsPage />} />
+          <Route index element={<Navigate to="dashboard" />} />
+        </Route>
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" />} />

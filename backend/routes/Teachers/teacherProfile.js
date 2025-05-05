@@ -6,6 +6,7 @@ const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const s3Client = require('../../config/s3');
 const Teacher = require('../../models/Teachers/profile');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 // Configure multer for memory storage
@@ -28,6 +29,27 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // 5MB limit
   }
 });
+
+// Authentication middleware
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    console.log('No token provided in request');
+    return res.status(401).json({ error: 'Unauthorized: No token provided' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY || 'fallback_secret_key');
+    req.user = decoded;
+    console.log('Authenticated user:', req.user.email, 'User ID:', req.user.id);
+    next();
+  } catch (error) {
+    console.error('Token verification failed:', error.message);
+    return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+  }
+};
 
 // Sanitize input helper function
 const sanitizeInput = (obj) => {
@@ -57,12 +79,116 @@ const logActivity = (req, res, next) => {
 
 router.use(logActivity);
 
-// ───────────────────────── GET profile
-// GET /api/teachers/profile
-router.get('/profile', async (req, res) => {
+// Initialize teacher profile
+// In routes/Teachers/teacherProfile.js - Update the initialize profile route
+router.post('/profile/initialize', authenticateToken, async (req, res) => {
   try {
-    const teacher = await Teacher.findOne().select('-profileImage.data -passwordHash'); // Don't send binary data or password hash
-    if (!teacher) return res.status(404).json({ error: 'No teacher profile found.' });
+    console.log('Initializing profile for user:', req.user.email);
+    
+    // First, try to find profile by userId
+    let teacher = await Teacher.findOne({ userId: req.user.id });
+    
+    // If not found by userId, try by email
+    if (!teacher && req.user.email) {
+      teacher = await Teacher.findOne({ email: req.user.email });
+    }
+    
+    // If profile exists, return it
+    if (teacher) {
+      console.log('Found existing profile for:', teacher.name || teacher.email);
+      
+      // If the profile doesn't have userId, update it
+      if (!teacher.userId) {
+        teacher.userId = req.user.id;
+        await teacher.save();
+        console.log('Updated profile with user ID:', req.user.id);
+      }
+      
+      const teacherData = teacher.toObject({ virtuals: true });
+      delete teacherData.passwordHash;
+      delete teacherData.profileImage?.data;
+      
+      return res.json({
+        message: 'Profile already exists',
+        teacher: teacherData
+      });
+    }
+    
+    // Create a default profile
+    const defaultFirstName = req.user.email ? req.user.email.split('@')[0] : '';
+    const newTeacher = new Teacher({
+      userId: req.user.id,
+      email: req.user.email,
+      firstName: defaultFirstName || 'New',
+      lastName: 'Teacher',
+      position: '',
+      // Add default contact number to satisfy the required field
+      contact: '09000000000', // Default placeholder phone number
+      passwordHash: await bcrypt.hash("DefaultPassword123!", 10),
+      profileImageUrl: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    
+    await newTeacher.save();
+    console.log('Created default profile for:', req.user.email);
+    
+    const returnData = newTeacher.toObject({ virtuals: true });
+    delete returnData.passwordHash;
+    
+    return res.status(201).json({
+      message: 'Default profile created',
+      teacher: returnData
+    });
+  } catch (err) {
+    console.error('Error initializing profile:', err);
+    res.status(500).json({ error: 'Failed to initialize profile', details: err.message });
+  }
+});
+
+
+
+// GET /api/teachers/profile
+router.get('/profile', authenticateToken, async (req, res) => {
+  try {
+    console.log('Getting profile for user ID:', req.user.id);
+    
+    // First, try to find profile by userId
+    let teacher = await Teacher.findOne({ userId: req.user.id }).select('-profileImage.data -passwordHash');
+    
+    // If not found by userId, try by email
+    if (!teacher && req.user.email) {
+      teacher = await Teacher.findOne({ email: req.user.email }).select('-profileImage.data -passwordHash');
+      
+      // If found by email but without userId, update it
+      if (teacher && !teacher.userId) {
+        teacher.userId = req.user.id;
+        await teacher.save();
+        console.log('Updated existing profile with user ID');
+      }
+    }
+    
+    // If still not found, check if any profile exists (migration support)
+    if (!teacher) {
+      teacher = await Teacher.findOne().select('-profileImage.data -passwordHash');
+      
+      // If found any profile, update it with the current user's ID
+      if (teacher) {
+        teacher.userId = req.user.id;
+        teacher.email = req.user.email || teacher.email;
+        await teacher.save();
+        console.log('Migrated existing profile to user ID:', req.user.id);
+      }
+    }
+    
+    // If no profile exists at all, create default profile
+    if (!teacher) {
+      console.log('No profile found, redirecting to initialize endpoint...');
+      return res.status(404).json({ 
+        error: 'No teacher profile found.',
+        action: 'initialize'
+      });
+    }
 
     // Create response object with profile data
     const teacherObj = teacher.toObject({ virtuals: true });
@@ -98,9 +224,8 @@ router.get('/profile', async (req, res) => {
   }
 });
 
-// ───────────────────────── CREATE new profile
 // POST /api/teachers/profile
-router.post('/profile', async (req, res) => {
+router.post('/profile', authenticateToken, async (req, res) => {
   try {
     // Sanitize input data
     const sanitizedData = sanitizeInput(req.body);
@@ -110,8 +235,12 @@ router.post('/profile', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Check if profile already exists
-    const existingTeacher = await Teacher.findOne();
+    // Check if profile already exists for this user
+    let existingTeacher = await Teacher.findOne({ userId: req.user.id });
+    if (!existingTeacher && req.user.email) {
+      existingTeacher = await Teacher.findOne({ email: req.user.email });
+    }
+    
     if (existingTeacher) {
       return res.status(400).json({ error: 'Teacher profile already exists. Use PUT to update.' });
     }
@@ -119,6 +248,8 @@ router.post('/profile', async (req, res) => {
     // Create a new teacher profile
     const teacher = new Teacher({
       ...sanitizedData,
+      userId: req.user.id, // Link to authenticated user
+      email: sanitizedData.email || req.user.email,
       passwordHash: await bcrypt.hash("DefaultPassword123!", 10), // Set default password
       profileImageUrl: null,
       createdAt: new Date(),
@@ -146,9 +277,8 @@ router.post('/profile', async (req, res) => {
   }
 });
 
-// ───────────────────────── UPDATE profile
 // PUT /api/teachers/profile
-router.put('/profile', async (req, res) => {
+router.put('/profile', authenticateToken, async (req, res) => {
   try {
     // Sanitize input data
     const sanitizedData = sanitizeInput(req.body);
@@ -171,11 +301,42 @@ router.put('/profile', async (req, res) => {
       return res.status(400).json({ error: 'Invalid phone number format' });
     }
 
-    // Find existing profile using findOneAndUpdate instead of find + save
-    // This avoids potential race conditions and "document not found" errors
+    // Find profile by user ID
+    let updateFilter = { userId: req.user.id };
+    
+    // Check if profile exists by userId
+    const profileExists = await Teacher.findOne(updateFilter);
+    if (!profileExists) {
+      // If no profile found by userId, try email
+      if (req.user.email) {
+        const profileByEmail = await Teacher.findOne({ email: req.user.email });
+        if (profileByEmail) {
+          // If found by email, update it to use userId
+          profileByEmail.userId = req.user.id;
+          await profileByEmail.save();
+          console.log('Added userId to existing profile found by email');
+        } else {
+          // If still not found, look for any profile
+          const anyProfile = await Teacher.findOne();
+          if (anyProfile) {
+            // Update any profile to use the current user's ID
+            anyProfile.userId = req.user.id;
+            anyProfile.email = req.user.email || anyProfile.email;
+            await anyProfile.save();
+            console.log('Linked existing profile to current user');
+          }
+        }
+      }
+      
+      // For findOneAndUpdate, use empty filter as fallback if no profile found yet
+      updateFilter = {};
+    }
+
+    // Find existing profile using findOneAndUpdate
     const updateResult = await Teacher.findOneAndUpdate(
-      {}, // Empty filter to match any document 
+      updateFilter,
       {
+        userId: req.user.id, // Ensure userId is set
         firstName: sanitizedData.firstName,
         middleName: sanitizedData.middleName || '',
         lastName: sanitizedData.lastName,
@@ -221,12 +382,22 @@ router.put('/profile', async (req, res) => {
 });
 
 // GET /api/teachers/profile/image/current
-router.get('/profile/image/current', async (req, res) => {
+router.get('/profile/image/current', authenticateToken, async (req, res) => {
   try {
-    console.log(`Attempting to fetch current teacher profile image`);
+    console.log(`Attempting to fetch current teacher profile image for user:`, req.user.id);
 
-    // Always use findOne without ID parameters
-    const teacher = await Teacher.findOne();
+    // Find profile by userId
+    let teacher = await Teacher.findOne({ userId: req.user.id });
+    
+    // If not found by userId, try by email
+    if (!teacher && req.user.email) {
+      teacher = await Teacher.findOne({ email: req.user.email });
+    }
+    
+    // If still not found, try any profile
+    if (!teacher) {
+      teacher = await Teacher.findOne();
+    }
 
     if (!teacher) {
       console.log('No teacher profile found');
@@ -257,9 +428,8 @@ router.get('/profile/image/current', async (req, res) => {
   }
 });
 
-// ───────────────────────── CHANGE password
 // POST /api/teachers/password
-router.post('/password', async (req, res) => {
+router.post('/password', authenticateToken, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
   // Sanitize inputs
@@ -273,7 +443,19 @@ router.post('/password', async (req, res) => {
   }
 
   try {
-    const teacher = await Teacher.findOne();
+    // Find profile by userId
+    let teacher = await Teacher.findOne({ userId: req.user.id });
+    
+    // If not found by userId, try by email
+    if (!teacher && req.user.email) {
+      teacher = await Teacher.findOne({ email: req.user.email });
+    }
+    
+    // If still not found, try any profile
+    if (!teacher) {
+      teacher = await Teacher.findOne();
+    }
+    
     if (!teacher) {
       return res.status(404).json({ error: 'Profile not found.' });
     }
@@ -301,6 +483,12 @@ router.post('/password', async (req, res) => {
     // Hash and save new password
     teacher.passwordHash = await bcrypt.hash(sanitizedNewPassword, 10);
     teacher.lastPasswordChange = new Date();
+    
+    // If the profile doesn't have a userId, update it
+    if (!teacher.userId) {
+      teacher.userId = req.user.id;
+    }
+    
     await teacher.save();
 
     // Log successful password change
@@ -313,9 +501,8 @@ router.post('/password', async (req, res) => {
   }
 });
 
-// ───────────────────────── UPLOAD profile image
 // POST /api/teachers/profile/image
-router.post('/profile/image', upload.single('profileImage'), async (req, res) => {
+router.post('/profile/image', authenticateToken, upload.single('profileImage'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -324,12 +511,28 @@ router.post('/profile/image', upload.single('profileImage'), async (req, res) =>
     console.log('Processing image upload: file size =', req.file.size, 'bytes');
     console.log('MIME type =', req.file.mimetype);
 
-    // Find teacher profile without using ID - critical fix
-    const teacher = await Teacher.findOne({});
+    // Find profile by userId
+    let teacher = await Teacher.findOne({ userId: req.user.id });
+    
+    // If not found by userId, try by email
+    if (!teacher && req.user.email) {
+      teacher = await Teacher.findOne({ email: req.user.email });
+    }
+    
+    // If still not found, try any profile
+    if (!teacher) {
+      teacher = await Teacher.findOne();
+    }
 
     if (!teacher) {
       console.error('No teacher profile found in the database');
       return res.status(404).json({ error: 'Teacher profile not found. Please create a profile first.' });
+    }
+
+    // Add userId if missing
+    if (!teacher.userId) {
+      teacher.userId = req.user.id;
+      await teacher.save();
     }
 
     console.log('Found teacher profile with ID:', teacher._id.toString());
@@ -403,7 +606,7 @@ router.post('/profile/image', upload.single('profileImage'), async (req, res) =>
 
       // Update MongoDB document - using findOneAndUpdate to avoid document not found errors
       const updateResult = await Teacher.findOneAndUpdate(
-        {}, // Empty filter to match any document
+        { _id: teacher._id },
         {
           profileImageUrl: uploadResult.Location,
           updatedAt: new Date()
@@ -434,7 +637,7 @@ router.post('/profile/image', upload.single('profileImage'), async (req, res) =>
       try {
         // Store image in MongoDB using findOneAndUpdate
         const mongoUpdate = await Teacher.findOneAndUpdate(
-          {}, // Empty filter to match any document
+          { _id: teacher._id },
           {
             profileImage: {
               data: req.file.buffer,
@@ -479,12 +682,21 @@ router.post('/profile/image', upload.single('profileImage'), async (req, res) =>
   }
 });
 
-// ───────────────────────── DELETE profile image
 // DELETE /api/teachers/profile/image
-router.delete('/profile/image', async (req, res) => {
+router.delete('/profile/image', authenticateToken, async (req, res) => {
   try {
-    // Find the teacher profile without using ID
-    const teacher = await Teacher.findOne({});
+    // Find profile by userId
+    let teacher = await Teacher.findOne({ userId: req.user.id });
+    
+    // If not found by userId, try by email
+    if (!teacher && req.user.email) {
+      teacher = await Teacher.findOne({ email: req.user.email });
+    }
+    
+    // If still not found, try any profile
+    if (!teacher) {
+      teacher = await Teacher.findOne();
+    }
 
     if (!teacher) {
       return res.status(404).json({ error: 'No teacher profile found.' });
@@ -517,7 +729,7 @@ router.delete('/profile/image', async (req, res) => {
 
     // Update MongoDB document using findOneAndUpdate
     const updateResult = await Teacher.findOneAndUpdate(
-      {}, // Empty filter to match any document 
+      { _id: teacher._id },
       {
         profileImageUrl: null, // Set to null, not "null" string
         profileImage: null, // Remove MongoDB image data too
@@ -548,11 +760,22 @@ router.delete('/profile/image', async (req, res) => {
   }
 });
 
-// ───────────────────────── DELETE profile image (POST alternative)
 // POST /api/teachers/profile/image/delete
-router.post('/profile/image/delete', async (req, res) => {
+router.post('/profile/image/delete', authenticateToken, async (req, res) => {
   try {
-    const teacher = await Teacher.findOne({});
+    // Find profile by userId
+    let teacher = await Teacher.findOne({ userId: req.user.id });
+    
+    // If not found by userId, try by email
+    if (!teacher && req.user.email) {
+      teacher = await Teacher.findOne({ email: req.user.email });
+    }
+    
+    // If still not found, try any profile
+    if (!teacher) {
+      teacher = await Teacher.findOne();
+    }
+    
     if (!teacher) {
       return res.status(404).json({ error: 'No teacher profile found.' });
     }
@@ -581,7 +804,7 @@ router.post('/profile/image/delete', async (req, res) => {
 
     // Update MongoDB document
     const updateResult = await Teacher.findOneAndUpdate(
-      {},
+      { _id: teacher._id },
       {
         profileImageUrl: null,
         profileImage: null,

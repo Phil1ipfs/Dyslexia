@@ -12,8 +12,15 @@ const api = axios.create({
 });
 
 // Add a request interceptor for logging
+// Update your api interceptor in teacherService.js to include the token
 api.interceptors.request.use(
   config => {
+    // Add the auth token to every request
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     console.log(`API Request: ${config.method.toUpperCase()} ${config.url}`);
     return config;
   },
@@ -22,7 +29,6 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
-
 // Add a response interceptor for error handling
 api.interceptors.response.use(
   response => {
@@ -50,6 +56,24 @@ api.interceptors.response.use(
  * Fetch teacher profile data from API
  * @returns {Promise<Object>} The teacher profile data
  */
+
+
+
+// src/services/teacherService.js - Add auth token and profile initialization
+
+// Add this function to initialize profiles:
+export const initializeTeacherProfile = async () => {
+  try {
+    const { data } = await api.post('/teachers/profile/initialize');
+    console.log('Profile initialized:', data.teacher);
+    return data.teacher;
+  } catch (error) {
+    console.error('Error initializing teacher profile:', error);
+    return null;
+  }
+};
+
+// Update fetchTeacherProfile to handle 404/initialization
 export const fetchTeacherProfile = async () => {
   try {
     const { data } = await api.get('/teachers/profile');
@@ -61,31 +85,41 @@ export const fetchTeacherProfile = async () => {
 
     return data;
   } catch (error) {
-    // Handle the case where no profile exists yet
-    if (error.response && error.response.status === 404) {
-      console.log("No teacher profile found - returning default template");
-      return {
-        firstName: "",
-        middleName: "",
-        lastName: "",
-        position: "",
-        employeeId: "",
-        email: "",
-        contact: "",
-        gender: "",
-        civilStatus: "",
-        dob: "",
-        address: "",
-        profileImageUrl: null,
-        emergencyContact: {
-          name: "",
-          number: ""
+    // Handle the case where profile needs initialization
+    if (error.response && error.response.status === 404 && 
+        error.response.data.action === 'initialize') {
+      console.log("No teacher profile found - attempting to initialize");
+      
+      try {
+        const profile = await initializeTeacherProfile();
+        if (profile) {
+          return profile;
         }
-      };
+      } catch (initError) {
+        console.error("Failed to initialize profile:", initError);
+      }
     }
-
-    console.error('Error fetching teacher profile:', error);
-    throw error;
+    
+    // If initialization fails or other error, return default template
+    console.log("No teacher profile found - returning default template");
+    return {
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      position: "",
+      employeeId: "",
+      email: "",
+      contact: "",
+      gender: "",
+      civilStatus: "",
+      dob: "",
+      address: "",
+      profileImageUrl: null,
+      emergencyContact: {
+        name: "",
+        number: ""
+      }
+    };
   }
 };
 
@@ -285,4 +319,8 @@ export const updateTeacherPassword = async (currentPassword, newPassword) => {
     console.error('Error updating password:', error);
     throw error;
   }
+
+  
 };
+
+
