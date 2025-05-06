@@ -35,6 +35,8 @@ import VisualChartsPage from "./pages/Admin/VisualChartsPage";
 import SubmissionsOverview from './pages/Admin/SubmissionsOverview';
 import StudentListPage from './pages/Admin/StudentListPage';
 import TeacherListPage from './pages/Admin/TeacherLists';
+import ParentListPage from './pages/Admin/ParentsPage';
+
 
 
 // Layouts
@@ -194,6 +196,8 @@ function App() {
           <Route path="submissions-overview" element={<SubmissionsOverview />} />
           <Route path="user-lists/student-list" element={<StudentListPage />} />
           <Route path="user-lists/teacher-list" element={<TeacherListPage />} />
+          <Route path="user-lists/parent-list" element={<ParentListPage />} />
+
           <Route index element={<Navigate to="dashboard" />} />
         </Route>
 
