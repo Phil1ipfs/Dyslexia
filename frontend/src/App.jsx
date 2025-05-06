@@ -32,6 +32,8 @@ import Progress from "./pages/Parents/Progress";
 // Admin Pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import VisualChartsPage from "./pages/Admin/VisualChartsPage";
+import SubmissionsOverview from './pages/Admin/SubmissionsOverview';
+import StudentListPage from './pages/Admin/StudentListPage';
 
 // Layouts
 import TeacherLayout from "./components/TeacherPage/TeacherLayout";
@@ -187,6 +189,10 @@ function App() {
         >
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="visual-charts" element={<VisualChartsPage />} />
+          <Route path="submissions-overview" element={<SubmissionsOverview />} />
+          <Route path="user-lists/student-list" element={<StudentListPage />} />
+
+          
           <Route index element={<Navigate to="dashboard" />} />
         </Route>
 
