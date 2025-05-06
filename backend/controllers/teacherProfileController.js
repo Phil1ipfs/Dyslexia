@@ -157,6 +157,7 @@ exports.initializeProfile = async (req, res) => {
     console.error('Error initializing profile:', err);
     res.status(500).json({ error: 'Failed to initialize profile', details: err.message });
   }
+
 };
 
 // Create teacher profile
