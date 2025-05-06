@@ -67,6 +67,9 @@ const LogoutIcon = () => (
   </svg>
 );
 
+// Create a simple inline SVG placeholder as base64 data URL
+const placeholderAvatar = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"%3E%3Crect width="40" height="40" fill="%23f0f0f0"/%3E%3Ctext x="20" y="25" font-family="Arial" font-size="16" text-anchor="middle" fill="%23999"%3EAA%3C/text%3E%3C/svg%3E';
+
 const NavigationBar = ({ onLogout }) => {
   const location = useLocation();
   const [expandedSections, setExpandedSections] = useState([]);
@@ -156,7 +159,29 @@ const NavigationBar = ({ onLogout }) => {
         <h1 className="logo">LITEREXIA</h1>
         <div className="admin-profile">
           <div className="admin-avatar">
-            <img src="/admin-avatar.png" alt="Admin" onError={(e) => {e.target.src = "https://via.placeholder.com/40"; e.target.onerror = null;}} />
+            <img 
+              src={placeholderAvatar} 
+              alt="Admin" 
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+            <div 
+              style={{
+                display: 'none',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: '100%',
+                height: '100%',
+                backgroundColor: '#4a5568',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}
+            >
+              JJ
+            </div>
           </div>
           <div className="admin-info">
             <p className="admin-name">Madam Jaja</p>
