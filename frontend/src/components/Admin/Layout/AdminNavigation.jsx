@@ -11,7 +11,10 @@ import {
   Settings,
   LogOut,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  FileText,  // Added for submissions
+  Upload,    // Added for submissions
+  Eye        // Added for overview
 } from 'lucide-react';
 import './AdminNavigation.css';
 
@@ -34,8 +37,20 @@ const AdminNavigation = ({ onLogout, adminData }) => {
       path: '/admin/analytics',
       subItems: [
         { id: 'visual-charts', label: 'Visual Charts', path: '/admin/visual-charts' },
-        { id: 'submission-overview', label: 'Submission Overview', path: '/admin/submission-overview' },
+        { id: 'submission-overview', label: 'Submissions Overview', path: '/admin/submissions-overview' },
         { id: 'performance-reports', label: 'Performance Reports', path: '/admin/performance-reports' }
+      ]
+    },
+    {
+      id: 'submissions',
+      label: 'Submissions',
+      icon: FileText,
+      path: '/admin/submissions',
+      subItems: [
+        { id: 'submissions-overview', label: 'Submissions Overview', path: '/admin/submissions-overview' },
+        { id: 'pending-submissions', label: 'Pending Submissions', path: '/admin/submissions/pending' },
+        { id: 'graded-submissions', label: 'Graded Submissions', path: '/admin/submissions/graded' },
+        { id: 'flagged-submissions', label: 'Flagged Submissions', path: '/admin/submissions/flagged' }
       ]
     },
     {

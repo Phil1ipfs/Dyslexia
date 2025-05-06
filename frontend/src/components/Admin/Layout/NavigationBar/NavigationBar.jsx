@@ -77,7 +77,7 @@ const NavigationBar = ({ onLogout }) => {
   // Navigation items structure
   const navItems = {
     main: ['Dashboard'],
-    dashboardSubItems: ['Visual Charts', 'Submission Overview'],
+    dashboardSubItems: ['Visual Charts', 'Submissions Overview'],
     userLists: ['Student List', 'Teacher List', 'Parent List', 'Add Account'],
     approvalItems: ['Pending Approvals', 'Approved Items', 'Rejected Items']
   };
@@ -89,7 +89,7 @@ const NavigationBar = ({ onLogout }) => {
     if (path.includes('/admin/dashboard')) return 'Dashboard';
     if (path.includes('/admin/analytics')) return 'Analytics';
     if (path.includes('/admin/visual-charts')) return 'Visual Charts';
-    if (path.includes('/admin/submission-overview')) return 'Submission Overview';
+    if (path.includes('/admin/submissions-overview')) return 'Submissions Overview';
     
     if (path.includes('/admin/user-lists/student-list')) return 'Student List';
     if (path.includes('/admin/user-lists/teacher-list')) return 'Teacher List';
@@ -134,7 +134,7 @@ const NavigationBar = ({ onLogout }) => {
     // Dashboard subsections
     if (section === 'Analytics') return `${baseUrl}/analytics`;
     if (section === 'Visual Charts') return `${baseUrl}/visual-charts`;
-    if (section === 'Submission Overview') return `${baseUrl}/submission-overview`;
+    if (section === 'Submissions Overview') return `${baseUrl}/submissions-overview`;
     
     // User Lists
     if (section === 'User Lists') return `${baseUrl}/user-lists`;

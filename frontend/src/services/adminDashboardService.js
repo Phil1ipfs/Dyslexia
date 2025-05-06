@@ -6,18 +6,16 @@
  */
 // Configuration for the service
 const config = {
-  // Set to true for mock data, false for API calls
   useMockData: true,
   apiBaseUrl: import.meta.env.VITE_API_URL || 'http://localhost:5002/api',
-  refreshInterval: 30000, // 30 seconds
-  // MongoDB collections (for future reference)
+  refreshInterval: 30000,
   collections: {
     users: 'users',
     activities: 'activities',
     assessments: 'assessments',
     prescriptiveData: 'prescriptiveData',
-    teacherPerformance: 'teacherPerformance',
-    systemLogs: 'systemLogs'
+    submissions: 'submissions',
+    assignments: 'assignments'
   }
 };
 
@@ -61,6 +59,39 @@ const mongoQueries = {
         activitiesCreated: { $sum: '$activitiesCreated' }
       }
     }
+  },
+  // Submissions queries
+  getSubmissions: {
+    byGrade: {
+      $match: { 
+        grade: 'Grade 1',
+        antas: { $in: ['Antas 1', 'Antas 2'] }
+      }
+    },
+    pending: {
+      $match: { status: 'pending' }
+    },
+    flagged: {
+      $match: { status: 'flagged' }
+    },
+    recent: {
+      $sort: { submissionDate: -1 },
+      $limit: 50
+    }
+  },
+  getSubmissionStats: {
+    totalCount: [
+      { $match: { grade: 'Grade 1' } },
+      { $count: 'total' }
+    ],
+    statusDistribution: [
+      { $match: { grade: 'Grade 1' } },
+      { $group: { _id: '$status', count: { $sum: 1 } } }
+    ],
+    averageScore: [
+      { $match: { grade: 'Grade 1', status: 'graded' } },
+      { $group: { _id: null, avgScore: { $avg: { $multiply: [ { $divide: ['$score', '$totalPoints'] }, 100 ] } } } }
+    ]
   }
 };
 
@@ -119,7 +150,6 @@ const mockDataService = {
         parents: 350,
         admins: 30,
         activeToday: 487,
-        // User type distribution
         userGrowth: {
           month: 12.5,
           week: 3.2,
@@ -177,6 +207,194 @@ const mockDataService = {
     });
   },
   
+  // Mock submissions data service
+  getSubmissions: (filter = {}) => {
+    const mockSubmissions = [
+      {
+        id: 'SUB001',
+        studentName: 'Maria Santos',
+        studentId: 'ST001',
+        grade: 'Grade 1',
+        section: 'Sampaguita',
+        antas: 'Antas 1',
+        activityTitle: 'Mga Uri ng Pangungusap',
+        activityType: 'Worksheet',
+        submissionDate: new Date().toISOString(),
+        dueDate: new Date(new Date().getTime() + 24 * 60 * 60 * 1000).toISOString(),
+        status: 'pending',
+        score: null,
+        totalPoints: 20,
+        teacherComments: '',
+        attachments: 2,
+        timeSpent: '15 mins'
+      },
+      {
+        id: 'SUB002',
+        studentName: 'Juan dela Cruz',
+        studentId: 'ST002',
+        grade: 'Grade 1',
+        section: 'Sampaguita',
+        antas: 'Antas 2',
+        activityTitle: 'Salitang Naglalarawan',
+        activityType: 'Quiz',
+        submissionDate: new Date(new Date().getTime() - 24 * 60 * 60 * 1000).toISOString(),
+        dueDate: new Date().toISOString(),
+        status: 'graded',
+        score: 18,
+        totalPoints: 20,
+        teacherComments: 'Mahusay! Pero tandaan ang tamang pagbigkas ng "mayaman".',
+        attachments: 1,
+        timeSpent: '12 mins'
+      },
+      {
+        id: 'SUB003',
+        studentName: 'Anna Reyes',
+        studentId: 'ST003',
+        grade: 'Grade 1',
+        section: 'Rosal',
+        antas: 'Antas 1',
+        activityTitle: 'Pangngalan',
+        activityType: 'Assignment',
+        submissionDate: new Date(new Date().getTime() - 48 * 60 * 60 * 1000).toISOString(),
+        dueDate: new Date(new Date().getTime() - 24 * 60 * 60 * 1000).toISOString(),
+        status: 'pending',
+        score: null,
+        totalPoints: 15,
+        teacherComments: '',
+        attachments: 3,
+        timeSpent: '18 mins'
+      },
+      {
+        id: 'SUB004',
+        studentName: 'Pedro Gomez',
+        studentId: 'ST004',
+        grade: 'Grade 1',
+        section: 'Orchid',
+        antas: 'Antas 2',
+        activityTitle: 'Pandiwa',
+        activityType: 'Practice',
+        submissionDate: new Date(new Date().getTime() - 72 * 60 * 60 * 1000).toISOString(),
+        dueDate: new Date(new Date().getTime() - 48 * 60 * 60 * 1000).toISOString(),
+        status: 'graded',
+        score: 12,
+        totalPoints: 15,
+        teacherComments: 'Kailangan ng karagdagang pagsasanay sa mga aspekto ng pandiwa.',
+        attachments: 1,
+        timeSpent: '22 mins'
+      },
+      {
+        id: 'SUB005',
+        studentName: 'Sofia Lim',
+        studentId: 'ST005',
+        grade: 'Grade 1',
+        section: 'Sampaguita',
+        antas: 'Antas 1',
+        activityTitle: 'Sanhi at Bunga',
+        activityType: 'Interactive',
+        submissionDate: new Date(new Date().getTime() - 96 * 60 * 60 * 1000).toISOString(),
+        dueDate: new Date(new Date().getTime() - 72 * 60 * 60 * 1000).toISOString(),
+        status: 'graded',
+        score: 20,
+        totalPoints: 20,
+        teacherComments: 'Napakagaling! Perfect score sa pagkilala ng sanhi at bunga.',
+        attachments: 0,
+        timeSpent: '25 mins'
+      },
+      {
+        id: 'SUB006',
+        studentName: 'Miguel Torres',
+        studentId: 'ST006',
+        grade: 'Grade 1',
+        section: 'Rosal',
+        antas: 'Antas 1',
+        activityTitle: 'Mga Uri ng Pangungusap',
+        activityType: 'Worksheet',
+        submissionDate: new Date(new Date().getTime() - 120 * 60 * 60 * 1000).toISOString(),
+        dueDate: new Date(new Date().getTime() - 96 * 60 * 60 * 1000).toISOString(),
+        status: 'flagged',
+        score: null,
+        totalPoints: 20,
+        teacherComments: '',
+        attachments: 1,
+        timeSpent: '8 mins',
+        flagReason: 'Possible copying detected'
+      }
+    ];
+    
+    // Apply filters
+    let filtered = mockSubmissions;
+    
+    if (filter.status) {
+      filtered = filtered.filter(s => s.status === filter.status);
+    }
+    if (filter.activityType) {
+      filtered = filtered.filter(s => s.activityType === filter.activityType);
+    }
+    if (filter.search) {
+      const search = filter.search.toLowerCase();
+      filtered = filtered.filter(s => 
+        s.studentName.toLowerCase().includes(search) ||
+        s.activityTitle.toLowerCase().includes(search) ||
+        s.section.toLowerCase().includes(search)
+      );
+    }
+    if (filter.antas) {
+      filtered = filtered.filter(s => s.antas === filter.antas);
+    }
+    
+    // Apply sorting
+    if (filter.sortBy) {
+      filtered.sort((a, b) => {
+        let aVal = a[filter.sortBy];
+        let bVal = b[filter.sortBy];
+        
+        if (filter.sortBy === 'submissionDate' || filter.sortBy === 'dueDate') {
+          aVal = new Date(aVal);
+          bVal = new Date(bVal);
+        }
+        
+        if (filter.sortOrder === 'desc') {
+          return bVal > aVal ? 1 : -1;
+        }
+        return aVal > bVal ? 1 : -1;
+      });
+    }
+    
+    return Promise.resolve(filtered);
+  },
+  
+  getSubmissionStats: () => {
+    return Promise.resolve({
+      total: 6,
+      pending: 2,
+      graded: 3,
+      flagged: 1,
+      averageScore: 83,
+      averageCompletionTime: '17 mins',
+      submissionsToday: 2,
+      upcomingDeadlines: 3
+    });
+  },
+  
+  getActivityTypes: () => {
+    return Promise.resolve([
+      'Worksheet',
+      'Quiz', 
+      'Assignment',
+      'Practice',
+      'Interactive'
+    ]);
+  },
+  
+  getSections: () => {
+    return Promise.resolve([
+      'Sampaguita',
+      'Rosal',
+      'Orchid'
+    ]);
+  },
+  
+  // Continue with the rest of the mock data service methods...
   getRecentActivities: (limit = 10) => {
     const activityTypes = [
       'student_assessment',
@@ -246,7 +464,6 @@ const mockDataService = {
       const type = activityTypes[Math.floor(Math.random() * activityTypes.length)];
       const status = statuses[Math.floor(Math.random() * statuses.length)];
       
-      // Make sure the type exists in our activities object before accessing
       const actionsForType = activities[type] || [];
       const action = actionsForType.length > 0 
         ? actionsForType[Math.floor(Math.random() * actionsForType.length)] 
@@ -272,6 +489,7 @@ const mockDataService = {
     );
   },
   
+  // Continue with all other mock data service methods...
   getSystemAlerts: () => {
     return Promise.resolve([
       {
@@ -317,6 +535,7 @@ const mockDataService = {
     ]);
   },
   
+  // Rest of the mock data service methods...
   getPrescriptiveAnalytics: () => {
     return Promise.resolve({
       studentCategories: [
@@ -591,7 +810,6 @@ class AdminDashboardService {
     if (config.useMockData) {
       return this.mockData.getDashboardStats();
     }
-    // MongoDB implementation
     const [users, activities, academic, system] = await Promise.all([
       api.mongoQuery(config.collections.users, mongoQueries.getUserStats),
       api.mongoQuery(config.collections.activities, mongoQueries.getActivityStats),
@@ -660,9 +878,322 @@ class AdminDashboardService {
     return api.get('/dashboard/parent-engagement');
   }
   
-  // Utility methods for data manipulation
+  // === SUBMISSIONS-RELATED METHODS ===
+  
+  // Get all submissions for Grade 1 students
+  async getSubmissions(filter = {}) {
+    if (config.useMockData) {
+      return this.mockData.getSubmissions(filter);
+    }
+    
+    const query = {
+      grade: 'Grade 1',
+      antas: { $in: ['Antas 1', 'Antas 2'] }
+    };
+    
+    if (filter.status) query.status = filter.status;
+    if (filter.activityType) query.activityType = filter.activityType;
+    if (filter.antas) query.antas = filter.antas;
+    
+    const options = {};
+    if (filter.sortBy) {
+      options.sort = { [filter.sortBy]: filter.sortOrder === 'desc' ? -1 : 1 };
+    }
+    
+    return api.mongoQuery(config.collections.submissions, query, options);
+  }
+  
+  // Get submissions statistics
+  async getSubmissionStats() {
+    if (config.useMockData) {
+      return this.mockData.getSubmissionStats();
+    }
+    
+    const [total, statusDist, avgScore] = await Promise.all([
+      api.mongoQuery(config.collections.submissions, ...mongoQueries.getSubmissionStats.totalCount),
+      api.mongoQuery(config.collections.submissions, ...mongoQueries.getSubmissionStats.statusDistribution),
+      api.mongoQuery(config.collections.submissions, ...mongoQueries.getSubmissionStats.averageScore)
+    ]);
+    
+    const stats = { total: total[0]?.total || 0 };
+    statusDist.forEach(item => {
+      stats[item._id] = item.count;
+    });
+    stats.averageScore = avgScore[0]?.avgScore || 0;
+    
+    return stats;
+  }
+  
+  // Get available activity types
+  async getActivityTypes() {
+    if (config.useMockData) {
+      return this.mockData.getActivityTypes();
+    }
+    
+    const types = await api.mongoQuery(config.collections.submissions, [
+      { $match: { grade: 'Grade 1' } },
+      { $group: { _id: '$activityType' } },
+      { $sort: { _id: 1 } }
+    ]);
+    return types.map(t => t._id);
+  }
+  
+  // Get available sections
+  async getSections() {
+    if (config.useMockData) {
+      return this.mockData.getSections();
+    }
+    
+    const sections = await api.mongoQuery(config.collections.users, [
+      { $match: { userType: 'student', grade: 'Grade 1' } },
+      { $group: { _id: '$section' } },
+      { $sort: { _id: 1 } }
+    ]);
+    return sections.map(s => s._id);
+  }
+  
+  // Grade a submission
+  async gradeSubmission(submissionId, score, totalPoints, comments = '') {
+    if (config.useMockData) {
+      console.log('Mock grading submission:', submissionId, score, totalPoints, comments);
+      return { success: true };
+    }
+    
+    return api.post(`/submissions/${submissionId}/grade`, {
+      score,
+      totalPoints,
+      comments,
+      status: 'graded'
+    });
+  }
+  
+  // Flag a submission
+  async flagSubmission(submissionId, reason) {
+    if (config.useMockData) {
+      console.log('Mock flagging submission:', submissionId, reason);
+      return { success: true };
+    }
+    
+    return api.post(`/submissions/${submissionId}/flag`, {
+      reason,
+      status: 'flagged'
+    });
+  }
+  
+  // Get submission details
+  async getSubmissionDetails(submissionId) {
+    if (config.useMockData) {
+      const submissions = await this.mockData.getSubmissions();
+      return submissions.find(s => s.id === submissionId) || null;
+    }
+    
+    return api.get(`/submissions/${submissionId}`);
+  }
+  
+  // Export submissions data
+  async exportSubmissions(format = 'csv', filter = {}) {
+    const submissions = await this.getSubmissions(filter);
+    
+    if (format === 'csv') {
+      const headers = [
+        'Student Name',
+        'Student ID',
+        'Section',
+        'Antas',
+        'Activity Title',
+        'Activity Type',
+        'Submission Date',
+        'Due Date',
+        'Status',
+        'Score',
+        'Total Points',
+        'Time Spent',
+        'Teacher Comments'
+      ];
+      
+      const rows = submissions.map(sub => [
+        sub.studentName,
+        sub.studentId,
+        sub.section,
+        sub.antas,
+        sub.activityTitle,
+        sub.activityType,
+        new Date(sub.submissionDate).toLocaleString('en-PH'),
+        new Date(sub.dueDate).toLocaleString('en-PH'),
+        sub.status,
+        sub.score || '-',
+        sub.totalPoints,
+        sub.timeSpent,
+        sub.teacherComments || '-'
+      ]);
+      
+      const csv = [headers, ...rows].map(row => 
+        row.map(cell => `"${cell}"`).join(',')
+      ).join('\n');
+      
+      return {
+        data: csv,
+        filename: `submissions_grade1_${new Date().toISOString().split('T')[0]}.csv`,
+        contentType: 'text/csv'
+      };
+    }
+    
+    // JSON export
+    return {
+      data: JSON.stringify(submissions, null, 2),
+      filename: `submissions_grade1_${new Date().toISOString().split('T')[0]}.json`,
+      contentType: 'application/json'
+    };
+  }
+  
+  // Get pending submissions requiring review
+  async getPendingSubmissions() {
+    return this.getSubmissions({ status: 'pending' });
+  }
+  
+  // Get flagged submissions
+  async getFlaggedSubmissions() {
+    return this.getSubmissions({ status: 'flagged' });
+  }
+  
+  // Get overdue submissions
+  async getOverdueSubmissions() {
+    const submissions = await this.getSubmissions();
+    const now = new Date();
+    
+    return submissions.filter(sub => 
+      sub.status === 'pending' && 
+      new Date(sub.dueDate) < now
+    );
+  }
+  
+  // Get activity performance analytics
+  async getActivityPerformance() {
+    if (config.useMockData) {
+      return {
+        byActivityType: [
+          { type: 'Worksheet', averageScore: 85, completionRate: 92 },
+          { type: 'Quiz', averageScore: 78, completionRate: 88 },
+          { type: 'Assignment', averageScore: 82, completionRate: 95 }
+        ],
+        byAntas: [
+          { level: 'Antas 1', averageScore: 78, completionRate: 89 },
+          { level: 'Antas 2', averageScore: 83, completionRate: 92 }
+        ],
+        topActivities: [
+          { title: 'Mga Patinig', score: 92, completionCount: 45 },
+          { title: 'Pantig', score: 87, completionCount: 38 }
+        ]
+      };
+    }
+    
+    const [byActivityType, byAntas, topActivities] = await Promise.all([
+      api.mongoQuery(config.collections.submissions, [
+        { $match: { grade: 'Grade 1', status: 'graded' } },
+        { $group: {
+          _id: '$activityType',
+          averageScore: { $avg: { $multiply: [ { $divide: ['$score', '$totalPoints'] }, 100 ] } },
+          completionRate: { $sum: 1 }
+        }},
+        { $project: {
+          type: '$_id',
+          averageScore: { $round: ['$averageScore', 2] },
+          completionRate: 1
+        }}
+      ]),
+      api.mongoQuery(config.collections.submissions, [
+        { $match: { grade: 'Grade 1', status: 'graded' } },
+        { $group: {
+          _id: '$antas',
+          averageScore: { $avg: { $multiply: [ { $divide: ['$score', '$totalPoints'] }, 100 ] } },
+          completionRate: { $sum: 1 }
+        }},
+        { $project: {
+          level: '$_id',
+          averageScore: { $round: ['$averageScore', 2] },
+          completionRate: 1
+        }}
+      ]),
+      api.mongoQuery(config.collections.submissions, [
+        { $match: { grade: 'Grade 1', status: 'graded' } },
+        { $group: {
+          _id: '$activityTitle',
+          averageScore: { $avg: { $multiply: [ { $divide: ['$score', '$totalPoints'] }, 100 ] } },
+          completionCount: { $sum: 1 }
+        }},
+        { $project: {
+          title: '$_id',
+          score: { $round: ['$averageScore', 2] },
+          completionCount: 1
+        }},
+        { $sort: { averageScore: -1 } },
+        { $limit: 10 }
+      ])
+    ]);
+    
+    return { byActivityType, byAntas, topActivities };
+  }
+  
+  // Get student submission patterns
+  async getStudentSubmissionPatterns() {
+    if (config.useMockData) {
+      return {
+        submissionTrends: [
+          { date: new Date(new Date().setDate(new Date().getDate() - 6)).toISOString().split('T')[0], count: 15 },
+          { date: new Date(new Date().setDate(new Date().getDate() - 5)).toISOString().split('T')[0], count: 22 },
+          { date: new Date(new Date().setDate(new Date().getDate() - 4)).toISOString().split('T')[0], count: 18 },
+          { date: new Date(new Date().setDate(new Date().getDate() - 3)).toISOString().split('T')[0], count: 25 },
+          { date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString().split('T')[0], count: 19 },
+          { date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0], count: 28 },
+          { date: new Date().toISOString().split('T')[0], count: 24 }
+        ],
+        hourlyPatterns: [
+          { hour: '08:00', submissions: 5 },
+          { hour: '09:00', submissions: 12 },
+          { hour: '10:00', submissions: 18 },
+          { hour: '11:00', submissions: 22 },
+          { hour: '14:00', submissions: 15 },
+          { hour: '15:00', submissions: 25 },
+          { hour: '16:00', submissions: 20 }
+        ]
+      };
+    }
+    
+    const [submissionTrends, hourlyPatterns] = await Promise.all([
+      api.mongoQuery(config.collections.submissions, [
+        { $match: { grade: 'Grade 1' } },
+        { $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$submissionDate' } },
+          count: { $sum: 1 }
+        }},
+        { $project: {
+          date: '$_id',
+          count: 1
+        }},
+        { $sort: { date: -1 } },
+        { $limit: 30 }
+      ]),
+      api.mongoQuery(config.collections.submissions, [
+        { $match: { grade: 'Grade 1' } },
+        { $group: {
+          _id: { $hour: '$submissionDate' },
+          submissions: { $sum: 1 }
+        }},
+        { $project: {
+          hour: { $concat: [{ $toString: '$_id' }, ':00'] },
+          submissions: 1
+        }},
+        { $sort: { _id: 1 } }
+      ])
+    ]);
+    
+    return { submissionTrends, hourlyPatterns };
+  }
+  
+  // === UTILITY METHODS ===
+  
+  // Calculate trends
   calculateTrends(data, timeframe = 'weekly') {
-    // Implement trend calculation logic
     return data.map((item, index) => ({
       ...item,
       trend: index > 0 ?
@@ -671,12 +1202,14 @@ class AdminDashboardService {
     }));
   }
   
+  // Export all dashboard data
   async exportDashboardData(format = 'json', dateRange = null) {
     const data = await Promise.all([
       this.getDashboardStats(),
       this.getRecentActivities(),
       this.getPrescriptiveAnalytics(),
-      this.getTeacherPerformance()
+      this.getTeacherPerformance(),
+      this.getSubmissionStats()
     ]);
     
     const dashboardData = {
@@ -685,24 +1218,32 @@ class AdminDashboardService {
       stats: data[0],
       activities: data[1],
       prescriptiveAnalytics: data[2],
-      teacherPerformance: data[3]
+      teacherPerformance: data[3],
+      submissionStats: data[4]
     };
     
     switch (format) {
       case 'json':
         return JSON.stringify(dashboardData, null, 2);
       case 'csv':
-        // Implement CSV export logic
         return this.convertToCSV(dashboardData);
       default:
         return dashboardData;
     }
   }
   
+  // Convert to CSV
   convertToCSV(data) {
-    // Implement CSV conversion logic
     const csv = [];
-    // Convert data to CSV format
+    // CSV conversion logic can be expanded based on requirements
+    Object.keys(data).forEach(key => {
+      if (Array.isArray(data[key])) {
+        csv.push(`\n--- ${key.toUpperCase()} ---`);
+        data[key].forEach(item => {
+          csv.push(JSON.stringify(item));
+        });
+      }
+    });
     return csv.join('\n');
   }
 }

@@ -377,7 +377,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Activity Feed Section */}
-        <div className="admin-dashboard__section admin-dashboard__section--activity">
+        {/* <div className="admin-dashboard__section admin-dashboard__section--activity">
           <h2 className="admin-dashboard__section-title">Recent Activity</h2>
           <div className="admin-dashboard__activity-feed">
             {recentActivities.map(activity => (
@@ -385,7 +385,7 @@ const AdminDashboard = () => {
             ))}
           </div>
           <button className="admin-dashboard__view-all-btn">View All Activities</button>
-        </div>
+        </div> */}
 
         {/* System Alerts Section */}
         <div className="admin-dashboard__section admin-dashboard__section--alerts">
@@ -420,27 +420,7 @@ const AdminDashboard = () => {
               </div>
             </div>
             
-            <div className="admin-dashboard__teacher-metrics">
-              <h3 className="admin-dashboard__subsection-title">Engagement Metrics</h3>
-              <div className="admin-dashboard__teacher-metrics-grid">
-                <div className="admin-dashboard__metric-card">
-                  <div className="admin-dashboard__metric-value">{teacherPerformance?.engagement.activitiesCreated}</div>
-                  <div className="admin-dashboard__metric-label">Activities Created</div>
-                </div>
-                <div className="admin-dashboard__metric-card">
-                  <div className="admin-dashboard__metric-value">{teacherPerformance?.engagement.studentsMonitored}</div>
-                  <div className="admin-dashboard__metric-label">Students Monitored</div>
-                </div>
-                <div className="admin-dashboard__metric-card">
-                  <div className="admin-dashboard__metric-value">{teacherPerformance?.engagement.parentCommunications}</div>
-                  <div className="admin-dashboard__metric-label">Parent Communications</div>
-                </div>
-                <div className="admin-dashboard__metric-card">
-                  <div className="admin-dashboard__metric-value">{teacherPerformance?.engagement.averageResponseTime}h</div>
-                  <div className="admin-dashboard__metric-label">Avg Response Time</div>
-                </div>
-              </div>
-            </div>
+          
           </div>
         </div>
 
@@ -492,6 +472,28 @@ const AdminDashboard = () => {
             </div>
           </div>
         </div>
+
+        <div className="admin-dashboard__teacher-metrics">
+              <h3 className="admin-dashboard__subsection-title">Engagement Metrics</h3>
+              <div className="admin-dashboard__teacher-metrics-grid">
+                <div className="admin-dashboard__metric-card">
+                  <div className="admin-dashboard__metric-value">{teacherPerformance?.engagement.activitiesCreated}</div>
+                  <div className="admin-dashboard__metric-label">Activities Created</div>
+                </div>
+                <div className="admin-dashboard__metric-card">
+                  <div className="admin-dashboard__metric-value">{teacherPerformance?.engagement.studentsMonitored}</div>
+                  <div className="admin-dashboard__metric-label">Students Monitored</div>
+                </div>
+                <div className="admin-dashboard__metric-card">
+                  <div className="admin-dashboard__metric-value">{teacherPerformance?.engagement.parentCommunications}</div>
+                  <div className="admin-dashboard__metric-label">Parent Communications</div>
+                </div>
+                <div className="admin-dashboard__metric-card">
+                  <div className="admin-dashboard__metric-value">{teacherPerformance?.engagement.averageResponseTime}h</div>
+                  <div className="admin-dashboard__metric-label">Avg Response Time</div>
+                </div>
+              </div>
+            </div>
       </div>
     </div>
   );
