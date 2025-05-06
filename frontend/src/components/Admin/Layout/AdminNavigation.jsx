@@ -62,7 +62,7 @@ const AdminNavigation = ({ onLogout, adminData }) => {
         { id: 'student-list', label: 'Student List', path: '/admin/user-management/students' },
         { id: 'teacher-list', label: 'Teacher List', path: '/admin/user-management/teachers' },
         { id: 'parent-list', label: 'Parent List', path: '/admin/user-management/parents' },
-        { id: 'add-account', label: 'Add Account', path: '/admin/user-management/add-account' }
+        { id: 'parent-list', label: 'Parent List', path: '/admin/user-lists/parent-list' }
       ]
     },
     {
