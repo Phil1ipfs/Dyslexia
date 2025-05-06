@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Trash2, Edit, ChevronDown, User, UserPlus } from 'lucide-react';
+import './TeacherLists.css';
+
 
 // Mock database structure - this would connect to MongoDB in production
 const initialTeachers = [
