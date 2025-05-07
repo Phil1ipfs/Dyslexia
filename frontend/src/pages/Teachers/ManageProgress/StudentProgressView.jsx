@@ -16,6 +16,9 @@ import ActivityEditModal from '../../../components/TeacherPage/ManageProgress/Ac
 import LoadingSpinner from '../../../components/TeacherPage/ManageProgress/common/LoadingSpinner';
 import ErrorMessage from '../../../components/TeacherPage/ManageProgress/common/ErrorMessage';
 
+import StudentApiService from '../../../services/StudentApiService';
+
+
 import '../../../css/Teachers/studentProgressView.css';
 import '../../../components/TeacherPage/ManageProgress/css/LessonProgress.css';
 
@@ -57,27 +60,27 @@ const StudentProgressView = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-
+  
         // Get student details
-        const studentData = await getStudentDetails(id);
+        const studentData = await StudentApiService.getStudentDetails(id);
         setStudent(studentData);
-
+  
         // Get assessment data
-        const assessment = await getAssessmentResults(id);
+        const assessment = await StudentApiService.getAssessmentResults(id);
         setAssessmentData(assessment);
-
+  
         // Get progress data
-        const progress = await getProgressData(id);
+        const progress = await StudentApiService.getProgressData(id);
         setProgressData(progress);
-
+  
         // Get recommended lessons
-        const lessons = await getRecommendedLessons(id);
+        const lessons = await StudentApiService.getRecommendedLessons(id);
         setRecommendedLessons(lessons);
-
+  
         // Check if any lessons are already assigned
         const hasAssignedLessons = lessons.some(lesson => lesson.assigned);
         setLessonsAssigned(hasAssignedLessons);
-
+  
         // Initialize learning objectives
         const assignedLessons = lessons.filter(lesson => lesson.assigned);
         setLearningObjectives(assignedLessons.map(lesson => ({
@@ -87,13 +90,13 @@ const StudentProgressView = () => {
           remarks: '',
           isEditingRemarks: false
         })));
-
+  
         // If lessons are assigned, get prescription
         if (hasAssignedLessons) {
-          const recommendations = await getPrescriptiveRecommendations(id);
+          const recommendations = await StudentApiService.getPrescriptiveRecommendations(id);
           setPrescriptiveRecommendations(recommendations);
         }
-
+  
         setLoading(false);
       } catch (err) {
         console.error('Error loading student data:', err);
@@ -101,7 +104,7 @@ const StudentProgressView = () => {
         setLoading(false);
       }
     };
-
+  
     fetchData();
   }, [id]);
 
@@ -121,12 +124,12 @@ const StudentProgressView = () => {
   // Handle lesson assignment
   const handleAssignLessons = async () => {
     if (selectedLessons.length === 0) return;
-
+  
     try {
       setLoading(true);
       const lessonIds = selectedLessons.map(lesson => lesson.id);
-      const result = await assignLessonsToStudent(id, lessonIds);
-
+      const result = await StudentApiService.assignLessonsToStudent(id, lessonIds);
+  
       if (result.success) {
         // Update assigned lessons
         const updatedLessons = recommendedLessons.map(lesson => {
@@ -135,24 +138,24 @@ const StudentProgressView = () => {
           }
           return lesson;
         });
-
+  
         setRecommendedLessons(updatedLessons);
         setSelectedLessons([]);
         setAssignmentSuccess(true);
-
+  
         // Get prescriptive recommendations
-        const recommendations = await getPrescriptiveRecommendations(id);
+        const recommendations = await StudentApiService.getPrescriptiveRecommendations(id);
         setPrescriptiveRecommendations(recommendations);
-
+  
         // Unlock the other tabs
         setLessonsAssigned(true);
-
+  
         // Reset success message after 3 seconds
         setTimeout(() => {
           setAssignmentSuccess(false);
         }, 3000);
       }
-
+  
       setLoading(false);
     } catch (err) {
       console.error('Error assigning lessons:', err);
@@ -195,37 +198,41 @@ const StudentProgressView = () => {
   };
 
   // Handle saving edited activity and pushing to mobile
-  const handleSaveActivity = async (updatedActivity) => {
-    try {
-      setLoading(true);
-      const result = await updateActivity(updatedActivity.id, updatedActivity);
+// Update the handleSaveActivity function (continued):
+const handleSaveActivity = async (updatedActivity) => {
+  try {
+    setLoading(true);
+    const result = await StudentApiService.updateActivity(updatedActivity.id, updatedActivity);
 
-      if (result.success) {
-        // Update recommendations
-        const updatedRecommendations = prescriptiveRecommendations.map(rec => {
-          if (rec.id === updatedActivity.id) {
-            // Mark as pushed to mobile directly
-            return { ...rec, ...updatedActivity, status: 'pushed_to_mobile' };
-          }
-          return rec;
-        });
+    if (result.success) {
+      // Update recommendations
+      const updatedRecommendations = prescriptiveRecommendations.map(rec => {
+        if (rec.id === updatedActivity.id) {
+          // Mark as pushed to mobile directly
+          return { ...rec, ...updatedActivity, status: 'pushed_to_mobile' };
+        }
+        return rec;
+      });
 
-        setPrescriptiveRecommendations(updatedRecommendations);
-        setPushToMobileSuccess(true);
+      setPrescriptiveRecommendations(updatedRecommendations);
+      setPushToMobileSuccess(true);
 
-        setTimeout(() => {
-          setPushToMobileSuccess(false);
-        }, 3000);
-      }
-
-      setEditingActivity(null);
-      setLoading(false);
-    } catch (err) {
-      console.error('Error updating activity:', err);
-      setError('Failed to update activity. Please try again.');
-      setLoading(false);
+      setTimeout(() => {
+        setPushToMobileSuccess(false);
+      }, 3000);
     }
-  };
+
+    setEditingActivity(null);
+    setLoading(false);
+  } catch (err) {
+    console.error('Error updating activity:', err);
+    setError('Failed to update activity. Please try again.');
+    setLoading(false);
+  }
+};
+
+
+
 
   // Go back to students list
   const goBack = () => {
