@@ -9,10 +9,12 @@ import {
   FaBookReader,
   FaCalendarAlt,
   FaAngleLeft,
-  FaAngleRight
+  FaAngleRight,
+  FaCheck,
+  FaTimes
 } from 'react-icons/fa';
+import StudentApiService from '../../../services/StudentApiService';
 import '../../../css/Teachers/ManageProgress.css';
-import { getStudentDetails, getPreAssessmentResults, getProgressData } from '../../../services/StudentService';
 
 function getPageNumbers(currentPage, totalPages) {
   const visiblePageCount = 7;
@@ -31,7 +33,6 @@ const ManageProgress = () => {
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [gradeFilter, setGradeFilter] = useState('all');
   const [readingLevelFilter, setReadingLevelFilter] = useState('all');
   const [sortBy, setSortBy] = useState('name');
   const [groupBy, setGroupBy] = useState('none');
@@ -39,60 +40,45 @@ const ManageProgress = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filteredStudents, setFilteredStudents] = useState([]);
+  const [readingLevels, setReadingLevels] = useState([]);
   const itemsPerPage = 6;
   
-  // List of grade levels and reading levels from the student data
-  const [gradeLevels, setGradeLevels] = useState([]);
-  const [readingLevels, setReadingLevels] = useState([]);
- 
   useEffect(() => {
     const fetchStudents = async () => {
       try {
         setLoading(true);
-        // In a real app, this would be a single API call to get a list of students
-        // For this mockup, we'll use the student IDs from StudentService
-        const studentIds = ['101', '102', '103']; // Use mock student IDs from service
-        const studentDataPromises = studentIds.map(async (id) => {
-          const studentDetails = await getStudentDetails(id)
-          const assessmentResults = await getPreAssessmentResults(id);
-          const progressData = await getProgressData(id);
-          
-          return {
-            id: id,
-            name: studentDetails?.name || '',
-            gradeLevel: studentDetails?.gradeLevel || '',
-            readingLevel: assessmentResults?.readingLevel || 'Not Assessed',
-            preAssessmentCompleted: !!assessmentResults,
-            lastAssessment: assessmentResults?.assessmentDate || '',
-            activitiesCompleted: progressData?.activitiesCompleted || 0,
-            totalActivities: progressData?.totalActivities || 0,
-            lrn: `LRN-${100000 + parseInt(id)}`,
-            section: studentDetails?.section || '',
-            age: studentDetails?.age || 0,
-            parent: progressData?.parent || 'Not Available',
-            lastActivityDate: progressData?.recentActivities?.[0]?.date || new Date().toISOString().split('T')[0]
-          };
+        console.log('Fetching students from API...');
+        
+        // Using the StudentApiService to fetch students
+        const data = await StudentApiService.getStudents({
+          page: 1,
+          limit: 50, // Get more students to ensure we have enough for filtering
+          search: searchQuery,
+          readingLevelFilter: readingLevelFilter !== 'all' ? readingLevelFilter : undefined
         });
         
-        const studentData = await Promise.all(studentDataPromises);
-        setStudents(studentData);
+        console.log('Students data received:', data);
         
-        // Extract unique grade levels and reading levels for filters
-        const uniqueGradeLevels = [...new Set(studentData.map(s => s.gradeLevel))];
-        const uniqueReadingLevels = [...new Set(studentData.map(s => s.readingLevel).filter(level => level !== 'Not Assessed'))];
-        setGradeLevels(uniqueGradeLevels);
-        setReadingLevels(uniqueReadingLevels);
+        if (!data || !data.students || !Array.isArray(data.students)) {
+          throw new Error('Invalid response format');
+        }
+        
+        setStudents(data.students);
+        
+        // Get reading levels
+        const readingLevelsData = await StudentApiService.getReadingLevels();
+        setReadingLevels(readingLevelsData);
         
         setLoading(false);
       } catch (err) {
-        setError("Failed to load student data");
-        setLoading(false);
         console.error("Error fetching student data:", err);
+        setError(`Failed to load student data: ${err.message}`);
+        setLoading(false);
       }
     };
     
     fetchStudents();
-  }, []);
+  }, [searchQuery, readingLevelFilter]);
 
   // Filter and sort students when any filter or search changes
   useEffect(() => {
@@ -113,22 +99,26 @@ const ManageProgress = () => {
       filtered = filtered.filter(student => student.readingLevel === readingLevelFilter);
     }
 
-    // Apply grade filter
-    if (gradeFilter !== 'all') {
-      filtered = filtered.filter(student => student.gradeLevel === gradeFilter);
-    }
-
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'name':
           return a.name.localeCompare(b.name);
-        case 'grade':
-          return a.gradeLevel.localeCompare(b.gradeLevel);
         case 'reading':
-          return a.readingLevel.localeCompare(b.readingLevel);
+          // Sort by reading level priority
+          const levelPriority = {
+            'Low Emerging': 1,
+            'High Emerging': 2,
+            'Developing': 3,
+            'Transitioning': 4,
+            'At Grade Level': 5,
+            'Not Assessed': 0
+          };
+          return (levelPriority[b.readingLevel] || 0) - (levelPriority[a.readingLevel] || 0);
         case 'progress':
-          return (b.activitiesCompleted / b.totalActivities) - (a.activitiesCompleted / a.totalActivities);
+          const progressA = a.totalActivities > 0 ? (a.activitiesCompleted / a.totalActivities) : 0;
+          const progressB = b.totalActivities > 0 ? (b.activitiesCompleted / b.totalActivities) : 0;
+          return progressB - progressA;
         case 'recent':
           return new Date(b.lastActivityDate) - new Date(a.lastActivityDate);
         default:
@@ -139,29 +129,31 @@ const ManageProgress = () => {
     setFilteredStudents(filtered);
     // Reset to first page when filters change
     setCurrentPage(1);
-  }, [searchQuery, readingLevelFilter, gradeFilter, sortBy, students]);
+  }, [searchQuery, readingLevelFilter, sortBy, students]);
 
   const handleViewDetails = (student) => {
     navigate(`/teacher/student-progress/${student.id}`, { state: student });
   };
 
-  // Reading level descriptions
+  // Reading level descriptions (based on CRLA DEPED)
   const readingLevelDescriptions = {
-    'Antas 1': 'Nag-uumpisang Matuto',
-    'Antas 2': 'Pa-unlad na Nag-aaral',
-    'Antas 3': 'Sanay na Mag-aaral',
-    'Antas 4': 'Maalam na Mag-aaral',
-    'Antas 5': 'Mahusay na Mag-aaral'
+    'Low Emerging': 'Nagsisimulang Matuto',
+    'High Emerging': 'Umuunlad na Matuto',
+    'Developing': 'Paunlad na Pagbasa',
+    'Transitioning': 'Lumalago na Pagbasa',
+    'At Grade Level': 'Batay sa Antas',
+    'Not Assessed': 'Hindi pa nasusuri'
   };
 
   // Get reading level CSS class
   const getReadingLevelClass = (level) => {
     switch (level) {
-      case 'Antas 1': return 'mp-level-1';
-      case 'Antas 2': return 'mp-level-2';
-      case 'Antas 3': return 'mp-level-3';
-      case 'Antas 4': return 'mp-level-4';
-      case 'Antas 5': return 'mp-level-5';
+      case 'Low Emerging': return 'mp-level-1';
+      case 'High Emerging': return 'mp-level-2';
+      case 'Developing': return 'mp-level-3';
+      case 'Transitioning': return 'mp-level-4';
+      case 'At Grade Level': return 'mp-level-5';
+      case 'Not Assessed': return '';
       default: return '';
     }
   };
@@ -200,9 +192,6 @@ const ManageProgress = () => {
       let key;
       
       switch (groupBy) {
-        case 'grade':
-          key = student.gradeLevel;
-          break;
         case 'reading':
           key = student.readingLevel;
           break;
@@ -271,22 +260,6 @@ const ManageProgress = () => {
           </div>
           
           <div className="mp-filter-group">
-            <label className="mp-filter-label">Baitang:</label>
-            <div className="mp-select-wrapper">
-              <select
-                value={gradeFilter}
-                onChange={(e) => setGradeFilter(e.target.value)}
-                className="mp-select"
-              >
-                <option value="all">Lahat ng Baitang</option>
-                {gradeLevels.map((grade, index) => (
-                  <option key={index} value={grade}>{grade}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          
-          <div className="mp-filter-group">
             <label className="mp-filter-label">Pagkakabukod:</label>
             <div className="mp-select-wrapper">
               <select
@@ -295,7 +268,6 @@ const ManageProgress = () => {
                 className="mp-select"
               >
                 <option value="none">Walang Pagkakabukod</option>
-                <option value="grade">Ayon sa Baitang</option>
                 <option value="reading">Ayon sa Antas ng Pagbasa</option>
                 <option value="section">Ayon sa Seksiyon</option>
               </select>
@@ -311,9 +283,9 @@ const ManageProgress = () => {
                 className="mp-select"
               >
                 <option value="name">Pangalan</option>
-                <option value="grade">Baitang</option>
                 <option value="reading">Antas ng Pagbasa</option>
                 <option value="progress">Pag-unlad</option>
+                <option value="recent">Huling Aktibidad</option>
               </select>
             </div>
           </div>
@@ -327,9 +299,8 @@ const ManageProgress = () => {
         </span>
         <span className="mp-results-sort">
           <FaSortAmountDown /> Nakaayos ayon sa: <strong>{sortBy === 'name' ? 'Pangalan' : 
-            sortBy === 'grade' ? 'Baitang' : 
             sortBy === 'reading' ? 'Antas ng Pagbasa' : 
-            sortBy === 'progress' ? 'Pag-unlad' : ' Aktibidad'}</strong>
+            sortBy === 'progress' ? 'Pag-unlad' : 'Huling Aktibidad'}</strong>
         </span>
       </div>
       
@@ -353,7 +324,7 @@ const ManageProgress = () => {
           Object.entries(groupedStudents).map(([group, students]) => (
             <div key={group} className="mp-group-section">
               {group !== 'All Students' && (
-                <h2 className="mp-group-title">{group}</h2>
+                <h2 className="mp-group-title">{group} {group !== 'All Students' && readingLevelDescriptions[group] ? `- ${readingLevelDescriptions[group]}` : ''}</h2>
               )}
               
               <div className="mp-cards-grid">
@@ -380,7 +351,7 @@ const ManageProgress = () => {
                         <div className="mp-detail-row">
                           <div className="mp-detail-item">
                             <FaUserGraduate className="mp-detail-icon" />
-                            <span className="mp-detail-text">{student.gradeLevel}</span>
+                            <span className="mp-detail-text">Grade 1</span>
                           </div>
                           <div className="mp-detail-item">
                             <FaChild className="mp-detail-icon" />
@@ -397,12 +368,6 @@ const ManageProgress = () => {
                                 : 'Hindi pa nasusuri'}
                             </span>
                           </div>
-                          {/* <div className="mp-detail-item">
-                            <FaCalendarAlt className="mp-detail-icon" />
-                            <span className="mp-detail-text">
-                              Huling aktibidad: {formatDate(student.lastActivityDate)}
-                            </span>
-                          </div> */}
                         </div>
                         
                         <div className="mp-section-divider"></div>
@@ -423,14 +388,14 @@ const ManageProgress = () => {
                         <div className="mp-progress-section">
                           <div className="mp-progress-header">
                             <span className="mp-progress-label">Pag-unlad sa Mga Aktibidad:</span>
-                            <span className={`mp-progress-value ${getProgressClass(student.activitiesCompleted / student.totalActivities * 100)}`}>
-                              {Math.round(student.activitiesCompleted / student.totalActivities * 100)}%
+                            <span className={`mp-progress-value ${getProgressClass(student.activitiesCompleted / Math.max(1, student.totalActivities) * 100)}`}>
+                              {Math.round(student.activitiesCompleted / Math.max(1, student.totalActivities) * 100)}%
                             </span>
                           </div>
                           <div className="mp-progress-bar-container">
                             <div 
-                              className={`mp-progress-bar ${getProgressClass(student.activitiesCompleted / student.totalActivities * 100)}`}
-                              style={{width: `${(student.activitiesCompleted / student.totalActivities * 100)}%`}}
+                              className={`mp-progress-bar ${getProgressClass(student.activitiesCompleted / Math.max(1, student.totalActivities) * 100)}`}
+                              style={{width: `${(student.activitiesCompleted / Math.max(1, student.totalActivities) * 100)}%`}}
                             ></div>
                           </div>
                           <div className="mp-progress-text">

@@ -27,7 +27,6 @@ import CreatePreAssessment from "./pages/Teachers/PreAssessment/CreatePreAssessm
 // Parent Pages
 import ParentDashboard from "./pages/Parents/ParentDashboard";
 import Feedback from "./pages/Parents/Feedback";  
-import Progress from "./pages/Parents/Progress"; 
 
 // Admin Pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
@@ -178,7 +177,6 @@ function App() {
         >
           <Route path="dashboard" element={<ParentDashboard />} />
           <Route path="feedback" element={<Feedback />} />
-          <Route path="progress" element={<Progress />} />
           <Route index element={<Navigate to="dashboard" />} />
         </Route>
 

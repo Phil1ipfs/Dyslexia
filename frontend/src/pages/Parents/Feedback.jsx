@@ -148,7 +148,7 @@ const Feedback = () => {
           <thead>
             <tr>
               <th>Teacher</th>
-              <th>Subject</th>
+              <th>Aralin</th>
               <th>Week</th>
               <th>Date</th>
               <th>Action</th>
@@ -164,7 +164,7 @@ const Feedback = () => {
                   <td>{feedback.date}</td>
                   <td>
                     <button className="view-details-btn" onClick={() => toggleDetails(index)}>
-                      <FaEye /> {feedback.detailsVisible ? 'Hide Details' : 'View Details'}
+                      <FaEye /> {feedback.detailsVisible ? 'Hide Progress' : 'View Progress'}
                     </button>
                   </td>
                 </tr>

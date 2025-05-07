@@ -32,14 +32,14 @@ const connectDB = async () => {
       socketTimeoutMS: 45000,
       serverSelectionTimeoutMS: 60000
     });
-    
+
     console.log('✅ MongoDB Connected to users_web database');
-    
+
     // List all collections for debugging
     const collections = await mongoose.connection.db.listCollections().toArray();
     console.log('Available collections in users_web:');
     collections.forEach(c => console.log(`- ${c.name}`));
-    
+
     return true;
   } catch (err) {
     console.error('❌ MongoDB connection failed:', err.message);
@@ -77,12 +77,12 @@ const userSchema = new mongoose.Schema({
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
-  
+
   if (!token) {
     console.log('No token provided in request');
     return res.status(401).json({ error: 'Unauthorized: No token provided' });
   }
-  
+
   try {
     const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
     const decoded = jwt.verify(token, secretKey);
@@ -101,7 +101,7 @@ const authorize = (...allowedRoles) => {
     if (!req.user) {
       return res.status(401).json({ message: 'User not authenticated' });
     }
-    
+
     // Handle roles which might be a string or array from the token
     let userRoles = req.user.roles;
     if (typeof userRoles === 'string') {
@@ -109,26 +109,26 @@ const authorize = (...allowedRoles) => {
     } else if (!Array.isArray(userRoles)) {
       userRoles = []; // Default to empty array if undefined
     }
-    
+
     // Add support for Tagalog role names
     const roleMap = {
       'guro': 'teacher',
       'magulang': 'parent'
     };
-    
+
     // Map Tagalog roles to English
     const normalizedUserRoles = userRoles.map(role => roleMap[role] || role);
-    
+
     // Check if user has required role
-    const hasRole = allowedRoles.some(role => 
-      normalizedUserRoles.includes(role) || 
+    const hasRole = allowedRoles.some(role =>
+      normalizedUserRoles.includes(role) ||
       normalizedUserRoles.includes(roleMap[role])
     );
-    
+
     if (!hasRole) {
       return res.status(403).json({ message: 'Not authorized for this resource' });
     }
-    
+
     next();
   };
 };
@@ -137,7 +137,7 @@ const authorize = (...allowedRoles) => {
 connectDB().then(() => {
   // Create User model after connection is established
   const User = mongoose.models.User || mongoose.model('User', userSchema);
-  
+
   console.log('Database connected successfully - registering routes');
   console.log('User model is targeting collection:', User.collection.name);
 
@@ -176,11 +176,11 @@ connectDB().then(() => {
       /* ── 2. fetch user ──────────────────────────────────── */
       // Extra debug logging to see what we're querying
       console.log('Query:', { email });
-      
+
       const user = await User.findOne({ email });
-      
+
       console.log('User query result:', user ? 'Found' : 'Not found');
-      
+
       if (!user) {
         console.log('❌ User not found:', email);
         return res.status(400).json({ message: 'Invalid credentials' });
@@ -191,11 +191,11 @@ connectDB().then(() => {
 
       /* ── 3. password check with bcrypt ─────────────────── */
       let isMatch = false;
-      
+
       try {
         console.log('Comparing password with hash...');
         console.log('Password hash from DB:', user.password.substring(0, 10) + '...');
-        
+
         isMatch = await bcrypt.compare(password, user.password);
         console.log('Password check result:', isMatch ? '✅ Valid' : '❌ Invalid');
       } catch (error) {
@@ -212,17 +212,17 @@ connectDB().then(() => {
 
       /* ── 4. sign JWT ───────────────────────────────────── */
       const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
-      
+
       // Handle roles which might be a string (from DB) or array (converted)
       let userRoles = user.roles;
       if (typeof userRoles === 'string') {
         userRoles = [userRoles]; // Convert string to array for consistency in token
       }
-      
+
       const token = jwt.sign(
-        { 
-          id: user._id, 
-          email: user.email, 
+        {
+          id: user._id,
+          email: user.email,
           roles: userRoles // Now always an array in the token
         },
         secretKey,
@@ -245,10 +245,10 @@ connectDB().then(() => {
   });
 
   // Implement the actual API routes
-  
+
   // Protected route to test authentication
   app.get('/api/protected', authenticateToken, (req, res) => {
-    res.json({ 
+    res.json({
       message: 'Protected route accessed successfully',
       user: req.user
     });
@@ -258,28 +258,28 @@ connectDB().then(() => {
   app.post('/api/auth/test-password', async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       if (!email || !password) {
         return res.status(400).json({ message: 'Email and password are required' });
       }
-      
+
       // Find the user by email
       const user = await User.findOne({ email });
-      
+
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      
+
       // Test the password
       const isMatch = await bcrypt.compare(password, user.password);
-      
+
       // Handle roles which might be a string (from DB) or array (converted)
       let userRoles = user.roles;
       if (typeof userRoles === 'string') {
         userRoles = [userRoles]; // Convert string to array for consistency
       }
-      
-      return res.json({ 
+
+      return res.json({
         isMatch,
         message: isMatch ? 'Password is valid' : 'Password is invalid',
         user: { id: user._id, email: user.email, roles: userRoles }
@@ -291,11 +291,32 @@ connectDB().then(() => {
   });
 
   // Try to load teacher profile routes
+  // Add this to your server.js file where you're registering other routes
+ 
+
   try {
     app.use('/api/teachers', require('./routes/Teachers/teacherProfile'));
     console.log('✅ Loaded teacher profile routes');
   } catch (error) {
     console.warn('⚠️ Could not load teacher profile routes:', error.message);
+  }
+
+
+  try {
+    app.use('/api/student', require('./routes/Teachers/studentRoutes'));
+    console.log('✅ Loaded student routes');
+  } catch (error) {
+    console.warn('⚠️ Could not load student routes:', error.message);
+  }
+
+  try {
+    app.use(
+      '/api/parents',
+      require('./routes/Parents/parentProfile')
+    );
+    console.log('✅ Loaded parents routes');
+  } catch (error) {
+    console.warn('⚠️ Could not load parents routes:', error.message);
   }
 
   // Try to load chatbot routes

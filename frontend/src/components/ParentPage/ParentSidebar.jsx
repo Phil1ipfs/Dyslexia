@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";  // Make sure to im
 import "./ParentSidebar.css";
 import literexiaLogo from "../../assets/images/Teachers/LITEREXIA.png";
 import logoutIcon from "../../assets/icons/Teachers/Logout.png";
-import progressIcon from "../../assets/icons/Parents/progress.png";
 import feedbackIcon from "../../assets/icons/Parents/feedback.png";
 import profileIcon from "../../assets/icons/Parents/profile.png";
 
@@ -32,9 +31,7 @@ const ParentSidebar = ({ defaultActive = "dashboard", onLogout }) => {
       navigate("/parent/dashboard");
     } else if (item === "feedback") {
       navigate("/parent/feedback");  
-    } else if (item === "progress") {
-      navigate("/parent/progress");  
-    }
+    } 
   };
 
   const handleLogoutClick = () => {
@@ -56,11 +53,7 @@ const ParentSidebar = ({ defaultActive = "dashboard", onLogout }) => {
         </li>
         <li className={active === "feedback" ? "active" : ""} onClick={() => handleClick("feedback")}>
         <img src={feedbackIcon} alt="Literexia Logo" />
-          <span>Feedback to Teacher</span>
-        </li>
-        <li className={active === "progress" ? "active" : ""} onClick={() => handleClick("progress")}>
-        <img src={progressIcon} alt="Literexia Logo" />
-          <span>Student Progress</span>
+          <span>View Student Progress</span>
         </li>
       </ul>
       <div className="sidebar-footer" onClick={handleLogoutClick}>
