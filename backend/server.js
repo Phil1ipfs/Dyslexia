@@ -170,6 +170,13 @@ try {
   console.warn('⚠️ Could not load auth routes:', error.message);
 }
 
+try {
+  app.use('/api/parents', require('./routes/Parents/parentProfile'));
+  console.log('✅ Loaded parents routes');
+} catch (error) {
+  console.warn('⚠️ Could not load parents routes:', error.message);
+}
+
 // Register roles routes right after auth routes
 try {
   app.use('/api/roles', require('./routes/rolesRoutes'));
@@ -337,6 +344,43 @@ try {
     console.error(`[ERROR] ${err.message}`);
     res.status(500).json({ error: 'Server error', message: err.message });
   });
+
+
+// Add S3 image proxy endpoint
+app.get('/api/proxy-image', async (req, res) => {
+  try {
+    const { url } = req.query;
+    
+    if (!url) {
+      return res.status(400).send('Missing URL parameter');
+    }
+    
+    // Only allow proxying from your S3 bucket for security
+    if (!url.includes('literexia-bucket.s3.ap-southeast-2.amazonaws.com')) {
+      return res.status(403).send('Unauthorized image source');
+    }
+    
+    // Fetch the image
+    const response = await axios({
+      method: 'get',
+      url: url,
+      responseType: 'arraybuffer'
+    });
+    
+    // Set proper content type
+    const contentType = response.headers['content-type'];
+    res.setHeader('Content-Type', contentType);
+    
+    // Add cache headers
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+    
+    // Return the image data
+    res.send(response.data);
+  } catch (error) {
+    console.error('Error proxying image:', error);
+    res.status(404).send('Image not found');
+  }
+});
 
   // Start server on the specified port
   const PORT = process.env.PORT || 5002;

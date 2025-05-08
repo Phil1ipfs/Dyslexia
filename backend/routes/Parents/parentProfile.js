@@ -1,82 +1,63 @@
 // routes/Parents/parentProfile.js
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const { auth, authorize } = require('../../middleware/auth');
-// We'll use a simple stub controller until we implement the full parent profile controller
-const parentProfileController = {
-    initializeProfile: (req, res) => {
-        res.json({ message: 'Parent profile initialization endpoint (stub)' });
-    },
-    getProfile: (req, res) => {
-        res.json({ message: 'Get parent profile endpoint (stub)' });
-    },
-    createProfile: (req, res) => {
-        res.json({ message: 'Create parent profile endpoint (stub)' });
-    },
-    updateProfile: (req, res) => {
-        res.json({ message: 'Update parent profile endpoint (stub)' });
-    },
-    updatePassword: (req, res) => {
-        res.json({ message: 'Update parent password endpoint (stub)' });
-    },
-    uploadProfileImage: (req, res) => {
-        res.json({ message: 'Upload parent profile image endpoint (stub)' });
-    },
-    deleteProfileImage: (req, res) => {
-        res.json({ message: 'Delete parent profile image endpoint (stub)' });
-    },
-    getCurrentProfileImage: (req, res) => {
-        res.json({ message: 'Get current parent profile image endpoint (stub)' });
+const mongoose = require('mongoose');
+const { auth } = require('../../middleware/auth');
+
+// Get parent profile by ID
+router.get('/profile/:id', auth, async (req, res) => {
+  try {
+    const parentId = req.params.id;
+    console.log(`Fetching parent profile for ID: ${parentId}`);
+    
+    if (!mongoose.Types.ObjectId.isValid(parentId)) {
+      return res.status(400).json({ message: 'Invalid parent ID format' });
     }
-};
-
-// Configure multer for memory storage
-const storage = multer.memoryStorage();
-
-// File type filter
-const fileFilter = (req, file, cb) => {
-  // Accept only images
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true);
-  } else {
-    cb(new Error('Only image files are allowed'), false);
-  }
-};
-
-const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    
+    const parentObjId = new mongoose.Types.ObjectId(parentId);
+    
+    // Access the parent database and profile collection
+    const parentDb = mongoose.connection.useDb('parent');
+    const profileCollection = parentDb.collection('profile');
+    
+    // Find parent profile
+    const parentProfile = await profileCollection.findOne({ _id: parentObjId });
+    console.log(`Parent profile found: ${parentProfile ? 'Yes' : 'No'}`);
+    
+    if (!parentProfile) {
+      return res.status(404).json({ message: 'Parent profile not found' });
+    }
+    
+    // Get user info from users_web database
+    const usersDb = mongoose.connection.useDb('users_web');
+    const usersCollection = usersDb.collection('users');
+    
+    let userEmail = null;
+    if (parentProfile.userId) {
+      const userObjId = new mongoose.Types.ObjectId(parentProfile.userId);
+      const user = await usersCollection.findOne({ _id: userObjId });
+      if (user) {
+        userEmail = user.email;
+      }
+    }
+    
+    // Build parent info object
+    const parentInfo = {
+      name: `${parentProfile.firstName || ''} ${parentProfile.middleName || ''} ${parentProfile.lastName || ''}`.trim(),
+      email: userEmail,
+      contact: parentProfile.contact || '',
+      address: parentProfile.address || '',
+      civilStatus: parentProfile.civilStatus || '',
+      gender: parentProfile.gender || '',
+      occupation: parentProfile.occupation || '',
+      profileImageUrl: parentProfile.profileImageUrl || null
+    };
+    
+    return res.json(parentInfo);
+  } catch (error) {
+    console.error('Error fetching parent profile:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
-
-// Initialize parent profile
-router.post('/profile/initialize', auth, authorize('parent', 'magulang'), parentProfileController.initializeProfile);
-
-// Get profile route
-router.get('/profile', auth, authorize('parent', 'magulang'), parentProfileController.getProfile);
-
-// Create profile route
-router.post('/profile', auth, authorize('parent', 'magulang'), parentProfileController.createProfile);
-
-// Update profile route
-router.put('/profile', auth, authorize('parent', 'magulang'), parentProfileController.updateProfile);
-
-// Update password route
-router.post('/password', auth, authorize('parent', 'magulang'), parentProfileController.updatePassword);
-
-// Upload profile image route
-router.post('/profile/image', auth, authorize('parent', 'magulang'), upload.single('profileImage'), parentProfileController.uploadProfileImage);
-
-// Delete profile image route
-router.delete('/profile/image', auth, authorize('parent', 'magulang'), parentProfileController.deleteProfileImage);
-
-// Alternative delete profile image route
-router.post('/profile/image/delete', auth, authorize('parent', 'magulang'), parentProfileController.deleteProfileImage);
-
-// Get current profile image route
-router.get('/profile/image/current', auth, authorize('parent', 'magulang'), parentProfileController.getCurrentProfileImage);
 
 module.exports = router;

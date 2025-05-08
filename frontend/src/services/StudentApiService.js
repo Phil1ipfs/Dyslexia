@@ -15,23 +15,17 @@ const api = axios.create({
   }
 });
 
-
-// First, update the StudentApiService.js file to handle errors better
-
-// Current problematic function in StudentApiService.js
-export const getParentProfile = async (parentId) => {
-  try {
-    const response = await api.get(`/student/parent/${parentId}`);
-    return response.data;
-  } catch (error) {
-    console.error('API Error:', error.response?.status, error.response?.data);
-    throw error;
+// Create a separate instance for direct backend calls
+const directApi = axios.create({
+  baseURL: import.meta.env.DEV
+    ? 'http://localhost:5002/api'
+    : '/api',
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest'
   }
-};
-
-// Add this new function to handle missing parent information with a fallback
-
-
+});
 
 // —————————————————————————————————————————————————————————
 //  REQUEST INTERCEPTOR: attach bearer token + log
@@ -55,6 +49,25 @@ api.interceptors.request.use(
   }
 );
 
+// Apply same interceptor to directApi
+directApi.interceptors.request.use(
+  config => {
+    const token =
+      localStorage.getItem('token') ||
+      localStorage.getItem('authToken');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    console.log(
+      `Direct API Request: ${config.method.toUpperCase()} ${config.url}`
+    );
+    return config;
+  },
+  error => {
+    console.error('API Request Error:', error);
+    return Promise.reject(error);
+  }
+);
 
 // —————————————————————————————————————————————————————————
 //  RESPONSE INTERCEPTOR: handle errors + 401 redirect
@@ -69,12 +82,35 @@ api.interceptors.response.use(
         error.response.data
       );
       if (error.response.status === 401) {
-        window.location.href = '/login';
+        // Don't redirect to login for all 401s - just log it
+        console.warn('Authorization failed for API request - continuing with available data');
       }
     } else if (error.request) {
       console.error('API No Response:', error.request);
     } else {
       console.error('API Setup Error:', error.message);
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Apply same interceptor to directApi
+directApi.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response) {
+      console.error(
+        'Direct API Error:',
+        error.response.status,
+        error.response.data
+      );
+      if (error.response.status === 401) {
+        console.warn('Authorization failed for direct API request - continuing with available data');
+      }
+    } else if (error.request) {
+      console.error('Direct API No Response:', error.request);
+    } else {
+      console.error('Direct API Setup Error:', error.message);
     }
     return Promise.reject(error);
   }
@@ -102,16 +138,50 @@ const StudentApiService = {
     return data;
   },
 
-  getParentProfile: (parentId) =>
-    axios.get(`/api/student/parent/${parentId}`)
-         .then(res => res.data),
+  // ▶ Parent profile - properly fetch from database
+  getParentProfile: async (parentId) => {
+    try {
+      // Use the correct endpoint that properly accesses the database
+      // This should connect to an endpoint that correctly accesses both databases:
+      // - users_web database for the user information
+      // - mobile_literexia database for profile information
+      const { data } = await directApi.get(`/parents/profile/${parentId}`);
+      
+      // If data is returned correctly, process it to ensure consistent format
+      if (data) {
+        // Process name fields if needed
+        if (data.firstName || data.lastName) {
+          let fullName = data.firstName || '';
+          if (data.middleName) fullName += ` ${data.middleName}`;
+          if (data.lastName) fullName += ` ${data.lastName}`;
+          data.name = fullName.trim();
+        }
+        
+        return data;
+      }
+      throw new Error('No data returned from parent profile API');
+    } catch (error) {
+      console.error('Error fetching parent profile:', error);
+      throw error; 
+    }
+  },
 
-  // 2) optional “with fallback” wrapper
+  // ▶ Parent profile with fallback
   getParentProfileWithFallback: async (parentId) => {
     try {
-      return await StudentApiService.getParentProfile(parentId);
+      const profile = await StudentApiService.getParentProfile(parentId);
+      
+      // Use the S3 image URL directly - no more placeholder avatar service
+      // Only apply a fallback if the profileImageUrl is null or undefined
+      if (!profile.profileImageUrl) {
+        console.log("No profile image URL found, leaving it as null");
+      } else {
+        console.log("Using original S3 image URL:", profile.profileImageUrl);
+      }
+      
+      return profile;
     } catch (err) {
-      console.warn("falling back to empty parent profile", err);
+      console.warn("Falling back to empty parent profile", err);
       return {
         name: null,
         email: null,
@@ -124,9 +194,7 @@ const StudentApiService = {
       };
     }
   },
-
   
-
   // ▶ Progress data
   getProgressData: async (id) => {
     const { data } = await api.get(`/progress/${id}`);
@@ -181,27 +249,12 @@ const StudentApiService = {
     return data;
   },
 
-  
-  // ▶ Lookup parent profile
-  getParentProfile: async (parentId) => {
-    const { data } = await api.get(`/parent/${parentId}`);
-    return data;
-  },
-
-
-
-
-
-
-
-
-
-
   // ▶ Static lookup endpoints
   getGradeLevels: async () => {
     const { data } = await api.get('/grade-levels');
     return data;
   },
+  
   getReadingLevels: async () => {
     const { data } = await api.get('/reading-levels');
     return data;
@@ -232,7 +285,6 @@ const StudentApiService = {
     return classMap[level] || 'mp-level-1';
   },
   
-
   // ▶ Legacy ↔ CRLA DEPED level conversion
   convertLegacyReadingLevel: (oldLevel) => {
     const map = {

@@ -17,44 +17,33 @@ import {
   FaPrint,
   FaFilePdf,
   FaTimes,
-  FaPlusCircle,
-  FaUserFriends,
-  FaChild,
   FaBookReader,
   FaCheckSquare,
   FaBuilding,
   FaRing,
   FaAddressCard,
-  FaCheck,
-  FaInfoCircle,
-  FaExclamationTriangle,
-  FaCheckCircle
+  FaCheckCircle,
+  FaSync
 } from 'react-icons/fa';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import StudentApiService from '../../../services/StudentApiService';
 import '../../../css/Teachers/StudentDetails.css';
-
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 // Import cradle logo - using Vite's import mechanism
 const cradleLogo = new URL('../../../assets/images/Teachers/cradleLogo.jpg', import.meta.url).href;
 
-
-
 const StudentDetails = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { id } = useParams();
   const studentId = id || (location.state?.student?.id);
-
-
   const progressReportRef = useRef(null);
 
+  // State variables
   const [student, setStudent] = useState(null);
-
   const [parentProfile, setParentProfile] = useState(null);
-
   const [assessment, setAssessment] = useState(null);
   const [progress, setProgress] = useState(null);
   const [recommendedLessons, setRecommendedLessons] = useState([]);
@@ -62,89 +51,12 @@ const StudentDetails = () => {
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState([]);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [parentImageLoaded, setParentImageLoaded] = useState(false);
+  const [parentImageError, setParentImageError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 2;
 
-  async function fetchAllStudentData() {
-    try {
-      // Fetch basic student data
-      const studentData = await studentApiService.getStudent(studentId);
-      setStudent(studentData);
-
-      // Try to fetch parent profile with fallback to prevent component failure
-      try {
-        if (studentData.parentId) {
-          const parentData = await StudentApiService.getParentProfileWithFallback(studentData.parentId);
-          // Merge parent data into student object
-          setStudent(prevStudent => ({
-            ...prevStudent,
-            parent: parentData
-          }));
-        }
-      } catch (error) {
-        console.warn("Could not load parent profile:", error);
-        // Don't let parent profile failure break the whole component
-        // Default values will be used
-      }
-      try {
-        const assessmentData = await studentApiService.getStudentAssessment(studentId);
-        setAssessmentData(assessmentData);
-      } catch (error) {
-        console.warn("Could not load assessment data:", error);
-      }
-
-      try {
-        const progressData = await studentApiService.getStudentProgress(studentId);
-        setProgressData(progressData);
-      } catch (error) {
-        console.warn("Could not load progress data:", error);
-      }
-
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error fetching student data:", error);
-      setError("Failed to load student information");
-      setIsLoading(false);
-    }
-  }
-
-  // Helper to map a reading level code to the appropriate CSS class
-  const getReadingLevelClass = (level) => {
-    switch (level) {
-      case 'Fluent': return 'reading-level-fluent';
-      case 'Early': return 'reading-level-early';
-      case 'Antas 2':
-      case 'Antas 3':
-      case 'Developing':
-        return 'reading-level-developing';
-      case 'Antas 4':
-      case 'Antas 5':
-      case 'Advanced':
-        return 'reading-level-advanced';
-      default:
-        return 'reading-level-not-assessed';
-    }
-  };
-
-  // Helper to get reading level description
-  const getReadingLevelDescription = (level) => {
-    switch (level) {
-      case 'Early':
-        return 'Low Emerging - Learning letter sounds and basic word recognition';
-      case 'Developing':
-      case 'Antas 2':
-      case 'Antas 3':
-        return 'Developing - Building phonemic awareness and basic vocabulary';
-      case 'Fluent':
-        return 'Fluent - Can read and comprehend grade-level text';
-      case 'Advanced':
-      case 'Antas 4':
-      case 'Antas 5':
-        return 'Advanced - Reading above grade level with strong comprehension';
-      default:
-        return 'Not yet assessed - Needs initial assessment';
-    }
-  };
-
-  // Default progress report based on template
+  // Default progress report
   const defaultProgress = {
     schoolYear: '2024-2025',
     reportDate: new Date().toISOString().split('T')[0],
@@ -155,89 +67,93 @@ const StudentDetails = () => {
     ]
   };
 
-  // State for progress report
+  // UI state
   const [progressReport, setProgressReport] = useState(defaultProgress);
-
-  // State for feedback message
   const [feedbackMessage, setFeedbackMessage] = useState({
     subject: '',
     content: ''
   });
-
-  // State for showing progress report modal
   const [showProgressReport, setShowProgressReport] = useState(false);
-
-  // State for editing feedback
   const [isEditingFeedback, setIsEditingFeedback] = useState(false);
-
-  // State for including progress report
   const [includeProgressReport, setIncludeProgressReport] = useState(true);
 
+  // Main data fetching effect
   useEffect(() => {
     if (!studentId) {
       setLoading(false);
       return;
     }
     
-
     const fetchAllStudentData = async () => {
       try {
         setLoading(true);
+        console.log("Fetching data for student ID:", studentId);
 
-        // 1) Student details
+        // 1) Fetch student details
         const studentData = await StudentApiService.getStudentDetails(studentId);
         setStudent(studentData);
+        console.log("Student data loaded:", studentData);
 
-        // 2) Parent profile (with fallback)
+        // 2) Fetch parent profile if parentId exists
         if (studentData.parentId) {
           try {
-            const p = await StudentApiService.getParentProfileWithFallback(studentData.parentId);
-            setParentProfile(p);
+            console.log("Fetching parent profile for ID:", studentData.parentId);
+            const parentData = await StudentApiService.getParentProfileWithFallback(studentData.parentId);
+            setParentProfile(parentData);
+            console.log("Parent profile loaded:", parentData);
+            
+            // Set up feedback message with parent name
+            setFeedbackMessage({
+              subject: `Progress Report for ${studentData.name}`,
+              content: `Dear ${parentData?.name || 'Parent'},\n\nI'm writing to update you on ${studentData.name}'s progress in our reading comprehension activities. ${studentData.name} is working diligently to improve their reading skills, particularly in ${studentData.readingLevel === 'Not Assessed' ? 'developing their foundational reading skills' : 'developing skills at the ' + studentData.readingLevel + ' level'}.\n\nPlease find the attached progress report for detailed information about their development. If you have any questions or concerns, please don't hesitate to reach out.\n\nSincerely,\nTeacher Claire`
+            });
           } catch (e) {
             console.warn('Could not load parent profile:', e);
+            
+            // Set feedback with fallback parent name
+            setFeedbackMessage({
+              subject: `Progress Report for ${studentData.name}`,
+              content: `Dear Parent,\n\nI'm writing to update you on ${studentData.name}'s progress in our reading comprehension activities. ${studentData.name} is working diligently to improve their reading skills, particularly in ${studentData.readingLevel === 'Not Assessed' ? 'developing their foundational reading skills' : 'developing skills at the ' + studentData.readingLevel + ' level'}.\n\nPlease find the attached progress report for detailed information about their development. If you have any questions or concerns, please don't hesitate to reach out.\n\nSincerely,\nTeacher Claire`
+            });
           }
         }
 
-        // 3) Feedback message template
-        setFeedbackMessage({
-          subject: `Progress Report for ${studentData.name}`,
-          content: `Dear ${parentProfile?.name || 'Parent'},\n\nI'm writing to update you on ${studentData.name}'s progress in our reading comprehension activities. ${studentData.name} is working diligently to improve their reading skills, particularly in ${studentData.readingLevel === 'Not Assessed' ? 'developing their foundational reading skills' : 'developing skills at the ' + studentData.readingLevel + ' level'}.\n\nPlease find the attached progress report for detailed information about their development. If you have any questions or concerns, please don't hesitate to reach out.\n\nSincerely,\nTeacher Claire`
-        });
+        // 3) Fetch other data (assessment, progress, etc.)
+        const [assessmentData, progressData, lessonsData, recs] = await Promise.all([
+          StudentApiService.getAssessmentResults(studentId),
+          StudentApiService.getProgressData(studentId),
+          StudentApiService.getRecommendedLessons(studentId),
+          StudentApiService.getPrescriptiveRecommendations(studentId)
+        ]);
 
-        // 4) Assessment results
-        const assessmentData = await StudentApiService.getAssessmentResults(studentId);
         setAssessment(assessmentData);
-
-        // 5) Progress data + derive activities
-        const progressData = await StudentApiService.getProgressData(studentId);
         setProgress(progressData);
-
-        const formattedActivities = (progressData.recentActivities || []).map(act => {
-          const score = act.score || 0;
-          return {
-            id: act.id,
-            name: act.title,
-            description: act.category,
-            completed: true,
-            minimalSupport: score >= 70,
-            moderateSupport: score >= 40 && score < 70,
-            extensiveSupport: score < 40,
-            remarks: `Student ${score >= 70 ? 'excels at' : score >= 40 ? 'is progressing with' : 'needs additional support with'} ${act.category.toLowerCase()}.`
-          };
-        });
-        setActivities(formattedActivities);
-
-        // 6) Recommended lessons
-        const lessonsData = await StudentApiService.getRecommendedLessons(studentId);
         setRecommendedLessons(lessonsData);
-
-        // 7) Prescriptive recommendations + build progressReport.recommendations
-        const recs = await StudentApiService.getPrescriptiveRecommendations(studentId);
         setPrescriptiveRecommendations(recs);
-        if (recs.length) {
+
+        // Format activities from progress data
+        if (progressData && progressData.recentActivities) {
+          const formattedActivities = progressData.recentActivities.map(act => {
+            const score = act.score || 0;
+            return {
+              id: act.id,
+              name: act.title,
+              description: act.category,
+              completed: true,
+              minimalSupport: score >= 70,
+              moderateSupport: score >= 40 && score < 70,
+              extensiveSupport: score < 40,
+              remarks: `Student ${score >= 70 ? 'excels at' : score >= 40 ? 'is progressing with' : 'needs additional support with'} ${act.category?.toLowerCase() || 'this area'}.`
+            };
+          });
+          setActivities(formattedActivities);
+        }
+
+        // Update progress report recommendations
+        if (recs && recs.length) {
           setProgressReport(prev => ({
             ...prev,
-            recommendations: recs.map(r => r.rationale)
+            recommendations: recs.map(r => r.rationale || r.recommendation || r.text || '')
           }));
         }
 
@@ -251,35 +167,96 @@ const StudentDetails = () => {
     fetchAllStudentData();
   }, [studentId]);
 
+  const handleParentImageLoad = () => {
+    console.log("Parent image loaded successfully");
+    setParentImageLoaded(true);
+    setParentImageError(false);
+  };
+
+  const handleParentImageError = (e) => {
+    console.error("Error loading parent image:", e.target.src);
+    console.warn("Failed image URL:", e.target.src);
+    setParentImageError(true);
+    setParentImageLoaded(false);
+    
+    // Add browser console debugging info
+    console.info("Try accessing the image directly in your browser:", e.target.src);
+    console.info("Check the Network tab in DevTools for more details on the failure");
+  };
+  
+  
+  // Retry loading the parent image
+  const retryLoadImage = () => {
+    if (retryCount < MAX_RETRIES) {
+      console.log(`Retrying image load (${retryCount + 1}/${MAX_RETRIES})`);
+      console.log("Original URL:", parentProfile.profileImageUrl);
+      
+      setParentImageError(false);
+      setParentImageLoaded(false);
+      setRetryCount(prev => prev + 1);
+      
+      // Force reload with cache-busting parameter
+      const cacheBuster = `cb=${Date.now()}`;
+      const newUrl = parentProfile.profileImageUrl.includes('?') 
+        ? `${parentProfile.profileImageUrl}&${cacheBuster}` 
+        : `${parentProfile.profileImageUrl}?${cacheBuster}`;
+      
+      console.log("Retrying with URL:", newUrl);
+      
+      // Update the image src
+      const imgElement = document.querySelector('.sdx-parent-avatar img');
+      if (imgElement) {
+        imgElement.src = newUrl;
+      }
+    }
+  };
+
+  const getFormattedImageUrl = (url) => {
+    if (!url) return null;
+    
+    try {
+      // If this is already a proxy URL, just return it
+      if (url.startsWith('/api/proxy-image')) {
+        return url;
+      }
+      
+      // Otherwise, this is an S3 URL, so return it directly
+      return url;
+    } catch (error) {
+      console.error("Error formatting image URL:", error);
+      return url; // Return original URL if formatting fails
+    }
+  };
+
+
+  // Export progress report to PDF
   const exportToPDF = async () => {
     const element = progressReportRef.current;
     if (!element) return;
 
     try {
       const canvas = await html2canvas(element, {
-        scale: 2,         // good looking text
+        scale: 2,
         useCORS: true,
-        scrollY: -window.scrollY   // grab full page even if modal is scrolled
+        scrollY: -window.scrollY
       });
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfW = pdf.internal.pageSize.getWidth();
       const pdfH = pdf.internal.pageSize.getHeight();
-
-      // image dimensions *inside* the PDF
       const imgW = pdfW;
       const imgH = (canvas.height * imgW) / canvas.width;
 
-      let yOffset = 0;        // current y‑offset (negative after 1st page)
-      let remainingH = imgH;     // how much of the image is still not on a page yet
+      let yOffset = 0;
+      let remainingH = imgH;
 
-      // first page
+      // First page
       pdf.addImage(imgData, 'PNG', 0, yOffset, imgW, imgH);
       remainingH -= pdfH;
-      yOffset -= pdfH;         // shift upwards for next slice
+      yOffset -= pdfH;
 
-      // add extra pages while there's still image left
+      // Additional pages if needed
       while (remainingH > 0) {
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', 0, yOffset, imgW, imgH);
@@ -287,74 +264,54 @@ const StudentDetails = () => {
         yOffset -= pdfH;
       }
 
-      pdf.save(
-        `${(student?.name || 'student')
-          .replace(/[^a-z0-9]/gi, '_')}_progress_report.pdf`
-      );
+      pdf.save(`${(student?.name || 'student').replace(/[^a-z0-9]/gi, '_')}_progress_report.pdf`);
     } catch (err) {
       console.error('PDF Export Error:', err);
       alert('Failed to export PDF – please try again.');
     }
   };
 
-  // Handle save feedback
-  const handleSaveFeedback = () => {
-    setIsEditingFeedback(false);
-    // Here you would typically send the message to the parent via API
-    // For now we just show a success message
+  // Helper functions
+  const getReadingLevelClass = (level) => {
+    const classMap = {
+      'Fluent': 'reading-level-fluent',
+      'Early': 'reading-level-early', 
+      'Developing': 'reading-level-developing',
+      'Antas 2': 'reading-level-developing',
+      'Antas 3': 'reading-level-developing',
+      'Advanced': 'reading-level-advanced',
+      'Antas 4': 'reading-level-advanced',
+      'Antas 5': 'reading-level-advanced'
+    };
+    return classMap[level] || 'reading-level-not-assessed';
   };
 
-  // Handle send report
-  const handleSendReport = () => {
-    // In a real implementation, this would connect to an API to send the message
-    // Show success dialog
-    setShowSuccessDialog(true);
+  const getReadingLevelDescription = (level) => {
+    const descriptions = {
+      'Early': 'Low Emerging - Learning letter sounds and basic word recognition',
+      'Developing': 'Developing - Building phonemic awareness and basic vocabulary',
+      'Antas 2': 'Developing - Building phonemic awareness and basic vocabulary',
+      'Antas 3': 'Developing - Building phonemic awareness and basic vocabulary',
+      'Fluent': 'Fluent - Can read and comprehend grade-level text',
+      'Advanced': 'Advanced - Reading above grade level with strong comprehension',
+      'Antas 4': 'Advanced - Reading above grade level with strong comprehension',
+      'Antas 5': 'Advanced - Reading above grade level with strong comprehension'
+    };
+    return descriptions[level] || 'Not yet assessed - Needs initial assessment';
   };
 
-  // Function to render checkbox based on status
-  const renderCheckbox = (isChecked) => {
-    return (
-      <div className={`sdx-checkbox ${isChecked ? 'checked' : ''}`}>
-        {isChecked && <span className="sdx-checkmark">✓</span>}
-      </div>
-    );
-  };
+  // UI event handlers
+  const handleSaveFeedback = () => setIsEditingFeedback(false);
+  const handleSendReport = () => setShowSuccessDialog(true);
+  const renderCheckbox = (isChecked) => (
+    <div className={`sdx-checkbox ${isChecked ? 'checked' : ''}`}>
+      {isChecked && <span className="sdx-checkmark">✓</span>}
+    </div>
+  );
+  const goBack = () => navigate('/teacher/view-student');
+  const closeSuccessDialog = () => setShowSuccessDialog(false);
 
-  // Go back to students list
-  const goBack = () => {
-    navigate('/teacher/view-student');
-  };
-
-  // Close success dialog
-  const closeSuccessDialog = () => {
-    setShowSuccessDialog(false);
-  };
-
-  if (loading) {
-    return (
-      <div className="sdx-container">
-        <div className="vs-loading">
-          <div className="vs-loading-spinner"></div>
-          <p>Loading student details...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!student) {
-    return (
-      <div className="sdx-container">
-        <div className="vs-no-results">
-          <p>Student not found.</p>
-          <button className="sdx-back-btn" onClick={goBack}>
-            <FaArrowLeft /> Back to Student List
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Format reading level assessments for display
+  // Format assessment items for display
   const formatAssessmentItems = () => {
     if (!assessment || !assessment.skillDetails) return [];
 
@@ -370,6 +327,78 @@ const StudentDetails = () => {
     }));
   };
 
+  // Get parent name for display
+  const getParentName = () => {
+    if (parentProfile && parentProfile.name) {
+      return parentProfile.name;
+    }
+    if (typeof student.parent === 'string') {
+      return student.parent;
+    }
+    if (student.parent && student.parent.name) {
+      return student.parent.name;
+    }
+    return 'Parent';
+  };
+// Complete replacement of the renderParentImage function
+const renderParentImage = () => {
+  if (parentProfile && parentProfile.profileImageUrl) {
+    return (
+      <img
+        src={parentProfile.profileImageUrl}
+        alt={getParentName()}
+        className="sdx-parent-avatar-img"
+        onLoad={handleParentImageLoad}
+        onError={handleParentImageError}
+      />
+    );
+  }
+    const initial = parentProfile && parentProfile.name ? 
+    parentProfile.name.charAt(0) : 
+    typeof student.parent === 'string' ? 
+      student.parent.charAt(0) : 
+      student.parent && student.parent.name ? 
+        student.parent.name.charAt(0) : 'P';
+        
+  return (
+    <div className="sdx-parent-avatar-placeholder">
+      {initial}
+      {parentImageError && retryCount < MAX_RETRIES && (
+        <div className="sdx-image-retry" onClick={retryLoadImage}>
+          <FaSync size={14} /> Retry
+        </div>
+      )}
+    </div>
+  );
+}; 
+
+  // Render loading state
+  if (loading) {
+    return (
+      <div className="sdx-container">
+        <div className="vs-loading">
+          <div className="vs-loading-spinner"></div>
+          <p>Loading student details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Render "not found" state
+  if (!student) {
+    return (
+      <div className="sdx-container">
+        <div className="vs-no-results">
+          <p>Student not found.</p>
+          <button className="sdx-back-btn" onClick={goBack}>
+            <FaArrowLeft /> Back to Student List
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Main component render
   return (
     <div className="sdx-container">
       {/* Header */}
@@ -377,7 +406,7 @@ const StudentDetails = () => {
         <button className="sdx-back-btn" onClick={goBack}>
           <FaArrowLeft /> Back
         </button>
-        <h1 className="sdx-title">Student Details</h1>
+        <h1 className="sdx-title">Student and Parent Information</h1>
         <div className="sdx-actions">
           <button
             className="sdx-view-report-btn"
@@ -409,6 +438,8 @@ const StudentDetails = () => {
             </div>
           </div>
         </div>
+
+        
 
         <div className="sdx-profile-details">
           <div className="sdx-details-column">
@@ -476,6 +507,7 @@ const StudentDetails = () => {
           </div>
         </div>
       </div>
+      
       {/* Parent Information */}
       <div className="sdx-parent-card">
         <h3 className="sdx-section-title">
@@ -483,48 +515,31 @@ const StudentDetails = () => {
         </h3>
         <div className="sdx-parent-details">
           <div className="sdx-parent-avatar">
-            {student.parent && student.parent.profileImageUrl ? (
-              <img
-                src={parentProfile.profileImageUrl || '/images/default-avatar.png'}
-                alt="Parent"
-                onError={e => { e.currentTarget.src = '/images/default-avatar.png'; }}
-              />
-            ) : (
-              student.parent && typeof student.parent === 'string'
-                ? student.parent.charAt(0)
-                : student.parent && student.parent.name
-                  ? student.parent.name.charAt(0)
-                  : 'P'
-            )}
-
+            {renderParentImage()}
           </div>
           <div className="sdx-parent-info">
-            <h4 className="sdx-parent-name">
-              {typeof student.parent === 'string'
-                ? student.parent
-                : student.parent && student.parent.name
-                  ? student.parent.name
-                  : 'Parent info not available'}
-            </h4>
+            <h4 className="sdx-parent-name">{getParentName()}</h4>
             <div className="sdx-parent-contact">
               <div className="sdx-contact-item">
                 <FaEnvelope className="sdx-contact-icon" />
                 <span>
-                  {typeof student.parentEmail === 'string'
-                    ? student.parentEmail
-                    : student.parent && student.parent.email
-                      ? student.parent.email
-                      : 'Not available'}
+                  {parentProfile && parentProfile.email ? 
+                    parentProfile.email : 
+                    typeof student.parentEmail === 'string' ? 
+                      student.parentEmail : 
+                      student.parent && student.parent.email ? 
+                        student.parent.email : 'Not available'}
                 </span>
               </div>
               <div className="sdx-contact-item">
                 <FaPhone className="sdx-contact-icon" />
                 <span>
-                  {typeof student.parentContact === 'string'
-                    ? student.parentContact
-                    : student.parent && student.parent.contact
-                      ? student.parent.contact
-                      : 'Not available'}
+                  {parentProfile && parentProfile.contact ? 
+                    parentProfile.contact : 
+                    typeof student.parentContact === 'string' ? 
+                      student.parentContact : 
+                      student.parent && student.parent.contact ? 
+                        student.parent.contact : 'Not available'}
                 </span>
               </div>
             </div>
@@ -536,11 +551,12 @@ const StudentDetails = () => {
               <div className="sdx-detail-content">
                 <span className="sdx-detail-label">Address</span>
                 <span className="sdx-detail-value">
-                  {typeof student.parentAddress === 'string'
-                    ? student.parentAddress
-                    : student.parent && student.parent.address
-                      ? student.parent.address
-                      : 'Not provided'}
+                  {parentProfile && parentProfile.address ? 
+                    parentProfile.address : 
+                    typeof student.parentAddress === 'string' ? 
+                      student.parentAddress : 
+                      student.parent && student.parent.address ? 
+                        student.parent.address : 'Not provided'}
                 </span>
               </div>
             </div>
@@ -549,11 +565,12 @@ const StudentDetails = () => {
               <div className="sdx-detail-content">
                 <span className="sdx-detail-label">Civil Status</span>
                 <span className="sdx-detail-value">
-                  {typeof student.parentCivilStatus === 'string'
-                    ? student.parentCivilStatus
-                    : student.parent && student.parent.civilStatus
-                      ? student.parent.civilStatus
-                      : 'Not provided'}
+                  {parentProfile && parentProfile.civilStatus ? 
+                    parentProfile.civilStatus : 
+                    typeof student.parentCivilStatus === 'string' ? 
+                      student.parentCivilStatus : 
+                      student.parent && student.parent.civilStatus ? 
+                        student.parent.civilStatus : 'Not provided'}
                 </span>
               </div>
             </div>
@@ -562,11 +579,12 @@ const StudentDetails = () => {
               <div className="sdx-detail-content">
                 <span className="sdx-detail-label">Gender</span>
                 <span className="sdx-detail-value">
-                  {typeof student.parentGender === 'string'
-                    ? student.parentGender
-                    : student.parent && student.parent.gender
-                      ? student.parent.gender
-                      : 'Not provided'}
+                  {parentProfile && parentProfile.gender ? 
+                    parentProfile.gender : 
+                    typeof student.parentGender === 'string' ? 
+                      student.parentGender : 
+                      student.parent && student.parent.gender ? 
+                        student.parent.gender : 'Not provided'}
                 </span>
               </div>
             </div>
@@ -575,17 +593,19 @@ const StudentDetails = () => {
               <div className="sdx-detail-content">
                 <span className="sdx-detail-label">Occupation</span>
                 <span className="sdx-detail-value">
-                  {typeof student.parentOccupation === 'string'
-                    ? student.parentOccupation
-                    : student.parent && student.parent.occupation
-                      ? student.parent.occupation
-                      : 'Not provided'}
+                  {parentProfile && parentProfile.occupation ? 
+                    parentProfile.occupation : 
+                    typeof student.parentOccupation === 'string' ? 
+                      student.parentOccupation : 
+                      student.parent && student.parent.occupation ? 
+                        student.parent.occupation : 'Not provided'}
                 </span>
               </div>
             </div>
           </div>
         </div>
       </div>
+
       {/* Learning Activities and Progress Section */}
       <div className="sdx-activities-card">
         <h3 className="sdx-section-title">
@@ -639,84 +659,6 @@ const StudentDetails = () => {
         )}
       </div>
 
-      {/* Assessment Summary Card */}
-      {assessment && (
-        <div className="sdx-assessment-card">
-          <div className="sdx-assessment-header">
-            <h3 className="sdx-assessment-title">
-              <span className="sdx-assessment-icon">
-                <FaBookReader />
-              </span>
-              Reading Assessment
-            </h3>
-            <div className="sdx-assessment-score">
-              {assessment.scores?.overall || 0}%
-            </div>
-          </div>
-
-          <div className="sdx-assessment-content">
-            {/* Reading Level Information */}
-            <div className="sdx-level-info">
-              <div className={`sdx-level-badge ${getReadingLevelClass(student.readingLevel)}`}>
-                {student.readingLevel || 'Not Assessed'}
-              </div>
-              <div className="sdx-level-details">
-                <div className="sdx-level-name">Reading Level</div>
-                <div className="sdx-level-description">
-                  {getReadingLevelDescription(student.readingLevel)}
-                </div>
-              </div>
-            </div>
-
-            {/* Assessment Date */}
-            <div className="sdx-level-info">
-              <div className="sdx-level-badge">
-                <FaCalendarAlt />
-              </div>
-              <div className="sdx-level-details">
-                <div className="sdx-level-name">Last Assessment Date</div>
-                <div className="sdx-level-description">
-                  {assessment.assessmentDate || 'Not available'}
-                </div>
-              </div>
-            </div>
-
-            <div className="sdx-assessment-divider"></div>
-
-            {/* Skill Assessment Items */}
-            <div className="sdx-assessment-items">
-              {formatAssessmentItems().map((item, index) => (
-                <div key={index} className="sdx-assessment-item">
-                  <div className="sdx-assessment-item-header">
-                    <div className="sdx-assessment-item-name">
-                      <span>{item.code}</span> {item.name}
-                    </div>
-                    <div className={`sdx-assessment-item-badge ${item.score > 0 ? `score-${Math.floor(item.score / 20)}` : 'score-0'}`}>
-                      {item.score}%
-                    </div>
-                  </div>
-                  <div className="sdx-assessment-item-description">
-                    {item.description}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="sdx-assessment-divider"></div>
-
-            {/* Focus Areas */}
-            <div className="sdx-focus-areas">
-              <div className="sdx-focus-areas-title">
-                <FaInfoCircle /> Focus Areas
-              </div>
-              <p className="sdx-focus-areas-content">
-                {assessment.focusAreas || 'No specific focus areas identified yet.'}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Send Progress Report Section */}
       <div className="sdx-send-report-section">
         <h3 className="sdx-section-title">
@@ -742,7 +684,7 @@ const StudentDetails = () => {
               <span>To:</span>
               <div className="sdx-recipient-badge">
                 <FaUser className="sdx-recipient-icon" />
-                <span>{student.parent || 'Parent'}</span>
+                <span>{getParentName()}</span>
               </div>
             </div>
           </div>
@@ -862,7 +804,7 @@ const StudentDetails = () => {
                     </div>
                     <div className="sdx-report-info-row">
                       <div className="sdx-report-info-item">
-                        <strong>Parent:</strong> {student.parent || 'Not provided'}
+                        <strong>Parent:</strong> {getParentName()}
                       </div>
                       <div className="sdx-report-info-item">
                         <strong>Date:</strong> {progressReport.reportDate}
@@ -931,7 +873,7 @@ const StudentDetails = () => {
                   {/* Reading Assessment Summary */}
                   {assessment && (
                     <div className="sdx-report-assessment-summary">
-                      <h3 className="sdx-report-section-title">Reading Assessment Summary</h3>
+                      <h3 className="sdx-report-section-title">Reading Level Progress</h3>
                       <div className="sdx-report-skills-grid">
                         {formatAssessmentItems().map((skill, index) => (
                           <div key={index} className="sdx-report-skill-item">
@@ -962,7 +904,7 @@ const StudentDetails = () => {
 
                   {/* Recommendations */}
                   <div className="sdx-report-recommendations">
-                    <h3 className="sdx-report-section-title">Recommendations</h3>
+                    <h3 className="sdx-report-section-title">Prescriptive Recommendations</h3>
                     <ul className="sdx-report-rec-list">
                       {progressReport.recommendations.map((rec, index) => (
                         <li key={index} className="sdx-report-rec-item">{rec}</li>
@@ -999,7 +941,7 @@ const StudentDetails = () => {
             </div>
             <div className="sdx-dialog-content">
               <div className="sdx-dialog-message">
-                <p>Progress report has been successfully sent to {student.parent}!</p>
+                <p>Progress report has been successfully sent to {getParentName()}!</p>
                 <p>A copy has been saved to the student's records.</p>
               </div>
               <div className="sdx-dialog-actions">

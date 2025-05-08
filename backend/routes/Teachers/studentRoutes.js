@@ -669,6 +669,17 @@ router.post('/assign-lessons/:id', auth, async (req, res) => {
   }
 });
 
+
+const parentController = require('../../controllers/parentController');
+
+/**
+ * @route GET /api/student/parent/:id
+ * @desc Get parent profile by ID
+ * @access Private (teachers only)
+ */
+router.get('/parent/:id', parentController.getParentProfile);
+
+
 // Update an activity
 router.put('/update-activity/:id', auth, async (req, res) => {
   try {
