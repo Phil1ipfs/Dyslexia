@@ -1,4 +1,3 @@
-// src/pages/Teachers/ManageProgress/ManageProgress.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -14,17 +13,26 @@ import {
   FaAngleLeft,
   FaAngleRight,
   FaCheck,
-  FaTimes
-}
-
-  from 'react-icons/fa';
-  import StudentApiService from '../../../services/StudentApiService';
-  import S3Image from '../../../components/S3Image'; 
+  FaTimes,
+  FaChalkboardTeacher,
+  FaFilter,
+  FaLayerGroup,
+  FaSort,
+  FaIdCard,
+  FaUserFriends,
+  FaChartLine,
+  FaTrophy,
+  FaBook,
+  FaBullseye,
+  FaArrowRight
+} from 'react-icons/fa';
+import StudentApiService from '../../../services/StudentApiService';
+import S3Image from '../../../components/S3Image'; 
 import '../../../css/Teachers/ManageProgress.css';
 
 function getPageNumbers(currentPage, totalPages) {
-  const visiblePageCount = 7;
-  let startPage = Math.max(currentPage - 3, 1);
+  const visiblePageCount = 5;
+  let startPage = Math.max(currentPage - Math.floor(visiblePageCount / 2), 1);
   let endPage = startPage + visiblePageCount - 1;
 
   if (endPage > totalPages) {
@@ -96,8 +104,6 @@ const ManageProgress = () => {
       filtered = filtered.filter(student =>
         student.name.toLowerCase().includes(query) ||
         (student.parentName && student.parentName.toLowerCase().includes(query)) ||
-       
-       
         student.id.toLowerCase().includes(query)
       );
     }
@@ -120,6 +126,8 @@ const ManageProgress = () => {
             'Developing': 3,
             'Transitioning': 4,
             'At Grade Level': 5,
+            'Fluent': 6,
+            'Advanced': 7,
             'Not Assessed': 0
           };
           return (levelPriority[b.readingLevel] || 0) - (levelPriority[a.readingLevel] || 0);
@@ -128,7 +136,7 @@ const ManageProgress = () => {
           const progressB = b.totalActivities > 0 ? (b.activitiesCompleted / b.totalActivities) : 0;
           return progressB - progressA;
         case 'recent':
-          return new Date(b.lastActivityDate) - new Date(a.lastActivityDate);
+          return new Date(b.lastActivityDate || 0) - new Date(a.lastActivityDate || 0);
         default:
           return a.name.localeCompare(b.name);
       }
@@ -150,6 +158,7 @@ const ManageProgress = () => {
     'Developing': 'Paunlad na Pagbasa',
     'Transitioning': 'Lumalago na Pagbasa',
     'At Grade Level': 'Batay sa Antas',
+    'Fluent': 'Mahusay na Pagbasa',
     'Not Assessed': 'Hindi pa nasusuri'
   };
 
@@ -161,8 +170,9 @@ const ManageProgress = () => {
       case 'Developing': return 'mp-level-3';
       case 'Transitioning': return 'mp-level-4';
       case 'At Grade Level': return 'mp-level-5';
-      case 'Not Assessed': return '';
-      default: return '';
+      case 'Fluent': return 'mp-level-fluent';
+      case 'Not Assessed': return 'mp-level-na';
+      default: return 'mp-level-na';
     }
   };
 
@@ -201,10 +211,10 @@ const ManageProgress = () => {
 
       switch (groupBy) {
         case 'reading':
-          key = student.readingLevel;
+          key = student.readingLevel || 'Not Assessed';
           break;
         case 'section':
-          key = student.section;
+          key = student.section || 'No Section';
           break;
         default:
           key = 'All Students';
@@ -224,6 +234,25 @@ const ManageProgress = () => {
   const currentItems = filteredStudents.slice(startIndex, startIndex + itemsPerPage);
   const groupedStudents = getGroupedStudents();
 
+  // Get icon for reading level
+  const getReadingLevelIcon = (level) => {
+    switch (level) {
+      case 'Low Emerging':
+      case 'High Emerging':
+        return <FaBook />;
+      case 'Developing':
+        return <FaBookReader />;
+      case 'Transitioning':
+      case 'At Grade Level':
+        return <FaChartLine />;
+      case 'Fluent':
+        return <FaTrophy />;
+      case 'Not Assessed':
+      default:
+        return <FaBookReader />;
+    }
+  };
+
   return (
     <div className="mp-container">
       {/* Header */}
@@ -235,6 +264,7 @@ const ManageProgress = () => {
 
         <div className="mp-search-container">
           <div className="mp-search-wrapper">
+            <FaSearch className="mp-search-icon" />
             <input
               type="text"
               placeholder="Maghanap ng mag-aaral..."
@@ -247,10 +277,12 @@ const ManageProgress = () => {
       </div>
 
       {/* Filters Section - Always visible */}
-      <div className="mp-filters-section mp-filters-open">
+      <div className="mp-filters-section">
         <div className="mp-filter-row">
           <div className="mp-filter-group">
-            <label className="mp-filter-label">Antas ng Pagbasa:</label>
+            <label className="mp-filter-label">
+              <FaFilter style={{ marginRight: '0.5rem' }} /> Antas ng Pagbasa:
+            </label>
             <div className="mp-select-wrapper">
               <select
                 value={readingLevelFilter}
@@ -268,7 +300,9 @@ const ManageProgress = () => {
           </div>
 
           <div className="mp-filter-group">
-            <label className="mp-filter-label">Pagkakabukod:</label>
+            <label className="mp-filter-label">
+              <FaLayerGroup style={{ marginRight: '0.5rem' }} /> Pagkakabukod:
+            </label>
             <div className="mp-select-wrapper">
               <select
                 value={groupBy}
@@ -283,7 +317,9 @@ const ManageProgress = () => {
           </div>
 
           <div className="mp-filter-group">
-            <label className="mp-filter-label">Ayusin ayon sa:</label>
+            <label className="mp-filter-label">
+              <FaSort style={{ marginRight: '0.5rem' }} /> Ayusin ayon sa:
+            </label>
             <div className="mp-select-wrapper">
               <select
                 value={sortBy}
@@ -306,7 +342,7 @@ const ManageProgress = () => {
           Natagpuan: <strong>{filteredStudents.length}</strong> (na) mag-aaral
         </span>
         <span className="mp-results-sort">
-          <FaSortAmountDown /> Nakaayos ayon sa: <strong>{sortBy === 'name' ? 'Pangalan' :
+          <FaSortAmountDown style={{ marginRight: '0.5rem' }} /> Nakaayos ayon sa: <strong>{sortBy === 'name' ? 'Pangalan' :
             sortBy === 'reading' ? 'Antas ng Pagbasa' :
               sortBy === 'progress' ? 'Pag-unlad' : 'Huling Aktibidad'}</strong>
         </span>
@@ -322,7 +358,7 @@ const ManageProgress = () => {
         ) : error ? (
           <div className="mp-error">
             <p>{error}</p>
-            <button onClick={() => window.location.reload()}>Subukang muli</button>
+            <button onClick={() => window.location.reload()} className="mp-view-details-btn">Subukang muli</button>
           </div>
         ) : filteredStudents.length === 0 ? (
           <div className="mp-no-results">
@@ -332,7 +368,9 @@ const ManageProgress = () => {
           Object.entries(groupedStudents).map(([group, students]) => (
             <div key={group} className="mp-group-section">
               {group !== 'All Students' && (
-                <h2 className="mp-group-title">{group} {group !== 'All Students' && readingLevelDescriptions[group] ? `- ${readingLevelDescriptions[group]}` : ''}</h2>
+                <h2 className="mp-group-title">
+                  {getReadingLevelIcon(group)} {group} {group !== 'All Students' && readingLevelDescriptions[group] ? `- ${readingLevelDescriptions[group]}` : ''}
+                </h2>
               )}
 
               <div className="mp-cards-grid">
@@ -369,12 +407,12 @@ const ManageProgress = () => {
                           <div className="mp-student-basic-info">
                             <h3 className="mp-student-name">{student.name}</h3>
                             <span className="mp-student-number">
-                              Student ID:&nbsp;{student.id}
+                              <FaIdCard style={{ marginRight: '0.4rem' }} /> ID: {student.id}
                             </span>
                           </div>
 
-                          <div className={`mp-reading-level ${student.readingLevelClass}`}>
-                            {student.readingLevel}
+                          <div className={`mp-reading-level ${getReadingLevelClass(student.readingLevel)}`}>
+                            {getReadingLevelIcon(student.readingLevel)} {student.readingLevel}
                           </div>
                         </div>
                       </div>
@@ -382,11 +420,15 @@ const ManageProgress = () => {
                       <div className="mp-card-details">
                         <div className="mp-detail-row">
                           <div className="mp-detail-item">
-                            <FaUserGraduate className="mp-detail-icon" />
+                            <div className="mp-detail-icon">
+                              <FaUserGraduate />
+                            </div>
                             <span className="mp-detail-text">Grade 1</span>
                           </div>
                           <div className="mp-detail-item">
-                            <FaChild className="mp-detail-icon" />
+                            <div className="mp-detail-icon">
+                              <FaChild />
+                            </div>
                             <span className="mp-detail-text">{student.age} years old</span>
                           </div>
                         </div>
@@ -394,7 +436,9 @@ const ManageProgress = () => {
                         {/* Proper positioning of gender and reading level */}
                         <div className="mp-detail-row">
                           <div className="mp-detail-item">
-                            <FaBookReader className="mp-detail-icon" />
+                            <div className="mp-detail-icon">
+                              <FaBookReader />
+                            </div>
                             <span className="mp-detail-text">
                               {student.readingLevel !== 'Not Assessed'
                                 ? readingLevelDescriptions[student.readingLevel] || student.readingLevel
@@ -402,13 +446,15 @@ const ManageProgress = () => {
                             </span>
                           </div>
                           <div className="mp-detail-item">
-                            {student.gender === "Male" ? (
-                              <FaMars className="mp-detail-icon" />
-                            ) : student.gender === "Female" ? (
-                              <FaVenus className="mp-detail-icon" />
-                            ) : (
-                              <FaGenderless className="mp-detail-icon" />
-                            )}
+                            <div className="mp-detail-icon">
+                              {student.gender === "Male" ? (
+                                <FaMars />
+                              ) : student.gender === "Female" ? (
+                                <FaVenus />
+                              ) : (
+                                <FaGenderless />
+                              )}
+                            </div>
                             <span className="mp-detail-text">{student.gender || "Not specified"}</span>
                           </div>
                         </div>
@@ -420,14 +466,15 @@ const ManageProgress = () => {
                           <div className="mp-assessment-status">
                             {student.preAssessmentCompleted ? (
                               <span className="mp-assessment-complete">
+                                <FaCheck className="mp-status-icon-inner" />
                                 <span>Tapos na</span>
                               </span>
                             ) : (
                               <span className="mp-assessment-incomplete">
-                                <span className="mp-status-circle red">
+                                <span className="mp-status-circle">
                                   <FaTimes className="mp-status-icon-inner" />
                                 </span>
-                                Not Assessed
+                                <span>Not Assessed</span>
                               </span>
                             )}
                           </div>
@@ -457,14 +504,15 @@ const ManageProgress = () => {
 
                         <div className="mp-parent-info">
                           <div className="mp-parent-label">Parent or Guardian:</div>
-                          <div className="mp-parent-name">{student.parentName}</div>                        </div>
+                          <div className="mp-parent-name">{student.parentName || "Not specified"}</div>
+                        </div>
 
                         <div className="mp-btn-wrapper">
                           <button
                             className="mp-view-details-btn"
                             onClick={() => handleViewDetails(student)}
                           >
-                            Tingnan ang Pag-unlad
+                            Tingnan ang Pag-unlad <FaArrowRight style={{ marginLeft: '0.5rem' }} />
                           </button>
                         </div>
                       </div>

@@ -1,0 +1,381 @@
+/* Shared Variables */
+:root {
+    --primary-color: #2c3e50;
+    --primary-light: rgba(44, 62, 80, 0.1);
+    --secondary-color: #34495e;
+    --accent-color: #3498db;
+    --accent-light: rgba(52, 152, 219, 0.1);
+    --success-color: #2ecc71;
+    --success-light: rgba(46, 204, 113, 0.1);
+    --warning-color: #f39c12;
+    --warning-light: rgba(243, 156, 18, 0.1);
+    --danger-color: #e74c3c;
+    --danger-light: rgba(231, 76, 60, 0.1);
+    --neutral-dark: #333333;
+    --neutral-medium: #666666;
+    --neutral-light: #999999;
+    --neutral-bg: #f5f7fa;
+    --white: #ffffff;
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --transition: all 0.2s ease-in-out;
+  }
+  
+  /* Shared Card Styles */
+  .literexia-card {
+    background-color: var(--white);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+    border-top: 4px solid var(--primary-color);
+    transition: var(--transition);
+  }
+  
+  .literexia-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+  
+  /* ====== STUDENT PROFILE CARD ====== */
+  .literexia-student-card {
+    gap: 1.25rem;
+  }
+  
+  .literexia-student-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  
+  .literexia-avatar {
+    flex-shrink: 0;
+  }
+  
+  .literexia-avatar-circle {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 1.5rem;
+    position: relative;
+    box-shadow: var(--shadow-sm);
+  }
+  
+  .literexia-avatar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .literexia-student-name-section {
+    flex: 1;
+  }
+  
+  .literexia-student-name {
+    margin: 0 0 0.4rem 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    line-height: 1.2;
+  }
+  
+  .literexia-student-id {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--neutral-medium);
+    background-color: var(--neutral-bg);
+    padding: 0.3rem 0.6rem;
+    border-radius: var(--radius-sm);
+  }
+  
+  /* Student details */
+  .literexia-student-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .literexia-detail-row {
+    display: flex;
+    gap: 1.5rem;
+  }
+  
+  .literexia-detail-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .literexia-detail-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-md);
+    background-color: var(--primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  
+  .literexia-detail-content {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .literexia-detail-label {
+    font-size: 0.8rem;
+    color: var(--neutral-medium);
+    margin-bottom: 0.2rem;
+  }
+  
+  .literexia-detail-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--neutral-dark);
+  }
+  
+  /* Reading level specific styling */
+  .reading-level-early .literexia-detail-icon,
+  .reading-level-early .literexia-item-icon {
+    background-color: var(--danger-light);
+    color: var(--danger-color);
+  }
+  
+  .reading-level-developing .literexia-detail-icon,
+  .reading-level-developing .literexia-item-icon {
+    background-color: var(--warning-light);
+    color: var(--warning-color);
+  }
+  
+  .reading-level-fluent .literexia-detail-icon,
+  .reading-level-fluent .literexia-item-icon {
+    background-color: var(--success-light);
+    color: var(--success-color);
+  }
+  
+  .reading-level-advanced .literexia-detail-icon,
+  .reading-level-advanced .literexia-item-icon {
+    background-color: var(--accent-light);
+    color: var(--accent-color);
+  }
+  
+  .reading-level-not-assessed .literexia-detail-icon,
+  .reading-level-not-assessed .literexia-item-icon {
+    background-color: var(--neutral-bg);
+    color: var(--neutral-medium);
+  }
+  
+  .reading-level-early .literexia-detail-value,
+  .reading-level-early .literexia-item-value {
+    color: var(--danger-color);
+  }
+  
+  .reading-level-developing .literexia-detail-value,
+  .reading-level-developing .literexia-item-value {
+    color: var(--warning-color);
+  }
+  
+  .reading-level-fluent .literexia-detail-value,
+  .reading-level-fluent .literexia-item-value {
+    color: var(--success-color);
+  }
+  
+  .reading-level-advanced .literexia-detail-value,
+  .reading-level-advanced .literexia-item-value {
+    color: var(--accent-color);
+  }
+  
+  .reading-level-not-assessed .literexia-detail-value,
+  .reading-level-not-assessed .literexia-item-value {
+    color: var(--neutral-medium);
+  }
+  
+  /* ====== ASSESSMENT SUMMARY CARD ====== */
+  .literexia-assessment-card {
+    gap: 1.25rem;
+  }
+  
+  .literexia-assessment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .literexia-assessment-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .literexia-header-icon {
+    color: var(--accent-color);
+  }
+  
+  .literexia-score-badge {
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 55px;
+  }
+  
+  .score-excellent {
+    background-color: var(--success-color);
+  }
+  
+  .score-good {
+    background-color: var(--accent-color);
+  }
+  
+  .score-average {
+    background-color: var(--warning-color);
+  }
+  
+  .score-needs-improvement {
+    background-color: var(--danger-color);
+  }
+  
+  .score-not-assessed {
+    background-color: var(--neutral-medium);
+  }
+  
+  .literexia-assessment-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+  
+  .literexia-assessment-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .literexia-item-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-md);
+    background-color: var(--primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  
+  .literexia-item-content {
+    flex: 1;
+  }
+  
+  .literexia-item-value {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.1rem;
+    color: var(--neutral-dark);
+  }
+  
+  .literexia-item-label {
+    color: var(--neutral-medium);
+    font-size: 0.85rem;
+  }
+  
+  .literexia-assessment-divider {
+    height: 1px;
+    background-color: var(--neutral-bg);
+    margin: 0.25rem 0;
+  }
+  
+  .literexia-assessment-recommendation {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+  
+  .literexia-recommendation-icon {
+    color: var(--success-color);
+  }
+  
+  .literexia-recommendation-label {
+    color: var(--neutral-medium);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  
+  .literexia-recommendation-value {
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--neutral-bg);
+    color: var(--neutral-dark);
+  }
+  
+  /* Calendar specific styling */
+  .calendar-icon {
+    background-color: var(--neutral-bg) !important;
+    color: var(--neutral-medium) !important;
+  }
+  
+  .date-value {
+    color: var(--neutral-dark) !important;
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 576px) {
+    .literexia-detail-row {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    
+    .literexia-student-header {
+      flex-direction: column;
+      text-align: center;
+      gap: 0.75rem;
+    }
+    
+    .literexia-student-name-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .literexia-assessment-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    
+    .literexia-score-badge {
+      align-self: flex-start;
+    }
+  }
