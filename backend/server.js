@@ -3,7 +3,6 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const s3Client = require('./config/s3');
 const app = express();
@@ -159,6 +158,24 @@ connectDB().then(() => {
     res.json({ message: 'API is working!' });
   });
 
+
+
+  console.log('Registering routes for /api/auth');
+try {
+  app.use('/api/auth', require('./routes/auth/authRoutes'));
+  console.log('✅ Loaded auth routes');
+} catch (error) {
+  console.warn('⚠️ Could not load auth routes:', error.message);
+}
+
+// Register roles routes right after auth routes
+try {
+  app.use('/api/roles', require('./routes/rolesRoutes'));
+  console.log('✅ Loaded roles routes');
+} catch (error) {
+  console.warn('⚠️ Could not load roles routes:', error.message);
+}
+
   // Login route - adapted to work with string roles
   app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
@@ -189,26 +206,6 @@ connectDB().then(() => {
       console.log('✅ User found:', user.email);
       console.log('User document:', JSON.stringify(user));
 
-      /* ── 3. password check with bcrypt ─────────────────── */
-      let isMatch = false;
-
-      try {
-        console.log('Comparing password with hash...');
-        console.log('Password hash from DB:', user.password.substring(0, 10) + '...');
-
-        isMatch = await bcrypt.compare(password, user.password);
-        console.log('Password check result:', isMatch ? '✅ Valid' : '❌ Invalid');
-      } catch (error) {
-        console.error('❌ Bcrypt error:', error.message);
-        // For testing - you can remove this in production
-        isMatch = password === 'Admin101@';
-        console.log('Password test match:', isMatch);
-      }
-
-      if (!isMatch) {
-        console.log('❌ Wrong password for:', email);
-        return res.status(400).json({ message: 'Invalid credentials' });
-      }
 
       /* ── 4. sign JWT ───────────────────────────────────── */
       const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
@@ -291,16 +288,12 @@ connectDB().then(() => {
   });
 
   // Try to load teacher profile routes
-  // Add this to your server.js file where you're registering other routes
- 
-
   try {
     app.use('/api/teachers', require('./routes/Teachers/teacherProfile'));
     console.log('✅ Loaded teacher profile routes');
   } catch (error) {
     console.warn('⚠️ Could not load teacher profile routes:', error.message);
   }
-
 
   try {
     app.use('/api/student', require('./routes/Teachers/studentRoutes'));
@@ -327,16 +320,7 @@ connectDB().then(() => {
     console.warn('⚠️ Could not load chatbot routes:', error.message);
   }
 
-  // Register additional authentication routes
-  console.log('Registering routes for /api/auth');
-  try {
-    app.use('/api/auth', require('./routes/auth/authRoutes'));
-    console.log('✅ Loaded auth routes');
-  } catch (error) {
-    console.warn('⚠️ Could not load auth routes:', error.message);
-    console.log('Using built-in auth routes instead.');
-  }
-
+ 
   // Simple home route
   app.get('/', (_req, res) => res.send('API is running…'));
 

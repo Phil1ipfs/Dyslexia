@@ -4,52 +4,128 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const { auth } = require('../../middleware/auth');
 
+// First import the Student model schema
+// Note: Make sure this path is correct for your project structure
+const Student = mongoose.model('Student', new mongoose.Schema({
+  idNumber: {
+    type: Number,
+    required: true,
+    unique: true
+  },
+  firstName: {
+    type: String,
+    required: true
+  },
+  middleName: {
+    type: String,
+    default: ''
+  },
+  lastName: {
+    type: String,
+    required: true
+  },
+  profileImageUrl: {
+    type: String,
+    default: null
+  },
+  age: {
+    type: Number,
+    default: null
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  lastLogin: {
+    type: Date,
+    default: null
+  },
+  completedLessons: {
+    type: [Number],
+    default: []
+  },
+  readingLevel: {
+    type: String,
+    default: 'Not Assessed'
+  },
+  readingPercentage: {
+    type: Number,
+    default: 0
+  },
+  preAssessmentCompleted: {
+    type: Boolean,
+    default: false
+  },
+  parentId: {
+    type: mongoose.Schema.Types.Mixed
+  },
+  lastAssessmentDate: {
+    type: Date
+  }
+}));
+
 // Helper function to handle different types of ObjectId formats
 const toObjectIdIfPossible = (id) => {
   if (!id) return null;
-  
+
   try {
     if (typeof id === 'object' && id.$oid) {
       return new mongoose.Types.ObjectId(id.$oid);
     }
-    
+
     if (mongoose.Types.ObjectId.isValid(id)) {
       return new mongoose.Types.ObjectId(id);
     }
   } catch (error) {
     console.error('Error converting to ObjectId:', error);
   }
-  
+
   return id;
 };
+
+const getReadingLevelClass = (level) => {
+  switch (level) {
+    case 'Low Emerging': return 'mp-level-1';   // red
+    case 'High Emerging': return 'mp-level-2';   // orange
+    case 'Developing': return 'mp-level-3';   // yellow
+    case 'Transitioning': return 'mp-level-4';   // light‑green
+    case 'At Grade Level': return 'mp-level-5';   // green
+    case 'Early': return 'mp-level-6';   // teal
+    case 'Emergent': return 'mp-level-7';   // blue
+    case 'Fluent': return 'mp-level-8';   // indigo
+    case 'Not Assessed': return 'mp-level-na';  // gray
+    default: return 'mp-level-na';
+  }
+};
+
 
 // Helper function to get parent information from mobile_literexia.parent.profile
 async function getParentInfo(student) {
   let parentInfo = "Not connected";
-  
+
   if (!student.parentId) {
     return parentInfo;
   }
-  
+
   try {
     // Connect to mobile_literexia database to get parent profile
-    const mobileDb = mongoose.connection.useDb('mobile_literexia');
-    const parentProfileCollection = mobileDb.collection('parent.profile');
-    
+    const parentDb = mongoose.connection.useDb('parent');
+    const parentProfileCollection = parentDb.collection('profile');
+
     console.log("Looking for parent with ID:", JSON.stringify(student.parentId));
-    
+
     let parentProfile = null;
-    
+
     // If parentId is in object format with $oid property
     if (typeof student.parentId === 'object' && student.parentId.$oid) {
       try {
         const parentObjId = new mongoose.Types.ObjectId(student.parentId.$oid);
         console.log("Looking up parent by ObjectId:", parentObjId);
-        
+
         // Find by _id
         parentProfile = await parentProfileCollection.findOne({ _id: parentObjId });
         console.log("Found parent by _id:", parentProfile ? "Yes" : "No");
-        
+
         // If not found, try by userId
         if (!parentProfile) {
           parentProfile = await parentProfileCollection.findOne({ userId: parentObjId });
@@ -59,14 +135,14 @@ async function getParentInfo(student) {
         console.error("Error converting parentId to ObjectId:", err);
       }
     }
-    
+
     // If parentId is a string or we didn't find a parent yet
-    if (!parentProfile && (typeof student.parentId === 'string' || 
-        (typeof student.parentId === 'object' && student.parentId.toString))) {
-      
-      const parentIdStr = typeof student.parentId === 'string' ? 
-                         student.parentId : student.parentId.toString();
-      
+    if (!parentProfile && (typeof student.parentId === 'string' ||
+      (typeof student.parentId === 'object' && student.parentId.toString))) {
+
+      const parentIdStr = typeof student.parentId === 'string' ?
+        student.parentId : student.parentId.toString();
+
       if (mongoose.Types.ObjectId.isValid(parentIdStr)) {
         const objId = new mongoose.Types.ObjectId(parentIdStr);
         parentProfile = await parentProfileCollection.findOne({
@@ -77,11 +153,11 @@ async function getParentInfo(student) {
         });
       }
     }
-    
+
     if (parentProfile) {
       // Format full name with first, middle, and last name
       parentInfo = [
-        parentProfile.firstName || '', 
+        parentProfile.firstName || '',
         parentProfile.middleName ? parentProfile.middleName + ' ' : '',
         parentProfile.lastName || ''
       ].filter(part => part).join(' ');
@@ -92,9 +168,40 @@ async function getParentInfo(student) {
   } catch (error) {
     console.error("Error finding parent:", error);
   }
-  
+
   return parentInfo;
 }
+
+// Add this to your studentRoutes.js
+router.get('/test-image/:id', async (req, res) => {
+  try {
+    const testDb = mongoose.connection.useDb('test');
+    const usersCollection = testDb.collection('users');
+
+    const student = await usersCollection.findOne({
+      idNumber: isNaN(req.params.id) ? undefined : parseInt(req.params.id)
+    });
+
+    if (!student || !student.profileImageUrl) {
+      return res.status(404).json({ 
+        message: 'No image found',
+        studentFound: !!student
+      });
+    }
+
+    // Return details for debugging
+    res.json({
+      imageUrl: student.profileImageUrl,
+      student: {
+        id: student.idNumber,
+        name: `${student.firstName} ${student.lastName}`
+      },
+      headers: req.headers
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Get all students
 router.get('/students', auth, async (req, res) => {
@@ -102,14 +209,14 @@ router.get('/students', auth, async (req, res) => {
     const { page = 1, limit = 10, search, readingLevelFilter } = req.query;
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
-    
+
     // Get access to test database with student data
     const testDb = mongoose.connection.useDb('test');
     const usersCollection = testDb.collection('users');
-    
+
     // Build query filter
     let filter = {};
-    
+
     if (search) {
       const searchRegex = new RegExp(search, 'i');
       filter = {
@@ -120,38 +227,42 @@ router.get('/students', auth, async (req, res) => {
         ].filter(condition => condition !== undefined)
       };
     }
-    
+
     // Fetch students with pagination
     const students = await usersCollection
       .find(filter)
       .limit(limitNum)
       .skip((pageNum - 1) * limitNum)
       .toArray();
-    
+
     // Create an array of transformed student promises
     const transformedStudentsPromises = students.map(async (student) => {
+      console.log(`Original profile image URL for ${student.firstName} ${student.lastName}:`, student.profileImageUrl);
+
       // Get reading level directly from student record - NO CONVERSION
       let readingLevel = student.readingLevel || 'Not Assessed';
       let readingPercentage = student.readingPercentage || 0;
-      
+
       // Apply reading level filtering if specified
       if (readingLevelFilter && readingLevelFilter !== 'all' && readingLevel !== readingLevelFilter) {
         return null; // This student doesn't match the filter
       }
-      
+
+      const readingLevelClass = getReadingLevelClass(readingLevel);
+
       // Get parent information using the helper function
       const parentInfo = await getParentInfo(student);
-      
+
       // Get pre-assessment completion status directly from the database
       const preAssessmentCompleted = student.preAssessmentCompleted === true;
-      
+
       // Generate activities data based on reading percentage
       const activitiesCompleted = preAssessmentCompleted ? Math.floor(readingPercentage / 5) : 0;
       const totalActivities = 25; // Fixed total activities
-      
+
       // Format the full name properly
       const fullName = `${student.firstName || ''} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName || ''}`.trim();
-      
+
       // Transform student data for frontend
       return {
         id: student.idNumber?.toString() || student._id.toString(),
@@ -160,22 +271,26 @@ router.get('/students', auth, async (req, res) => {
         gradeLevel: 'Grade 1', // Fixed to Grade 1 as requested
         section: 'Sampaguita',
         readingLevel: readingLevel, // Use directly, no conversion
+        readingLevelClass,
         readingPercentage: readingPercentage,
         parent: parentInfo,
         preAssessmentCompleted: preAssessmentCompleted,
+        profileImageUrl: student.profileImageUrl || null,
+        gender: student.gender || 'Not specified',
         lastAssessment: student.lastAssessmentDate ? new Date(student.lastAssessmentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Not assessed',
         activitiesCompleted: activitiesCompleted,
         totalActivities: totalActivities,
         lastActivityDate: student.lastLogin || student.createdAt || new Date()
       };
     });
-    
+
     // Wait for all promises to resolve
     const transformedStudents = await Promise.all(transformedStudentsPromises);
     
+
     // Filter out null entries (those that didn't match filters)
     const filteredStudents = transformedStudents.filter(student => student !== null);
-    
+
     res.json({
       students: filteredStudents,
       totalPages: Math.ceil(filteredStudents.length / limitNum),
@@ -194,28 +309,28 @@ router.get('/student/:id', auth, async (req, res) => {
     // Connect to test database
     const testDb = mongoose.connection.useDb('test');
     const usersCollection = testDb.collection('users');
-    
+
     // Convert id to number if possible
     const idQuery = isNaN(req.params.id) ? req.params.id : parseInt(req.params.id);
-    
-    const student = await usersCollection.findOne({ 
+
+    const student = await usersCollection.findOne({
       $or: [
         { idNumber: idQuery },
         { _id: mongoose.Types.ObjectId.isValid(req.params.id) ? new mongoose.Types.ObjectId(req.params.id) : null }
       ].filter(condition => condition !== null)
     });
-    
+
     if (student) {
       // Use the reading level directly from the student record
       let readingLevel = student.readingLevel || 'Not Assessed';
       let readingPercentage = student.readingPercentage || 0;
-      
+
       // Get pre-assessment completion status directly from the database
       const preAssessmentCompleted = student.preAssessmentCompleted === true;
-      
+
       // Get parent information using the helper function
       const parentInfo = await getParentInfo(student);
-      
+
       // Create student data object - no parent email or contact info yet
       const studentData = {
         id: student.idNumber?.toString() || student._id.toString(),
@@ -227,14 +342,16 @@ router.get('/student/:id', auth, async (req, res) => {
         readingLevel: readingLevel, // Use directly, no conversion
         readingPercentage: readingPercentage,
         parent: parentInfo,
-        parentEmail: 'Not available', // Can be enhanced if needed
-        contactNumber: 'Not available', // Can be enhanced if needed
+        parentEmail: 'Not available', 
+        contactNumber: 'Not available', 
         address: student.address || 'Not available',
+        profileImageUrl: student.profileImageUrl || null,
+
         lastActivityDate: student.lastLogin || student.createdAt || new Date(),
         preAssessmentCompleted: preAssessmentCompleted,
         lastAssessment: student.lastAssessmentDate ? new Date(student.lastAssessmentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Not assessed'
       };
-      
+
       return res.json(studentData);
     } else {
       return res.status(404).json({ message: 'Student not found' });
@@ -251,30 +368,30 @@ router.get('/assessment/:id', auth, async (req, res) => {
     // Connect to test database for student data
     const testDb = mongoose.connection.useDb('test');
     const usersCollection = testDb.collection('users');
-    
+
     // Find the student first to get their reading level
     const studentIdStr = req.params.id;
     const studentIdNum = isNaN(req.params.id) ? null : parseInt(req.params.id);
-    
+
     let student = null;
-    
+
     // Try numeric ID first if available
     if (studentIdNum !== null) {
       student = await usersCollection.findOne({ idNumber: studentIdNum });
     }
-    
+
     // If not found, try with string ID
     if (!student && mongoose.Types.ObjectId.isValid(studentIdStr)) {
       student = await usersCollection.findOne({ _id: new mongoose.Types.ObjectId(studentIdStr) });
     }
-    
+
     if (student) {
       // Get reading level directly from student record
       let readingLevel = student.readingLevel || 'Not Assessed';
-      
+
       // Calculate percentage if available
       const readingPercentage = student.readingPercentage || 0;
-      
+
       // Calculate skill scores based on the reading percentage
       // These are estimates based on the reading level
       const overall = readingPercentage;
@@ -282,12 +399,12 @@ router.get('/assessment/:id', auth, async (req, res) => {
       const pantigScore = Math.round(readingPercentage * 0.85);
       const pagkilalaNgSalitaScore = Math.round(readingPercentage * 0.8);
       const pagUnawaSaBinasaScore = Math.round(readingPercentage * 0.75);
-      
+
       const formattedAssessment = {
         studentId: studentIdStr,
         readingLevel: readingLevel, // Use directly, no conversion
         recommendedLevel: readingLevel,
-        assessmentDate: student.lastAssessmentDate 
+        assessmentDate: student.lastAssessmentDate
           ? new Date(student.lastAssessmentDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
           : 'Not available',
         scores: {
@@ -321,7 +438,7 @@ router.get('/assessment/:id', auth, async (req, res) => {
         ],
         focusAreas: determineFocusAreas(overall, 100)
       };
-      
+
       return res.json(formattedAssessment);
     } else {
       return res.status(404).json({ message: 'Student not found' });
@@ -338,46 +455,46 @@ router.get('/progress/:id', auth, async (req, res) => {
     // Connect to test database for student data
     const testDb = mongoose.connection.useDb('test');
     const usersCollection = testDb.collection('users');
-    
+
     // Find the student first to get their reading level
     const studentIdStr = req.params.id;
     const studentIdNum = isNaN(req.params.id) ? null : parseInt(req.params.id);
-    
+
     let student = null;
-    
+
     // Try numeric ID first if available
     if (studentIdNum !== null) {
       student = await usersCollection.findOne({ idNumber: studentIdNum });
     }
-    
+
     // If not found, try with string ID
     if (!student && mongoose.Types.ObjectId.isValid(studentIdStr)) {
       student = await usersCollection.findOne({ _id: new mongoose.Types.ObjectId(studentIdStr) });
     }
-    
+
     if (student) {
       // Get reading level directly from student record
       let readingLevel = student.readingLevel || 'Not Assessed';
-      
+
       // Calculate percentage if available
       const readingPercentage = student.readingPercentage || 0;
-      
+
       // Get pre-assessment completion status
       const preAssessmentCompleted = student.preAssessmentCompleted === true;
-      
+
       // Calculate skill scores based on the reading percentage
       const patinigScore = Math.round(readingPercentage * 0.9);
       const pantigScore = Math.round(readingPercentage * 0.85);
       const pagkilalaNgSalitaScore = Math.round(readingPercentage * 0.8);
       const pagUnawaSaBinasaScore = Math.round(readingPercentage * 0.75);
-      
+
       // Calculate completed activities based on reading percentage
       const activitiesCompleted = preAssessmentCompleted ? Math.floor(readingPercentage / 5) : 0;
       const totalActivities = 25;
-      
+
       // Generate sample recent activities
       const recentActivities = generateRecentActivities(req.params.id, readingPercentage / 100);
-      
+
       // Generate skill mastery data
       const skillMasteryOverTime = {
         patinig: generateSkillProgressData(patinigScore),
@@ -385,7 +502,7 @@ router.get('/progress/:id', auth, async (req, res) => {
         pagkilalaNgSalita: generateSkillProgressData(pagkilalaNgSalitaScore),
         pagUnawaSaBinasa: generateSkillProgressData(pagUnawaSaBinasaScore)
       };
-      
+
       const progressData = {
         studentId: req.params.id,
         activitiesCompleted: activitiesCompleted,
@@ -400,7 +517,7 @@ router.get('/progress/:id', auth, async (req, res) => {
         recentActivities: recentActivities,
         skillMasteryOverTime: skillMasteryOverTime
       };
-      
+
       return res.json(progressData);
     } else {
       // Return default progress data if student not found
@@ -436,16 +553,16 @@ router.get('/reading-levels', auth, async (req, res) => {
     // Get all possible reading levels directly from the database
     const testDb = mongoose.connection.useDb('test');
     const usersCollection = testDb.collection('users');
-    
+
     // Get distinct reading levels from the users collection
     const dbReadingLevels = await usersCollection.distinct('readingLevel');
-    
+
     // Filter out null/undefined values and add 'Not Assessed'
     const readingLevels = dbReadingLevels
       .filter(level => level) // Remove null/undefined
       .concat(['Not Assessed']) // Add 'Not Assessed' option
       .filter((value, index, self) => self.indexOf(value) === index); // Remove duplicates
-    
+
     res.json(readingLevels);
   } catch (error) {
     console.error('Error fetching reading levels:', error);
@@ -459,32 +576,32 @@ router.get('/recommended-lessons/:id', auth, async (req, res) => {
     // Connect to test database for student data
     const testDb = mongoose.connection.useDb('test');
     const usersCollection = testDb.collection('users');
-    
+
     // Find the student first to get their reading level
     const studentIdStr = req.params.id;
     const studentIdNum = isNaN(req.params.id) ? null : parseInt(req.params.id);
-    
+
     let student = null;
-    
+
     // Try numeric ID first if available
     if (studentIdNum !== null) {
       student = await usersCollection.findOne({ idNumber: studentIdNum });
     }
-    
+
     // If not found, try with string ID
     if (!student && mongoose.Types.ObjectId.isValid(studentIdStr)) {
       student = await usersCollection.findOne({ _id: new mongoose.Types.ObjectId(studentIdStr) });
     }
-    
+
     let readingLevel = 'Not Assessed';
-    
+
     if (student && student.readingLevel) {
       readingLevel = student.readingLevel;
     }
-    
+
     // Generate recommended lessons based on reading level
     const lessons = generateRecommendedLessons(readingLevel);
-    
+
     res.json(lessons);
   } catch (error) {
     console.error('Error fetching recommended lessons:', error);
@@ -498,32 +615,32 @@ router.get('/prescriptive-recommendations/:id', auth, async (req, res) => {
     // Connect to test database for student data
     const testDb = mongoose.connection.useDb('test');
     const usersCollection = testDb.collection('users');
-    
+
     // Find the student first to get their reading level
     const studentIdStr = req.params.id;
     const studentIdNum = isNaN(req.params.id) ? null : parseInt(req.params.id);
-    
+
     let student = null;
-    
+
     // Try numeric ID first if available
     if (studentIdNum !== null) {
       student = await usersCollection.findOne({ idNumber: studentIdNum });
     }
-    
+
     // If not found, try with string ID
     if (!student && mongoose.Types.ObjectId.isValid(studentIdStr)) {
       student = await usersCollection.findOne({ _id: new mongoose.Types.ObjectId(studentIdStr) });
     }
-    
+
     let readingLevel = 'Not Assessed';
-    
+
     if (student && student.readingLevel) {
       readingLevel = student.readingLevel;
     }
-    
+
     // Generate prescriptive recommendations based on reading level
     const recommendations = generatePrescriptiveRecommendations(readingLevel);
-    
+
     res.json(recommendations);
   } catch (error) {
     console.error('Error fetching prescriptive recommendations:', error);
@@ -535,17 +652,17 @@ router.get('/prescriptive-recommendations/:id', auth, async (req, res) => {
 router.post('/assign-lessons/:id', auth, async (req, res) => {
   try {
     const { lessonIds } = req.body;
-    
+
     if (!Array.isArray(lessonIds) || lessonIds.length === 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'No lesson IDs provided' 
+      return res.status(400).json({
+        success: false,
+        message: 'No lesson IDs provided'
       });
     }
-    
+
     // In a real implementation, this would update a database
     // For now, we'll just return success
-    
+
     res.json({
       success: true,
       message: `Successfully assigned ${lessonIds.length} lessons to student`,
@@ -553,10 +670,10 @@ router.post('/assign-lessons/:id', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Error assigning lessons:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Server error', 
-      error: error.message 
+      message: 'Server error',
+      error: error.message
     });
   }
 });
@@ -566,10 +683,10 @@ router.put('/update-activity/:id', auth, async (req, res) => {
   try {
     const activityId = req.params.id;
     const updatedActivity = req.body;
-    
+
     // In a real implementation, this would update a database
     // For now, we'll just return success
-    
+
     res.json({
       success: true,
       message: 'Activity updated successfully',
@@ -581,10 +698,10 @@ router.put('/update-activity/:id', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating activity:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Server error', 
-      error: error.message 
+      message: 'Server error',
+      error: error.message
     });
   }
 });
@@ -604,7 +721,7 @@ function getSkillAnalysis(skillCategory, score) {
 
 function determineFocusAreas(score, maxScore) {
   const percentage = (score / maxScore) * 100;
-  
+
   if (percentage <= 25) {
     return 'pagkilala ng mga patinig at pantig';
   } else if (percentage <= 50) {
@@ -626,7 +743,7 @@ function generateRecentActivities(studentId, score) {
     { id: 'act004', title: 'Paghihiwalay ng Pantig', category: 'Pantig', score: Math.round(score * 90), timeSpent: 18 },
     { id: 'act005', title: 'Pagkilala ng mga Pamilyar na Salita', category: 'Pagkilala ng Salita', score: Math.round(score * 80), timeSpent: 22 }
   ];
-  
+
   // Add dates, most recent first
   return baseActivities.map((activity, index) => {
     const date = new Date();
@@ -642,23 +759,23 @@ function generateSkillProgressData(currentScore) {
   // Generate realistic progress over time
   const now = new Date();
   const data = [];
-  
+
   // Start with a lower score and progress toward current score
   let baseScore = Math.max(currentScore - 30, 0);
-  
+
   for (let i = 0; i < 5; i++) {
     const date = new Date();
     date.setDate(now.getDate() - ((4 - i) * 7)); // Weekly progress
-    
+
     // Progress toward current score
     const progressScore = Math.round(baseScore + ((currentScore - baseScore) * (i / 4)));
-    
+
     data.push({
       date: date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }),
       score: progressScore
     });
   }
-  
+
   return data;
 }
 
@@ -706,7 +823,7 @@ function generateRecommendedLessons(readingLevel) {
       { id: 'lessonNA01', title: 'Pre-Assessment Exercise', level: 'Not Assessed', category: 'Assessment', description: 'Exercise para sa pre-assessment.', estimatedTime: '30 minuto', difficulty: 'Madali', assigned: false, isRecommended: true }
     ]
   };
-  
+
   return levelLessonsMap[readingLevel] || levelLessonsMap['Not Assessed'];
 }
 
@@ -746,7 +863,7 @@ function generatePrescriptiveRecommendations(readingLevel) {
       { id: 14, title: "Pre-Assessment Recommendation", category: "Pre-Assessment", rationale: "Kailangan munang kumpletuhin ang pre-assessment upang matukoy ang tamang mga rekomendasyon.", status: "draft" }
     ]
   };
-  
+
   return focusAreas[readingLevel] || focusAreas['Not Assessed'];
 }
 

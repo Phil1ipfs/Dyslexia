@@ -3,13 +3,16 @@ import {
   FaUser,
   FaIdCard,
   FaUserGraduate,
-  FaBookReader
+  FaBookReader,
+  FaMale,
+  FaFemale
 } from 'react-icons/fa';
 import '../ManageProgress/css/StudentProfileCard.css';
+import S3Image from '../../S3Image';
 
 const StudentProfileCard = ({ student }) => {
   if (!student) return null;
-
+  
   /* ---------- helpers ---------- */
   const getInitials = (name = '') =>
     name
@@ -18,28 +21,42 @@ const StudentProfileCard = ({ student }) => {
       .join('')
       .toUpperCase()
       .substring(0, 2);
+   
+  const getFullName = (student) => {
+    // Check if first, middle, and last name exist
+    if (student.firstName && student.lastName) {
+      const middle = student.middleName ? `${student.middleName} ` : '';
+      return `${student.firstName} ${middle}${student.lastName}`;
+    }
+    // Fallback to name if it exists
+    return student.name || 'Student';
+  };
 
-  const getGradeInFilipino = (gradeLevel = '') => {
-    switch (gradeLevel) {
-      case 'Kindergarten':
-        return 'Kindergarten';
-      case 'Grade 1':
-        return 'Ika-1 Baitang';
-      case 'Grade 2':
-        return 'Ika-2 Baitang';
-      case 'Grade 3':
-        return 'Ika-3 Baitang';
+  // Get CSS class for reading level
+  const getReadingLevelClass = (level) => {
+    if (!level || level === 'Not Assessed') return 'reading-level-not-assessed';
+    switch(level?.toLowerCase()) {
+      case 'early':
+        return 'reading-level-early';
+      case 'developing':
+        return 'reading-level-developing';
+      case 'fluent':
+        return 'reading-level-fluent';
+      case 'advanced':
+        return 'reading-level-advanced';
       default:
-        return gradeLevel;
+        return 'reading-level-not-assessed';
     }
   };
-
-  const getGenderInFilipino = (gender = '') => {
-    if (gender.toLowerCase() === 'male') return 'Lalaki';
-    if (gender.toLowerCase() === 'female') return 'Babae';
-    return 'Hindi Tinukoy';
+  
+  // Get gender-specific class
+  const getGenderClass = (gender) => {
+    return gender?.toLowerCase() === 'female' ? 'female-icon' : 'male-icon';
   };
-
+  
+  // Get reading level class
+  const readingLevelClass = getReadingLevelClass(student.readingLevel);
+  
   /* ---------- render ---------- */
   return (
     <div className="literexia-student-card">
@@ -47,18 +64,21 @@ const StudentProfileCard = ({ student }) => {
       <div className="literexia-student-header">
         <div className="literexia-avatar">
           <div className="literexia-avatar-circle">
-            {getInitials(student.name)}
+            <S3Image 
+              src={student.profileImageUrl}
+              alt={getFullName(student)}
+              fallbackText={getInitials(getFullName(student))}
+              className="literexia-avatar-image"
+            />
           </div>
         </div>
-
         <div className="literexia-student-name-section">
-          <h2 className="literexia-student-name">{student.name}</h2>
+          <h2 className="literexia-student-name">{getFullName(student)}</h2>
           <span className="literexia-student-id">
-            <FaIdCard /> ID: {student.id}
+            <FaIdCard /> ID: {student.idNumber || student.id || ''}
           </span>
         </div>
       </div>
-
       {/* core details */}
       <div className="literexia-student-details">
         <div className="literexia-detail-row">
@@ -67,53 +87,49 @@ const StudentProfileCard = ({ student }) => {
               <FaUser />
             </div>
             <div className="literexia-detail-content">
-              <span className="literexia-detail-label">Edad</span>
+              <span className="literexia-detail-label">Age</span>
               <span className="literexia-detail-value">
-                {student.age} taong gulang
+                {student.age} years old
               </span>
             </div>
           </div>
-
           <div className="literexia-detail-item">
             <div className="literexia-detail-icon">
               <FaUserGraduate />
             </div>
             <div className="literexia-detail-content">
-              <span className="literexia-detail-label">Baitang</span>
+              <span className="literexia-detail-label">Grade</span>
               <span className="literexia-detail-value">
-                {getGradeInFilipino(student.gradeLevel)}
+                {student.gradeLevel}
               </span>
             </div>
           </div>
         </div>
-
         <div className="literexia-detail-row">
           <div className="literexia-detail-item">
-            <div className="literexia-detail-icon gender-icon">
-              <FaUser />
+            <div className={`literexia-detail-icon gender-icon ${getGenderClass(student.gender)}`}>
+              {student.gender && student.gender.toLowerCase() === 'female' ? <FaFemale /> : <FaMale />}
             </div>
             <div className="literexia-detail-content">
-              <span className="literexia-detail-label">Kasarian</span>
+              <span className="literexia-detail-label">Gender</span>
               <span className="literexia-detail-value">
-                {getGenderInFilipino(student.gender)}
+                {student.gender || 'Not specified'}
               </span>
             </div>
           </div>
-
           <div className="literexia-detail-item">
-            <div className="literexia-detail-icon">
+            <div className={`literexia-detail-icon reading-icon ${readingLevelClass}`}>
               <FaBookReader />
             </div>
             <div className="literexia-detail-content">
-              <span className="literexia-detail-label">Antas ng Pagbasa</span>
-              <span className="literexia-detail-value reading-level">
-                {student.readingLevel || 'Hindi pa nasusuri'}
+              <span className="literexia-detail-label">Reading Level</span>
+              <span className={`literexia-detail-value ${readingLevelClass}`}>
+                {student.readingLevel || 'Not Assessed'}
               </span>
             </div>
           </div>
         </div>
       </div>
-
     </div>
   );
 };

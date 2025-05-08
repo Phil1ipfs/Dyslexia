@@ -1,131 +1,251 @@
 // controllers/authController.js
-const bcrypt = require('bcrypt');
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt'); 
 const jwt = require('jsonwebtoken');
-// Use your existing User model
-const User = require('../models/userModel');
 
+/**
+ * Login controller with proper security validation
+ */
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
-  /* ── 1. quick validation ─────────────────────────────── */
+  /* ── 1. Basic validation ─────────────────────────────── */
   if (!email || !password) {
     return res.status(400).json({ message: 'Email & password required' });
   }
 
   try {
     console.log('🔑 Login attempt:', email);
-
-    /* ── 2. fetch user ──────────────────────────────────── */
-    console.log('Searching for user in collection:', User.collection.name);
-    const user = await User.findOne({ email });
     
+    // Get User model from users_web database
+    const usersDb = mongoose.connection.useDb('users_web');
+    const usersCollection = usersDb.collection('users');
+    
+    /* ── 2. Fetch user ──────────────────────────────────── */
+    console.log('Searching for user in users_web.users collection');
+
+    const user = await usersCollection.findOne({ email });
+
     if (!user) {
+      // Use consistent messaging to prevent email enumeration
       console.log('❌ User not found:', email);
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     console.log('✅ User found:', user.email);
-    console.log('User roles:', user.roles);
-
-    /* ── 3. password check with bcrypt ─────────────────── */
-    // FOR TESTING ONLY - Make sure password check is working properly
-    // Remove this in production or set to false
-    const bypassPasswordCheck = false;
     
-    let isMatch = bypassPasswordCheck;
+    /* ── 3. Check password ───────────────────────────────── */
+    // Determine which field has the password hash
+    let passwordField = null;
+    let passwordHash = null;
     
-    if (!bypassPasswordCheck) {
+    if (user.passwordHash) {
+      passwordField = 'passwordHash';
+      passwordHash = user.passwordHash;
+    } else if (user.password) {
+      passwordField = 'password';
+      passwordHash = user.password;
+    }
+    
+    if (!passwordHash) {
+      console.error('No password hash found for user:', email);
+      return res.status(500).json({ message: 'Account configuration error' });
+    }
+    
+    console.log(`Using ${passwordField} field for password verification`);
+    
+    let passwordIsValid = false;
+    
+    // Verify the password using bcrypt - NEVER use test password in production
+    if (passwordHash.startsWith('$2a$') || passwordHash.startsWith('$2b$')) {
       try {
-        isMatch = await bcrypt.compare(password, user.password);
-        console.log('Password check result:', isMatch ? '✅ Valid' : '❌ Invalid');
-      } catch (error) {
-        console.error('❌ Bcrypt error:', error.message);
-        return res.status(500).json({ message: 'Password verification error' });
+        passwordIsValid = await bcrypt.compare(password, passwordHash);
+        console.log('Password bcrypt comparison result:', passwordIsValid ? 'Valid' : 'Invalid');
+      } catch (bcryptError) {
+        console.error('Bcrypt error:', bcryptError);
+        return res.status(500).json({ message: 'Authentication error' });
       }
     } else {
-      console.log('⚠️ DEV MODE: Password check bypassed, allowing login');
+      // If password isn't hashed with bcrypt, it's invalid
+      console.error('Invalid password hash format for user:', email);
+      return res.status(500).json({ message: 'Account configuration error' });
+    }
+    
+    if (!passwordIsValid) {
+      console.log('❌ Invalid password for user:', email);
+      
+      // Log failed attempt but use consistent messaging
+      await usersCollection.updateOne(
+        { _id: user._id },
+        { 
+          $inc: { failedLoginAttempts: 1 },
+          $set: { lastFailedLogin: new Date() }
+        }
+      );
+      
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    if (!isMatch) {
-      console.log('❌ Wrong password for:', email);
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
+    /* ── 4. Reset failed login attempts on success ───────── */
+    await usersCollection.updateOne(
+      { _id: user._id },
+      { 
+        $set: { 
+          failedLoginAttempts: 0,
+          lastSuccessfulLogin: new Date() 
+        } 
+      }
+    );
 
-    /* ── 4. sign JWT ───────────────────────────────────── */
+    /* ── 5. Get user roles ───────────────────────────────── */
+    // Look up the role in the roles collection if it's an ObjectId
+    let userRoles = [];
+    
+    if (user.roles) {
+      if (user.roles.$oid) {
+        // It's an ObjectId reference - look it up in the roles collection
+        const rolesCollection = usersDb.collection('roles');
+        const role = await rolesCollection.findOne({ _id: new mongoose.Types.ObjectId(user.roles.$oid) });
+        
+        if (role && role.name) {
+          userRoles.push(role.name);
+        }
+      } else if (typeof user.roles === 'string') {
+        userRoles = [user.roles];
+      } else if (Array.isArray(user.roles)) {
+        userRoles = user.roles;
+      }
+    }
+    
+    console.log('User roles:', userRoles);
+
+    /* ── 6. Sign JWT with appropriate options ───────────── */
     const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
     
     const token = jwt.sign(
-      { 
-        id: user._id, 
-        email: user.email, 
-        roles: user.roles || ['user'] 
+      {
+        id: user._id.toString(),
+        email: user.email,
+        roles: userRoles
       },
       secretKey,
-      { expiresIn: '1h' }
+      { 
+        expiresIn: '1h',
+        issuer: 'literexia-api',
+        subject: user._id.toString()
+      }
     );
 
     console.log('✅ Login success for:', email);
-    console.log('User roles for redirection:', user.roles);
+    console.log('User roles for redirection:', userRoles);
 
-    /* ── 5. success response ───────────────────────────── */
+    /* ── 7. Success response ───────────────────────────── */
     return res.json({
       token,
-      user: { id: user._id, email: user.email, roles: user.roles || ['user'] }
+      user: { 
+        id: user._id.toString(), 
+        email: user.email, 
+        roles: userRoles 
+      }
     });
 
   } catch (err) {
-    console.error('💥 Login handler error:\n', err.stack);
+    console.error('💥 Login handler error:', err);
     return res.status(500).json({ message: 'Server error' });
   }
 };
 
-// Register new user
-exports.register = async (req, res) => {
+/**
+ * Change password function with proper validation
+ */
+exports.changePassword = async (req, res) => {
   try {
-    const { email, password, role } = req.body;
-
-    // Basic validation
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
-
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Validate role
-    const validRoles = ['parent', 'teacher', 'admin', 'user', 'magulang', 'guro'];
-    const userRole = validRoles.includes(role) ? role : 'user';
+    const { currentPassword, newPassword } = req.body;
     
-    // Create new user
-    const newUser = new User({
-      email,
-      password: hashedPassword,
-      roles: [userRole]
-    });
-
-    await newUser.save();
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: newUser._id, email: newUser.email, roles: newUser.roles },
-      process.env.JWT_SECRET_KEY || 'fallback_secret_key',
-      { expiresIn: '1h' }
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current password and new password are required' });
+    }
+    
+    // Validate password complexity - at least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({ 
+        message: 'Password does not meet security requirements',
+        requirements: [
+          'Minimum 8 characters',
+          'At least one uppercase letter',
+          'At least one lowercase letter',
+          'At least one number',
+          'At least one special character (!@#$%^&*)'
+        ]
+      });
+    }
+    
+    // Get User model from users_web database
+    const usersDb = mongoose.connection.useDb('users_web');
+    const usersCollection = usersDb.collection('users');
+    
+    // Find the user
+    const user = await usersCollection.findOne({ _id: new mongoose.Types.ObjectId(req.user.id) });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Determine which field has the password hash
+    let passwordField = null;
+    let passwordHash = null;
+    
+    if (user.passwordHash) {
+      passwordField = 'passwordHash';
+      passwordHash = user.passwordHash;
+    } else if (user.password) {
+      passwordField = 'password';
+      passwordHash = user.password;
+    }
+    
+    if (!passwordHash) {
+      return res.status(500).json({ message: 'Account configuration error' });
+    }
+    
+    // Verify current password
+    let passwordIsValid = false;
+    
+    if (passwordHash.startsWith('$2a$') || passwordHash.startsWith('$2b$')) {
+      try {
+        passwordIsValid = await bcrypt.compare(currentPassword, passwordHash);
+      } catch (bcryptError) {
+        console.error('Bcrypt error:', bcryptError);
+        return res.status(500).json({ message: 'Authentication error' });
+      }
+    }
+    
+    if (!passwordIsValid) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+    
+    // Hash the new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 12); // Use higher cost factor for better security
+    
+    // Update the password - always use passwordHash field for consistency
+    const updateResult = await usersCollection.updateOne(
+      { _id: user._id },
+      { 
+        $set: { 
+          passwordHash: newPasswordHash,
+          passwordUpdatedAt: new Date(),
+          updatedAt: new Date()
+        } 
+      }
     );
-
-    res.status(201).json({
-      message: 'User registered successfully',
-      token,
-      user: { id: newUser._id, email: newUser.email, roles: newUser.roles }
-    });
-  } catch (err) {
-    console.error('Register error:', err);
-    res.status(500).json({ message: 'Server error' });
+    
+    if (updateResult.modifiedCount === 0) {
+      return res.status(500).json({ message: 'Failed to update password' });
+    }
+    
+    return res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Error updating password:', error);
+    return res.status(500).json({ message: 'Server error' });
   }
 };

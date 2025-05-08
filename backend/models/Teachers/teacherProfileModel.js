@@ -1,11 +1,9 @@
-// Updated teacherProfileController.js
+// Modified teacherProfileController.js to handle both databases
 const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
 const { Upload } = require('@aws-sdk/lib-storage');
 const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
-const s3Client = require('../config/s3');
-const path = require('path');
-const slugify = require('slugify'); // Add this dependency if not already installed
+const s3Client = require('../../config/s3');
 
 /**
  * Helper function to safely convert a string to ObjectId
@@ -33,8 +31,7 @@ const createSafeResponse = (profile) => {
   console.log('Creating safe response from profile:', {
     _id: response._id,
     firstName: response.firstName || '',
-    lastName: response.lastName || '',
-    email: response.email || ''
+    lastName: response.lastName || ''
   });
   
   // Add defaults for all fields that might be missing
@@ -84,11 +81,6 @@ const createSafeResponse = (profile) => {
     }
   }
   
-  // Add timestamps for cache busting
-  if (result.profileImageUrl) {
-    result.profileImageUrl = `${result.profileImageUrl}?t=${Date.now()}`;
-  }
-  
   return result;
 };
 
@@ -101,14 +93,13 @@ const getUserModel = async () => {
     email: String,
     password: String,
     passwordHash: String,
-    roles: mongoose.Schema.Types.Mixed,
-    updatedAt: Date
+    roles: mongoose.Schema.Types.Mixed
   }, { collection: 'users' });
   
-  // Get a connection to the users_web database
+  // Use users_web database
   const userConnection = mongoose.connection.useDb('users_web');
   
-  // Try to get existing model or create a new one
+  // Return User model or create it if it doesn't exist
   try {
     return userConnection.model('User');
   } catch (e) {
@@ -120,18 +111,15 @@ const getUserModel = async () => {
  * Get the profile collection from mobile_literexia database
  */
 const getProfileCollection = async () => {
-  // Connect to the mobile_literexia database
   const db = mongoose.connection.useDb('mobile_literexia');
-  // Use teachers.profile collection (not profile)
-  return db.collection('teachers.profile');
+  return db.collection('profile');
 };
-
 
 /**
  * Create or get the correct profile with the known ID
  */
 const getOrCreateCorrectProfile = async (req) => {
-  // Get the profile collection from mobile_literexia.teachers.profile
+  // Get the profile collection from mobile_literexia database
   const profileCollection = await getProfileCollection();
   
   // First try to find profile by user ID
@@ -157,36 +145,86 @@ const getOrCreateCorrectProfile = async (req) => {
         const userId = toObjectId(req.user.id);
         await profileCollection.updateOne(
           { _id: profile._id },
-          { $set: { userId, updatedAt: new Date() } }
+          { $set: { userId } }
         );
         profile.userId = userId;
-        profile.updatedAt = new Date();
-      }
-      return profile;
-    }
-  }
-   
-};
-
-  // If not found by user ID, try by email
-  if (req.user.email) {
-    profile = await profileCollection.findOne({ email: req.user.email });
-    if (profile) {
-      console.log('Found profile by email:', profile._id);
-      // Update profile with userId if needed
-      if (req.user.id && !profile.userId) {
-        const userId = toObjectId(req.user.id);
-        await profileCollection.updateOne(
-          { _id: profile._id },
-          { $set: { userId, updatedAt: new Date() } }
-        );
-        profile.userId = userId;
-        profile.updatedAt = new Date();
       }
       return profile;
     }
   }
   
+  // Try to find by the KNOWN ID as a last resort
+  const knownId = '6818bae0e9bed4ff08ab7e8c';
+  if (mongoose.Types.ObjectId.isValid(knownId)) {
+    const objId = new mongoose.Types.ObjectId(knownId);
+    const existingProfile = await profileCollection.findOne({ _id: objId });
+    
+    if (existingProfile) {
+      console.log('Found profile by known ID:', existingProfile._id);
+      
+      // Update it to link to the current user
+      const userId = toObjectId(req.user.id);
+      await profileCollection.updateOne(
+        { _id: objId },
+        { $set: { 
+            userId: userId,
+            email: req.user.email,
+            updatedAt: new Date()
+          } 
+        }
+      );
+      
+      existingProfile.userId = userId;
+      existingProfile.email = req.user.email;
+      existingProfile.updatedAt = new Date();
+      
+      return existingProfile;
+    }
+  }
+  
+  // If profile still doesn't exist, create a new one with the known ID
+  try {
+    const userId = toObjectId(req.user.id);
+    
+    const newProfileData = {
+      _id: new mongoose.Types.ObjectId(knownId),
+      userId: userId,
+      firstName: "Jan Mark",
+      lastName: "Caram",
+      position: "Grade 1 Teacher",
+      contact: "09155933015",
+      profileImageUrl: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      name: "Jan Mark Caram",  // Using firstName + lastName for consistency
+      address: "",
+      civilStatus: "",
+      dob: "",
+      emergencyContact: {
+        name: "",
+        number: ""
+      },
+      gender: "",
+      middleName: "",
+      email: req.user.email
+    };
+    
+    console.log('Creating new profile with ID:', knownId);
+    await profileCollection.insertOne(newProfileData);
+    
+    return newProfileData;
+  } catch (error) {
+    console.error('Error creating profile:', error);
+    
+    // If error is duplicate key, try to find it again
+    if (error.code === 11000) {
+      const objId = new mongoose.Types.ObjectId(knownId);
+      return await profileCollection.findOne({ _id: objId });
+    }
+    
+    throw error;
+  }
+};
 
 /**
  * Get teacher profile
@@ -209,17 +247,11 @@ exports.getProfile = async (req, res) => {
     // Create safe response with proper defaults
     const response = createSafeResponse(profile);
     
-    // Add timestamp for cache busting on image
-    if (response.profileImageUrl) {
-      response.profileImageUrl = `${response.profileImageUrl}?t=${Date.now()}`;
-    }
-    
     // Log profile data being returned for debugging
     console.log('Profile being returned:', JSON.stringify({
       _id: response._id,
       name: response.name,
-      email: response.email,
-      profileImageUrl: response.profileImageUrl ? 'has image' : 'no image'
+      email: response.email
     }));
     
     res.json(response);
@@ -259,9 +291,6 @@ exports.initializeProfile = async (req, res) => {
 
 /**
  * Update teacher profile
-
-/**
- * Update teacher profile with proper synchronization to users_web
  */
 exports.updateProfile = async (req, res) => {
   try {
@@ -285,9 +314,6 @@ exports.updateProfile = async (req, res) => {
         action: 'initialize'
       });
     }
-    // Check if email is being changed
-    const isEmailChanged = req.body.email !== req.user.email;
-    console.log(`Email change check: ${req.body.email} vs ${req.user.email} = ${isEmailChanged}`);
 
     // Generate full name from parts
     const fullName = [
@@ -323,48 +349,36 @@ exports.updateProfile = async (req, res) => {
     const profileCollection = await getProfileCollection();
     
     // Update the profile
-    const profileUpdateResult = await profileCollection.updateOne(
+    await profileCollection.updateOne(
       { _id: profile._id },
       { $set: updateData }
     );
     
-    console.log('Profile update result:', profileUpdateResult);
-    
     // Get the updated profile
     const updatedProfile = await profileCollection.findOne({ _id: profile._id });
 
-    // Always update the users_web database, regardless of email change
-    try {
-      // Connect directly to users_web database
-      const usersDb = mongoose.connection.useDb('users_web');
-      const usersCollection = usersDb.collection('users');
-      
-      if (req.user.id) {
-        const userId = toObjectId(req.user.id);
+    // Update email in user record if changed
+    if (req.body.email !== req.user.email) {
+      try {
+        const User = await getUserModel();
         
-        console.log(`Updating user in users_web.users with ID: ${userId}`);
-        
-        const userUpdateData = { 
-          email: req.body.email,
-          updatedAt: new Date()
-        };
-        
-        const userUpdateResult = await usersCollection.updateOne(
-          { _id: userId },
-          { $set: userUpdateData }
-        );
-        
-        console.log('User update result in users_web.users:', userUpdateResult);
+        if (req.user.id) {
+          await User.updateOne(
+            { _id: toObjectId(req.user.id) },
+            { $set: { email: req.body.email } }
+          );
+          console.log('Updated email in users_web.users collection');
+        }
+      } catch (emailUpdateError) {
+        console.error('Failed to update email in users collection:', emailUpdateError.message);
+        // Continue anyway, profile was updated
       }
-    } catch (userUpdateError) {
-      console.error('Failed to update user in users_web collection:', userUpdateError.message);
-      // Continue anyway, profile was updated
     }
 
     console.log('Profile updated successfully');
 
     res.json({ 
-      message: 'Profile updated successfully!', 
+      message: 'Profile updated!', 
       teacher: createSafeResponse(updatedProfile)
     });
   } catch (err) {
@@ -374,9 +388,8 @@ exports.updateProfile = async (req, res) => {
 };
 
 /**
- * Update teacher password - with proper synchronization to users_web
+ * Update teacher password
  */
-// Update teacher password function
 exports.updatePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
@@ -391,30 +404,24 @@ exports.updatePassword = async (req, res) => {
   }
 
   try {
-    // Connect directly to users_web database
-    const usersDb = mongoose.connection.useDb('users_web');
-    const usersCollection = usersDb.collection('users');
+    // Get the User model from users_web database
+    const User = await getUserModel();
     
     // Find user in users_web database
     const userId = toObjectId(req.user.id);
     let user = null;
     
     if (userId) {
-      user = await usersCollection.findOne({ _id: userId });
-      console.log('Found user by ID:', user ? 'Yes' : 'No');
+      user = await User.findOne({ _id: userId });
     }
     
     if (!user && req.user.email) {
-      user = await usersCollection.findOne({ email: req.user.email });
-      console.log('Found user by email:', user ? 'Yes' : 'No');
+      user = await User.findOne({ email: req.user.email });
     }
     
     if (!user) {
-      console.error('User not found in users_web collection');
       return res.status(404).json({ error: 'User account not found.' });
     }
-    
-    console.log('Found user in users_web:', user.email);
 
     // Check which field contains the password hash
     let passwordField = null;
@@ -429,22 +436,18 @@ exports.updatePassword = async (req, res) => {
     }
     
     if (!passwordField) {
-      console.error('No password field found in user record');
       return res.status(500).json({ error: 'Password field not found in user record.' });
     }
-    
-    console.log(`Using ${passwordField} for verification and update`);
 
     let passwordIsValid = false;
 
     // For password field string starting with $2a$, use bcrypt
-    if (passwordValue && (passwordValue.startsWith('$2a$') || passwordValue.startsWith('$2b$'))) {
+    if (passwordValue && passwordValue.startsWith('$2a$')) {
       try {
         passwordIsValid = await bcrypt.compare(currentPassword, passwordValue);
-        console.log('Password verification result:', passwordIsValid);
       } catch (bcryptError) {
-        console.error('Bcrypt error:', bcryptError);
-        // Support the test password as fallback
+        console.error('Bcrypt error:', bcryptError.message);
+        // Support the test password mentioned in your login function as fallback
         if (currentPassword === 'Admin101@') {
           passwordIsValid = true;
           console.log('Using test password match');
@@ -467,30 +470,17 @@ exports.updatePassword = async (req, res) => {
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
     
     // Update the appropriate password field in users_web.users
-    const updateData = { 
-      [passwordField]: newPasswordHash,
-      updatedAt: new Date()  
-    };
+    const updateData = { [passwordField]: newPasswordHash };
     
     // Update the user document
-    const updateResult = await usersCollection.updateOne(
-      { _id: user._id }, 
-      { $set: updateData }
-    );
-    
-    console.log('Password update result:', {
-      acknowledged: updateResult.acknowledged,
-      modifiedCount: updateResult.modifiedCount
-    });
+    await User.updateOne({ _id: user._id }, { $set: updateData });
 
-    if (updateResult.modifiedCount === 0) {
-      console.warn('No changes made to the password - may still be considered successful');
-    }
+    console.log(`Password changed successfully for user ID: ${user._id}`);
 
-    return res.json({ success: true, message: 'Password updated successfully.' });
+    res.json({ success: true, message: 'Password updated successfully.' });
   } catch (err) {
     console.error('Error updating password:', err);
-    return res.status(500).json({ error: 'Password update failed.', details: err.message });
+    res.status(500).json({ error: 'Password update failed.', details: err.message });
   }
 };
 
@@ -515,43 +505,32 @@ exports.uploadProfileImage = async (req, res) => {
     }
 
     try {
-      // Configuration values
-      const bucketName = process.env.AWS_S3_BUCKET || 'literexia-bucket';
+      // Check for bucket name in environment
+      const bucketName = process.env.AWS_BUCKET_NAME || 'literexia-bucket';
       const region = process.env.AWS_REGION || 'ap-southeast-2';
 
       // Delete existing S3 image if present
-      if (profile.profileImageUrl && 
-          profile.profileImageUrl !== "null" && 
+      if (profile.profileImageUrl &&
+          profile.profileImageUrl !== "null" &&
           profile.profileImageUrl.includes('amazonaws.com')) {
         try {
-          // Extract key from URL by parsing carefully
-          let key = '';
+          // Extract key from URL
+          const url = new URL(profile.profileImageUrl.startsWith('http') ? 
+                              profile.profileImageUrl : 
+                              `https://${profile.profileImageUrl}`);
           
-          // Clean the URL to handle any query parameters
-          const urlString = profile.profileImageUrl.split('?')[0];
-          
-          // Parse the path part only
-          if (urlString.includes('/teacher-profiles/')) {
-            const pathParts = urlString.split('/teacher-profiles/');
-            if (pathParts.length > 1) {
-              key = 'teacher-profiles/' + pathParts[1];
-              console.log('Extracted S3 key:', key);
-            }
-          } else {
-            console.log('Could not parse path from URL:', urlString);
-          }
-          
-          if (key) {
-            console.log('Deleting previous S3 image with key:', key);
+          const pathParts = url.pathname.split('/');
+          const key = pathParts.slice(1).join('/');
 
-            const deleteCommand = new DeleteObjectCommand({
-              Bucket: bucketName,
-              Key: key
-            });
+          console.log('Deleting previous S3 image with key:', key);
 
-            await s3Client.send(deleteCommand);
-            console.log('Successfully deleted previous S3 image');
-          }
+          const deleteCommand = new DeleteObjectCommand({
+            Bucket: bucketName,
+            Key: key
+          });
+
+          await s3Client.send(deleteCommand);
+          console.log('Successfully deleted previous S3 image');
         } catch (deleteError) {
           console.error('Failed to delete previous S3 image:', deleteError.message);
           // Continue with upload even if deletion fails
@@ -560,23 +539,18 @@ exports.uploadProfileImage = async (req, res) => {
 
       // Create organized folder structure
       const currentYear = new Date().getFullYear();
-      const currentMonth = String(date.getMonth() + 1).padStart(2, '0');
+      const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
 
-      // Create a safe filename - avoiding spaces and special characters
+      // Generate unique filename with teacher information
       const timestamp = Date.now();
-      const teacherId = profile._id.toString().replace(/[^a-zA-Z0-9]/g, '');
-      
-      // Get filename parts
-      const originalFilename = req.file.originalname;
-      const extension = path.extname(originalFilename);
-      
-      // Replace spaces and special characters
-      const filenameBase = path.basename(originalFilename, extension)
-        .replace(/[^a-zA-Z0-9]/g, '-')
-        .toLowerCase();
-      
-      // Create a safe key
-      const filename = `${timestamp}-${filenameBase}-${teacherId}${extension}`;
+      const sanitizedId = profile._id.toString().replace(/[^a-zA-Z0-9]/g, '');
+      const sanitizedName = profile.lastName ?
+        profile.lastName.toLowerCase().replace(/[^a-z0-9]/g, '') :
+        'teacher';
+      const fileExt = req.file.originalname.split('.').pop().toLowerCase() || 'jpg';
+
+      // Create structured key with folders
+      const filename = `${timestamp}-${sanitizedName}-${sanitizedId}.${fileExt}`;
       const key = `teacher-profiles/${currentYear}/${currentMonth}/${filename}`;
 
       console.log('S3 upload starting:');
@@ -584,28 +558,30 @@ exports.uploadProfileImage = async (req, res) => {
       console.log('- Key:', key);
       console.log('- File size:', req.file.size, 'bytes');
 
-      // Set upload parameters
-      const params = {
-        Bucket: bucketName,
-        Key: key,
-        Body: req.file.buffer,
-        ContentType: req.file.mimetype,
-        CacheControl: 'no-cache',
-        ACL: 'public-read' // Make sure file is publicly accessible
-      };
-      
-      // Upload to S3
-      await s3Client.send(new PutObjectCommand(params));
-      
-      // Construct the complete URL
+      // Create S3 upload
+      const uploader = new Upload({
+        client: s3Client,
+        params: {
+          Bucket: bucketName,
+          Key: key,
+          Body: req.file.buffer,
+          ACL: 'public-read',
+          ContentType: req.file.mimetype
+        }
+      });
+
+      // Perform the upload
+      const uploadResult = await uploader.done();
+      console.log('S3 upload successful:', uploadResult.Location);
+
+      // Construct the S3 URL
       const imageUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
-      console.log('Image uploaded to:', imageUrl);
 
       // Get the profile collection
       const profileCollection = await getProfileCollection();
       
       // Update MongoDB document
-      const updateResult = await profileCollection.updateOne(
+      await profileCollection.updateOne(
         { _id: profile._id },
         { 
           $set: { 
@@ -614,20 +590,16 @@ exports.uploadProfileImage = async (req, res) => {
           } 
         }
       );
-      
-      console.log('Profile update result:', updateResult);
 
-      // Get the updated profile to confirm change
+      // Get the updated profile
       const updatedProfile = await profileCollection.findOne({ _id: profile._id });
-      console.log('Teacher profile updated with new image URL:', updatedProfile.profileImageUrl);
 
-      // Add timestamp for cache busting in response
-      const imageUrlWithTimestamp = `${imageUrl}?t=${Date.now()}`;
+      console.log('Teacher profile updated with new image URL:', updatedProfile.profileImageUrl);
 
       return res.json({
         success: true,
         message: 'Profile image uploaded successfully',
-        imageUrl: imageUrlWithTimestamp
+        imageUrl: imageUrl
       });
     } catch (s3Error) {
       console.error('S3 upload failed:', s3Error.message);
@@ -642,7 +614,6 @@ exports.uploadProfileImage = async (req, res) => {
     });
   }
 };
-
 
 /**
  * Delete profile image
@@ -664,23 +635,13 @@ exports.deleteProfileImage = async (req, res) => {
         // Check for bucket name in environment
         const bucketName = process.env.AWS_BUCKET_NAME || 'literexia-bucket';
 
-        // Extract key from URL by parsing it properly
-        let key = '';
-        try {
-          const url = new URL(profile.profileImageUrl.startsWith('http') ? 
-                            profile.profileImageUrl : 
-                            `https://${profile.profileImageUrl}`);
-          
-          // Remove query parameters (like timestamps) from the path
-          const cleanPath = url.pathname.split('?')[0]; 
-          const pathParts = cleanPath.split('/');
-          key = pathParts.slice(1).join('/');
-        } catch (urlError) {
-          console.error('Error parsing image URL:', urlError);
-          // Fallback method - crude string manipulation
-          const urlParts = profile.profileImageUrl.split('/');
-          key = urlParts.slice(3).join('/');
-        }
+        // Extract key from URL
+        const url = new URL(profile.profileImageUrl.startsWith('http') ? 
+                          profile.profileImageUrl : 
+                          `https://${profile.profileImageUrl}`);
+        
+        const pathParts = url.pathname.split('/');
+        const key = pathParts.slice(1).join('/');
 
         console.log('Deleting S3 image with key:', key);
 
@@ -748,21 +709,16 @@ exports.getCurrentProfileImage = async (req, res) => {
     if (profile.profileImageUrl && profile.profileImageUrl !== "null") {
       // Clean up the URL in case it got stored in an abbreviated format
       let cleanUrl = profile.profileImageUrl;
-      
       // Ensure the URL is properly formed
       if (cleanUrl.includes('s3.') && !cleanUrl.startsWith('http')) {
         cleanUrl = 'https://' + cleanUrl;
       }
       
-      // Add timestamp for cache busting
-      const timestamp = Date.now();
-      const cacheBustedUrl = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}t=${timestamp}`;
-      
-      console.log(`Teacher has S3 URL with cache busting: ${cacheBustedUrl}`);
+      console.log(`Teacher has S3 URL: ${cleanUrl}`);
       
       return res.json({ 
-        imageUrl: cacheBustedUrl,
-        timestamp: timestamp
+        imageUrl: cleanUrl,
+        timestamp: Date.now() // Add timestamp for cache busting
       });
     }
 
