@@ -1,22 +1,22 @@
 /* src/css/Teachers/StudentDetails.css - Enhanced Version */
 
 :root {
-  --primary-colorr: #3B4F81;        /* Matching sidebar blue */
-  --primary-lightt: #0e2a80;        /* Lighter blue */
-  --primary-darkk: #3653ac;         /* Darker blue */
+  --primary-colorr: #3B4F81;        
+  --primary-lightt: #0e2a80;        
+  --primary-darkk: #3653ac;        
   --primary-transparentt: rgba(59, 79, 129, 0.1);
-  --secondary-colorr: #FFD700;      /* Gold/yellow accent */
-  --success-colorr: #4CAF50;        /* Green for success */
-  --success-darkk: #3d8b40;         /* Darker green */
-  --warning-colorr: #FF9800;        /* Orange for warning */
-  --danger-colorr: #F44336;         /* Red for danger */
-  --literexia-yelloww: #FFDD4A;     /* Matching Literexia logo yellow */
-  --text-primary: #333333;         /* Primary text color */
-  --text-secondaryy: #666666;       /* Secondary text color */
-  --text-mutedd: #999999;           /* Muted text color */
-  --background-lightt: #f8f9fc;     /* Light background */
-  --background-whitee: #ffffff;     /* White background */
-  --border-lightt: #e2e8f0;         /* Light border color */
+  --secondary-colorr: #FFD700;      
+  --success-colorr: #4CAF50;        
+  --success-darkk: #3d8b40;         
+  --warning-colorr: #FF9800;        
+  --danger-colorr: #F44336;        
+  --literexia-yelloww: #FFDD4A;    
+  --text-primary: #333333;         
+  --text-secondaryy: #666666;       
+  --text-mutedd: #999999;           
+  --background-lightt: #f8f9fc;     
+  --background-whitee: #ffffff;     
+  --border-lightt: #e2e8f0;        
   --shadow-smm: 0 2px 4px rgba(0, 0, 0, 0.05);
   --shadow-mdd: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-lgg: 0 10px 25px rgba(0, 0, 0, 0.12);
@@ -474,16 +474,33 @@
   text-align: center;
 }
 
-.sdx-activity-remarks {
-  flex: 3;
-  text-align: left;
-}
-
 .sdx-table-subheader {
   display: flex;
-  background-color: var(--primary-lightt);
-  color: white;
-  font-size: 0.85rem;
+  background-color: rgb(205, 219, 235);
+  color: rgb(62, 62, 62);
+  font-size: 0.90rem;
+}
+
+.sdx-table-subheader .sdx-subheader-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sdx-table-subheader .sdx-placeholder:nth-child(1) {
+  flex: 2;
+}
+
+.sdx-table-subheader .sdx-placeholder:nth-child(2) {
+  flex: 1;
+}
+
+.sdx-table-subheader .sdx-support-level {
+  flex: 1;
+}
+
+.sdx-table-subheader .sdx-placeholder:last-child {
+  flex: 3;
 }
 
 .sdx-subheader-cell {
@@ -541,7 +558,6 @@
   flex: 3;
   justify-content: flex-start;
   text-align: left;
-  color: var(--text-secondaryy);
   line-height: 1.4;
 }
 

@@ -40,12 +40,15 @@ import html2canvas from 'html2canvas';
 // Import cradle logo - using Vite's import mechanism
 const cradleLogo = new URL('../../../assets/images/Teachers/cradleLogo.jpg', import.meta.url).href;
 
+
+
 const StudentDetails = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { id } = useParams();
   const studentId = id || (location.state?.student?.id);
-  
+
+
   const progressReportRef = useRef(null);
 
   const [student, setStudent] = useState(null);
@@ -59,18 +62,59 @@ const StudentDetails = () => {
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState([]);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  
+
+  async function fetchAllStudentData() {
+    try {
+      // Fetch basic student data
+      const studentData = await studentApiService.getStudent(studentId);
+      setStudent(studentData);
+
+      // Try to fetch parent profile with fallback to prevent component failure
+      try {
+        if (studentData.parentId) {
+          const parentData = await StudentApiService.getParentProfileWithFallback(studentData.parentId);
+          // Merge parent data into student object
+          setStudent(prevStudent => ({
+            ...prevStudent,
+            parent: parentData
+          }));
+        }
+      } catch (error) {
+        console.warn("Could not load parent profile:", error);
+        // Don't let parent profile failure break the whole component
+        // Default values will be used
+      }
+      try {
+        const assessmentData = await studentApiService.getStudentAssessment(studentId);
+        setAssessmentData(assessmentData);
+      } catch (error) {
+        console.warn("Could not load assessment data:", error);
+      }
+
+      try {
+        const progressData = await studentApiService.getStudentProgress(studentId);
+        setProgressData(progressData);
+      } catch (error) {
+        console.warn("Could not load progress data:", error);
+      }
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error fetching student data:", error);
+      setError("Failed to load student information");
+      setIsLoading(false);
+    }
+  }
+
   // Helper to map a reading level code to the appropriate CSS class
   const getReadingLevelClass = (level) => {
     switch (level) {
       case 'Fluent': return 'reading-level-fluent';
       case 'Early': return 'reading-level-early';
-      // Antas 2 & 3 (Developing)
       case 'Antas 2':
       case 'Antas 3':
       case 'Developing':
         return 'reading-level-developing';
-      // Antas 4 & 5 (Advanced)
       case 'Antas 4':
       case 'Antas 5':
       case 'Advanced':
@@ -130,93 +174,76 @@ const StudentDetails = () => {
   const [includeProgressReport, setIncludeProgressReport] = useState(true);
 
   useEffect(() => {
+    if (!studentId) {
+      setLoading(false);
+      return;
+    }
+    
+
     const fetchAllStudentData = async () => {
-      if (!studentId) {
-        setLoading(false);
-        return;
-      }
-
       try {
-        // Fetch student details using StudentApiService
-        const studentData = await StudentApiService.getStudentDetails(studentId);
-        if (studentData) {
-          setStudent(studentData);
+        setLoading(true);
 
-          if (studentData.parentId) {
-           try {
-                     const p = await StudentApiService.getParentProfile(studentData.parentId);
-                     setParentProfile(p);
-                   } catch (e) {
-                     console.warn('Could not load parent profile:', e);
-                   }
-                 }
-          
-          // Initialize feedback message with student and parent data
-          setFeedbackMessage({
-            subject: `Progress Report for ${studentData.name}`,
-            content: `Dear ${studentData.parent},\n\nI'm writing to update you on ${studentData.name}'s progress in our reading comprehension activities. ${studentData.name} is working diligently to improve their reading skills, particularly in ${studentData.readingLevel === 'Not Assessed' ? 'developing their foundational reading skills' : 'developing skills at the ' + studentData.readingLevel + ' level'}.\n\nPlease find the attached progress report for detailed information about their development. If you have any questions or concerns, please don't hesitate to reach out.\n\nSincerely,\nTeacher Claire`
-          });
-          
-          // Fetch assessment results
-          const assessmentData = await StudentApiService.getAssessmentResults(studentId);
-          if (assessmentData) {
-            setAssessment(assessmentData);
-          }
-          
-          // Fetch progress data
-          const progressData = await StudentApiService.getProgressData(studentId);
-          if (progressData) {
-            setProgress(progressData);
-            
-            // Create learning activities from recent activities in progress data
-            if (progressData.recentActivities && progressData.recentActivities.length > 0) {
-              const formattedActivities = progressData.recentActivities.map(activity => {
-                // Calculate support levels based on score
-                const score = activity.score || 0;
-                const minimalSupport = score >= 70;
-                const moderateSupport = score >= 40 && score < 70;
-                const extensiveSupport = score < 40;
-                
-                return {
-                  id: activity.id,
-                  name: activity.title,
-                  description: activity.category,
-                  completed: true, // Assuming all recent activities are completed
-                  minimalSupport,
-                  moderateSupport,
-                  extensiveSupport,
-                  remarks: `Student ${score >= 70 ? 'excels at' : score >= 40 ? 'is progressing with' : 'needs additional support with'} ${activity.category.toLowerCase()}.`
-                };
-              });
-              
-              setActivities(formattedActivities);
-            }
-          }
-          
-          // Fetch recommended lessons
-          const lessonsData = await StudentApiService.getRecommendedLessons(studentId);
-          if (lessonsData) {
-            setRecommendedLessons(lessonsData);
-          }
-          
-          // Fetch prescriptive recommendations
-          const recommendationsData = await StudentApiService.getPrescriptiveRecommendations(studentId);
-          if (recommendationsData) {
-            setPrescriptiveRecommendations(recommendationsData);
-            
-            // Update progress report recommendations if available
-            if (recommendationsData.length > 0) {
-              setProgressReport(prev => ({
-                ...prev,
-                recommendations: recommendationsData.map(rec => rec.rationale)
-              }));
-            }
+        // 1) Student details
+        const studentData = await StudentApiService.getStudentDetails(studentId);
+        setStudent(studentData);
+
+        // 2) Parent profile (with fallback)
+        if (studentData.parentId) {
+          try {
+            const p = await StudentApiService.getParentProfileWithFallback(studentData.parentId);
+            setParentProfile(p);
+          } catch (e) {
+            console.warn('Could not load parent profile:', e);
           }
         }
-        
-        setLoading(false);
+
+        // 3) Feedback message template
+        setFeedbackMessage({
+          subject: `Progress Report for ${studentData.name}`,
+          content: `Dear ${parentProfile?.name || 'Parent'},\n\nI'm writing to update you on ${studentData.name}'s progress in our reading comprehension activities. ${studentData.name} is working diligently to improve their reading skills, particularly in ${studentData.readingLevel === 'Not Assessed' ? 'developing their foundational reading skills' : 'developing skills at the ' + studentData.readingLevel + ' level'}.\n\nPlease find the attached progress report for detailed information about their development. If you have any questions or concerns, please don't hesitate to reach out.\n\nSincerely,\nTeacher Claire`
+        });
+
+        // 4) Assessment results
+        const assessmentData = await StudentApiService.getAssessmentResults(studentId);
+        setAssessment(assessmentData);
+
+        // 5) Progress data + derive activities
+        const progressData = await StudentApiService.getProgressData(studentId);
+        setProgress(progressData);
+
+        const formattedActivities = (progressData.recentActivities || []).map(act => {
+          const score = act.score || 0;
+          return {
+            id: act.id,
+            name: act.title,
+            description: act.category,
+            completed: true,
+            minimalSupport: score >= 70,
+            moderateSupport: score >= 40 && score < 70,
+            extensiveSupport: score < 40,
+            remarks: `Student ${score >= 70 ? 'excels at' : score >= 40 ? 'is progressing with' : 'needs additional support with'} ${act.category.toLowerCase()}.`
+          };
+        });
+        setActivities(formattedActivities);
+
+        // 6) Recommended lessons
+        const lessonsData = await StudentApiService.getRecommendedLessons(studentId);
+        setRecommendedLessons(lessonsData);
+
+        // 7) Prescriptive recommendations + build progressReport.recommendations
+        const recs = await StudentApiService.getPrescriptiveRecommendations(studentId);
+        setPrescriptiveRecommendations(recs);
+        if (recs.length) {
+          setProgressReport(prev => ({
+            ...prev,
+            recommendations: recs.map(r => r.rationale)
+          }));
+        }
+
       } catch (error) {
         console.error('Error fetching student data:', error);
+      } finally {
         setLoading(false);
       }
     };
@@ -330,12 +357,12 @@ const StudentDetails = () => {
   // Format reading level assessments for display
   const formatAssessmentItems = () => {
     if (!assessment || !assessment.skillDetails) return [];
-    
+
     return assessment.skillDetails.map(skill => ({
       id: skill.id || Math.random().toString(36).substr(2, 9),
-      code: skill.category === 'Patinig' ? 'Pa' : 
-            skill.category === 'Pantig' ? 'Pg' : 
-            skill.category === 'Pagkilala ng Salita' ? 'PS' : 
+      code: skill.category === 'Patinig' ? 'Pa' :
+        skill.category === 'Pantig' ? 'Pg' :
+          skill.category === 'Pagkilala ng Salita' ? 'PS' :
             skill.category === 'Pag-unawa sa Binasa' ? 'PB' : 'RL',
       name: skill.category,
       score: skill.score || 0,
@@ -366,9 +393,9 @@ const StudentDetails = () => {
         <div className="sdx-profile-header">
           <div className="sdx-avatar">
             {student.profileImageUrl ? (
-              <img 
-                src={student.profileImageUrl} 
-                alt={student.name} 
+              <img
+                src={student.profileImageUrl}
+                alt={student.name}
                 className="sdx-avatar-img"
               />
             ) : (
@@ -449,7 +476,6 @@ const StudentDetails = () => {
           </div>
         </div>
       </div>
-
       {/* Parent Information */}
       <div className="sdx-parent-card">
         <h3 className="sdx-section-title">
@@ -457,76 +483,109 @@ const StudentDetails = () => {
         </h3>
         <div className="sdx-parent-details">
           <div className="sdx-parent-avatar">
-            {student.parent ? student.parent.split(' ')[0][0] : 'P'}
+            {student.parent && student.parent.profileImageUrl ? (
+              <img
+                src={parentProfile.profileImageUrl || '/images/default-avatar.png'}
+                alt="Parent"
+                onError={e => { e.currentTarget.src = '/images/default-avatar.png'; }}
+              />
+            ) : (
+              student.parent && typeof student.parent === 'string'
+                ? student.parent.charAt(0)
+                : student.parent && student.parent.name
+                  ? student.parent.name.charAt(0)
+                  : 'P'
+            )}
+
           </div>
-
-
-         <div className="sdx-parent-info">
+          <div className="sdx-parent-info">
             <h4 className="sdx-parent-name">
-              {parentProfile
-                ? `${parentProfile.firstName} ${parentProfile.middleName || ''} ${parentProfile.lastName}`
-                : student.parent || 'Parent info not available'}
+              {typeof student.parent === 'string'
+                ? student.parent
+                : student.parent && student.parent.name
+                  ? student.parent.name
+                  : 'Parent info not available'}
             </h4>
             <div className="sdx-parent-contact">
               <div className="sdx-contact-item">
                 <FaEnvelope className="sdx-contact-icon" />
-                <span>{parentProfile?.email || 'Not available'}</span>
+                <span>
+                  {typeof student.parentEmail === 'string'
+                    ? student.parentEmail
+                    : student.parent && student.parent.email
+                      ? student.parent.email
+                      : 'Not available'}
+                </span>
               </div>
-
-
-
               <div className="sdx-contact-item">
                 <FaPhone className="sdx-contact-icon" />
-                <span>{parentProfile?.contact || 'Not available'}</span>
+                <span>
+                  {typeof student.parentContact === 'string'
+                    ? student.parentContact
+                    : student.parent && student.parent.contact
+                      ? student.parent.contact
+                      : 'Not available'}
+                </span>
               </div>
             </div>
           </div>
-          
           {/* Additional parent details in grid format */}
           <div className="sdx-parent-details-grid">
-          <div className="sdx-contact-item">
-             <FaAddressCard className="sdx-contact-icon" />
-             <div className="sdx-detail-content">
-               <span className="sdx-detail-label">Address</span>
-               <span className="sdx-detail-value">
-                 {parentProfile?.address || 'Not provided'}
-               </span>
-             </div>
-           </div>
-
-
-            
-           <div className="sdx-contact-item">
-             <FaRing className="sdx-contact-icon" />
-             <div className="sdx-detail-content">
-               <span className="sdx-detail-label">Civil Status</span>
-               <span className="sdx-detail-value">
-                 {parentProfile?.civilStatus || 'Not provided'}
-               </span>
-             </div>
-           </div>
-            
+            <div className="sdx-contact-item">
+              <FaAddressCard className="sdx-contact-icon" />
+              <div className="sdx-detail-content">
+                <span className="sdx-detail-label">Address</span>
+                <span className="sdx-detail-value">
+                  {typeof student.parentAddress === 'string'
+                    ? student.parentAddress
+                    : student.parent && student.parent.address
+                      ? student.parent.address
+                      : 'Not provided'}
+                </span>
+              </div>
+            </div>
+            <div className="sdx-contact-item">
+              <FaRing className="sdx-contact-icon" />
+              <div className="sdx-detail-content">
+                <span className="sdx-detail-label">Civil Status</span>
+                <span className="sdx-detail-value">
+                  {typeof student.parentCivilStatus === 'string'
+                    ? student.parentCivilStatus
+                    : student.parent && student.parent.civilStatus
+                      ? student.parent.civilStatus
+                      : 'Not provided'}
+                </span>
+              </div>
+            </div>
             <div className="sdx-contact-item">
               <FaVenusMars className="sdx-contact-icon" />
               <div className="sdx-detail-content">
                 <span className="sdx-detail-label">Gender</span>
-                <span className="sdx-detail-value">{student.parentGender || 'Not provided'}</span>
+                <span className="sdx-detail-value">
+                  {typeof student.parentGender === 'string'
+                    ? student.parentGender
+                    : student.parent && student.parent.gender
+                      ? student.parent.gender
+                      : 'Not provided'}
+                </span>
               </div>
             </div>
-            
             <div className="sdx-contact-item">
-             <FaBuilding className="sdx-contact-icon" />
-             <div className="sdx-detail-content">
-               <span className="sdx-detail-label">Occupation</span>
-               <span className="sdx-detail-value">
-                 {parentProfile?.occupation || 'Not provided'}
-               </span>
-             </div>
-           </div>
+              <FaBuilding className="sdx-contact-icon" />
+              <div className="sdx-detail-content">
+                <span className="sdx-detail-label">Occupation</span>
+                <span className="sdx-detail-value">
+                  {typeof student.parentOccupation === 'string'
+                    ? student.parentOccupation
+                    : student.parent && student.parent.occupation
+                      ? student.parent.occupation
+                      : 'Not provided'}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-
       {/* Learning Activities and Progress Section */}
       <div className="sdx-activities-card">
         <h3 className="sdx-section-title">
@@ -608,7 +667,7 @@ const StudentDetails = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Assessment Date */}
             <div className="sdx-level-info">
               <div className="sdx-level-badge">
@@ -632,7 +691,7 @@ const StudentDetails = () => {
                     <div className="sdx-assessment-item-name">
                       <span>{item.code}</span> {item.name}
                     </div>
-                    <div className={`sdx-assessment-item-badge ${item.score > 0 ? `score-${Math.floor(item.score/20)}` : 'score-0'}`}>
+                    <div className={`sdx-assessment-item-badge ${item.score > 0 ? `score-${Math.floor(item.score / 20)}` : 'score-0'}`}>
                       {item.score}%
                     </div>
                   </div>
@@ -878,22 +937,20 @@ const StudentDetails = () => {
                           <div key={index} className="sdx-report-skill-item">
                             <div className="sdx-report-skill-header">
                               <span className="sdx-report-skill-name">{skill.name}</span>
-                              <span className={`sdx-report-skill-score ${
-                                skill.score >= 80 ? 'score-excellent' : 
-                                skill.score >= 60 ? 'score-good' : 
-                                skill.score >= 40 ? 'score-average' : 
-                                'score-needs-improvement'
-                              }`}>{skill.score}%</span>
+                              <span className={`sdx-report-skill-score ${skill.score >= 80 ? 'score-excellent' :
+                                skill.score >= 60 ? 'score-good' :
+                                  skill.score >= 40 ? 'score-average' :
+                                    'score-needs-improvement'
+                                }`}>{skill.score}%</span>
                             </div>
                             <div className="sdx-report-skill-bar-container">
-                              <div 
-                                className={`sdx-report-skill-bar ${
-                                  skill.score >= 80 ? 'score-excellent' : 
-                                  skill.score >= 60 ? 'score-good' : 
-                                  skill.score >= 40 ? 'score-average' : 
-                                  'score-needs-improvement'
-                                }`}
-                                style={{width: `${skill.score}%`}}
+                              <div
+                                className={`sdx-report-skill-bar ${skill.score >= 80 ? 'score-excellent' :
+                                  skill.score >= 60 ? 'score-good' :
+                                    skill.score >= 40 ? 'score-average' :
+                                      'score-needs-improvement'
+                                  }`}
+                                style={{ width: `${skill.score}%` }}
                               ></div>
                             </div>
                             <p className="sdx-report-skill-analysis">{skill.description}</p>
@@ -946,7 +1003,7 @@ const StudentDetails = () => {
                 <p>A copy has been saved to the student's records.</p>
               </div>
               <div className="sdx-dialog-actions">
-                <button 
+                <button
                   className="sdx-dialog-btn sdx-dialog-btn-primary"
                   onClick={closeSuccessDialog}
                 >

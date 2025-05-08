@@ -1,18 +1,22 @@
 // src/pages/Teachers/ViewStudent.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FaSearch, 
-  FaFilter, 
-  FaChevronDown, 
-  FaSortAmountDown, 
+import {
+  FaSearch,
+  FaFilter,
+  FaChevronDown,
+  FaSortAmountDown,
   FaUserGraduate,
   FaChild,
   FaBookReader,
   FaVenusMars
 } from 'react-icons/fa';
 import StudentApiService from '../../../services/StudentApiService';
+
+
 import '../../../css/Teachers/ViewStudent.css';
+
+
 
 const ViewStudent = () => {
   const navigate = useNavigate();
@@ -33,13 +37,13 @@ const ViewStudent = () => {
     const fetchStudents = async () => {
       try {
         setLoading(true);
-        
+
         // First get reading levels
         const levelsData = await StudentApiService.getReadingLevels();
         if (Array.isArray(levelsData)) {
           setReadingLevels(levelsData);
         }
-        
+
         // Fetch students list
         const studentsData = await StudentApiService.getStudents();
         if (studentsData && studentsData.students) {
@@ -49,14 +53,14 @@ const ViewStudent = () => {
           setStudents([]);
           setFilteredStudents([]);
         }
-        
+
         setLoading(false);
       } catch (error) {
         console.error('Error fetching students:', error);
         setLoading(false);
       }
     };
-    
+
     fetchStudents();
   }, []);
 
@@ -70,7 +74,7 @@ const ViewStudent = () => {
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(student => 
+      filtered = filtered.filter(student =>
         student.name?.toLowerCase().includes(query) ||
         (student.parent && student.parent.toLowerCase().includes(query)) ||
         (student.id && student.id.toString().toLowerCase().includes(query))
@@ -116,7 +120,7 @@ const ViewStudent = () => {
 
     return filteredStudents.reduce((groups, student) => {
       let key;
-      
+
       switch (groupBy) {
         case 'grade':
           key = student.gradeLevel || 'Not Assigned';
@@ -158,7 +162,7 @@ const ViewStudent = () => {
           <h1 className="vs-title">Student List</h1>
           <p className="vs-subtitle">View and manage student details</p>
         </div>
-        
+
         <div className="vs-search-container">
           <div className="vs-search-wrapper">
             <FaSearch className="vs-search-icon" />
@@ -170,9 +174,9 @@ const ViewStudent = () => {
               className="vs-search-input"
             />
           </div>
-          
-          <button 
-            className="vs-filter-toggle" 
+
+          <button
+            className="vs-filter-toggle"
             onClick={() => setIsFiltersOpen(!isFiltersOpen)}
           >
             <FaFilter /> Filters
@@ -180,7 +184,7 @@ const ViewStudent = () => {
           </button>
         </div>
       </div>
-      
+
       {/* Filters Section */}
       <div className={`vs-filters-section ${isFiltersOpen ? 'vs-filters-open' : ''}`}>
         <div className="vs-filter-row">
@@ -202,7 +206,7 @@ const ViewStudent = () => {
               <FaChevronDown className="vs-select-icon" />
             </div>
           </div>
-          
+
           <div className="vs-filter-group">
             <label className="vs-filter-label">Grade:</label>
             <div className="vs-select-wrapper">
@@ -217,7 +221,7 @@ const ViewStudent = () => {
               <FaChevronDown className="vs-select-icon" />
             </div>
           </div>
-          
+
           <div className="vs-filter-group">
             <label className="vs-filter-label">Section:</label>
             <div className="vs-select-wrapper">
@@ -236,7 +240,7 @@ const ViewStudent = () => {
               <FaChevronDown className="vs-select-icon" />
             </div>
           </div>
-          
+
           <div className="vs-filter-group">
             <label className="vs-filter-label">Group by:</label>
             <div className="vs-select-wrapper">
@@ -253,7 +257,7 @@ const ViewStudent = () => {
               <FaChevronDown className="vs-select-icon" />
             </div>
           </div>
-          
+
           <div className="vs-filter-group">
             <label className="vs-filter-label">Sort by:</label>
             <div className="vs-select-wrapper">
@@ -271,7 +275,7 @@ const ViewStudent = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Results Summary */}
       <div className="vs-results-summary">
         <span className="vs-results-count">
@@ -279,14 +283,14 @@ const ViewStudent = () => {
         </span>
         <span className="vs-results-sort">
           <FaSortAmountDown /> Sorted by: <strong>{
-            sortBy === 'name' ? 'Name' : 
-            sortBy === 'grade' ? 'Grade' : 
-            sortBy === 'reading' ? 'Reading Level' : 
-            'Name'
+            sortBy === 'name' ? 'Name' :
+              sortBy === 'grade' ? 'Grade' :
+                sortBy === 'reading' ? 'Reading Level' :
+                  'Name'
           }</strong>
         </span>
       </div>
-      
+
       {/* Students List */}
       <div className="vs-students-list">
         {loading ? (
@@ -304,16 +308,16 @@ const ViewStudent = () => {
               {group !== 'All Students' && (
                 <h2 className="vs-group-title">{group}</h2>
               )}
-              
+
               <div className="vs-cards-grid">
                 {students.map(student => (
                   <div key={student.id} className="vs-student-card">
                     <div className="vs-card-header">
                       <div className="vs-student-avatar">
                         {student.profileImageUrl ? (
-                          <img 
-                            src={student.profileImageUrl} 
-                            alt={student.name} 
+                          <img
+                            src={student.profileImageUrl}
+                            alt={student.name}
                             className="vs-student-avatar-img"
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
@@ -329,7 +333,7 @@ const ViewStudent = () => {
                         {student.readingLevel || 'Not Assessed'}
                       </div>
                     </div>
-                    
+
                     <div className="vs-card-details">
                       <div className="vs-detail-row">
                         <div className="vs-detail-item">
@@ -341,7 +345,7 @@ const ViewStudent = () => {
                           <span className="vs-detail-text">{student.age} years old</span>
                         </div>
                       </div>
-                      
+
                       <div className="vs-detail-row">
                         <div className="vs-detail-item">
                           <FaVenusMars className="vs-detail-icon" />
@@ -352,13 +356,19 @@ const ViewStudent = () => {
                           <span className="vs-detail-text">{getReadingLevelDescription(student.readingLevel)}</span>
                         </div>
                       </div>
-                      
+
                       <div className="vs-parent-info">
                         <span className="vs-parent-label">Parent/Guardian:</span>
-                        <span className="vs-parent-name">{student.parent || 'Not registered'}</span>
+                        <span className="vs-parent-name">
+                          {typeof student.parent === 'string'
+                            ? student.parent
+                            : student.parent && student.parent.name
+                              ? student.parent.name
+                              : 'Not registered'}
+                        </span>
                       </div>
-                      
-                      <button 
+
+                      <button
                         className="vs-view-details-btn"
                         onClick={() => handleViewDetails(student)}
                       >
