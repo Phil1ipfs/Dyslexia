@@ -361,16 +361,15 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background-color: var(--literexia-yelloww);
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  font-weight: 600;
+  overflow: hidden;
   flex-shrink: 0;
-  box-shadow: 0 4px 10px rgba(255, 221, 74, 0.25);
-  transition: var(--transition-fast);
+  margin-right: 16px;
+}
+
+.sdx-parent-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .sdx-parent-avatar:hover {
@@ -1140,6 +1139,8 @@
   padding: 2rem;
   background-color: white;
 }
+
+
 
 /* Report Header */
 .sdx-report-header {
