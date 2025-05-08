@@ -11,6 +11,8 @@ const s3Client = new S3Client({
   },
 });
 
+
+
 // Test S3 connection function
 const testS3Connection = async () => {
   try {

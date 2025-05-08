@@ -6,7 +6,8 @@ src/css/Teachers/ManageProgress.css
   background-color: #f8f9fc;
   padding: 2rem;
   min-height: 100vh;
-  margin-left: 240px; /* For sidebar navigation */
+  margin-left: 240px;
+  /* For sidebar navigation */
   color: #333;
   line-height: 1.6;
 }
@@ -206,19 +207,6 @@ src/css/Teachers/ManageProgress.css
   position: relative;
 }
 
-.mp-student-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background-color: #3B4F81;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  font-weight: bold;
-  flex-shrink: 0;
-}
 
 .mp-student-basic-info {
   flex: 1;
@@ -229,6 +217,13 @@ src/css/Teachers/ManageProgress.css
   margin: 0 0 0.3rem 0;
   color: #3B4F81;
   font-weight: 600;
+}
+
+.mp-student-avatar__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;  /* For circular images */
 }
 
 .mp-student-id {
@@ -337,11 +332,29 @@ src/css/Teachers/ManageProgress.css
   font-size: 0.8rem;
 }
 
-.mp-assessment-incomplete {
-  color: #F44336;
-  font-weight: 500;
-  font-size: 0.95rem;
+.mp-status-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #f8d7da;
+  color: #d32f2f;
+  margin-right: 8px;
 }
+
+.mp-status-icon-inner {
+  font-size: 12px;
+}
+
+.mp-assessment-incomplete {
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  color: #d32f2f;
+}
+
 
 /* Progress Section */
 .mp-progress-section {
@@ -585,7 +598,7 @@ src/css/Teachers/ManageProgress.css
   .mp-container {
     padding: 1.5rem;
   }
-  
+
   .mp-cards-grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
@@ -596,24 +609,24 @@ src/css/Teachers/ManageProgress.css
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .mp-search-container {
     width: 100%;
   }
-  
+
   .mp-search-wrapper {
     width: 100%;
   }
-  
+
   .mp-search-input {
     width: 100%;
   }
-  
+
   .mp-filter-row {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .mp-filter-group {
     width: 100%;
   }
@@ -624,22 +637,22 @@ src/css/Teachers/ManageProgress.css
     padding: 1rem;
     margin-left: 0;
   }
-  
+
   .mp-pagination {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .mp-pagination-controls {
     margin-top: 0.8rem;
     width: 100%;
     justify-content: center;
   }
-  
+
   .mp-cards-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .mp-results-summary {
     flex-direction: column;
     align-items: flex-start;
@@ -650,11 +663,11 @@ src/css/Teachers/ManageProgress.css
   .mp-card-header {
     padding: 1.2rem;
   }
-  
+
   .mp-card-details {
     padding: 1.2rem;
   }
-  
+
   .mp-pagination-controls {
     flex-wrap: wrap;
     justify-content: center;
@@ -670,7 +683,8 @@ src/css/Teachers/ManageProgress.css
   background-color: #f8f9fc;
   padding: 2rem;
   min-height: 100vh;
-  margin-left: 240px; /* For sidebar navigation */
+  margin-left: 240px;
+  /* For sidebar navigation */
   color: #333;
   line-height: 1.6;
 }
@@ -913,24 +927,30 @@ src/css/Teachers/ManageProgress.css
 
 /* CRLA DEPED Reading Levels */
 .mp-level-1 {
-  background-color: #FF5252; /* Low Emerging - Red */
+  background-color: #FF5252;
+  /* Low Emerging - Red */
 }
 
 .mp-level-2 {
-  background-color: #FF9800; /* High Emerging - Orange */
+  background-color: #FF9800;
+  /* High Emerging - Orange */
 }
 
 .mp-level-3 {
-  background-color: #FFD600; /* Developing - Yellow */
-  color: #333; /* Dark text for better contrast */
+  background-color: #FFD600;
+  /* Developing - Yellow */
+  color: #333;
+  /* Dark text for better contrast */
 }
 
 .mp-level-4 {
-  background-color: #4CAF50; /* Transitioning - Green */
+  background-color: #4CAF50;
+  /* Transitioning - Green */
 }
 
 .mp-level-5 {
-  background-color: #2196F3; /* At Grade Level - Blue */
+  background-color: #2196F3;
+  /* At Grade Level - Blue */
 }
 
 .mp-card-details {
@@ -1003,11 +1023,7 @@ src/css/Teachers/ManageProgress.css
   font-size: 0.8rem;
 }
 
-.mp-assessment-incomplete {
-  color: #F44336;
-  font-weight: 500;
-  font-size: 0.95rem;
-}
+
 
 /* Progress Section */
 .mp-progress-section {
@@ -1251,7 +1267,7 @@ src/css/Teachers/ManageProgress.css
   .mp-container {
     padding: 1.5rem;
   }
-  
+
   .mp-cards-grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
@@ -1262,24 +1278,24 @@ src/css/Teachers/ManageProgress.css
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .mp-search-container {
     width: 100%;
   }
-  
+
   .mp-search-wrapper {
     width: 100%;
   }
-  
+
   .mp-search-input {
     width: 100%;
   }
-  
+
   .mp-filter-row {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .mp-filter-group {
     width: 100%;
   }
@@ -1290,22 +1306,22 @@ src/css/Teachers/ManageProgress.css
     padding: 1rem;
     margin-left: 0;
   }
-  
+
   .mp-pagination {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .mp-pagination-controls {
     margin-top: 0.8rem;
     width: 100%;
     justify-content: center;
   }
-  
+
   .mp-cards-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .mp-results-summary {
     flex-direction: column;
     align-items: flex-start;
@@ -1316,13 +1332,78 @@ src/css/Teachers/ManageProgress.css
   .mp-card-header {
     padding: 1.2rem;
   }
-  
+
   .mp-card-details {
     padding: 1.2rem;
   }
-  
+
   .mp-pagination-controls {
     flex-wrap: wrap;
     justify-content: center;
   }
+}
+
+.mp-student-number {
+  display: inline-block;
+  background-color: #eef2ff;
+  /* light periwinkle bg */
+  color: #465dae;
+  /* indigo-600 text */
+  font-size: 0.875rem;
+  /* 14px */
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  /* 4px top/bottom, 8px left/right */
+  border-radius: 0.375rem;
+  /* 6px */
+  vertical-align: middle;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #c7d2fe;
+}
+
+/* color codes – tweak to your palette */
+.mp-level-1 {
+  background: #e53935;
+}
+
+/* Low Emerging */
+.mp-level-2 {
+  background: #fb8c00;
+}
+
+/* High Emerging */
+.mp-level-3 {
+  background: #fdd835;
+}
+
+/* Developing    */
+.mp-level-4 {
+  background: #7cb342;
+}
+
+/* Transitioning */
+.mp-level-5 {
+  background: #43a047;
+}
+
+/* At Grade Lvl  */
+.mp-level-6 {
+  background: #00897b;
+}
+
+/* Early         */
+.mp-level-7 {
+  background: #1e88e5;
+}
+
+/* Emergent      */
+.mp-level-8 {
+  background: #3949ab;
+}
+
+/* Fluent        */
+.mp-level-na {
+  background: #be1515;
+  color: #fff;
 }

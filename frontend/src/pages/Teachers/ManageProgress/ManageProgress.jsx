@@ -1,31 +1,37 @@
 // src/pages/Teachers/ManageProgress/ManageProgress.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FaSearch, 
+import {
+  FaSearch,
   FaSortAmountDown,
   FaUserGraduate,
   FaChild,
+  FaMars,
+  FaVenus,
+  FaGenderless,
   FaBookReader,
   FaCalendarAlt,
   FaAngleLeft,
   FaAngleRight,
   FaCheck,
   FaTimes
-} from 'react-icons/fa';
+}
+
+  from 'react-icons/fa';
 import StudentApiService from '../../../services/StudentApiService';
+import S3Image from '../../../components/S3Image'; // Import the new S3Image component
 import '../../../css/Teachers/ManageProgress.css';
 
 function getPageNumbers(currentPage, totalPages) {
   const visiblePageCount = 7;
   let startPage = Math.max(currentPage - 3, 1);
   let endPage = startPage + visiblePageCount - 1;
-  
+
   if (endPage > totalPages) {
     endPage = totalPages;
     startPage = Math.max(endPage - visiblePageCount + 1, 1);
   }
-  
+
   return Array.from({ length: endPage - startPage + 1 }, (_, i) => i + startPage);
 }
 
@@ -42,13 +48,13 @@ const ManageProgress = () => {
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [readingLevels, setReadingLevels] = useState([]);
   const itemsPerPage = 6;
-  
+
   useEffect(() => {
     const fetchStudents = async () => {
       try {
         setLoading(true);
         console.log('Fetching students from API...');
-        
+
         // Using the StudentApiService to fetch students
         const data = await StudentApiService.getStudents({
           page: 1,
@@ -56,19 +62,19 @@ const ManageProgress = () => {
           search: searchQuery,
           readingLevelFilter: readingLevelFilter !== 'all' ? readingLevelFilter : undefined
         });
-        
+
         console.log('Students data received:', data);
-        
+
         if (!data || !data.students || !Array.isArray(data.students)) {
           throw new Error('Invalid response format');
         }
-        
+
         setStudents(data.students);
-        
+
         // Get reading levels
         const readingLevelsData = await StudentApiService.getReadingLevels();
         setReadingLevels(readingLevelsData);
-        
+
         setLoading(false);
       } catch (err) {
         console.error("Error fetching student data:", err);
@@ -76,18 +82,18 @@ const ManageProgress = () => {
         setLoading(false);
       }
     };
-    
+
     fetchStudents();
   }, [searchQuery, readingLevelFilter]);
 
   // Filter and sort students when any filter or search changes
   useEffect(() => {
     let filtered = [...students];
-    
+
     // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(student => 
+      filtered = filtered.filter(student =>
         student.name.toLowerCase().includes(query) ||
         (student.parent && student.parent.toLowerCase().includes(query)) ||
         student.id.toLowerCase().includes(query)
@@ -125,7 +131,7 @@ const ManageProgress = () => {
           return a.name.localeCompare(b.name);
       }
     });
-    
+
     setFilteredStudents(filtered);
     // Reset to first page when filters change
     setCurrentPage(1);
@@ -181,7 +187,7 @@ const ManageProgress = () => {
       return dateString;
     }
   };
-  
+
   // Get grouped students
   const getGroupedStudents = () => {
     if (groupBy === 'none') {
@@ -190,7 +196,7 @@ const ManageProgress = () => {
 
     return filteredStudents.reduce((groups, student) => {
       let key;
-      
+
       switch (groupBy) {
         case 'reading':
           key = student.readingLevel;
@@ -224,7 +230,7 @@ const ManageProgress = () => {
           <h1 className="mp-title">Pamamahala ng Pag-unlad ng Mag-aaral</h1>
           <p className="mp-subtitle">Subaybayan ang pag-unlad ng bawat mag-aaral, magsagawa ng mga pre-assessment, at magtalaga ng mga inirerekomendang aktibidad</p>
         </div>
-        
+
         <div className="mp-search-container">
           <div className="mp-search-wrapper">
             <input
@@ -237,7 +243,7 @@ const ManageProgress = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Filters Section - Always visible */}
       <div className="mp-filters-section mp-filters-open">
         <div className="mp-filter-row">
@@ -258,7 +264,7 @@ const ManageProgress = () => {
               </select>
             </div>
           </div>
-          
+
           <div className="mp-filter-group">
             <label className="mp-filter-label">Pagkakabukod:</label>
             <div className="mp-select-wrapper">
@@ -273,7 +279,7 @@ const ManageProgress = () => {
               </select>
             </div>
           </div>
-          
+
           <div className="mp-filter-group">
             <label className="mp-filter-label">Ayusin ayon sa:</label>
             <div className="mp-select-wrapper">
@@ -291,19 +297,19 @@ const ManageProgress = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Results Summary */}
       <div className="mp-results-summary">
         <span className="mp-results-count">
           Natagpuan: <strong>{filteredStudents.length}</strong> (na) mag-aaral
         </span>
         <span className="mp-results-sort">
-          <FaSortAmountDown /> Nakaayos ayon sa: <strong>{sortBy === 'name' ? 'Pangalan' : 
-            sortBy === 'reading' ? 'Antas ng Pagbasa' : 
-            sortBy === 'progress' ? 'Pag-unlad' : 'Huling Aktibidad'}</strong>
+          <FaSortAmountDown /> Nakaayos ayon sa: <strong>{sortBy === 'name' ? 'Pangalan' :
+            sortBy === 'reading' ? 'Antas ng Pagbasa' :
+              sortBy === 'progress' ? 'Pag-unlad' : 'Huling Aktibidad'}</strong>
         </span>
       </div>
-      
+
       {/* Students Progress Cards */}
       <div className="mp-students-list">
         {loading ? (
@@ -326,7 +332,7 @@ const ManageProgress = () => {
               {group !== 'All Students' && (
                 <h2 className="mp-group-title">{group} {group !== 'All Students' && readingLevelDescriptions[group] ? `- ${readingLevelDescriptions[group]}` : ''}</h2>
               )}
-              
+
               <div className="mp-cards-grid">
                 {students
                   .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
@@ -334,19 +340,43 @@ const ManageProgress = () => {
                     <div key={student.id} className="mp-student-card">
                       <div className="mp-card-header">
                         <div className="mp-student-avatar">
-                          {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          {student.profileImageUrl ? (
+                            <S3Image
+                              src={student.profileImageUrl}
+                              alt={student.name}
+                              className="mp-student-avatar__img"
+                              fallbackText={student.name
+                                .split(' ')
+                                .map(n => n[0])
+                                .join('')
+                                .toUpperCase()}
+                            />
+                          ) : (
+                            <span className="mp-student-avatar__initials">
+                              {student.name
+                                .split(' ')
+                                .map(n => n[0])
+                                .join('')
+                                .toUpperCase()}
+                            </span>
+                          )}
                         </div>
-                        <div className="mp-student-basic-info">
-                          <h3 className="mp-student-name">{student.name}</h3>
-                          <span className="mp-student-id">{student.id}</span>
-                        </div>
-                        {student.readingLevel !== 'Not Assessed' && (
-                          <div className={`mp-reading-level ${getReadingLevelClass(student.readingLevel)}`}>
+
+                        {/* Header main section */}
+                        <div className="mp-header-main">
+                          <div className="mp-student-basic-info">
+                            <h3 className="mp-student-name">{student.name}</h3>
+                            <span className="mp-student-number">
+                              Student ID:&nbsp;{student.id}
+                            </span>
+                          </div>
+
+                          <div className={`mp-reading-level ${student.readingLevelClass}`}>
                             {student.readingLevel}
                           </div>
-                        )}
+                        </div>
                       </div>
-                      
+
                       <div className="mp-card-details">
                         <div className="mp-detail-row">
                           <div className="mp-detail-item">
@@ -355,63 +385,81 @@ const ManageProgress = () => {
                           </div>
                           <div className="mp-detail-item">
                             <FaChild className="mp-detail-icon" />
-                            <span className="mp-detail-text">{student.age} taong gulang</span>
+                            <span className="mp-detail-text">{student.age} years old</span>
                           </div>
                         </div>
-                        
+
+                        {/* Proper positioning of gender and reading level */}
                         <div className="mp-detail-row">
                           <div className="mp-detail-item">
                             <FaBookReader className="mp-detail-icon" />
                             <span className="mp-detail-text">
-                              {student.readingLevel !== 'Not Assessed' 
+                              {student.readingLevel !== 'Not Assessed'
                                 ? readingLevelDescriptions[student.readingLevel] || student.readingLevel
-                                : 'Hindi pa nasusuri'}
+                                : 'Not Assessed'}
                             </span>
                           </div>
+                          <div className="mp-detail-item">
+                            {student.gender === "Male" ? (
+                              <FaMars className="mp-detail-icon" />
+                            ) : student.gender === "Female" ? (
+                              <FaVenus className="mp-detail-icon" />
+                            ) : (
+                              <FaGenderless className="mp-detail-icon" />
+                            )}
+                            <span className="mp-detail-text">{student.gender || "Not specified"}</span>
+                          </div>
                         </div>
-                        
+
                         <div className="mp-section-divider"></div>
-                        
+
                         <div className="mp-assessment-section">
                           <div className="mp-assessment-label">Pre-Assessment Status:</div>
                           <div className="mp-assessment-status">
                             {student.preAssessmentCompleted ? (
-                              <span className="mp-assessment-complete">Tapos na</span>
+                              <span className="mp-assessment-complete">
+                                <span>Tapos na</span>
+                              </span>
                             ) : (
-                              <span className="mp-assessment-incomplete">Hindi pa nasusuri</span>
+                              <span className="mp-assessment-incomplete">
+                                <span className="mp-status-circle red">
+                                  <FaTimes className="mp-status-icon-inner" />
+                                </span>
+                                Not Assessed
+                              </span>
                             )}
                           </div>
                         </div>
-                        
+
                         <div className="mp-section-divider"></div>
-                        
+
                         <div className="mp-progress-section">
                           <div className="mp-progress-header">
-                            <span className="mp-progress-label">Pag-unlad sa Mga Aktibidad:</span>
+                            <span className="mp-progress-label">Category Questions</span>
                             <span className={`mp-progress-value ${getProgressClass(student.activitiesCompleted / Math.max(1, student.totalActivities) * 100)}`}>
                               {Math.round(student.activitiesCompleted / Math.max(1, student.totalActivities) * 100)}%
                             </span>
                           </div>
                           <div className="mp-progress-bar-container">
-                            <div 
+                            <div
                               className={`mp-progress-bar ${getProgressClass(student.activitiesCompleted / Math.max(1, student.totalActivities) * 100)}`}
-                              style={{width: `${(student.activitiesCompleted / Math.max(1, student.totalActivities) * 100)}%`}}
+                              style={{ width: `${(student.activitiesCompleted / Math.max(1, student.totalActivities) * 100)}%` }}
                             ></div>
                           </div>
                           <div className="mp-progress-text">
-                            {student.activitiesCompleted} / {student.totalActivities} na mga aktibidad
+                            {student.activitiesCompleted} / {student.totalActivities} of Category Answered
                           </div>
                         </div>
-                        
+
                         <div className="mp-section-divider"></div>
-                        
+
                         <div className="mp-parent-info">
-                          <div className="mp-parent-label">Magulang/Tagapag-alaga:</div>
+                          <div className="mp-parent-label">Parent or Guardian:</div>
                           <div className="mp-parent-name">{student.parent}</div>
                         </div>
-                        
+
                         <div className="mp-btn-wrapper">
-                          <button 
+                          <button
                             className="mp-view-details-btn"
                             onClick={() => handleViewDetails(student)}
                           >
@@ -425,7 +473,7 @@ const ManageProgress = () => {
             </div>
           ))
         )}
-        
+
         {/* Pagination */}
         {!loading && !error && filteredStudents.length > 0 && (
           <div className="mp-pagination">
@@ -434,14 +482,14 @@ const ManageProgress = () => {
             </div>
             {totalPages > 1 && (
               <div className="mp-pagination-controls">
-                <button 
-                  className="mp-pagination-arrow" 
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} 
+                <button
+                  className="mp-pagination-arrow"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
                 >
                   <FaAngleLeft /> Nauna
                 </button>
-                
+
                 {getPageNumbers(currentPage, totalPages).map(page => (
                   <button
                     key={page}
@@ -451,10 +499,10 @@ const ManageProgress = () => {
                     {page < 10 ? `0${page}` : page}
                   </button>
                 ))}
-                
-                <button 
-                  className="mp-pagination-arrow" 
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} 
+
+                <button
+                  className="mp-pagination-arrow"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
                 >
                   Sunod <FaAngleRight />

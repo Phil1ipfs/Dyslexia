@@ -22,16 +22,6 @@ import StudentApiService from '../../../services/StudentApiService';
 import '../../../css/Teachers/studentProgressView.css';
 import '../../../components/TeacherPage/ManageProgress/css/LessonProgress.css';
 
-// Import services
-import {
-  getStudentDetails,
-  getAssessmentResults,
-  getRecommendedLessons,
-  getProgressData,
-  getPrescriptiveRecommendations,
-  assignLessonsToStudent,
-  updateActivity
-} from '../../../services/ProgressService';
 
 const StudentProgressView = () => {
   const navigate = useNavigate();
@@ -60,27 +50,29 @@ const StudentProgressView = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-  
+
         // Get student details
         const studentData = await StudentApiService.getStudentDetails(id);
         setStudent(studentData);
-  
+
         // Get assessment data
         const assessment = await StudentApiService.getAssessmentResults(id);
+        // Make sure we're logging the data to verify what's coming from the API
+        console.log('Assessment data from API:', assessment);
         setAssessmentData(assessment);
-  
+
         // Get progress data
         const progress = await StudentApiService.getProgressData(id);
         setProgressData(progress);
-  
+
         // Get recommended lessons
         const lessons = await StudentApiService.getRecommendedLessons(id);
         setRecommendedLessons(lessons);
-  
+
         // Check if any lessons are already assigned
         const hasAssignedLessons = lessons.some(lesson => lesson.assigned);
         setLessonsAssigned(hasAssignedLessons);
-  
+
         // Initialize learning objectives
         const assignedLessons = lessons.filter(lesson => lesson.assigned);
         setLearningObjectives(assignedLessons.map(lesson => ({
@@ -90,13 +82,13 @@ const StudentProgressView = () => {
           remarks: '',
           isEditingRemarks: false
         })));
-  
+
         // If lessons are assigned, get prescription
         if (hasAssignedLessons) {
           const recommendations = await StudentApiService.getPrescriptiveRecommendations(id);
           setPrescriptiveRecommendations(recommendations);
         }
-  
+
         setLoading(false);
       } catch (err) {
         console.error('Error loading student data:', err);
@@ -104,7 +96,7 @@ const StudentProgressView = () => {
         setLoading(false);
       }
     };
-  
+
     fetchData();
   }, [id]);
 
@@ -124,12 +116,12 @@ const StudentProgressView = () => {
   // Handle lesson assignment
   const handleAssignLessons = async () => {
     if (selectedLessons.length === 0) return;
-  
+
     try {
       setLoading(true);
       const lessonIds = selectedLessons.map(lesson => lesson.id);
       const result = await StudentApiService.assignLessonsToStudent(id, lessonIds);
-  
+
       if (result.success) {
         // Update assigned lessons
         const updatedLessons = recommendedLessons.map(lesson => {
@@ -138,24 +130,24 @@ const StudentProgressView = () => {
           }
           return lesson;
         });
-  
+
         setRecommendedLessons(updatedLessons);
         setSelectedLessons([]);
         setAssignmentSuccess(true);
-  
+
         // Get prescriptive recommendations
         const recommendations = await StudentApiService.getPrescriptiveRecommendations(id);
         setPrescriptiveRecommendations(recommendations);
-  
+
         // Unlock the other tabs
         setLessonsAssigned(true);
-  
+
         // Reset success message after 3 seconds
         setTimeout(() => {
           setAssignmentSuccess(false);
         }, 3000);
       }
-  
+
       setLoading(false);
     } catch (err) {
       console.error('Error assigning lessons:', err);
@@ -198,38 +190,38 @@ const StudentProgressView = () => {
   };
 
   // Handle saving edited activity and pushing to mobile
-// Update the handleSaveActivity function (continued):
-const handleSaveActivity = async (updatedActivity) => {
-  try {
-    setLoading(true);
-    const result = await StudentApiService.updateActivity(updatedActivity.id, updatedActivity);
+  // Update the handleSaveActivity function (continued):
+  const handleSaveActivity = async (updatedActivity) => {
+    try {
+      setLoading(true);
+      const result = await StudentApiService.updateActivity(updatedActivity.id, updatedActivity);
 
-    if (result.success) {
-      // Update recommendations
-      const updatedRecommendations = prescriptiveRecommendations.map(rec => {
-        if (rec.id === updatedActivity.id) {
-          // Mark as pushed to mobile directly
-          return { ...rec, ...updatedActivity, status: 'pushed_to_mobile' };
-        }
-        return rec;
-      });
+      if (result.success) {
+        // Update recommendations
+        const updatedRecommendations = prescriptiveRecommendations.map(rec => {
+          if (rec.id === updatedActivity.id) {
+            // Mark as pushed to mobile directly
+            return { ...rec, ...updatedActivity, status: 'pushed_to_mobile' };
+          }
+          return rec;
+        });
 
-      setPrescriptiveRecommendations(updatedRecommendations);
-      setPushToMobileSuccess(true);
+        setPrescriptiveRecommendations(updatedRecommendations);
+        setPushToMobileSuccess(true);
 
-      setTimeout(() => {
-        setPushToMobileSuccess(false);
-      }, 3000);
+        setTimeout(() => {
+          setPushToMobileSuccess(false);
+        }, 3000);
+      }
+
+      setEditingActivity(null);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error updating activity:', err);
+      setError('Failed to update activity. Please try again.');
+      setLoading(false);
     }
-
-    setEditingActivity(null);
-    setLoading(false);
-  } catch (err) {
-    console.error('Error updating activity:', err);
-    setError('Failed to update activity. Please try again.');
-    setLoading(false);
-  }
-};
+  };
 
 
 
@@ -289,7 +281,12 @@ const handleSaveActivity = async (updatedActivity) => {
       {/* Top cards */}
       <div className="literexia-top-cards">
         {student && <StudentProfileCard student={student} />}
-        {assessmentData && <AssessmentSummaryCard assessmentData={assessmentData} />}
+        {/* Make sure we're passing the assessmentData directly */}
+        {assessmentData && (
+          <AssessmentSummaryCard
+            assessmentData={assessmentData}
+          />
+        )}
       </div>
 
       {/* Tabs */}
@@ -332,123 +329,123 @@ const handleSaveActivity = async (updatedActivity) => {
       </div>
 
       {/* Tab content */}
-        <div className="literexia-tab-content">
-          {activeTab === 'assessment' && (
-            <div className="literexia-tab-panel">
-          <div className="literexia-panel-header">
-            <h2>Assessment Results (CRLA)</h2>
-          </div>
-          <div className="literexia-panel-content">
-            {assessmentData ? (
-              <AssessmentResults assessmentData={assessmentData} />
-            ) : (
-              <div className="literexia-empty-state">
-            <FaExclamationTriangle />
-            <p>No assessment data available for this student.</p>
-              </div>
-            )}
-          </div>
+      <div className="literexia-tab-content">
+        {activeTab === 'assessment' && (
+          <div className="literexia-tab-panel">
+            <div className="literexia-panel-header">
+              <h2>Pre-Assessment Results (CRLA)</h2>
             </div>
-          )}
-
-          {activeTab === 'lessons' && (
-            <div className="literexia-tab-panel">
-          <div className="literexia-panel-header">
-            <h2>Assign Lessons</h2>
-          </div>
-          <div className="literexia-panel-content">
-            <h3>Recommended Lessons for {student?.name}</h3>
-            {recommendedLessons.length > 0 ? (
-              <LessonAssignment
-            lessons={recommendedLessons}
-            selectedLessons={selectedLessons}
-            onLessonSelect={handleLessonSelect}
-            onAssign={handleAssignLessons}
-            assignmentSuccess={assignmentSuccess}
-              />
-            ) : (
-              <div className="literexia-empty-state">
-            <FaExclamationTriangle />
-            <p>No lessons available for this student at this time.</p>
-              </div>
-            )}
-          </div>
+            <div className="literexia-panel-content">
+              {assessmentData ? (
+                <AssessmentResults assessmentData={assessmentData} />
+              ) : (
+                <div className="literexia-empty-state">
+                  <FaExclamationTriangle />
+                  <p>No assessment data available for this student.</p>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+        )}
 
-          {activeTab === 'progress' && !isTabLocked('progress') && (
-            <div className="literexia-tab-panel">
-          <div className="literexia-panel-header">
-            <h2>Progress Report</h2>
-          </div>
-          <div className="literexia-panel-content">
-            {progressData ? (
-              <ProgressReport
-            progressData={progressData}
-            assignedLessons={recommendedLessons.filter(lesson => lesson.assigned)}
-            learningObjectives={learningObjectives}
-            setLearningObjectives={setLearningObjectives}
-              />
-            ) : (
-              <div className="literexia-empty-state">
-            <FaExclamationTriangle />
-            <p>No progress data available for this student. They may not have completed any lessons yet.</p>
-              </div>
-            )}
-          </div>
+        {activeTab === 'lessons' && (
+          <div className="literexia-tab-panel">
+            <div className="literexia-panel-header">
+              <h2>Assign Lessons</h2>
             </div>
-          )}
+            <div className="literexia-panel-content">
+              <h3>Recommended Lessons for {student?.name}</h3>
+              {recommendedLessons.length > 0 ? (
+                <LessonAssignment
+                  lessons={recommendedLessons}
+                  selectedLessons={selectedLessons}
+                  onLessonSelect={handleLessonSelect}
+                  onAssign={handleAssignLessons}
+                  assignmentSuccess={assignmentSuccess}
+                />
+              ) : (
+                <div className="literexia-empty-state">
+                  <FaExclamationTriangle />
+                  <p>No lessons available for this student at this time.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
-          {activeTab === 'lessonProgress' && !isTabLocked('lessonProgress') && (
-            <div className="literexia-tab-panel">
+        {activeTab === 'progress' && !isTabLocked('progress') && (
+          <div className="literexia-tab-panel">
+            <div className="literexia-panel-header">
+              <h2>Progress Report</h2>
+            </div>
+            <div className="literexia-panel-content">
+              {progressData ? (
+                <ProgressReport
+                  progressData={progressData}
+                  assignedLessons={recommendedLessons.filter(lesson => lesson.assigned)}
+                  learningObjectives={learningObjectives}
+                  setLearningObjectives={setLearningObjectives}
+                />
+              ) : (
+                <div className="literexia-empty-state">
+                  <FaExclamationTriangle />
+                  <p>No progress data available for this student. They may not have completed any lessons yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
-          {/* Progress info section */}
-          <div className="literexia-progress-info" style={{ marginBottom: '30px' }}>
-            {/* <div className="literexia-progress-info-icon">
+        {activeTab === 'lessonProgress' && !isTabLocked('lessonProgress') && (
+          <div className="literexia-tab-panel">
+
+            {/* Progress info section */}
+            <div className="literexia-progress-info" style={{ marginBottom: '30px' }}>
+              {/* <div className="literexia-progress-info-icon">
             <FaBrain />
           </div> */}
-            <div className="literexia-progress-info-text">
-              <p>
+              <div className="literexia-progress-info-text">
+                <p>
 
-            <h3>Individual Progress</h3>
-            This section shows the student's progress in their reading activities.
-            This section shows the student's progress in their reading activities.
-            This section shows the student's progress in their reading activities.
-            This section shows the student's progress in their reading activities.
-            This section shows the student's progress in their reading activities.
-              </p>
+                  <h3>Individual Progress</h3>
+                  This section shows the student's progress in their reading activities.
+                  This section shows the student's progress in their reading activities.
+                  This section shows the student's progress in their reading activities.
+                  This section shows the student's progress in their reading activities.
+                  This section shows the student's progress in their reading activities.
+                </p>
+              </div>
             </div>
-          </div>
-          
-          {/* Adding a spacer div for extra spacing */}
-          <div style={{ height: '20px' }}></div>
 
-          <div className="literexia-panel-header">
-            <h2>Individuaized Education Progress</h2>
-          </div>
-          <div className="literexia-panel-content">
-            <div className="lesson-progress-container">
-              {assignedLessons.length > 0 ? (
-            <div className="lesson-progress-table-container">
-              <table className="lesson-progress-table">
-                <thead>
-              <tr>
-                <th>Lesson</th>
-                <th>Completed</th>
-                <th colSpan="3">Assistance Level</th>
-                <th>Remarks</th>
-              </tr>
-              <tr className="assistance-level-header">
-                <th></th>
-                <th></th>
-                <th>Minimal</th>
-                <th>Moderate</th>
-                <th>Substantial</th>
-                <th></th>
-              </tr>
-                </thead>
-                <tbody>
-              {assignedLessons.map(lesson => {
+            {/* Adding a spacer div for extra spacing */}
+            <div style={{ height: '20px' }}></div>
+
+            <div className="literexia-panel-header">
+              <h2>Individuaized Education Progress</h2>
+            </div>
+            <div className="literexia-panel-content">
+              <div className="lesson-progress-container">
+                {assignedLessons.length > 0 ? (
+                  <div className="lesson-progress-table-container">
+                    <table className="lesson-progress-table">
+                      <thead>
+                        <tr>
+                          <th>Lesson</th>
+                          <th>Completed</th>
+                          <th colSpan="3">Assistance Level</th>
+                          <th>Remarks</th>
+                        </tr>
+                        <tr className="assistance-level-header">
+                          <th></th>
+                          <th></th>
+                          <th>Minimal</th>
+                          <th>Moderate</th>
+                          <th>Substantial</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {assignedLessons.map(lesson => {
                           // Find if there's any activity associated with this lesson
                           const isCompleted = progressData?.recentActivities?.some(
                             activity => activity.title.includes(lesson.title.substring(0, 5))

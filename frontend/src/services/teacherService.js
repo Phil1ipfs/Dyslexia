@@ -1,4 +1,4 @@
-// src/services/teacherService.js
+// src/services/teacherService.js - Key fixes for image handling
 import axios from 'axios';
 
 // Setup axios defaults for API calls
@@ -11,8 +11,7 @@ const api = axios.create({
   }
 });
 
-// Add a request interceptor for logging
-// Update your api interceptor in teacherService.js to include the token
+// Add auth token to all requests
 api.interceptors.request.use(
   config => {
     // Add the auth token to every request
@@ -21,7 +20,7 @@ api.interceptors.request.use(
       config.headers['Authorization'] = `Bearer ${token}`;
     }
     
-    console.log(`API Request: ${config.method.toUpperCase()} ${config.url}`);
+    console.log(`API Request: ${config.method?.toUpperCase() || 'GET'} ${config.url}`);
     return config;
   },
   error => {
@@ -29,7 +28,8 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
-// Add a response interceptor for error handling
+
+// Handle response errors
 api.interceptors.response.use(
   response => {
     return response;
@@ -40,6 +40,8 @@ api.interceptors.response.use(
 
       if (error.response.status === 401) {
         // Unauthorized - redirect to login
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
         window.location.href = '/login';
       }
     } else if (error.request) {
@@ -53,34 +55,51 @@ api.interceptors.response.use(
 );
 
 /**
- * Fetch teacher profile data from API
- * @returns {Promise<Object>} The teacher profile data
+ * Initialize teacher profile - called after login
+ * @returns {Promise<Object>} New or existing teacher profile
  */
-
-
-
-// src/services/teacherService.js - Add auth token and profile initialization
-
-// Add this function to initialize profiles:
 export const initializeTeacherProfile = async () => {
   try {
     const { data } = await api.post('/teachers/profile/initialize');
-    console.log('Profile initialized:', data.teacher);
-    return data.teacher;
+    console.log('Profile initialization response:', data);
+    
+    if (data.teacher) {
+      // Ensure proper data normalization
+      if (data.teacher.profileImageUrl === "null") {
+        data.teacher.profileImageUrl = null;
+      }
+      
+      // Ensure emergencyContact exists
+      if (!data.teacher.emergencyContact) {
+        data.teacher.emergencyContact = { name: '', number: '' };
+      }
+      
+      return data.teacher;
+    }
+    
+    return null;
   } catch (error) {
     console.error('Error initializing teacher profile:', error);
-    return null;
+    throw error; // Re-throw to allow handling in the component
   }
 };
 
-// Update fetchTeacherProfile to handle 404/initialization
+/**
+ * Fetch teacher profile from API
+ * @returns {Promise<Object>} Teacher profile data
+ */
 export const fetchTeacherProfile = async () => {
   try {
     const { data } = await api.get('/teachers/profile');
-
+    
     // Normalize the profileImageUrl field - convert "null" string to actual null
     if (data && data.profileImageUrl === "null") {
       data.profileImageUrl = null;
+    }
+    
+    // Ensure emergencyContact exists
+    if (!data.emergencyContact) {
+      data.emergencyContact = { name: '', number: '' };
     }
 
     return data;
@@ -97,29 +116,12 @@ export const fetchTeacherProfile = async () => {
         }
       } catch (initError) {
         console.error("Failed to initialize profile:", initError);
+        throw initError; // Re-throw to show error UI
       }
     }
     
-    // If initialization fails or other error, return default template
-    console.log("No teacher profile found - returning default template");
-    return {
-      firstName: "",
-      middleName: "",
-      lastName: "",
-      position: "",
-      employeeId: "",
-      email: "",
-      contact: "",
-      gender: "",
-      civilStatus: "",
-      dob: "",
-      address: "",
-      profileImageUrl: null,
-      emergencyContact: {
-        name: "",
-        number: ""
-      }
-    };
+    // Re-throw the error to handle in component
+    throw error;
   }
 };
 
@@ -130,7 +132,7 @@ export const fetchTeacherProfile = async () => {
  */
 export const updateTeacherProfile = async (profile) => {
   // Validate required fields on client side
-  if (!profile.firstName?.trim() || !profile.email?.trim() || !profile.contact?.trim()) {
+  if (!profile.firstName?.trim() || !profile.email?.trim()) {
     throw new Error('Missing required fields');
   }
 
@@ -159,33 +161,20 @@ export const updateTeacherProfile = async (profile) => {
   }
 
   try {
-    // Handle case where profile doesn't exist yet (first time saving)
     const { data } = await api.put('/teachers/profile', normalizedProfile);
 
     // Normalize the returned data
     if (data.teacher && data.teacher.profileImageUrl === "null") {
       data.teacher.profileImageUrl = null;
     }
+    
+    // Ensure emergencyContact exists in response
+    if (data.teacher && !data.teacher.emergencyContact) {
+      data.teacher.emergencyContact = { name: '', number: '' };
+    }
 
     return data;
   } catch (error) {
-    // If 404, try creating a new profile with POST instead
-    if (error.response && error.response.status === 404) {
-      try {
-        const { data } = await api.post('/teachers/profile', normalizedProfile);
-
-        // Normalize the returned data
-        if (data.teacher && data.teacher.profileImageUrl === "null") {
-          data.teacher.profileImageUrl = null;
-        }
-
-        return data;
-      } catch (postError) {
-        console.error('Error creating new profile:', postError);
-        throw postError;
-      }
-    }
-
     console.error('Error updating teacher profile:', error);
     throw error;
   }
@@ -197,8 +186,6 @@ export const updateTeacherProfile = async (profile) => {
  * @param {Function} onProgress - Progress callback function
  * @returns {Promise<Object>} Upload result
  */
-// Improved uploadProfileImage function in teacherService.js
-// Improved uploadProfileImage function in teacherService.js
 export const uploadProfileImage = async (file, onProgress) => {
   // Create form data
   const formData = new FormData();
@@ -247,11 +234,6 @@ export const uploadProfileImage = async (file, onProgress) => {
   } catch (error) {
     console.error('Error uploading profile image:', error);
     
-    // Log detailed response data if available
-    if (error.response?.data) {
-      console.log('Response data:', error.response.data);
-    }
-    
     // Create a more informative error
     const errorMessage = error.response?.data?.details || 
                          error.response?.data?.error || 
@@ -259,14 +241,9 @@ export const uploadProfileImage = async (file, onProgress) => {
                          'Unknown error';
     const enhancedError = new Error(`Failed to upload image: ${errorMessage}`);
     
-    // Add original error for debugging
-    enhancedError.originalError = error;
-    
     throw enhancedError;
   }
 };
-
-
 
 /**
  * Delete profile image from S3
@@ -278,18 +255,12 @@ export const deleteProfileImage = async () => {
     return data; // { success: true, message: '...' }
   } catch (error) {
     console.error('Error deleting profile image:', error);
-
-    // If 404, the profile or image might not exist yet
-    if (error.response && error.response.status === 404) {
-      return { success: false, message: 'No image to delete' };
-    }
-
     throw error;
   }
 };
 
 /**
- * Update teacher password
+ * Update teacher password - updates the user record in users_web collection
  * @param {string} currentPassword - The current password
  * @param {string} newPassword - The new password
  * @returns {Promise<Object>} Success message
@@ -306,20 +277,54 @@ export const updateTeacherPassword = async (currentPassword, newPassword) => {
     return data;
   } catch (error) {
     // If server returns specific error code, preserve it
-    if (error.response && error.response.data && error.response.data.error === 'INCORRECT_PASSWORD') {
+    if (error.response?.data?.error === 'INCORRECT_PASSWORD') {
       const customError = new Error('INCORRECT_PASSWORD');
       throw customError;
     }
 
-    // Handle case where profile doesn't exist yet
-    if (error.response && error.response.status === 404) {
-      throw new Error('Please create your profile before changing password');
-    }
-
-    console.error('Error updating password:', error);
+    // Rethrow the error
     throw error;
   }
-  
 };
 
+/**
+ * Get the current profile image with cache busting
+ * @returns {Promise<Object>} Image URL info
+ */
+export const getCurrentProfileImage = async () => {
+  try {
+    const { data } = await api.get('/teachers/profile/image/current');
+    return data;
+  } catch (error) {
+    console.error('Error getting profile image:', error);
+    return { imageUrl: null };
+  }
+};
 
+/**
+ * Helper function to get profile image URL with cache busting
+ * @param {string} url - The image URL
+ * @returns {string|null} Formatted URL with cache busting
+ */
+export const getCacheBustedImageUrl = (url) => {
+  if (!url) return null;
+
+  try {
+    // Add a timestamp for cache busting
+    const timestamp = Date.now();
+    
+    // Create a proper URL object to handle the URL correctly
+    const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
+    
+    // Add or update the timestamp parameter
+    urlObj.searchParams.set('t', timestamp);
+    
+    return urlObj.toString();
+  } catch (error) {
+    console.error('Error formatting image URL:', error);
+    
+    // Fallback to simple string concatenation
+    const joinChar = url.includes('?') ? '&' : '?';
+    return `${url}${joinChar}t=${Date.now()}`;
+  }
+};

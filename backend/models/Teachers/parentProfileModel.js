@@ -1,6 +1,6 @@
 // models/parentProfileModel.js
 const mongoose = require('mongoose');
-const { connectParentDB } = require('../config/db');
+const { connectParentDB } = require('../../config/db');
 
 // Define the parent profile schema
 const parentProfileSchema = new mongoose.Schema({
