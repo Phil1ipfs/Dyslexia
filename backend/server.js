@@ -7,6 +7,8 @@ const jwt = require('jsonwebtoken');
 const s3Client = require('./config/s3');
 const app = express();
 
+
+
 // Enhanced logging middleware to debug route issues
 const requestLogger = (req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
@@ -60,7 +62,7 @@ const userSchema = new mongoose.Schema({
     required: true
   },
   roles: {
-    type: String, // Changed from array to string to match your actual data
+    type: String, 
     default: 'user'
   },
   createdAt: {
@@ -69,7 +71,7 @@ const userSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
-  collection: 'users' // This is the correct collection name based on your screenshots
+  collection: 'users' 
 });
 
 // Authentication middleware

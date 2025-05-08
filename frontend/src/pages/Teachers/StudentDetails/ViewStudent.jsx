@@ -9,9 +9,9 @@ import {
   FaUserGraduate,
   FaChild,
   FaBookReader,
-  FaCalendarAlt
+  FaVenusMars
 } from 'react-icons/fa';
-import { getStudents, getReadingLevelDescription } from '../../../services/StudentService';
+import StudentApiService from '../../../services/StudentApiService';
 import '../../../css/Teachers/ViewStudent.css';
 
 const ViewStudent = () => {
@@ -26,13 +26,30 @@ const ViewStudent = () => {
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [readingLevels, setReadingLevels] = useState([]);
 
+  // Fetch students from API
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const data = await getStudents();
-        setStudents(data);
-        setFilteredStudents(data);
+        setLoading(true);
+        
+        // First get reading levels
+        const levelsData = await StudentApiService.getReadingLevels();
+        if (Array.isArray(levelsData)) {
+          setReadingLevels(levelsData);
+        }
+        
+        // Fetch students list
+        const studentsData = await StudentApiService.getStudents();
+        if (studentsData && studentsData.students) {
+          setStudents(studentsData.students);
+          setFilteredStudents(studentsData.students);
+        } else {
+          setStudents([]);
+          setFilteredStudents([]);
+        }
+        
         setLoading(false);
       } catch (error) {
         console.error('Error fetching students:', error);
@@ -43,6 +60,7 @@ const ViewStudent = () => {
     fetchStudents();
   }, []);
 
+  // Filter and sort students based on search query and filters
   useEffect(() => {
     filterAndSortStudents();
   }, [searchQuery, readingLevelFilter, gradeFilter, classFilter, sortBy, students]);
@@ -53,9 +71,9 @@ const ViewStudent = () => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(student => 
-        student.name.toLowerCase().includes(query) ||
-        student.parent.toLowerCase().includes(query) ||
-        student.id.toLowerCase().includes(query)
+        student.name?.toLowerCase().includes(query) ||
+        (student.parent && student.parent.toLowerCase().includes(query)) ||
+        (student.id && student.id.toString().toLowerCase().includes(query))
       );
     }
 
@@ -74,13 +92,13 @@ const ViewStudent = () => {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'name':
-          return a.name.localeCompare(b.name);
+          return a.name?.localeCompare(b.name || '');
         case 'grade':
-          return a.gradeLevel.localeCompare(b.gradeLevel);
+          return (a.gradeLevel || '').localeCompare(b.gradeLevel || '');
         case 'reading':
-          return a.readingLevel.localeCompare(b.readingLevel);
+          return (a.readingLevel || '').localeCompare(b.readingLevel || '');
         default:
-          return a.name.localeCompare(b.name);
+          return a.name?.localeCompare(b.name || '');
       }
     });
 
@@ -101,13 +119,13 @@ const ViewStudent = () => {
       
       switch (groupBy) {
         case 'grade':
-          key = student.gradeLevel;
+          key = student.gradeLevel || 'Not Assigned';
           break;
         case 'reading':
-          key = student.readingLevel;
+          key = student.readingLevel || 'Not Assessed';
           break;
         case 'section':
-          key = student.section;
+          key = student.section || 'Not Assigned';
           break;
         default:
           key = 'All Students';
@@ -123,14 +141,11 @@ const ViewStudent = () => {
   };
 
   const getReadingLevelClass = (level) => {
-    switch (level) {
-      case 'Antas 1': return 'vs-level-1';
-      case 'Antas 2': return 'vs-level-2';
-      case 'Antas 3': return 'vs-level-3';
-      case 'Antas 4': return 'vs-level-4';
-      case 'Antas 5': return 'vs-level-5';
-      default: return '';
-    }
+    return StudentApiService.getReadingLevelClass(level) || 'vs-level-na';
+  };
+
+  const getReadingLevelDescription = (level) => {
+    return StudentApiService.getReadingLevelDescription(level) || level;
   };
 
   const groupedStudents = getGroupedStudents();
@@ -146,6 +161,7 @@ const ViewStudent = () => {
         
         <div className="vs-search-container">
           <div className="vs-search-wrapper">
+            <FaSearch className="vs-search-icon" />
             <input
               type="text"
               placeholder="Search students..."
@@ -177,11 +193,11 @@ const ViewStudent = () => {
                 className="vs-select"
               >
                 <option value="all">All Levels</option>
-                <option value="Antas 1">Antas 1: Starting to Learn</option>
-                <option value="Antas 2">Antas 2: Progressive Learner</option>
-                <option value="Antas 3">Antas 3: Competent Reader</option>
-                <option value="Antas 4">Antas 4: Proficient Reader</option>
-                <option value="Antas 5">Antas 5: Advanced Reader</option>
+                {readingLevels.map((level, index) => (
+                  <option key={index} value={level}>
+                    {level}
+                  </option>
+                ))}
               </select>
               <FaChevronDown className="vs-select-icon" />
             </div>
@@ -196,10 +212,7 @@ const ViewStudent = () => {
                 className="vs-select"
               >
                 <option value="all">All Grades</option>
-                <option value="Kindergarten">Kindergarten</option>
                 <option value="Grade 1">Grade 1</option>
-                <option value="Grade 2">Grade 2</option>
-                <option value="Grade 3">Grade 3</option>
               </select>
               <FaChevronDown className="vs-select-icon" />
             </div>
@@ -297,14 +310,23 @@ const ViewStudent = () => {
                   <div key={student.id} className="vs-student-card">
                     <div className="vs-card-header">
                       <div className="vs-student-avatar">
-                        {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        {student.profileImageUrl ? (
+                          <img 
+                            src={student.profileImageUrl} 
+                            alt={student.name} 
+                            className="vs-student-avatar-img"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          (student.name || '').split(' ').map(n => n[0] || '').join('').toUpperCase()
+                        )}
                       </div>
                       <div className="vs-student-basic-info">
                         <h3 className="vs-student-name">{student.name}</h3>
                         <span className="vs-student-id">{student.id}</span>
                       </div>
                       <div className={`vs-reading-level ${getReadingLevelClass(student.readingLevel)}`}>
-                        {student.readingLevel}
+                        {student.readingLevel || 'Not Assessed'}
                       </div>
                     </div>
                     
@@ -312,7 +334,7 @@ const ViewStudent = () => {
                       <div className="vs-detail-row">
                         <div className="vs-detail-item">
                           <FaUserGraduate className="vs-detail-icon" />
-                          <span className="vs-detail-text">{student.gradeLevel}</span>
+                          <span className="vs-detail-text">{student.gradeLevel || 'Grade 1'}</span>
                         </div>
                         <div className="vs-detail-item">
                           <FaChild className="vs-detail-icon" />
@@ -322,6 +344,10 @@ const ViewStudent = () => {
                       
                       <div className="vs-detail-row">
                         <div className="vs-detail-item">
+                          <FaVenusMars className="vs-detail-icon" />
+                          <span className="vs-detail-text">{student.gender || 'Not specified'}</span>
+                        </div>
+                        <div className="vs-detail-item">
                           <FaBookReader className="vs-detail-icon" />
                           <span className="vs-detail-text">{getReadingLevelDescription(student.readingLevel)}</span>
                         </div>
@@ -329,7 +355,7 @@ const ViewStudent = () => {
                       
                       <div className="vs-parent-info">
                         <span className="vs-parent-label">Parent/Guardian:</span>
-                        <span className="vs-parent-name">{student.parent}</span>
+                        <span className="vs-parent-name">{student.parent || 'Not registered'}</span>
                       </div>
                       
                       <button 
