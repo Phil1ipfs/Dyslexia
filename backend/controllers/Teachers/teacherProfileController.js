@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
 const { Upload } = require('@aws-sdk/lib-storage');
 const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
-const s3Client = require('../config/s3');
+const s3Client = require('../../config/s3');
 const path = require('path');
 const slugify = require('slugify'); // Add this dependency if not already installed
 

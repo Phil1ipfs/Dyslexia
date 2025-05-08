@@ -670,7 +670,7 @@ router.post('/assign-lessons/:id', auth, async (req, res) => {
 });
 
 
-const parentController = require('../../controllers/parentController');
+const parentController = require('../../controllers/Teachers/parentController');
 
 /**
  * @route GET /api/student/parent/:id
