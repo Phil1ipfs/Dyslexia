@@ -18,8 +18,8 @@ import {
 }
 
   from 'react-icons/fa';
-import StudentApiService from '../../../services/StudentApiService';
-import S3Image from '../../../components/S3Image'; // Import the new S3Image component
+  import StudentApiService from '../../../services/StudentApiService';
+  import S3Image from '../../../components/S3Image'; 
 import '../../../css/Teachers/ManageProgress.css';
 
 function getPageNumbers(currentPage, totalPages) {
@@ -95,7 +95,9 @@ const ManageProgress = () => {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(student =>
         student.name.toLowerCase().includes(query) ||
-        (student.parent && student.parent.toLowerCase().includes(query)) ||
+        (student.parentName && student.parentName.toLowerCase().includes(query)) ||
+       
+       
         student.id.toLowerCase().includes(query)
       );
     }
@@ -455,8 +457,7 @@ const ManageProgress = () => {
 
                         <div className="mp-parent-info">
                           <div className="mp-parent-label">Parent or Guardian:</div>
-                          <div className="mp-parent-name">{student.parent}</div>
-                        </div>
+                          <div className="mp-parent-name">{student.parentName}</div>                        </div>
 
                         <div className="mp-btn-wrapper">
                           <button

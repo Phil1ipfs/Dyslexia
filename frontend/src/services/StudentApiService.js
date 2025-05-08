@@ -1,228 +1,3 @@
-// // src/services/StudentApiService.js
-// import axios from 'axios';
-
-// // Setup axios defaults
-// const api = axios.create({
-//     baseURL: import.meta.env.DEV ? 'http://localhost:5002/api/student' : '/api/student',
-//     timeout: 30000, // 30 second timeout
-//     headers: {
-//       'Content-Type': 'application/json',
-//       'X-Requested-With': 'XMLHttpRequest'
-//     }
-//   });
-
-// // Add request interceptor for auth token
-// api.interceptors.request.use(
-//   config => {
-//     // Add the auth token to every request
-//     const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-//     if (token) {
-//       config.headers['Authorization'] = `Bearer ${token}`;
-//     }
-    
-//     console.log(`Student API Request: ${config.method.toUpperCase()} ${config.url}`);
-//     return config;
-//   },
-//   error => {
-//     console.error('API Request Error:', error);
-//     return Promise.reject(error);
-//   }
-// );
-
-// // Add response interceptor for error handling
-// api.interceptors.response.use(
-//   response => {
-//     return response;
-//   },
-//   error => {
-//     if (error.response) {
-//       console.error('API Error:', error.response.status, error.response.data);
-
-//       if (error.response.status === 401) {
-//         // Unauthorized - redirect to login
-//         window.location.href = '/login';
-//       }
-//     } else if (error.request) {
-//       console.error('API No Response:', error.request);
-//     } else {
-//       console.error('API Request Setup Error:', error.message);
-//     }
-
-//     return Promise.reject(error);
-//   }
-// );
-
-// // Student Service API
-// const StudentApiService = {
-//   // Get all students with filtering options
-//   getStudents: async (params = {}) => {
-//     try {
-//       const { data } = await api.get('/students', { params });
-//       return data;
-//     } catch (error) {
-//       console.error('Error fetching students:', error);
-//       throw error;
-//     }
-//   },
-  
-//   // Get a specific student's details
-//   getStudentDetails: async (id) => {
-//     try {
-//       const { data } = await api.get(`/student/${id}`);
-//       return data;
-//     } catch (error) {
-//       console.error(`Error fetching student details for ID ${id}:`, error);
-//       throw error;
-//     }
-//   },
-  
-//   // Get assessment results for a student
-//   getAssessmentResults: async (id) => {
-//     try {
-//       const { data } = await api.get(`/assessment/${id}`);
-//       return data;
-//     } catch (error) {
-//       console.error(`Error fetching assessment for student ID ${id}:`, error);
-//       throw error;
-//     }
-//   },
-  
-//   // Get progress data for a student
-//   getProgressData: async (id) => {
-//     try {
-//       const { data } = await api.get(`/progress/${id}`);
-//       return data;
-//     } catch (error) {
-//       console.error(`Error fetching progress data for student ID ${id}:`, error);
-//       throw error;
-//     }
-//   },
-  
-//   // Get recommended lessons for a student
-//   getRecommendedLessons: async (id) => {
-//     try {
-//       const { data } = await api.get(`/recommended-lessons/${id}`);
-//       return data;
-//     } catch (error) {
-//       console.error(`Error fetching recommended lessons for student ID ${id}:`, error);
-//       throw error;
-//     }
-//   },
-  
-//   // Get prescriptive recommendations for a student
-//   getPrescriptiveRecommendations: async (id) => {
-//     try {
-//       const { data } = await api.get(`/prescriptive-recommendations/${id}`);
-//       return data;
-//     } catch (error) {
-//       console.error(`Error fetching prescriptive recommendations for student ID ${id}:`, error);
-//       throw error;
-//     }
-//   },
-  
-//   // Assign lessons to a student
-//   assignLessonsToStudent: async (studentId, lessonIds) => {
-//     try {
-//       const { data } = await api.post(`/assign-lessons/${studentId}`, { lessonIds });
-//       return data;
-//     } catch (error) {
-//       console.error(`Error assigning lessons to student ID ${studentId}:`, error);
-//       throw error;
-//     }
-//   },
-  
-//   // Update an activity
-//   updateActivity: async (activityId, updatedActivity) => {
-//     try {
-//       const { data } = await api.put(`/update-activity/${activityId}`, updatedActivity);
-//       return data;
-//     } catch (error) {
-//       console.error(`Error updating activity ID ${activityId}:`, error);
-//       throw error;
-//     }
-//   },
-  
-//   // Get all grade levels
-//   getGradeLevels: async () => {
-//     try {
-//       const { data } = await api.get('/grade-levels');
-//       return data;
-//     } catch (error) {
-//       console.error('Error fetching grade levels:', error);
-//       throw error;
-//     }
-//   },
-  
-//   // Get all reading levels
-//   getReadingLevels: async () => {
-//     try {
-//       const { data } = await api.get('/reading-levels');
-//       return data;
-//     } catch (error) {
-//       console.error('Error fetching reading levels:', error);
-//       throw error;
-//     }
-//   },
-  
-//   // Helper methods for reading level descriptions and colors
-//   getReadingLevelDescription: (level) => {
-//     const descriptions = {
-//       'Low Emerging': 'Nagsisimulang Matuto',
-//       'High Emerging': 'Umuunlad na Matuto',
-//       'Developing': 'Paunlad na Pagbasa',
-//       'Transitioning': 'Lumalago na Pagbasa',
-//       'At Grade Level': 'Batay sa Antas',
-//       'Not Assessed': 'Hindi pa nasusuri'
-//     };
-//     return descriptions[level] || level;
-//   },
-  
-//   getReadingLevelClass: (level) => {
-//     const classMap = {
-//       'Low Emerging': 'mp-level-1',
-//       'High Emerging': 'mp-level-2',
-//       'Developing': 'mp-level-3',
-//       'Transitioning': 'mp-level-4',
-//       'At Grade Level': 'mp-level-5',
-//       'Not Assessed': ''
-//     };
-//     return classMap[level] || 'mp-level-1';
-//   },
-  
-//   // Convert legacy reading level to new CRLA DEPED system
-//   convertLegacyReadingLevel: (level) => {
-//     const levelMap = {
-//       'Antas 1': 'Low Emerging',
-//       'Antas 2': 'Developing',
-//       'Antas 3': 'Transitioning',
-//       'Antas 4': 'At Grade Level', 
-//       'Antas 5': 'At Grade Level',
-//       'Emergent': 'Low Emerging',
-//       'Early': 'Developing',
-//       'Fluent': 'At Grade Level'
-//     };
-//     return levelMap[level] || level;
-//   },
-  
-//   // Get reading level from score
-//   getReadingLevelFromScore: (score, maxScore = 5) => {
-//     const percentage = (score / maxScore) * 100;
-    
-//     if (percentage <= 25) {
-//       return 'Low Emerging';
-//     } else if (percentage <= 50) {
-//       return 'Developing';
-//     } else if (percentage <= 75) {
-//       return 'Transitioning';
-//     } else {
-//       return 'At Grade Level';
-//     }
-//   }
-// };
-
-// export default StudentApiService;
-
-
 // src/services/StudentApiService.js
 import axios from 'axios';
 
@@ -239,6 +14,24 @@ const api = axios.create({
     'X-Requested-With': 'XMLHttpRequest'
   }
 });
+
+
+// First, update the StudentApiService.js file to handle errors better
+
+// Current problematic function in StudentApiService.js
+export const getParentProfile = async (parentId) => {
+  try {
+    const response = await api.get(`/student/parent/${parentId}`);
+    return response.data;
+  } catch (error) {
+    console.error('API Error:', error.response?.status, error.response?.data);
+    throw error;
+  }
+};
+
+// Add this new function to handle missing parent information with a fallback
+
+
 
 // —————————————————————————————————————————————————————————
 //  REQUEST INTERCEPTOR: attach bearer token + log
@@ -309,6 +102,29 @@ const StudentApiService = {
     return data;
   },
 
+  getParentProfile: (parentId) =>
+    axios.get(`/api/student/parent/${parentId}`)
+         .then(res => res.data),
+
+  // 2) optional “with fallback” wrapper
+  getParentProfileWithFallback: async (parentId) => {
+    try {
+      return await StudentApiService.getParentProfile(parentId);
+    } catch (err) {
+      console.warn("falling back to empty parent profile", err);
+      return {
+        name: null,
+        email: null,
+        contact: null,
+        address: null,
+        civilStatus: null,
+        gender: null,
+        occupation: null,
+        profileImageUrl: null
+      };
+    }
+  },
+
   
 
   // ▶ Progress data
@@ -365,11 +181,21 @@ const StudentApiService = {
     return data;
   },
 
+  
   // ▶ Lookup parent profile
   getParentProfile: async (parentId) => {
     const { data } = await api.get(`/parent/${parentId}`);
     return data;
   },
+
+
+
+
+
+
+
+
+
 
   // ▶ Static lookup endpoints
   getGradeLevels: async () => {

@@ -4,8 +4,6 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const { auth } = require('../../middleware/auth');
 
-
-
 // Helper function to handle different types of ObjectId formats
 const toObjectIdIfPossible = (id) => {
   if (!id) return null;
@@ -42,8 +40,9 @@ const getReadingLevelClass = (level) => {
 };
 
 // Helper function to get parent information from parent.profile collection
-// Enhanced helper function to get comprehensive parent information
 async function getParentInfo(student) {
+  console.log("Starting getParentInfo for student:", student.idNumber || student._id);
+  
   let parentInfo = {
     name: "Not connected",
     email: "Not available",
@@ -51,60 +50,40 @@ async function getParentInfo(student) {
     address: "Not provided",
     civilStatus: "Not provided",
     gender: "Not provided",
-    occupation: "Not provided"
+    occupation: "Not provided",
+    profileImageUrl: null // Add this line to initialize the profileImageUrl
   };
 
   if (!student.parentId) {
+    console.log("No parentId found for student");
     return parentInfo;
   }
+  
+  console.log("ParentId found:", student.parentId);
 
   try {
+    // Convert parentId to ObjectId if possible
+    const parentId = toObjectIdIfPossible(student.parentId);
+    console.log("Converted parentId:", parentId);
+    
     // Connect to parent database to get parent profile
     const parentDb = mongoose.connection.useDb('parent');
     const parentProfileCollection = parentDb.collection('profile');
+    
+    // Connect to users_web database to get user email
+    const usersWebDb = mongoose.connection.useDb('users_web');
+    const usersCollection = usersWebDb.collection('users');
+    
+    // Find parent profile by parentId
+    const parentProfile = await parentProfileCollection.findOne({
+      $or: [
+        { _id: parentId },
+        { userId: parentId }
+      ]
+    });
 
-    console.log("Looking for parent with ID:", JSON.stringify(student.parentId));
-
-    let parentProfile = null;
-
-    // If parentId is in object format with $oid property
-    if (typeof student.parentId === 'object' && student.parentId.$oid) {
-      try {
-        const parentObjId = new mongoose.Types.ObjectId(student.parentId.$oid);
-        console.log("Looking up parent by ObjectId:", parentObjId);
-
-        // Find by _id
-        parentProfile = await parentProfileCollection.findOne({ _id: parentObjId });
-        console.log("Found parent by _id:", parentProfile ? "Yes" : "No");
-
-        // If not found, try by userId
-        if (!parentProfile) {
-          parentProfile = await parentProfileCollection.findOne({ userId: parentObjId });
-          console.log("Found parent by userId:", parentProfile ? "Yes" : "No");
-        }
-      } catch (err) {
-        console.error("Error converting parentId to ObjectId:", err);
-      }
-    }
-
-    // If parentId is a string or we didn't find a parent yet
-    if (!parentProfile && (typeof student.parentId === 'string' ||
-      (typeof student.parentId === 'object' && student.parentId.toString))) {
-
-      const parentIdStr = typeof student.parentId === 'string' ?
-        student.parentId : student.parentId.toString();
-
-      if (mongoose.Types.ObjectId.isValid(parentIdStr)) {
-        const objId = new mongoose.Types.ObjectId(parentIdStr);
-        parentProfile = await parentProfileCollection.findOne({
-          $or: [
-            { _id: objId },
-            { userId: objId }
-          ]
-        });
-      }
-    }
-
+    console.log("Parent profile found:", parentProfile ? "Yes" : "No");
+    
     if (parentProfile) {
       // Format full name with first, middle, and last name
       parentInfo.name = [
@@ -113,25 +92,39 @@ async function getParentInfo(student) {
         parentProfile.lastName || ''
       ].filter(part => part).join(' ');
       
-      // Add extended parent information
-      parentInfo.email = parentProfile.email || "Not available";
+      // Populate all available parent information from profile
       parentInfo.contact = parentProfile.contact || "Not available";
       parentInfo.address = parentProfile.address || "Not provided";
       parentInfo.civilStatus = parentProfile.civilStatus || "Not provided";
       parentInfo.gender = parentProfile.gender || "Not provided";
       parentInfo.occupation = parentProfile.occupation || "Not provided";
+      parentInfo.profileImageUrl = parentProfile.profileImageUrl || null; // Add this line
       
-      console.log("Parent found, name:", parentInfo.name);
-    } else {
-      console.log("No parent profile found for parentId:", student.parentId);
+      // Find the user's email by connecting the userId from parent profile to users_web.users
+      if (parentProfile.userId) {
+        console.log("Looking up email with userId:", parentProfile.userId);
+        const userRecord = await usersCollection.findOne({
+          _id: toObjectIdIfPossible(parentProfile.userId)
+        });
+        
+        console.log("User record found:", userRecord ? "Yes" : "No");
+        console.log("Email found:", userRecord?.email || "None");
+        
+        if (userRecord && userRecord.email) {
+          parentInfo.email = userRecord.email;
+        }
+      } else {
+        console.log("No userId found in parent profile");
+      }
     }
+    
+    console.log("Final parent info:", parentInfo);
   } catch (error) {
-    console.error("Error finding parent:", error);
+    console.error("Error finding parent information:", error);
   }
 
   return parentInfo;
 }
-
 
 // Get all students
 router.get('/students', auth, async (req, res) => {
@@ -206,6 +199,7 @@ router.get('/students', auth, async (req, res) => {
         readingLevelClass,
         readingPercentage: readingPercentage,
         parent: parentInfo,
+        parentName:     parentInfo.name,
         preAssessmentCompleted: preAssessmentCompleted,
         profileImageUrl: student.profileImageUrl || null,
         gender: student.gender || 'Not specified',
@@ -218,7 +212,7 @@ router.get('/students', auth, async (req, res) => {
 
     // Wait for all promises to resolve
     const transformedStudents = await Promise.all(transformedStudentsPromises);
-    
+
     // Filter out null entries (those that didn't match filters)
     const filteredStudents = transformedStudents.filter(student => student !== null);
 
@@ -278,6 +272,7 @@ router.get('/student/:id', auth, async (req, res) => {
         parentCivilStatus: parentInfo.civilStatus,
         parentGender: parentInfo.gender,
         parentOccupation: parentInfo.occupation,
+        parentProfileImageUrl: parentInfo.profileImageUrl,
         age: student.age || 0,
         gradeLevel: student.gradeLevel || 'Grade 1',
         gender: student.gender || 'Not specified',
@@ -322,12 +317,14 @@ router.patch('/student/:id/address', auth, async (req, res) => {
       : parseInt(req.params.id);
 
     const result = await users.updateOne(
-      { 
+      {
         $or: [
           { idNumber: idQuery },
-          { _id: mongoose.Types.ObjectId.isValid(req.params.id) 
+          {
+            _id: mongoose.Types.ObjectId.isValid(req.params.id)
               ? new mongoose.Types.ObjectId(req.params.id)
-              : null }
+              : null
+          }
         ].filter(x => x)
       },
       { $set: { address } }
@@ -429,6 +426,17 @@ router.get('/assessment/:id', auth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching assessment:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+router.get('/parent/:parentId', auth, async (req, res) => {
+  try {
+    // we only need the parentId
+    const parentInfo = await getParentInfo({ parentId: req.params.parentId });
+    return res.json(parentInfo);
+  } catch (error) {
+    console.error('Error fetching parent info:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -710,10 +718,10 @@ function determineFocusAreas(readingLevel, patinigScore, pantigScore, pagkilalaN
     { category: 'pagkilala ng mga salita', score: pagkilalaNgSalitaScore },
     { category: 'pag-unawa sa binasa', score: pagUnawaSaBinasaScore }
   ];
-  
+
   // Sort by score, ascending
   scores.sort((a, b) => a.score - b.score);
-  
+
   // Return the lowest 1-2 areas as focus
   if (scores[0].score < 40) {
     return scores[0].category;
@@ -731,10 +739,10 @@ function determineFocusAreas(readingLevel, patinigScore, pantigScore, pagkilalaN
 function generateRecentActivities(studentId, readingLevel, score) {
   // Create realistic recent activities based on reading level and score
   const now = new Date();
-  
+
   // Base activities based on reading level
   let baseActivities = [];
-  
+
   if (readingLevel === 'Antas 1' || readingLevel === 'Early' || readingLevel === 'Emergent' || readingLevel === 'Not Assessed') {
     baseActivities = [
       { id: `act${studentId}-001`, title: 'Pagkilala ng Patinig', category: 'Patinig', score: Math.round(score * 100), timeSpent: 15 },
@@ -760,7 +768,6 @@ function generateRecentActivities(studentId, readingLevel, score) {
       { id: `act${studentId}-012`, title: 'Pagsusunod-sunod ng mga Pangyayari', category: 'Pag-unawa sa Binasa', score: Math.round(score * 85), timeSpent: 35 }
     ];
   }
-
   // Add dates, most recent first
   return baseActivities.map((activity, index) => {
     const date = new Date();
@@ -860,10 +867,9 @@ function generatePrescriptiveRecommendations(readingLevel) {
       { id: 6, title: "Mga Gawain sa Paghihiwalay ng Pantig", category: "Pantig", status: "in_progress", score: 70, targetScore: 85, readingLevel: "Antas 3", analysis: "Nagpapakita ng katamtamang progreso sa paghihiwalay ng pantig ngunit kailangan pa ng mas maraming pagsasanay sa mga komplikadong kombinasyon ng pantig.", recommendation: "Ipagpatuloy ang mga pagsasanay sa paghihiwalay ng pantig, na nakatutok sa mga salitang may tatlong pantig" }
     ],
     'Antas 4': [
-      { id: 7, title: "Pagsasanay sa Pag-unawa sa Binasa", category: "Pag-unawa sa Binasa", rationale: "Kailangan ng pagsasanay sa pag-unawa sa binasa. Kailangan ng pagsasanay sa pag-unawa sa binasa. Kailangan ng pagsasanay sa pag-unawa sa binasa."   , status: "draft" },
+      { id: 7, title: "Pagsasanay sa Pag-unawa sa Binasa", category: "Pag-unawa sa Binasa", rationale: "Kailangan ng pagsasanay sa pag-unawa sa binasa. Kailangan ng pagsasanay sa pag-unawa sa binasa. Kailangan ng pagsasanay sa pag-unawa sa binasa.", status: "draft" },
       { id: 8, title: "Pagsasanay sa Pagtukoy ng Pangunahing Kaisipan", category: "Pag-unawa sa Binasa", rationale: "Kailangan ng pagsasanay sa pagtukoy ng pangunahing kaisipan.", status: "draft" }
     ],
-
 
     'Antas 5': [
       { id: 9, title: "Komprehensyon sa Pagbasa", category: "Pag-unawa sa Binasa", rationale: "Dapat palakasin ang kakayahang maghinuha mula sa binasa.", status: "draft" },
@@ -884,6 +890,8 @@ function generatePrescriptiveRecommendations(readingLevel) {
   };
 
   return focusAreas[readingLevel] || focusAreas['Not Assessed'];
+
+  
 }
 
 module.exports = router;
