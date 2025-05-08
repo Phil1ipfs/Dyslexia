@@ -6,7 +6,7 @@ const { connectParentDB } = require('../../config/db');
 const parentProfileSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    ref: 'user'
   },
   firstName: {
     type: String,
@@ -42,27 +42,13 @@ const parentProfileSchema = new mongoose.Schema({
   passwordHash: {
     type: String
   },
-  childrenInfo: [{
-    name: String,
-    age: Number,
-    grade: String,
-    school: String
-  }],
   profileImageUrl: {
     type: String
   },
-  profileImage: {
-    data: Buffer,
-    contentType: String,
-    filename: String,
-    uploadDate: Date
-  },
-  name: {
-    type: String
-  }
+
 }, {
   timestamps: true,
-  collection: 'profile', // Match your existing collection name
+  collection: 'profile', 
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
@@ -89,7 +75,7 @@ const getParentProfileModel = async () => {
     const connection = await connectParentDB();
     
     // Create the model with this specific connection
-    ParentProfile = connection.model('ParentProfile', parentProfileSchema);
+    ParentProfile = connection.model('profile', parentProfileSchema);
     
     return ParentProfile;
   } catch (error) {

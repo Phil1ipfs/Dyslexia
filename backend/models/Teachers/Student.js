@@ -40,6 +40,11 @@ const studentSchema = new mongoose.Schema({
     type: String,
     default: 'Grade 1'
   },
+
+  address: {
+    type: String,
+    default: ''
+  },
   createdAt: {
     type: Date,
     default: Date.now

@@ -4,65 +4,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const { auth } = require('../../middleware/auth');
 
-// First import the Student model schema
-// Note: Make sure this path is correct for your project structure
-const Student = mongoose.model('Student', new mongoose.Schema({
-  idNumber: {
-    type: Number,
-    required: true,
-    unique: true
-  },
-  firstName: {
-    type: String,
-    required: true
-  },
-  middleName: {
-    type: String,
-    default: ''
-  },
-  lastName: {
-    type: String,
-    required: true
-  },
-  profileImageUrl: {
-    type: String,
-    default: null
-  },
-  age: {
-    type: Number,
-    default: null
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  lastLogin: {
-    type: Date,
-    default: null
-  },
-  completedLessons: {
-    type: [Number],
-    default: []
-  },
-  readingLevel: {
-    type: String,
-    default: 'Not Assessed'
-  },
-  readingPercentage: {
-    type: Number,
-    default: 0
-  },
-  preAssessmentCompleted: {
-    type: Boolean,
-    default: false
-  },
-  parentId: {
-    type: mongoose.Schema.Types.Mixed
-  },
-  lastAssessmentDate: {
-    type: Date
-  }
-}));
+
 
 // Helper function to handle different types of ObjectId formats
 const toObjectIdIfPossible = (id) => {
@@ -83,32 +25,41 @@ const toObjectIdIfPossible = (id) => {
   return id;
 };
 
+// Helper function to get reading level class
 const getReadingLevelClass = (level) => {
   switch (level) {
-    case 'Low Emerging': return 'mp-level-1';   // red
-    case 'High Emerging': return 'mp-level-2';   // orange
-    case 'Developing': return 'mp-level-3';   // yellow
-    case 'Transitioning': return 'mp-level-4';   // light‑green
-    case 'At Grade Level': return 'mp-level-5';   // green
-    case 'Early': return 'mp-level-6';   // teal
-    case 'Emergent': return 'mp-level-7';   // blue
-    case 'Fluent': return 'mp-level-8';   // indigo
-    case 'Not Assessed': return 'mp-level-na';  // gray
-    default: return 'mp-level-na';
+    case 'Antas 1': return 'vs-level-1';
+    case 'Antas 2': return 'vs-level-2';
+    case 'Antas 3': return 'vs-level-3';
+    case 'Antas 4': return 'vs-level-4';
+    case 'Antas 5': return 'vs-level-5';
+    case 'Early': return 'vs-level-1';
+    case 'Emergent': return 'vs-level-2';
+    case 'Fluent': return 'vs-level-3';
+    case 'Not Assessed': return 'vs-level-na';
+    default: return 'vs-level-na';
   }
 };
 
-
-// Helper function to get parent information from mobile_literexia.parent.profile
+// Helper function to get parent information from parent.profile collection
+// Enhanced helper function to get comprehensive parent information
 async function getParentInfo(student) {
-  let parentInfo = "Not connected";
+  let parentInfo = {
+    name: "Not connected",
+    email: "Not available",
+    contact: "Not available",
+    address: "Not provided",
+    civilStatus: "Not provided",
+    gender: "Not provided",
+    occupation: "Not provided"
+  };
 
   if (!student.parentId) {
     return parentInfo;
   }
 
   try {
-    // Connect to mobile_literexia database to get parent profile
+    // Connect to parent database to get parent profile
     const parentDb = mongoose.connection.useDb('parent');
     const parentProfileCollection = parentDb.collection('profile');
 
@@ -156,12 +107,21 @@ async function getParentInfo(student) {
 
     if (parentProfile) {
       // Format full name with first, middle, and last name
-      parentInfo = [
+      parentInfo.name = [
         parentProfile.firstName || '',
         parentProfile.middleName ? parentProfile.middleName + ' ' : '',
         parentProfile.lastName || ''
       ].filter(part => part).join(' ');
-      console.log("Parent found, name:", parentInfo);
+      
+      // Add extended parent information
+      parentInfo.email = parentProfile.email || "Not available";
+      parentInfo.contact = parentProfile.contact || "Not available";
+      parentInfo.address = parentProfile.address || "Not provided";
+      parentInfo.civilStatus = parentProfile.civilStatus || "Not provided";
+      parentInfo.gender = parentProfile.gender || "Not provided";
+      parentInfo.occupation = parentProfile.occupation || "Not provided";
+      
+      console.log("Parent found, name:", parentInfo.name);
     } else {
       console.log("No parent profile found for parentId:", student.parentId);
     }
@@ -172,36 +132,6 @@ async function getParentInfo(student) {
   return parentInfo;
 }
 
-// Add this to your studentRoutes.js
-router.get('/test-image/:id', async (req, res) => {
-  try {
-    const testDb = mongoose.connection.useDb('test');
-    const usersCollection = testDb.collection('users');
-
-    const student = await usersCollection.findOne({
-      idNumber: isNaN(req.params.id) ? undefined : parseInt(req.params.id)
-    });
-
-    if (!student || !student.profileImageUrl) {
-      return res.status(404).json({ 
-        message: 'No image found',
-        studentFound: !!student
-      });
-    }
-
-    // Return details for debugging
-    res.json({
-      imageUrl: student.profileImageUrl,
-      student: {
-        id: student.idNumber,
-        name: `${student.firstName} ${student.lastName}`
-      },
-      headers: req.headers
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // Get all students
 router.get('/students', auth, async (req, res) => {
@@ -237,11 +167,10 @@ router.get('/students', auth, async (req, res) => {
 
     // Create an array of transformed student promises
     const transformedStudentsPromises = students.map(async (student) => {
-      console.log(`Original profile image URL for ${student.firstName} ${student.lastName}:`, student.profileImageUrl);
+      console.log(`Processing student: ${student.firstName} ${student.lastName} (ID: ${student.idNumber})`);
 
-      // Get reading level directly from student record - NO CONVERSION
+      // Get reading level directly from student record
       let readingLevel = student.readingLevel || 'Not Assessed';
-      let readingPercentage = student.readingPercentage || 0;
 
       // Apply reading level filtering if specified
       if (readingLevelFilter && readingLevelFilter !== 'all' && readingLevel !== readingLevelFilter) {
@@ -256,6 +185,9 @@ router.get('/students', auth, async (req, res) => {
       // Get pre-assessment completion status directly from the database
       const preAssessmentCompleted = student.preAssessmentCompleted === true;
 
+      // Calculate reading percentage
+      const readingPercentage = student.readingPercentage || 0;
+
       // Generate activities data based on reading percentage
       const activitiesCompleted = preAssessmentCompleted ? Math.floor(readingPercentage / 5) : 0;
       const totalActivities = 25; // Fixed total activities
@@ -268,9 +200,9 @@ router.get('/students', auth, async (req, res) => {
         id: student.idNumber?.toString() || student._id.toString(),
         name: fullName,
         age: student.age || 0,
-        gradeLevel: 'Grade 1', // Fixed to Grade 1 as requested
-        section: 'Sampaguita',
-        readingLevel: readingLevel, // Use directly, no conversion
+        gradeLevel: student.gradeLevel || 'Grade 1', // Default to Grade 1 if not set
+        section: 'Sampaguita', // Fixed as requested
+        readingLevel: readingLevel,
         readingLevelClass,
         readingPercentage: readingPercentage,
         parent: parentInfo,
@@ -287,7 +219,6 @@ router.get('/students', auth, async (req, res) => {
     // Wait for all promises to resolve
     const transformedStudents = await Promise.all(transformedStudentsPromises);
     
-
     // Filter out null entries (those that didn't match filters)
     const filteredStudents = transformedStudents.filter(student => student !== null);
 
@@ -303,6 +234,7 @@ router.get('/students', auth, async (req, res) => {
   }
 });
 
+// Get student details by ID
 // Get student details by ID
 router.get('/student/:id', auth, async (req, res) => {
   try {
@@ -328,25 +260,32 @@ router.get('/student/:id', auth, async (req, res) => {
       // Get pre-assessment completion status directly from the database
       const preAssessmentCompleted = student.preAssessmentCompleted === true;
 
-      // Get parent information using the helper function
+      // Get detailed parent information using the enhanced helper function
       const parentInfo = await getParentInfo(student);
 
-      // Create student data object - no parent email or contact info yet
+      // Format the full name properly
+      const fullName = `${student.firstName || ''} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName || ''}`.trim();
+
+      // Create student data object
       const studentData = {
         id: student.idNumber?.toString() || student._id.toString(),
-        name: `${student.firstName || ''} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName || ''}`.trim(),
+        name: fullName,
+        parent: parentInfo.name,
+        parentId: student.parentId,
+        parentEmail: parentInfo.email,
+        parentContact: parentInfo.contact,
+        parentAddress: parentInfo.address,
+        parentCivilStatus: parentInfo.civilStatus,
+        parentGender: parentInfo.gender,
+        parentOccupation: parentInfo.occupation,
         age: student.age || 0,
-        gradeLevel: 'Grade 1',
+        gradeLevel: student.gradeLevel || 'Grade 1',
         gender: student.gender || 'Not specified',
         section: 'Sampaguita',
-        readingLevel: readingLevel, // Use directly, no conversion
+        readingLevel: readingLevel,
         readingPercentage: readingPercentage,
-        parent: parentInfo,
-        parentEmail: 'Not available', 
-        contactNumber: 'Not available', 
         address: student.address || 'Not available',
         profileImageUrl: student.profileImageUrl || null,
-
         lastActivityDate: student.lastLogin || student.createdAt || new Date(),
         preAssessmentCompleted: preAssessmentCompleted,
         lastAssessment: student.lastAssessmentDate ? new Date(student.lastAssessmentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Not assessed'
@@ -361,6 +300,50 @@ router.get('/student/:id', auth, async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+
+
+
+
+
+// PATCH /api/student/:id/address
+router.patch('/student/:id/address', auth, async (req, res) => {
+  try {
+    const { address } = req.body;
+    if (typeof address !== 'string') {
+      return res.status(400).json({ message: 'Address must be a string' });
+    }
+
+    const testDb = mongoose.connection.useDb('test');
+    const users = testDb.collection('users');
+
+    // Try numeric or ObjectId lookup just like your GET
+    const idQuery = isNaN(req.params.id)
+      ? new mongoose.Types.ObjectId(req.params.id)
+      : parseInt(req.params.id);
+
+    const result = await users.updateOne(
+      { 
+        $or: [
+          { idNumber: idQuery },
+          { _id: mongoose.Types.ObjectId.isValid(req.params.id) 
+              ? new mongoose.Types.ObjectId(req.params.id)
+              : null }
+        ].filter(x => x)
+      },
+      { $set: { address } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    res.json({ success: true, message: 'Address updated', address });
+  } catch (err) {
+    console.error('Error updating address:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 
 // Get assessment results for a student
 router.get('/assessment/:id', auth, async (req, res) => {
@@ -402,7 +385,7 @@ router.get('/assessment/:id', auth, async (req, res) => {
 
       const formattedAssessment = {
         studentId: studentIdStr,
-        readingLevel: readingLevel, // Use directly, no conversion
+        readingLevel: readingLevel,
         recommendedLevel: readingLevel,
         assessmentDate: student.lastAssessmentDate
           ? new Date(student.lastAssessmentDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -412,7 +395,7 @@ router.get('/assessment/:id', auth, async (req, res) => {
           pantig: pantigScore,
           pagkilalaNgSalita: pagkilalaNgSalitaScore,
           pagUnawaSaBinasa: pagUnawaSaBinasaScore,
-          overall: overall.toFixed(1)
+          overall: overall
         },
         skillDetails: [
           {
@@ -436,7 +419,7 @@ router.get('/assessment/:id', auth, async (req, res) => {
             analysis: getSkillAnalysis('Pag-unawa sa Binasa', pagUnawaSaBinasaScore)
           }
         ],
-        focusAreas: determineFocusAreas(overall, 100)
+        focusAreas: determineFocusAreas(readingLevel, patinigScore, pantigScore, pagkilalaNgSalitaScore, pagUnawaSaBinasaScore)
       };
 
       return res.json(formattedAssessment);
@@ -493,7 +476,7 @@ router.get('/progress/:id', auth, async (req, res) => {
       const totalActivities = 25;
 
       // Generate sample recent activities
-      const recentActivities = generateRecentActivities(req.params.id, readingPercentage / 100);
+      const recentActivities = generateRecentActivities(req.params.id, readingLevel, readingPercentage / 100);
 
       // Generate skill mastery data
       const skillMasteryOverTime = {
@@ -719,30 +702,64 @@ function getSkillAnalysis(skillCategory, score) {
   }
 }
 
-function determineFocusAreas(score, maxScore) {
-  const percentage = (score / maxScore) * 100;
-
-  if (percentage <= 25) {
-    return 'pagkilala ng mga patinig at pantig';
-  } else if (percentage <= 50) {
+function determineFocusAreas(readingLevel, patinigScore, pantigScore, pagkilalaNgSalitaScore, pagUnawaSaBinasaScore) {
+  // Find the lowest score
+  const scores = [
+    { category: 'pagkilala ng mga patinig', score: patinigScore },
+    { category: 'pagkilala ng mga pantig', score: pantigScore },
+    { category: 'pagkilala ng mga salita', score: pagkilalaNgSalitaScore },
+    { category: 'pag-unawa sa binasa', score: pagUnawaSaBinasaScore }
+  ];
+  
+  // Sort by score, ascending
+  scores.sort((a, b) => a.score - b.score);
+  
+  // Return the lowest 1-2 areas as focus
+  if (scores[0].score < 40) {
+    return scores[0].category;
+  } else if (scores[0].score < 60) {
+    return `${scores[0].category} at ${scores[1].category}`;
+  } else if (readingLevel === 'Antas 1' || readingLevel === 'Early' || readingLevel === 'Emergent') {
     return 'pagkilala ng mga tunog at pantig';
-  } else if (percentage <= 75) {
-    return 'pag-unawa sa binasa';
+  } else if (readingLevel === 'Antas 2' || readingLevel === 'Antas 3') {
+    return 'pagkilala ng mga salita at pag-unawa';
   } else {
-    return 'kayarian ng pangngalan';
+    return 'pag-unawa sa binasa';
   }
 }
 
-function generateRecentActivities(studentId, score) {
-  // Create realistic recent activities based on score
+function generateRecentActivities(studentId, readingLevel, score) {
+  // Create realistic recent activities based on reading level and score
   const now = new Date();
-  const baseActivities = [
-    { id: 'act001', title: 'Pagkilala ng Patinig', category: 'Patinig', score: Math.round(score * 100), timeSpent: 15 },
-    { id: 'act002', title: 'Pagbuo ng Pantig', category: 'Pantig', score: Math.round(score * 90), timeSpent: 20 },
-    { id: 'act003', title: 'Pagbasa ng mga Salitang may Diptonggo', category: 'Patinig', score: Math.round(score * 100), timeSpent: 25 },
-    { id: 'act004', title: 'Paghihiwalay ng Pantig', category: 'Pantig', score: Math.round(score * 90), timeSpent: 18 },
-    { id: 'act005', title: 'Pagkilala ng mga Pamilyar na Salita', category: 'Pagkilala ng Salita', score: Math.round(score * 80), timeSpent: 22 }
-  ];
+  
+  // Base activities based on reading level
+  let baseActivities = [];
+  
+  if (readingLevel === 'Antas 1' || readingLevel === 'Early' || readingLevel === 'Emergent' || readingLevel === 'Not Assessed') {
+    baseActivities = [
+      { id: `act${studentId}-001`, title: 'Pagkilala ng Patinig', category: 'Patinig', score: Math.round(score * 100), timeSpent: 15 },
+      { id: `act${studentId}-002`, title: 'Pagbuo ng Pantig', category: 'Pantig', score: Math.round(score * 90), timeSpent: 20 },
+      { id: `act${studentId}-003`, title: 'Mga Salitang May Dalawang Pantig', category: 'Pagkilala ng Salita', score: Math.round(score * 85), timeSpent: 18 }
+    ];
+  } else if (readingLevel === 'Antas 2') {
+    baseActivities = [
+      { id: `act${studentId}-004`, title: 'Pagbasa ng mga Salitang may Diptonggo', category: 'Patinig', score: Math.round(score * 95), timeSpent: 25 },
+      { id: `act${studentId}-005`, title: 'Paghihiwalay ng Pantig', category: 'Pantig', score: Math.round(score * 90), timeSpent: 18 },
+      { id: `act${studentId}-006`, title: 'Pagkilala ng mga Pamilyar na Salita', category: 'Pagkilala ng Salita', score: Math.round(score * 85), timeSpent: 22 }
+    ];
+  } else if (readingLevel === 'Antas 3') {
+    baseActivities = [
+      { id: `act${studentId}-007`, title: 'Mga Panghalip Panao', category: 'Pagkilala ng Salita', score: Math.round(score * 95), timeSpent: 25 },
+      { id: `act${studentId}-008`, title: 'Pag-unawa sa Maikling Kwento', category: 'Pag-unawa sa Binasa', score: Math.round(score * 85), timeSpent: 25 },
+      { id: `act${studentId}-009`, title: 'Pagsagot sa mga Tanong tungkol sa Kwento', category: 'Pag-unawa sa Binasa', score: Math.round(score * 80), timeSpent: 30 }
+    ];
+  } else if (readingLevel === 'Antas 4' || readingLevel === 'Antas 5' || readingLevel === 'Fluent') {
+    baseActivities = [
+      { id: `act${studentId}-010`, title: 'Pagbasa ng Tekstong Deskriptibo', category: 'Pag-unawa sa Binasa', score: Math.round(score * 95), timeSpent: 35 },
+      { id: `act${studentId}-011`, title: 'Pagkilala ng Tambalang Salita', category: 'Pagkilala ng Salita', score: Math.round(score * 90), timeSpent: 30 },
+      { id: `act${studentId}-012`, title: 'Pagsusunod-sunod ng mga Pangyayari', category: 'Pag-unawa sa Binasa', score: Math.round(score * 85), timeSpent: 35 }
+    ];
+  }
 
   // Add dates, most recent first
   return baseActivities.map((activity, index) => {
@@ -771,7 +788,7 @@ function generateSkillProgressData(currentScore) {
     const progressScore = Math.round(baseScore + ((currentScore - baseScore) * (i / 4)));
 
     data.push({
-      date: date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }),
+      date: date.toISOString().split('T')[0], // YYYY-MM-DD format
       score: progressScore
     });
   }
@@ -780,7 +797,7 @@ function generateSkillProgressData(currentScore) {
 }
 
 function generateRecommendedLessons(readingLevel) {
-  // Use the actual reading levels from the database
+  // Map reading levels to the appropriate lessons
   const levelLessonsMap = {
     'Antas 1': [
       { id: 'lesson301', title: 'Patinig: Pagkilala at Pagbigkas', level: 'Antas 1', category: 'Patinig', description: 'Interactive flashcards para sa limang patinig.', estimatedTime: '12 minuto', difficulty: 'Madali', assigned: false, isRecommended: true },
@@ -828,7 +845,7 @@ function generateRecommendedLessons(readingLevel) {
 }
 
 function generatePrescriptiveRecommendations(readingLevel) {
-  // Use the actual reading levels from the database
+  // Map reading levels to appropriate prescriptive recommendations
   const focusAreas = {
     'Antas 1': [
       { id: 1, title: "Pagkilala ng Patinig", category: "Patinig", rationale: "Kailangan ng higit na pagsasanay sa pagkilala ng patinig.", status: "draft" },
@@ -843,18 +860,20 @@ function generatePrescriptiveRecommendations(readingLevel) {
       { id: 6, title: "Mga Gawain sa Paghihiwalay ng Pantig", category: "Pantig", status: "in_progress", score: 70, targetScore: 85, readingLevel: "Antas 3", analysis: "Nagpapakita ng katamtamang progreso sa paghihiwalay ng pantig ngunit kailangan pa ng mas maraming pagsasanay sa mga komplikadong kombinasyon ng pantig.", recommendation: "Ipagpatuloy ang mga pagsasanay sa paghihiwalay ng pantig, na nakatutok sa mga salitang may tatlong pantig" }
     ],
     'Antas 4': [
-      { id: 7, title: "Pagsasanay sa Pag-unawa sa Binasa", category: "Pag-unawa sa Binasa", rationale: "Kailangan ng pagsasanay sa pag-unawa sa binasa.", status: "draft" },
+      { id: 7, title: "Pagsasanay sa Pag-unawa sa Binasa", category: "Pag-unawa sa Binasa", rationale: "Kailangan ng pagsasanay sa pag-unawa sa binasa. Kailangan ng pagsasanay sa pag-unawa sa binasa. Kailangan ng pagsasanay sa pag-unawa sa binasa."   , status: "draft" },
       { id: 8, title: "Pagsasanay sa Pagtukoy ng Pangunahing Kaisipan", category: "Pag-unawa sa Binasa", rationale: "Kailangan ng pagsasanay sa pagtukoy ng pangunahing kaisipan.", status: "draft" }
     ],
+
+
     'Antas 5': [
       { id: 9, title: "Komprehensyon sa Pagbasa", category: "Pag-unawa sa Binasa", rationale: "Dapat palakasin ang kakayahang maghinuha mula sa binasa.", status: "draft" },
       { id: 10, title: "Pagsusunod-sunod ng mga Pangyayari", category: "Pag-unawa sa Binasa", rationale: "Kailangan ng pagsasanay sa pagtukoy ng tamang pagkakasunod-sunod ng mga pangyayari.", status: "draft" }
     ],
-    'Emergent': [
-      { id: 11, title: "Pagkilala ng mga Letra", category: "Patinig", rationale: "Kailangan ng pagsasanay sa pagkilala ng mga letra.", status: "draft" }
-    ],
     'Early': [
       { id: 12, title: "Pagkilala ng mga Patinig at Katinig", category: "Patinig", rationale: "Kailangan ng pagsasanay sa pagkilala ng mga patinig at katinig.", status: "draft" }
+    ],
+    'Emergent': [
+      { id: 11, title: "Pagkilala ng mga Letra", category: "Patinig", rationale: "Kailangan ng pagsasanay sa pagkilala ng mga letra.", status: "draft" }
     ],
     'Fluent': [
       { id: 13, title: "Pag-unawa sa Binasa", category: "Pag-unawa sa Binasa", rationale: "Kailangan ng pagsasanay sa pag-unawa sa binasa.", status: "draft" }
