@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/images/Teachers/LITEREXIA.png";
-import "./Navbar.css";
+import "./Homepage-Navbar.css"; // Import the renamed CSS file
 
-function Navbar() {
+function LiterexiaHomeNavbar() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
@@ -48,28 +48,28 @@ function Navbar() {
   };
 
   return (
-    <nav className={`navbar ${scrolled ? "navbar-scrolled" : ""}`}>
-      <div className="nav-left">
-        <img src={logo} alt="Literexia" className="nav-logo-img" />
-        <p className="nav-subtext">Filipino Reading Comprehension Dyslexia</p>
+    <nav className={`literexia-home-navbar ${scrolled ? "scrolled" : ""}`}>
+      <div className="literexia-home-brand">
+        <img src={logo} alt="Literexia" className="literexia-home-logo" />
+        <p className="literexia-home-tagline">Filipino Reading Comprehension Dyslexia</p>
       </div>
       
-      <ul className={`nav-links ${mobileMenuOpen ? "active" : ""}`}>
+      <ul className={`literexia-home-menu ${mobileMenuOpen ? "active" : ""}`}>
         {["home", "about", "features", "methodology", "why Choose"].map((section) => (
           <li key={section}>
             <button 
               onClick={() => scrollToSection(section)}
-              className={`nav-link ${activeSection === section ? "active" : ""}`}
+              className={`literexia-home-menuitem ${activeSection === section ? "active" : ""}`}
               aria-label={`Go to ${section} section`}
             >
               {section.charAt(0).toUpperCase() + section.slice(1)}
-              <span className="nav-link-underline"></span>
+              <span className="literexia-home-menuline"></span>
             </button>
           </li>
         ))}
         <li>
           <button 
-            className="login-btn"
+            className="literexia-home-loginbtn"
             onClick={handleLoginClick}
             aria-label="Login to your account"
           >
@@ -79,7 +79,7 @@ function Navbar() {
       </ul>
       
       <button 
-        className={`mobile-menu-btn ${mobileMenuOpen ? "active" : ""}`} 
+        className={`literexia-home-mobilebtn ${mobileMenuOpen ? "active" : ""}`} 
         aria-label="Toggle menu"
         onClick={toggleMobileMenu}
       >
@@ -91,4 +91,4 @@ function Navbar() {
   );
 }
 
-export default Navbar;
+export default LiterexiaHomeNavbar;

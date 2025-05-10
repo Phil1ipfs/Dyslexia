@@ -177,6 +177,29 @@ try {
   console.warn('⚠️ Could not load dashboard routes:', error.message);
 }
 
+// Register dashboard routes
+try {
+  app.use('/api/dashboard', require('./routes/Teachers/dashboardRoutes'));
+  console.log('✅ Loaded dashboard routes');
+} catch (error) {
+  console.warn('⚠️ Could not load dashboard routes:', error.message);
+}
+
+// Route to handle activity updates
+try {
+  // This will register the PUT /api/student/update-activity/:id endpoint
+  app.use('/api/student', require('./routes/Teachers/dashboardRoutes'));
+  console.log('✅ Loaded student activity routes');
+} catch (error) {
+  console.warn('⚠️ Could not load student activity routes:', error.message);
+}
+
+// Add to your existing error handling middleware at the end of server.js
+app.use((err, req, res, next) => {
+  console.error(`[ERROR] ${err.message}`);
+  res.status(500).json({ error: 'Server error', message: err.message });
+});
+
 try {
   app.use('/api/parents', require('./routes/Parents/parentProfile'));
   console.log('✅ Loaded parents routes');
@@ -257,7 +280,6 @@ try {
     }
   });
 
-  // Implement the actual API routes
 
   // Protected route to test authentication
   app.get('/api/protected', authenticateToken, (req, res) => {
@@ -318,15 +340,7 @@ try {
     console.warn('⚠️ Could not load student routes:', error.message);
   }
 
-  try {
-    app.use(
-      '/api/parents',
-      require('./routes/Parents/parentProfile')
-    );
-    console.log('✅ Loaded parents routes');
-  } catch (error) {
-    console.warn('⚠️ Could not load parents routes:', error.message);
-  }
+
 
   // Try to load chatbot routes
   try {
@@ -335,6 +349,28 @@ try {
   } catch (error) {
     console.warn('⚠️ Could not load chatbot routes:', error.message);
   }
+
+  try {
+    app.use('/api/dashboard', require('./routes/Teachers/dashboardRoutes'));
+    console.log('✅ Loaded dashboard routes');
+  } catch (error) {
+    console.warn('⚠️ Could not load dashboard routes:', error.message);
+  }
+  
+  // Route to handle activity updates
+  try {
+    // This will register the PUT /api/student/update-activity/:id endpoint
+    app.use('/api/student', require('./routes/Teachers/dashboardRoutes'));
+    console.log('✅ Loaded student activity routes');
+  } catch (error) {
+    console.warn('⚠️ Could not load student activity routes:', error.message);
+  }
+  
+  // Add to your existing error handling middleware at the end of server.js
+  app.use((err, req, res, next) => {
+    console.error(`[ERROR] ${err.message}`);
+    res.status(500).json({ error: 'Server error', message: err.message });
+  });
 
  
   // Simple home route

@@ -173,7 +173,7 @@ const Login = ({ onLogin }) => {
       } else {
         // For teachers, initialize profile first
         try {
-          const teacherService = await import('../services/teacherService');
+          const teacherService = await import('../services/Teachers/teacherService');
           await teacherService.initializeTeacherProfile();
         } catch (profileError) {
           console.warn('Failed to initialize teacher profile:', profileError);
