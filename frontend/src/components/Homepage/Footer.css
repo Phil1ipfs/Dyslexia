@@ -1,83 +1,45 @@
 .footer-section {
-    width: 100%;
-    position: relative;
-    color: #fff;             
-    font-family: 'Atkinson Hyperlegible', sans-serif;
-    background-image: url("../../assets/images/Homepage/Group 4079.png"); 
-    background-repeat: no-repeat;
-    background-size: 100% auto; 
-    background-position: top center;
-    padding: 4rem 8%;
-    box-sizing: border-box;
-  }
-  
-  .footer-links-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between; 
-    margin-bottom: 2rem; 
-  }
-  
-  .footer-column {
-    flex: 1;          
-    min-width: 150px;
-    margin-right: 2rem;
-    margin-bottom: 2rem;
-  }
-  
-  .footer-column h4 {
-    font-size: 1.5rem;
-    font-weight: bold;
-    margin-top: 80%;
-    margin-bottom: 1rem;
-  }
-  
-  .footer-column ul {
-    list-style: none;
-    padding-left: 0;
-    margin: 0;
-  }
-  
-  .footer-column li {
-    margin-bottom: 0.5rem;
-  }
-  
-  .footer-column a {
-    color: #fff;
-    text-decoration: none;
-    font-size: 1rem;
-  }
-  
-  .footer-column a:hover {
-    text-decoration: underline;
-  }
-  
-  .footer-bottom {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+  width: 100%;
+  position: relative;
+  color: #fff;             
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+  background-image: url("../../assets/images/Homepage/Group 4079.png"); 
+  background-repeat: no-repeat;
+  background-size: 100% auto; 
+  background-position: top center;
+  padding: 4rem 8%;
+  box-sizing: border-box;
+}
+
+.footer-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 8rem;
+}
+
+.footer-logo {
+  width: 200px;
+  height: auto;
+  margin-bottom: 0.5rem;
+}
+
+.footer-rights {
+  font-size: 0.95rem;
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .footer-section {
+    padding: 3rem 5%;
   }
   
   .footer-logo {
-    width: 200px;
-    height: auto;
-    margin-bottom: 0.5rem;
+    width: 160px;
   }
   
   .footer-rights {
-    font-size: 0.95rem;
-    color: #fff;
+    font-size: 0.85rem;
   }
-  
-  @media (max-width: 768px) {
-    .footer-links-container {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-  
-    .footer-column {
-      margin-right: 0;
-    }
-  }
-  
+}
