@@ -396,10 +396,9 @@
 
 .sdx-parent-details-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem; /* consistent spacing */
   width: 100%;
-  margin-top: 1rem;
 }
 
 .sdx-contact-item {
@@ -412,7 +411,37 @@
   padding: 0.5rem;
   border-radius: var(--radius-smm);
   background-color: var(--background-lightt);
+  
 }
+
+/* --- Center text & icon inside Parent Information cards --- */
+.sdx-parent-details-grid .sdx-contact-item {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;            /* center any inline text */
+  padding: 1rem;              /* you can tweak this */
+}
+
+.sdx-parent-details-grid .sdx-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.sdx-parent-details-grid .sdx-detail-label {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-secondaryy);
+}
+
+.sdx-parent-details-grid .sdx-detail-value {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
 
 .sdx-contact-item:hover {
   color: var(--primary-colorr);
@@ -422,6 +451,7 @@
 
 .sdx-contact-icon {
   color: var(--primary-colorr);
+  font-size: 1.05rem;
 }
 
 /* Activities Card */

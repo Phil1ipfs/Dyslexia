@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useChatbot } from '../../../contexts/ChatbotContexts.js';
-import { fetchTeacherProfile } from '../../../services/teacherService';
+import { fetchTeacherProfile } from '../../../services/Teachers/teacherService';
 import '../../../css/Teachers/TeacherChatbot.css'; 
 
 // Adjust these relative paths if you've moved the file

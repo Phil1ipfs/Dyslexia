@@ -1,6 +1,6 @@
 // src/contexts/ChatbotContext.js
 import React, { createContext, useContext, useState, useReducer } from 'react';
-import { generateResponse } from '../services/chatbotService';
+import { generateResponse } from '../services/Teachers/chatbotService';
 
 // Create context
 const ChatbotContext = createContext();
