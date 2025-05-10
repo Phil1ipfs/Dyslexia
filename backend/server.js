@@ -171,6 +171,13 @@ try {
 }
 
 try {
+  app.use('/api/dashboard', require('./routes/Teachers/dashboardRoutes'));
+  console.log('✅ Loaded dashboard routes');
+} catch (error) {
+  console.warn('⚠️ Could not load dashboard routes:', error.message);
+}
+
+try {
   app.use('/api/parents', require('./routes/Parents/parentProfile'));
   console.log('✅ Loaded parents routes');
 } catch (error) {

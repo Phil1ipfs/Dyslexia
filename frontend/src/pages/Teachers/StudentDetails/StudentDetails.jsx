@@ -26,7 +26,7 @@ import {
   FaSync
 } from 'react-icons/fa';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import StudentApiService from '../../../services/StudentApiService';
+import StudentApiService from '../../../services/Teachers/StudentApiService';
 import '../../../css/Teachers/StudentDetails.css';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -544,6 +544,8 @@ const renderParentImage = () => {
               </div>
             </div>
           </div>
+
+          
           {/* Additional parent details in grid format */}
           <div className="sdx-parent-details-grid">
             <div className="sdx-contact-item">

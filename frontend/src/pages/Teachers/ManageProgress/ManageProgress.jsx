@@ -26,7 +26,7 @@ import {
   FaBullseye,
   FaArrowRight
 } from 'react-icons/fa';
-import StudentApiService from '../../../services/StudentApiService';
+import StudentApiService from '../../../services/Teachers/StudentApiService';
 import S3Image from '../../../components/S3Image'; 
 import '../../../css/Teachers/ManageProgress.css';
 
@@ -258,7 +258,7 @@ const ManageProgress = () => {
       {/* Header */}
       <div className="mp-header">
         <div className="mp-title-section">
-          <h1 className="mp-title">Pamamahala ng Pag-unlad ng Mag-aaral</h1>
+          <h1 className="mp-title">Manage Progress</h1>
           <p className="mp-subtitle">Subaybayan ang pag-unlad ng bawat mag-aaral, magsagawa ng mga pre-assessment, at magtalaga ng mga inirerekomendang aktibidad</p>
         </div>
 
@@ -512,7 +512,7 @@ const ManageProgress = () => {
                             className="mp-view-details-btn"
                             onClick={() => handleViewDetails(student)}
                           >
-                            Tingnan ang Pag-unlad <FaArrowRight style={{ marginLeft: '0.5rem' }} />
+                            View Progress Details<FaArrowRight style={{ marginLeft: '0.5rem' }} />
                           </button>
                         </div>
                       </div>

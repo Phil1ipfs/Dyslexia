@@ -16,7 +16,7 @@ import ActivityEditModal from '../../../components/TeacherPage/ManageProgress/Ac
 import LoadingSpinner from '../../../components/TeacherPage/ManageProgress/common/LoadingSpinner';
 import ErrorMessage from '../../../components/TeacherPage/ManageProgress/common/ErrorMessage';
 
-import StudentApiService from '../../../services/StudentApiService';
+import StudentApiService from '../../../services/Teachers/StudentApiService';
 
 
 import '../../../css/Teachers/studentProgressView.css';
@@ -316,7 +316,7 @@ const StudentProgressView = () => {
           className={`literexia-tab-button ${activeTab === 'prescriptive' ? 'active' : ''} ${isTabLocked('prescriptive') ? 'locked' : ''}`}
           onClick={() => handleTabClick('prescriptive')}
         >
-          <FaLightbulb /> Personalized Activities
+          <FaLightbulb /> Prescriptive Analysis
         </button>
         <button
           className={`literexia-tab-button ${activeTab === 'lessonProgress' ? 'active' : ''} ${isTabLocked('lessonProgress') ? 'locked' : ''}`}

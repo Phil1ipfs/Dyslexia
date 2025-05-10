@@ -11,7 +11,7 @@ import {
   updateTeacherPassword,
   uploadProfileImage,
   deleteProfileImage
-} from "../../services/teacherService";
+} from "../../services/Teachers/teacherService";
 
 /**
  * TeacherProfile Component - Updated to better handle profile data

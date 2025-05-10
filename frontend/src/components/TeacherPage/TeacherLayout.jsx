@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
-import { fetchTeacherProfile, initializeTeacherProfile } from "../../services/teacherService";
+import { fetchTeacherProfile, initializeTeacherProfile } from "../../services/Teachers/teacherService";
 import "./teacherLayout.css";
 
 function TeacherLayout({ onLogout }) {
