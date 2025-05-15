@@ -1,55 +1,55 @@
 import React from 'react';
 import { FaChartLine, FaChartBar, FaPercent } from 'react-icons/fa';
-import '../ManageProgress/css/SkillsOverviewSection.css';
+import './css/SkillsOverviewSection.css';
 
 const SkillsOverviewSection = ({ scores }) => {
   if (!scores || Object.keys(scores).length === 0) {
     return (
       <div className="literexia-skills-empty">
-        <p>Walang available na datos ng kasanayan para sa mag-aaral na ito.</p>
+        <p>No skills data available for this student.</p>
       </div>
     );
   }
 
-  // Map keys to Filipino labels and determine skill categories
+  // Map keys to English labels and determine skill categories
   const getSkillInfo = (key) => {
     switch(key) {
       case 'patinig':
       case 'vowelSound':
         return { 
-          label: 'Patinig', 
-          description: 'Kakayahan sa pagkilala at pagbigkas ng mga patinig',
+          label: 'Alphabet Knowledge', 
+          description: 'Ability to recognize and pronounce letters',
           className: 'literexia-patinig',
           icon: <FaChartBar />
         };
       case 'pantig':
       case 'syllableBlending':
         return { 
-          label: 'Pantig', 
-          description: 'Kakayahan sa pagbuo at paghihiwalay ng mga pantig',
+          label: 'Phonological Awareness', 
+          description: 'Ability to form and break down syllables',
           className: 'literexia-pantig',
           icon: <FaChartBar />
         };
       case 'pagkilalaNgSalita':
       case 'wordRecognition':
         return { 
-          label: 'Pagkilala ng Salita', 
-          description: 'Kakayahan sa pagkilala at pagbasa ng mga salita',
+          label: 'Decoding', 
+          description: 'Ability to decode words from letters and syllables',
           className: 'literexia-salita',
           icon: <FaChartBar />
         };
       case 'pagUnawaSaBinasa':
       case 'readingComprehension':
         return { 
-          label: 'Pag-unawa sa Binasa', 
-          description: 'Kakayahan sa pag-unawa ng nilalaman ng binasa',
+          label: 'Reading Comprehension', 
+          description: 'Ability to understand text content',
           className: 'literexia-pag-unawa',
           icon: <FaChartBar />
         };
       default:
         return { 
-          label: key, 
-          description: 'Kasanayan sa pagbasa',
+          label: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()), 
+          description: 'Reading skill',
           className: '',
           icon: <FaChartBar />
         };
@@ -58,10 +58,10 @@ const SkillsOverviewSection = ({ scores }) => {
 
   // Get skill level classification
   const getSkillLevel = (score) => {
-    if (score >= 85) return { label: 'Mahusay', className: 'literexia-excellent' };
-    if (score >= 70) return { label: 'Mabuti', className: 'literexia-good' };
-    if (score >= 50) return { label: 'Katamtaman', className: 'literexia-average' };
-    return { label: 'Nangangailangan ng Pagsasanay', className: 'literexia-needs-improvement' };
+    if (score >= 85) return { label: 'Excellent', className: 'literexia-excellent' };
+    if (score >= 70) return { label: 'Good', className: 'literexia-good' };
+    if (score >= 50) return { label: 'Average', className: 'literexia-average' };
+    return { label: 'Needs Practice', className: 'literexia-needs-improvement' };
   };
 
   // Calculate average score
@@ -80,7 +80,7 @@ const SkillsOverviewSection = ({ scores }) => {
       <div className="literexia-skills-header">
         <div className="literexia-skills-title">
           <FaChartLine className="literexia-skills-icon" />
-          <h3>Kabuuan ng mga Kasanayan</h3>
+          <h3>Skill Assessment Scores</h3>
         </div>
         <div className={`literexia-average-score ${averageSkillLevel.className}`}>
           <span className="literexia-average-value">{averageScore}<FaPercent className="literexia-percent-icon" /></span>
@@ -134,23 +134,23 @@ const SkillsOverviewSection = ({ scores }) => {
       </div>
       
       <div className="literexia-skills-legend">
-        <div className="literexia-legend-title">Antas ng Kasanayan:</div>
+        <div className="literexia-legend-title">Progress Levels:</div>
         <div className="literexia-legend-items">
           <div className="literexia-legend-item">
             <span className="literexia-legend-marker literexia-excellent"></span>
-            <span className="literexia-legend-label">Mahusay (85-100%)</span>
+            <span className="literexia-legend-label">Excellent (85-100%)</span>
           </div>
           <div className="literexia-legend-item">
             <span className="literexia-legend-marker literexia-good"></span>
-            <span className="literexia-legend-label">Mabuti (70-84%)</span>
+            <span className="literexia-legend-label">Good (70-84%)</span>
           </div>
           <div className="literexia-legend-item">
             <span className="literexia-legend-marker literexia-average"></span>
-            <span className="literexia-legend-label">Katamtaman (50-69%)</span>
+            <span className="literexia-legend-label">Average (50-69%)</span>
           </div>
           <div className="literexia-legend-item">
             <span className="literexia-legend-marker literexia-needs-improvement"></span>
-            <span className="literexia-legend-label">Nangangailangan ng Pagsasanay (0-49%)</span>
+            <span className="literexia-legend-label">Needs Practice (0-49%)</span>
           </div>
         </div>
       </div>

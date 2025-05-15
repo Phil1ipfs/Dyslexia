@@ -2,15 +2,16 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-import literexiaLogo         from "../../assets/images/Teachers/LITEREXIA.png";
-import dashboardIcon        from "../../assets/icons/Teachers/Dashboard.png";
-import viewStudentIcon      from "../../assets/icons/Teachers/ViewStudent.png";
-import manageActivityIcon   from "../../assets/icons/Teachers/activitymanage.png";
-import manageProgressIcon   from "../../assets/icons/Teachers/progress.png";
-import teacherProfileIcon   from "../../assets/icons/Teachers/Feedback.png";
-import logoutIcon           from "../../assets/icons/Teachers/Logout.png";
-import avatarFallback       from "../../assets/icons/Teachers/avatar.png";
-import chatbotIcon          from "../../assets/icons/Teachers/chatbot.png";
+// Updated import for Cradle of Learners logo
+import cradleLogo from "../../assets/images/Teachers/cradleLogoTrans.png";
+import dashboardIcon from "../../assets/icons/Teachers/Dashboard.png";
+import viewStudentIcon from "../../assets/icons/Teachers/ViewStudent.png";
+import manageActivityIcon from "../../assets/icons/Teachers/activitymanage.png";
+import manageProgressIcon from "../../assets/icons/Teachers/progress.png";
+import teacherProfileIcon from "../../assets/icons/Teachers/Feedback.png";
+import logoutIcon from "../../assets/icons/Teachers/Logout.png";
+import avatarFallback from "../../assets/icons/Teachers/avatar.png";
+import chatbotIcon from "../../assets/icons/Teachers/chatbot.png";
 
 import "./Sidebar.css";
 
@@ -18,33 +19,72 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [active, setActive] = useState(defaultActive);
+  const [imageRefreshKey, setImageRefreshKey] = useState(Date.now());
 
   const {
     firstName = "",
-    middleName = "",
     lastName = "",
     position = "",
     profileImageUrl = null,
   } = teacherInfo;
 
-  const fullName = [firstName, middleName, lastName]
+  const fullName = [firstName,lastName]
     .filter(Boolean)
     .join(" ");
 
-  // cache-busting to force reload when updated
+  useEffect(() => {
+    setImageRefreshKey(Date.now());
+  }, [teacherInfo, profileImageUrl]);
+
   const avatarSrc = profileImageUrl
-    ? `${profileImageUrl}?t=${Date.now()}`
+    ? `${profileImageUrl}?t=${imageRefreshKey}`
     : avatarFallback;
 
   useEffect(() => {
     const path = location.pathname;
-    if (path.includes("/teacher/dashboard")) setActive("dashboard");
-    else if (path.includes("/teacher/view-student")) setActive("view-student");
-    else if (path.includes("/teacher/manage-activities")) setActive("manage-activities");
-    else if (path.includes("/teacher/manage-progress")) setActive("manage-progress");
-    else if (path.includes("/teacher/profile")) setActive("profile");
-    else if (path.includes("/teacher/chatbot")) setActive("chatbot");
-    else setActive("");
+    
+    // Dashboard route
+    if (path.includes("/teacher/dashboard")) {
+      setActive("dashboard");
+    }
+    // Student details and related routes
+    else if (
+      path.includes("/teacher/view-student") || 
+      path.includes("/teacher/student-details")
+    ) {
+      setActive("view-student");
+    }
+    // Manage activities and related routes
+    else if (
+      path.includes("/teacher/manage-activities") || 
+      path.includes("/teacher/create-activity") || 
+      path.includes("/teacher/edit-activity") ||
+      path.includes("/teacher/preview-activity") ||
+      path.includes("/teacher/manage-activity")
+    ) {
+      setActive("manage-activities");
+    }
+    // Manage progress and related routes
+    else if (
+      path.includes("/teacher/manage-progress") || 
+      path.includes("/teacher/student-progress") ||
+      path.includes("/teacher/pre-assessment") ||
+      path.includes("/teacher/create-pre-assessment")
+    ) {
+      setActive("manage-progress");
+    }
+    // Profile route
+    else if (path.includes("/teacher/profile")) {
+      setActive("profile");
+    }
+    // Chatbot route
+    else if (path.includes("/teacher/chatbot")) {
+      setActive("chatbot");
+    }
+    // Default case
+    else {
+      setActive("");
+    }
   }, [location]);
 
   const handleClick = (item, to) => {
@@ -56,52 +96,66 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
     onLogout?.();
     navigate("/login");
   };
+  
+
 
   return (
-    <div className="sidebar">
-      <div className="sidebar-logo">
-        <img src={literexiaLogo} alt="Literexia Logo" />
+    <div className={`sidebar`}>
+      <div className="sidebar-top">
+        <div className="sidebar-logo">
+          <img src={cradleLogo} alt="Cradle of Learners Logo" />
+          <span className="logo-text">CRADLE OF LEARNERS INC.</span>
+        </div>
+    
       </div>
-
-      <div className="sidebar-user-info">
-        <img
-          src={avatarSrc}
-          onError={e => { e.currentTarget.src = avatarFallback; }}
-          alt="User Avatar"
-          className="sidebar-avatar"
-        />
-        <div className="sidebar-user-details">
-          <p className="sidebar-user-name">{fullName || "Teacher"}</p>
-          <p className="sidebar-user-role">{position || "Educator"}</p>
+      
+      <div className="sidebar-user-container">
+        <div className="sidebar-user-info">
+          <img
+            src={avatarSrc}
+            onError={e => { e.currentTarget.src = avatarFallback; }}
+            alt="User Avatar"
+            className="sidebar-avatar"
+            key={imageRefreshKey}
+          />
+          <div className="sidebar-user-details">
+            <p className="sidebar-user-name">{fullName || "Teacher"}</p>
+            <p className="sidebar-user-role">{position || "Educator"}</p>
+          </div>
         </div>
       </div>
-
+      
       <hr className="sidebar-divider" />
 
-      <ul className="sidebar-menu">
-        <li className={active === "dashboard" ? "active" : ""} onClick={() => handleClick("dashboard", "/teacher/dashboard")}>
-          <img src={dashboardIcon} alt="Dashboard" /><span>Dashboard</span>
-        </li>
-        <li className={active === "view-student" ? "active" : ""} onClick={() => handleClick("view-student", "/teacher/view-student")}>
-          <img src={viewStudentIcon} alt="View Student" /><span>Student Details and Feedback</span>
-        </li>
-        <li className={active === "manage-activities" ? "active" : ""} onClick={() => handleClick("manage-activities", "/teacher/manage-activities")}>
-          <img src={manageActivityIcon} alt="Manage Activities" /><span>Manage Activities</span>
-        </li>
-        <li className={active === "manage-progress" ? "active" : ""} onClick={() => handleClick("manage-progress", "/teacher/manage-progress")}>
-          <img src={manageProgressIcon} alt="Manage Progress" /><span>Manage Progress</span>
-        </li>
-        <li className={active === "chatbot" ? "active" : ""} onClick={() => handleClick("chatbot", "/teacher/chatbot")}>
-          <img src={chatbotIcon} alt="Chatbot Assistant" /><span>Chatbot Assistant</span>
-        </li>
-        <li className={active === "profile" ? "active" : ""} onClick={() => handleClick("profile", "/teacher/profile")}>
-          <img src={teacherProfileIcon} alt="Teacher Profile" /><span>Teacher Profile</span>
-        </li>
-      </ul>
+      <div className="sidebar-menu-container">
+        <ul className="sidebar-menu">
+          <li className={active === "dashboard" ? "active" : ""} onClick={() => handleClick("dashboard", "/teacher/dashboard")}>
+            <img src={dashboardIcon} alt="Dashboard" /><span>Dashboard</span>
+          </li>
+          <li className={active === "view-student" ? "active" : ""} onClick={() => handleClick("view-student", "/teacher/view-student")}>
+            <img src={viewStudentIcon} alt="View Student" /><span>Student Details</span>
+          </li>
+          <li className={active === "manage-activities" ? "active" : ""} onClick={() => handleClick("manage-activities", "/teacher/manage-activities")}>
+            <img src={manageActivityIcon} alt="Manage Activities" /><span>Manage Activities</span>
+          </li>
+          <li className={active === "manage-progress" ? "active" : ""} onClick={() => handleClick("manage-progress", "/teacher/manage-progress")}>
+            <img src={manageProgressIcon} alt="Manage Progress" /><span>Manage Progress</span>
+          </li>
+          <li className={active === "chatbot" ? "active" : ""} onClick={() => handleClick("chatbot", "/teacher/chatbot")}>
+            <img src={chatbotIcon} alt="Chatbot Assistant" /><span>Chatbot Assistant</span>
+          </li>
+          <li className={active === "profile" ? "active" : ""} onClick={() => handleClick("profile", "/teacher/profile")}>
+            <img src={teacherProfileIcon} alt="Teacher Profile" /><span>Teacher Profile</span>
+          </li>
+        </ul>
+      </div>
 
+      <hr className="sidebar-divider logout-divider" />
+      
       <div className="sidebar-logout" onClick={handleLogoutClick}>
         <img src={logoutIcon} alt="Logout" /><span>Logout</span>
       </div>
+
     </div>
   );
 }

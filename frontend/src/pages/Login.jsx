@@ -1,16 +1,18 @@
-// src/pages/Login.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/login.css';
 
 import logo from '../assets/images/Teachers/LITEREXIA.png';
 import wave from '../assets/images/Teachers/wave.png';
-import { FiMail, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiMail, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
 
 function ErrorDialog({ message, onClose }) {
   return (
     <div className="error-dialog-overlay fade-in">
       <div className="error-dialog-box pop-in">
+        <div className="error-icon">
+          <FiAlertCircle size={24} color="#d9534f" />
+        </div>
         <p>{message}</p>
         <button className="dialog-close-btn" onClick={onClose}>OK</button>
       </div>
@@ -27,77 +29,174 @@ const Login = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [expectedRoleType, setExpectedRoleType] = useState(null);
+
+  // Retrieve the expected role type from localStorage when component mounts
+  useEffect(() => {
+    const userType = localStorage.getItem('userType');
+    if (userType) {
+      setExpectedRoleType(userType);
+      console.log('Expected user type:', userType);
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const isValidPassword = (password) => {
-    const regex = /^(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
-    return regex.test(password);
+  // Helper to determine user type from role string
+  const determineUserTypeFromString = (role) => {
+    if (!role) return null;
+    
+    const normalizedRole = role.toLowerCase();
+    
+    if (normalizedRole === 'admin') return 'admin';
+    if (normalizedRole === 'parent' || normalizedRole === 'magulang') return 'parent';
+    if (normalizedRole === 'teacher' || normalizedRole === 'guro') return 'teacher';
+    
+    return null;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
+    // Basic validation
     if (!formData.email || !formData.password) {
-      return setError('Lahat ng field ay kailangan punan.');
-    }
-    if (!formData.email.includes('@')) {
-      return setError('Gumamit ng wastong email address.');
-    }
-    if (!isValidPassword(formData.password)) {
-      return setError('Password must be 8+ characters, contain 1 uppercase & 1 number.');
+      return setError('Email and password are required.');
     }
 
     setIsLoading(true);
+
     try {
-      const response = await mockLogin(formData);
-      const data = await response.json();
+      /* ----------  API URL  ---------- */
+      const BASE =
+        import.meta.env.VITE_API_BASE_URL ||
+        (import.meta.env.DEV ? 'http://localhost:5002' : '');
 
-      if (response.ok) {
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userData', JSON.stringify(data.user));
-        if (onLogin) onLogin();
+      console.log(`Attempting login to ${BASE}/api/auth/login`);
 
-        // Read the user type from localStorage (set previously via ChooseAccountType)
-        // Default to 'teacher' if not found.
-        const userType = localStorage.getItem('userType') || 'teacher';
-        // Redirect to the appropriate dashboard based on user type.
-        navigate(`/${userType}/dashboard`);
-      } else {
-        setError(data.message || 'Login failed.');
+      const res = await fetch(`${BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+        credentials: 'include',
+      });
+
+      // Parse response first to get detailed error if available
+      const data = await res.json();
+
+      // If response is not OK, handle the error
+      if (!res.ok) {
+        throw new Error(data.message || `Login failed (${res.status})`);
       }
-    } catch {
-      setError('May nangyaring mali. Subukan muli.');
+
+      // Check if response has expected data
+      if (!data.token || !data.user) {
+        throw new Error('Invalid response from server');
+      }
+
+      console.log('Login successful, user data:', data.user);
+
+      // Store auth data in localStorage
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('userData', JSON.stringify(data.user));
+
+      // Determine user type based on roles from server response
+      let userType = null;
+      
+      // Try to find a valid role in the roles array
+      if (Array.isArray(data.user.roles)) {
+        for (const role of data.user.roles) {
+          const type = determineUserTypeFromString(role);
+          if (type) {
+            userType = type;
+            break;
+          }
+        }
+      } else if (typeof data.user.roles === 'string') {
+        userType = determineUserTypeFromString(data.user.roles);
+      }
+      
+      // If no valid role was found
+      if (!userType) {
+        console.warn('Could not determine user type from roles:', data.user.roles);
+        
+        // Try to resolve role ID if it looks like an ObjectId
+        const roleId = Array.isArray(data.user.roles) && data.user.roles.length > 0 
+          ? data.user.roles[0] 
+          : data.user.roles;
+        
+        if (roleId) {
+          try {
+            // Try to fetch the role details
+            const roleResponse = await fetch(`${BASE}/api/auth/check-role/${roleId}`);
+            if (roleResponse.ok) {
+              const roleData = await roleResponse.json();
+              userType = determineUserTypeFromString(roleData.roleName);
+              console.log('Role resolved from ID:', roleData);
+            }
+          } catch (roleError) {
+            console.error('Error resolving role ID:', roleError);
+          }
+        }
+        
+        // If still no user type, use a fallback based on what the user selected
+        if (!userType) {
+          userType = expectedRoleType || 'teacher';
+          console.warn(`Using fallback user type: ${userType}`);
+        }
+      }
+      
+      console.log('Determined user type:', userType);
+      
+      // Store the detected user type
+      localStorage.setItem('userType', userType);
+
+      // Check if user type matches expected type from account selection
+      if (expectedRoleType && userType !== expectedRoleType) {
+        console.warn(`Role mismatch: Expected ${expectedRoleType}, got ${userType}`);
+        setError(`This account is a ${userType} account, not a ${expectedRoleType} account. Please choose the correct account type.`);
+        setIsLoading(false);
+        return;
+      }
+
+      // Call the onLogin function to update App state
+      onLogin();
+
+      // Route to the appropriate dashboard
+      if (userType === 'admin') {
+        navigate('/admin/dashboard');
+      } else if (userType === 'parent') {
+        navigate('/parent/dashboard');
+      } else {
+        // For teachers, initialize profile first
+        try {
+          const teacherService = await import('../services/Teachers/teacherService');
+          await teacherService.initializeTeacherProfile();
+        } catch (profileError) {
+          console.warn('Failed to initialize teacher profile:', profileError);
+        }
+
+        navigate('/teacher/dashboard');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Simulated login function.
-  const mockLogin = ({ email, password }) => {
-    return new Promise(resolve => {
-      setTimeout(() => {
-        if (email && password) {
-          resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve({
-                token: 'mock-token',
-                user: { email }
-              })
-          });
-        } else {
-          resolve({
-            ok: false,
-            json: () => Promise.resolve({ message: 'Invalid credentials' })
-          });
-        }
-      }, 700);
-    });
+  // Get label for the current account type
+  const getAccountTypeLabel = () => {
+    switch (expectedRoleType) {
+      case 'parent': return 'Magulang';
+      case 'teacher': return 'Guro';
+      case 'admin': return 'Admin';
+      default: return 'User';
+    }
   };
 
   return (
@@ -110,17 +209,21 @@ const Login = ({ onLogin }) => {
 
       <div className="login-card">
         <h1 className="welcome-text">Maligayang Pagbalik!</h1>
-        <p className="instruction-text">Punan ang email at password</p>
+        <p className="instruction-text">
+          Punan ang email at password para sa {getAccountTypeLabel()} account
+        </p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group icon-input">
             <input
               type="email"
               name="email"
-              placeholder="Email"
+              placeholder="Email" required
               value={formData.email}
               onChange={handleChange}
               className="form-input"
+              disabled={isLoading}
+              data-testid="email-input"
             />
             <FiMail className="input-icon" />
           </div>
@@ -129,20 +232,24 @@ const Login = ({ onLogin }) => {
             <input
               type={showPassword ? 'text' : 'password'}
               name="password"
-              placeholder="Password"
+              placeholder="Password" required
               value={formData.password}
               onChange={handleChange}
               className="form-input"
+              disabled={isLoading}
+              data-testid="password-input"
             />
             {showPassword ? (
               <FiEyeOff
                 className="input-icon clickable"
                 onClick={() => setShowPassword(false)}
+                data-testid="hide-password"
               />
             ) : (
               <FiEye
                 className="input-icon clickable"
                 onClick={() => setShowPassword(true)}
+                data-testid="show-password"
               />
             )}
           </div>
@@ -150,9 +257,14 @@ const Login = ({ onLogin }) => {
           <button
             className="signin-button"
             type="submit"
-            disabled={isLoading}
+            disabled={
+              isLoading ||
+              formData.email.trim() === '' ||
+              formData.password === ''
+            }
+            data-testid="login-button"
           >
-            {isLoading ? 'Logging in...' : 'Sign in'}
+            {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
       </div>

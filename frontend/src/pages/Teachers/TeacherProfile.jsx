@@ -1,4 +1,4 @@
-// src/pages/Teachers/TeacherProfile.jsx
+// src/pages/Teachers/TeacherProfile.jsx - Updated version
 import React, { useState, useEffect, useRef } from "react";
 import DOMPurify from 'dompurify';
 import "../../css/Teachers/TeacherProfile.css";
@@ -6,22 +6,23 @@ import "../../css/Teachers/TeacherProfile.css";
 // Import service functions for API calls
 import {
   fetchTeacherProfile,
+  initializeTeacherProfile,
   updateTeacherProfile,
   updateTeacherPassword,
   uploadProfileImage,
   deleteProfileImage
-} from "../../services/teacherService";
+} from "../../services/Teachers/teacherService";
 
 /**
- * TeacherProfile Component
- * 
- * A comprehensive profile management component for teachers that allows viewing
- * and editing of personal information, profile image management, and password management.
+ * TeacherProfile Component - Updated to better handle profile data
  */
 function TeacherProfile() {
   // State for loading and error handling
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
+
+  const [imageLoadError, setImageLoadError] = useState(false);
+
 
   // State for tracking actions and changes
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -35,9 +36,6 @@ function TeacherProfile() {
   // Refs for file input
   const fileInputRef = useRef(null);
 
-
-  
-  
   // Add a state for image refresh trigger
   const [imageRefreshKey, setImageRefreshKey] = useState(Date.now());
 
@@ -46,15 +44,33 @@ function TeacherProfile() {
     const getTeacherData = async () => {
       try {
         setIsLoading(true);
+
+        // First try to initialize profile if it doesn't exist
+        try {
+          await initializeTeacherProfile();
+        } catch (initError) {
+          console.log("Profile initialization skipped:", initError.message);
+        }
+
         // Fetch profile data from API
         const data = await fetchTeacherProfile();
-        console.log("Profile data received:", data); // Debug log
+
+        // Debug logs
+        console.log("Profile data received:", data);
         if (data.profileImageUrl) {
-          console.log("Profile image URL:", data.profileImageUrl); // Debug log for image URL
+          console.log("Profile image URL:", data.profileImageUrl);
         } else {
           console.log("No profile image URL found.");
         }
-        setFormData(data);
+
+        // Ensure emergencyContact exists
+        const normalizedData = {
+          ...data,
+          // ensure emergencyContact always exists
+          emergencyContact: data.emergencyContact || { name: '', number: '' }
+        };
+
+        setFormData(normalizedData);
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -73,6 +89,47 @@ function TeacherProfile() {
       console.log(`[${new Date().toISOString()}] ${lastAction.type.toUpperCase()}: ${lastAction.message}`);
     }
   }, [lastAction]);
+
+
+  // Add debugging output when profile is loaded
+  useEffect(() => {
+    const getTeacherData = async () => {
+      try {
+        setIsLoading(true);
+
+        // First try to initialize profile if it doesn't exist
+        try {
+          await initializeTeacherProfile();
+        } catch (initError) {
+          console.log("Profile initialization skipped:", initError.message);
+        }
+
+        // Fetch profile data from API
+        const data = await fetchTeacherProfile();
+
+        // Debug logs
+        console.log("Profile data received:", data);
+        console.log("Full profile object:", JSON.stringify(data, null, 2));
+
+        if (data.profileImageUrl) {
+          console.log("Profile image URL:", data.profileImageUrl);
+          console.log("Encoded image URL:", encodeURI(data.profileImageUrl));
+        } else {
+          console.log("No profile image URL found.");
+        }
+
+        // Update form data state
+        setFormData(data);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        setLoadError("Failed to load profile data. Please try again later.");
+        setIsLoading(false);
+      }
+    };
+
+    getTeacherData();
+  }, []);
 
   // States for form handling
   const [isEditing, setIsEditing] = useState(false);
@@ -100,7 +157,7 @@ function TeacherProfile() {
       number: ""
     }
   });
-  
+
   // Handle input changes with sanitization
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -115,7 +172,7 @@ function TeacherProfile() {
     const sanitizedValue = DOMPurify.sanitize(value);
     setFormData((prev) => ({
       ...prev,
-      emergencyContact: { ...prev.emergencyContact, [field]: sanitizedValue },
+      emergencyContact: { ...(prev.emergencyContact || {}), [field]: sanitizedValue },
     }));
   };
 
@@ -136,11 +193,11 @@ function TeacherProfile() {
 
   // Handle profile image click - only show controls when in edit mode
   const handleImageClick = () => {
-    // Only allow toggling image controls if in edit mode
     if (isEditing) {
       setShowImageControls(!showImageControls);
     }
   };
+
 
   // Open file browser when upload button is clicked
   const triggerFileInput = () => {
@@ -150,8 +207,11 @@ function TeacherProfile() {
   };
 
   // Process the selected image file
+  // Improved handleFileChange
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
+    setImageLoadError(false);
+
     if (!file) return;
 
     // Validate file type
@@ -184,7 +244,11 @@ function TeacherProfile() {
 
       // After successful upload
       const result = await uploadProfileImage(file, onProgress);
-      console.log("Upload result:", result); // Debug log
+      console.log("Upload result:", result);
+
+      if (!result.success) {
+        throw new Error(result.error || "Upload failed");
+      }
 
       // Update form data with new image URL
       setFormData(prev => {
@@ -194,7 +258,7 @@ function TeacherProfile() {
           profileImageUrl: result.imageUrl
         };
       });
-      
+
       // Force image refresh
       setImageRefreshKey(Date.now());
 
@@ -206,11 +270,15 @@ function TeacherProfile() {
 
       // Hide controls after successful upload
       setShowImageControls(false);
-      
+
       // Force reload of profile data to ensure we have the latest state
       try {
         const refreshedData = await fetchTeacherProfile();
-        setFormData(refreshedData);
+        setFormData(prevData => ({
+          ...prevData,
+          ...refreshedData,
+          profileImageUrl: refreshedData.profileImageUrl
+        }));
       } catch (refreshError) {
         console.warn("Could not refresh profile data after image upload:", refreshError);
       }
@@ -218,7 +286,7 @@ function TeacherProfile() {
       console.error("Error uploading image:", error);
       setErrorDialog({
         show: true,
-        message: error.response?.data?.error || "Failed to upload profile image. Please try again."
+        message: error.message || "Failed to upload profile image. Please try again."
       });
 
       setLastAction({
@@ -248,7 +316,7 @@ function TeacherProfile() {
         ...prev,
         profileImageUrl: null
       }));
-      
+
       // Force image refresh
       setImageRefreshKey(Date.now());
 
@@ -302,14 +370,29 @@ function TeacherProfile() {
         });
       }
       try {
+        // Create a copy of the form data to normalize
+        const updateData = { ...formData };
+
+        // Ensure we're not sending undefined or invalid values
+        if (!updateData.middleName) updateData.middleName = '';
+        if (!updateData.gender) updateData.gender = '';
+        if (!updateData.civilStatus) updateData.civilStatus = '';
+        if (!updateData.dob) updateData.dob = '';
+        if (!updateData.address) updateData.address = '';
+
+        // Make sure emergency contact is properly formatted
+        if (!updateData.emergencyContact) {
+          updateData.emergencyContact = { name: '', number: '' };
+        }
+
         // Send data to API
-        const updateResult = await updateTeacherProfile(formData);
-        
+        const updateResult = await updateTeacherProfile(updateData);
+
         // If the API returns updated data, use it to refresh our form
         if (updateResult && updateResult.teacher) {
           setFormData(updateResult.teacher);
         }
-        
+
         setIsEditing(false);
         setShowSaveDialog(true);
         // Hide image controls when exiting edit mode
@@ -324,7 +407,7 @@ function TeacherProfile() {
         console.error("Error updating profile:", error);
         setErrorDialog({
           show: true,
-          message: "Failed to update profile. Please try again later."
+          message: error.response?.data?.error || "Failed to update profile. Please try again later."
         });
 
         setLastAction({
@@ -374,16 +457,24 @@ function TeacherProfile() {
   // Generate a random cache-busting parameter for the image URL
   const getCacheBustedImageUrl = (url) => {
     if (!url) return null;
-    // Check if the URL is a direct S3 URL or a local API URL
-    if (url.startsWith('http')) {
-      // For S3 URLs, add a timestamp parameter to prevent browser caching
-      const timestamp = imageRefreshKey || Date.now();
-      return `${url}?t=${timestamp}`;
-    } else {
-      // For local API URLs, they already have the nocache parameter
-      return url;
+
+    try {
+      // First clean the URL by removing any existing query parameters
+      const baseUrl = url.split('?')[0];
+
+      // Handle URLs with spaces and special characters
+      const encodedUrl = encodeURI(baseUrl);
+
+      // Add timestamp for cache busting
+      const timestamp = Date.now();
+
+      return `${encodedUrl}?t=${timestamp}`;
+    } catch (error) {
+      console.error('Error formatting image URL:', error);
+      return url; // Return original URL if formatting fails
     }
   };
+
 
   return (
     <div className="lit-teacherprofile-container">
@@ -427,27 +518,33 @@ function TeacherProfile() {
               className={`lit-avatar-lg ${formData.profileImageUrl ? 'lit-has-image' : ''} ${isEditing ? 'lit-editable' : ''}`}
               onClick={handleImageClick}
             >
-              {formData.profileImageUrl ? (
-                <img
-                  key={imageRefreshKey} // Add key for forcing re-render
-                  src={getCacheBustedImageUrl(formData.profileImageUrl)}
-                  alt="Profile"
-                  className="lit-profile-image"
-                  onError={(e) => {
-                    console.error("Failed to load image:", e);
-                    if (e.target && e.target.parentNode) {
-                      e.target.style.display = 'none';
-                      try {
-                        e.target.parentNode.textContent = getInitials();
-                      } catch (err) {
-                        console.error("Error setting initials:", err);
-                      }
-                    }
-                  }}
-                />
-              ) : (
-                getInitials()
-              )}
+              <div
+                className={`lit-avatar-lg ${formData.profileImageUrl && !imageLoadError ? 'lit-has-image' : ''} ${isEditing ? 'lit-editable' : ''}`}
+                onClick={handleImageClick}
+              >
+                {formData.profileImageUrl && !imageLoadError ? (
+                  <img
+                    key={imageRefreshKey}
+                    src={getCacheBustedImageUrl(formData.profileImageUrl)}
+                    alt="Profile"
+                    className="lit-profile-image"
+                    onError={(e) => {
+                      console.error("Failed to load image:", e.target.src);
+                      setImageLoadError(true);
+                    }}
+                  />
+                ) : (
+                  getInitials()
+                )}
+                {/* Show edit indicator when in edit mode */}
+                {isEditing && (
+                  <div className="lit-avatar-overlay">
+                    <span className="lit-camera-text">Edit</span>
+                  </div>
+                )}
+              </div>
+
+
               {/* Show edit indicator when in edit mode */}
               {isEditing && (
                 <div className="lit-avatar-overlay">
@@ -675,9 +772,9 @@ function TeacherProfile() {
               <label htmlFor="emergency-name">Contact Person</label>
               <input
                 id="emergency-name"
+                name="name"
                 type="text"
-                name="emergencyName"
-                value={formData.emergencyContact.name}
+                value={formData.emergencyContact?.name || ""}
                 onChange={(e) => handleEmergencyChange("name", e.target.value)}
                 readOnly={!isEditing}
                 placeholder="Emergency Contact Name"
@@ -689,8 +786,8 @@ function TeacherProfile() {
               <input
                 id="emergency-number"
                 type="text"
-                name="emergencyNumber"
-                value={formData.emergencyContact.number}
+                name="number"
+                value={formData.emergencyContact?.number || ""}
                 onChange={(e) => handleEmergencyChange("number", e.target.value)}
                 readOnly={!isEditing}
                 placeholder="Emergency Contact Number"

@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useChatbot } from '../../../contexts/ChatbotContexts.js';
+import { fetchTeacherProfile } from '../../../services/Teachers/teacherService';
 import '../../../css/Teachers/TeacherChatbot.css'; 
 
-// Adjust these relative paths if you’ve moved the file
+// Adjust these relative paths if you've moved the file
 import botAvatar from '../../../assets/icons/Homepage/penguin.png';
-
-import userAvatar from '../../../assets/icons/Teachers/Avatar.png';
+// Remove the static import
+// import userAvatar from '../../../assets/icons/Teachers/Avatar.png';
+import defaultUserAvatar from '../../../assets/icons/Teachers/avatar.png';
 
 const TeacherChatbot = () => {
   const {
@@ -19,8 +21,27 @@ const TeacherChatbot = () => {
   } = useChatbot();
   
   const [inputMessage, setInputMessage] = useState('');
+  const [userAvatar, setUserAvatar] = useState(defaultUserAvatar);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Fetch teacher profile to get the avatar image
+  useEffect(() => {
+    const fetchUserAvatar = async () => {
+      try {
+        const teacherData = await fetchTeacherProfile();
+        if (teacherData && teacherData.profileImageUrl) {
+          // Add cache-busting parameter to avoid stale images
+          setUserAvatar(`${teacherData.profileImageUrl}?t=${Date.now()}`);
+        }
+      } catch (error) {
+        console.error('Failed to fetch teacher profile image:', error);
+        // Keep using default avatar on error
+      }
+    };
+    
+    fetchUserAvatar();
+  }, []);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -42,6 +63,11 @@ const TeacherChatbot = () => {
   const handleSuggestedQuestion = (question) => {
     setInputMessage(question);
     inputRef.current?.focus();
+  };
+
+  // Helper function to handle image errors
+  const handleImageError = (e) => {
+    e.target.src = defaultUserAvatar;
   };
 
   return (
@@ -108,7 +134,11 @@ const TeacherChatbot = () => {
             {messages.map(msg => (
               <div key={msg.id} className={`tcb-message ${msg.sender==='user'?'tcb-user-message':'tcb-bot-message'}`}>
                 <div className="tcb-avatar">
-                  <img src={msg.sender==='user'? userAvatar : botAvatar} alt={msg.sender}/>
+                  <img 
+                    src={msg.sender==='user'? userAvatar : botAvatar} 
+                    alt={msg.sender}
+                    onError={msg.sender==='user' ? handleImageError : undefined}
+                  />
                 </div>
                 <div className="tcb-message-content">
                   <div className="tcb-message-text">

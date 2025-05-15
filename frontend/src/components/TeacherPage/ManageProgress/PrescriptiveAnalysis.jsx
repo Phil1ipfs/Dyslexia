@@ -1,235 +1,275 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  FaEdit, 
   FaLightbulb, 
+  FaCheckCircle, 
   FaExclamationTriangle, 
-  FaCheckCircle,
-  FaInfoCircle,
-  FaChartLine,
-  FaArrowRight,
-  FaBrain,
-  FaChalkboardTeacher,
-  FaHandsHelping
+  FaStar, 
+  FaClock, 
+  FaArrowRight, 
+  FaEdit,
+  FaEye,
+  FaPlayCircle,
+  FaSyncAlt,
+  FaChevronDown,
+  FaChevronUp
 } from 'react-icons/fa';
-import '../ManageProgress/css/PrescriptiveAnalysis.css';
+import StudentApiService from '../../../services/Teachers/StudentApiService';
 
-const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
-  if (!recommendations || recommendations.length === 0) {
+// CSS will be included in an artifact
+
+const PrescriptiveAnalysis = ({ student, recommendations = [], onEditActivity }) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [studentRecommendations, setStudentRecommendations] = useState(recommendations);
+  const [expandedActivities, setExpandedActivities] = useState({});
+  const [expandedRecommendations, setExpandedRecommendations] = useState({});
+
+  useEffect(() => {
+    if (recommendations && recommendations.length > 0) {
+      setStudentRecommendations(recommendations);
+    } else if (student?.id) {
+      loadRecommendations(student.id);
+    }
+  }, [student, recommendations]);
+
+  const loadRecommendations = async (studentId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const result = await StudentApiService.getPrescriptiveRecommendations(studentId);
+      
+      if (Array.isArray(result)) {
+        setStudentRecommendations(result);
+      } else {
+        setStudentRecommendations([]);
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      console.error('Error loading prescriptive recommendations:', err);
+      setError('Failed to load recommendations. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const handleToggleActivities = (recommendationId) => {
+    setExpandedActivities(prev => ({
+      ...prev,
+      [recommendationId]: !prev[recommendationId]
+    }));
+  };
+
+  const handleToggleRecommendation = (recommendationId) => {
+    setExpandedRecommendations(prev => ({
+      ...prev,
+      [recommendationId]: !prev[recommendationId]
+    }));
+  };
+
+  const getRecommendationStatusClass = (status) => {
+    switch (status) {
+      case 'completed':
+        return 'literexia-status-completed';
+      case 'in_progress':
+        return 'literexia-status-in-progress';
+      case 'pushed_to_mobile':
+        return 'literexia-status-pushed';
+      case 'draft':
+      default:
+        return 'literexia-status-draft';
+    }
+  };
+
+  const getRecommendationStatusText = (status) => {
+    switch (status) {
+      case 'completed':
+        return 'Completed';
+      case 'in_progress':
+        return 'In Progress';
+      case 'pushed_to_mobile':
+        return 'Pushed to Mobile';
+      case 'draft':
+      default:
+        return 'Draft';
+    }
+  };
+
+  const getPriorityClass = (priority) => {
+    switch (priority) {
+      case 'high':
+        return 'literexia-priority-high';
+      case 'medium':
+        return 'literexia-priority-medium';
+      case 'low':
+        return 'literexia-priority-low';
+      default:
+        return 'literexia-priority-medium';
+    }
+  };
+
+  const handleEditActivity = (activity) => {
+    if (onEditActivity) {
+      onEditActivity(activity);
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="literexia-empty-state">
-        <FaExclamationTriangle className="literexia-empty-icon" />
-        <h3>Walang Rekomendasyong Natagpuan</h3>
-        <p>Kailangan munang kumpletuhin ang paunang pagsusuri upang makabuo ng mga personalized na rekomendasyon.</p>
+      <div className="literexia-loading">
+        <FaSyncAlt className="literexia-spinner" />
+        <p>Loading prescriptive recommendations...</p>
       </div>
     );
   }
-  
-  // Get category color class
-  const getCategoryColorClass = (category) => {
-    switch (category) {
-      case 'Patinig':
-        return 'literexia-patinig';
-      case 'Pantig':
-        return 'literexia-pantig';
-      case 'Pagkilala ng Salita':
-        return 'literexia-salita';
-      case 'Pag-unawa sa Binasa':
-        return 'literexia-pag-unawa';
-      default:
-        return '';
-    }
-  };
-  
-  // Get status class and text
-  const getStatusInfo = (status) => {
-    switch (status) {
-      case 'pending_approval':
-        return { class: 'literexia-pending', text: 'Nakabinbin ang Pag-apruba' };
-      case 'completed':
-        return { class: 'literexia-completed', text: 'Nakumpleto' };
-      case 'in_progress':
-        return { class: 'literexia-in-progress', text: 'Kasalukuyang Ginagawa' };
-      default:
-        return { class: 'literexia-draft', text: 'Draft' };
-    }
-  };
 
-  // Text shortening utility
-  const shortenText = (text, maxLength = 100) => {
-    if (!text || text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
-  
+  if (error) {
+    return (
+      <div className="literexia-error">
+        <FaExclamationTriangle />
+        <p>{error}</p>
+        <button onClick={() => loadRecommendations(student?.id)} className="literexia-retry-btn">
+          <FaSyncAlt /> Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!studentRecommendations || studentRecommendations.length === 0) {
+    return (
+      <div className="literexia-empty-state">
+        <FaLightbulb className="literexia-empty-icon" />
+        <h3>No Prescriptive Recommendations Available</h3>
+        <p>There are no personalized recommendations for this student yet. Continue evaluating their progress to generate recommendations.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="literexia-prescriptive-container">
-      {/* Header with explanation */}
-      <div className="literexia-prescriptive-header">
-        <div className="literexia-header-icon">
-          <FaBrain />
-        </div>
-        <div className="literexia-head-content">
-          <h3>AI-Generated na mga Rekomendasyon para sa Pag-aaral</h3>
+      <div className="literexia-recommendations-header">
+        <div className="literexia-header-info">
+          <h3>
+            <FaLightbulb /> Personalized Learning Recommendations
+          </h3>
           <p>
-            Batay sa resulta ng pagtatasa at patuloy na pagganap ng mag-aaral, 
-            ang aming system ay nakakita ng partikular na mga learning gaps 
-            at gumawa ng mga targeted na rekomendasyon upang mapabuti ang 
-            kanilang mga kasanayan sa pagbasa.
+            Based on {student?.name || 'this student'}'s performance in the {student?.readingLevel || 'current'} reading level. 
+            These recommendations are designed to address specific learning needs.
           </p>
         </div>
       </div>
-      
-      {/* Findings summary */}
-      <div className="literexia-summary-section">
-        <div className="literexia-summary-header">
-          <FaLightbulb className="literexia-summary-icon" />
-          <h3>Buod ng mga Natuklasan</h3>
-        </div>
-        <div className="literexia-summary-content">
-          <p>
-            Ang pagsusuri sa data ng pag-unlad ni {student?.name} ay nagpapahiwatig na may 
-            kahirapan siya sa <strong>pagkilala ng diptonggo</strong> at <strong>kumplikadong 
-            pattern ng pantig</strong>. Ang kanyang performance sa mga aktibidad na 
-            nangangailangan ng mga kasanayang ito ay patuloy na nasa mababang antas, 
-            na may pattern ng mga pagkakamali na nagmumungkahi ng mga hamon sa phonological 
-            processing na karaniwan sa mga mag-aaral na may dyslexia.
-          </p>
-          <p>
-            Batay sa kanyang kasalukuyang antas ng pagbasa ({recommendations[0]?.readingLevel || 'Antas 2'}) 
-            at sa kanyang mga partikular na pattern ng pagganap, ang system ay bumuo ng mga 
-            personalized na rekomendasyon para sa pag-aaral upang matugunan ang mga gaps na ito. 
-            Ang mga aktibidad sa ibaba ay partikular na idinisenyo upang tukuyin ang kanyang 
-            mga kahinaan habang itinataguyod ang kanyang mga kasalukuyang kalakasan.
-          </p>
-        </div>
-      </div>
-      
-      {/* Teacher Implementation Guide */}
-      <div className="literexia-teaching-guide">
-        <div className="literexia-guide-header">
-          <FaChalkboardTeacher className="literexia-guide-icon" />
-          <h3>Gabay sa Pagtuturo sa Harap-harapan</h3>
-        </div>
-        <div className="literexia-guide-content">
-          <p>
-            Habang gumagamit ng mga digital na aktibidad, inirerekomenda na suportahan si {student?.name} 
-            gamit ang mga sumusunod na estratehiya:
-          </p>
-          <div className="literexia-strategy-list">
-            <div className="literexia-strategy">
-              <div className="literexia-strategy-icon">
-                <FaHandsHelping />
+
+      <div className="literexia-recommendations-list">
+        {studentRecommendations.map((recommendation) => (
+          <div 
+            key={recommendation.id} 
+            className={`literexia-recommendation-card ${getRecommendationStatusClass(recommendation.status)}`}
+          >
+            <div className="literexia-recommendation-header" onClick={() => handleToggleRecommendation(recommendation.id)}>
+              <div className="literexia-recommendation-title">
+                <h4>{recommendation.title}</h4>
+                <div className="literexia-recommendation-meta">
+                  <span className="literexia-category-pill">{recommendation.category}</span>
+                  {recommendation.priorityLevel && (
+                    <span className={`literexia-priority-pill ${getPriorityClass(recommendation.priorityLevel)}`}>
+                      {recommendation.priorityLevel.charAt(0).toUpperCase() + recommendation.priorityLevel.slice(1)} Priority
+                    </span>
+                  )}
+                  <span className={`literexia-status-pill ${getRecommendationStatusClass(recommendation.status)}`}>
+                    {getRecommendationStatusText(recommendation.status)}
+                  </span>
+                </div>
               </div>
-              <div className="literexia-strategy-content">
-                <h4>Multi-sensory na Pagtuturo</h4>
-                <p>
-                  Gumamit ng mga pisikal na letter tiles o cards kapag 
-                  nagtatrabaho sa mga diptonggo, na nagbibigay-daan kay {student?.name} na makita, 
-                  mahawakan, at marinig ang mga tunog nang sabay-sabay.
-                </p>
+              <div className="literexia-recommendation-toggle">
+                {expandedRecommendations[recommendation.id] ? <FaChevronUp /> : <FaChevronDown />}
               </div>
             </div>
-            
-            <div className="literexia-strategy">
-              <div className="literexia-strategy-icon">
-                <FaHandsHelping />
-              </div>
-              <div className="literexia-strategy-content">
-                <h4>Syllable Tapping</h4>
-                <p>
-                  Turuan si {student?.name} na i-tap ang mga pantig gamit ang kanyang mga daliri 
-                  habang nagbabasa, na pinatitibay ang pisikal na koneksyon sa mga pattern ng pantig.
-                </p>
-              </div>
-            </div>
-            
-            <div className="literexia-strategy">
-              <div className="literexia-strategy-icon">
-                <FaHandsHelping />
-              </div>
-              <div className="literexia-strategy-content">
-                <h4>Chunking Strategy</h4>
-                <p>
-                  Ipakita kung paano hatiin ang mas mahahabang salita sa mga makakayanan parts, 
-                  at unti-unting bawasan ang suporta habang tumataas ang kumpiyansa ni {student?.name}.
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="literexia-monitoring-note">
-            <strong>Pag-monitor ng Progreso:</strong> Pagkatapos ipatupad ang mga interbensiyon na ito 
-            sa loob ng 2-3 linggo, suriin ang progreso ni {student?.name} at ayusin ang mga estratehiya kung kinakailangan.
-          </div>
-        </div>
-      </div>
-      
-      {/* Recommended Activities/Interventions */}
-      <div className="literexia-interventions">
-        <h3 className="literexia-interventions-title">Mga Inirerekomendang Interbensyon</h3>
-        
-        <div className="literexia-interventions-list">
-          {recommendations.map((rec) => (
-            <div key={rec.id} className="literexia-intervention-card">
-              <div className="literexia-intervention-header">
-                <div className={`literexia-intervention-icon ${getCategoryColorClass(rec.category)}`}>
-                  <FaLightbulb />
-                </div>
-                <div className="literexia-intervention-title-container">
-                  <h4 className="literexia-intervention-title">{rec.title}</h4>
-                  <div className="literexia-intervention-category">{rec.category}</div>
-                </div>
-                <div className={`literexia-intervention-status ${getStatusInfo(rec.status).class}`}>
-                  {getStatusInfo(rec.status).text}
-                </div>
-              </div>
-              
-              <div className="literexia-intervention-metrics">
-                <div className="literexia-metric">
-                  <div className="literexia-metric-label">Kasalukuyang Iskor</div>
-                  <div className="literexia-metric-value">{rec.score}%</div>
-                </div>
-                <div className="literexia-metric-arrow">
-                  <FaArrowRight />
-                </div>
-                <div className="literexia-metric">
-                  <div className="literexia-metric-label">Target na Iskor</div>
-                  <div className="literexia-metric-value">{rec.targetScore}%</div>
-                </div>
-                <div className="literexia-metric literexia-success-probability">
-                  <div className="literexia-metric-label">Posibilidad ng Tagumpay</div>
-                  <div className="literexia-metric-value">{rec.successProbability || '85'}%</div>
-                </div>
-              </div>
-              
-              <div className="literexia-intervention-details">
-                <div className="literexia-intervention-analysis">
-                  <h5>Pagsusuri</h5>
-                  <p>{rec.analysis || 'Walang partikular na pagsusuri na ibinigay.'}</p>
-                </div>
-                
-                <div className="literexia-intervention-recommendation">
-                  <h5><FaCheckCircle /> Rekomendasyon</h5>
-                  <p>{rec.recommendation}</p>
-                </div>
-                
-                <div className="literexia-intervention-actions">
-                  <div className="literexia-action-note">
-                    <FaInfoCircle />
-                    <span>Ang pag-edit ng aktibidad na ito ay gagawa ng custom version para sa partikular na pangangailangan ng mag-aaral na ito.</span>
+
+            {expandedRecommendations[recommendation.id] && (
+              <div className="literexia-recommendation-content">
+                {recommendation.description && (
+                  <div className="literexia-recommendation-description">
+                    <p>{recommendation.description}</p>
                   </div>
-                  <button
-                    className="literexia-edit-activity-btn"
-                    onClick={() => onEditActivity(rec)}
-                    disabled={rec.status === 'pending_approval'}
+                )}
+
+                {recommendation.analysis && (
+                  <div className="literexia-recommendation-analysis">
+                    <h5>Analysis</h5>
+                    <p>{recommendation.analysis}</p>
+                  </div>
+                )}
+
+                {recommendation.recommendation && (
+                  <div className="literexia-recommendation-suggestion">
+                    <h5>Recommendation</h5>
+                    <p>{recommendation.recommendation}</p>
+                  </div>
+                )}
+
+                {recommendation.score !== undefined && (
+                  <div className="literexia-recommendation-scores">
+                    <div className="literexia-score-item">
+                      <span className="literexia-score-label">Current Score:</span>
+                      <span className="literexia-score-value">{recommendation.score}%</span>
+                    </div>
+                    {recommendation.targetScore && (
+                      <div className="literexia-score-item">
+                        <span className="literexia-score-label">Target Score:</span>
+                        <span className="literexia-score-value">{recommendation.targetScore}%</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {recommendation.notes && (
+                  <div className="literexia-recommendation-notes">
+                    <h5>Teacher Notes</h5>
+                    <p>{recommendation.notes}</p>
+                  </div>
+                )}
+
+                <div className="literexia-recommendation-actions">
+                  <button 
+                    className="literexia-edit-btn"
+                    onClick={() => handleEditActivity(recommendation)}
                   >
-                    <FaEdit /> {rec.status === 'pending_approval' ? 'Naghihintay ng Pag-apruba' : 'I-edit ang Aktibidad'}
+                    <FaEdit /> Edit & Push to Mobile
                   </button>
+                  
+                  {recommendation.activities && recommendation.activities.length > 0 && (
+                    <button 
+                      className="literexia-toggle-activities"
+                      onClick={() => handleToggleActivities(recommendation.id)}
+                    >
+                      {expandedActivities[recommendation.id] ? 'Hide Activities' : 'Show Activities'} 
+                      {expandedActivities[recommendation.id] ? <FaChevronUp /> : <FaChevronDown />}
+                    </button>
+                  )}
                 </div>
+
+                {expandedActivities[recommendation.id] && recommendation.activities && recommendation.activities.length > 0 && (
+                  <div className="literexia-activities-list">
+                    <h5>Suggested Activities</h5>
+                    {recommendation.activities.map((activity, index) => (
+                      <div key={index} className="literexia-activity-item">
+                        <div className="literexia-activity-icon">
+                          {activity.activityType === 'interactive' && <FaPlayCircle />}
+                          {activity.activityType === 'reading' && <FaEye />}
+                          {!activity.activityType && <FaLightbulb />}
+                        </div>
+                        <div className="literexia-activity-details">
+                          <h6>{activity.title}</h6>
+                          {activity.description && <p>{activity.description}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              
-            </div>
-          ))}
-        </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
