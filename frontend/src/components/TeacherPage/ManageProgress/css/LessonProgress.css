@@ -1,0 +1,213 @@
+/* Lesson Progress Styles */
+
+.lesson-progress-container {
+    padding: 1rem 0;
+  }
+  
+  .lesson-progress-table-container {
+    background-color: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+  
+  .lesson-progress-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1rem;
+  }
+  
+  .lesson-progress-table th,
+  .lesson-progress-table td {
+    padding: 1rem;
+    text-align: left;
+    border: 1px solid #E5E7EB;
+  }
+  
+  .lesson-progress-table th {
+    background-color: #3B4F81;
+    color: white;
+    font-weight: 500;
+    text-align: center;
+  }
+  
+  .lesson-progress-table tr.assistance-level-header th {
+    background-color: #4C5F91;
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+  }
+  
+  .lesson-progress-table tr.assistance-level-header th:first-child,
+  .lesson-progress-table tr.assistance-level-header th:nth-child(2),
+  .lesson-progress-table tr.assistance-level-header th:last-child {
+    background-color: transparent;
+    border: none;
+  }
+  
+  .lesson-progress-table tbody tr:nth-child(even) {
+    background-color: #F9FAFB;
+  }
+  
+  .lesson-progress-table tbody tr:hover {
+    background-color: #F3F4F6;
+  }
+  
+  .completion-cell {
+    text-align: center;
+  }
+  
+  .completed {
+    color: #4CAF50;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .not-completed {
+    color: #9CA3AF;
+    font-style: italic;
+    font-size: 0.9rem;
+  }
+  
+  .assistance-cell {
+    text-align: center;
+  }
+  
+  .assistance-checkbox {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #D1D5DB;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin: 0 auto;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+  
+  .assistance-checkbox:hover {
+    border-color: #3B4F81;
+    background-color: rgba(59, 79, 129, 0.05);
+  }
+  
+  .assistance-checkbox.selected {
+    background-color: #3B4F81;
+    border-color: #3B4F81;
+    color: white;
+  }
+  
+  .notes-cell {
+    min-width: 250px;
+  }
+  
+  .notes-view {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .notes-view p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #4B5563;
+    flex: 1;
+  }
+  
+  .edit-notes-btn {
+    background: none;
+    border: none;
+    color: #3B4F81;
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+  
+  .edit-notes-btn:hover {
+    background-color: rgba(59, 79, 129, 0.1);
+  }
+  
+  .notes-edit {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+  }
+  
+  .notes-textarea {
+    flex: 1;
+    min-height: 60px;
+    padding: 0.5rem;
+    border: 1px solid #D1D5DB;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    resize: vertical;
+  }
+  
+  .notes-textarea:focus {
+    outline: none;
+    border-color: #3B4F81;
+    box-shadow: 0 0 0 2px rgba(59, 79, 129, 0.1);
+  }
+  
+  .save-notes-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #3B4F81;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .save-notes-btn:hover {
+    background-color: #2C3E70;
+  }
+  
+  .goto-lessons-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #3B4F81;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 1.5rem;
+    transition: all 0.2s ease;
+  }
+  
+  .goto-lessons-btn:hover {
+    background-color: #2C3E70;
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 992px) {
+    .lesson-progress-table-container {
+      overflow-x: auto;
+    }
+    
+    .lesson-progress-table {
+      min-width: 750px;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .lesson-progress-table {
+      min-width: 500px;
+    }
+  }
