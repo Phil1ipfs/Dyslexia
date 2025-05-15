@@ -1,236 +1,275 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  FaEdit, 
   FaLightbulb, 
+  FaCheckCircle, 
   FaExclamationTriangle, 
-  FaCheckCircle,
-  FaInfoCircle,
-  FaChartLine,
-  FaArrowRight,
-  FaBrain,
-  FaChalkboardTeacher,
-  FaHandsHelping,
-  FaMobile
+  FaStar, 
+  FaClock, 
+  FaArrowRight, 
+  FaEdit,
+  FaEye,
+  FaPlayCircle,
+  FaSyncAlt,
+  FaChevronDown,
+  FaChevronUp
 } from 'react-icons/fa';
-import './css/PrescriptiveAnalysis.css';
+import StudentApiService from '../../../services/Teachers/StudentApiService';
 
-const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
-  if (!recommendations || recommendations.length === 0) {
+// CSS will be included in an artifact
+
+const PrescriptiveAnalysis = ({ student, recommendations = [], onEditActivity }) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [studentRecommendations, setStudentRecommendations] = useState(recommendations);
+  const [expandedActivities, setExpandedActivities] = useState({});
+  const [expandedRecommendations, setExpandedRecommendations] = useState({});
+
+  useEffect(() => {
+    if (recommendations && recommendations.length > 0) {
+      setStudentRecommendations(recommendations);
+    } else if (student?.id) {
+      loadRecommendations(student.id);
+    }
+  }, [student, recommendations]);
+
+  const loadRecommendations = async (studentId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const result = await StudentApiService.getPrescriptiveRecommendations(studentId);
+      
+      if (Array.isArray(result)) {
+        setStudentRecommendations(result);
+      } else {
+        setStudentRecommendations([]);
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      console.error('Error loading prescriptive recommendations:', err);
+      setError('Failed to load recommendations. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const handleToggleActivities = (recommendationId) => {
+    setExpandedActivities(prev => ({
+      ...prev,
+      [recommendationId]: !prev[recommendationId]
+    }));
+  };
+
+  const handleToggleRecommendation = (recommendationId) => {
+    setExpandedRecommendations(prev => ({
+      ...prev,
+      [recommendationId]: !prev[recommendationId]
+    }));
+  };
+
+  const getRecommendationStatusClass = (status) => {
+    switch (status) {
+      case 'completed':
+        return 'literexia-status-completed';
+      case 'in_progress':
+        return 'literexia-status-in-progress';
+      case 'pushed_to_mobile':
+        return 'literexia-status-pushed';
+      case 'draft':
+      default:
+        return 'literexia-status-draft';
+    }
+  };
+
+  const getRecommendationStatusText = (status) => {
+    switch (status) {
+      case 'completed':
+        return 'Completed';
+      case 'in_progress':
+        return 'In Progress';
+      case 'pushed_to_mobile':
+        return 'Pushed to Mobile';
+      case 'draft':
+      default:
+        return 'Draft';
+    }
+  };
+
+  const getPriorityClass = (priority) => {
+    switch (priority) {
+      case 'high':
+        return 'literexia-priority-high';
+      case 'medium':
+        return 'literexia-priority-medium';
+      case 'low':
+        return 'literexia-priority-low';
+      default:
+        return 'literexia-priority-medium';
+    }
+  };
+
+  const handleEditActivity = (activity) => {
+    if (onEditActivity) {
+      onEditActivity(activity);
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="literexia-empty-state">
-        <FaExclamationTriangle className="literexia-empty-icon" />
-        <h3>No Recommendations Found</h3>
-        <p>The initial assessment needs to be completed first to generate personalized recommendations.</p>
+      <div className="literexia-loading">
+        <FaSyncAlt className="literexia-spinner" />
+        <p>Loading prescriptive recommendations...</p>
       </div>
     );
   }
-  
-  // Get category color class
-  const getCategoryColorClass = (category) => {
-    switch (category) {
-      case 'Vowel Sound':
-      case 'Patinig':
-        return 'literexia-patinig';
-      case 'Syllable Blending':
-      case 'Pantig':
-        return 'literexia-pantig';
-      case 'Word Recognition':
-      case 'Pagkilala ng Salita':
-        return 'literexia-salita';
-      case 'Reading Comprehension':
-      case 'Pag-unawa sa Binasa':
-        return 'literexia-pag-unawa';
-      default:
-        return '';
-    }
-  };
-  
-  // Get status info
-  const getStatusInfo = (status) => {
-    switch (status) {
-      case 'pushed_to_mobile':
-        return { class: 'literexia-mobile', text: 'Pushed to Mobile' };
-      case 'completed':
-        return { class: 'literexia-completed', text: 'Completed' };
-      case 'in_progress':
-        return { class: 'literexia-in-progress', text: 'In Progress' };
-      default:
-        return { class: 'literexia-draft', text: 'Draft' };
-    }
-  };
-  
+
+  if (error) {
+    return (
+      <div className="literexia-error">
+        <FaExclamationTriangle />
+        <p>{error}</p>
+        <button onClick={() => loadRecommendations(student?.id)} className="literexia-retry-btn">
+          <FaSyncAlt /> Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!studentRecommendations || studentRecommendations.length === 0) {
+    return (
+      <div className="literexia-empty-state">
+        <FaLightbulb className="literexia-empty-icon" />
+        <h3>No Prescriptive Recommendations Available</h3>
+        <p>There are no personalized recommendations for this student yet. Continue evaluating their progress to generate recommendations.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="literexia-prescriptive-container">
-      {/* Header Section */}
-      <div className="literexia-prescriptive-header">
-        <div className="literexia-header-icon">
-          <FaBrain />
-        </div>
-        <div className="literexia-head-content">
-          <h3>AI-Generated Learning Recommendations</h3>
+      <div className="literexia-recommendations-header">
+        <div className="literexia-header-info">
+          <h3>
+            <FaLightbulb /> Personalized Learning Recommendations
+          </h3>
           <p>
-            Based on assessment results and the student's ongoing performance, 
-            our system has identified specific learning gaps and generated 
-            targeted recommendations to improve their reading skills.
+            Based on {student?.name || 'this student'}'s performance in the {student?.readingLevel || 'current'} reading level. 
+            These recommendations are designed to address specific learning needs.
           </p>
         </div>
       </div>
-      
-      {/* Findings summary */}
-      <div className="literexia-summary-section">
-        <div className="literexia-summary-header">
-          <FaLightbulb className="literexia-summary-icon" />
-          <h3>Summary of Findings</h3>
-        </div>
-        <div className="literexia-summary-content">
-          <p>
-            Analysis of {student?.name}'s progress data indicates difficulties with 
-            <strong> diphthong recognition</strong> and <strong>complex syllable patterns</strong>. 
-            Their performance in activities requiring these skills has consistently been 
-            below average, with a pattern of errors suggesting phonological 
-            processing challenges common in students with dyslexia.
-          </p>
-          <p>
-            Based on their current reading level ({recommendations[0]?.readingLevel || 'Level 2'}) 
-            and their specific performance patterns, the system has generated 
-            personalized learning recommendations to address these gaps. 
-            The activities below are specifically designed to target their 
-            weaknesses while building on their existing strengths.
-          </p>
-        </div>
-      </div>
-      
-      {/* Teacher Implementation Guide */}
-      <div className="literexia-teaching-guide">
-        <div className="literexia-guide-header">
-          <FaChalkboardTeacher className="literexia-guide-icon" />
-          <h3>In-Person Teaching Guide</h3>
-        </div>
-        <div className="literexia-guide-content">
-          <p>
-            While using the digital activities, we recommend supporting {student?.name} 
-            with the following strategies:
-          </p>
-          <div className="literexia-strategy-list">
-            <div className="literexia-strategy">
-              <div className="literexia-strategy-icon">
-                <FaHandsHelping />
-              </div>
-              <div className="literexia-strategy-content">
-                <h4>Multi-sensory Instruction</h4>
-                <p>
-                  Use physical letter tiles or cards when working on diphthongs, allowing {student?.name} to see, 
-                  touch, and hear the sounds simultaneously.
-                </p>
-              </div>
-            </div>
-            
-            <div className="literexia-strategy">
-              <div className="literexia-strategy-icon">
-                <FaHandsHelping />
-              </div>
-              <div className="literexia-strategy-content">
-                <h4>Syllable Tapping</h4>
-                <p>
-                  Teach {student?.name} to tap syllables with their fingers while reading, 
-                  reinforcing the physical connection to syllable patterns.
-                </p>
-              </div>
-            </div>
-            
-            <div className="literexia-strategy">
-              <div className="literexia-strategy-icon">
-                <FaHandsHelping />
-              </div>
-              <div className="literexia-strategy-content">
-                <h4>Chunking Strategy</h4>
-                <p>
-                  Demonstrate how to break longer words into manageable parts, 
-                  gradually reducing support as {student?.name}'s confidence increases.
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="literexia-monitoring-note">
-            <strong>Progress Monitoring:</strong> After implementing these interventions for 2-3 weeks, 
-            review {student?.name}'s progress and adjust strategies as needed.
-          </div>
-        </div>
-      </div>
-      
-      {/* Recommended Activities/Interventions */}
-      <div className="literexia-interventions">
-        <h3 className="literexia-interventions-title">Recommended Interventions</h3>
-        
-        <div className="literexia-interventions-list">
-          {recommendations.map((rec) => (
-            <div key={rec.id} className="literexia-intervention-card">
-              <div className="literexia-intervention-header">
-                <div className={`literexia-intervention-icon ${getCategoryColorClass(rec.category)}`}>
-                  <FaLightbulb />
-                </div>
-                <div className="literexia-intervention-title-container">
-                  <h4 className="literexia-intervention-title">{rec.title}</h4>
-                  <div className="literexia-intervention-category">{rec.category}</div>
-                </div>
-                <div className={`literexia-intervention-status ${getStatusInfo(rec.status).class}`}>
-                  {getStatusInfo(rec.status).text}
-                </div>
-              </div>
-              
-              <div className="literexia-intervention-metrics">
-                <div className="literexia-metric">
-                  <div className="literexia-metric-label">Current Score</div>
-                  <div className="literexia-metric-value">{rec.score || 60}%</div>
-                </div>
-                <div className="literexia-metric-arrow">
-                  <FaArrowRight />
-                </div>
-                <div className="literexia-metric">
-                  <div className="literexia-metric-label">Target Score</div>
-                  <div className="literexia-metric-value">{rec.targetScore || 75}%</div>
-                </div>
-                <div className="literexia-metric literexia-success-probability">
-                  <div className="literexia-metric-label">Success Probability</div>
-                  <div className="literexia-metric-value">{rec.successProbability || 85}%</div>
-                </div>
-              </div>
-              
-              <div className="literexia-intervention-details">
-                <div className="literexia-intervention-analysis">
-                  <h5>Analysis</h5>
-                  <p>{rec.analysis || rec.rationale || 'No specific analysis provided.'}</p>
-                </div>
-                
-                <div className="literexia-intervention-recommendation">
-                  <h5><FaCheckCircle /> Recommendation</h5>
-                  <p>{rec.recommendation || 'Provide additional practice activities focusing on this skill area, with immediate feedback and opportunities for correction.'}</p>
-                </div>
-                
-                <div className="literexia-intervention-actions">
-                  {rec.status === 'pushed_to_mobile' ? (
-                    <div className="literexia-mobile-status">
-                      <FaMobile />
-                      <span>This activity has been pushed to the student's mobile device</span>
-                    </div>
-                  ) : (
-                    <div className="literexia-action-note">
-                      <FaInfoCircle />
-                      <span>Editing this activity will create a custom version for this student's specific needs.</span>
-                    </div>
+
+      <div className="literexia-recommendations-list">
+        {studentRecommendations.map((recommendation) => (
+          <div 
+            key={recommendation.id} 
+            className={`literexia-recommendation-card ${getRecommendationStatusClass(recommendation.status)}`}
+          >
+            <div className="literexia-recommendation-header" onClick={() => handleToggleRecommendation(recommendation.id)}>
+              <div className="literexia-recommendation-title">
+                <h4>{recommendation.title}</h4>
+                <div className="literexia-recommendation-meta">
+                  <span className="literexia-category-pill">{recommendation.category}</span>
+                  {recommendation.priorityLevel && (
+                    <span className={`literexia-priority-pill ${getPriorityClass(recommendation.priorityLevel)}`}>
+                      {recommendation.priorityLevel.charAt(0).toUpperCase() + recommendation.priorityLevel.slice(1)} Priority
+                    </span>
                   )}
-                  <button
-                    className="literexia-edit-activity-btn"
-                    onClick={() => onEditActivity(rec)}
-                  >
-                    <FaEdit /> {rec.status === 'pushed_to_mobile' ? 'Edit Activity' : 'Customize & Push to Mobile'}
-                  </button>
+                  <span className={`literexia-status-pill ${getRecommendationStatusClass(recommendation.status)}`}>
+                    {getRecommendationStatusText(recommendation.status)}
+                  </span>
                 </div>
               </div>
+              <div className="literexia-recommendation-toggle">
+                {expandedRecommendations[recommendation.id] ? <FaChevronUp /> : <FaChevronDown />}
+              </div>
             </div>
-          ))}
-        </div>
+
+            {expandedRecommendations[recommendation.id] && (
+              <div className="literexia-recommendation-content">
+                {recommendation.description && (
+                  <div className="literexia-recommendation-description">
+                    <p>{recommendation.description}</p>
+                  </div>
+                )}
+
+                {recommendation.analysis && (
+                  <div className="literexia-recommendation-analysis">
+                    <h5>Analysis</h5>
+                    <p>{recommendation.analysis}</p>
+                  </div>
+                )}
+
+                {recommendation.recommendation && (
+                  <div className="literexia-recommendation-suggestion">
+                    <h5>Recommendation</h5>
+                    <p>{recommendation.recommendation}</p>
+                  </div>
+                )}
+
+                {recommendation.score !== undefined && (
+                  <div className="literexia-recommendation-scores">
+                    <div className="literexia-score-item">
+                      <span className="literexia-score-label">Current Score:</span>
+                      <span className="literexia-score-value">{recommendation.score}%</span>
+                    </div>
+                    {recommendation.targetScore && (
+                      <div className="literexia-score-item">
+                        <span className="literexia-score-label">Target Score:</span>
+                        <span className="literexia-score-value">{recommendation.targetScore}%</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {recommendation.notes && (
+                  <div className="literexia-recommendation-notes">
+                    <h5>Teacher Notes</h5>
+                    <p>{recommendation.notes}</p>
+                  </div>
+                )}
+
+                <div className="literexia-recommendation-actions">
+                  <button 
+                    className="literexia-edit-btn"
+                    onClick={() => handleEditActivity(recommendation)}
+                  >
+                    <FaEdit /> Edit & Push to Mobile
+                  </button>
+                  
+                  {recommendation.activities && recommendation.activities.length > 0 && (
+                    <button 
+                      className="literexia-toggle-activities"
+                      onClick={() => handleToggleActivities(recommendation.id)}
+                    >
+                      {expandedActivities[recommendation.id] ? 'Hide Activities' : 'Show Activities'} 
+                      {expandedActivities[recommendation.id] ? <FaChevronUp /> : <FaChevronDown />}
+                    </button>
+                  )}
+                </div>
+
+                {expandedActivities[recommendation.id] && recommendation.activities && recommendation.activities.length > 0 && (
+                  <div className="literexia-activities-list">
+                    <h5>Suggested Activities</h5>
+                    {recommendation.activities.map((activity, index) => (
+                      <div key={index} className="literexia-activity-item">
+                        <div className="literexia-activity-icon">
+                          {activity.activityType === 'interactive' && <FaPlayCircle />}
+                          {activity.activityType === 'reading' && <FaEye />}
+                          {!activity.activityType && <FaLightbulb />}
+                        </div>
+                        <div className="literexia-activity-details">
+                          <h6>{activity.title}</h6>
+                          {activity.description && <p>{activity.description}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

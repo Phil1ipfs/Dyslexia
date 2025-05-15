@@ -1,81 +1,150 @@
-// src/services/authService.js
+// services/AuthService.js
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 
-                (import.meta.env.DEV ? 'http://localhost:5002' : '');
+// Import axios for HTTP requests
+import axios from 'axios';
 
-export const authService = {
-  // Login user and return user data
+// Get backend URL from environment variables
+const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5002';
+
+const AuthService = {
+  /**
+   * Login user with email and password
+   * @param {string} email - User email
+   * @param {string} password - User password
+   * @returns {Promise} Promise with login result
+   */
   login: async (email, password) => {
-    const response = await fetch(`${BASE_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    // Store auth data
-    localStorage.setItem('authToken', data.token);
-    localStorage.setItem('userData', JSON.stringify(data.user));
-    
-    // Set user type based on roles
-    const roles = Array.isArray(data.user.roles) ? data.user.roles : [data.user.roles];
-    
-    if (roles.includes('parent') || roles.includes('magulang')) {
-      localStorage.setItem('userType', 'parent');
-    } else if (roles.includes('teacher') || roles.includes('guro')) {
-      localStorage.setItem('userType', 'teacher');
-    } else if (roles.includes('admin')) {
-      localStorage.setItem('userType', 'admin');
-    } else {
-      localStorage.setItem('userType', 'user');
-    }
-    
-    return data;
-  },
-  
-  // Logout user
-  logout: () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userData');
-    localStorage.removeItem('userType');
-  },
-  
-  // Get current user
-  getCurrentUser: () => {
     try {
-      const userData = localStorage.getItem('userData');
-      return userData ? JSON.parse(userData) : null;
+      const response = await axios.post(`${API_URL}/api/auth/login`, { email, password });
+      
+      if (response.data.token) {
+        localStorage.setItem('user', JSON.stringify(response.data));
+      }
+      
+      return response.data;
     } catch (error) {
-      console.error('Error parsing user data:', error);
+      console.error('Login error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Logout current user
+   */
+  logout: () => {
+    localStorage.removeItem('user');
+  },
+
+  /**
+   * Register a new user
+   * @param {Object} userData - User registration data
+   * @returns {Promise} Promise with registration result
+   */
+  register: async (userData) => {
+    try {
+      return await axios.post(`${API_URL}/api/auth/register`, userData);
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get current user information
+   * @returns {Object|null} Current user data or null if not logged in
+   */
+  getCurrentUser: () => {
+    return JSON.parse(localStorage.getItem('user'));
+  },
+
+  /**
+   * Check if user is logged in
+   * @returns {boolean} True if user is logged in
+   */
+  isLoggedIn: () => {
+    const user = AuthService.getCurrentUser();
+    return !!user && !!user.token;
+  },
+
+  /**
+   * Get authentication token
+   * @returns {string|null} JWT token or null if not logged in
+   */
+  getToken: () => {
+    try {
+      const user = AuthService.getCurrentUser();
+      if (!user || !user.token) {
+        // First try to get token from localStorage directly
+        const directToken = localStorage.getItem('token') || localStorage.getItem('authToken');
+        if (directToken) return directToken;
+        
+        // If still no token, check if there's a raw user string
+        const rawUser = localStorage.getItem('user');
+        if (rawUser) {
+          try {
+            const parsedUser = JSON.parse(rawUser);
+            return parsedUser.token || null;
+          } catch (e) {
+            console.warn('Failed to parse user JSON from localStorage');
+          }
+        }
+        return null;
+      }
+      return user.token;
+    } catch (error) {
+      console.error('Error retrieving auth token:', error);
       return null;
     }
   },
-  
-  // Check if user is authenticated
-  isAuthenticated: () => {
-    return !!localStorage.getItem('authToken');
-  },
-  
-  // Get user type
-  getUserType: () => {
-    return localStorage.getItem('userType') || 'user';
-  },
-  
-  // Check if user has specific role
-  hasRole: (role) => {
-    const user = authService.getCurrentUser();
-    if (!user || !user.roles) return false;
+  /**
+   * Check if current user has a specific role
+   * @param {string} roleName - Role to check
+   * @returns {boolean} True if user has the role
+   */
+  hasRole: (roleName) => {
+    const user = AuthService.getCurrentUser();
     
-    const roles = Array.isArray(user.roles) ? user.roles : [user.roles];
-    return roles.includes(role);
+    if (!user || !user.user || !user.user.roles) {
+      return false;
+    }
+    
+    const userRoles = Array.isArray(user.user.roles) 
+      ? user.user.roles 
+      : [user.user.roles];
+    
+    // Handle Tagalog role names
+    const roleMap = {
+      'guro': 'teacher',
+      'magulang': 'parent'
+    };
+    
+    // Check if user has the role (case insensitive)
+    const normalizedRoleName = roleName.toLowerCase();
+    const mappedRoleName = roleMap[normalizedRoleName] || normalizedRoleName;
+    
+    return userRoles.some(role => {
+      const userRole = typeof role === 'string' ? role.toLowerCase() : '';
+      return userRole === normalizedRoleName || userRole === mappedRoleName;
+    });
+  },
+
+  /**
+   * Get user role
+   * @returns {string|null} User role or null if not available
+   */
+  getUserRole: () => {
+    const user = AuthService.getCurrentUser();
+    
+    if (!user || !user.user || !user.user.roles) {
+      return null;
+    }
+    
+    const userRoles = Array.isArray(user.user.roles) 
+      ? user.user.roles 
+      : [user.user.roles];
+    
+    return userRoles[0] || null;
   }
 };
 
-export default authService;
+export default AuthService;

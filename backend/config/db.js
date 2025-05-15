@@ -1,106 +1,77 @@
-// config/db.js
 const mongoose = require('mongoose');
-const Models = require('../models');
 require('dotenv').config();
 
-let models = null;
-let mainConnection = null;
+// 1. Create separate connections for each database
+const mainConnection = mongoose.createConnection(process.env.MONGO_URI, {
+  dbName: 'users_web',
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
 
-// Connect to the MongoDB server
-const connectToMongoDB = async () => {
-  try {
-    const mongoUri = process.env.MONGO_URI;
-    if (!mongoUri) {
-      console.error('❌ MONGO_URI is not defined in environment variables');
-      throw new Error('MONGO_URI is not defined');
-    }
-    
-    console.log('Connecting to MongoDB...');
-    
-    // Create the main connection to MongoDB
-    mainConnection = await mongoose.connect(mongoUri, {
-      dbName: 'users_web', // Default to users_web database
-      connectTimeoutMS: 30000,
-      socketTimeoutMS: 45000,
-      serverSelectionTimeoutMS: 60000
-    });
-    
-    console.log('✅ Connected to MongoDB server');
-    
-    // Create models for all databases
-    models = Models.createModels(mongoose.connection);
-    
-    // Check database connections
-    await checkDatabaseConnections();
-    
-    return { connection: mainConnection, models };
-  } catch (error) {
-    console.error('❌ Failed to connect to MongoDB:', error);
-    throw error;
-  }
+const testConnection = mongoose.createConnection(process.env.MONGO_URI, {
+  dbName: 'test',
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
+
+const mobileConnection = mongoose.createConnection(process.env.MONGO_URI, {
+  dbName: 'mobile_literexia',
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
+
+// 2. Import your schemas
+const ParentProfileSchema       = require('../models/ParentProfile');
+const StudentSchema             = require('../models/Student');
+const UserResponseSchema        = require('../models/UserResponse');
+const AssessmentTemplateSchema  = require('../models/AssessmentTemplate');
+
+// 3. Register models on their respective connections
+const ParentProfile      = mainConnection.model('ParentProfile', ParentProfileSchema);
+const Student            = testConnection.model('Student', StudentSchema);
+const UserResponse       = mobileConnection.model('UserResponse', UserResponseSchema);
+const AssessmentTemplate = testConnection.model('AssessmentTemplate', AssessmentTemplateSchema);
+
+// 4. Collect models
+const models = {
+  ParentProfile,
+  Student,
+  UserResponse,
+  AssessmentTemplate
 };
 
-// Check that all database connections are working
+// 5. Utility to verify connections
 const checkDatabaseConnections = async () => {
   console.log('Checking database connections...');
-  
   try {
-    // Test users_web connection - use parent profile collection
-    const parentCount = await models.ParentProfile.estimatedDocumentCount();
-    console.log(`✅ Connected to users_web database (${parentCount} parent profiles)`);
-    
-    // Test test database connection - use students collection
-    const studentCount = await models.Student.estimatedDocumentCount();
-    console.log(`✅ Connected to test database (${studentCount} students)`);
-    
-    // Test mobile_literexia connection - use user responses collection
-    const responseCount = await models.UserResponse.estimatedDocumentCount();
-    console.log(`✅ Connected to mobile_literexia database (${responseCount} assessment responses)`);
-    
-    console.log('All database connections verified successfully');
-  } catch (error) {
-    console.error('❌ Error checking database connections:', error);
-    throw error;
+    const parentCount   = await ParentProfile.estimatedDocumentCount();
+    console.log(`✅ users_web: ${parentCount} parent profiles`);
+
+    const studentCount  = await Student.estimatedDocumentCount();
+    console.log(`✅ test: ${studentCount} students`);
+
+    const responseCount = await UserResponse.estimatedDocumentCount();
+    console.log(`✅ mobile_literexia: ${responseCount} assessment responses`);
+
+    console.log('All database connections verified');
+  } catch (err) {
+    console.error('DB connection check failed', err);
+    throw err;
   }
 };
 
-// Get models for use in routes
-const getModels = () => {
-  if (!models) {
-    throw new Error('Database connection not initialized. Call connectToMongoDB() first.');
-  }
-  return models;
+// 6. Expose utility functions
+const closeConnections = async () => {
+  await Promise.all([
+    mainConnection.close(),
+    testConnection.close(),
+    mobileConnection.close()
+  ]);
+  console.log('✅ All MongoDB connections closed');
 };
-
-// Close database connection when application exits
-const closeDatabaseConnection = async () => {
-  if (mainConnection) {
-    try {
-      await mongoose.disconnect();
-      console.log('✅ MongoDB connection closed');
-    } catch (error) {
-      console.error('❌ Error closing MongoDB connection:', error);
-    }
-  }
-};
-
-const mainConnection   = mongoose.createConnection(process.env.MONGO_URI, { dbName: 'users_web' });
-const testConnection   = mongoose.createConnection(process.env.MONGO_URI, { dbName: 'test' });
-const mobileConnection = mongoose.createConnection(process.env.MONGO_URI, { dbName: 'mobile_literexia' });
-
-// Setup event handlers for graceful shutdown
-process.on('SIGINT', async () => {
-  await closeDatabaseConnection();
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  await closeDatabaseConnection();
-  process.exit(0);
-});
 
 module.exports = {
-  connectToMongoDB,
-  getModels,
-  closeDatabaseConnection
+  models,
+  checkDatabaseConnections,
+  closeConnections
 };

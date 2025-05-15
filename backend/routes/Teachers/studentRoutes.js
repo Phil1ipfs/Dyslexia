@@ -3,6 +3,42 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { auth } = require('../../middleware/auth');
+const readingLevelProgressionController = require('../../controllers/Teachers/ManageProgress/readingLevelProgressionController');
+
+/**
+ * Return a query that works with either:
+ *   – the real Mongo ObjectId (front-end passes `_id`)  ➜  { userId: ObjectId(...) }
+ *   – the legacy numeric / string code ("40003")        ➜  { studentCode: "40003" }
+ * Collections that use this helper must store `studentCode`
+ * if you still want to support the old URLs. Otherwise,
+ * just pass the real `_id` from the front-end and ignore option B.
+ */
+
+
+const buildStudentQuery = (param) => {
+  // Option A – looks like an ObjectId
+  if (mongoose.Types.ObjectId.isValid(param)) {
+    return { userId: new mongoose.Types.ObjectId(param) };
+  }
+
+  // Option B – treat it as the short code
+  return { studentCode: param.toString() };
+};
+
+// Then for your reading level progression route, replace it with this:
+router.get('/reading-level-progression/:id', auth, async (req, res) => {
+  try {
+    // Call the controller function directly
+    await readingLevelProgressionController.getProgression(req, res);
+  } catch (error) {
+    console.error('Error fetching reading-level-progression:', error);
+    res.status(500).json({ 
+      message: 'Error fetching reading level progression', 
+      error: error.message 
+    });
+  }
+});
+
 
 // Helper function to handle different types of ObjectId formats
 const toObjectIdIfPossible = (id) => {
@@ -22,6 +58,8 @@ const toObjectIdIfPossible = (id) => {
 
   return id;
 };
+
+
 
 // Helper function to get reading level class
 const getReadingLevelClass = (level) => {
@@ -58,8 +96,11 @@ async function getParentInfo(student) {
     console.log("No parentId found for student");
     return parentInfo;
   }
+
+
   
   console.log("ParentId found:", student.parentId);
+  
 
   try {
     // Convert parentId to ObjectId if possible
@@ -338,6 +379,58 @@ router.patch('/student/:id/address', auth, async (req, res) => {
   } catch (err) {
     console.error('Error updating address:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// In studentRoutes.js, add this route
+/**
+ * GET /api/student/assessment-assignments/:id
+ * Returns the assignments for a student
+ */
+router.get('/assessment-assignments/:id', auth, async (req, res) => {
+  try {
+    const studentId = req.params.id;
+    console.log(`Getting assessment assignments for student: ${studentId}`);
+    
+    const testDb = mongoose.connection.useDb('test');
+    const assignmentsCollection = testDb.collection('assessment_assignments');
+    
+    // Convert studentId to ObjectId if possible
+    const studentObjId = mongoose.Types.ObjectId.isValid(studentId) 
+      ? new mongoose.Types.ObjectId(studentId) 
+      : studentId;
+    
+    // Find assignments where student ID appears in assignedStudent array
+    const assignments = await assignmentsCollection.find({
+      "assignedStudent.userId": studentObjId
+    }).toArray();
+    
+    // If no assignments found, try with numeric ID
+    if (assignments.length === 0 && !isNaN(parseInt(studentId))) {
+      const numericId = parseInt(studentId);
+      
+      // First check if student exists with this ID
+      const usersCollection = testDb.collection('users');
+      const student = await usersCollection.findOne({ idNumber: numericId });
+      
+      if (student) {
+        // Try to find assignments for this student
+        const studentAssignments = await assignmentsCollection.find({
+          "assignedStudent.userId": student._id
+        }).toArray();
+        
+        if (studentAssignments.length > 0) {
+          console.log(`Found ${studentAssignments.length} assignments for student with numeric ID: ${numericId}`);
+          return res.json(studentAssignments);
+        }
+      }
+    }
+    
+    console.log(`Found ${assignments.length} assignments for student: ${studentId}`);
+    res.json(assignments);
+  } catch (error) {
+    console.error(`Error fetching assessment assignments for student: ${req.params.id}`, error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -904,5 +997,44 @@ function generatePrescriptiveRecommendations(readingLevel) {
 
   
 }
+
+/**
+ * GET /api/student/category-progress/:id
+ * Returns the category_progress document for a student
+ */
+router.get('/category-progress/:id', auth, async (req, res) => {
+  try {
+    const testDb   = mongoose.connection.useDb('test');
+    const progress = testDb.collection('category_progress');
+
+    const doc = await progress.findOne(buildStudentQuery(req.params.id));
+
+    if (!doc) return res.status(404).json({ message: 'Category progress not found' });
+    res.json(doc);
+  } catch (err) {
+    console.error('Error fetching category-progress:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+/**
+ * GET /api/student/reading-level-progression/:id
+ * Returns the reading_level_progression timeline for a student
+ */
+// Reading Level Progression route
+router.get('/reading-level-progression/:id', auth, async (req, res) => {
+  try {
+    await readingLevelProgressionController.getProgression(req, res);
+  } catch (error) {
+    console.error('Error fetching reading-level-progression:', error);
+    res.status(500).json({ 
+      message: 'Error fetching reading level progression', 
+      error: error.message 
+    });
+  }
+});
+
+router.put('/reading-level/:id', auth, readingLevelProgressionController.updateReadingLevel);
+
 
 module.exports = router;

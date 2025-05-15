@@ -27,7 +27,7 @@ import {
   FaArrowRight
 } from 'react-icons/fa';
 import StudentApiService from '../../../services/Teachers/StudentApiService';
-import S3Image from '../../../components/S3Image'; 
+import S3Image from '../../../components/S3Image';
 import '../../../css/Teachers/ManageProgress.css';
 
 function getPageNumbers(currentPage, totalPages) {
@@ -57,6 +57,7 @@ const ManageProgress = () => {
   const [readingLevels, setReadingLevels] = useState([]);
   const itemsPerPage = 6;
 
+  // Update the useEffect in ManageProgress.jsx
   useEffect(() => {
     const fetchStudents = async () => {
       try {
@@ -79,9 +80,37 @@ const ManageProgress = () => {
 
         setStudents(data.students);
 
-        // Get reading levels
-        const readingLevelsData = await StudentApiService.getReadingLevels();
-        setReadingLevels(readingLevelsData);
+        // Get reading levels - with error handling
+        try {
+          const readingLevelsData = await StudentApiService.getReadingLevels();
+          // Make sure we get an array - if not, use default
+          if (Array.isArray(readingLevelsData) && readingLevelsData.length > 0) {
+            setReadingLevels(readingLevelsData);
+          } else {
+            // Use default reading levels if API response is invalid
+            setReadingLevels([
+              'Low Emerging',
+              'High Emerging',
+              'Developing',
+              'Transitioning',
+              'At Grade Level',
+              'Fluent',
+              'Not Assessed'
+            ]);
+          }
+        } catch (levelsError) {
+          console.warn("Error fetching reading levels, using defaults:", levelsError);
+          // Use default reading levels on error
+          setReadingLevels([
+            'Low Emerging',
+            'High Emerging',
+            'Developing',
+            'Transitioning',
+            'At Grade Level',
+            'Fluent',
+            'Not Assessed'
+          ]);
+        }
 
         setLoading(false);
       } catch (err) {
@@ -93,6 +122,7 @@ const ManageProgress = () => {
 
     fetchStudents();
   }, [searchQuery, readingLevelFilter]);
+
 
   // Filter and sort students when any filter or search changes
   useEffect(() => {
@@ -467,7 +497,7 @@ const ManageProgress = () => {
                             {student.preAssessmentCompleted ? (
                               <span className="mp-assessment-complete">
                                 <FaCheck className="mp-status-icon-inner" />
-                                <span>Tapos na</span>
+                                <span>Completed</span>
                               </span>
                             ) : (
                               <span className="mp-assessment-incomplete">
@@ -482,7 +512,7 @@ const ManageProgress = () => {
 
                         <div className="mp-section-divider"></div>
 
-                        <div className="mp-progress-section">
+                        {/* <div className="mp-progress-section">
                           <div className="mp-progress-header">
                             <span className="mp-progress-label">Category Questions</span>
                             <span className={`mp-progress-value ${getProgressClass(student.activitiesCompleted / Math.max(1, student.totalActivities) * 100)}`}>
@@ -498,7 +528,7 @@ const ManageProgress = () => {
                           <div className="mp-progress-text">
                             {student.activitiesCompleted} / {student.totalActivities} of Category Answered
                           </div>
-                        </div>
+                        </div> */}
 
                         <div className="mp-section-divider"></div>
 
