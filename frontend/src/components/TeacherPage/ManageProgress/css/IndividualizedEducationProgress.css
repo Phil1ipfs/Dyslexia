@@ -1,0 +1,380 @@
+/* IndividualizedEducationProgress Component Styles */
+
+.individualized-progress-container {
+    padding: 1rem 0;
+  }
+  
+  .literexia-progress-info {
+    background-color: #f1f7ff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-left: 4px solid #3B4F81;
+  }
+  
+  .literexia-progress-info h3 {
+    margin: 0 0 0.75rem 0;
+    color: #3B4F81;
+    font-size: 1.2rem;
+  }
+  
+  .literexia-progress-info p {
+    margin: 0;
+    color: #4B5563;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+  
+  .literexia-individualized-education-table {
+    background-color: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+  }
+  
+  .literexia-progress-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+  
+  .literexia-progress-table th,
+  .literexia-progress-table td {
+    padding: 1rem;
+    text-align: left;
+    border: 1px solid #E5E7EB;
+  }
+  
+  .literexia-progress-table th {
+    background-color: #3B4F81;
+    color: white;
+    font-weight: 500;
+    text-align: center;
+  }
+  
+  .literexia-progress-table tr.assistance-level-header th {
+    background-color: #4C5F91;
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+  }
+  
+  .literexia-progress-table tr.assistance-level-header th:first-child,
+  .literexia-progress-table tr.assistance-level-header th:nth-child(2),
+  .literexia-progress-table tr.assistance-level-header th:nth-child(3),
+  .literexia-progress-table tr.assistance-level-header th:nth-child(4),
+  .literexia-progress-table tr.assistance-level-header th:last-child {
+    background-color: transparent;
+    border: none;
+  }
+  
+  .literexia-progress-table tbody tr:nth-child(even) {
+    background-color: #F9FAFB;
+  }
+  
+  .literexia-progress-table tbody tr:hover {
+    background-color: #F3F4F6;
+  }
+  
+  .literexia-progress-table tr.passed-row {
+    background-color: rgba(76, 175, 80, 0.05) !important;
+  }
+  
+  .category-name-cell {
+    font-weight: 600;
+    color: #1F2937;
+    position: relative;
+  }
+  
+  .passed-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.3rem;
+    font-size: 0.75rem;
+    color: #2E7D32;
+    font-weight: 500;
+  }
+  
+  .assessment-id-cell {
+    font-family: monospace;
+    color: #4B5563;
+  }
+  
+  .completion-cell {
+    text-align: center;
+  }
+  
+  .completed {
+    color: #4CAF50;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .not-completed {
+    color: #9CA3AF;
+    font-style: italic;
+    font-size: 0.85rem;
+  }
+  
+  .score-cell {
+    font-weight: 700;
+    text-align: center;
+  }
+  
+  .score-cell.passing-score {
+    color: #2E7D32;
+  }
+  
+  .score-cell.failing-score {
+    color: #D32F2F;
+  }
+  
+  .assistance-cell {
+    text-align: center;
+  }
+  
+  .assistance-checkbox {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #D1D5DB;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin: 0 auto;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+  
+  .assistance-checkbox:hover {
+    border-color: #3B4F81;
+    background-color: rgba(59, 79, 129, 0.05);
+  }
+  
+  .assistance-checkbox.selected {
+    background-color: #3B4F81;
+    border-color: #3B4F81;
+    color: white;
+  }
+  
+  .remarks-cell {
+    min-width: 250px;
+  }
+  
+  .remarks-view {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .remarks-view p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #4B5563;
+    flex: 1;
+  }
+  
+  .edit-remarks-btn {
+    background: none;
+    border: none;
+    color: #3B4F81;
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+  
+  .edit-remarks-btn:hover {
+    background-color: rgba(59, 79, 129, 0.1);
+  }
+  
+  .remarks-edit {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+  }
+  
+  .remarks-textarea {
+    flex: 1;
+    min-height: 60px;
+    padding: 0.5rem;
+    border: 1px solid #D1D5DB;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    resize: vertical;
+  }
+  
+  .remarks-textarea:focus {
+    outline: none;
+    border-color: #3B4F81;
+    box-shadow: 0 0 0 2px rgba(59, 79, 129, 0.1);
+  }
+  
+  .save-remarks-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #3B4F81;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .save-remarks-btn:hover {
+    background-color: #2C3E70;
+  }
+  
+  .literexia-assistance-legend {
+    background-color: #F9FAFB;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border: 1px solid #E5E7EB;
+  }
+  
+  .literexia-assistance-legend h4 {
+    margin: 0 0 1rem 0;
+    color: #1F2937;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  
+  .legend-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .legend-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  
+  .legend-label {
+    font-weight: 600;
+    color: #3B4F81;
+    min-width: 80px;
+  }
+  
+  .legend-description {
+    color: #4B5563;
+    font-size: 0.95rem;
+  }
+  
+  .literexia-progression-guidance {
+    background-color: #fff8e1;
+    border-radius: 8px;
+    padding: 1.5rem;
+    border-left: 4px solid #FFC107;
+  }
+  
+  .literexia-progression-guidance h4 {
+    margin: 0 0 1rem 0;
+    color: #F57F17;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  
+  .literexia-progression-guidance p {
+    margin: 0 0 1rem 0;
+    color: #4B5563;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+  
+  .literexia-progress-note {
+    background-color: rgba(255, 255, 255, 0.5);
+    padding: 1rem;
+    border-radius: 4px;
+    color: #4B5563;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+  
+  .literexia-empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6B7280;
+    background-color: #F9FAFB;
+    border-radius: 12px;
+    border: 1px dashed #D1D5DB;
+  }
+  
+  .literexia-empty-state svg {
+    font-size: 3rem;
+    color: #9CA3AF;
+    margin-bottom: 1rem;
+  }
+  
+  .literexia-empty-state h3 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.25rem;
+    color: #4B5563;
+  }
+  
+  .literexia-empty-state p {
+    margin: 0 0 1.5rem 0;
+    font-size: 1rem;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  
+  .goto-categories-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #3B4F81;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 1.5rem;
+    transition: all 0.2s ease;
+  }
+  
+  .goto-categories-btn:hover {
+    background-color: #2C3E70;
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 992px) {
+    .literexia-individualized-education-table {
+      overflow-x: auto;
+    }
+    
+    .literexia-progress-table {
+      min-width: 800px;
+    }
+    
+    .legend-items {
+      flex-direction: column;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .literexia-progress-table {
+      min-width: 600px;
+    }
+    
+    .literexia-assistance-legend,
+    .literexia-progression-guidance {
+      padding: 1rem;
+    }
+  }

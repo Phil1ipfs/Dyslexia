@@ -17,15 +17,15 @@ const SkillsOverviewSection = ({ scores }) => {
       case 'patinig':
       case 'vowelSound':
         return { 
-          label: 'Vowel Sound', 
-          description: 'Ability to recognize and pronounce vowels',
+          label: 'Alphabet Knowledge', 
+          description: 'Ability to recognize and pronounce letters',
           className: 'literexia-patinig',
           icon: <FaChartBar />
         };
       case 'pantig':
       case 'syllableBlending':
         return { 
-          label: 'Syllable Blending', 
+          label: 'Phonological Awareness', 
           description: 'Ability to form and break down syllables',
           className: 'literexia-pantig',
           icon: <FaChartBar />
@@ -33,8 +33,8 @@ const SkillsOverviewSection = ({ scores }) => {
       case 'pagkilalaNgSalita':
       case 'wordRecognition':
         return { 
-          label: 'Word Recognition', 
-          description: 'Ability to recognize and read words',
+          label: 'Decoding', 
+          description: 'Ability to decode words from letters and syllables',
           className: 'literexia-salita',
           icon: <FaChartBar />
         };
@@ -48,7 +48,7 @@ const SkillsOverviewSection = ({ scores }) => {
         };
       default:
         return { 
-          label: key, 
+          label: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()), 
           description: 'Reading skill',
           className: '',
           icon: <FaChartBar />
@@ -80,7 +80,7 @@ const SkillsOverviewSection = ({ scores }) => {
       <div className="literexia-skills-header">
         <div className="literexia-skills-title">
           <FaChartLine className="literexia-skills-icon" />
-          <h3>Progress Scores</h3>
+          <h3>Skill Assessment Scores</h3>
         </div>
         <div className={`literexia-average-score ${averageSkillLevel.className}`}>
           <span className="literexia-average-value">{averageScore}<FaPercent className="literexia-percent-icon" /></span>

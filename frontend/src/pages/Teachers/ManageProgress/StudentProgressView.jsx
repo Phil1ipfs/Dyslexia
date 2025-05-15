@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   FaArrowLeft, FaChartLine, FaBook, FaLightbulb, FaListAlt,
-  FaCheck, FaExclamationTriangle, FaEdit, FaCheckCircle, FaSpinner, FaUser, FaSave
+  FaCheck, FaExclamationTriangle, FaEdit, FaCheckCircle, FaSpinner, FaUserAlt, FaSave
 } from 'react-icons/fa';
 
 // Import components
@@ -10,18 +10,17 @@ import StudentProfileCard from '../../../components/TeacherPage/ManageProgress/S
 import AssessmentSummaryCard from '../../../components/TeacherPage/ManageProgress/AssessmentSummaryCard';
 import AssessmentResults from '../../../components/TeacherPage/ManageProgress/AssessmentResults';
 import ProgressReport from '../../../components/TeacherPage/ManageProgress/ProgressReport';
-import LessonAssignment from '../../../components/TeacherPage/ManageProgress/LessonAssignment';
+import CategoryAssignment from '../../../components/TeacherPage/ManageProgress/CategoryAssignment';
 import PrescriptiveAnalysis from '../../../components/TeacherPage/ManageProgress/PrescriptiveAnalysis';
 import ActivityEditModal from '../../../components/TeacherPage/ManageProgress/ActivityEditModal';
 import LoadingSpinner from '../../../components/TeacherPage/ManageProgress/common/LoadingSpinner';
 import ErrorMessage from '../../../components/TeacherPage/ManageProgress/common/ErrorMessage';
+import IndividualizedEducationProgress from '../../../components/TeacherPage/ManageProgress/IndividualizedEducationProgress';
 
 import StudentApiService from '../../../services/Teachers/StudentApiService';
 
-
 import '../../../css/Teachers/studentProgressView.css';
-import '../../../components/TeacherPage/ManageProgress/css/LessonProgress.css';
-
+import '../../../components/TeacherPage/ManageProgress/css/IndividualizedEducationProgress.css';
 
 const StudentProgressView = () => {
   const navigate = useNavigate();
@@ -32,115 +31,258 @@ const StudentProgressView = () => {
   const [student, setStudent] = useState(null);
   const [assessmentData, setAssessmentData] = useState(null);
   const [progressData, setProgressData] = useState(null);
-  const [recommendedLessons, setRecommendedLessons] = useState([]);
-  const [selectedLessons, setSelectedLessons] = useState([]);
+  const [categoryProgress, setCategoryProgress] = useState(null);
+  const [readingLevelInfo, setReadingLevelInfo] = useState(null);
+  const [assignmentData, setAssignmentData] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [prescriptiveRecommendations, setPrescriptiveRecommendations] = useState([]);
   const [editingActivity, setEditingActivity] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [assignmentSuccess, setAssignmentSuccess] = useState(false);
-  const [lessonsAssigned, setLessonsAssigned] = useState(false);
+  const [categoriesAssigned, setCategoriesAssigned] = useState(false);
   const [pushToMobileSuccess, setPushToMobileSuccess] = useState(false);
   const [learningObjectives, setLearningObjectives] = useState([]);
   const [editingFeedback, setEditingFeedback] = useState({});
   const [tempFeedback, setTempFeedback] = useState({});
+  const [availableCategories, setAvailableCategories] = useState([]);
+  const [mainAssessmentData, setMainAssessmentData] = useState([]);
 
-  // Fetch student data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
+// Fetch student data
+useEffect(() => {
+const fetchData = async () => {
+  try {
+    setLoading(true);
 
-        // Get student details
-        const studentData = await StudentApiService.getStudentDetails(id);
-        setStudent(studentData);
+    // Get student details
+    let hasError = false;
+    let studentData;
+    
+    try {
+      studentData = await StudentApiService.getStudentDetails(id);
+      setStudent(studentData);
+    } catch (studentError) {
+      console.error('Failed to load student details:', studentError);
+      hasError = true;
+      // Create a default student object with reading level if in URL
+      const urlSearchParams = new URLSearchParams(window.location.search);
+      const readingLevel = urlSearchParams.get('readingLevel') || 'Low Emerging';
+      
+      studentData = {
+        id: id,
+        name: "Student " + id,
+        firstName: "Student",
+        lastName: id,
+        readingLevel: readingLevel,
+        gradeLevel: "Grade 1",
+        // Flag to check if this is a new pre-assessment student
+        preAssessmentCompleted: true,
+        preAssessmentJustCompleted: true
+      };
+      setStudent(studentData);
+    }
 
-        // Get assessment data
-        const assessment = await StudentApiService.getAssessmentResults(id);
-        // Make sure we're logging the data to verify what's coming from the API
-        console.log('Assessment data from API:', assessment);
-        setAssessmentData(assessment);
+    // Continue with other data fetching, handling each independently
+    try {
+      const assessment = await StudentApiService.getPreAssessmentResults(id);
+      setAssessmentData(assessment);
+    } catch (assessmentError) {
+      console.warn('Failed to load assessment data:', assessmentError);
+      // Assessment data is optional, continue
+    }
 
-        // Get progress data
-        const progress = await StudentApiService.getProgressData(id);
-        setProgressData(progress);
+    try {
+      const progress = await StudentApiService.getProgressData(id);
+      setProgressData(progress);
+    } catch (progressError) {
+      console.warn('Failed to load progress data:', progressError);
+      // Progress data is optional, continue
+    }
 
-        // Get recommended lessons
-        const lessons = await StudentApiService.getRecommendedLessons(id);
-        setRecommendedLessons(lessons);
-
-        // Check if any lessons are already assigned
-        const hasAssignedLessons = lessons.some(lesson => lesson.assigned);
-        setLessonsAssigned(hasAssignedLessons);
-
-        // Initialize learning objectives
-        const assignedLessons = lessons.filter(lesson => lesson.assigned);
-        setLearningObjectives(assignedLessons.map(lesson => ({
-          id: lesson.id,
-          title: lesson.title,
+    try {
+      // For student who just completed pre-assessment, try initializing
+      if (studentData?.preAssessmentCompleted && studentData?.preAssessmentJustCompleted) {
+        try {
+          console.log("Initializing student data after pre-assessment");
+          await StudentApiService.initializeStudentAfterPreAssessment(id, studentData.readingLevel);
+        } catch (initError) {
+          console.warn("Failed to initialize student after pre-assessment:", initError);
+        }
+      }
+      
+      const categoryProgressData = await StudentApiService.getCategoryProgress(id);
+      setCategoryProgress(categoryProgressData);
+      
+      // Check if any categories are already assigned
+      const hasAssignedCategories = categoryProgressData && 
+        categoryProgressData.categories && 
+        categoryProgressData.categories.some(cat => cat.status === 'in_progress');
+      
+      setCategoriesAssigned(hasAssignedCategories);
+      
+      // Initialize learning objectives based on assigned categories
+      if (hasAssignedCategories && categoryProgressData.categories) {
+        const assignedCategories = categoryProgressData.categories.filter(
+          cat => cat.status === 'in_progress' || cat.status === 'completed'
+        );
+        
+        setLearningObjectives(assignedCategories.map(cat => ({
+          id: cat.categoryId,
+          title: cat.categoryName,
+          mainAssessmentId: cat.mainAssessmentId,
           assistance: null, // null, 'minimal', 'moderate', 'maximal'
           remarks: '',
           isEditingRemarks: false
         })));
-
-        // If lessons are assigned, get prescription
-        if (hasAssignedLessons) {
+      }
+      
+      // If categories are assigned, get prescription
+      if (hasAssignedCategories) {
+        try {
           const recommendations = await StudentApiService.getPrescriptiveRecommendations(id);
           setPrescriptiveRecommendations(recommendations);
+        } catch (recommendationsError) {
+          console.warn('Failed to load recommendations:', recommendationsError);
         }
-
-        setLoading(false);
-      } catch (err) {
-        console.error('Error loading student data:', err);
-        setError('Failed to load student data. Please try again later.');
-        setLoading(false);
       }
-    };
+    } catch (categoryError) {
+      console.warn('Failed to load category progress:', categoryError);
+      // Set default empty category progress
+      setCategoryProgress({
+        userId: id,
+        categories: [],
+        completedCategories: 0,
+        totalCategories: 0,
+        overallProgress: 0
+      });
+    }
+
+    try {
+      const readingLevelData = await StudentApiService.getReadingLevelProgression(id);
+      setReadingLevelInfo(readingLevelData);
+    } catch (readingLevelError) {
+      console.warn('Failed to load reading level info:', readingLevelError);
+    }
+
+    try {
+      const assignments = await StudentApiService.getAssessmentAssignments(id);
+      setAssignmentData(assignments);
+    } catch (assignmentsError) {
+      console.warn('Failed to load assessment assignments:', assignmentsError);
+      setAssignmentData([]);
+    }
+
+    try {
+      const categories = await StudentApiService.getAssessmentCategories();
+      setAvailableCategories(categories);
+    } catch (categoriesError) {
+      console.warn('Failed to load assessment categories:', categoriesError);
+      setAvailableCategories([]);
+    }
+
+   try {
+      // Check if getMainAssessmentDetails exists before calling it
+      if (typeof StudentApiService.getMainAssessmentDetails === 'function') {
+        const mainAssessments = await StudentApiService.getMainAssessmentDetails();
+        setMainAssessmentData(mainAssessments);
+      } else {
+        console.warn('getMainAssessmentDetails method is not defined');
+        setMainAssessmentData([]);
+      }
+    } catch (mainAssessmentsError) {
+      console.warn('Failed to load main assessment details:', mainAssessmentsError);
+      setMainAssessmentData([]);
+    }
+
+ 
+
+    // If there were any critical errors, set the error state
+    if (hasError) {
+      setError('Some data could not be loaded. The view may be incomplete.');
+    }
+
+    setLoading(false);
+  } catch (err) {
+    console.error('Error loading student data:', err);
+    setError('Failed to load student data. Please try again later.');
+    setLoading(false);
+  }
+};
 
     fetchData();
   }, [id]);
 
-  // Handle lesson selection
-  const handleLessonSelect = (lesson) => {
-    if (lesson.assigned) return;
+  // Handle category selection
+  const handleCategorySelect = (category) => {
+    // Check if category is already assigned
+    if (categoryProgress &&
+      categoryProgress.categories &&
+      categoryProgress.categories.some(cat =>
+        cat.categoryId === category.categoryID &&
+        (cat.status === 'in_progress' || cat.status === 'completed')
+      )) {
+      return;
+    }
 
-    const isSelected = selectedLessons.some(l => l.id === lesson.id);
+    const isSelected = selectedCategories.some(c => c.categoryID === category.categoryID);
 
     if (isSelected) {
-      setSelectedLessons(selectedLessons.filter(l => l.id !== lesson.id));
+      setSelectedCategories(selectedCategories.filter(c => c.categoryID !== category.categoryID));
     } else {
-      setSelectedLessons([...selectedLessons, lesson]);
+      setSelectedCategories([...selectedCategories, category]);
     }
   };
 
-  // Handle lesson assignment
-  const handleAssignLessons = async () => {
-    if (selectedLessons.length === 0) return;
+  // Handle category assignment
+  const handleAssignCategories = async () => {
+    if (selectedCategories.length === 0) return;
 
     try {
       setLoading(true);
-      const lessonIds = selectedLessons.map(lesson => lesson.id);
-      const result = await StudentApiService.assignLessonsToStudent(id, lessonIds);
+
+      // Prepare data for assignment
+      const assignmentPayload = {
+        studentId: id,
+        readingLevel: student?.readingLevel || 'Low Emerging',
+        categories: selectedCategories.map(cat => ({
+          categoryId: cat.categoryID,
+          categoryName: cat.categoryTitle
+        }))
+      };
+
+      // Call API to assign categories
+      const result = await StudentApiService.assignCategoriesToStudent(assignmentPayload);
 
       if (result.success) {
-        // Update assigned lessons
-        const updatedLessons = recommendedLessons.map(lesson => {
-          if (lessonIds.includes(lesson.id)) {
-            return { ...lesson, assigned: true };
-          }
-          return lesson;
-        });
+        // Refresh category progress data
+        try {
+          const updatedCategoryProgress = await StudentApiService.getCategoryProgress(id);
+          setCategoryProgress(updatedCategoryProgress);
+        } catch (progressError) {
+          console.warn('Failed to refresh category progress:', progressError);
+        }
 
-        setRecommendedLessons(updatedLessons);
-        setSelectedLessons([]);
+        // Refresh assignments data
+        try {
+          const updatedAssignments = await StudentApiService.getAssessmentAssignments(id);
+          setAssignmentData(updatedAssignments);
+        } catch (assignmentsError) {
+          console.warn('Failed to refresh assignments:', assignmentsError);
+        }
+
+        setSelectedCategories([]);
         setAssignmentSuccess(true);
 
         // Get prescriptive recommendations
-        const recommendations = await StudentApiService.getPrescriptiveRecommendations(id);
-        setPrescriptiveRecommendations(recommendations);
+        try {
+          const recommendations = await StudentApiService.getPrescriptiveRecommendations(id);
+          setPrescriptiveRecommendations(recommendations);
+        } catch (recommendationsError) {
+          console.warn('Failed to load recommendations:', recommendationsError);
+        }
 
         // Unlock the other tabs
-        setLessonsAssigned(true);
+        setCategoriesAssigned(true);
 
         // Reset success message after 3 seconds
         setTimeout(() => {
@@ -150,9 +292,70 @@ const StudentProgressView = () => {
 
       setLoading(false);
     } catch (err) {
-      console.error('Error assigning lessons:', err);
-      setError('Failed to assign lessons. Please try again.');
+      console.error('Error assigning categories:', err);
+      setError('Failed to assign categories. Please try again.');
       setLoading(false);
+    }
+  };
+
+  // Handle learning objective assistance level
+  const handleAssistanceChange = (categoryId, level) => {
+    setLearningObjectives(prev =>
+      prev.map(obj =>
+        obj.id === categoryId ? { ...obj, assistance: level } : obj
+      )
+    );
+  };
+
+  // Handle remarks editing
+  const toggleRemarksEditing = (categoryId) => {
+    setLearningObjectives(prev =>
+      prev.map(obj =>
+        obj.id === categoryId
+          ? { ...obj, isEditingRemarks: !obj.isEditingRemarks }
+          : obj
+      )
+    );
+  };
+
+  const handleRemarksChange = (categoryId, remarks) => {
+    setLearningObjectives(prev =>
+      prev.map(obj =>
+        obj.id === categoryId ? { ...obj, remarks } : obj
+      )
+    );
+  };
+
+  // Add this function to StudentProgressView.jsx
+  const fetchCategoryProgress = async () => {
+    try {
+      const updatedCategoryProgress = await StudentApiService.getCategoryProgress(id);
+      setCategoryProgress(updatedCategoryProgress);
+
+      // Check if any categories are now assigned
+      const hasAssignedCategories = updatedCategoryProgress &&
+        updatedCategoryProgress.categories &&
+        updatedCategoryProgress.categories.some(cat => cat.status === 'in_progress');
+
+      setCategoriesAssigned(hasAssignedCategories);
+
+      // Initialize learning objectives based on assigned categories
+      if (hasAssignedCategories && updatedCategoryProgress.categories) {
+        const assignedCategories = updatedCategoryProgress.categories.filter(
+          cat => cat.status === 'in_progress' || cat.status === 'completed'
+        );
+
+        setLearningObjectives(assignedCategories.map(cat => ({
+          id: cat.categoryId,
+          title: cat.categoryName,
+          mainAssessmentId: cat.mainAssessmentId,
+          assistance: null,
+          remarks: '',
+          isEditingRemarks: false
+        })));
+      }
+    } catch (error) {
+      console.error('Failed to refresh category progress:', error);
     }
   };
 
@@ -161,36 +364,7 @@ const StudentProgressView = () => {
     setEditingActivity(activity);
   };
 
-  // Handle learning objective assistance level
-  const handleAssistanceChange = (lessonId, level) => {
-    setLearningObjectives(prev =>
-      prev.map(obj =>
-        obj.id === lessonId ? { ...obj, assistance: level } : obj
-      )
-    );
-  };
-
-  // Handle remarks editing
-  const toggleRemarksEditing = (lessonId) => {
-    setLearningObjectives(prev =>
-      prev.map(obj =>
-        obj.id === lessonId
-          ? { ...obj, isEditingRemarks: !obj.isEditingRemarks }
-          : obj
-      )
-    );
-  };
-
-  const handleRemarksChange = (lessonId, remarks) => {
-    setLearningObjectives(prev =>
-      prev.map(obj =>
-        obj.id === lessonId ? { ...obj, remarks } : obj
-      )
-    );
-  };
-
   // Handle saving edited activity and pushing to mobile
-  // Update the handleSaveActivity function (continued):
   const handleSaveActivity = async (updatedActivity) => {
     try {
       setLoading(true);
@@ -200,7 +374,7 @@ const StudentProgressView = () => {
         // Update recommendations
         const updatedRecommendations = prescriptiveRecommendations.map(rec => {
           if (rec.id === updatedActivity.id) {
-            // Mark as pushed to mobile directly
+            // Mark as pushed to mobile
             return { ...rec, ...updatedActivity, status: 'pushed_to_mobile' };
           }
           return rec;
@@ -209,6 +383,7 @@ const StudentProgressView = () => {
         setPrescriptiveRecommendations(updatedRecommendations);
         setPushToMobileSuccess(true);
 
+        // Reset success message after 3 seconds
         setTimeout(() => {
           setPushToMobileSuccess(false);
         }, 3000);
@@ -223,8 +398,35 @@ const StudentProgressView = () => {
     }
   };
 
+  // Handle feedback for assessment responses
+  const handleProvideFeedback = async (responseId, feedback, nextSteps) => {
+    try {
+      setLoading(true);
+      const result = await StudentApiService.provideFeedback(responseId, {
+        feedback,
+        nextSteps
+      });
 
+      if (result.success) {
+        // Refresh assessment data
+        try {
+          const updatedAssignments = await StudentApiService.getAssessmentAssignments(id);
+          setAssignmentData(updatedAssignments);
+        } catch (assignmentsError) {
+          console.warn('Failed to refresh assignments:', assignmentsError);
+        }
 
+        setEditingFeedback({});
+        setTempFeedback({});
+      }
+
+      setLoading(false);
+    } catch (err) {
+      console.error('Error providing feedback:', err);
+      setError('Failed to save feedback. Please try again.');
+      setLoading(false);
+    }
+  };
 
   // Go back to students list
   const goBack = () => {
@@ -233,10 +435,10 @@ const StudentProgressView = () => {
 
   // Check if a tab should be locked
   const isTabLocked = (tabName) => {
-    if (tabName === 'assessment' || tabName === 'lessons') {
+    if (tabName === 'assessment' || tabName === 'categories') {
       return false;
     }
-    return !lessonsAssigned;
+    return !categoriesAssigned;
   };
 
   // Handle tab click
@@ -246,15 +448,21 @@ const StudentProgressView = () => {
     }
   };
 
-  // Calculate assigned lessons for use in rendering
-  const assignedLessons = recommendedLessons.filter(lesson => lesson.assigned);
+  // Try clearing error and reloading component
+  const handleRetry = () => {
+    setError(null);
+    setLoading(true);
+    window.location.reload();
+  };
 
+  // Show loading spinner while initial data loads
   if (loading && !student) {
     return <LoadingSpinner message="Loading student data..." />;
   }
 
+  // Show error message if critical data failed to load
   if (error && !student) {
-    return <ErrorMessage message={error} retry={() => window.location.reload()} />;
+    return <ErrorMessage message={error} retry={handleRetry} />;
   }
 
   return (
@@ -263,12 +471,20 @@ const StudentProgressView = () => {
       <div className="literexia-profile-header">
         <div className="literexia-header-content">
           <h1>Student Profile and Assessment</h1>
-          <p>Review assessment results and assign lessons based on reading skill level.</p>
+          <p>Review assessment results and assign categories based on reading skill level.</p>
         </div>
         <button className="literexia-btn-back" onClick={goBack}>
           <FaArrowLeft /> Back to Students List
         </button>
       </div>
+
+      {/* Warning banner for partial data load */}
+      {error && student && (
+        <div className="literexia-warning-alert">
+          <FaExclamationTriangle />
+          {error} <button onClick={handleRetry} className="literexia-retry-link">Retry loading</button>
+        </div>
+      )}
 
       {/* Success message for push to mobile */}
       {pushToMobileSuccess && (
@@ -281,7 +497,6 @@ const StudentProgressView = () => {
       {/* Top cards */}
       <div className="literexia-top-cards">
         {student && <StudentProfileCard student={student} />}
-        {/* Make sure we're passing the assessmentData directly */}
         {assessmentData && (
           <AssessmentSummaryCard
             assessmentData={assessmentData}
@@ -299,10 +514,10 @@ const StudentProgressView = () => {
         </button>
 
         <button
-          className={`literexia-tab-button ${activeTab === 'lessons' ? 'active' : ''}`}
-          onClick={() => handleTabClick('lessons')}
+          className={`literexia-tab-button ${activeTab === 'categories' ? 'active' : ''}`}
+          onClick={() => handleTabClick('categories')}
         >
-          <FaBook /> Lesson Assignment
+          <FaBook /> Category Assignment
         </button>
 
         <button
@@ -318,14 +533,13 @@ const StudentProgressView = () => {
         >
           <FaLightbulb /> Prescriptive Analysis
         </button>
+
         <button
-          className={`literexia-tab-button ${activeTab === 'lessonProgress' ? 'active' : ''} ${isTabLocked('lessonProgress') ? 'locked' : ''}`}
-          onClick={() => handleTabClick('lessonProgress')}
+          className={`literexia-tab-button ${activeTab === 'individualProgress' ? 'active' : ''} ${isTabLocked('individualProgress') ? 'locked' : ''}`}
+          onClick={() => handleTabClick('individualProgress')}
         >
-          <FaCheckCircle /> Individuaized Education Progress
+          <FaCheckCircle /> Individualized Education Progress
         </button>
-
-
       </div>
 
       {/* Tab content */}
@@ -348,30 +562,40 @@ const StudentProgressView = () => {
           </div>
         )}
 
-        {activeTab === 'lessons' && (
+        {activeTab === 'categories' && (
           <div className="literexia-tab-panel">
             <div className="literexia-panel-header">
-              <h2>Assign Lessons</h2>
+              <h2>Assign Assessment Categories</h2>
             </div>
             <div className="literexia-panel-content">
-              <h3>Recommended Lessons for {student?.name}</h3>
-              {recommendedLessons.length > 0 ? (
-                <LessonAssignment
-                  lessons={recommendedLessons}
-                  selectedLessons={selectedLessons}
-                  onLessonSelect={handleLessonSelect}
-                  onAssign={handleAssignLessons}
-                  assignmentSuccess={assignmentSuccess}
+              <h3>Assessment Categories for {student?.name || `Student ${id}`}</h3>
+              {availableCategories && availableCategories.length > 0 ? (
+                <CategoryAssignment
+                  studentId={id}
+                  studentName={student?.name || `Student ${id}`}
+                  studentReadingLevel={student?.readingLevel || 'Low Emerging'}
+                  onAssignmentComplete={(result) => {
+                    setAssignmentSuccess(true);
+                    setCategoriesAssigned(true);
+                    // Clear selection and show success message
+                    setSelectedCategories([]);
+                    setTimeout(() => setAssignmentSuccess(false), 3000);
+
+                    // Refresh category progress data
+                    fetchCategoryProgress();
+                  }}
                 />
               ) : (
                 <div className="literexia-empty-state">
                   <FaExclamationTriangle />
-                  <p>No lessons available for this student at this time.</p>
+                  <p>No assessment categories available at this time.</p>
                 </div>
               )}
             </div>
           </div>
         )}
+
+
 
         {activeTab === 'progress' && !isTabLocked('progress') && (
           <div className="literexia-tab-panel">
@@ -379,161 +603,54 @@ const StudentProgressView = () => {
               <h2>Progress Report</h2>
             </div>
             <div className="literexia-panel-content">
-              {progressData ? (
+              {progressData && categoryProgress ? (
                 <ProgressReport
                   progressData={progressData}
-                  assignedLessons={recommendedLessons.filter(lesson => lesson.assigned)}
-                  learningObjectives={learningObjectives}
-                  setLearningObjectives={setLearningObjectives}
+                  categoryProgress={categoryProgress}
+                  readingLevelInfo={readingLevelInfo}
+                  assessmentAssignments={assignmentData}
                 />
               ) : (
                 <div className="literexia-empty-state">
                   <FaExclamationTriangle />
-                  <p>No progress data available for this student. They may not have completed any lessons yet.</p>
+                  <p>No progress data available for this student. They may not have completed any assessments yet.</p>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {activeTab === 'lessonProgress' && !isTabLocked('lessonProgress') && (
+        {activeTab === 'individualProgress' && !isTabLocked('individualProgress') && (
           <div className="literexia-tab-panel">
-
-            {/* Progress info section */}
-            <div className="literexia-progress-info" style={{ marginBottom: '30px' }}>
-              {/* <div className="literexia-progress-info-icon">
-            <FaBrain />
-          </div> */}
-              <div className="literexia-progress-info-text">
-                <p>
-
-                  <h3>Individual Progress</h3>
-                  This section shows the student's progress in their reading activities.
-                  This section shows the student's progress in their reading activities.
-                  This section shows the student's progress in their reading activities.
-                  This section shows the student's progress in their reading activities.
-                  This section shows the student's progress in their reading activities.
-                </p>
-              </div>
-            </div>
-
-            {/* Adding a spacer div for extra spacing */}
-            <div style={{ height: '20px' }}></div>
-
             <div className="literexia-panel-header">
-              <h2>Individuaized Education Progress</h2>
+              <h2>Individualized Education Progress</h2>
             </div>
             <div className="literexia-panel-content">
-              <div className="lesson-progress-container">
-                {assignedLessons.length > 0 ? (
-                  <div className="lesson-progress-table-container">
-                    <table className="lesson-progress-table">
-                      <thead>
-                        <tr>
-                          <th>Lesson</th>
-                          <th>Completed</th>
-                          <th colSpan="3">Assistance Level</th>
-                          <th>Remarks</th>
-                        </tr>
-                        <tr className="assistance-level-header">
-                          <th></th>
-                          <th></th>
-                          <th>Minimal</th>
-                          <th>Moderate</th>
-                          <th>Substantial</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {assignedLessons.map(lesson => {
-                          // Find if there's any activity associated with this lesson
-                          const isCompleted = progressData?.recentActivities?.some(
-                            activity => activity.title.includes(lesson.title.substring(0, 5))
-                          );
-
-                          const existingObjective = learningObjectives?.find(obj => obj.id === lesson.id);
-
-                          return (
-                            <tr key={lesson.id}>
-                              <td>{lesson.title}</td>
-                              <td className="completion-cell">
-                                {isCompleted ? (
-                                  <span className="completed"><FaCheckCircle /></span>
-                                ) : (
-                                  <span className="not-completed">Not yet</span>
-                                )}
-                              </td>
-                              <td className="assistance-cell">
-                                <div
-                                  className={`assistance-checkbox ${existingObjective?.assistance === 'minimal' ? 'selected' : ''}`}
-                                  onClick={() => handleAssistanceChange(lesson.id, 'minimal')}
-                                >
-                                  {existingObjective?.assistance === 'minimal' && <FaCheckCircle />}
-                                </div>
-                              </td>
-                              <td className="assistance-cell">
-                                <div
-                                  className={`assistance-checkbox ${existingObjective?.assistance === 'moderate' ? 'selected' : ''}`}
-                                  onClick={() => handleAssistanceChange(lesson.id, 'moderate')}
-                                >
-                                  {existingObjective?.assistance === 'moderate' && <FaCheckCircle />}
-                                </div>
-                              </td>
-                              <td className="assistance-cell">
-                                <div
-                                  className={`assistance-checkbox ${existingObjective?.assistance === 'maximal' ? 'selected' : ''}`}
-                                  onClick={() => handleAssistanceChange(lesson.id, 'maximal')}
-                                >
-                                  {existingObjective?.assistance === 'maximal' && <FaCheckCircle />}
-                                </div>
-                              </td>
-                              <td className="notes-cell">
-                                {existingObjective?.isEditingRemarks ? (
-                                  <div className="notes-edit">
-                                    <textarea
-                                      value={existingObjective.remarks}
-                                      onChange={(e) => handleRemarksChange(lesson.id, e.target.value)}
-                                      placeholder="Add notes..."
-                                      className="notes-textarea"
-                                    />
-                                    <button
-                                      className="save-notes-btn"
-                                      onClick={() => toggleRemarksEditing(lesson.id)}
-                                    >
-                                      <FaSave />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div className="notes-view">
-                                    <p>{existingObjective?.remarks || 'No notes yet.'}</p>
-                                    <button
-                                      className="edit-notes-btn"
-                                      onClick={() => toggleRemarksEditing(lesson.id)}
-                                    >
-                                      <FaEdit />
-                                    </button>
-                                  </div>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="literexia-empty-state">
-                    <FaExclamationTriangle />
-                    <p>No lessons have been assigned to this student yet.</p>
-                    <button
-                      className="goto-lessons-btn"
-                      onClick={() => setActiveTab('lessons')}
-                    >
-                      Go to Lesson Assignment
-                    </button>
-                  </div>
-                )}
-              </div>
+              {categoryProgress && categoryProgress.categories && categoryProgress.categories.some(cat =>
+                cat.status === 'in_progress' || cat.status === 'completed'
+              ) ? (
+                <IndividualizedEducationProgress
+                  assignedCategories={categoryProgress.categories.filter(
+                    cat => cat.status === 'in_progress' || cat.status === 'completed'
+                  )}
+                  progressData={progressData}
+                  learningObjectives={learningObjectives}
+                  onAssistanceChange={handleAssistanceChange}
+                  onRemarksChange={handleRemarksChange}
+                  onToggleRemarksEditing={toggleRemarksEditing}
+                />
+              ) : (
+                <div className="literexia-empty-state">
+                  <FaExclamationTriangle />
+                  <p>No assigned categories found for this student.</p>
+                  <button
+                    className="goto-categories-btn"
+                    onClick={() => setActiveTab('categories')}
+                  >
+                    Go to Category Assignment
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -544,25 +661,32 @@ const StudentProgressView = () => {
               <h2>Personalized Activities</h2>
             </div>
             <div className="literexia-panel-content">
-              <PrescriptiveAnalysis
-                recommendations={prescriptiveRecommendations}
-                onEditActivity={handleEditActivity}
-                student={student}
-              />
+              {prescriptiveRecommendations && prescriptiveRecommendations.length > 0 ? (
+                <PrescriptiveAnalysis
+                  recommendations={prescriptiveRecommendations}
+                  onEditActivity={handleEditActivity}
+                  student={student}
+                />
+              ) : (
+                <div className="literexia-empty-state">
+                  <FaExclamationTriangle />
+                  <p>No personalized activities available for this student yet.</p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {isTabLocked(activeTab) && activeTab !== 'assessment' && activeTab !== 'lessons' && (
+        {isTabLocked(activeTab) && activeTab !== 'assessment' && activeTab !== 'categories' && (
           <div className="literexia-locked-content">
             <FaLightbulb className="literexia-lock-large" />
             <h3>This section is locked</h3>
-            <p>You need to assign lessons first to unlock this feature.</p>
+            <p>You need to assign assessment categories first to unlock this feature.</p>
             <button
               className="literexia-btn-goto-assign"
-              onClick={() => setActiveTab('lessons')}
+              onClick={() => setActiveTab('categories')}
             >
-              Go to Lesson Assignment
+              Go to Category Assignment
             </button>
           </div>
         )}

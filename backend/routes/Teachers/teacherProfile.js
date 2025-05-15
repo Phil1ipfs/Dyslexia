@@ -191,32 +191,7 @@ router.post('/profile/initialize', auth, authorize('teacher', 'guro'), async (re
       }
     }
     
-    // Create a new profile using data from the known profile
-    console.log('Creating new profile with known template data');
-    
-    const newProfile = {
-      _id: new mongoose.Types.ObjectId(knownId),
-      userId: toObjectId(userId),
-      firstName: "Jan Mark",
-      lastName: "Caram",
-      position: "Grade 1 Teacher",
-      contact: "09155933015",
-      profileImageUrl: null,
-      createdAt: new Date("2025-05-05T02:02:23.476Z"),
-      updatedAt: new Date(),
-      name: "Kit Nicholas T. Santiago",
-      address: "123 Maharlika Street Los Baños Laguna",
-      civilStatus: "Single",
-      dob: "2025-05-14",
-      emergencyContact: {
-        name: "Maricel Santos",
-        number: "09155933015"
-      },
-      gender: "Female",
-      middleName: "T.",
-      email: userEmail
-    };
-    
+
     try {
       // Insert the new profile
       await collection.insertOne(newProfile);
