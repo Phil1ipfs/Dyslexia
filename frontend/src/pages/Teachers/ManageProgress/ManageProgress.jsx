@@ -482,26 +482,6 @@ const ManageProgress = () => {
 
                         <div className="mp-section-divider"></div>
 
-                        <div className="mp-progress-section">
-                          <div className="mp-progress-header">
-                            <span className="mp-progress-label">Category Questions</span>
-                            <span className={`mp-progress-value ${getProgressClass(student.activitiesCompleted / Math.max(1, student.totalActivities) * 100)}`}>
-                              {Math.round(student.activitiesCompleted / Math.max(1, student.totalActivities) * 100)}%
-                            </span>
-                          </div>
-                          <div className="mp-progress-bar-container">
-                            <div
-                              className={`mp-progress-bar ${getProgressClass(student.activitiesCompleted / Math.max(1, student.totalActivities) * 100)}`}
-                              style={{ width: `${(student.activitiesCompleted / Math.max(1, student.totalActivities) * 100)}%` }}
-                            ></div>
-                          </div>
-                          <div className="mp-progress-text">
-                            {student.activitiesCompleted} / {student.totalActivities} of Category Answered
-                          </div>
-                        </div>
-
-                        <div className="mp-section-divider"></div>
-
                         <div className="mp-parent-info">
                           <div className="mp-parent-label">Parent or Guardian:</div>
                           <div className="mp-parent-name">{student.parentName || "Not specified"}</div>
