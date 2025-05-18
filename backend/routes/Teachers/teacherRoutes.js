@@ -117,16 +117,6 @@ router.get('/profile/debug', auth, authorize('teacher', 'guro'), async (req, res
   }
 });
 
-// routes/Teachers/teacherRoutes.js - Key fix
-
-// Helper function to get the correct profile collection
-const getProfileCollection = async () => {
-  // Connect to the mobile_literexia database, not teachers database
-  const db = mongoose.connection.useDb('mobile_literexia');
-  // Get the profile collection
-  return db.collection('profile');
-};
-
 // Add debug route to see both database records
 router.get('/profile/debug', auth, authorize('teacher', 'guro'), async (req, res) => {
   try {

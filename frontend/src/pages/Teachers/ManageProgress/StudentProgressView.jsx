@@ -19,7 +19,6 @@ import StudentApiService from '../../../services/Teachers/StudentApiService';
 
 
 import '../../../css/Teachers/studentProgressView.css';
-import '../../../components/TeacherPage/ManageProgress/css/LessonProgress.css';
 
 
 const StudentProgressView = () => {
@@ -38,7 +37,6 @@ const StudentProgressView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [assignmentSuccess, setAssignmentSuccess] = useState(false);
-  const [lessonsAssigned, setLessonsAssigned] = useState(false);
   const [pushToMobileSuccess, setPushToMobileSuccess] = useState(false);
   const [learningObjectives, setLearningObjectives] = useState([]);
   const [editingFeedback, setEditingFeedback] = useState({});
@@ -68,13 +66,8 @@ const StudentProgressView = () => {
         const lessons = await StudentApiService.getRecommendedLessons(id);
         setRecommendedLessons(lessons);
 
-        // Check if any lessons are already assigned
-        const hasAssignedLessons = lessons.some(lesson => lesson.assigned);
-        setLessonsAssigned(hasAssignedLessons);
-
-        // Initialize learning objectives
-        const assignedLessons = lessons.filter(lesson => lesson.assigned);
-        setLearningObjectives(assignedLessons.map(lesson => ({
+        // Initialize learning objectives from all lessons regardless of assigned status
+        setLearningObjectives(lessons.map(lesson => ({
           id: lesson.id,
           title: lesson.title,
           assistance: null, // null, 'minimal', 'moderate', 'maximal'
@@ -82,10 +75,13 @@ const StudentProgressView = () => {
           isEditingRemarks: false
         })));
 
-        // If lessons are assigned, get prescription
-        if (hasAssignedLessons) {
+        // Always try to get prescriptive recommendations regardless of assigned status
+        try {
           const recommendations = await StudentApiService.getPrescriptiveRecommendations(id);
           setPrescriptiveRecommendations(recommendations);
+        } catch (recError) {
+          console.log('No prescriptive recommendations available yet:', recError);
+          // Don't fail completely if recommendations aren't available
         }
 
         setLoading(false);
@@ -138,9 +134,6 @@ const StudentProgressView = () => {
         const recommendations = await StudentApiService.getPrescriptiveRecommendations(id);
         setPrescriptiveRecommendations(recommendations);
 
-        // Unlock the other tabs
-        setLessonsAssigned(true);
-
         // Reset success message after 3 seconds
         setTimeout(() => {
           setAssignmentSuccess(false);
@@ -189,7 +182,6 @@ const StudentProgressView = () => {
   };
 
   // Handle saving edited activity and pushing to mobile
-  // Update the handleSaveActivity function (continued):
   const handleSaveActivity = async (updatedActivity) => {
     try {
       setLoading(true);
@@ -222,27 +214,14 @@ const StudentProgressView = () => {
     }
   };
 
-
-
-
   // Go back to students list
   const goBack = () => {
     navigate('/teacher/manage-progress');
   };
 
-  // Check if a tab should be locked
-  const isTabLocked = (tabName) => {
-    if (tabName === 'assessment' || tabName === 'lessons') {
-      return false;
-    }
-    return !lessonsAssigned;
-  };
-
-  // Handle tab click
+  // Handle tab click - removed the locking condition
   const handleTabClick = (tabName) => {
-    if (!isTabLocked(tabName)) {
-      setActiveTab(tabName);
-    }
+    setActiveTab(tabName);
   };
 
   // Calculate assigned lessons for use in rendering
@@ -288,7 +267,7 @@ const StudentProgressView = () => {
         )}
       </div>
 
-      {/* Tabs */}
+      {/* Tabs - Removed the locked class and isTabLocked function calls */}
       <div className="literexia-tabs-navigation">
         <button
           className={`literexia-tab-button ${activeTab === 'assessment' ? 'active' : ''}`}
@@ -297,31 +276,29 @@ const StudentProgressView = () => {
           <FaChartLine /> Assessment Results
         </button>
 
-
         <button
-          className={`literexia-tab-button ${activeTab === 'progress' ? 'active' : ''} ${isTabLocked('progress') ? 'locked' : ''}`}
+          className={`literexia-tab-button ${activeTab === 'progress' ? 'active' : ''}`}
           onClick={() => handleTabClick('progress')}
         >
           <FaChartLine /> Progress Report
         </button>
 
         <button
-          className={`literexia-tab-button ${activeTab === 'prescriptive' ? 'active' : ''} ${isTabLocked('prescriptive') ? 'locked' : ''}`}
+          className={`literexia-tab-button ${activeTab === 'prescriptive' ? 'active' : ''}`}
           onClick={() => handleTabClick('prescriptive')}
         >
           <FaLightbulb /> Prescriptive Analysis
         </button>
+        
         <button
-          className={`literexia-tab-button ${activeTab === 'lessonProgress' ? 'active' : ''} ${isTabLocked('lessonProgress') ? 'locked' : ''}`}
+          className={`literexia-tab-button ${activeTab === 'lessonProgress' ? 'active' : ''}`}
           onClick={() => handleTabClick('lessonProgress')}
         >
           <FaCheckCircle /> Individuaized Education Progress
         </button>
-
-
       </div>
 
-      {/* Tab content */}
+      {/* Tab content - Removed the isTabLocked conditions */}
       <div className="literexia-tab-content">
         {activeTab === 'assessment' && (
           <div className="literexia-tab-panel">
@@ -366,7 +343,7 @@ const StudentProgressView = () => {
           </div>
         )}
 
-        {activeTab === 'progress' && !isTabLocked('progress') && (
+        {activeTab === 'progress' && (
           <div className="literexia-tab-panel">
             <div className="literexia-panel-header">
               <h2>Progress Report</h2>
@@ -389,17 +366,12 @@ const StudentProgressView = () => {
           </div>
         )}
 
-        {activeTab === 'lessonProgress' && !isTabLocked('lessonProgress') && (
+        {activeTab === 'lessonProgress' && (
           <div className="literexia-tab-panel">
-
             {/* Progress info section */}
             <div className="literexia-progress-info" style={{ marginBottom: '30px' }}>
-              {/* <div className="literexia-progress-info-icon">
-            <FaBrain />
-          </div> */}
               <div className="literexia-progress-info-text">
                 <p>
-
                   <h3>Individual Progress</h3>
                   This section shows the student's progress in their reading activities.
                   This section shows the student's progress in their reading activities.
@@ -516,14 +488,6 @@ const StudentProgressView = () => {
                   </div>
                 ) : (
                   <div className="literexia-empty-state">
-                    <FaExclamationTriangle />
-                    <p>No lessons have been assigned to this student yet.</p>
-                    <button
-                      className="goto-lessons-btn"
-                      onClick={() => setActiveTab('lessons')}
-                    >
-                      Go to Lesson Assignment
-                    </button>
                   </div>
                 )}
               </div>
@@ -531,32 +495,31 @@ const StudentProgressView = () => {
           </div>
         )}
 
-        {activeTab === 'prescriptive' && !isTabLocked('prescriptive') && (
+        {activeTab === 'prescriptive' && (
           <div className="literexia-tab-panel">
             <div className="literexia-panel-header">
               <h2>Personalized Activities</h2>
             </div>
             <div className="literexia-panel-content">
-              <PrescriptiveAnalysis
-                recommendations={prescriptiveRecommendations}
-                onEditActivity={handleEditActivity}
-                student={student}
-              />
+              {prescriptiveRecommendations.length > 0 ? (
+                <PrescriptiveAnalysis
+                  recommendations={prescriptiveRecommendations}
+                  onEditActivity={handleEditActivity}
+                  student={student}
+                />
+              ) : (
+                <div className="literexia-empty-state">
+                  <FaExclamationTriangle />
+                  <p>No personalized activities available for this student yet.</p>
+                  <button
+                    className="goto-lessons-btn"
+                    onClick={() => setActiveTab('lessons')}
+                  >
+                    Go to Lesson Assignment
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
-        )}
-
-        {isTabLocked(activeTab) && activeTab !== 'assessment' && activeTab !== 'lessons' && (
-          <div className="literexia-locked-content">
-            <FaLightbulb className="literexia-lock-large" />
-            <h3>This section is locked</h3>
-            <p>You need to assign lessons first to unlock this feature.</p>
-            <button
-              className="literexia-btn-goto-assign"
-              onClick={() => setActiveTab('lessons')}
-            >
-              Go to Lesson Assignment
-            </button>
           </div>
         )}
       </div>
