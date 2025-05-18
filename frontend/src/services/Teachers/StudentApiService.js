@@ -478,7 +478,6 @@ const StudentApiService = {
     }
   },
 
-  // Helpers: reading-level descriptions & CSS classes
   getReadingLevelDescription: (level) => {
     const descriptions = {
       'Low Emerging': 'Nagsisimulang Matuto - Beginning to recognize letters and sounds',

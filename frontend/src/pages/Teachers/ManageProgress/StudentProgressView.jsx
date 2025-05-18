@@ -10,7 +10,6 @@ import StudentProfileCard from '../../../components/TeacherPage/ManageProgress/S
 import AssessmentSummaryCard from '../../../components/TeacherPage/ManageProgress/AssessmentSummaryCard';
 import AssessmentResults from '../../../components/TeacherPage/ManageProgress/AssessmentResults';
 import ProgressReport from '../../../components/TeacherPage/ManageProgress/ProgressReport';
-import LessonAssignment from '../../../components/TeacherPage/ManageProgress/LessonAssignment';
 import PrescriptiveAnalysis from '../../../components/TeacherPage/ManageProgress/PrescriptiveAnalysis';
 import ActivityEditModal from '../../../components/TeacherPage/ManageProgress/ActivityEditModal';
 import LoadingSpinner from '../../../components/TeacherPage/ManageProgress/common/LoadingSpinner';
@@ -298,12 +297,6 @@ const StudentProgressView = () => {
           <FaChartLine /> Assessment Results
         </button>
 
-        <button
-          className={`literexia-tab-button ${activeTab === 'lessons' ? 'active' : ''}`}
-          onClick={() => handleTabClick('lessons')}
-        >
-          <FaBook /> Lesson Assignment
-        </button>
 
         <button
           className={`literexia-tab-button ${activeTab === 'progress' ? 'active' : ''} ${isTabLocked('progress') ? 'locked' : ''}`}
