@@ -72,10 +72,10 @@ class ProgressController {
             const interventionPlanCollection = mongoose.connection.db.collection('intervention_assessment');
             const interventionProgressCollection = mongoose.connection.db.collection('intervention_progress');
 
-            console.log(`Direct collection check: 'category_results' has ${await categoryResultsCollection.countDocuments({})} documents`);
-            console.log(`Direct collection check: 'prescriptive_analysis' has ${await prescriptiveAnalysisCollection.countDocuments({})} documents`);
-            console.log(`Direct collection check: 'intervention_assessment' has ${await interventionPlanCollection.countDocuments({})} documents`);
-            console.log(`Direct collection check: 'intervention_progress' has ${await interventionProgressCollection.countDocuments({})} documents`);
+            // console.log(`Direct collection check: 'category_results' has ${await categoryResultsCollection.countDocuments({})} documents`);
+            // console.log(`Direct collection check: 'prescriptive_analysis' has ${await prescriptiveAnalysisCollection.countDocuments({})} documents`);
+            // console.log(`Direct collection check: 'intervention_assessment' has ${await interventionPlanCollection.countDocuments({})} documents`);
+            // console.log(`Direct collection check: 'intervention_progress' has ${await interventionProgressCollection.countDocuments({})} documents`);
 
             // If count > 0, show a sample document
             if (await categoryResultsCollection.countDocuments({}) > 0) {
@@ -118,7 +118,7 @@ class ProgressController {
 
         // For each student, create/update records as needed
         for (const student of students) {
-            console.log(`\nInitializing progress tracking for student: ${student.firstName} ${student.lastName} (${student._id})`);
+            // console.log(`\nInitializing progress tracking for student: ${student.firstName} ${student.lastName} (${student._id})`);
 
             try {
                 const studentId = new mongoose.Types.ObjectId(student._id);
@@ -129,7 +129,7 @@ class ProgressController {
                 try {
                     const categoryResultsCollection = mongoose.connection.db.collection('category_results');
                     const directCount = await categoryResultsCollection.countDocuments({ studentId });
-                    console.log(`Direct DB check: Student ${studentId} has ${directCount} category results`);
+                    // console.log(`Direct DB check: Student ${studentId} has ${directCount} category results`);
                 } catch (err) {
                     console.error(`Error in direct DB check: ${err}`);
                 }
@@ -176,7 +176,7 @@ class ProgressController {
                         recordsCreated++;
                         createdCategoryResults++;
                     } else {
-                        console.log(`✓ Student ${studentId} already has category results: ${categoryResult._id}`);
+                        // console.log(`✓ Student ${studentId} already has category results: ${categoryResult._id}`);
                     }
                 } catch (error) {
                     console.error(`Error checking/creating category results: ${error}`);
@@ -211,7 +211,7 @@ class ProgressController {
                                 { readingLevel, updatedAt: new Date() },
                                 { new: true }
                             );
-                            console.log(`✓ Student ${studentId} already has ${category} analysis: ${analysis._id}`);
+                            // console.log(`✓ Student ${studentId} already has ${category} analysis: ${analysis._id}`);
                         }
                     } catch (error) {
                         console.error(`Error managing ${category} analysis: ${error}`);
@@ -307,7 +307,7 @@ class ProgressController {
                     } else {
                         // Get the existing plan
                         interventionPlan = await InterventionPlan.findOne({ studentId });
-                        console.log(`✓ Student ${studentId} already has intervention plan: ${interventionPlan._id}`);
+                        // console.log(`✓ Student ${studentId} already has intervention plan: ${interventionPlan._id}`);
 
                         // Update the reading level and foreign keys if needed
                         const updateData = {};
@@ -363,7 +363,7 @@ class ProgressController {
                             const progress = await InterventionProgress.findOne({
                                 interventionPlanId: interventionPlan._id
                             });
-                            console.log(`✓ Student ${studentId} already has intervention progress: ${progress._id}`);
+                            // console.log(`✓ Student ${studentId} already has intervention progress: ${progress._id}`);
                         }
                     }
                 } catch (error) {
