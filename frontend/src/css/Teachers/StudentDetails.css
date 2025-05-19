@@ -1730,3 +1730,31 @@
     align-items: center;
   }
 }
+
+/* Add to StudentDetails.css */
+
+.sdx-parent-avatar {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #e0e0e0;
+}
+
+.sdx-parent-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sdx-parent-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #555;
+}
