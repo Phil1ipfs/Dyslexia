@@ -502,3 +502,161 @@
   .literexia-teacher-confirm-delete-btn:hover {
     background-color: #dc2626;
   }
+
+  .literexia-teacher-profile-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .literexia-teacher-profile-info {
+    display: grid;
+    gap: 16px;
+    margin-top: 24px;
+  }
+
+  .literexia-teacher-profile-info-item {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .literexia-teacher-profile-label {
+    font-weight: 600;
+    color: #4b5563;
+    font-size: 14px;
+  }
+
+  .literexia-teacher-profile-value {
+    color: #111827;
+    font-size: 14px;
+  }
+
+  .literexia-teacher-profile-name {
+    font-size: 24px;
+    font-weight: 600;
+    color: #111827;
+    margin: 16px 0 0;
+    text-align: center;
+  }
+
+  .literexia-teacher-profile-content {
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .literexia-teacher-profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+  }
+
+  .literexia-teacher-profile-details {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .literexia-teacher-close-profile-btn {
+    background: #4f46e5;
+    color: white;
+    border: none;
+    padding: 8px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .literexia-teacher-close-profile-btn:hover {
+    background: #4338ca;
+  }
+
+  .literexia-teacher-profile-actions {
+    padding: 16px 32px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* Loading and Error States */
+  .loading-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    font-size: 18px;
+    color: #6b7280;
+  }
+
+  .error-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    font-size: 18px;
+    color: #dc2626;
+    text-align: center;
+    padding: 24px;
+    background: #fef2f2;
+    border: 1px solid #fee2e2;
+    border-radius: 8px;
+    margin: 24px;
+  }
+
+  /* Skeleton Loading Styles */
+  .skeleton-text {
+    height: 16px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+    width: 80%;
+  }
+
+  .skeleton-button {
+    height: 32px;
+    width: 100px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+  }
+
+  .skeleton-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .skeleton-actions::before,
+  .skeleton-actions::after {
+    content: '';
+    height: 32px;
+    width: 32px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }

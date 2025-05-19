@@ -1,140 +1,140 @@
-// middleware/auth.js
 const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
 
-/**
- * Basic authentication middleware
- * Verifies JWT token and adds user data to request
- */
-const auth = (req, res, next) => {
-  // Check for token in various places
-  const token = 
-    req.header('Authorization')?.split(' ')[1] || // Authorization: Bearer <token>
-    req.cookies?.token ||                         // Cookie
-    req.query?.token;                             // URL query parameter
-    
-  // Check if no token
+// Authentication middleware
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
   if (!token) {
-    return res.status(401).json({ message: 'No token, authorization denied' });
+    console.log('No token provided in request');
+    return res.status(401).json({ error: 'Unauthorized: No token provided' });
   }
-  
+
   try {
-    // Verify token
-    const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
+    // Use consistent secret key across the application
+    const secretKey = process.env.JWT_SECRET_KEY || process.env.JWT_SECRET || 'your-secret-key';
     const decoded = jwt.verify(token, secretKey);
     
-    // Add user from payload to request object
-    req.user = decoded;
+    // Log the raw decoded token
+    console.log('Raw decoded token:', decoded);
+    
+    // Ensure we have a standardized user object with more flexible role extraction
+    req.user = {
+      id: decoded.id || decoded._id || decoded.userId || 
+          (decoded.user && (decoded.user.id || decoded.user._id)),
+      email: decoded.email || (decoded.user && decoded.user.email),
+      roles: extractRoles(decoded)
+    };
+
+    // Validate that we have the minimum required user information
+    if (!req.user.email) {
+      throw new Error('Token missing required user email');
+    }
+
+    console.log('Standardized user object:', req.user);
     next();
-  } catch (err) {
-    console.error('Token verification failed:', err.message);
-    res.status(401).json({ message: 'Token is invalid or expired' });
+  } catch (error) {
+    console.error('Token verification failed:', error.message);
+    return res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 };
 
-/**
- * Resolves a role ID to its name from the database
- * @param {string|Object} roleId - MongoDB ObjectId as string or object
- * @returns {Promise<string|null>} - Role name or null if not found
- */
-const resolveRoleFromId = async (roleId) => {
-  try {
-    if (!roleId) return null;
-    
-    // Extract the ID string if it's an ObjectId object
-    const idString = roleId.$oid || (typeof roleId === 'object' ? String(roleId) : roleId);
-    
-    // Connect to roles collection
-    const usersDb = mongoose.connection.useDb('users_web');
-    const rolesCollection = usersDb.collection('roles');
-    
-    // Query the role
-    const role = await rolesCollection.findOne({ 
-      _id: new mongoose.Types.ObjectId(idString) 
-    });
-    
-    return role?.name || null;
-  } catch (err) {
-    console.error('Error resolving role from ID:', err);
-    return null;
+// Helper function to extract roles from various token formats
+const extractRoles = (decoded) => {
+  let roles = [];
+  
+  // Try to get roles from various possible locations
+  if (decoded.roles) {
+    roles = Array.isArray(decoded.roles) ? decoded.roles : [decoded.roles];
+  } else if (decoded.user && decoded.user.roles) {
+    roles = Array.isArray(decoded.user.roles) ? decoded.user.roles : [decoded.user.roles];
+  } else if (decoded.role) {
+    roles = [decoded.role];
+  } else if (decoded.userType) {
+    roles = [decoded.userType];
   }
+  
+  // Convert to array if somehow we got a non-array
+  if (!Array.isArray(roles)) {
+    roles = [roles];
+  }
+  
+  // Filter out any null/undefined values and convert to lowercase
+  roles = roles
+    .filter(role => role)
+    .map(role => role.toLowerCase());
+  
+  // If we still have no roles, check the token for admin role
+  if (roles.length === 0 && decoded.isAdmin) {
+    roles = ['admin'];
+  }
+  
+  console.log('Extracted roles:', roles);
+  return roles;
 };
 
-/**
- * Role-based authorization middleware
- * Checks if authenticated user has required role
- *
- * @param {...string} allowedRoles - Roles that can access the route
- * @returns {Function} Express middleware
- */
+// Role-based authorization middleware
 const authorize = (...allowedRoles) => {
-  return async (req, res, next) => {
+  return (req, res, next) => {
+    console.log('Authorization check:', {
+      user: req.user,
+      allowedRoles,
+      headers: req.headers
+    });
+
     if (!req.user) {
+      console.log('No user object in request');
       return res.status(401).json({ message: 'User not authenticated' });
     }
-    
-    // Handle roles which might be a string or array from the token
-    let userRoles = req.user.roles || [];
-    
-    // If roles field doesn't exist or is empty, try to fetch from database
-    if ((!userRoles || userRoles.length === 0) && req.user.id) {
-      try {
-        const usersDb = mongoose.connection.useDb('users_web');
-        const usersCollection = usersDb.collection('users');
-        const user = await usersCollection.findOne({ 
-          _id: new mongoose.Types.ObjectId(req.user.id) 
-        });
-        
-        if (user && user.roles) {
-          userRoles = user.roles;
-          // Update the request object for future middleware
-          req.user.roles = userRoles;
-        }
-      } catch (err) {
-        console.error('Error fetching user roles:', err);
-      }
-    }
-    
-    // Convert to array if not already
-    const roleArray = Array.isArray(userRoles) ? userRoles : [userRoles];
-    
-    // Array to hold the normalized role names
-    const normalizedRoles = [];
-    
-    // Process each role (could be ID, name, or object)
-    for (const role of roleArray) {
-      // If it's already a string name, add it directly
-      if (typeof role === 'string' && !mongoose.Types.ObjectId.isValid(role)) {
-        normalizedRoles.push(role.toLowerCase());
-      } 
-      // If it could be an ObjectId or role object, resolve it from database
-      else {
-        const resolvedRole = await resolveRoleFromId(role);
-        if (resolvedRole) {
-          normalizedRoles.push(resolvedRole.toLowerCase());
-        }
-      }
-    }
-    
-    // Support for equivalent Tagalog role names
-    const tagalogToEnglish = {
+
+    // Convert allowed roles to lowercase
+    const normalizedAllowedRoles = allowedRoles.map(role => role.toLowerCase());
+
+    // Role mapping for Tagalog and variations
+    const roleMap = {
       'guro': 'teacher',
-      'magulang': 'parent'
+      'magulang': 'parent',
+      'admin': 'admin',
+      'parent': 'parent',
+      'teacher': 'teacher',
+      'administrator': 'admin'
     };
-    
-    // Check if user has required role - case-insensitive matching
-    const hasRole = allowedRoles.some(role => {
-      const lowercaseRole = role.toLowerCase();
-      return normalizedRoles.includes(lowercaseRole) || 
-             normalizedRoles.includes(tagalogToEnglish[lowercaseRole]);
+
+    // Get user roles and normalize them
+    const userRoles = (Array.isArray(req.user.roles) ? req.user.roles : [req.user.roles])
+      .map(role => role ? role.toLowerCase() : '')
+      .filter(role => role); // Remove empty strings
+
+    console.log('Checking roles:', {
+      userRoles,
+      allowedRoles: normalizedAllowedRoles
     });
-    
+
+    // Check if user has any of the allowed roles
+    const hasRole = userRoles.some(role => {
+      const normalizedRole = roleMap[role] || role;
+      return normalizedAllowedRoles.includes(normalizedRole);
+    });
+
     if (!hasRole) {
-      return res.status(403).json({ message: 'Not authorized for this resource' });
+      console.log('Authorization failed:', {
+        userRoles,
+        allowedRoles: normalizedAllowedRoles
+      });
+      return res.status(403).json({
+        message: 'Not authorized for this resource',
+        userRoles,
+        requiredRoles: normalizedAllowedRoles
+      });
     }
-    
+
+    console.log('Authorization successful for user:', {
+      userId: req.user.id,
+      roles: userRoles
+    });
+
     next();
   };
 };
 
-module.exports = { auth, authorize };
+module.exports = { authenticateToken, authorize };

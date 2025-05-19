@@ -45,47 +45,59 @@ const Login = ({ onLogin }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Helper to determine user type from role string
-  const determineUserTypeFromString = (role) => {
-    if (!role) return null;
-    
-    const normalizedRole = role.toLowerCase();
-    
-    if (normalizedRole === 'admin') return 'admin';
-    if (normalizedRole === 'parent' || normalizedRole === 'magulang') return 'parent';
-    if (normalizedRole === 'teacher' || normalizedRole === 'guro') return 'teacher';
-    
-    return null;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
-    // Basic validation
-    if (!formData.email || !formData.password) {
-      return setError('Email and password are required.');
-    }
-
     setIsLoading(true);
 
     try {
-      /* ----------  API URL  ---------- */
-      const BASE =
-        import.meta.env.VITE_API_BASE_URL ||
-        (import.meta.env.DEV ? 'http://localhost:5002' : '');
+      // Basic validation
+      if (!formData.email || !formData.password) {
+        setError('Email and password are required.');
+        setIsLoading(false);
+        return;
+      }
 
-      console.log(`Attempting login to ${BASE}/api/auth/login`);
+      if (!expectedRoleType) {
+        setError('User type not specified. Please return to account selection.');
+        setIsLoading(false);
+        return;
+      }
+
+      const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002';
+      console.log('Login attempt:', {
+        email: formData.email,
+        expectedRole: expectedRoleType,
+        url: `${BASE}/api/auth/login`
+      });
+
+      // Add the expected role to the login request
+      const loginData = {
+        email: formData.email,
+        password: formData.password,
+        expectedRole: expectedRoleType
+      };
+
+      console.log('Sending login request with data:', {
+        email: loginData.email,
+        expectedRole: loginData.expectedRole
+      });
 
       const res = await fetch(`${BASE}/api/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-        credentials: 'include',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(loginData)
       });
 
       // Parse response first to get detailed error if available
       const data = await res.json();
+      console.log('Login response:', {
+        status: res.status,
+        data: data
+      });
 
       // If response is not OK, handle the error
       if (!res.ok) {
@@ -101,85 +113,23 @@ const Login = ({ onLogin }) => {
 
       // Store auth data in localStorage
       localStorage.setItem('authToken', data.token);
+      localStorage.setItem('token', data.token);
       localStorage.setItem('userData', JSON.stringify(data.user));
-
-      // Determine user type based on roles from server response
-      let userType = null;
-      
-      // Try to find a valid role in the roles array
-      if (Array.isArray(data.user.roles)) {
-        for (const role of data.user.roles) {
-          const type = determineUserTypeFromString(role);
-          if (type) {
-            userType = type;
-            break;
-          }
-        }
-      } else if (typeof data.user.roles === 'string') {
-        userType = determineUserTypeFromString(data.user.roles);
-      }
-      
-      // If no valid role was found
-      if (!userType) {
-        console.warn('Could not determine user type from roles:', data.user.roles);
-        
-        // Try to resolve role ID if it looks like an ObjectId
-        const roleId = Array.isArray(data.user.roles) && data.user.roles.length > 0 
-          ? data.user.roles[0] 
-          : data.user.roles;
-        
-        if (roleId) {
-          try {
-            // Try to fetch the role details
-            const roleResponse = await fetch(`${BASE}/api/auth/check-role/${roleId}`);
-            if (roleResponse.ok) {
-              const roleData = await roleResponse.json();
-              userType = determineUserTypeFromString(roleData.roleName);
-              console.log('Role resolved from ID:', roleData);
-            }
-          } catch (roleError) {
-            console.error('Error resolving role ID:', roleError);
-          }
-        }
-        
-        // If still no user type, use a fallback based on what the user selected
-        if (!userType) {
-          userType = expectedRoleType || 'teacher';
-          console.warn(`Using fallback user type: ${userType}`);
-        }
-      }
-      
-      console.log('Determined user type:', userType);
-      
-      // Store the detected user type
-      localStorage.setItem('userType', userType);
-
-      // Check if user type matches expected type from account selection
-      if (expectedRoleType && userType !== expectedRoleType) {
-        console.warn(`Role mismatch: Expected ${expectedRoleType}, got ${userType}`);
-        setError(`This account is a ${userType} account, not a ${expectedRoleType} account. Please choose the correct account type.`);
-        setIsLoading(false);
-        return;
-      }
+      localStorage.setItem('userId', data.user.id);
+      localStorage.setItem('userType', expectedRoleType);
 
       // Call the onLogin function to update App state
       onLogin();
 
-      // Route to the appropriate dashboard
-      if (userType === 'admin') {
-        navigate('/admin/dashboard');
-      } else if (userType === 'parent') {
+      // Route based on user type
+      if (expectedRoleType === 'parent') {
         navigate('/parent/dashboard');
-      } else {
-        // For teachers, initialize profile first
-        try {
-          const teacherService = await import('../services/Teachers/teacherService');
-          await teacherService.initializeTeacherProfile();
-        } catch (profileError) {
-          console.warn('Failed to initialize teacher profile:', profileError);
-        }
-
+      } else if (expectedRoleType === 'teacher') {
         navigate('/teacher/dashboard');
+      } else if (expectedRoleType === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        setError('Invalid account type selected');
       }
     } catch (err) {
       console.error('Login error:', err);

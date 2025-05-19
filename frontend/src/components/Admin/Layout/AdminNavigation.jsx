@@ -1,5 +1,5 @@
 // src/components/Layout/AdminNavigation.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, 
@@ -18,9 +18,77 @@ import {
 } from 'lucide-react';
 import './AdminNavigation.css';
 
-const AdminNavigation = ({ onLogout, adminData }) => {
+const AdminNavigation = ({ onLogout }) => {
   const location = useLocation();
   const [expandedSections, setExpandedSections] = useState([]);
+  const [adminData, setAdminData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAdminProfile = async () => {
+      try {
+        console.log('Starting admin profile fetch...');
+        
+        // Get the auth token from localStorage
+        const token = localStorage.getItem('authToken');
+        console.log('Auth token:', token ? 'Found' : 'Not found');
+        
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+        
+        const response = await fetch('http://localhost:5002/api/admin/profile', {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          credentials: 'include'
+        });
+
+        console.log('Response status:', response.status);
+        const responseText = await response.text();
+        console.log('Raw response:', responseText);
+
+        let data;
+        try {
+          data = JSON.parse(responseText);
+          console.log('Parsed response data:', data);
+        } catch (e) {
+          console.error('Failed to parse response:', e);
+          throw new Error('Invalid response format');
+        }
+
+        if (!response.ok) {
+          throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        }
+
+        if (!data.success || !data.data) {
+          console.error('Invalid response structure:', data);
+          throw new Error('Invalid response structure');
+        }
+
+        const profileData = data.data;
+        console.log('Setting admin profile data:', profileData);
+
+        if (!profileData.firstName || !profileData.lastName) {
+          console.error('Missing name data:', profileData);
+          throw new Error('Profile data missing required fields');
+        }
+
+        setAdminData(profileData);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error in profile fetch:', err);
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchAdminProfile();
+  }, []);
 
   const navigationItems = [
     {
@@ -124,14 +192,24 @@ const AdminNavigation = ({ onLogout, adminData }) => {
         <h1 className="admin-navigation__logo">LITEREXIA</h1>
         <div className="admin-navigation__profile">
           <div className="admin-navigation__avatar">
-            {adminData?.avatar ? (
-              <img src={adminData.avatar} alt={adminData.name} />
+            {adminData?.profileImageUrl ? (
+              <img 
+                src={adminData.profileImageUrl} 
+                alt={`${adminData.firstName} ${adminData.lastName}`} 
+                className="admin-navigation__avatar-img"
+              />
             ) : (
-              <span>{adminData?.name?.charAt(0) || 'A'}</span>
+              <span className="admin-navigation__avatar-placeholder">
+                {adminData?.firstName?.charAt(0) || 'A'}
+              </span>
             )}
           </div>
           <div className="admin-navigation__profile-info">
-            <h3 className="admin-navigation__admin-name">{adminData?.name || 'Admin User'}</h3>
+            <h3 className="admin-navigation__admin-name">
+              {loading ? 'Loading...' : 
+               error ? `Error: ${error}` : 
+               adminData ? `${adminData.firstName} ${adminData.lastName}` : 'Admin User'}
+            </h3>
             <p className="admin-navigation__role">Administrator</p>
           </div>
         </div>

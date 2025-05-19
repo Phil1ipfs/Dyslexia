@@ -3,7 +3,7 @@ const express = require('express');
 const bcrypt = require('bcrypt'); 
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
-const { auth } = require('../../middleware/auth'); // Import auth middleware
+const { authenticateToken } = require('../../middleware/auth');
 const router = express.Router();
 
 /**
@@ -16,12 +16,38 @@ const isBcryptHash = (str) => {
 };
 
 /**
+ * Normalizes role strings to handle variations
+ * @param {string} role - Role to normalize
+ * @returns {string} - Normalized role
+ */
+const normalizeRole = (role) => {
+  if (!role) return '';
+  
+  const normalized = role.toLowerCase().trim();
+  
+  // Handle common variations
+  switch (normalized) {
+    case 'magulang':
+    case 'parent':
+      return 'parent';
+    case 'guro':
+    case 'teacher':
+      return 'teacher';
+    case 'admin':
+    case 'administrator':
+      return 'admin';
+    default:
+      return normalized;
+  }
+};
+
+/**
  * @route   POST /api/auth/login
  * @desc    Authenticate user & get token
  * @access  Public
  */
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, expectedRole } = req.body;
 
   // Basic validation
   if (!email || !password) {
@@ -31,127 +57,162 @@ router.post('/login', async (req, res) => {
   try {
     console.log('=== LOGIN ATTEMPT ===');
     console.log('Login attempt for:', email);
-    console.log('Password provided:', password ? `${password.substring(0, 3)}...` : 'none');
+    console.log('Expected role:', expectedRole);
     
-    // Get User model from users_web database
+    // Get databases and collections
     const usersDb = mongoose.connection.useDb('users_web');
     const usersCollection = usersDb.collection('users');
+    const rolesCollection = usersDb.collection('roles');
     
-    // Fetch user
-    const user = await usersCollection.findOne({ email });
+    // Fetch user from users_web.users
+    const user = await usersCollection.findOne({ email: email.toLowerCase() });
 
     if (!user) {
       console.log('User not found:', email);
-      // Use consistent error messages to prevent username enumeration
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     
     console.log('User found:', user.email);
-    console.log('User document:', JSON.stringify(user));
     
-    // Determine which field contains the password hash
-    let passwordHash = null;
-    
-    if (user.passwordHash && isBcryptHash(user.passwordHash)) {
-      passwordHash = user.passwordHash;
-      console.log('Using passwordHash field for verification:', user.passwordHash.substring(0, 10) + '...');
-    } else if (user.password && isBcryptHash(user.password)) {
-      passwordHash = user.password;
-      console.log('Using password field for verification (contains hash):', user.password.substring(0, 10) + '...');
-    } else {
-      console.error('No valid password hash found for user:', email);
-      return res.status(500).json({ message: 'Account configuration error' });
-    }
-    
-    // Verify the password using bcrypt
-    let passwordIsValid = false;
-    
+    // Verify password
+    let isValidPassword = false;
     try {
-      console.log('Comparing password with hash using bcrypt...');
-      passwordIsValid = await bcrypt.compare(password, passwordHash);
-      console.log('bcrypt comparison result:', passwordIsValid ? 'Valid' : 'Invalid');
-      
-      if (!passwordIsValid) {
-        console.log('FAILED LOGIN: Invalid password for user:', email);
-        return res.status(401).json({ message: 'Invalid credentials' });
+      // Check for valid bcrypt hash in passwordHash field first
+      if (user.passwordHash && typeof user.passwordHash === 'string' && 
+          (user.passwordHash.startsWith('$2a$') || user.passwordHash.startsWith('$2b$'))) {
+        isValidPassword = await bcrypt.compare(password, user.passwordHash);
+      } 
+      // Fall back to password field if it contains a valid bcrypt hash
+      else if (user.password && typeof user.password === 'string' && 
+               (user.password.startsWith('$2a$') || user.password.startsWith('$2b$'))) {
+        isValidPassword = await bcrypt.compare(password, user.password);
       }
     } catch (bcryptError) {
-      console.error('Bcrypt comparison error:', bcryptError);
+      console.error('Password verification error:', bcryptError);
       return res.status(500).json({ message: 'Authentication error' });
     }
 
-    console.log('Password verification successful');
-    
-    // Get user roles
+    if (!isValidPassword) {
+      console.log('Invalid password for user:', email);
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Get user's roles by resolving role references
     let userRoles = [];
-    
     if (user.roles) {
-      if (mongoose.Types.ObjectId.isValid(user.roles)) {
-        console.log('Role is a valid ObjectId:', user.roles);
-        
-        // Fetch the role from roles collection
-        const rolesCollection = usersDb.collection('roles');
-        const role = await rolesCollection.findOne({ _id: new mongoose.Types.ObjectId(user.roles) });
-        
-        if (role && role.name) {
-          userRoles.push(role.name);
-          console.log('Resolved role from ObjectId:', role.name);
-        } else {
-          // If role name not found, use the ID as fallback
-          userRoles.push(user.roles);
-          console.log('Using role ID as fallback:', user.roles);
+      // Convert role references to ObjectIds if they're strings
+      const roleIds = Array.isArray(user.roles) ? 
+        user.roles.map(id => typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id) : 
+        [typeof user.roles === 'string' ? new mongoose.Types.ObjectId(user.roles) : user.roles];
+
+      console.log('Looking up roles with IDs:', roleIds);
+
+      // Fetch role documents
+      const roleDocs = await rolesCollection.find({
+        _id: { $in: roleIds }
+      }).toArray();
+
+      console.log('Found role documents:', roleDocs);
+
+      // Extract role names
+      userRoles = roleDocs.map(role => role.name.toLowerCase());
+    }
+
+    console.log('Resolved user roles:', userRoles);
+
+    // Check if user has the expected role
+    const normalizedExpectedRole = normalizeRole(expectedRole);
+    let isAuthorized = userRoles.includes(normalizedExpectedRole);
+    let parentProfile = null;
+
+    // If not authorized but trying to log in as parent, check parent profile
+    if (!isAuthorized && normalizedExpectedRole === 'parent') {
+      // Try different parent collections
+      const parentDatabases = ['Literexia', 'parent'];
+      const parentCollections = ['parent', 'parent_profile', 'profile'];
+
+      for (const dbName of parentDatabases) {
+        const db = mongoose.connection.useDb(dbName);
+        for (const collName of parentCollections) {
+          try {
+            const collection = db.collection(collName);
+            parentProfile = await collection.findOne({ 
+              $or: [
+                { email: email.toLowerCase() },
+                { userId: user._id },
+                { userId: user._id.toString() }
+              ]
+            });
+            
+            if (parentProfile) {
+              console.log(`Found parent profile in ${dbName}.${collName}`);
+              isAuthorized = true;
+              break;
+            }
+          } catch (err) {
+            console.log(`Error checking ${dbName}.${collName}:`, err.message);
+          }
         }
-      } else if (typeof user.roles === 'string') {
-        userRoles = [user.roles];
-        console.log('Role is a string:', user.roles);
-      } else if (Array.isArray(user.roles)) {
-        userRoles = user.roles;
-        console.log('Roles is an array:', user.roles);
-      } else if (user.roles.$oid) {
-        console.log('Role is in MongoDB extended JSON format:', user.roles.$oid);
-        
-        // It's an ObjectId in extended JSON format
-        const rolesCollection = usersDb.collection('roles');
-        const role = await rolesCollection.findOne({ _id: new mongoose.Types.ObjectId(user.roles.$oid) });
-        
-        if (role && role.name) {
-          userRoles.push(role.name);
-          console.log('Resolved role from $oid:', role.name);
-        } else {
-          userRoles.push(user.roles.$oid);
-          console.log('Using role $oid as fallback:', user.roles.$oid);
+        if (parentProfile) break;
+      }
+
+      // If still no profile found, create one in Literexia.parent
+      if (!parentProfile) {
+        try {
+          const literexiaDb = mongoose.connection.useDb('Literexia');
+          const parentCollection = literexiaDb.collection('parent');
+          
+          parentProfile = {
+            userId: user._id,
+            email: email.toLowerCase(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          
+          const result = await parentCollection.insertOne(parentProfile);
+          parentProfile._id = result.insertedId;
+          console.log('Created new parent profile:', result.insertedId);
+          isAuthorized = true;
+        } catch (err) {
+          console.error('Error creating parent profile:', err);
         }
       }
     }
-    
-    console.log('Final user roles array:', userRoles);
 
-    // Sign JWT with proper secret key from environment variables
-    const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
-    
+    if (!isAuthorized) {
+      console.log('Role mismatch. Expected:', normalizedExpectedRole, 'Has:', userRoles);
+      return res.status(403).json({ message: 'Not authorized for this resource' });
+    }
+
+    // Generate JWT token with verified roles and parent profile ID if applicable
+    const tokenPayload = { 
+      id: user._id.toString(),
+      email: user.email,
+      roles: userRoles
+    };
+
+    if (parentProfile) {
+      tokenPayload.roles = ['parent'];
+      tokenPayload.profileId = parentProfile._id.toString();
+    }
+
     const token = jwt.sign(
-      {
-        id: user._id.toString(),
-        email: user.email,
-        roles: userRoles
-      },
-      secretKey,
-      { 
-        expiresIn: '1h',
-        issuer: 'literexia-api'
-      }
+      tokenPayload,
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
     );
-
+    
     console.log('Login successful for:', email);
+    console.log('Roles assigned:', tokenPayload.roles);
     console.log('=== END LOGIN ===');
 
-    // Success response
     return res.json({
       token,
       user: { 
         id: user._id.toString(), 
-        email: user.email, 
-        roles: userRoles 
+        email: user.email,
+        roles: tokenPayload.roles,
+        ...(parentProfile && { profileId: parentProfile._id.toString() })
       }
     });
 
@@ -166,7 +227,7 @@ router.post('/login', async (req, res) => {
  * @desc    Update user password
  * @access  Private
  */
-router.post('/update-password', auth, async (req, res) => {
+router.post('/update-password', authenticateToken, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     
@@ -285,4 +346,5 @@ router.get('/check-role/:roleId', async (req, res) => {
   }
 });
 
+// Export the router
 module.exports = router;

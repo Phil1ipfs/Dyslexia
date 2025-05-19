@@ -1,69 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Trash2, Edit, ChevronDown, User, UserPlus } from 'lucide-react';
+import { Search, Trash2, Edit, ChevronDown, User, UserPlus, Filter, Plus } from 'lucide-react';
+import axios from 'axios';
 import './TeacherLists.css';
 
-
-// Mock database structure - this would connect to MongoDB in production
-const initialTeachers = [
-  { 
-    id: '1', 
-    name: 'Christine Brooks', 
-    email: 'christianbrooks@gmail.com', 
-    address: 'Sampaloc Manila',
-    subjects: ['Math', 'Science'],
-    phone: '123-456-7890',
-    dateJoined: '2023-01-15'
-  },
-  { 
-    id: '2', 
-    name: 'Rosie Pearson', 
-    email: 'christianbrooks@gmail.com', 
-    address: 'Sampaloc Manila',
-    subjects: ['English', 'History'],
-    phone: '123-456-7891',
-    dateJoined: '2023-02-10'
-  },
-  { 
-    id: '3', 
-    name: 'Darrell Caldwell', 
-    email: 'christianbrooks@gmail.com', 
-    address: 'Sampaloc Manila',
-    subjects: ['Physical Education', 'Health'],
-    phone: '123-456-7892',
-    dateJoined: '2023-03-05'
-  },
-  { 
-    id: '4', 
-    name: 'Gilbert Johnston', 
-    email: 'christianbrooks@gmail.com', 
-    address: 'Sampaloc Manila',
-    subjects: ['Arts', 'Music'],
-    phone: '123-456-7893',
-    dateJoined: '2023-04-20'
-  },
-  { 
-    id: '5', 
-    name: 'Alan Cain', 
-    email: 'christianbrooks@gmail.com', 
-    address: 'Sampaloc Manila',
-    subjects: ['Computer Science', 'Physics'],
-    phone: '123-456-7894',
-    dateJoined: '2023-05-12'
-  },
-  { 
-    id: '6', 
-    name: 'Alfred Murray', 
-    email: 'christianbrooks@gmail.com', 
-    address: 'Sampaloc Manila',
-    subjects: ['Chemistry', 'Biology'],
-    phone: '123-456-7895',
-    dateJoined: '2023-06-08'
-  }
-];
-
-// Main TeacherLists component
 const TeacherLists = () => {
-  const [teachers, setTeachers] = useState(initialTeachers);
+  const [teachers, setTeachers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchBy, setSearchBy] = useState('name');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -72,14 +13,40 @@ const TeacherLists = () => {
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Search functionality
+  // Fetch teachers from database
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get('http://localhost:5002/api/admin/manage/teachers');
+        if (response.data.success) {
+          setTeachers(response.data.data);
+        } else {
+          throw new Error(response.data.message || 'Failed to fetch teachers');
+        }
+      } catch (error) {
+        console.error('Error fetching teachers:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeachers();
+  }, []);
+
+  // Filter teachers based on search term
   const filteredTeachers = teachers.filter(teacher => {
-    const searchValue = teacher[searchBy].toLowerCase();
+    const searchValue = searchBy === 'name' 
+      ? `${teacher.firstName} ${teacher.lastName}`.toLowerCase()
+      : (teacher[searchBy] || '').toLowerCase();
     return searchValue.includes(searchTerm.toLowerCase());
   });
 
-  // Handler for viewing teacher profile
+  // View teacher profile
   const handleViewProfile = (teacher) => {
     setSelectedTeacher(teacher);
     setShowTeacherProfileModal(true);
@@ -100,7 +67,7 @@ const TeacherLists = () => {
   // Handler for actual deletion
   const handleDeleteTeacher = () => {
     if (teacherToDelete) {
-      const updatedTeachers = teachers.filter(teacher => teacher.id !== teacherToDelete.id);
+      const updatedTeachers = teachers.filter(teacher => teacher._id !== teacherToDelete._id);
       setTeachers(updatedTeachers);
       setIsConfirmDeleteOpen(false);
       setTeacherToDelete(null);
@@ -111,7 +78,7 @@ const TeacherLists = () => {
   const handleAddNewTeacher = (newTeacher) => {
     const teacherWithId = {
       ...newTeacher,
-      id: (teachers.length + 1).toString()
+      _id: (teachers.length + 1).toString()
     };
     setTeachers([...teachers, teacherWithId]);
     setShowAddTeacherModal(false);
@@ -120,12 +87,81 @@ const TeacherLists = () => {
   // Update existing teacher handler
   const handleUpdateTeacher = (updatedTeacher) => {
     const updatedTeachers = teachers.map(teacher => 
-      teacher.id === updatedTeacher.id ? updatedTeacher : teacher
+      teacher._id === updatedTeacher._id ? updatedTeacher : teacher
     );
     setTeachers(updatedTeachers);
     setShowAddTeacherModal(false);
     setSelectedTeacher(null);
   };
+
+  if (loading) {
+    return (
+      <div className="literexia-teacher-lists-container">
+        {/* Header Section */}
+        <div className="literexia-teacher-header">
+          <div className="literexia-teacher-title-container">
+            <h1 className="literexia-teacher-title">Teacher Lists</h1>
+            <p className="literexia-teacher-subtitle">Add, View the List of Teachers and their Information</p>
+          </div>
+          <div className="literexia-teacher-image">
+            <div className="literexia-teacher-placeholder"></div>
+          </div>
+        </div>
+
+        {/* Controls Section */}
+        <div className="literexia-teacher-controls">
+          <div className="literexia-teacher-search-container">
+            <div className="literexia-teacher-search">
+              <input
+                type="text"
+                placeholder="Search..."
+                disabled
+                className="literexia-teacher-search-input"
+              />
+              <Search className="literexia-teacher-search-icon" size={18} />
+            </div>
+            <button className="literexia-teacher-filter-btn" disabled>
+              <Filter size={18} />
+              <span>Filter</span>
+            </button>
+            <button className="literexia-teacher-add-btn" disabled>
+              <Plus size={18} />
+              Add New Teacher
+            </button>
+          </div>
+        </div>
+
+        <div className="literexia-teacher-table-container" style={{ opacity: 0.6 }}>
+          <table className="literexia-teacher-table">
+            <thead>
+              <tr>
+                <th className="literexia-teacher-th">Teacher Name</th>
+                <th className="literexia-teacher-th">Email</th>
+                <th className="literexia-teacher-th">Address</th>
+                <th className="literexia-teacher-th">View Profile</th>
+                <th className="literexia-teacher-th">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 2, 3].map((_, index) => (
+                <tr key={index} className="literexia-teacher-tr">
+                  <td className="literexia-teacher-td"><div className="skeleton-text"></div></td>
+                  <td className="literexia-teacher-td"><div className="skeleton-text"></div></td>
+                  <td className="literexia-teacher-td"><div className="skeleton-text"></div></td>
+                  <td className="literexia-teacher-td"><div className="skeleton-button"></div></td>
+                  <td className="literexia-teacher-td"><div className="skeleton-actions"></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="error-message">Error: {error}</div>;
+  }
 
   return (
     <div className="literexia-teacher-lists-container">
@@ -141,7 +177,7 @@ const TeacherLists = () => {
         </div>
       </div>
 
-      {/* Search and Filter Section */}
+      {/* Controls Section */}
       <div className="literexia-teacher-controls">
         <div className="literexia-teacher-search-container">
           <div className="literexia-teacher-search">
@@ -154,49 +190,10 @@ const TeacherLists = () => {
             />
             <Search className="literexia-teacher-search-icon" size={18} />
           </div>
-          
-          <div className="literexia-teacher-filter">
-            <button 
-              className="literexia-teacher-dropdown-btn"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            >
-              Search by {searchBy.charAt(0).toUpperCase() + searchBy.slice(1)}
-              <ChevronDown size={18} />
-            </button>
-            
-            {isDropdownOpen && (
-              <div className="literexia-teacher-dropdown-content">
-                <div 
-                  className="literexia-teacher-dropdown-item"
-                  onClick={() => {
-                    setSearchBy('name');
-                    setIsDropdownOpen(false);
-                  }}
-                >
-                  Name
-                </div>
-                <div 
-                  className="literexia-teacher-dropdown-item"
-                  onClick={() => {
-                    setSearchBy('email');
-                    setIsDropdownOpen(false);
-                  }}
-                >
-                  Email
-                </div>
-                <div 
-                  className="literexia-teacher-dropdown-item"
-                  onClick={() => {
-                    setSearchBy('address');
-                    setIsDropdownOpen(false);
-                  }}
-                >
-                  Address
-                </div>
-              </div>
-            )}
-          </div>
-          
+          <button className="literexia-teacher-filter-btn">
+            <Filter size={18} />
+            <span>Filter</span>
+          </button>
           <button 
             className="literexia-teacher-add-btn"
             onClick={() => {
@@ -204,28 +201,28 @@ const TeacherLists = () => {
               setShowAddTeacherModal(true);
             }}
           >
-            <UserPlus size={18} />
+            <Plus size={18} />
             Add New Teacher
           </button>
         </div>
       </div>
 
-      {/* Teachers Table */}
+      {/* Table Section */}
       <div className="literexia-teacher-table-container">
         <table className="literexia-teacher-table">
           <thead>
             <tr>
-              <th className="literexia-teacher-th">TEACHER NAME</th>
-              <th className="literexia-teacher-th">TEACHER EMAIL</th>
-              <th className="literexia-teacher-th">ADDRESS</th>
-              <th className="literexia-teacher-th">VIEW PROFILE</th>
-              <th className="literexia-teacher-th">ACTION/S</th>
+              <th className="literexia-teacher-th">Teacher Name</th>
+              <th className="literexia-teacher-th">Email</th>
+              <th className="literexia-teacher-th">Address</th>
+              <th className="literexia-teacher-th">View Profile</th>
+              <th className="literexia-teacher-th">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredTeachers.map((teacher) => (
-              <tr key={teacher.id} className="literexia-teacher-tr">
-                <td className="literexia-teacher-td">{teacher.name}</td>
+              <tr key={teacher._id} className="literexia-teacher-tr">
+                <td className="literexia-teacher-td">{`${teacher.firstName} ${teacher.lastName}`}</td>
                 <td className="literexia-teacher-td">{teacher.email}</td>
                 <td className="literexia-teacher-td">{teacher.address}</td>
                 <td className="literexia-teacher-td">
@@ -241,13 +238,13 @@ const TeacherLists = () => {
                     className="literexia-teacher-edit-btn"
                     onClick={() => handleEditTeacher(teacher)}
                   >
-                    <Edit size={18} />
+                    <Edit size={16} />
                   </button>
                   <button 
                     className="literexia-teacher-delete-btn"
                     onClick={() => handleDeleteConfirmation(teacher)}
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={16} />
                   </button>
                 </td>
               </tr>
@@ -270,13 +267,70 @@ const TeacherLists = () => {
 
       {/* Teacher Profile Modal */}
       {showTeacherProfileModal && selectedTeacher && (
-        <TeacherProfileModal
-          teacher={selectedTeacher}
-          onClose={() => {
-            setShowTeacherProfileModal(false);
-            setSelectedTeacher(null);
-          }}
-        />
+        <div className="literexia-teacher-modal-overlay">
+          <div className="literexia-teacher-profile-modal">
+            <div className="literexia-teacher-modal-header">
+              <h2>Teacher Profile</h2>
+              <button className="literexia-teacher-modal-close" onClick={() => setShowTeacherProfileModal(false)}>×</button>
+            </div>
+            
+            <div className="literexia-teacher-profile-content">
+              <div className="literexia-teacher-profile-avatar">
+                {selectedTeacher.profileImageUrl ? (
+                  <img 
+                    src={selectedTeacher.profileImageUrl} 
+                    alt={`${selectedTeacher.firstName} ${selectedTeacher.lastName}`}
+                    className="literexia-teacher-profile-image"
+                  />
+                ) : (
+                  <User size={64} />
+                )}
+              </div>
+              
+              <div className="literexia-teacher-profile-details">
+                <h3 className="literexia-teacher-profile-name">
+                  {`${selectedTeacher.firstName} ${selectedTeacher.lastName}`}
+                </h3>
+                
+                <div className="literexia-teacher-profile-info">
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Email:</span>
+                    <span className="literexia-teacher-profile-value">{selectedTeacher.email}</span>
+                  </div>
+                  
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Position:</span>
+                    <span className="literexia-teacher-profile-value">{selectedTeacher.position}</span>
+                  </div>
+                  
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Contact:</span>
+                    <span className="literexia-teacher-profile-value">{selectedTeacher.contact}</span>
+                  </div>
+                  
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Civil Status:</span>
+                    <span className="literexia-teacher-profile-value">{selectedTeacher.civilStatus}</span>
+                  </div>
+                  
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Gender:</span>
+                    <span className="literexia-teacher-profile-value">{selectedTeacher.gender}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="literexia-teacher-profile-actions">
+              <button 
+                className="literexia-teacher-close-profile-btn"
+                onClick={() => setShowTeacherProfileModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Confirm Delete Modal */}
@@ -465,74 +519,6 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
   );
 };
 
-// TeacherProfileModal Component
-const TeacherProfileModal = ({ teacher, onClose }) => {
-  return (
-    <div className="literexia-teacher-modal-overlay">
-      <div className="literexia-teacher-profile-modal">
-        <div className="literexia-teacher-modal-header">
-          <h2>Teacher Profile</h2>
-          <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
-        </div>
-        
-        <div className="literexia-teacher-profile-content">
-          <div className="literexia-teacher-profile-avatar">
-            <User size={64} />
-          </div>
-          
-          <div className="literexia-teacher-profile-details">
-            <h3 className="literexia-teacher-profile-name">{teacher.name}</h3>
-            
-            <div className="literexia-teacher-profile-info">
-              <div className="literexia-teacher-profile-info-item">
-                <span className="literexia-teacher-profile-label">Email:</span>
-                <span className="literexia-teacher-profile-value">{teacher.email}</span>
-              </div>
-              
-              <div className="literexia-teacher-profile-info-item">
-                <span className="literexia-teacher-profile-label">Address:</span>
-                <span className="literexia-teacher-profile-value">{teacher.address}</span>
-              </div>
-              
-              <div className="literexia-teacher-profile-info-item">
-                <span className="literexia-teacher-profile-label">Phone:</span>
-                <span className="literexia-teacher-profile-value">{teacher.phone}</span>
-              </div>
-              
-              <div className="literexia-teacher-profile-info-item">
-                <span className="literexia-teacher-profile-label">Date Joined:</span>
-                <span className="literexia-teacher-profile-value">
-                  {new Date(teacher.dateJoined).toLocaleDateString()}
-                </span>
-              </div>
-              
-              <div className="literexia-teacher-profile-info-item">
-                <span className="literexia-teacher-profile-label">Subjects:</span>
-                <div className="literexia-teacher-profile-subjects">
-                  {teacher.subjects.map((subject, index) => (
-                    <span key={index} className="literexia-teacher-profile-subject-tag">
-                      {subject}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="literexia-teacher-profile-actions">
-          <button 
-            className="literexia-teacher-close-profile-btn"
-            onClick={onClose}
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // ConfirmDeleteModal Component
 const ConfirmDeleteModal = ({ teacher, onCancel, onConfirm }) => {
   return (
@@ -566,117 +552,5 @@ const ConfirmDeleteModal = ({ teacher, onCancel, onConfirm }) => {
     </div>
   );
 };
-
-// MongoDB Schema - This would be in a separate file in production
-/*
-// teacher.model.js
-import mongoose from 'mongoose';
-
-const teacherSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  email: {
-    type: String,
-    required: true,
-    trim: true,
-    lowercase: true
-  },
-  address: {
-    type: String,
-    required: true
-  },
-  phone: {
-    type: String,
-    required: true
-  },
-  subjects: [{
-    type: String,
-    trim: true
-  }],
-  dateJoined: {
-    type: Date,
-    default: Date.now
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-// Middleware to update the 'updatedAt' field on save
-teacherSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
-
-const Teacher = mongoose.model('Teacher', teacherSchema);
-
-export default Teacher;
-*/
-
-// API Service - This would be in a separate file in production
-/*
-// teacherService.js
-import axios from 'axios';
-
-const API_URL = '/api/teachers';
-
-export const getTeachers = async () => {
-  try {
-    const response = await axios.get(API_URL);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching teachers:', error);
-    throw error;
-  }
-};
-
-export const getTeacherById = async (id) => {
-  try {
-    const response = await axios.get(`${API_URL}/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error(`Error fetching teacher with id ${id}:`, error);
-    throw error;
-  }
-};
-
-export const createTeacher = async (teacherData) => {
-  try {
-    const response = await axios.post(API_URL, teacherData);
-    return response.data;
-  } catch (error) {
-    console.error('Error creating teacher:', error);
-    throw error;
-  }
-};
-
-export const updateTeacher = async (id, teacherData) => {
-  try {
-    const response = await axios.put(`${API_URL}/${id}`, teacherData);
-    return response.data;
-  } catch (error) {
-    console.error(`Error updating teacher with id ${id}:`, error);
-    throw error;
-  }
-};
-
-export const deleteTeacher = async (id) => {
-  try {
-    const response = await axios.delete(`${API_URL}/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error(`Error deleting teacher with id ${id}:`, error);
-    throw error;
-  }
-};
-*/
 
 export default TeacherLists;
