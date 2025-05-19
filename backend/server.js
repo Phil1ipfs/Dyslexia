@@ -174,12 +174,6 @@ connectDB().then(() => {
     console.warn('⚠️ Could not load auth routes:', error.message);
   }
 
-  try {
-    app.use('/api/dashboard', require('./routes/Teachers/dashboardRoutes'));
-    console.log('✅ Loaded dashboard routes');
-  } catch (error) {
-    console.warn('⚠️ Could not load dashboard routes:', error.message);
-  }
 
   // Add to your existing error handling middleware at the end of server.js
   app.use((err, req, res, next) => {
@@ -334,15 +328,18 @@ connectDB().then(() => {
   } catch (error) {
     console.warn('⚠️ Could not load chatbot routes:', error.message);
   }
-  
-  // Route to handle activity updates
-  try {
-    app.use('/api/student', require('./routes/Teachers/dashboardRoutes'));
-    console.log('✅ Loaded student activity routes');
-  } catch (error) {
-    console.warn('⚠️ Could not load student activity routes:', error.message);
-  }
-  
+
+// In server.js, find the section where routes are registered
+
+try {
+  const dashboardRoutes = require('./routes/Teachers/dashboardRoutes');
+  app.use('/api/dashboard', dashboardRoutes);
+  console.log('✅ Loaded dashboard routes');
+} catch (error) {
+  console.warn('⚠️ Could not load dashboard routes:', error.message);
+}
+
+
   app.use((err, req, res, next) => {
     console.error(`[ERROR] ${err.message}`);
     res.status(500).json({ error: 'Server error', message: err.message });

@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 // Get the correct database connections
 const getUsersDb = () => mongoose.connection.useDb('users_web');
 const getMobileLiterexiaDb = () => mongoose.connection.useDb('parent');
-const getParentProfileCollection = () => getMobileLiterexiaDb().collection('profile');
+const getParentProfileCollection = () => getMobileLiterexiaDb().collection('parent_profile');
 
 // Controller function to get parent profile by ID
 exports.getParentProfile = async (req, res) => {
