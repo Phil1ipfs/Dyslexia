@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
     required: true
   },
   roles: {
-    type: String, 
+    type: String,
     default: 'user'
   },
   createdAt: {
@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
-  collection: 'users' 
+  collection: 'users'
 });
 
 const requestLogger = (req, res, next) => {
@@ -38,8 +38,8 @@ const requestLogger = (req, res, next) => {
 };
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173', 
-  credentials: true 
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
 }));
 app.use(express.json());
 app.use(requestLogger);
@@ -59,11 +59,11 @@ const connectDB = async () => {
     const collections = await mongoose.connection.db.listCollections().toArray();
     console.log('Available collections in test:');
     collections.forEach(c => console.log(`- ${c.name}`));
-    
+
     // NOW initialize the ManageProgress module
     const progressController = require('./controllers/Teachers/ManageProgress/progressController');
     await progressController.initializeCollections();
-    
+
     try {
       const manageProgressRoutes = require('./routes/Teachers/ManageProgress/progressRoutes');
       app.use('/api/progress', manageProgressRoutes);
@@ -72,13 +72,34 @@ const connectDB = async () => {
       console.warn('⚠️ Could not load manage progress routes:', error.message);
     }
 
+    console.log('Initializing connections to other databases...');
+
+    // Connect to the parent.parent_profile collection directly
+    try {
+      const db = mongoose.connection.db;
+      const adminDb = db.admin();
+      const dbInfo = await adminDb.listDatabases();
+
+      console.log('Available databases:');
+      dbInfo.databases.forEach(db => console.log(`- ${db.name}`));
+
+      // Ensure parent database exists by accessing it directly
+      const parentDb = mongoose.connection.useDb('parent');
+      console.log('Created connection to parent database');
+
+      // Ensure users_web database exists by accessing it directly
+      const usersWebDb = mongoose.connection.useDb('users_web');
+      console.log('Created connection to users_web database');
+    } catch (err) {
+      console.warn('⚠️ Could not list available databases:', err.message);
+    }
+
     return true;
   } catch (err) {
     console.error('❌ MongoDB connection failed:', err.message);
     throw err;
   }
 };
-
 
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
@@ -182,10 +203,11 @@ connectDB().then(() => {
   });
 
   try {
-    app.use('/api/parents', require('./routes/Parents/parentProfile'));
-    console.log('✅ Loaded parents routes');
+    const parentRoutes = require('./routes/Parents/parentRoutes');
+    app.use('/api/parents', parentRoutes);
+    console.log('✅ Loaded parents routes with profile endpoint');
   } catch (error) {
-    console.warn('⚠️ Could not load parents routes:', error.message);
+    console.warn('⚠️ Could not load parent routes:', error.message);
   }
 
   // Register roles routes right after auth routes
@@ -195,6 +217,9 @@ connectDB().then(() => {
   } catch (error) {
     console.warn('⚠️ Could not load roles routes:', error.message);
   }
+
+
+
 
   // Login route - adapted to work with string roles
   app.post('/api/auth/login', async (req, res) => {
@@ -314,6 +339,9 @@ connectDB().then(() => {
     console.warn('⚠️ Could not load teacher profile routes:', error.message);
   }
 
+
+
+
   try {
     app.use('/api/student', require('./routes/Teachers/studentRoutes'));
     console.log('✅ Loaded student routes');
@@ -329,15 +357,13 @@ connectDB().then(() => {
     console.warn('⚠️ Could not load chatbot routes:', error.message);
   }
 
-// In server.js, find the section where routes are registered
-
-try {
-  const dashboardRoutes = require('./routes/Teachers/dashboardRoutes');
-  app.use('/api/dashboard', dashboardRoutes);
-  console.log('✅ Loaded dashboard routes');
-} catch (error) {
-  console.warn('⚠️ Could not load dashboard routes:', error.message);
-}
+  try {
+    const dashboardRoutes = require('./routes/Teachers/dashboardRoutes');
+    app.use('/api/dashboard', dashboardRoutes);
+    console.log('✅ Loaded dashboard routes');
+  } catch (error) {
+    console.warn('⚠️ Could not load dashboard routes:', error.message);
+  }
 
 
   app.use((err, req, res, next) => {
@@ -362,30 +388,30 @@ try {
   app.get('/api/proxy-image', async (req, res) => {
     try {
       const { url } = req.query;
-      
+
       if (!url) {
         return res.status(400).send('Missing URL parameter');
       }
-      
+
       // Only allow proxying from your S3 bucket for security
       if (!url.includes('literexia-bucket.s3.ap-southeast-2.amazonaws.com')) {
         return res.status(403).send('Unauthorized image source');
       }
-      
+
       // Fetch the image
       const response = await axios({
         method: 'get',
         url: url,
         responseType: 'arraybuffer'
       });
-      
+
       // Set proper content type
       const contentType = response.headers['content-type'];
       res.setHeader('Content-Type', contentType);
-      
+
       // Add cache headers
       res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
-      
+
       // Return the image data
       res.send(response.data);
     } catch (error) {

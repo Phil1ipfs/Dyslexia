@@ -26,7 +26,7 @@ import {
   FaSync
 } from 'react-icons/fa';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import StudentApiService from '../../../services/Teachers/StudentApiService';
+import StudentDetailsService from '../../../services/Teachers/StudentDetailsService';
 import '../../../css/Teachers/StudentDetails.css';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -77,53 +77,71 @@ const StudentDetails = () => {
   const [isEditingFeedback, setIsEditingFeedback] = useState(false);
   const [includeProgressReport, setIncludeProgressReport] = useState(true);
 
+  const isParentConnected = () => {
+    return (
+      (parentProfile && (parentProfile.name || parentProfile.email)) ||
+      (typeof student.parent === 'string' && student.parent) ||
+      (student.parent && student.parent.name) ||
+      (student.parentId)
+    );
+  };
+
   // Main data fetching effect
   useEffect(() => {
     if (!studentId) {
       setLoading(false);
       return;
     }
-    
+
     const fetchAllStudentData = async () => {
       try {
         setLoading(true);
         console.log("Fetching data for student ID:", studentId);
-
+  
         // 1) Fetch student details
-        const studentData = await StudentApiService.getStudentDetails(studentId);
+        const studentData = await StudentDetailsService.getStudentDetails(studentId);
+  
+        // Normalize reading level to new categories
+        if (studentData) {
+          studentData.readingLevel = StudentDetailsService.convertLegacyReadingLevel(studentData.readingLevel);
+        }
+
         setStudent(studentData);
         console.log("Student data loaded:", studentData);
 
-        // 2) Fetch parent profile if parentId exists
-        if (studentData.parentId) {
-          try {
-            console.log("Fetching parent profile for ID:", studentData.parentId);
-            const parentData = await StudentApiService.getParentProfileWithFallback(studentData.parentId);
-            setParentProfile(parentData);
-            console.log("Parent profile loaded:", parentData);
-            
-            // Set up feedback message with parent name
-            setFeedbackMessage({
-              subject: `Progress Report for ${studentData.name}`,
-              content: `Dear ${parentData?.name || 'Parent'},\n\nI'm writing to update you on ${studentData.name}'s progress in our reading comprehension activities. ${studentData.name} is working diligently to improve their reading skills, particularly in ${studentData.readingLevel === 'Not Assessed' ? 'developing their foundational reading skills' : 'developing skills at the ' + studentData.readingLevel + ' level'}.\n\nPlease find the attached progress report for detailed information about their development. If you have any questions or concerns, please don't hesitate to reach out.\n\nSincerely,\nTeacher Claire`
-            });
-          } catch (e) {
-            console.warn('Could not load parent profile:', e);
-            
-            // Set feedback with fallback parent name
-            setFeedbackMessage({
-              subject: `Progress Report for ${studentData.name}`,
-              content: `Dear Parent,\n\nI'm writing to update you on ${studentData.name}'s progress in our reading comprehension activities. ${studentData.name} is working diligently to improve their reading skills, particularly in ${studentData.readingLevel === 'Not Assessed' ? 'developing their foundational reading skills' : 'developing skills at the ' + studentData.readingLevel + ' level'}.\n\nPlease find the attached progress report for detailed information about their development. If you have any questions or concerns, please don't hesitate to reach out.\n\nSincerely,\nTeacher Claire`
-            });
-          }
+         // 2) Fetch parent profile if parentId exists
+      if (studentData && studentData.parentId) {
+        try {
+          console.log("Fetching parent profile for ID:", studentData.parentId);
+          // Pass the student data as second parameter for fallback
+          const parentData = await StudentDetailsService.getParentProfileWithFallback(
+            studentData.parentId, 
+            studentData
+          );
+          setParentProfile(parentData);
+          console.log("Parent profile loaded:", parentData);
+
+          // Set up feedback message with parent name
+          setFeedbackMessage({
+            subject: `Progress Report for ${studentData.name}`,
+            content: `Dear ${parentData?.name || 'Parent'},\n\nI'm writing to update you on ${studentData.name}'s progress in our reading comprehension activities...`
+          });
+        } catch (e) {
+          console.warn('Could not load parent profile:', e);
+          // Set feedback with fallback parent name
+          setFeedbackMessage({
+            subject: `Progress Report for ${studentData.name}`,
+            content: `Dear Parent,\n\nI'm writing to update you on ${studentData.name}'s progress...`
+          });
         }
+      }
 
         // 3) Fetch other data (assessment, progress, etc.)
         const [assessmentData, progressData, lessonsData, recs] = await Promise.all([
-          StudentApiService.getAssessmentResults(studentId),
-          StudentApiService.getProgressData(studentId),
-          StudentApiService.getRecommendedLessons(studentId),
-          StudentApiService.getPrescriptiveRecommendations(studentId)
+          StudentDetailsService.getAssessmentResults(studentId),
+          StudentDetailsService.getProgressData(studentId),
+          StudentDetailsService.getRecommendedLessons(studentId),
+          StudentDetailsService.getPrescriptiveRecommendations(studentId)
         ]);
 
         setAssessment(assessmentData);
@@ -164,6 +182,8 @@ const StudentDetails = () => {
       }
     };
 
+
+
     fetchAllStudentData();
   }, [studentId]);
 
@@ -173,58 +193,43 @@ const StudentDetails = () => {
     setParentImageError(false);
   };
 
+
+
+
   const handleParentImageError = (e) => {
     console.error("Error loading parent image:", e.target.src);
     console.warn("Failed image URL:", e.target.src);
     setParentImageError(true);
     setParentImageLoaded(false);
-    
+  
     // Add browser console debugging info
     console.info("Try accessing the image directly in your browser:", e.target.src);
     console.info("Check the Network tab in DevTools for more details on the failure");
   };
   
-  
-  // Retry loading the parent image
+  // Update the retryLoadImage function:
   const retryLoadImage = () => {
     if (retryCount < MAX_RETRIES) {
       console.log(`Retrying image load (${retryCount + 1}/${MAX_RETRIES})`);
       console.log("Original URL:", parentProfile.profileImageUrl);
-      
+  
       setParentImageError(false);
       setParentImageLoaded(false);
       setRetryCount(prev => prev + 1);
-      
+  
       // Force reload with cache-busting parameter
       const cacheBuster = `cb=${Date.now()}`;
-      const newUrl = parentProfile.profileImageUrl.includes('?') 
-        ? `${parentProfile.profileImageUrl}&${cacheBuster}` 
+      const newUrl = parentProfile.profileImageUrl.includes('?')
+        ? `${parentProfile.profileImageUrl}&${cacheBuster}`
         : `${parentProfile.profileImageUrl}?${cacheBuster}`;
-      
+  
       console.log("Retrying with URL:", newUrl);
-      
+  
       // Update the image src
       const imgElement = document.querySelector('.sdx-parent-avatar img');
       if (imgElement) {
         imgElement.src = newUrl;
       }
-    }
-  };
-
-  const getFormattedImageUrl = (url) => {
-    if (!url) return null;
-    
-    try {
-      // If this is already a proxy URL, just return it
-      if (url.startsWith('/api/proxy-image')) {
-        return url;
-      }
-      
-      // Otherwise, this is an S3 URL, so return it directly
-      return url;
-    } catch (error) {
-      console.error("Error formatting image URL:", error);
-      return url; // Return original URL if formatting fails
     }
   };
 
@@ -274,28 +279,24 @@ const StudentDetails = () => {
   // Helper functions
   const getReadingLevelClass = (level) => {
     const classMap = {
-      'Fluent': 'reading-level-fluent',
-      'Early': 'reading-level-early', 
+      'Low Emerging': 'reading-level-early',
+      'High Emerging': 'reading-level-early',
       'Developing': 'reading-level-developing',
-      'Antas 2': 'reading-level-developing',
-      'Antas 3': 'reading-level-developing',
-      'Advanced': 'reading-level-advanced',
-      'Antas 4': 'reading-level-advanced',
-      'Antas 5': 'reading-level-advanced'
+      'Transitioning': 'reading-level-developing',
+      'At Grade Level': 'reading-level-fluent',
+      'Advanced': 'reading-level-advanced'
     };
     return classMap[level] || 'reading-level-not-assessed';
   };
 
   const getReadingLevelDescription = (level) => {
     const descriptions = {
-      'Early': 'Low Emerging - Learning letter sounds and basic word recognition',
-      'Developing': 'Developing - Building phonemic awareness and basic vocabulary',
-      'Antas 2': 'Developing - Building phonemic awareness and basic vocabulary',
-      'Antas 3': 'Developing - Building phonemic awareness and basic vocabulary',
-      'Fluent': 'Fluent - Can read and comprehend grade-level text',
-      'Advanced': 'Advanced - Reading above grade level with strong comprehension',
-      'Antas 4': 'Advanced - Reading above grade level with strong comprehension',
-      'Antas 5': 'Advanced - Reading above grade level with strong comprehension'
+      'Low Emerging': 'Beginning to recognize letters and sounds',
+      'High Emerging': 'Developing letter-sound connections',
+      'Developing': 'Building phonemic awareness and basic vocabulary',
+      'Transitioning': 'Building reading comprehension skills',
+      'At Grade Level': 'Can read and comprehend grade-level text',
+      'Advanced': 'Reading above grade level with strong comprehension'
     };
     return descriptions[level] || 'Not yet assessed - Needs initial assessment';
   };
@@ -340,37 +341,45 @@ const StudentDetails = () => {
     }
     return 'Parent';
   };
-// Complete replacement of the renderParentImage function
+
+  // In StudentDetails.jsx, update the renderParentImage function:
+// In StudentDetails.jsx, update the renderParentImage function:
+
 const renderParentImage = () => {
   if (parentProfile && parentProfile.profileImageUrl) {
     return (
-      <img
-        src={parentProfile.profileImageUrl}
-        alt={getParentName()}
-        className="sdx-parent-avatar-img"
-        onLoad={handleParentImageLoad}
-        onError={handleParentImageError}
-      />
+      <div className="sdx-parent-avatar">
+        <img
+          src={parentProfile.profileImageUrl}
+          alt={getParentName()}
+          className="sdx-parent-avatar-img"
+          onLoad={handleParentImageLoad}
+          onError={handleParentImageError}
+        />
+        {parentImageError && retryCount < MAX_RETRIES && (
+          <div className="sdx-image-retry" onClick={retryLoadImage}>
+            <FaSync size={14} /> Retry
+          </div>
+        )}
+      </div>
     );
   }
-    const initial = parentProfile && parentProfile.name ? 
-    parentProfile.name.charAt(0) : 
-    typeof student.parent === 'string' ? 
-      student.parent.charAt(0) : 
-      student.parent && student.parent.name ? 
-        student.parent.name.charAt(0) : 'P';
-        
+
+  const initial = parentProfile && parentProfile.name ?
+    parentProfile.name.charAt(0).toUpperCase() :
+    typeof student.parent === 'string' ?
+      student.parent.charAt(0).toUpperCase() :
+      student.parent && student.parent.name ?
+        student.parent.name.charAt(0).toUpperCase() : 'P';
+
   return (
     <div className="sdx-parent-avatar-placeholder">
       {initial}
-      {parentImageError && retryCount < MAX_RETRIES && (
-        <div className="sdx-image-retry" onClick={retryLoadImage}>
-          <FaSync size={14} /> Retry
-        </div>
-      )}
     </div>
   );
-}; 
+};
+
+  
 
   // Render loading state
   if (loading) {
@@ -426,6 +435,11 @@ const renderParentImage = () => {
                 src={student.profileImageUrl}
                 alt={student.name}
                 className="sdx-avatar-img"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.style.display = "none";
+                  e.target.parentElement.innerText = student.name.split(' ').map(n => n[0]).join('').toUpperCase();
+                }}
               />
             ) : (
               student.name.split(' ').map(n => n[0]).join('').toUpperCase()
@@ -434,12 +448,10 @@ const renderParentImage = () => {
           <div className="sdx-profile-info">
             <h2 className="sdx-student-name">{student.name}</h2>
             <div className="sdx-student-id">
-              <FaIdCard /> ID: {student.id}
+              <FaIdCard /> ID: {student.idNumber || student.id || student._id}
             </div>
           </div>
         </div>
-
-        
 
         <div className="sdx-profile-details">
           <div className="sdx-details-column">
@@ -507,106 +519,112 @@ const renderParentImage = () => {
           </div>
         </div>
       </div>
-      
-      {/* Parent Information */}
-      <div className="sdx-parent-card">
-        <h3 className="sdx-section-title">
-          <FaUser /> Parent Information
-        </h3>
-        <div className="sdx-parent-details">
-          <div className="sdx-parent-avatar">
-            {renderParentImage()}
-          </div>
-          <div className="sdx-parent-info">
-            <h4 className="sdx-parent-name">{getParentName()}</h4>
-            <div className="sdx-parent-contact">
-              <div className="sdx-contact-item">
-                <FaEnvelope className="sdx-contact-icon" />
-                <span>
-                  {parentProfile && parentProfile.email ? 
-                    parentProfile.email : 
-                    typeof student.parentEmail === 'string' ? 
-                      student.parentEmail : 
-                      student.parent && student.parent.email ? 
-                        student.parent.email : 'Not available'}
-                </span>
-              </div>
-              <div className="sdx-contact-item">
-                <FaPhone className="sdx-contact-icon" />
-                <span>
-                  {parentProfile && parentProfile.contact ? 
-                    parentProfile.contact : 
-                    typeof student.parentContact === 'string' ? 
-                      student.parentContact : 
-                      student.parent && student.parent.contact ? 
-                        student.parent.contact : 'Not available'}
-                </span>
-              </div>
-            </div>
-          </div>
 
-          
-          {/* Additional parent details in grid format */}
-          <div className="sdx-parent-details-grid">
-            <div className="sdx-contact-item">
-              <FaAddressCard className="sdx-contact-icon" />
-              <div className="sdx-detail-content">
-                <span className="sdx-detail-label">Address</span>
-                <span className="sdx-detail-value">
-                  {parentProfile && parentProfile.address ? 
-                    parentProfile.address : 
-                    typeof student.parentAddress === 'string' ? 
-                      student.parentAddress : 
-                      student.parent && student.parent.address ? 
-                        student.parent.address : 'Not provided'}
-                </span>
-              </div>
-            </div>
-            <div className="sdx-contact-item">
-              <FaRing className="sdx-contact-icon" />
-              <div className="sdx-detail-content">
-                <span className="sdx-detail-label">Civil Status</span>
-                <span className="sdx-detail-value">
-                  {parentProfile && parentProfile.civilStatus ? 
-                    parentProfile.civilStatus : 
-                    typeof student.parentCivilStatus === 'string' ? 
-                      student.parentCivilStatus : 
-                      student.parent && student.parent.civilStatus ? 
-                        student.parent.civilStatus : 'Not provided'}
-                </span>
-              </div>
-            </div>
-            <div className="sdx-contact-item">
-              <FaVenusMars className="sdx-contact-icon" />
-              <div className="sdx-detail-content">
-                <span className="sdx-detail-label">Gender</span>
-                <span className="sdx-detail-value">
-                  {parentProfile && parentProfile.gender ? 
-                    parentProfile.gender : 
-                    typeof student.parentGender === 'string' ? 
-                      student.parentGender : 
-                      student.parent && student.parent.gender ? 
-                        student.parent.gender : 'Not provided'}
-                </span>
-              </div>
-            </div>
-            <div className="sdx-contact-item">
-              <FaBuilding className="sdx-contact-icon" />
-              <div className="sdx-detail-content">
-                <span className="sdx-detail-label">Occupation</span>
-                <span className="sdx-detail-value">
-                  {parentProfile && parentProfile.occupation ? 
-                    parentProfile.occupation : 
-                    typeof student.parentOccupation === 'string' ? 
-                      student.parentOccupation : 
-                      student.parent && student.parent.occupation ? 
-                        student.parent.occupation : 'Not provided'}
-                </span>
-              </div>
-            </div>
+   {/* Parent Information */}
+<div className="sdx-parent-card">
+  <h3 className="sdx-section-title">
+    <FaUser /> Parent Information
+  </h3>
+  <div className="sdx-parent-details">
+    <div className="sdx-parent-avatar">
+      {renderParentImage()}
+    </div>
+    <div className="sdx-parent-info">
+      <h4 className="sdx-parent-name">
+        {isParentConnected() ? getParentName() : 'Not connected'}
+      </h4>
+      {isParentConnected() ? (
+        <div className="sdx-parent-contact">
+          <div className="sdx-contact-item">
+            <FaEnvelope className="sdx-contact-icon" />
+            <span>
+              {parentProfile && parentProfile.email ? 
+                parentProfile.email : 
+                typeof student.parentEmail === 'string' ? 
+                  student.parentEmail : 
+                  student.parent && student.parent.email ? 
+                    student.parent.email : 'Not available'}
+            </span>
+          </div>
+          <div className="sdx-contact-item">
+            <FaPhone className="sdx-contact-icon" />
+            <span>
+              {parentProfile && parentProfile.contact ? 
+                parentProfile.contact : 
+                typeof student.parentContact === 'string' ? 
+                  student.parentContact : 
+                  student.parent && student.parent.contact ? 
+                    student.parent.contact : 'Not available'}
+            </span>
           </div>
         </div>
+      ) : (
+        <div className="sdx-parent-contact">
+          <div className="sdx-contact-item">
+            <FaEnvelope className="sdx-contact-icon" />
+            <span>Not available</span>
+          </div>
+          <div className="sdx-contact-item">
+            <FaPhone className="sdx-contact-icon" />
+            <span>Not available</span>
+          </div>
+        </div>
+      )}
+    </div>
+
+    {/* Additional parent details in grid format */}
+    <div className="sdx-parent-details-grid">
+      <div className="sdx-contact-item">
+        <FaAddressCard className="sdx-contact-icon" />
+        <div className="sdx-detail-content">
+          <span className="sdx-detail-label">Address</span>
+          <span className="sdx-detail-value">
+            {parentProfile && parentProfile.address ? 
+              parentProfile.address : 
+              student.parent && typeof student.parent === 'object' && student.parent.address ? 
+                student.parent.address : 'Not provided'}
+          </span>
+        </div>
       </div>
+      <div className="sdx-contact-item">
+        <FaRing className="sdx-contact-icon" />
+        <div className="sdx-detail-content">
+          <span className="sdx-detail-label">Civil Status</span>
+          <span className="sdx-detail-value">
+            {parentProfile && parentProfile.civilStatus ? 
+              parentProfile.civilStatus : 
+              student.parent && typeof student.parent === 'object' && student.parent.civilStatus ? 
+                student.parent.civilStatus : 'Not provided'}
+          </span>
+        </div>
+      </div>
+      <div className="sdx-contact-item">
+        <FaVenusMars className="sdx-contact-icon" />
+        <div className="sdx-detail-content">
+          <span className="sdx-detail-label">Gender</span>
+          <span className="sdx-detail-value">
+            {parentProfile && parentProfile.gender ? 
+              parentProfile.gender : 
+              student.parent && typeof student.parent === 'object' && student.parent.gender ? 
+                student.parent.gender : 'Not provided'}
+          </span>
+        </div>
+      </div>
+      <div className="sdx-contact-item">
+        <FaBuilding className="sdx-contact-icon" />
+        <div className="sdx-detail-content">
+          <span className="sdx-detail-label">Occupation</span>
+          <span className="sdx-detail-value">
+            {parentProfile && parentProfile.occupation ? 
+              parentProfile.occupation : 
+              student.parent && typeof student.parent === 'object' && student.parent.occupation ? 
+                student.parent.occupation : 'Not provided'}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
       {/* Learning Activities and Progress Section */}
       <div className="sdx-activities-card">
@@ -614,7 +632,7 @@ const renderParentImage = () => {
           <FaBookReader /> Learning Activities and Progress
         </h3>
 
-        {activities.length > 0 ? (
+        {activities && activities.length > 0 ? (
           <div className="sdx-activities-table">
             <div className="sdx-table-header">
               <div className="sdx-header-cell sdx-activity-name">Lesson</div>
@@ -817,7 +835,7 @@ const renderParentImage = () => {
                         <strong>Reading Level:</strong> {student.readingLevel || 'Not Assessed'}
                       </div>
                       <div className="sdx-report-info-item">
-                        <strong>Last Assessment:</strong> {student.lastAssessment || 'Not available'}
+                        <strong>Last Assessment:</strong> {student.lastAssessment || student.lastAssessmentDate ? new Date(student.lastAssessment || student.lastAssessmentDate).toLocaleDateString() : 'Not available'}
                       </div>
                     </div>
                   </div>
@@ -842,7 +860,7 @@ const renderParentImage = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {activities.length > 0 ? (
+                        {activities && activities.length > 0 ? (
                           activities.map((activity, index) => (
                             <tr key={index} className="sdx-report-tr">
                               <td className="sdx-report-td sdx-report-td-aralin">{activity.name}</td>
