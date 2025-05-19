@@ -1,4 +1,3 @@
-// server.js - Targeting the correct database and collection
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
@@ -7,48 +6,7 @@ const jwt = require('jsonwebtoken');
 const s3Client = require('./config/s3');
 const app = express();
 
-
-
-// Enhanced logging middleware to debug route issues
-const requestLogger = (req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-};
-
-// Apply middlewares
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // allow your frontend origin
-  credentials: true // allow cookies and credentials
-}));
-app.use(express.json());
-app.use(requestLogger);
-
-// Define database connection
-const connectDB = async () => {
-  try {
-    // Explicitly set the database name to 'users_web' - this is the correct DB name
-    await mongoose.connect(process.env.MONGO_URI, {
-      dbName: 'users_web', // This is the correct database name based on your screenshots
-      connectTimeoutMS: 30000,
-      socketTimeoutMS: 45000,
-      serverSelectionTimeoutMS: 60000
-    });
-
-    console.log('✅ MongoDB Connected to users_web database');
-
-    // List all collections for debugging
-    const collections = await mongoose.connection.db.listCollections().toArray();
-    console.log('Available collections in users_web:');
-    collections.forEach(c => console.log(`- ${c.name}`));
-
-    return true;
-  } catch (err) {
-    console.error('❌ MongoDB connection failed:', err.message);
-    throw err;
-  }
-};
-
-// Define user schema for authentication - matching your actual structure
+// Define userSchema at the module level so it's available throughout the file
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
@@ -73,6 +31,54 @@ const userSchema = new mongoose.Schema({
   timestamps: true,
   collection: 'users' 
 });
+
+const requestLogger = (req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+};
+
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173', 
+  credentials: true 
+}));
+app.use(express.json());
+app.use(requestLogger);
+
+
+const connectDB = async () => {
+  try {
+    // FIRST connect to the database
+    await mongoose.connect(process.env.MONGO_URI, {
+      dbName: 'test',
+      connectTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+      serverSelectionTimeoutMS: 60000
+    });
+
+    console.log('✅ MongoDB Connected to test database');
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    console.log('Available collections in test:');
+    collections.forEach(c => console.log(`- ${c.name}`));
+    
+    // NOW initialize the ManageProgress module
+    const progressController = require('./controllers/Teachers/ManageProgress/progressController');
+    await progressController.initializeCollections();
+    
+    try {
+      const manageProgressRoutes = require('./routes/Teachers/ManageProgress/progressRoutes');
+      app.use('/api/progress', manageProgressRoutes);
+      console.log('✅ Loaded manage progress routes');
+    } catch (error) {
+      console.warn('⚠️ Could not load manage progress routes:', error.message);
+    }
+
+    return true;
+  } catch (err) {
+    console.error('❌ MongoDB connection failed:', err.message);
+    throw err;
+  }
+};
+
 
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
@@ -160,60 +166,41 @@ connectDB().then(() => {
     res.json({ message: 'API is working!' });
   });
 
-
-
   console.log('Registering routes for /api/auth');
-try {
-  app.use('/api/auth', require('./routes/auth/authRoutes'));
-  console.log('✅ Loaded auth routes');
-} catch (error) {
-  console.warn('⚠️ Could not load auth routes:', error.message);
-}
+  try {
+    app.use('/api/auth', require('./routes/auth/authRoutes'));
+    console.log('✅ Loaded auth routes');
+  } catch (error) {
+    console.warn('⚠️ Could not load auth routes:', error.message);
+  }
 
-try {
-  app.use('/api/dashboard', require('./routes/Teachers/dashboardRoutes'));
-  console.log('✅ Loaded dashboard routes');
-} catch (error) {
-  console.warn('⚠️ Could not load dashboard routes:', error.message);
-}
+  try {
+    app.use('/api/dashboard', require('./routes/Teachers/dashboardRoutes'));
+    console.log('✅ Loaded dashboard routes');
+  } catch (error) {
+    console.warn('⚠️ Could not load dashboard routes:', error.message);
+  }
 
-// Register dashboard routes
-try {
-  app.use('/api/dashboard', require('./routes/Teachers/dashboardRoutes'));
-  console.log('✅ Loaded dashboard routes');
-} catch (error) {
-  console.warn('⚠️ Could not load dashboard routes:', error.message);
-}
+  // Add to your existing error handling middleware at the end of server.js
+  app.use((err, req, res, next) => {
+    console.error(`[ERROR] ${err.message}`);
+    res.status(500).json({ error: 'Server error', message: err.message });
+  });
 
-// Route to handle activity updates
-try {
-  // This will register the PUT /api/student/update-activity/:id endpoint
-  app.use('/api/student', require('./routes/Teachers/dashboardRoutes'));
-  console.log('✅ Loaded student activity routes');
-} catch (error) {
-  console.warn('⚠️ Could not load student activity routes:', error.message);
-}
+  try {
+    app.use('/api/parents', require('./routes/Parents/parentProfile'));
+    console.log('✅ Loaded parents routes');
+  } catch (error) {
+    console.warn('⚠️ Could not load parents routes:', error.message);
+  }
 
-// Add to your existing error handling middleware at the end of server.js
-app.use((err, req, res, next) => {
-  console.error(`[ERROR] ${err.message}`);
-  res.status(500).json({ error: 'Server error', message: err.message });
-});
-
-try {
-  app.use('/api/parents', require('./routes/Parents/parentProfile'));
-  console.log('✅ Loaded parents routes');
-} catch (error) {
-  console.warn('⚠️ Could not load parents routes:', error.message);
-}
-
-// Register roles routes right after auth routes
-try {
-  app.use('/api/roles', require('./routes/rolesRoutes'));
-  console.log('✅ Loaded roles routes');
-} catch (error) {
-  console.warn('⚠️ Could not load roles routes:', error.message);
-}
+  // Register roles routes right after auth routes
+  try {
+    app.use('/api/roles', require('./routes/rolesRoutes'));
+    console.log('✅ Loaded roles routes');
+  } catch (error) {
+    console.warn('⚠️ Could not load roles routes:', error.message);
+  }
 
   // Login route - adapted to work with string roles
   app.post('/api/auth/login', async (req, res) => {
@@ -340,8 +327,6 @@ try {
     console.warn('⚠️ Could not load student routes:', error.message);
   }
 
-
-
   // Try to load chatbot routes
   try {
     app.use('/api/chatbot', require('./routes/Teachers/chatbot'));
@@ -349,34 +334,22 @@ try {
   } catch (error) {
     console.warn('⚠️ Could not load chatbot routes:', error.message);
   }
-
-  try {
-    app.use('/api/dashboard', require('./routes/Teachers/dashboardRoutes'));
-    console.log('✅ Loaded dashboard routes');
-  } catch (error) {
-    console.warn('⚠️ Could not load dashboard routes:', error.message);
-  }
   
   // Route to handle activity updates
   try {
-    // This will register the PUT /api/student/update-activity/:id endpoint
     app.use('/api/student', require('./routes/Teachers/dashboardRoutes'));
     console.log('✅ Loaded student activity routes');
   } catch (error) {
     console.warn('⚠️ Could not load student activity routes:', error.message);
   }
   
-  // Add to your existing error handling middleware at the end of server.js
   app.use((err, req, res, next) => {
     console.error(`[ERROR] ${err.message}`);
     res.status(500).json({ error: 'Server error', message: err.message });
   });
 
- 
-  // Simple home route
   app.get('/', (_req, res) => res.send('API is running…'));
 
-  // Handle 404 errors
   app.use((req, res) => {
     console.log(`[404] Route not found: ${req.method} ${req.url}`);
     res.status(404).json({ error: 'Route not found' });
@@ -388,42 +361,41 @@ try {
     res.status(500).json({ error: 'Server error', message: err.message });
   });
 
-
-// Add S3 image proxy endpoint
-app.get('/api/proxy-image', async (req, res) => {
-  try {
-    const { url } = req.query;
-    
-    if (!url) {
-      return res.status(400).send('Missing URL parameter');
+  // Add S3 image proxy endpoint
+  app.get('/api/proxy-image', async (req, res) => {
+    try {
+      const { url } = req.query;
+      
+      if (!url) {
+        return res.status(400).send('Missing URL parameter');
+      }
+      
+      // Only allow proxying from your S3 bucket for security
+      if (!url.includes('literexia-bucket.s3.ap-southeast-2.amazonaws.com')) {
+        return res.status(403).send('Unauthorized image source');
+      }
+      
+      // Fetch the image
+      const response = await axios({
+        method: 'get',
+        url: url,
+        responseType: 'arraybuffer'
+      });
+      
+      // Set proper content type
+      const contentType = response.headers['content-type'];
+      res.setHeader('Content-Type', contentType);
+      
+      // Add cache headers
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+      
+      // Return the image data
+      res.send(response.data);
+    } catch (error) {
+      console.error('Error proxying image:', error);
+      res.status(404).send('Image not found');
     }
-    
-    // Only allow proxying from your S3 bucket for security
-    if (!url.includes('literexia-bucket.s3.ap-southeast-2.amazonaws.com')) {
-      return res.status(403).send('Unauthorized image source');
-    }
-    
-    // Fetch the image
-    const response = await axios({
-      method: 'get',
-      url: url,
-      responseType: 'arraybuffer'
-    });
-    
-    // Set proper content type
-    const contentType = response.headers['content-type'];
-    res.setHeader('Content-Type', contentType);
-    
-    // Add cache headers
-    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
-    
-    // Return the image data
-    res.send(response.data);
-  } catch (error) {
-    console.error('Error proxying image:', error);
-    res.status(404).send('Image not found');
-  }
-});
+  });
 
   // Start server on the specified port
   const PORT = process.env.PORT || 5002;
