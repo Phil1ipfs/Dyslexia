@@ -136,13 +136,13 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
             <img src={viewStudentIcon} alt="View Student" /><span>Student Details</span>
           </li>
           <li className={active === "manage-activities" ? "active" : ""} onClick={() => handleClick("manage-activities", "/teacher/manage-activities")}>
-            <img src={manageActivityIcon} alt="Manage Activities" /><span>Manage Activities</span>
+            <img src={manageActivityIcon} alt="Manage Categories" /><span>Manage Categories</span>
           </li>
           <li className={active === "manage-progress" ? "active" : ""} onClick={() => handleClick("manage-progress", "/teacher/manage-progress")}>
             <img src={manageProgressIcon} alt="Manage Progress" /><span>Manage Progress</span>
           </li>
           <li className={active === "chatbot" ? "active" : ""} onClick={() => handleClick("chatbot", "/teacher/chatbot")}>
-            <img src={chatbotIcon} alt="Chatbot Assistant" /><span>Chatbot Assistant</span>
+            <img src={chatbotIcon} alt="Chatbot Assistant" /><span>Chatbot</span>
           </li>
           <li className={active === "profile" ? "active" : ""} onClick={() => handleClick("profile", "/teacher/profile")}>
             <img src={teacherProfileIcon} alt="Teacher Profile" /><span>Teacher Profile</span>
