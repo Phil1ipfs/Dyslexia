@@ -1414,3 +1414,29 @@
 .recharts-default-tooltip .recharts-tooltip-item {
   color: #6b7280 !important;
 }
+
+.admin-dashboard-card__view-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  margin-top: 12px;
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-dashboard-card__view-btn:hover {
+  background-color: #eeeeee;
+  border-color: #cccccc;
+  color: #333;
+}
+
+.admin-dashboard-card__view-btn:active {
+  transform: translateY(1px);
+}

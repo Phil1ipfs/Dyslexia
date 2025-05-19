@@ -307,9 +307,9 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="visual-charts" element={<VisualChartsPage />} />
           <Route path="submissions-overview" element={<SubmissionsOverview />} />
-          <Route path="user-lists/student-list" element={<StudentListPage />} />
-          <Route path="user-lists/teacher-list" element={<TeacherListPage />} />
-          <Route path="user-lists/parent-list" element={<ParentListPage />} />
+          <Route path="student-list" element={<StudentListPage />} />
+          <Route path="teacher-list" element={<TeacherListPage />} />
+          <Route path="parent-list" element={<ParentListPage />} />
           <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 

@@ -1,6 +1,7 @@
 // src/pages/StudentList/StudentListPage.jsx
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, Edit, Trash2, Eye, BookOpen, Book, Clock, MoreHorizontal } from 'lucide-react';
+import { Search, Filter, Plus, Edit, Trash2, Eye, BookOpen, Book, Clock, MoreHorizontal, User } from 'lucide-react';
+import axios from 'axios';
 import './StudentListPage.css';
 
 const StudentListPage = () => {
@@ -16,181 +17,45 @@ const StudentListPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedGrade, setSelectedGrade] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
   
-  // Sample data for demonstration
-  const sampleStudents = [
-    {
-      id: 'ST001',
-      name: 'Christine Brooks',
-      grade: '5',
-      age: '10',
-      joinDate: '2023-09-01',
-      parent: 'Christine Brooks',
-      parentEmail: 'christianbrooks@gmail.com',
-      progress: '75%',
-      status: 'active',
-      lastActivity: '2025-05-03',
-      booksRead: 12,
-      assignmentsCompleted: 25,
-      averageScore: 85
-    },
-    {
-      id: 'ST002',
-      name: 'Rosie Pearson',
-      grade: '4',
-      age: '9',
-      joinDate: '2023-09-15',
-      parent: 'Alan Cain',
-      parentEmail: 'christianbrooks@gmail.com',
-      progress: '68%',
-      status: 'active',
-      lastActivity: '2025-05-04',
-      booksRead: 9,
-      assignmentsCompleted: 20,
-      averageScore: 78
-    },
-    {
-      id: 'ST003',
-      name: 'Darrell Caldwell',
-      grade: '6',
-      age: '11',
-      joinDate: '2023-08-30',
-      parent: 'Alan Cain',
-      parentEmail: 'christianbrooks@gmail.com',
-      progress: '82%',
-      status: 'active',
-      lastActivity: '2025-05-02',
-      booksRead: 15,
-      assignmentsCompleted: 30,
-      averageScore: 92
-    },
-    {
-      id: 'ST004',
-      name: 'Gilbert Johnston',
-      grade: '5',
-      age: '10',
-      joinDate: '2023-09-05',
-      parent: 'Alan Cain',
-      parentEmail: 'christianbrooks@gmail.com',
-      progress: '63%',
-      status: 'inactive',
-      lastActivity: '2025-04-25',
-      booksRead: 7,
-      assignmentsCompleted: 18,
-      averageScore: 75
-    },
-    {
-      id: 'ST005',
-      name: 'Alan Cain',
-      grade: '3',
-      age: '8',
-      joinDate: '2023-10-10',
-      parent: 'Alan Cain',
-      parentEmail: 'christianbrooks@gmail.com',
-      progress: '55%',
-      status: 'active',
-      lastActivity: '2025-05-05',
-      booksRead: 6,
-      assignmentsCompleted: 15,
-      averageScore: 70
-    },
-    {
-      id: 'ST006',
-      name: 'Alfred Murray',
-      grade: '4',
-      age: '9',
-      joinDate: '2023-09-20',
-      parent: 'Alan Cain',
-      parentEmail: 'christianbrooks@gmail.com',
-      progress: '70%',
-      status: 'active',
-      lastActivity: '2025-05-01',
-      booksRead: 10,
-      assignmentsCompleted: 22,
-      averageScore: 81
-    },
-    {
-      id: 'ST007',
-      name: 'Olivia Chen',
-      grade: '6',
-      age: '11',
-      joinDate: '2023-08-25',
-      parent: 'Wei Chen',
-      parentEmail: 'weichen@gmail.com',
-      progress: '90%',
-      status: 'active',
-      lastActivity: '2025-05-05',
-      booksRead: 18,
-      assignmentsCompleted: 32,
-      averageScore: 95
-    },
-    {
-      id: 'ST008',
-      name: 'Marcus Johnson',
-      grade: '5',
-      age: '10',
-      joinDate: '2023-09-12',
-      parent: 'Denise Johnson',
-      parentEmail: 'djohnson@gmail.com',
-      progress: '72%',
-      status: 'active',
-      lastActivity: '2025-05-04',
-      booksRead: 11,
-      assignmentsCompleted: 24,
-      averageScore: 83
-    }
-  ];
-
-  // Load students data
+  // Fetch students from database
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setStudents(sampleStudents);
-      setFilteredStudents(sampleStudents);
-      setLoading(false);
-    }, 800);
+    const fetchStudents = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get('http://localhost:5002/api/admin/manage/students');
+        if (response.data.success) {
+          setStudents(response.data.data);
+          setFilteredStudents(response.data.data);
+        } else {
+          console.error("Error fetching students:", response.data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching students data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudents();
   }, []);
 
   // Filter and search functionality
   useEffect(() => {
-    let result = [...students];
-    
-    // Apply search term
-    if (searchTerm) {
-      result = result.filter(student => 
-        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.parent.toLowerCase().includes(searchTerm.toLowerCase())
+    if (searchTerm === '') {
+      setFilteredStudents(students);
+    } else {
+      const filtered = students.filter(student => 
+        `${student.firstName} ${student.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.idNumber?.toString().includes(searchTerm.toLowerCase()) ||
+        student.section?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.gradeLevel?.toLowerCase().includes(searchTerm.toLowerCase())
       );
+      setFilteredStudents(filtered);
     }
-    
-    // Apply grade filter
-    if (selectedGrade !== 'all') {
-      result = result.filter(student => student.grade === selectedGrade);
-    }
-    
-    // Apply status filter
-    if (selectedStatus !== 'all') {
-      result = result.filter(student => student.status === selectedStatus);
-    }
-    
-    // Apply sorting
-    if (sortBy === 'name-asc') {
-      result.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortBy === 'name-desc') {
-      result.sort((a, b) => b.name.localeCompare(a.name));
-    } else if (sortBy === 'grade-asc') {
-      result.sort((a, b) => parseInt(a.grade) - parseInt(b.grade));
-    } else if (sortBy === 'grade-desc') {
-      result.sort((a, b) => parseInt(b.grade) - parseInt(a.grade));
-    } else if (sortBy === 'recent') {
-      result.sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity));
-    } else if (sortBy === 'progress') {
-      result.sort((a, b) => parseInt(b.progress) - parseInt(a.progress));
-    }
-    
-    setFilteredStudents(result);
-  }, [searchTerm, students, selectedGrade, selectedStatus, sortBy]);
+  }, [searchTerm, students]);
 
   // Pagination
   const indexOfLastStudent = currentPage * studentsPerPage;
@@ -211,10 +76,9 @@ const StudentListPage = () => {
   };
 
   // View student profile
-  const viewStudentProfile = (studentId) => {
-    console.log(`View student profile: ${studentId}`);
-    // Navigate to student profile page
-    // history.push(`/admin/student-profile/${studentId}`);
+  const handleViewProfile = (student) => {
+    setSelectedStudent(student);
+    setShowProfileModal(true);
   };
 
   // Edit student
@@ -245,40 +109,128 @@ const StudentListPage = () => {
     setShowFilters(!showFilters);
   };
 
-  return (
-    <div className="student-list-page">
-      <div className="page-header">
-        <h1>Student Lists</h1>
+  if (loading) {
+    return (
+      <div className="student-list-page">
+        {/* Header Section */}
+        <div className="page-header">
+          <div className="page-title-container">
+            <h1>Student Lists</h1>
+            <p className="page-subtitle">Add, View the List of Students and their Information</p>
+          </div>
+          <div className="page-image">
+            <div className="page-placeholder"></div>
+          </div>
+        </div>
+
         <div className="overview-stats">
           <div className="stat-card">
             <h3>Total Students</h3>
-            <p className="stat-number">{students.length}</p>
+            <p className="stat-number">-</p>
           </div>
           <div className="stat-card">
             <h3>Active Students</h3>
-            <p className="stat-number">{students.filter(s => s.status === 'active').length}</p>
+            <p className="stat-number">-</p>
           </div>
           <div className="stat-card">
             <h3>Average Performance</h3>
-            <p className="stat-number">
-              {students.length > 0 
-                ? `${Math.round(students.reduce((acc, student) => acc + parseInt(student.averageScore), 0) / students.length)}%` 
-                : '0%'}
-            </p>
+            <p className="stat-number">-</p>
           </div>
+        </div>
+
+        <div className="controls-container">
+          <div className="search-filter-container">
+            <div className="search-box">
+              <input
+                type="text"
+                placeholder="Search students..."
+                disabled
+              />
+              <Search size={18} />
+            </div>
+            <button className="filter-button" disabled>
+              <Filter size={18} />
+              <span>Filter</span>
+            </button>
+            <button className="add-student-button" disabled>
+              <Plus size={18} />
+              Add Student
+            </button>
+          </div>
+        </div>
+
+        <div className="students-table-container" style={{ opacity: 0.6 }}>
+          <table className="students-table">
+            <thead>
+              <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Grade</th>
+                <th>View Profile</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 2, 3].map((_, index) => (
+                <tr key={index}>
+                  <td><div className="skeleton-text"></div></td>
+                  <td><div className="skeleton-text"></div></td>
+                  <td><div className="skeleton-text"></div></td>
+                  <td><div className="skeleton-button"></div></td>
+                  <td><div className="skeleton-actions"></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="student-list-page">
+      {/* Header Section */}
+      <div className="page-header">
+        <div className="page-title-container">
+          <h1>Student Lists</h1>
+          <p className="page-subtitle">Add, View the List of Students and their Information</p>
+        </div>
+        <div className="page-image">
+          {/* This would be replaced with an actual image in production */}
+          <div className="page-placeholder"></div>
         </div>
       </div>
 
+      <div className="overview-stats">
+        <div className="stat-card">
+          <h3>Total Students</h3>
+          <p className="stat-number">{students.length}</p>
+        </div>
+        <div className="stat-card">
+          <h3>Active Students</h3>
+          <p className="stat-number">{students.filter(s => s.status === 'active').length}</p>
+        </div>
+        <div className="stat-card">
+          <h3>Average Performance</h3>
+          <p className="stat-number">
+            {students.length > 0 
+              ? `${Math.round(students.reduce((acc, student) => acc + parseInt(student.averageScore), 0) / students.length)}%` 
+              : '0%'}
+          </p>
+        </div>
+      </div>
+
+      {/* Controls Section */}
       <div className="controls-container">
         <div className="search-filter-container">
           <div className="search-box">
-            <Search size={18} />
             <input
               type="text"
               placeholder="Search students..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+            <Search size={18} />
           </div>
           <button className="filter-button" onClick={toggleFilters}>
             <Filter size={18} />
@@ -296,11 +248,11 @@ const StudentListPage = () => {
             <option value="recent">Recent Activity</option>
             <option value="progress">Progress</option>
           </select>
+          <button className="add-student-button" onClick={addNewStudent}>
+            <Plus size={18} />
+            <span>Add Student</span>
+          </button>
         </div>
-        <button className="add-student-button" onClick={addNewStudent}>
-          <Plus size={18} />
-          <span>Add Student</span>
-        </button>
       </div>
 
       {showFilters && (
@@ -342,146 +294,195 @@ const StudentListPage = () => {
         </div>
       )}
 
-      {loading ? (
-        <div className="loading-spinner">Loading...</div>
-      ) : (
-        <>
-          <div className="students-table-container">
-            <table className="students-table">
-              <thead>
-                <tr>
-                  <th>Student ID</th>
-                  <th>Name</th>
-                  <th>Grade</th>
-                  <th>Parent</th>
-                  <th>Progress</th>
-                  <th>Status</th>
-                  <th>Last Activity</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentStudents.length > 0 ? (
-                  currentStudents.map((student) => (
-                    <tr key={student.id}>
-                      <td>{student.id}</td>
-                      <td className="student-name">{student.name}</td>
-                      <td>Grade {student.grade}</td>
-                      <td>{student.parent}</td>
-                      <td>
-                        <div className="progress-bar-container">
-                          <div 
-                            className="progress-bar" 
-                            style={{ width: student.progress }}
-                          ></div>
-                          <span className="progress-text">{student.progress}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`status-badge ${getStatusColor(student.status)}`}>
-                          {student.status.charAt(0).toUpperCase() + student.status.slice(1)}
-                        </span>
-                      </td>
-                      <td>{new Date(student.lastActivity).toLocaleDateString()}</td>
-                      <td className="action-buttons">
-                        <button 
-                          className="view-button" 
-                          onClick={() => viewStudentProfile(student.id)}
-                          title="View Profile"
-                        >
-                          <Eye size={16} />
-                        </button>
-                        <button 
-                          className="edit-button" 
-                          onClick={() => editStudent(student.id)}
-                          title="Edit Student"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button 
-                          className="delete-button" 
-                          onClick={() => deleteStudent(student.id)}
-                          title="Delete Student"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="8" className="no-results">No students found</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {filteredStudents.length > studentsPerPage && (
-            <div className="pagination">
-              <button 
-                onClick={() => paginate(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="pagination-button"
-              >
-                Previous
-              </button>
-              <div className="page-numbers">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
-                  <button
-                    key={number}
-                    onClick={() => paginate(number)}
-                    className={`page-number ${currentPage === number ? 'active' : ''}`}
+      <div className="students-table-container">
+        <table className="students-table">
+          <thead>
+            <tr>
+              <th>ID Number</th>
+              <th>Student Name</th>
+              <th>Grade Level</th>
+              <th>Section</th>
+              <th>View Profile</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentStudents.map((student) => (
+              <tr key={student._id}>
+                <td>{student.idNumber}</td>
+                <td className="student-name">{`${student.firstName} ${student.lastName}`}</td>
+                <td>{student.gradeLevel}</td>
+                <td>{student.section}</td>
+                <td>
+                  <button 
+                    className="students-page-view-btn"
+                    onClick={() => handleViewProfile(student)}
                   >
-                    {number}
+                    View Profile
                   </button>
-                ))}
-              </div>
-              <button 
-                onClick={() => paginate(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="pagination-button"
-              >
-                Next
-              </button>
-            </div>
-          )}
+                </td>
+                <td>
+                  <div className="action-buttons">
+                    <button className="edit-button">
+                      <Edit size={16} />
+                    </button>
+                    <button className="delete-button">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-          <div className="student-insights">
-            <h2>Quick Insights</h2>
-            <div className="insights-cards">
-              <div className="insight-card">
-                <div className="insight-icon">
-                  <BookOpen size={24} />
-                </div>
-                <div className="insight-content">
-                  <h3>Reading Progress</h3>
-                  <p>Average books read: {Math.round(students.reduce((acc, student) => acc + student.booksRead, 0) / students.length)}</p>
-                </div>
-              </div>
-              
-              <div className="insight-card">
-                <div className="insight-icon">
-                  <Book size={24} />
-                </div>
-                <div className="insight-content">
-                  <h3>Assignment Completion</h3>
-                  <p>Average completed: {Math.round(students.reduce((acc, student) => acc + student.assignmentsCompleted, 0) / students.length)}</p>
-                </div>
-              </div>
-              
-              <div className="insight-card">
-                <div className="insight-icon">
-                  <Clock size={24} />
-                </div>
-                <div className="insight-content">
-                  <h3>Activity Status</h3>
-                  <p>{students.filter(s => s.status === 'active').length} active in the last 7 days</p>
-                </div>
-              </div>
+      {filteredStudents.length > studentsPerPage && (
+        <div className="pagination">
+          <button 
+            onClick={() => paginate(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="pagination-button"
+          >
+            Previous
+          </button>
+          <div className="page-numbers">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
+              <button
+                key={number}
+                onClick={() => paginate(number)}
+                className={`page-number ${currentPage === number ? 'active' : ''}`}
+              >
+                {number}
+              </button>
+            ))}
+          </div>
+          <button 
+            onClick={() => paginate(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="pagination-button"
+          >
+            Next
+          </button>
+        </div>
+      )}
+
+      <div className="student-insights">
+        <h2>Quick Insights</h2>
+        <div className="insights-cards">
+          <div className="insight-card">
+            <div className="insight-icon">
+              <BookOpen size={24} />
+            </div>
+            <div className="insight-content">
+              <h3>Reading Progress</h3>
+              <p>Average books read: {Math.round(students.reduce((acc, student) => acc + student.booksRead, 0) / students.length)}</p>
             </div>
           </div>
-        </>
+          
+          <div className="insight-card">
+            <div className="insight-icon">
+              <Book size={24} />
+            </div>
+            <div className="insight-content">
+              <h3>Assignment Completion</h3>
+              <p>Average completed: {Math.round(students.reduce((acc, student) => acc + student.assignmentsCompleted, 0) / students.length)}</p>
+            </div>
+          </div>
+          
+          <div className="insight-card">
+            <div className="insight-icon">
+              <Clock size={24} />
+            </div>
+            <div className="insight-content">
+              <h3>Activity Status</h3>
+              <p>{students.filter(s => s.status === 'active').length} active in the last 7 days</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Student Profile Modal */}
+      {showProfileModal && selectedStudent && (
+        <div className="students-page-modal-overlay">
+          <div className="students-page-profile-modal">
+            <div className="students-page-modal-header">
+              <h2>Student Profile</h2>
+              <button 
+                className="students-page-modal-close"
+                onClick={() => setShowProfileModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="students-page-profile-content">
+              <div className="students-page-profile-avatar">
+                {selectedStudent.profileImageUrl ? (
+                  <img 
+                    src={selectedStudent.profileImageUrl} 
+                    alt={`${selectedStudent.firstName} ${selectedStudent.lastName}`}
+                    className="students-page-profile-image"
+                  />
+                ) : (
+                  <User size={64} />
+                )}
+              </div>
+              
+              <div className="students-page-profile-details">
+                <h3 className="students-page-profile-name">
+                  {`${selectedStudent.firstName} ${selectedStudent.lastName}`}
+                </h3>
+                
+                <div className="students-page-profile-info">
+                  <div className="students-page-profile-info-item">
+                    <span className="students-page-profile-label">ID Number:</span>
+                    <span className="students-page-profile-value">{selectedStudent.idNumber}</span>
+                  </div>
+                  
+                  <div className="students-page-profile-info-item">
+                    <span className="students-page-profile-label">Email:</span>
+                    <span className="students-page-profile-value">{selectedStudent.email}</span>
+                  </div>
+                  
+                  <div className="students-page-profile-info-item">
+                    <span className="students-page-profile-label">Age:</span>
+                    <span className="students-page-profile-value">{selectedStudent.age}</span>
+                  </div>
+                  
+                  <div className="students-page-profile-info-item">
+                    <span className="students-page-profile-label">Reading Level:</span>
+                    <span className="students-page-profile-value">{selectedStudent.readingLevel}</span>
+                  </div>
+                  
+                  <div className="students-page-profile-info-item">
+                    <span className="students-page-profile-label">Address:</span>
+                    <span className="students-page-profile-value">{selectedStudent.address}</span>
+                  </div>
+                  
+                  <div className="students-page-profile-info-item">
+                    <span className="students-page-profile-label">Section:</span>
+                    <span className="students-page-profile-value">{selectedStudent.section}</span>
+                  </div>
+                  
+                  <div className="students-page-profile-info-item">
+                    <span className="students-page-profile-label">Gender:</span>
+                    <span className="students-page-profile-value">{selectedStudent.gender}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="students-page-modal-footer">
+              <button 
+                className="students-page-close-btn"
+                onClick={() => setShowProfileModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

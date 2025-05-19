@@ -2,11 +2,10 @@
 /**
  * Admin Dashboard Service
  * This service handles all data fetching for the admin dashboard.
- * Currently using mock data but designed to be easily replaced with MongoDB queries.
  */
 // Configuration for the service
 const config = {
-  useMockData: true,
+  useMockData: false, // Changed to false to use real data
   apiBaseUrl: import.meta.env.VITE_API_URL || 'http://localhost:5002/api',
   refreshInterval: 30000,
   collections: {
@@ -18,6 +17,28 @@ const config = {
     assignments: 'assignments'
   }
 };
+
+// Import axios for API calls
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+
+const axiosInstance = axios.create({
+    baseURL: `${API_URL}/dashboard`,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    }
+});
+
+// Add response interceptor for better error handling
+axiosInstance.interceptors.response.use(
+    response => response,
+    error => {
+        console.error('API Error:', error.response?.data || error.message);
+        throw error;
+    }
+);
 
 /**
  * Database query templates for MongoDB integration
@@ -807,21 +828,15 @@ class AdminDashboardService {
   
   // Dashboard statistics
   async getDashboardStats() {
-    if (config.useMockData) {
-      return this.mockData.getDashboardStats();
+    try {
+      console.log('Fetching dashboard stats...');
+      const response = await axiosInstance.get('/stats');
+      console.log('Dashboard response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      throw error;
     }
-    const [users, activities, academic, system] = await Promise.all([
-      api.mongoQuery(config.collections.users, mongoQueries.getUserStats),
-      api.mongoQuery(config.collections.activities, mongoQueries.getActivityStats),
-      api.mongoQuery(config.collections.assessments, mongoQueries.getStudentPerformance),
-      api.get('/dashboard/system-health')
-    ]);
-    return {
-      users,
-      activities,
-      academicData: academic,
-      systemHealth: system
-    };
   }
   
   // Recent activities
