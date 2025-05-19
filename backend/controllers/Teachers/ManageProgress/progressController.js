@@ -1069,8 +1069,6 @@ class ProgressController {
                     lastActivity: Date.now()
                 });
             }
-
-            // Update progress
             const totalActivities = intervention.questions.length;
             const percentComplete = (completedActivities / totalActivities) * 100;
             const totalAnswers = correctAnswers + incorrectAnswers;
