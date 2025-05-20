@@ -203,7 +203,7 @@ connectDB().then(() => {
   });
 
   try {
-    const parentRoutes = require('./routes/Parents/parentRoutes');
+    const parentRoutes = require('./routes/Teachers/parentRoutes');
     app.use('/api/parents', parentRoutes);
     console.log('✅ Loaded parents routes with profile endpoint');
   } catch (error) {
