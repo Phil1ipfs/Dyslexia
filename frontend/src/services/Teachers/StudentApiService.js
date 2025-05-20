@@ -126,7 +126,7 @@ const StudentApiService = {
   // Get all students for dashboard
   getAllStudents: async () => {
     try {
-      const { data } = await api.get('/students', { 
+      const { data } = await api.get('/students', {
         params: { limit: 100 } // Get more students for dashboard
       });
       return data.students || [];
@@ -163,7 +163,7 @@ const StudentApiService = {
     try {
       // Use the correct endpoint that properly accesses the database
       const { data } = await directApi.get(`/parents/profile/${parentId}`);
-      
+
       // If data is returned correctly, process it to ensure consistent format
       if (data) {
         // Process name fields if needed
@@ -173,13 +173,13 @@ const StudentApiService = {
           if (data.lastName) fullName += ` ${data.lastName}`;
           data.name = fullName.trim();
         }
-        
+
         return data;
       }
       throw new Error('No data returned from parent profile API');
     } catch (error) {
       console.error('Error fetching parent profile:', error);
-      throw error; 
+      throw error;
     }
   },
 
@@ -187,14 +187,14 @@ const StudentApiService = {
   getParentProfileWithFallback: async (parentId) => {
     try {
       const profile = await StudentApiService.getParentProfile(parentId);
-      
+
       // Only apply a fallback if the profileImageUrl is null or undefined
       if (!profile.profileImageUrl) {
         console.log("No profile image URL found, leaving it as null");
       } else {
         console.log("Using original S3 image URL:", profile.profileImageUrl);
       }
-      
+
       return profile;
     } catch (err) {
       console.warn("Falling back to empty parent profile", err);
@@ -210,7 +210,7 @@ const StudentApiService = {
       };
     }
   },
-  
+
   // Progress data
   getProgressData: async (id) => {
     try {
@@ -309,26 +309,26 @@ const StudentApiService = {
       return data;
     } catch (error) {
       console.error('Error fetching dashboard metrics:', error);
-      
+
       // Fallback: calculate metrics from students list
       try {
         const studentsResponse = await StudentApiService.getAllStudents();
         const students = studentsResponse.students || studentsResponse;
-        
+
         // Calculate metrics from students
         const totalStudents = students.length;
-        const completedActivities = students.reduce((sum, s) => 
+        const completedActivities = students.reduce((sum, s) =>
           sum + (s.activitiesCompleted || 0), 0);
-        const totalActivities = students.reduce((sum, s) => 
+        const totalActivities = students.reduce((sum, s) =>
           sum + (s.totalActivities || 25), 0);
-        const completionRate = totalActivities > 0 
-          ? Math.round((completedActivities / totalActivities) * 100) 
+        const completionRate = totalActivities > 0
+          ? Math.round((completedActivities / totalActivities) * 100)
           : 0;
         const averageScore = students.length > 0
-          ? Math.round(students.reduce((sum, s) => 
-              sum + (s.readingPercentage || 0), 0) / students.length)
+          ? Math.round(students.reduce((sum, s) =>
+            sum + (s.readingPercentage || 0), 0) / students.length)
           : 0;
-        
+
         return {
           totalStudents,
           completedActivities,
@@ -352,12 +352,12 @@ const StudentApiService = {
       return data;
     } catch (error) {
       console.error('Error fetching reading level distribution:', error);
-      
+
       // Fallback: calculate from students list
       try {
         const studentsResponse = await StudentApiService.getAllStudents();
         const students = studentsResponse.students || studentsResponse;
-        
+
         // Count students by reading level
         const levelCounts = {};
         const levelColors = {
@@ -367,12 +367,12 @@ const StudentApiService = {
           'Transitioning': '#6C8EF4',
           'At Grade Level': '#4BC0C0'
         };
-        
-    
+
+
         students.forEach(student => {
           const rawLevel = student.readingLevel || 'Not Assessed';
           const normalizedLevel = levelMapping[rawLevel] || rawLevel;
-          
+
           if (!levelCounts[normalizedLevel]) {
             levelCounts[normalizedLevel] = {
               name: normalizedLevel,
@@ -380,10 +380,10 @@ const StudentApiService = {
               color: levelColors[normalizedLevel] || '#B0B0B0'
             };
           }
-          
+
           levelCounts[normalizedLevel].value += 1;
         });
-        
+
         return Object.values(levelCounts);
       } catch (fallbackError) {
         console.error('Error calculating reading level distribution fallback:', fallbackError);
@@ -391,7 +391,7 @@ const StudentApiService = {
       }
     }
   },
-  
+
   // Get students needing attention
   getStudentsNeedingAttention: async (limit = 5) => {
     try {
@@ -402,20 +402,20 @@ const StudentApiService = {
       return data;
     } catch (error) {
       console.error('Error fetching students needing attention:', error);
-      
+
       // Fallback: calculate from students list
       try {
         const studentsResponse = await StudentApiService.getAllStudents();
         const students = studentsResponse.students || studentsResponse;
-        
+
         // Process students to match expected format
         const processedStudents = students.map(student => {
           const readingLevel = student.readingLevel || 'Not Assessed';
           const score = student.readingPercentage || Math.floor(Math.random() * 50) + 30; // Random score as fallback
-          const completionRate = student.activitiesCompleted 
+          const completionRate = student.activitiesCompleted
             ? Math.round((student.activitiesCompleted / (student.totalActivities || 25)) * 100)
             : Math.floor(Math.random() * 60) + 20; // Random completion rate as fallback
-            
+
           return {
             id: student.id || student.idNumber || (student._id ? student._id.toString() : ''),
             name: student.name || `${student.firstName || ''} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName || ''}`.trim(),
@@ -425,7 +425,7 @@ const StudentApiService = {
             difficulty: student.focusAreas || 'Needs assessment to determine areas for improvement'
           };
         });
-        
+
         // Sort by score and take the lowest scoring students
         return processedStudents
           .sort((a, b) => a.lastScore - b.lastScore)
@@ -448,7 +448,7 @@ const StudentApiService = {
       return ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'];
     }
   },
-  
+
   getReadingLevels: async () => {
     try {
       const { data } = await api.get('/reading-levels');
@@ -457,10 +457,10 @@ const StudentApiService = {
       // Fallback to static list
       console.warn('Error fetching reading levels:', error);
       return [
-        'Low Emerging', 
-        'High Emerging', 
-        'Developing', 
-        'Transitioning', 
+        'Low Emerging',
+        'High Emerging',
+        'Developing',
+        'Transitioning',
         'At Grade Level',
         'Not Assessed'
       ];
@@ -492,26 +492,26 @@ const StudentApiService = {
   },
 
   // Get category results for a student
-getCategoryResults: async (id) => {
-  try {
-    const { data } = await api.get(`/student/${id}/category-results`);
-    return data;
-  } catch (error) {
-    console.error(`Error fetching category results for student ID ${id}:`, error);
-    
-    // Return empty placeholder data if API fails
-    return {
-      studentId: id,
-      readingLevel: 'Not Available',
-      categories: [],
-      allCategoriesPassed: false,
-      assessmentDate: null,
-      overallScore: 0
-    };
-  }
-},
-  
-  
+  getCategoryResults: async (id) => {
+    try {
+      const { data } = await api.get(`/student/${id}/category-results`);
+      return data;
+    } catch (error) {
+      console.error(`Error fetching category results for student ID ${id}:`, error);
+
+      // Return empty placeholder data if API fails
+      return {
+        studentId: id,
+        readingLevel: 'Not Available',
+        categories: [],
+        allCategoriesPassed: false,
+        assessmentDate: null,
+        overallScore: 0
+      };
+    }
+  },
+
+
 
   // Score-to-level helper
   getReadingLevelFromScore: (score, maxScore = 5) => {
@@ -522,8 +522,6 @@ getCategoryResults: async (id) => {
     return 'At Grade Level';
   }
 };
-
-
 
 
 export default StudentApiService;
