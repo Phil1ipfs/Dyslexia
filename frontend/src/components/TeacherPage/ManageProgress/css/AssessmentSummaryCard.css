@@ -20,15 +20,15 @@
 
 /* Dynamic border colors based on reading level */
 .literexia-assessment-card.reading-level-early {
-  border-top-color: #1e548d;
+  border-top-color: #1e548d !important;
 }
 
 .literexia-assessment-card.reading-level-developing {
-  border-top-color: #FF9800;
+  border-top-color: #FF9800 !important;
 }
 
 .literexia-assessment-card.reading-level-fluent {
-  border-top-color: #4CAF50;
+  border-top-color: #4CAF50 !important;
 }
 
 .literexia-assessment-card.reading-level-advanced {
@@ -43,12 +43,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .literexia-assessment-title {
   margin: 0;
-  font-size: 1.45rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: #3B4F81;
   display: flex;
@@ -62,10 +64,10 @@
 
 .literexia-score-badge {
   font-weight: 700;
-  padding: 0.25rem 0.75rem;
+  padding: 0.4rem 0.75rem;
   border-radius: 20px;
   font-size: 1rem;
-  color: white;
+  color: white ;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -75,34 +77,34 @@
 
 /* Score badge colors based on percentage */
 .literexia-score-badge.score-excellent {
-  background-color: #4CAF50;
+  background-color: #4CAF50 !important;
 }
 
 .literexia-score-badge.score-good {
-  background-color: #3B4F81;
+  background-color: #3B4F81 !important;
 }
 
 .literexia-score-badge.score-average {
-  background-color: #FF9800;
+  background-color: #FF9800 !important;
 }
 
 .literexia-score-badge.score-needs-improvement {
-  background-color: #F44336;
+  background-color: #F44336 !important;
 }
 
 .literexia-score-badge.score-not-assessed {
-  background-color: #F9A825;
+  background-color: #F9A825 !important;
 }
 
 .literexia-assessment-content {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 1.25rem;
 }
 
 .literexia-assessment-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
 }
 
@@ -118,17 +120,18 @@
   font-size: 1.1rem;
   flex-shrink: 0;
   transition: all 0.2s ease;
+  margin-top: 2px;
 }
 
 /* Icon background colors based on reading level */
 .literexia-item-icon.reading-level-early {
-  background-color: rgba(244, 67, 54, 0.1);
-  color: #1e548d;
+  background-color: rgba(30, 84, 141, 0.1);
+  color: #1e548d !important;
 }
 
 .literexia-item-icon.reading-level-developing {
   background-color: rgba(255, 152, 0, 0.1);
-  color: #FF9800;
+  color: #FF9800 !important;
 }
 
 .literexia-item-icon.reading-level-fluent {
@@ -153,22 +156,30 @@
 
 .literexia-item-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.literexia-item-label {
+  color: #666;
+  font-size: 0.85rem;
+  margin-bottom: 0.3rem;
 }
 
 .literexia-item-value {
   font-weight: 600;
   font-size: 1.1rem;
-  margin-bottom: 0.1rem;
-  color: #333; /* Default - will be overridden by inline styles */
+  color: #333 !important;
+  line-height: 1.2;
 }
 
 /* Text colors based on reading level */
 .literexia-item-value.reading-level-early {
-  color: #1f7d67;
+  color: #1e548d;
 }
 
 .literexia-item-value.reading-level-developing {
-  color: #FF9800;
+  color: #FF9800 !important;
 }
 
 .literexia-item-value.reading-level-fluent {
@@ -184,47 +195,9 @@
 }
 
 .literexia-item-value.date-value {
-  color: #6c757d;
+  color: #333;
 }
 
-.literexia-item-label {
-  color: #666;
-  font-size: 0.85rem;
-}
-
-.literexia-assessment-divider {
-  height: 1px;
-  background-color: #eee;
-  margin: 0.25rem 0;
-}
-
-.literexia-assessment-recommendation {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 0.5rem;
-}
-
-.literexia-recommendation-icon {
-  color: #4CAF50; /* Default - will be dynamically set */
-  font-size: 1.2rem;
-}
-
-.literexia-recommendation-label {
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.literexia-recommendation-value {
-  font-weight: 600;
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
-  margin-left: 0.25rem;
-  transition: all 0.2s ease;
-}
-
-/* Animation */
 .literexia-assessment-card {
   animation: literexiaSlideIn 0.4s ease-out;
 }
@@ -243,18 +216,19 @@
 /* Responsive styles */
 @media (max-width: 576px) {
   .literexia-assessment-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-  
-  .literexia-assessment-header {
-    flex-direction: column;
-    align-items: flex-start;
     gap: 0.75rem;
   }
   
+  .literexia-assessment-header {
+    margin-bottom: 1rem;
+  }
+  
   .literexia-score-badge {
-    align-self: flex-start;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.9rem;
+  }
+  
+  .literexia-item-value {
+    font-size: 1rem;
   }
 }

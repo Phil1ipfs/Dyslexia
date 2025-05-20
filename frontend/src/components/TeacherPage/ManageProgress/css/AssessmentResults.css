@@ -55,6 +55,89 @@
   font-size: 1.25rem;
 }
 
+/* Overview Section - NEW */
+.assessment-results__overview {
+  background-color: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.assessment-results__overview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.assessment-results__overview-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.25rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.assessment-results__overview-icon {
+  color: #3B4F81;
+}
+
+.assessment-results__score-badge {
+  background-color: #3B4F81;
+  color: white;
+  font-weight: 700;
+  padding: 0.4rem 1rem;
+  border-radius: 40px;
+  font-size: 1.1rem;
+}
+
+.assessment-results__overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+.assessment-results__overview-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #f9f9f9;
+  border-radius: 10px;
+}
+
+.assessment-results__overview-item-icon {
+  width: 42px;
+  height: 42px;
+  background-color: rgba(59, 79, 129, 0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3B4F81;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.assessment-results__overview-item-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.assessment-results__overview-item-label {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.assessment-results__overview-item-value {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #333;
+}
+
 /* Skills Results Section */
 .assessment-results__skills-section {
   background-color: white;
@@ -155,6 +238,7 @@
   transition: width 1s ease-in-out;
 }
 
+/* Different colors for each skill category */
 .assessment-results__skill-bar--patinig {
   background: linear-gradient(90deg, #FFB74D, #EF5350);
 }
@@ -276,6 +360,23 @@
   font-size: 0.9rem;
 }
 
+/* Skill level classes */
+.skill-excellent {
+  color: #4CAF50;
+}
+
+.skill-good {
+  color: #3B4F81;
+}
+
+.skill-average {
+  color: #FF9800;
+}
+
+.skill-needs-improvement {
+  color: #F44336;
+}
+
 /* Conclusion Section */
 .assessment-results__conclusion {
   background-color: white;
@@ -312,10 +413,44 @@
   margin-left: 0.5rem;
 }
 
+/* Process Note - NEW */
+.assessment-results__process-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.25rem;
+  border-left: 3px solid #999;
+}
+
+.assessment-results__process-note-icon {
+  color: #777;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.assessment-results__process-note-text p {
+  margin: 0;
+  color: #555;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.assessment-results__process-note-text strong {
+  color: #555;
+  font-weight: 600;
+}
+
 /* Responsive styles */
 @media (max-width: 768px) {
   .assessment-results__info-banner {
     flex-direction: column;
+  }
+  
+  .assessment-results__overview-grid {
+    grid-template-columns: 1fr;
   }
   
   .assessment-results__skill-title {
@@ -327,5 +462,21 @@
   .assessment-results__answer-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+  
+  .assessment-results__process-note {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .assessment-results__overview-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .assessment-results__score-badge {
+    align-self: flex-start;
   }
 }

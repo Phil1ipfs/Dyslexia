@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   FaInfoCircle, 
   FaBookOpen, 
   FaChartLine, 
   FaCheckCircle, 
   FaBrain,
-  FaEdit, 
-  FaSave,
   FaCalendarAlt,
-  FaClock,
-  FaTrophy
+  FaFilter,
+  FaArrowRight
 } from 'react-icons/fa';
 
 import SkillsOverviewSection from './SkillsOverviewSection';
@@ -18,200 +16,131 @@ import './css/ProgressReport.css';
 const ProgressReport = ({ progressData, assignedLessons }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [timeRange, setTimeRange] = useState('month');
-  const [editingFeedback, setEditingFeedback] = useState({});
-  const [tempFeedback, setTempFeedback] = useState({});
-
-  // Initialize learning objectives using the assignedLessons prop
-  const [learningObjectives, setLearningObjectives] = useState(
-    assignedLessons.map(lesson => ({
-      id: lesson.id,
-      title: lesson.title,
-      assistance: null, // null, 'minimal', 'moderate', 'maximal'
-      remarks: '',
-      isEditingRemarks: false
-    }))
-  );
-
-  // Update learning objectives when assignedLessons changes
+  const [animated, setAnimated] = useState(false);
+  const animatedRef = useRef(false);
+  
+  // Run animation after component mounts
   useEffect(() => {
-    // Make sure we don't overwrite existing data for lessons that are already in learningObjectives
-    const updatedObjectives = assignedLessons.map(lesson => {
-      const existingObjective = learningObjectives.find(obj => obj.id === lesson.id);
-      
-      if (existingObjective) {
-        return existingObjective;
-      } else {
-        return {
-          id: lesson.id,
-          title: lesson.title,
-          assistance: null,
-          remarks: '',
-          isEditingRemarks: false
-        };
-      }
-    });
+    if (animatedRef.current) return;
     
-    setLearningObjectives(updatedObjectives);
-  }, [assignedLessons]);
+    const timer = setTimeout(() => {
+      setAnimated(true);
+      animatedRef.current = true;
+      
+      // Animate counters on page load
+      const counters = document.querySelectorAll('.counter');
+      counters.forEach(counter => {
+        const target = parseInt(counter.textContent, 10);
+        const duration = 1500; // milliseconds
+        const startTime = performance.now();
+        
+        function updateCounter(currentTime) {
+          const elapsedTime = currentTime - startTime;
+          
+          if (elapsedTime < duration) {
+            const progress = elapsedTime / duration;
+            const currentValue = Math.ceil(progress * target);
+            counter.textContent = currentValue;
+            requestAnimationFrame(updateCounter);
+          } else {
+            counter.textContent = target;
+          }
+        }
+        
+        requestAnimationFrame(updateCounter);
+      });
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // Check if we have valid category results data
+  const hasCategoryResults = progressData && 
+    progressData.categories && 
+    progressData.categories.length > 0;
   
   if (!progressData) {
     return (
       <div className="literexia-empty-state">
         <FaInfoCircle size={40} />
         <h3>No Progress Data</h3>
-        <p>No progress data available for this student. They may not have completed any lessons yet.</p>
+        <p>No progress data available for this student. They may not have completed any assessment yet.</p>
       </div>
     );
   }
   
-  // Calculate progress metrics
+  // Calculate progress metrics from category results
   const calculateCompletionRate = () => {
-    const { activitiesCompleted, totalActivities } = progressData;
-    if (!totalActivities) return 0;
-    return Math.round((activitiesCompleted / totalActivities) * 100);
+    if (!hasCategoryResults) return 0;
+    
+    // Count passed categories
+    const passedCategories = progressData.categories.filter(cat => cat.isPassed).length;
+    return Math.round((passedCategories / progressData.categories.length) * 100);
   };
   
   const getAverageScore = () => {
-    if (!progressData.scores) return 0;
-    const scores = Object.values(progressData.scores || {});
-    if (scores.length === 0) return 0;
-    const sum = scores.reduce((total, score) => total + score, 0);
-    return Math.round(sum / scores.length);
+    if (!hasCategoryResults) return 0;
+    
+    // Calculate average score across all categories
+    const sum = progressData.categories.reduce((total, category) => total + (category.score || 0), 0);
+    return Math.round(sum / progressData.categories.length);
   };
   
-  // Filter activities based on selected time range
-  const filterActivitiesByTime = () => {
-    const now = new Date();
-    const cutoffDate = new Date();
+  const getTotalQuestions = () => {
+    if (!hasCategoryResults) return 0;
     
-    switch (timeRange) {
-      case 'week':
-        cutoffDate.setDate(now.getDate() - 7);
-        break;
-      case 'month':
-        cutoffDate.setDate(now.getDate() - 30);
-        break;
-      case 'quarter':
-        cutoffDate.setDate(now.getDate() - 90);
-        break;
-      default:
-        cutoffDate.setDate(now.getDate() - 30);
-    }
-    
-    return progressData.recentActivities?.filter(activity => {
-      const activityDate = new Date(activity.date);
-      return activityDate >= cutoffDate;
-    }) || [];
+    // Sum up all questions across categories
+    return progressData.categories.reduce((total, category) => total + (category.totalQuestions || 0), 0);
   };
   
-  const filteredActivities = filterActivitiesByTime();
-  
-  // Filter activities by category if a specific one is selected
-  const filteredByCategory = selectedCategory === 'all' 
-    ? filteredActivities 
-    : filteredActivities.filter(activity => activity.category === selectedCategory);
-  
-  // Get CSS class for skill category
-  const getCategoryClass = (category) => {
-    switch(category) {
-      case 'Vowel Sound':
-      case 'Patinig':
-        return 'literexia-patinig';
-      case 'Syllable Blending':
-      case 'Pantig':
-        return 'literexia-pantig';
-      case 'Word Recognition':
-      case 'Pagkilala ng Salita':
-        return 'literexia-salita';
-      case 'Reading Comprehension':
-      case 'Pag-unawa sa Binasa':
-        return 'literexia-pag-unawa';
-      default:
-        return '';
-    }
+  const getCorrectAnswers = () => {
+    if (!hasCategoryResults) return 0;
+    
+    // Sum up all correct answers across categories
+    return progressData.categories.reduce((total, category) => total + (category.correctAnswers || 0), 0);
   };
   
   // Format date for display
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
-  
-  // Handle teacher feedback
-  const handleEditFeedback = (activityId) => {
-    setEditingFeedback({
-      ...editingFeedback,
-      [activityId]: true
-    });
+  const formatDate = (dateString) => {
+    if (!dateString) return "Not available";
     
-    // Initialize temp feedback if needed
-    if (!tempFeedback[activityId]) {
-      setTempFeedback({
-        ...tempFeedback,
-        [activityId]: progressData.recentActivities.find(a => a.id === activityId)?.feedback || ''
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       });
+    } catch (e) {
+      return dateString;
     }
   };
   
-  const handleSaveFeedback = (activityId) => {
-    // In a real implementation, this would call an API to save the feedback
-    // For now, we'll just update our local state
+  // Prepare scores object for SkillsOverviewSection
+  const prepareScores = () => {
+    if (!hasCategoryResults) return null;
     
-    // Create a copy of the activities with the updated feedback
-    const updatedActivities = progressData.recentActivities.map(activity => {
-      if (activity.id === activityId) {
-        return {
-          ...activity,
-          feedback: tempFeedback[activityId]
-        };
-      }
-      return activity;
+    const scoreObj = {};
+    
+    // Map category names to score values
+    progressData.categories.forEach(category => {
+      // Convert category names without camelCase to match screenshot
+      scoreObj[category.categoryName] = category.score || 0;
     });
     
-    // Update the progressData object (in a real app, this would be done via state management or API call)
-    progressData.recentActivities = updatedActivities;
-    
-    // Exit editing mode
-    setEditingFeedback({
-      ...editingFeedback,
-      [activityId]: false
-    });
+    return scoreObj;
   };
   
-  // Handle learning objective assistance level
-  const handleAssistanceChange = (lessonId, level) => {
-    setLearningObjectives(prev =>
-      prev.map(obj =>
-        obj.id === lessonId ? { ...obj, assistance: level } : obj
-      )
-    );
-  };
-  
-  // Handle remarks editing
-  const toggleRemarksEditing = (lessonId) => {
-    setLearningObjectives(prev =>
-      prev.map(obj =>
-        obj.id === lessonId
-          ? { ...obj, isEditingRemarks: !obj.isEditingRemarks }
-          : obj
-      )
-    );
-  };
-  
-  const handleRemarksChange = (lessonId, remarks) => {
-    setLearningObjectives(prev =>
-      prev.map(obj =>
-        obj.id === lessonId ? { ...obj, remarks } : obj
-      )
-    );
-  };
-  
-  // Calculate completion rate and average score
+  // Calculate completion rate and other metrics
   const completionRate = calculateCompletionRate();
   const averageScore = getAverageScore();
+  const totalQuestions = getTotalQuestions();
+  const correctAnswers = getCorrectAnswers();
+  const passedCategories = hasCategoryResults ? progressData.categories.filter(cat => cat.isPassed).length : 0;
+  const totalCategories = hasCategoryResults ? progressData.categories.length : 0;
+  const assessmentDate = formatDate(progressData.assessmentDate || progressData.createdAt);
+  const readingLevel = progressData.readingLevel || "Not Assigned";
+  const scores = prepareScores();
   
   return (
     <div className="literexia-progress-container">
@@ -221,57 +150,170 @@ const ProgressReport = ({ progressData, assignedLessons }) => {
           <FaBrain />
         </div>
         <div className="literexia-progress-info-text">
+          <h3>Post Assessment Progress Report</h3>
           <p>
-            
-          <h3>Progress REPORRTT</h3>
-            This section shows the student's progress in their reading activities.
-            This section shows the student's progress in their reading activities.
-            This section shows the student's progress in their reading activities.
-            This section shows the student's progress in their reading activities.
-            This section shows the student's progress in their reading activities.
-            You can view their performance over time and across different reading skill categories.
+            This report shows the student's performance based on their most recent assessment
+            completed on {assessmentDate}. Current reading level: <strong>{readingLevel}</strong>.
+            You can view their performance across the five key reading skill categories.
           </p>
         </div>
       </div>
       
-      {/* Progress Summary Cards */}
+      {/* Assessment Summary Cards */}
       <div className="literexia-summary-cards">
-        <div className="literexia-summary-card">
+        <div className={`literexia-summary-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0s'}}>
           <div className="literexia-card-header">
             <div className="literexia-card-icon">
               <FaCheckCircle />
             </div>
-            <div className="literexia-card-value">{completionRate}%</div>
+            <div className="literexia-card-value">
+              <span className="counter">{completionRate}</span>%
+            </div>
           </div>
-          <div className="literexia-card-label">Lessons Completed</div>
+          <div className="literexia-card-label">Categories Passed ({passedCategories}/{totalCategories})</div>
         </div>
         
-        <div className="literexia-summary-card">
+        <div className={`literexia-summary-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.1s'}}>
           <div className="literexia-card-header">
             <div className="literexia-card-icon">
               <FaChartLine />
             </div>
-            <div className="literexia-card-value">{averageScore}%</div>
+            <div className="literexia-card-value">
+              <span className="counter">{averageScore}</span>%
+            </div>
           </div>
           <div className="literexia-card-label">Average Score</div>
         </div>
         
-        <div className="literexia-summary-card">
+        <div className={`literexia-summary-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.2s'}}>
           <div className="literexia-card-header">
             <div className="literexia-card-icon">
               <FaBookOpen />
             </div>
-            <div className="literexia-card-value">{progressData.activitiesCompleted || 0}</div>
+            <div className="literexia-card-value">
+              <span className="counter">{correctAnswers}</span>/{totalQuestions}
+            </div>
           </div>
-          <div className="literexia-card-label">Activities Completed</div>
+          <div className="literexia-card-label">Correct Answers</div>
+        </div>
+        
+        <div className={`literexia-summary-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.3s'}}>
+          <div className="literexia-card-header">
+            <div className="literexia-card-icon">
+              <FaCalendarAlt />
+            </div>
+            <div className="literexia-card-value">{readingLevel}</div>
+          </div>
+          <div className="literexia-card-label">Reading Level</div>
         </div>
       </div>
       
-      {/* Skills Overview Section */}
-      <SkillsOverviewSection scores={progressData.scores} /> 
+      {/* Optional: Filter section */}
+      {hasCategoryResults && (
+        <div className="literexia-filters">
+          <div className="literexia-filter-header">
+            <FaFilter /> <span>Filter Results</span>
+          </div>
+          <div className="literexia-filter-group">
+            <label htmlFor="categoryFilter">Category:</label>
+            <select 
+              id="categoryFilter" 
+              className="literexia-filter-select"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              <option value="all">All Categories</option>
+              {progressData.categories.map((category, index) => (
+                <option key={index} value={category.categoryName}>
+                  {category.categoryName}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+      
+      {/* Category Results Table */}
+      {hasCategoryResults && (
+        <div className="literexia-category-results">
+          <h3 className="literexia-section-title">
+            <FaChartLine className="literexia-section-icon" /> 
+            Category Performance
+          </h3>
+          
+          <div className="literexia-category-table-container">
+            <table className="literexia-category-table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Questions</th>
+                  <th>Correct</th>
+                  <th>Score</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {progressData.categories
+                  .filter(cat => selectedCategory === 'all' || cat.categoryName === selectedCategory)
+                  .map((category, index) => (
+                    <tr key={index} className={animated ? 'animate' : ''} style={{animationDelay: `${0.1 * index}s`}}>
+                      <td>
+                        <span className="literexia-category-label">
+                          {category.categoryName}
+                        </span>
+                      </td>
+                      <td>{category.totalQuestions || 0}</td>
+                      <td>{category.correctAnswers || 0}</td>
+                      <td>
+                        <span className="literexia-score-badgeee">
+                          {category.score || 0}%
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`literexia-status-badge ${category.isPassed ? 'achieved' : 'in-progress'}`}>
+                          {category.isPassed ? 'Achieved' : 'In Progress'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      
+      {/* Skills Overview Section - pass prepared scores */}
+      {scores && <SkillsOverviewSection scores={scores} animated={animated} />}
+      
+      {/* Overall Assessment Status */}
+      <div className={`literexia-overall-status ${progressData.allCategoriesPassed ? 'achieved' : 'developing'}`}>
+        <h3>
+          {progressData.allCategoriesPassed 
+            ? 'Assessment Mastered!' 
+            : 'Skills Being Developed'}
+        </h3>
+        <p>
+          {progressData.allCategoriesPassed 
+            ? 'Student has mastered all categories and is ready to advance to the next reading level.' 
+            : 'Student is developing skills in some categories. Focused practice will help them advance to the next level.'}
+        </p>
+        {!progressData.allCategoriesPassed && hasCategoryResults && (
+          <div className="literexia-focus-areas">
+            <h4>Recommended Focus Areas:</h4>
+            <ul>
+              {progressData.categories
+                .filter(cat => !cat.isPassed)
+                .map((category, index) => (
+                  <li key={index} className={animated ? 'animate' : ''} style={{animationDelay: `${0.2 + (0.1 * index)}s`}}>
+                    {category.categoryName}
+                  </li>
+                ))}
+            </ul>
+          </div>
+        )}
       </div>
+    </div>
   );
 };
 
 export default ProgressReport;
-                       

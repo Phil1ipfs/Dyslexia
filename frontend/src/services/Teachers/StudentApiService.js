@@ -1,4 +1,4 @@
-// src/services/StudentApiService.js //Manage Progress Layout
+// src/services/StudentApiService.js //Manage Progress Service
 import axios from 'axios';
 
 // Create axios instance with baseURL, timeouts, JSON headers
@@ -368,18 +368,7 @@ const StudentApiService = {
           'At Grade Level': '#4BC0C0'
         };
         
-        // Mapping old reading levels to new system
-        const levelMapping = {
-          'Antas 1': 'Low Emerging',
-          'Antas 2': 'Developing',
-          'Antas 3': 'Transitioning',
-          'Antas 4': 'At Grade Level',
-          'Antas 5': 'At Grade Level',
-          'Early': 'Low Emerging',
-          'Emergent': 'High Emerging',
-          'Fluent': 'At Grade Level'
-        };
-        
+    
         students.forEach(student => {
           const rawLevel = student.readingLevel || 'Not Assessed';
           const normalizedLevel = levelMapping[rawLevel] || rawLevel;
@@ -501,21 +490,28 @@ const StudentApiService = {
     };
     return classMap[level] || 'mp-level-1';
   },
-  
-  // Legacy ↔ CRLA DEPED level conversion
-  convertLegacyReadingLevel: (oldLevel) => {
-    const map = {
-      'Antas 1': 'Low Emerging',
-      'Antas 2': 'Developing',
-      'Antas 3': 'Transitioning',
-      'Antas 4': 'At Grade Level',
-      'Antas 5': 'At Grade Level',
-      'Emergent': 'High Emerging',
-      'Early': 'Low Emerging',
-      'Fluent': 'At Grade Level'
+
+  // Get category results for a student
+getCategoryResults: async (id) => {
+  try {
+    const { data } = await api.get(`/student/${id}/category-results`);
+    return data;
+  } catch (error) {
+    console.error(`Error fetching category results for student ID ${id}:`, error);
+    
+    // Return empty placeholder data if API fails
+    return {
+      studentId: id,
+      readingLevel: 'Not Available',
+      categories: [],
+      allCategoriesPassed: false,
+      assessmentDate: null,
+      overallScore: 0
     };
-    return map[oldLevel] || oldLevel;
-  },
+  }
+},
+  
+  
 
   // Score-to-level helper
   getReadingLevelFromScore: (score, maxScore = 5) => {
@@ -527,277 +523,8 @@ const StudentApiService = {
   }
 };
 
+
+
+
 export default StudentApiService;
 
-
-
-// // src/services/Teachers/StudentApiService.js
-// import axios from 'axios';
-
-// // Create axios instance with baseURL, timeouts, JSON headers
-// const api = axios.create({
-//   baseURL: import.meta.env.DEV
-//     ? 'http://localhost:5002/api/student'
-//     : '/api/student',
-//   timeout: 30000,
-//   headers: {
-//     'Content-Type': 'application/json',
-//     'X-Requested-With': 'XMLHttpRequest'
-//   }
-// });
-
-// // Create a separate instance for direct backend calls
-// const directApi = axios.create({
-//   baseURL: import.meta.env.DEV
-//     ? 'http://localhost:5002/api'
-//     : '/api',
-//   timeout: 30000,
-//   headers: {
-//     'Content-Type': 'application/json',
-//     'X-Requested-With': 'XMLHttpRequest'
-//   }
-// });
-
-// // REQUEST INTERCEPTOR: attach bearer token + log
-// api.interceptors.request.use(
-//   config => {
-//     const token =
-//       localStorage.getItem('token') ||
-//       localStorage.getItem('authToken');
-//     if (token) {
-//       config.headers['Authorization'] = `Bearer ${token}`;
-//     }
-//     console.log(
-//       `Student API Request: ${config.method.toUpperCase()} ${config.url}`
-//     );
-//     return config;
-//   },
-//   error => {
-//     console.error('API Request Error:', error);
-//     return Promise.reject(error);
-//   }
-// );
-
-// // Apply same interceptor to directApi
-// directApi.interceptors.request.use(
-//   config => {
-//     const token =
-//       localStorage.getItem('token') ||
-//       localStorage.getItem('authToken');
-//     if (token) {
-//       config.headers['Authorization'] = `Bearer ${token}`;
-//     }
-//     console.log(
-//       `Direct API Request: ${config.method.toUpperCase()} ${config.url}`
-//     );
-//     return config;
-//   },
-//   error => {
-//     console.error('API Request Error:', error);
-//     return Promise.reject(error);
-//   }
-// );
-
-// // RESPONSE INTERCEPTOR: handle errors + 401 redirect
-// api.interceptors.response.use(
-//   response => response,
-//   error => {
-//     if (error.response) {
-//       console.error(
-//         'API Error:',
-//         error.response.status,
-//         error.response.data
-//       );
-//       if (error.response.status === 401) {
-//         // Don't redirect to login for all 401s - just log it
-//         console.warn('Authorization failed for API request - continuing with available data');
-//       }
-//     } else if (error.request) {
-//       console.error('API No Response:', error.request);
-//     } else {
-//       console.error('API Setup Error:', error.message);
-//     }
-//     return Promise.reject(error);
-//   }
-// );
-
-// // Apply same interceptor to directApi
-// directApi.interceptors.response.use(
-//   response => response,
-//   error => {
-//     if (error.response) {
-//       console.error(
-//         'Direct API Error:',
-//         error.response.status,
-//         error.response.data
-//       );
-//       if (error.response.status === 401) {
-//         console.warn('Authorization failed for direct API request - continuing with available data');
-//       }
-//     } else if (error.request) {
-//       console.error('Direct API No Response:', error.request);
-//     } else {
-//       console.error('Direct API Setup Error:', error.message);
-//     }
-//     return Promise.reject(error);
-//   }
-// );
-
-// // StudentApiService object with methods
-// const StudentApiService = {
-//   // Assign lessons
-//   assignLessonsToStudent: async (studentId, lessonIds) => {
-//     try {
-//       const { data } = await api.post(
-//         `/assign-lessons/${studentId}`,
-//         { lessonIds }
-//       );
-//       return data;
-//     } catch (error) {
-//       console.error(`Error assigning lessons to student ${studentId}:`, error);
-//       throw error;
-//     }
-//   },
-
-//   // Get dashboard metrics
-//   getDashboardMetrics: async () => {
-//     try {
-//       // This is a custom endpoint that would need to be implemented
-//       // If it's not available, we can calculate metrics from the students list
-//       const { data } = await directApi.get('/dashboard/metrics');
-//       return data;
-//     } catch (error) {
-//       console.error('Error fetching dashboard metrics:', error);
-      
-//       // Fallback: calculate metrics from students list
-//       try {
-//         // Import from ViewStudentService directly to avoid circular dependencies
-//         const { default: ViewStudentService } = await import('./ViewStudentService');
-//         const students = await ViewStudentService.getAllStudents();
-        
-//         // Calculate metrics from students
-//         const totalStudents = students.length;
-//         const completedActivities = students.reduce((sum, s) => 
-//           sum + (s.activitiesCompleted || 0), 0);
-//         const totalActivities = students.reduce((sum, s) => 
-//           sum + (s.totalActivities || 25), 0);
-//         const completionRate = totalActivities > 0 
-//           ? Math.round((completedActivities / totalActivities) * 100) 
-//           : 0;
-//         const averageScore = students.length > 0
-//           ? Math.round(students.reduce((sum, s) => 
-//               sum + (s.readingPercentage || 0), 0) / students.length)
-//           : 0;
-        
-//         return {
-//           totalStudents,
-//           completedActivities,
-//           totalActivities,
-//           completionRate,
-//           averageScore,
-//           pendingEdits: Math.min(Math.floor(totalStudents / 3), 5) // Estimate
-//         };
-//       } catch (fallbackError) {
-//         console.error('Error calculating metrics fallback:', fallbackError);
-//         throw error; // Throw original error
-//       }
-//     }
-//   },
-
-//   // Get student distribution by reading level
-//   getReadingLevelDistribution: async () => {
-//     try {
-//       // This is a custom endpoint that would need to be implemented
-//       const { data } = await directApi.get('/dashboard/reading-level-distribution');
-//       return data;
-//     } catch (error) {
-//       console.error('Error fetching reading level distribution:', error);
-      
-//       // Fallback: calculate from students list
-//       try {
-//         // Import from ViewStudentService directly to avoid circular dependencies
-//         const { default: ViewStudentService } = await import('./ViewStudentService');
-//         const students = await ViewStudentService.getAllStudents();
-        
-//         // Count students by reading level
-//         const levelCounts = {};
-//         const levelColors = {
-//           'Low Emerging': '#FF6B8A',
-//           'High Emerging': '#FF9E40',
-//           'Developing': '#FFCD56',
-//           'Transitioning': '#6C8EF4',
-//           'At Grade Level': '#4BC0C0',
-//           'Advanced': '#885EAD'
-//         };
-        
-//         students.forEach(student => {
-//           const rawLevel = student.readingLevel || 'Not Assessed';
-//           const normalizedLevel = ViewStudentService.convertLegacyReadingLevel(rawLevel);
-          
-//           if (!levelCounts[normalizedLevel]) {
-//             levelCounts[normalizedLevel] = {
-//               name: normalizedLevel,
-//               value: 0,
-//               color: levelColors[normalizedLevel] || '#B0B0B0'
-//             };
-//           }
-          
-//           levelCounts[normalizedLevel].value += 1;
-//         });
-        
-//         return Object.values(levelCounts);
-//       } catch (fallbackError) {
-//         console.error('Error calculating reading level distribution fallback:', fallbackError);
-//         throw error; // Throw original error
-//       }
-//     }
-//   },
-  
-//   // Get students needing attention
-//   getStudentsNeedingAttention: async (limit = 5) => {
-//     try {
-//       // This would be a custom endpoint
-//       const { data } = await directApi.get('/dashboard/students-needing-attention', {
-//         params: { limit }
-//       });
-//       return data;
-//     } catch (error) {
-//       console.error('Error fetching students needing attention:', error);
-      
-//       // Fallback: calculate from students list
-//       try {
-//         // Import from ViewStudentService directly to avoid circular dependencies
-//         const { default: ViewStudentService } = await import('./ViewStudentService');
-//         const students = await ViewStudentService.getAllStudents();
-        
-//         // Process students to match expected format
-//         const processedStudents = students.map(student => {
-//           const readingLevel = student.readingLevel || 'Not Assessed';
-//           const score = student.readingPercentage || Math.floor(Math.random() * 50) + 30; // Random score as fallback
-//           const completionRate = student.activitiesCompleted 
-//             ? Math.round((student.activitiesCompleted / (student.totalActivities || 25)) * 100)
-//             : Math.floor(Math.random() * 60) + 20; // Random completion rate as fallback
-            
-//           return {
-//             id: student.id || student.idNumber || (student._id ? student._id.toString() : ''),
-//             name: student.name || `${student.firstName || ''} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName || ''}`.trim(),
-//             readingLevel: readingLevel,
-//             lastScore: score,
-//             completionRate: completionRate,
-//             difficulty: student.focusAreas || 'Needs assessment to determine areas for improvement'
-//           };
-//         });
-        
-//         // Sort by score and take the lowest scoring students
-//         return processedStudents
-//           .sort((a, b) => a.lastScore - b.lastScore)
-//           .slice(0, limit);
-//       } catch (fallbackError) {
-//         console.error('Error calculating students needing attention fallback:', fallbackError);
-//         throw error; // Throw original error
-//       }
-//     }
-//   }
-// };
-
-// export default StudentApiService;

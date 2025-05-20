@@ -1,414 +1,265 @@
-/* SkillsOverviewSection Component Styles */
+/* SkillsOverviewSection.css - Fixed to match screenshot */
 
 .literexia-skills-overview {
-    background-color: white;
-    border-radius: 12px;
-    padding: 1.75rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    margin-bottom: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  margin-bottom: 1.5rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* Skills header */
+.literexia-skills-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.literexia-section-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #4a5494;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.literexia-section-icon {
+  color: #4a5494;
+}
+
+.literexia-average-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background-color: #f4f7ff;
+  border-radius: 8px;
+}
+
+.literexia-average-value {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #4a5494;
+}
+
+.literexia-average-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+/* Skills grid */
+.literexia-skills-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.literexia-skill-card {
+  position: relative;
+  border-left: 4px solid #4a5494;
+  opacity: 0;
+  transform: translateY(20px);
+  padding-left: 0.75rem;
+}
+
+.literexia-skill-card.animate {
+  animation: fadeSlideUp 0.5s forwards;
+}
+
+.literexia-skill-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.literexia-skill-icon-container {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #4a5494;
+  color: white;
+  flex-shrink: 0;
+}
+
+.literexia-skill-info {
+  flex: 1;
+}
+
+.literexia-skill-name {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #4a5494;
+}
+
+.literexia-skill-description {
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.literexia-skill-score {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #4a5494;
+  text-align: right;
+  width: 4rem;
+}
+
+/* Progress bars - to match screenshot */
+.literexia-skill-bar-container {
+  position: relative;
+  height: 0.5rem;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  overflow: visible;
+  margin-bottom: 1.5rem;
+}
+
+.literexia-skill-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0;
+  background-color: #4a5494;
+  border-radius: 4px;
+  transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Level badge */
+.literexia-skill-level-badge {
+  position: absolute;
+  left: 0;
+  bottom: -1.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background-color: #eef2ff;
+  color: #4a5494;
+  transition: opacity 0.5s ease;
+}
+
+/* Legend section */
+.literexia-skills-legend {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.literexia-legend-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.literexia-legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.literexia-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.literexia-legend-marker {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+}
+
+.literexia-legend-marker.mastered {
+  background-color: #4a5494;
+}
+
+.literexia-legend-marker.proficient {
+  background-color: #6474a7;
+}
+
+.literexia-legend-marker.developing {
+  background-color: #8290c0;
+}
+
+.literexia-legend-marker.emerging {
+  background-color: #a2acd1;
+}
+
+.literexia-legend-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Empty state */
+.literexia-skills-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+  background-color: #f9fafb;
+  border-radius: 8px;
+}
+
+/* Animations */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
-  
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
   .literexia-skills-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
     gap: 1rem;
-  }
-  
-  .literexia-skills-title {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  
-  .literexia-skills-icon {
-    color: #3B4F81;
-    font-size: 1.5rem;
-  }
-  
-  .literexia-skills-title h3 {
-    margin: 0;
-    color: #1F2937;
-    font-size: 1.35rem;
-    font-weight: 600;
   }
   
   .literexia-average-score {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0.75rem 1.5rem;
-    border-radius: 10px;
-    font-weight: 600;
-  }
-  
-  .literexia-average-score.literexia-excellent {
-    background-color: rgba(76, 175, 80, 0.15);
-    color: #2E7D32;
-  }
-  
-  .literexia-average-score.literexia-good {
-    background-color: rgba(59, 79, 129, 0.15);
-    color: #3B4F81;
-  }
-  
-  .literexia-average-score.literexia-average {
-    background-color: rgba(255, 152, 0, 0.15);
-    color: #F57C00;
-  }
-  
-  .literexia-average-score.literexia-needs-improvement {
-    background-color: rgba(244, 67, 54, 0.15);
-    color: #D32F2F;
-  }
-  
-  .literexia-average-value {
-    font-size: 1.75rem;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    gap: 0.2rem;
-  }
-  
-  .literexia-percent-icon {
-    font-size: 0.9rem;
-    margin-top: -0.75rem;
-  }
-  
-  .literexia-average-label {
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
-  }
-  
-  .literexia-skills-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-  }
-  
-  .literexia-skill-card {
-    background-color: #F9FAFB;
-    border: 1px solid #E5E7EB;
-    border-radius: 10px;
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .literexia-skill-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-  }
-  
-  .literexia-skill-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 5px;
-    height: 100%;
-    border-top-left-radius: 10px;
-    border-bottom-left-radius: 10px;
-  }
-  
-  .literexia-skill-card:nth-child(1)::before {
-    background-color: #EF5350;
-  }
-  
-  .literexia-skill-card:nth-child(2)::before {
-    background-color: #FFCA28;
-  }
-  
-  .literexia-skill-card:nth-child(3)::before {
-    background-color: #66BB6A;
-  }
-  
-  .literexia-skill-card:nth-child(4)::before {
-    background-color: #42A5F5;
-  }
-  
-  .literexia-skill-content {
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
-    padding-left: 0.5rem;
-  }
-  
-  .literexia-skill-icon-container {
-    width: 45px;
-    height: 45px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.25rem;
-    flex-shrink: 0;
-  }
-  
-  .literexia-skill-icon-container.literexia-patinig {
-    background-color: #EF5350;
-  }
-  
-  .literexia-skill-icon-container.literexia-pantig {
-    background-color: #FFCA28;
-  }
-  
-  .literexia-skill-icon-container.literexia-salita {
-    background-color: #66BB6A;
-  }
-  
-  .literexia-skill-icon-container.literexia-pag-unawa {
-    background-color: #42A5F5;
-  }
-  
-  .literexia-skill-info {
-    flex: 1;
-  }
-  
-  .literexia-skill-name {
-    margin: 0 0 0.25rem 0;
-    font-size: 1.125rem;
-    color: #1F2937;
-    font-weight: 600;
-  }
-  
-  .literexia-skill-description {
-    font-size: 0.875rem;
-    color: #6B7280;
-  }
-  
-  .literexia-skill-score {
-    font-size: 1.5rem;
-    font-weight: 700;
-    padding: 0.5rem 0.75rem;
-    border-radius: 8px;
-    min-width: 65px;
-    text-align: center;
-  }
-  
-  .literexia-skill-score.literexia-excellent {
-    background-color: rgba(76, 175, 80, 0.15);
-    color: #2E7D32;
-  }
-  
-  .literexia-skill-score.literexia-good {
-    background-color: rgba(59, 79, 129, 0.15);
-    color: #3B4F81;
-  }
-  
-  .literexia-skill-score.literexia-average {
-    background-color: rgba(255, 152, 0, 0.15);
-    color: #F57C00;
-  }
-  
-  .literexia-skill-score.literexia-needs-improvement {
-    background-color: rgba(244, 67, 54, 0.15);
-    color: #D32F2F;
-  }
-  
-  .literexia-skill-bar-container {
-    position: relative;
-    height: 40px;
-    padding: 0 0.5rem;
-  }
-  
-  .literexia-skill-bar-background {
-    position: absolute;
-    top: 10px;
-    left: 0;
-    right: 0;
-    height: 10px;
-    border-radius: 5px;
-  }
-  
-  .literexia-skill-bar-background.literexia-patinig-bg {
-    background-color: rgba(239, 83, 80, 0.1);
-  }
-  
-  .literexia-skill-bar-background.literexia-pantig-bg {
-    background-color: rgba(255, 202, 40, 0.1);
-  }
-  
-  .literexia-skill-bar-background.literexia-salita-bg {
-    background-color: rgba(102, 187, 106, 0.1);
-  }
-  
-  .literexia-skill-bar-background.literexia-pag-unawa-bg {
-    background-color: rgba(66, 165, 245, 0.1);
-  }
-  
-  .literexia-skill-bar-fill {
-    position: absolute;
-    top: 10px;
-    left: 0;
-    height: 10px;
-    border-radius: 5px;
-    transition: width 1.5s cubic-bezier(0.165, 0.84, 0.44, 1);
-  }
-  
-  .literexia-skill-bar-fill.literexia-patinig-fill {
-    background: linear-gradient(90deg, #FF8A65, #EF5350);
-    box-shadow: 0 1px 3px rgba(239, 83, 80, 0.3);
-  }
-  
-  .literexia-skill-bar-fill.literexia-pantig-fill {
-    background: linear-gradient(90deg, #FFE082, #FFCA28);
-    box-shadow: 0 1px 3px rgba(255, 202, 40, 0.3);
-  }
-  
-  .literexia-skill-bar-fill.literexia-salita-fill {
-    background: linear-gradient(90deg, #AED581, #66BB6A);
-    box-shadow: 0 1px 3px rgba(102, 187, 106, 0.3);
-  }
-  
-  .literexia-skill-bar-fill.literexia-pag-unawa-fill {
-    background: linear-gradient(90deg, #81D4FA, #42A5F5);
-    box-shadow: 0 1px 3px rgba(66, 165, 245, 0.3);
-  }
-  
-  .literexia-skill-markers {
-    position: absolute;
-    top: 20px;
-    left: 0;
-    right: 0;
-    height: 10px;
-  }
-  
-  .literexia-skill-marker {
-    position: absolute;
-    width: 1px;
-    height: 10px;
-    background-color: rgba(0, 0, 0, 0.1);
-  }
-  
-  .literexia-skill-level-badge {
-    position: absolute;
-    top: 0;
-    transform: translateX(-50%);
-    padding: 0.25rem 0.75rem;
-    border-radius: 15px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    white-space: nowrap;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  .literexia-skill-level-badge.literexia-excellent {
-    background-color: rgba(76, 175, 80, 0.9);
-    color: white;
-  }
-  
-  .literexia-skill-level-badge.literexia-good {
-    background-color: rgba(59, 79, 129, 0.9);
-    color: white;
-  }
-  
-  .literexia-skill-level-badge.literexia-average {
-    background-color: rgba(255, 152, 0, 0.9);
-    color: white;
-  }
-  
-  .literexia-skill-level-badge.literexia-needs-improvement {
-    background-color: rgba(244, 67, 54, 0.9);
-    color: white;
+    align-self: flex-start;
   }
   
   .literexia-skills-legend {
-    display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    background-color: #F9FAFB;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    border: 1px solid #E5E7EB;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .literexia-skill-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
   
-  .literexia-legend-title {
-    font-weight: 600;
-    color: #4B5563;
-    font-size: 0.875rem;
+  .literexia-skill-score {
+    align-self: flex-start;
+    margin-top: 0.5rem;
   }
   
   .literexia-legend-items {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-  
-  .literexia-legend-item {
-    display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 0.5rem;
-    font-size: 0.875rem;
-    color: #6B7280;
   }
-  
-  .literexia-legend-marker {
-    width: 12px;
-    height: 12px;
-    border-radius: 3px;
-  }
-  
-  .literexia-legend-marker.literexia-excellent {
-    background-color: #4CAF50;
-  }
-  
-  .literexia-legend-marker.literexia-good {
-    background-color: #3B4F81;
-  }
-  
-  .literexia-legend-marker.literexia-average {
-    background-color: #FF9800;
-  }
-  
-  .literexia-legend-marker.literexia-needs-improvement {
-    background-color: #F44336;
-  }
-  
-  .literexia-skills-empty {
-    text-align: center;
-    padding: 3rem;
-    color: #6B7280;
-    font-style: italic;
-  }
-  
-  /* Animation */
-  @keyframes literexia-skill-bar-animation {
-    0% { width: 0; }
-    100% { width: var(--width-value); }
-  }
-  
-  .literexia-skill-bar-fill {
-    animation: literexia-skill-bar-animation 1.5s forwards;
-  }
-  
-  /* Responsive Styles */
-  @media (max-width: 768px) {
-    .literexia-skills-header {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    
-    .literexia-skill-content {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 1rem;
-    }
-    
-    .literexia-skill-score {
-      align-self: flex-start;
-    }
-    
-    .literexia-legend-items {
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-  }
+}
