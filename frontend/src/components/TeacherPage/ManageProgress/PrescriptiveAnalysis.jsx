@@ -18,7 +18,7 @@ import './css/PrescriptiveAnalysis.css';
  * PrescriptiveAnalysis Component
  * 
  * This component displays AI-generated learning recommendations based on student assessment results.
- * It also provides functionality for teachers to customize and push intervention activities to a student's mobile device.
+ * It also provides functionality for teachers to create intervention activities for the student's mobile device.
  * 
  * The component is designed to work with the template structure described in our system:
  * - For Alphabet Knowledge, Phonological Awareness, Word Recognition, and Decoding: 
@@ -225,10 +225,6 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
                   <div className="literexia-metric-label">Target Score</div>
                   <div className="literexia-metric-value">{rec.targetScore || 75}%</div>
                 </div>
-                <div className="literexia-metric literexia-success-probability">
-                  <div className="literexia-metric-label">Success Probability</div>
-                  <div className="literexia-metric-value">{rec.successProbability || 85}%</div>
-                </div>
               </div>
               
               {/* Analysis and detailed recommendations */}
@@ -253,14 +249,14 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
                   ) : (
                     <div className="literexia-action-note">
                       <FaInfoCircle />
-                      <span>Editing this activity will create a custom version for this student's specific needs.</span>
+                      <span>Creating an intervention activity will help address the student's specific needs in this area.</span>
                     </div>
                   )}
                   <button
                     className="literexia-edit-activity-btn"
                     onClick={() => onEditActivity(rec)}
                   >
-                    <FaEdit /> {rec.status === 'pushed_to_mobile' ? 'Edit Activity' : 'Customize & Push to Mobile'}
+                    <FaEdit /> {rec.status === 'pushed_to_mobile' ? 'Edit Activity' : 'Create Intervention Activity'}
                   </button>
                 </div>
               </div>
@@ -273,3 +269,4 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
 };
 
 export default PrescriptiveAnalysis;
+
