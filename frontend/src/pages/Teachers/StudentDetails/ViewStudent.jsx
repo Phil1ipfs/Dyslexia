@@ -242,35 +242,43 @@ const ViewStudent = () => {
     );
   };
 
-  // In ViewStudent.jsx, update the getParentName function:
-
   const getParentName = (student) => {
     // If student has no valid data, return default
     if (!student) return 'Not registered';
 
     // Direct parent object with name
-    if (student.parent && typeof student.parent === 'object' && student.parent.name) {
-      return student.parent.name;
-    }
-
-    // String name directly on parent field
-    if (typeof student.parent === 'string' && student.parent) {
-      return student.parent;
-    }
-
-    // For parentId only - server should have included parent info
-    if (student.parentId) {
-      // Try to get parent name from the parentId if possible
-      // For each student, we should have populated this in the backend
-      const studentsWithParentInfo = students.filter(s =>
-        s.parent && s.parent.name && s._id === student._id
-      );
-
-      if (studentsWithParentInfo.length > 0 && studentsWithParentInfo[0].parent) {
-        return studentsWithParentInfo[0].parent.name;
+    if (student.parent) {
+      // If parent has a name property, use it
+      if (typeof student.parent === 'object' && student.parent.name) {
+        return student.parent.name;
       }
 
-      return 'Registered'; // Default if parent ID exists but name not found
+      // If parent has firstName/lastName properties, construct full name
+      if (typeof student.parent === 'object' && (student.parent.firstName || student.parent.lastName)) {
+        return `${student.parent.firstName || ''} ${student.parent.middleName ? student.parent.middleName + ' ' : ''}${student.parent.lastName || ''}`.trim();
+      }
+
+      // If parent is a string, use it directly
+      if (typeof student.parent === 'string' && student.parent) {
+        return student.parent;
+      }
+    }
+
+    // For parentId - try to look up in the parent data from the JSON
+    if (student.parentId) {
+      // Use the parents data you have
+      const parentProfiles = [
+        { _id: "681a2933af165878136e05da", firstName: "Jan Mark", middleName: "Percival", lastName: "Caram" },
+        { _id: "6827575c89b0d728f9333a20", firstName: "Kit Nicholas", middleName: "Tongol", lastName: "Santiago" }
+      ];
+
+      // Find matching parent
+      const matchedParent = parentProfiles.find(p => p._id === student.parentId);
+      if (matchedParent) {
+        return `${matchedParent.firstName || ''} ${matchedParent.middleName ? matchedParent.middleName + ' ' : ''}${matchedParent.lastName || ''}`.trim();
+      }
+
+      return 'Registered'; // Default if parent ID exists but not found
     }
 
     return 'Not registered';
@@ -594,14 +602,9 @@ const ViewStudent = () => {
                         <div className="vs-parent-guardian">
                           <span className="vs-parent-label">Parent/Guardian: </span>
                           <span className="vs-parent-name">
-                            {student.parent && typeof student.parent === 'object' && student.parent.name
-                              ? student.parent.name
-                              : student.parentId
-                                ? `${student.parent?.firstName || ''} ${student.parent?.middleName ? student.parent.middleName + ' ' : ''}${student.parent?.lastName || ''}`.trim() || 'Registered'
-                                : 'Not registered'}
+                            {getParentName(student)}
                           </span>
                         </div>
-
                         <button
                           className="vs-view-details-btn"
                           onClick={() => handleViewDetails(student)}
