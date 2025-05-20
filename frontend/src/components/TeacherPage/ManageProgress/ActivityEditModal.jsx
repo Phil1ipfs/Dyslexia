@@ -20,6 +20,8 @@ import {
 } from 'react-icons/fa';
 import './css/ActivityEditModal.css';
 
+
+
 const ActivityEditModal = ({ activity, onClose, onSave, student }) => {
   // State for basic activity info
   const [title, setTitle] = useState(activity.title || '');

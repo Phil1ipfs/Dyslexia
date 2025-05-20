@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FaEdit, 
   FaLightbulb, 
@@ -14,7 +14,24 @@ import {
 } from 'react-icons/fa';
 import './css/PrescriptiveAnalysis.css';
 
+/**
+ * PrescriptiveAnalysis Component
+ * 
+ * This component displays AI-generated learning recommendations based on student assessment results.
+ * It also provides functionality for teachers to customize and push intervention activities to a student's mobile device.
+ * 
+ * The component is designed to work with the template structure described in our system:
+ * - For Alphabet Knowledge, Phonological Awareness, Word Recognition, and Decoding: 
+ *   It will use question templates (patinig, katinig, malapantig, word) 
+ * - For Reading Comprehension:
+ *   It will use sentence templates which include passage text, images, and specific questions
+ * 
+ * @param {Object[]} recommendations - Array of recommendation objects from prescriptive analysis
+ * @param {Function} onEditActivity - Callback function when editing an activity
+ * @param {Object} student - Student information object
+ */
 const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
+  // If no recommendations are provided, show empty state
   if (!recommendations || recommendations.length === 0) {
     return (
       <div className="literexia-empty-state">
@@ -25,14 +42,22 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
     );
   }
   
-  // Get category color class
+  /**
+   * Get CSS class for category styling
+   * Maps each category to a specific color class for visual distinction
+   * 
+   * @param {string} category - The category name
+   * @return {string} CSS class name for the category
+   */
   const getCategoryColorClass = (category) => {
     switch (category) {
       case 'Vowel Sound':
       case 'Patinig':
+      case 'Alphabet Knowledge':
         return 'literexia-patinig';
       case 'Syllable Blending':
       case 'Pantig':
+      case 'Phonological Awareness':
         return 'literexia-pantig';
       case 'Word Recognition':
       case 'Pagkilala ng Salita':
@@ -40,12 +65,20 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
       case 'Reading Comprehension':
       case 'Pag-unawa sa Binasa':
         return 'literexia-pag-unawa';
+      case 'Decoding':
+        return 'literexia-decoding';
       default:
         return '';
     }
   };
   
-  // Get status info
+  /**
+   * Get status display information
+   * Maps the activity status to visual indicators and text
+   * 
+   * @param {string} status - Current status of the activity
+   * @return {Object} Object containing CSS class and display text
+   */
   const getStatusInfo = (status) => {
     switch (status) {
       case 'pushed_to_mobile':
@@ -61,7 +94,7 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
   
   return (
     <div className="literexia-prescriptive-container">
-      {/* Header Section */}
+      {/* Header Section with AI recommendation overview */}
       <div className="literexia-prescriptive-header">
         <div className="literexia-header-icon">
           <FaBrain />
@@ -76,7 +109,7 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
         </div>
       </div>
       
-      {/* Findings summary */}
+      {/* Findings summary - Overall analysis of student's performance */}
       <div className="literexia-summary-section">
         <div className="literexia-summary-header">
           <FaLightbulb className="literexia-summary-icon" />
@@ -84,14 +117,14 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
         </div>
         <div className="literexia-summary-content">
           <p>
-            Analysis of {student?.name}'s progress data indicates difficulties with 
-            <strong> diphthong recognition</strong> and <strong>complex syllable patterns</strong>. 
+            Analysis of {student?.firstName || student?.name}'s progress data indicates difficulties with 
+            <strong> letter recognition</strong> and <strong>complex syllable patterns</strong>. 
             Their performance in activities requiring these skills has consistently been 
             below average, with a pattern of errors suggesting phonological 
             processing challenges common in students with dyslexia.
           </p>
           <p>
-            Based on their current reading level ({recommendations[0]?.readingLevel || 'Level 2'}) 
+            Based on their current reading level ({recommendations[0]?.readingLevel || 'Low Emerging'}) 
             and their specific performance patterns, the system has generated 
             personalized learning recommendations to address these gaps. 
             The activities below are specifically designed to target their 
@@ -100,7 +133,7 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
         </div>
       </div>
       
-      {/* Teacher Implementation Guide */}
+      {/* Teaching guide for in-person instruction to complement digital activities */}
       <div className="literexia-teaching-guide">
         <div className="literexia-guide-header">
           <FaChalkboardTeacher className="literexia-guide-icon" />
@@ -108,7 +141,7 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
         </div>
         <div className="literexia-guide-content">
           <p>
-            While using the digital activities, we recommend supporting {student?.name} 
+            While using the digital activities, we recommend supporting {student?.firstName || student?.name} 
             with the following strategies:
           </p>
           <div className="literexia-strategy-list">
@@ -119,7 +152,7 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
               <div className="literexia-strategy-content">
                 <h4>Multi-sensory Instruction</h4>
                 <p>
-                  Use physical letter tiles or cards when working on diphthongs, allowing {student?.name} to see, 
+                  Use physical letter tiles or cards when working on letter recognition, allowing {student?.firstName || student?.name} to see, 
                   touch, and hear the sounds simultaneously.
                 </p>
               </div>
@@ -132,7 +165,7 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
               <div className="literexia-strategy-content">
                 <h4>Syllable Tapping</h4>
                 <p>
-                  Teach {student?.name} to tap syllables with their fingers while reading, 
+                  Teach {student?.firstName || student?.name} to tap syllables with their fingers while reading, 
                   reinforcing the physical connection to syllable patterns.
                 </p>
               </div>
@@ -146,7 +179,7 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
                 <h4>Chunking Strategy</h4>
                 <p>
                   Demonstrate how to break longer words into manageable parts, 
-                  gradually reducing support as {student?.name}'s confidence increases.
+                  gradually reducing support as {student?.firstName || student?.name}'s confidence increases.
                 </p>
               </div>
             </div>
@@ -154,12 +187,12 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
           
           <div className="literexia-monitoring-note">
             <strong>Progress Monitoring:</strong> After implementing these interventions for 2-3 weeks, 
-            review {student?.name}'s progress and adjust strategies as needed.
+            review {student?.firstName || student?.name}'s progress and adjust strategies as needed.
           </div>
         </div>
       </div>
       
-      {/* Recommended Activities/Interventions */}
+      {/* Recommended Activities/Interventions - Main list of activities that can be customized */}
       <div className="literexia-interventions">
         <h3 className="literexia-interventions-title">Recommended Interventions</h3>
         
@@ -179,6 +212,7 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
                 </div>
               </div>
               
+              {/* Metrics showing current performance and targets */}
               <div className="literexia-intervention-metrics">
                 <div className="literexia-metric">
                   <div className="literexia-metric-label">Current Score</div>
@@ -197,10 +231,11 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
                 </div>
               </div>
               
+              {/* Analysis and detailed recommendations */}
               <div className="literexia-intervention-details">
                 <div className="literexia-intervention-analysis">
                   <h5>Analysis</h5>
-                  <p>{rec.analysis || rec.rationale || 'No specific analysis provided.'}</p>
+                  <p>{rec.analysis || rec.rationale || 'Based on assessment results, this area needs additional focused practice.'}</p>
                 </div>
                 
                 <div className="literexia-intervention-recommendation">
@@ -208,6 +243,7 @@ const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
                   <p>{rec.recommendation || 'Provide additional practice activities focusing on this skill area, with immediate feedback and opportunities for correction.'}</p>
                 </div>
                 
+                {/* Action buttons to edit/push activity to mobile */}
                 <div className="literexia-intervention-actions">
                   {rec.status === 'pushed_to_mobile' ? (
                     <div className="literexia-mobile-status">
