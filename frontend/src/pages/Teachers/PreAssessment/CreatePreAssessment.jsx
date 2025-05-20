@@ -85,7 +85,6 @@ const CreatePreAssessment = () => {
         const newlyAddedActivities = JSON.parse(localStorage.getItem('mockActivities') || '[]');
         
         // Then load from our mock data
-        const mockModule = await import('../../../data/Teachers/activitiesMockData');
         const allActivities = [...mockModule.default, ...newlyAddedActivities];
         
         // Filter for only approved templates
@@ -906,3 +905,4 @@ const CreatePreAssessment = () => {
 };
 
 export default CreatePreAssessment;
+
