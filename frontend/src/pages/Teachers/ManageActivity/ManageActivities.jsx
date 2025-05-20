@@ -16,11 +16,11 @@ import ActivityCard from "../../../components/TeacherPage/ManageActivity/Activit
 import AddActivityModal from "../../../components/TeacherPage/ManageActivity/AddActivityModal";
 import "../../../css/Teachers/ManageActivity.css";
 
-import {
-  readingLevels,
-  categories,
-  sortOptions
-} from "../../../data/Teachers/activityData";
+// import {
+//   readingLevels,
+//   categories,
+//   sortOptions
+// } from "../../../data/Teachers/activityData";
 
 function ManageActivities() {
   // State variables
@@ -64,7 +64,7 @@ function ManageActivities() {
     const loadAllActivities = async () => {
       try {
         // Load mock activities from mock data module
-        const module = await import("../../../data/Teachers/activitiesMockData");
+        // const module = await import("../../../data/Teachers/activitiesMockData");
         const mockData = module.default;
 
         // Get newly added activities from localStorage

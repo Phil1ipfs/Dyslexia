@@ -46,7 +46,7 @@ const PreviewActivity = () => {
           }
         } else {
           // If not found in localStorage, check the mock data import
-          const mockResponse = await import('../../../data/Teachers/activitiesMockData.js');
+          // const mockResponse = await import('../../../data/Teachers/activitiesMockData.js');
           const activities = mockResponse.default;
           const foundActivity = activities.find(a => a.id === parseInt(id));
           

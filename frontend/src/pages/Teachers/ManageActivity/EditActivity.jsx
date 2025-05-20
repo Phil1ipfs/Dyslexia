@@ -190,7 +190,7 @@ const EditActivity = () => {
 
         // If not found in localStorage, check mock data
         if (!activity) {
-          const mockModule = await import('../../../data/Teachers/activitiesMockData');
+          // const mockModule = await import('../../../data/Teachers/activitiesMockData');
           const mockData = mockModule.default;
           activity = mockData.find(a => Number(a.id) === Number(id));
         }
