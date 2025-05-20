@@ -1,8 +1,21 @@
-import React from 'react';
-import { FaChartLine, FaChartBar, FaPercent } from 'react-icons/fa';
+import React, { useEffect, useRef } from 'react';
+import { FaChartLine, FaChartBar } from 'react-icons/fa';
 import './css/SkillsOverviewSection.css';
 
-const SkillsOverviewSection = ({ scores }) => {
+const SkillsOverviewSection = ({ scores, animated = false }) => {
+  const progressBarsRef = useRef({});
+  
+  useEffect(() => {
+    if (!animated) return;
+    
+    // Animate progress bars after component mounts
+    Object.entries(scores).forEach(([key, value]) => {
+      if (progressBarsRef.current[key]) {
+        progressBarsRef.current[key].style.width = `${value}%`;
+      }
+    });
+  }, [animated, scores]);
+  
   if (!scores || Object.keys(scores).length === 0) {
     return (
       <div className="literexia-skills-empty">
@@ -11,46 +24,48 @@ const SkillsOverviewSection = ({ scores }) => {
     );
   }
 
-  // Map keys to English labels and determine skill categories
+  // Map keys to display labels and determine skill categories
   const getSkillInfo = (key) => {
     switch(key) {
-      case 'patinig':
-      case 'vowelSound':
+      case 'Alphabet Knowledge':
         return { 
-          label: 'Vowel Sound', 
-          description: 'Ability to recognize and pronounce vowels',
-          className: 'literexia-patinig',
+          label: 'Alphabet Knowledge', 
+          description: 'Recognition of uppercase and lowercase letters',
           icon: <FaChartBar />
         };
-      case 'pantig':
-      case 'syllableBlending':
+      case 'Phonological Awareness':
         return { 
-          label: 'Syllable Blending', 
-          description: 'Ability to form and break down syllables',
-          className: 'literexia-pantig',
+          label: 'Phonological Awareness', 
+          description: 'Ability to recognize and work with sounds in spoken language',
           icon: <FaChartBar />
         };
-      case 'pagkilalaNgSalita':
-      case 'wordRecognition':
+      case 'Word Recognition':
         return { 
           label: 'Word Recognition', 
-          description: 'Ability to recognize and read words',
-          className: 'literexia-salita',
+          description: 'Ability to recognize and read words accurately',
           icon: <FaChartBar />
         };
-      case 'pagUnawaSaBinasa':
-      case 'readingComprehension':
+      case 'Decoding':
+        return { 
+          label: 'Decoding', 
+          description: 'Ability to apply knowledge of letter-sound relationships',
+          icon: <FaChartBar />
+        };
+      case 'Reading Comprehension':
         return { 
           label: 'Reading Comprehension', 
-          description: 'Ability to understand text content',
-          className: 'literexia-pag-unawa',
+          description: 'Ability to understand and interpret text content',
           icon: <FaChartBar />
         };
       default:
+        // Create a reasonable label from the key
+        const label = key
+          .replace(/([A-Z])/g, ' $1')
+          .replace(/^./, str => str.toUpperCase());
+        
         return { 
           label: key, 
-          description: 'Reading skill',
-          className: '',
+          description: 'Reading skill assessment',
           icon: <FaChartBar />
         };
     }
@@ -58,10 +73,10 @@ const SkillsOverviewSection = ({ scores }) => {
 
   // Get skill level classification
   const getSkillLevel = (score) => {
-    if (score >= 85) return { label: 'Excellent', className: 'literexia-excellent' };
-    if (score >= 70) return { label: 'Good', className: 'literexia-good' };
-    if (score >= 50) return { label: 'Average', className: 'literexia-average' };
-    return { label: 'Needs Practice', className: 'literexia-needs-improvement' };
+    if (score >= 85) return { label: 'Mastered', className: 'mastered' };
+    if (score >= 70) return { label: 'Proficient', className: 'proficient' };
+    if (score >= 50) return { label: 'Developing', className: 'developing' };
+    return { label: 'Emerging', className: 'emerging' };
   };
 
   // Calculate average score
@@ -78,12 +93,12 @@ const SkillsOverviewSection = ({ scores }) => {
   return (
     <div className="literexia-skills-overview">
       <div className="literexia-skills-header">
-        <div className="literexia-skills-title">
-          <FaChartLine className="literexia-skills-icon" />
-          <h3>Progress Scores</h3>
-        </div>
+        <h3 className="literexia-section-title">
+          <FaChartLine className="literexia-section-icon" />
+          Skill Performance Overview
+        </h3>
         <div className={`literexia-average-score ${averageSkillLevel.className}`}>
-          <span className="literexia-average-value">{averageScore}<FaPercent className="literexia-percent-icon" /></span>
+          <span className="literexia-average-value">{averageScore}%</span>
           <span className="literexia-average-label">{averageSkillLevel.label}</span>
         </div>
       </div>
@@ -94,9 +109,13 @@ const SkillsOverviewSection = ({ scores }) => {
           const skillLevel = getSkillLevel(value);
           
           return (
-            <div key={index} className="literexia-skill-card">
+            <div 
+              key={index} 
+              className={`literexia-skill-card ${animated ? 'animate' : ''}`} 
+              style={{animationDelay: `${0.1 * index}s`}}
+            >
               <div className="literexia-skill-content">
-                <div className={`literexia-skill-icon-container ${skillInfo.className}`}>
+                <div className="literexia-skill-icon-container">
                   {skillInfo.icon}
                 </div>
                 
@@ -105,26 +124,20 @@ const SkillsOverviewSection = ({ scores }) => {
                   <div className="literexia-skill-description">{skillInfo.description}</div>
                 </div>
                 
-                <div className={`literexia-skill-score ${skillLevel.className}`}>
+                <div className="literexia-skill-score">
                   {value}%
                 </div>
               </div>
               
               <div className="literexia-skill-bar-container">
-                <div className={`literexia-skill-bar-background ${skillInfo.className}-bg`}></div>
                 <div 
-                  className={`literexia-skill-bar-fill ${skillInfo.className}-fill`}
-                  style={{ width: `${value}%` }}
+                  ref={el => progressBarsRef.current[key] = el}
+                  className="literexia-skill-bar-fill"
+                  style={{ width: animated ? `${value}%` : '0%' }}
+                  data-value={value}
                 ></div>
-                <div className="literexia-skill-markers">
-                  <div className="literexia-skill-marker" style={{ left: '25%' }}></div>
-                  <div className="literexia-skill-marker" style={{ left: '50%' }}></div>
-                  <div className="literexia-skill-marker" style={{ left: '75%' }}></div>
-                </div>
-                <div 
-                  className={`literexia-skill-level-badge ${skillLevel.className}`} 
-                  style={{ left: `${Math.min(Math.max(value, 15), 85)}%` }}
-                >
+                {/* Only show the Emerging label directly, no markers */}
+                <div className="literexia-skill-level-badge">
                   {skillLevel.label}
                 </div>
               </div>
@@ -134,23 +147,23 @@ const SkillsOverviewSection = ({ scores }) => {
       </div>
       
       <div className="literexia-skills-legend">
-        <div className="literexia-legend-title">Progress Levels:</div>
+        <div className="literexia-legend-title">Skill Levels:</div>
         <div className="literexia-legend-items">
           <div className="literexia-legend-item">
-            <span className="literexia-legend-marker literexia-excellent"></span>
-            <span className="literexia-legend-label">Excellent (85-100%)</span>
+            <span className="literexia-legend-marker mastered"></span>
+            <span className="literexia-legend-label">Mastered (85-100%)</span>
           </div>
           <div className="literexia-legend-item">
-            <span className="literexia-legend-marker literexia-good"></span>
-            <span className="literexia-legend-label">Good (70-84%)</span>
+            <span className="literexia-legend-marker proficient"></span>
+            <span className="literexia-legend-label">Proficient (70-84%)</span>
           </div>
           <div className="literexia-legend-item">
-            <span className="literexia-legend-marker literexia-average"></span>
-            <span className="literexia-legend-label">Average (50-69%)</span>
+            <span className="literexia-legend-marker developing"></span>
+            <span className="literexia-legend-label">Developing (50-69%)</span>
           </div>
           <div className="literexia-legend-item">
-            <span className="literexia-legend-marker literexia-needs-improvement"></span>
-            <span className="literexia-legend-label">Needs Practice (0-49%)</span>
+            <span className="literexia-legend-marker emerging"></span>
+            <span className="literexia-legend-label">Emerging (0-49%)</span>
           </div>
         </div>
       </div>

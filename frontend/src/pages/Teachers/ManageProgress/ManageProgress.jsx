@@ -27,7 +27,7 @@ import {
   FaArrowRight
 } from 'react-icons/fa';
 import StudentApiService from '../../../services/Teachers/StudentApiService';
-import S3Image from '../../../components/S3Image'; 
+import S3Image from '../../../components/S3Image';
 import '../../../css/Teachers/ManageProgress.css';
 
 function getPageNumbers(currentPage, totalPages) {
@@ -407,7 +407,7 @@ const ManageProgress = () => {
                           <div className="mp-student-basic-info">
                             <h3 className="mp-student-name">{student.name}</h3>
                             <span className="mp-student-number">
-                              <FaIdCard style={{ marginRight: '0.4rem' }} /> ID: {student.id}
+                              <FaIdCard style={{ marginRight: '0.4rem' }} /> ID: {student.idNumber || student.id}
                             </span>
                           </div>
 

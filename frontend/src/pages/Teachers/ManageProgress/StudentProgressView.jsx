@@ -42,48 +42,26 @@ const StudentProgressView = () => {
   const [editingFeedback, setEditingFeedback] = useState({});
   const [tempFeedback, setTempFeedback] = useState({});
 
-  // Fetch student data
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-
+  
         // Get student details
         const studentData = await StudentApiService.getStudentDetails(id);
         setStudent(studentData);
-
-        // Get assessment data
+  
+        // Keep this for compatibility with other components
         const assessment = await StudentApiService.getAssessmentResults(id);
-        // Make sure we're logging the data to verify what's coming from the API
-        console.log('Assessment data from API:', assessment);
         setAssessmentData(assessment);
-
-        // Get progress data
-        const progress = await StudentApiService.getProgressData(id);
-        setProgressData(progress);
-
-        // Get recommended lessons
-        const lessons = await StudentApiService.getRecommendedLessons(id);
-        setRecommendedLessons(lessons);
-
-        // Initialize learning objectives from all lessons regardless of assigned status
-        setLearningObjectives(lessons.map(lesson => ({
-          id: lesson.id,
-          title: lesson.title,
-          assistance: null, // null, 'minimal', 'moderate', 'maximal'
-          remarks: '',
-          isEditingRemarks: false
-        })));
-
-        // Always try to get prescriptive recommendations regardless of assigned status
-        try {
-          const recommendations = await StudentApiService.getPrescriptiveRecommendations(id);
-          setPrescriptiveRecommendations(recommendations);
-        } catch (recError) {
-          console.log('No prescriptive recommendations available yet:', recError);
-          // Don't fail completely if recommendations aren't available
-        }
-
+  
+        // Get category results for the progress report
+        const categoryResults = await StudentApiService.getCategoryResults(id);
+        setProgressData(categoryResults);
+  
+        // Other existing data fetching...
+  
         setLoading(false);
       } catch (err) {
         console.error('Error loading student data:', err);
@@ -91,9 +69,11 @@ const StudentProgressView = () => {
         setLoading(false);
       }
     };
-
+  
     fetchData();
   }, [id]);
+
+  
 
   // Handle lesson selection
   const handleLessonSelect = (lesson) => {
@@ -273,28 +253,28 @@ const StudentProgressView = () => {
           className={`literexia-tab-button ${activeTab === 'assessment' ? 'active' : ''}`}
           onClick={() => handleTabClick('assessment')}
         >
-          <FaChartLine /> Assessment Results
+          <FaChartLine /> Pre Assessment Results
         </button>
 
         <button
           className={`literexia-tab-button ${activeTab === 'progress' ? 'active' : ''}`}
           onClick={() => handleTabClick('progress')}
         >
-          <FaChartLine /> Progress Report
+          <FaChartLine /> Post Assessment Progress Report
         </button>
 
         <button
           className={`literexia-tab-button ${activeTab === 'prescriptive' ? 'active' : ''}`}
           onClick={() => handleTabClick('prescriptive')}
         >
-          <FaLightbulb /> Prescriptive Analysis
+          <FaLightbulb /> Prescriptive Analysis and Reassessment
         </button>
-        
+
         <button
           className={`literexia-tab-button ${activeTab === 'lessonProgress' ? 'active' : ''}`}
           onClick={() => handleTabClick('lessonProgress')}
         >
-          <FaCheckCircle /> Individuaized Education Progress
+          <FaCheckCircle /> IEP Report
         </button>
       </div>
 
@@ -346,7 +326,7 @@ const StudentProgressView = () => {
         {activeTab === 'progress' && (
           <div className="literexia-tab-panel">
             <div className="literexia-panel-header">
-              <h2>Progress Report</h2>
+              <h2>Post Assessment Progress Report</h2>
             </div>
             <div className="literexia-panel-content">
               {progressData ? (
@@ -498,7 +478,7 @@ const StudentProgressView = () => {
         {activeTab === 'prescriptive' && (
           <div className="literexia-tab-panel">
             <div className="literexia-panel-header">
-              <h2>Personalized Activities</h2>
+              <h2>Prescriptive Analysis and Reassessment</h2>
             </div>
             <div className="literexia-panel-content">
               {prescriptiveRecommendations.length > 0 ? (
