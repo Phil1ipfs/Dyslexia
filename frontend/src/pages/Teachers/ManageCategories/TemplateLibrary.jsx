@@ -119,25 +119,25 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
     return categories;
   };
 
-  // Check if a template can be edited (only if it's rejected or in pending state)
+  // UPDATED: Check if a template can be edited (only if it's rejected)
   const canEditTemplate = (template) => {
     if (nestedTabIndex === 0) {
-      return !template.isApproved && !template.pendingApproval;
+      return template.isRejected && !template.pendingApproval;
     } else if (nestedTabIndex === 1) {
-      return !template.isActive && !template.pendingApproval;
+      return template.isRejected && !template.pendingApproval;
     } else {
-      return !template.isApproved && !template.pendingApproval;
+      return template.isRejected && !template.pendingApproval;
     }
   };
 
-  // Check if a template can be deleted (only if it's rejected or in pending state)
+  // UPDATED: Check if a template can be deleted (only if it's rejected)
   const canDeleteTemplate = (template) => {
     if (nestedTabIndex === 0) {
-      return !template.isApproved && !template.pendingApproval;
+      return template.isRejected && !template.pendingApproval;
     } else if (nestedTabIndex === 1) {
-      return !template.isActive && !template.pendingApproval;
+      return template.isRejected && !template.pendingApproval;
     } else {
-      return !template.isApproved && !template.pendingApproval;
+      return template.isRejected && !template.pendingApproval;
     }
   };
 
@@ -149,8 +149,8 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
   const handleEditTemplate = (template) => {
     // Check if template can be edited
     if (!canEditTemplate(template)) {
-      // Show message that approved templates can't be edited
-      alert("Approved or pending templates cannot be edited. Only rejected templates can be modified.");
+      // Show message that only rejected templates can be edited
+      alert("Only rejected templates can be modified. Templates that are approved or pending cannot be edited.");
       return;
     }
     
@@ -166,8 +166,8 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
   const handleDeleteConfirm = (template) => {
     // Check if template can be deleted
     if (!canDeleteTemplate(template)) {
-      // Show message that approved templates can't be deleted
-      alert("Approved or pending templates cannot be deleted. Only rejected templates can be deleted.");
+      // Show message that only rejected templates can be deleted
+      alert("Only rejected templates can be deleted. Templates that are approved or pending cannot be deleted.");
       return;
     }
     
@@ -488,8 +488,8 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
                         </span>
                       </div>
                       <div className="tl-cell tl-actions">
-                        {/* Only show edit and delete buttons for rejected templates or templates not yet submitted */}
-                        {(template.isRejected || (!template.isApproved && !template.pendingApproval)) && (
+                        {/* UPDATED: Only show edit and delete buttons for rejected templates */}
+                        {template.isRejected && (
                           <>
                             <button
                               className="tl-action-btn tl-edit-btn"
@@ -581,8 +581,8 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
                         </span>
                       </div>
                       <div className="tl-cell tl-actions">
-                        {/* Only show edit and delete buttons for rejected templates or templates not yet submitted */}
-                        {(template.isRejected || (!template.isActive && !template.pendingApproval)) && (
+                        {/* UPDATED: Only show edit and delete buttons for rejected templates */}
+                        {template.isRejected && (
                           <>
                             <button
                               className="tl-action-btn tl-edit-btn"
@@ -649,8 +649,8 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
                         </span>
                       </div>
                       <div className="tl-cell tl-actions">
-                        {/* Only show edit and delete buttons for rejected templates or templates not yet submitted */}
-                        {(template.isRejected || (!template.isApproved && !template.pendingApproval)) && (
+                        {/* UPDATED: Only show edit and delete buttons for rejected templates */}
+                        {template.isRejected && (
                           <>
                             <button
                               className="tl-action-btn tl-edit-btn"

@@ -17,15 +17,16 @@ const CATEGORIES = [
   "Reading Comprehension"
 ];
 
+// UPDATED: Question types available for each category
 const QUESTION_TYPES = {
   "Alphabet Knowledge": ["patinig", "katinig"],
-  "Phonological Awareness": ["malapantig", "patinig", "katinig"],
+  "Phonological Awareness": ["malapantig", "patinig", "katinig"], // All three question types
   "Decoding": ["word"],
   "Word Recognition": ["word"],
   "Reading Comprehension": ["sentence"]
 };
 
-// Reorganized and clarified choice types with restrictions
+// UPDATED: Reorganized and clarified choice types with restrictions
 const CHOICE_TYPES = {
   // For Alphabet Knowledge
   "patinig": {
@@ -36,14 +37,12 @@ const CHOICE_TYPES = {
     "allowed": ["katinigBigLetter", "katinigSmallLetter", "katinigSound"],
     "description": "For consonant questions (B, C, D, etc.)"
   },
-  // For Phonological Awareness - RESTRICTED to sound-based types only
+  // For Phonological Awareness - UPDATED restrictions
   "malapantig": {
-    "allowed": ["patinigSound", "katinigSound", "malapatinigText"],
-    "restricted": ["patinigBigLetter", "patinigSmallLetter", "katinigBigLetter", "katinigSmallLetter"],
-    "description": "For sound awareness and blending questions"
+    "allowed": ["malapatinigText"], // Only syllable blocks for malapantig
+    "restricted": ["patinigSound", "katinigSound", "patinigBigLetter", "patinigSmallLetter", "katinigBigLetter", "katinigSmallLetter"],
+    "description": "For syllable awareness and blending questions"
   },
-
-
   // For Word Recognition and Decoding
   "word": {
     "allowed": ["wordText", "wordSound"],
@@ -103,37 +102,68 @@ const QuestionTemplateForm = ({ template, onSave, onCancel }) => {
     }
   }, [form.category]);
   
-  // Update available choice types when question type changes
+  // UPDATED: Update available choice types based on category and question type
   useEffect(() => {
     if (form.questionType) {
-      const choiceTypeInfo = CHOICE_TYPES[form.questionType] || { allowed: [] };
-      setAvailableChoiceTypes(choiceTypeInfo.allowed || []);
+      let allowedChoiceTypes = [];
+      
+      // Special handling for Phonological Awareness category
+      if (form.category === "Phonological Awareness") {
+        if (form.questionType === "malapantig") {
+          // For malapantig, only allow syllable blocks
+          allowedChoiceTypes = ["malapatinigText"];
+        } else if (form.questionType === "patinig") {
+          // For patinig in Phonological Awareness, only allow sounds
+          allowedChoiceTypes = ["patinigSound"];
+        } else if (form.questionType === "katinig") {
+          // For katinig in Phonological Awareness, only allow sounds
+          allowedChoiceTypes = ["katinigSound"];
+        }
+      } else {
+        // For other categories, use the standard mapping
+        const choiceTypeInfo = CHOICE_TYPES[form.questionType] || { allowed: [] };
+        allowedChoiceTypes = choiceTypeInfo.allowed || [];
+      }
+      
+      setAvailableChoiceTypes(allowedChoiceTypes);
       
       // Organize choice types by category
-      if (form.questionType === "malapantig") {
-        // For Phonological Awareness, group by sound vs. text categories
+      if (form.questionType === "malapantig" && form.category === "Phonological Awareness") {
         setChoiceTypesByCategory({
-          "Sound-Based Options": choiceTypeInfo.allowed.filter(type => 
-            type.includes('Sound')),
-          "Text-Based Options": choiceTypeInfo.allowed.filter(type => 
-            !type.includes('Sound'))
+          "Syllable Options": allowedChoiceTypes
+        });
+      } else if (form.questionType === "patinig" && form.category === "Phonological Awareness") {
+        setChoiceTypesByCategory({
+          "Sound Options": allowedChoiceTypes
+        });
+      } else if (form.questionType === "katinig" && form.category === "Phonological Awareness") {
+        setChoiceTypesByCategory({
+          "Sound Options": allowedChoiceTypes
         });
       } else if (form.questionType === "patinig" || form.questionType === "katinig") {
         // For Alphabet Knowledge, group by letter form vs. sound
         setChoiceTypesByCategory({
-          "Letter Forms": choiceTypeInfo.allowed.filter(type => 
+          "Letter Forms": allowedChoiceTypes.filter(type => 
             !type.includes('Sound')),
-          "Sound Forms": choiceTypeInfo.allowed.filter(type => 
+          "Sound Forms": allowedChoiceTypes.filter(type => 
             type.includes('Sound'))
         });
       } else {
         // For other categories
         setChoiceTypesByCategory({
-          "Available Options": choiceTypeInfo.allowed
+          "Available Options": allowedChoiceTypes
         });
       }
+      
+      // Reset applicable choice types when changing question type
+      // to ensure no invalid choices remain selected
+      setForm(prev => ({
+        ...prev,
+        applicableChoiceTypes: [],
+        correctChoiceType: ""
+      }));
     }
-  }, [form.questionType]);
+  }, [form.questionType, form.category]);
   
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -203,14 +233,32 @@ const QuestionTemplateForm = ({ template, onSave, onCancel }) => {
     if (form.applicableChoiceTypes.length === 0) newErrors.applicableChoiceTypes = "At least one choice type is required";
     if (!form.correctChoiceType) newErrors.correctChoiceType = "Correct answer type is required";
     
-    // Check for Phonological Awareness restrictions
+    // UPDATED: Check for restrictions based on category and question type
     if (form.category === "Phonological Awareness") {
-      const hasRestrictedChoices = form.applicableChoiceTypes.some(type => 
-        type.includes("BigLetter") || type.includes("SmallLetter")
-      );
-      
-      if (hasRestrictedChoices) {
-        newErrors.applicableChoiceTypes = "Phonological Awareness can only use sound-based choices, not letter forms";
+      if (form.questionType === "malapantig") {
+        const hasNonSyllableChoices = form.applicableChoiceTypes.some(type => 
+          type !== "malapatinigText"
+        );
+        
+        if (hasNonSyllableChoices) {
+          newErrors.applicableChoiceTypes = "For Syllable (Malapantig) type, only syllable blocks are allowed";
+        }
+      } else if (form.questionType === "patinig") {
+        const hasNonSoundChoices = form.applicableChoiceTypes.some(type => 
+          type !== "patinigSound"
+        );
+        
+        if (hasNonSoundChoices) {
+          newErrors.applicableChoiceTypes = "For Vowel (Patinig) in Phonological Awareness, only sound choices are allowed";
+        }
+      } else if (form.questionType === "katinig") {
+        const hasNonSoundChoices = form.applicableChoiceTypes.some(type => 
+          type !== "katinigSound"
+        );
+        
+        if (hasNonSoundChoices) {
+          newErrors.applicableChoiceTypes = "For Consonant (Katinig) in Phonological Awareness, only sound choices are allowed";
+        }
       }
     }
     
@@ -224,8 +272,20 @@ const QuestionTemplateForm = ({ template, onSave, onCancel }) => {
   
   // Helper function to check if a choice type is restricted
   const isChoiceTypeRestricted = (choiceType) => {
-    if (!form.questionType) return false;
+    if (!form.questionType || !form.category) return false;
     
+    // Handle Phonological Awareness restrictions
+    if (form.category === "Phonological Awareness") {
+      if (form.questionType === "malapantig") {
+        return choiceType !== "malapatinigText";
+      } else if (form.questionType === "patinig") {
+        return choiceType !== "patinigSound";
+      } else if (form.questionType === "katinig") {
+        return choiceType !== "katinigSound";
+      }
+    }
+    
+    // For other categories, use the standard restrictions
     const choiceTypeInfo = CHOICE_TYPES[form.questionType];
     return choiceTypeInfo && 
            choiceTypeInfo.restricted && 
@@ -234,10 +294,16 @@ const QuestionTemplateForm = ({ template, onSave, onCancel }) => {
   
   // Helper function to get explanation for why a choice type is restricted
   const getRestrictionReason = (choiceType) => {
-    if (form.category === "Phonological Awareness" && 
-        (choiceType.includes("BigLetter") || choiceType.includes("SmallLetter"))) {
-      return "Phonological Awareness focuses on sounds, not letter forms";
+    if (form.category === "Phonological Awareness") {
+      if (form.questionType === "malapantig") {
+        return "For Syllable (Malapantig) type, only syllable blocks are allowed";
+      } else if (form.questionType === "patinig") {
+        return "For Vowel (Patinig) in Phonological Awareness, only sound choices are allowed";
+      } else if (form.questionType === "katinig") {
+        return "For Consonant (Katinig) in Phonological Awareness, only sound choices are allowed";
+      }
     }
+    
     return "Not applicable for this question type";
   };
   
@@ -306,6 +372,20 @@ const QuestionTemplateForm = ({ template, onSave, onCancel }) => {
             <div className="form-help-text">
               <FontAwesomeIcon icon={faInfoCircle} />
               <span>{CHOICE_TYPES[form.questionType].description}</span>
+            </div>
+          )}
+          
+          {/* ADDED: Special note for Phonological Awareness */}
+          {form.category === "Phonological Awareness" && form.questionType && (
+            <div className="form-help-text" style={{ color: "#e67e22" }}>
+              <FontAwesomeIcon icon={faExclamationTriangle} />
+              <span>
+                {form.questionType === "malapantig" 
+                  ? "For Phonological Awareness, Malapantig questions can only use syllable blocks."
+                  : form.questionType === "patinig"
+                  ? "For Phonological Awareness, Patinig questions can only use sound-based choices."
+                  : "For Phonological Awareness, Katinig questions can only use sound-based choices."}
+              </span>
             </div>
           )}
         </div>
