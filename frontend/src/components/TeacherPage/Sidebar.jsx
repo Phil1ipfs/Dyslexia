@@ -137,7 +137,7 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
             onClick={() => handleClick("manage-categories", "/teacher/manage-categories")}
           >
             <img src={manageActivityIcon} alt="Manage Categories" />
-            <span>Manage Categories</span>
+            <span>Manage Activities</span>
           </li>
           <li className={active === "manage-progress" ? "active" : ""} onClick={() => handleClick("manage-progress", "/teacher/manage-progress")}>
             <img src={manageProgressIcon} alt="Manage Progress" /><span>Manage Progress</span>
