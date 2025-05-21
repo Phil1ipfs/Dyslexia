@@ -42,7 +42,7 @@
   cursor: pointer;
   display: flex;
   align-items: center;
-  font-size: 17px;
+  font-size: 16px;
   transition: all 0.3s;
   font-weight: 500;
   box-shadow: 0 2px 8px rgba(78, 92, 147, 0.2);
@@ -379,7 +379,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
+  padding: 8px 30px;
   border-radius: 30px;
   font-size: 14px;
   font-weight: 500;
@@ -1815,4 +1815,64 @@
   background: white;
   cursor: pointer;
   display: block;
+}
+
+/* Duplicate restriction dialog styles */
+.pa-restriction-dialog {
+  max-width: 550px;
+}
+
+.pa-restriction-icon {
+  font-size: 60px;
+  color: #f59f00;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.pa-restriction-message {
+  text-align: center;
+}
+
+.pa-restriction-message p {
+  margin-bottom: 16px;
+  font-size: 16px;
+  color: #4a5568;
+  line-height: 1.6;
+}
+
+.pa-restriction-options {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-top: 20px;
+  margin-bottom: 8px !important;
+}
+
+.pa-restriction-list {
+  text-align: left;
+  margin: 0 auto;
+  max-width: 400px;
+  color: #4a5568;
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.pa-restriction-list li {
+  padding: 8px 0;
+  position: relative;
+  padding-left: 24px;
+  line-height: 1.5;
+}
+
+.pa-restriction-list li:before {
+  content: "•";
+  color: #f59f00;
+  font-weight: bold;
+  font-size: 18px;
+  position: absolute;
+  left: 0;
+}
+
+.pa-modal-header-icon {
+  color: #f59f00;
+  margin-right: 8px;
 }
