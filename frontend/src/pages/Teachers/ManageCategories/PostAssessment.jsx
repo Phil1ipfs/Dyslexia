@@ -1057,7 +1057,8 @@ const PostAssessment = ({ templates }) => {
                        </div>
                      </div>
                    </>
-                 ) : (
+                 )}
+                 {questionFormData.questionType === "sentence" && (
                    // Reading Passage questions form
                    <div className="pa-passage-form pa-full-width">
                      <div className="pa-form-section">
