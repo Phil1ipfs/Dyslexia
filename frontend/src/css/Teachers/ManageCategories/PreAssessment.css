@@ -989,7 +989,7 @@
 .pre-form-group label {
   display: block !important;
   font-size: 14px !important;
-  color: #1b1616 !important;
+  color: #ffffff;
   margin-bottom: 8px !important;
   font-weight: 500 !important;
 }
@@ -998,7 +998,7 @@
 .pre-form-group select {
   width: 100% !important;
   padding: 10px 15px !important;
-  border: 1px solid #e0e0e0 !important;
+  border: 1px solid #e0e0e0;
   border-radius: 6px !important;
   font-size: 14px !important;
   transition: border-color 0.2s !important;
@@ -2160,22 +2160,22 @@
 }
 
 .pre-editor-back-btn {
-  background-color: #f8f9fa;
-  color: #4a5568;
-  border: 1px solid #e0e0e0;
-  padding: 8px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  transition: all 0.2s;
+  background-color: #f8f9fa !important;
+  color: #4a5568 !important;
+  border: 1px solid #e0e0e0 !important;
+  padding: 8px 14px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 14px !important;
+  transition: all 0.2s !important;
 }
 
 .pre-editor-back-btn:hover {
-  background-color: #edf2f7;
-  transform: translateY(-1px);
+  background-color: #edf2f7 !important;
+  transform: translateY(-1px) !important;
 }
 
 /* Question Form */
@@ -2254,6 +2254,7 @@
 .pre-file-upload-btn:hover {
   background-color: #3d497a !important;
   transform: translateY(-1px) !important;
+  color: white !important;
 }
 
 .pre-file-input-hidden {
@@ -2342,16 +2343,18 @@
 }
 
 .pre-option-item-editor {
-  background-color: #f8f9fa;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  padding: 15px;
-  margin-bottom: 15px;
-  transition: all 0.2s;
+  background-color: #f8f9fa !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 6px !important;
+  padding: 15px !important;
+  margin-bottom: 15px !important;
+  transition: all 0.2s !important;
+  position: relative !important;
 }
 
-.pre-option-item-editor:hover {
-  border-color: #cbd5e0;
+.pre-option-item-editor.has-error {
+  border-color: #fc8181 !important;
+  background-color: #fff5f5 !important;
 }
 
 .pre-option-header {
@@ -2680,4 +2683,89 @@
 .pre-questions-list.sortable .pre-question-item.dragging {
   opacity: 0.5;
   cursor: grabbing;
+}
+
+.pre-total-questions-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #f8f9fa;
+  padding: 12px 15px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.pre-total-questions-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #4e5c93;
+}
+
+.pre-total-questions-label {
+  font-size: 14px;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+/* File Upload Button - Fix color issues */
+.pre-file-upload-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background-color: #4e5c93 !important;
+  color: white !important;
+  padding: 10px 16px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s !important;
+  border: none !important;
+  width: fit-content !important;
+}
+
+.pre-file-upload-btn:hover {
+  background-color: #3d497a !important;
+  transform: translateY(-1px) !important;
+  color: white !important;
+}
+
+/* Style for disabled select field */
+.pre-form-group select:disabled {
+  background-color: #f1f1f1 !important;
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
+}
+
+/* Question type select styling */
+.pre-form-group select option {
+  color: #2c3e50 !important;
+  background-color: white !important;
+  padding: 8px !important;
+}
+
+/* Form validation styling */
+.pre-validation-highlight {
+  border-color: #fc8181 !important;
+  background-color: #fff5f5 !important;
+}
+
+.pre-validation-message {
+  color: #e53e3e !important;
+  font-size: 12px !important;
+  margin-top: 4px !important;
+  font-style: italic !important;
+}
+
+.pre-required-field {
+  color: #e53e3e !important;
+  margin-left: 2px !important;
+}
+
+/* Readonly field styling */
+.pre-readonly-input {
+  background-color: #f1f1f1 !important;
+  color: #718096 !important;
+  cursor: not-allowed !important;
+  border-color: #e2e8f0 !important;
 }
