@@ -259,29 +259,15 @@ const PreAssessment = () => {
     }
   };
 
-  // Handle form changes
+  // Modified to count questions automatically
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     
-    if (name === "totalQuestions") {
-      // When total questions change, auto-distribute them evenly across categories
-      const totalQs = parseInt(value);
-      if (!isNaN(totalQs)) {
-        const categories = Object.keys(formData.categoryCounts);
-        const newCategoryCounts = distributeQuestionsEvenly(totalQs, categories);
-        
-        setFormData(prev => ({
-          ...prev,
-          [name]: totalQs,
-          categoryCounts: newCategoryCounts
-        }));
-      }
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+    // We don't need to handle totalQuestions change anymore since it's based on actual questions count
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   // New function to distribute questions evenly across categories
@@ -304,6 +290,19 @@ const PreAssessment = () => {
     // Keeping it for backward compatibility but making it a no-op
   };
 
+  // Define category-specific question types
+  const getCategoryQuestionTypes = (categoryId) => {
+    const categoryQuestionTypes = {
+      'alphabet_knowledge': ['patinig', 'katinig', 'malaking_titik', 'maliit_na_titik'],
+      'phonological_awareness': ['tunog_letra', 'pantig', 'rima'],
+      'decoding': ['malapantig', 'word', 'salita_larawan'],
+      'word_recognition': ['word', 'salitang_madalas_makita', 'sight_word'],
+      'reading_comprehension': ['sentence', 'talata', 'buong_kwento']
+    };
+    
+    return categoryId ? (categoryQuestionTypes[categoryId] || []) : [];
+  };
+
   // Handle creating new pre-assessment
   const handleCreatePreAssessment = () => {
     const defaultTotal = 25;
@@ -314,7 +313,7 @@ const PreAssessment = () => {
       title: "",
       description: "",
       instructions: "",
-      totalQuestions: defaultTotal,
+      totalQuestions: 0, // Will be automatically updated based on questions count
       categoryCounts: newCategoryCounts,
       language: "FL",
       questions: []
@@ -399,17 +398,15 @@ const PreAssessment = () => {
     return preAssessment && preAssessment.status === "rejected";
   };
 
-  // Add these new handler functions
+  // Modified to add auto-generation of Question ID
   const handleAddQuestion = () => {
     setCurrentQuestionData({
-      questionId: '',
+      questionId: '', // Will be auto-generated when category is selected
       questionTypeId: '',
       questionType: '',
       questionText: '',
       questionImage: null,
       questionValue: '',
-      hasAudio: false,
-      audioUrl: '',
       difficultyLevel: '',
       options: [
         { optionId: '1', optionText: '', isCorrect: true },
@@ -420,6 +417,26 @@ const PreAssessment = () => {
     setShowQuestionEditor(true);
   };
 
+  // Adding a function to generate question ID based on category
+  const generateQuestionId = (categoryId) => {
+    const prefixMap = {
+      'alphabet_knowledge': 'AK',
+      'phonological_awareness': 'PA',
+      'decoding': 'DC',
+      'word_recognition': 'WR',
+      'reading_comprehension': 'RC'
+    };
+    
+    const prefix = prefixMap[categoryId] || 'QS';
+    
+    // Count how many questions of this category type already exist
+    const existingCount = formData.questions.filter(q => q.questionTypeId === categoryId).length;
+    const paddedNumber = String(existingCount + 1).padStart(3, '0');
+    
+    return `${prefix}_${paddedNumber}`;
+  };
+
+  // Restore missing handleEditQuestion function
   const handleEditQuestion = (index) => {
     const question = formData.questions[index];
     setCurrentQuestionData({
@@ -429,33 +446,53 @@ const PreAssessment = () => {
       questionText: question.questionText || '',
       questionImage: question.questionImage || null,
       questionValue: question.questionValue || '',
-      hasAudio: question.hasAudio || false,
-      audioUrl: question.audioUrl || '',
       difficultyLevel: question.difficultyLevel || '',
-      options: question.options || [
-        { optionId: '1', optionText: '', isCorrect: true },
-        { optionId: '2', optionText: '', isCorrect: false }
-      ]
+      options: question.options && question.options.length >= 2 ? 
+        question.options.slice(0, 2) : // Only take the first two options
+        [
+          { optionId: '1', optionText: '', isCorrect: true },
+          { optionId: '2', optionText: '', isCorrect: false }
+        ]
     });
     setEditingQuestionIndex(index);
     setShowQuestionEditor(true);
   };
 
+  // Restore missing handleDeleteQuestion function
   const handleDeleteQuestion = (index) => {
     if (window.confirm('Are you sure you want to delete this question?')) {
-      setFormData(prev => ({
-        ...prev,
-        questions: prev.questions.filter((_, i) => i !== index)
-      }));
+      setFormData(prev => {
+        const newQuestions = prev.questions.filter((_, i) => i !== index);
+        return {
+          ...prev,
+          questions: newQuestions,
+          totalQuestions: newQuestions.length // Update total questions count
+        };
+      });
     }
   };
 
+  // Modified to update questionId when category changes
   const handleQuestionDataChange = (e) => {
     const { name, value } = e.target;
-    setCurrentQuestionData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (name === 'questionTypeId') {
+      // Auto-generate questionId when category is selected
+      const questionId = generateQuestionId(value);
+      
+      setCurrentQuestionData(prev => ({
+        ...prev,
+        [name]: value,
+        questionId: questionId,
+        // Reset question type when category changes
+        questionType: ''
+      }));
+    } else {
+      setCurrentQuestionData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleQuestionImageUpload = (e) => {
@@ -491,47 +528,44 @@ const PreAssessment = () => {
     }));
   };
 
-  const handleAddOption = () => {
-    setCurrentQuestionData(prev => ({
-      ...prev,
-      options: [
-        ...prev.options,
-        { 
-          optionId: (prev.options.length + 1).toString(), 
-          optionText: '', 
-          isCorrect: false 
-        }
-      ]
-    }));
-  };
-
-  const handleRemoveOption = (index) => {
-    setCurrentQuestionData(prev => ({
-      ...prev,
-      options: prev.options.filter((_, i) => i !== index)
-    }));
-  };
-
   const handleSaveQuestion = () => {
     // Validate question data
-    if (!currentQuestionData.questionId || !currentQuestionData.questionText || 
-        !currentQuestionData.questionTypeId || !currentQuestionData.difficultyLevel) {
-      alert('Please fill in all required fields.');
-      return;
+    const errors = {};
+    
+    if (!currentQuestionData.questionText.trim()) {
+      errors.questionText = 'Question text is required';
+    }
+    
+    if (!currentQuestionData.questionTypeId) {
+      errors.questionTypeId = 'Category is required';
+    }
+    
+    if (!currentQuestionData.questionType) {
+      errors.questionType = 'Question type is required';
+    }
+    
+    if (!currentQuestionData.difficultyLevel) {
+      errors.difficultyLevel = 'Difficulty level is required';
     }
     
     if (!currentQuestionData.options.some(opt => opt.isCorrect)) {
-      alert('Please mark one option as correct.');
-      return;
+      errors.options = 'At least one option must be marked as correct';
     }
     
     if (currentQuestionData.options.some(opt => !opt.optionText.trim())) {
-      alert('Please fill in all option texts.');
+      errors.optionText = 'All option texts must be filled in';
+    }
+    
+    // Display errors if any
+    if (Object.keys(errors).length > 0) {
+      const errorMessage = Object.values(errors).join('\n');
+      alert(errorMessage);
       return;
     }
     
     const questionData = {
       ...currentQuestionData,
+      questionId: currentQuestionData.questionId || generateQuestionId(currentQuestionData.questionTypeId),
       questionNumber: editingQuestionIndex >= 0 ? editingQuestionIndex + 1 : formData.questions.length + 1,
       order: editingQuestionIndex >= 0 ? editingQuestionIndex + 1 : formData.questions.length + 1
     };
@@ -544,9 +578,11 @@ const PreAssessment = () => {
         newQuestions.push(questionData);
       }
       
+      // Update the total questions count based on the actual number of questions
       return {
         ...prev,
-        questions: newQuestions
+        questions: newQuestions,
+        totalQuestions: newQuestions.length
       };
     });
     
@@ -1056,63 +1092,53 @@ const PreAssessment = () => {
                 <div className="pre-form-group">
                   <label htmlFor="totalQuestions">
                     Total Questions:
-                    <Tooltip text="Set the total number of questions. This will be evenly distributed across all categories." />
+                    <Tooltip text="Total number of questions in the assessment. This is calculated automatically based on the questions you add." />
                   </label>
-                  <input
-                    type="number"
-                    id="totalQuestions"
-                    name="totalQuestions"
-                    value={formData.totalQuestions}
-                    onChange={handleFormChange}
-                    min="5"
-                    max="50"
-                    required
-                  />
+                  <div className="pre-total-questions-display">
+                    <span className="pre-total-questions-value">
+                      {formData.questions.length}
+                    </span>
+                    <span className="pre-total-questions-label">
+                      questions
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
             
             <div className="pre-form-section">
               <h4>Category Distribution</h4>
-              <div className="pre-form-group">
-                <label htmlFor="totalQuestions">
-                  Total Questions:
-                  <Tooltip text="Set the total number of questions. This will be evenly distributed across all categories." />
-                </label>
-                <input
-                  type="number"
-                  id="totalQuestions"
-                  name="totalQuestions"
-                  value={formData.totalQuestions}
-                  onChange={handleFormChange}
-                  min="5"
-                  max="50"
-                  required
-                />
-              </div>
               
-              <p className="pre-form-help">Questions are automatically distributed across these CRLA categories:</p>
+              <p className="pre-form-help">Questions are automatically distributed across CRLA categories as you add them:</p>
               
               <div className="pre-composition-preview">
                 <div className="pre-composition-chart">
-                  {Object.entries(formData.categoryCounts).map(([category, count]) => (
-                    <div key={category} className="pre-composition-item">
-                      <div className="pre-composition-label">
-                        {category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </div>
-                      <div className="pre-composition-bar-container">
-                        <div 
-                          className="pre-composition-bar"
-                          style={{ width: `${(count / formData.totalQuestions) * 100}%` }}
-                        >
-                          <span className="pre-composition-count">{count}</span>
+                  {Object.entries(formData.categoryCounts).map(([category, count]) => {
+                    // Count actual questions per category
+                    const questionsInCategory = formData.questions.filter(q => q.questionTypeId === category).length;
+                    const percentage = formData.questions.length > 0 
+                      ? Math.round((questionsInCategory / formData.questions.length) * 100) 
+                      : 0;
+                    
+                    return (
+                      <div key={category} className="pre-composition-item">
+                        <div className="pre-composition-label">
+                          {category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </div>
+                        <div className="pre-composition-bar-container">
+                          <div 
+                            className="pre-composition-bar"
+                            style={{ width: `${percentage}%` }}
+                          >
+                            <span className="pre-composition-count">{questionsInCategory}</span>
+                          </div>
+                        </div>
+                        <div className="pre-composition-percentage">
+                          {percentage}%
                         </div>
                       </div>
-                      <div className="pre-composition-percentage">
-                        {Math.round((count / formData.totalQuestions) * 100)}%
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -1124,15 +1150,13 @@ const PreAssessment = () => {
                   <FontAwesomeIcon icon={faListAlt} style={{ marginRight: '8px' }} />
                   Assessment Questions
                 </h4>
-                {showEditModal && (
-                  <button
-                    type="button"
-                    className="pre-add-question-btn"
-                    onClick={handleAddQuestion}
-                  >
-                    <FontAwesomeIcon icon={faPlus} /> Add Question
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="pre-add-question-btn"
+                  onClick={handleAddQuestion}
+                >
+                  <FontAwesomeIcon icon={faPlus} /> Add Question
+                </button>
               </div>
               
               {formData.questions && formData.questions.length > 0 ? (
@@ -1152,26 +1176,24 @@ const PreAssessment = () => {
                           </div>
                         </div>
                         
-                        {showEditModal && (
-                          <div className="pre-question-actions">
-                            <button
-                              type="button"
-                              className="pre-question-action-btn pre-edit-btn"
-                              onClick={() => handleEditQuestion(index)}
-                              title="Edit Question"
-                            >
-                              <FontAwesomeIcon icon={faEdit} />
-                            </button>
-                            <button
-                              type="button"
-                              className="pre-question-action-btn pre-delete-btn"
-                              onClick={() => handleDeleteQuestion(index)}
-                              title="Delete Question"
-                            >
-                              <FontAwesomeIcon icon={faTrash} />
-                            </button>
-                          </div>
-                        )}
+                        <div className="pre-question-actions">
+                          <button
+                            type="button"
+                            className="pre-question-action-btn pre-edit-btn"
+                            onClick={() => handleEditQuestion(index)}
+                            title="Edit Question"
+                          >
+                            <FontAwesomeIcon icon={faEdit} />
+                          </button>
+                          <button
+                            type="button"
+                            className="pre-question-action-btn pre-delete-btn"
+                            onClick={() => handleDeleteQuestion(index)}
+                            title="Delete Question"
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </button>
+                        </div>
                       </div>
                       
                       <div className="pre-question-preview">
@@ -1201,7 +1223,7 @@ const PreAssessment = () => {
               ) : (
                 <div className="pre-no-questions">
                   <FontAwesomeIcon icon={faInfoCircle} className="pre-no-questions-icon" />
-                  <p>No questions added yet. Questions will be auto-generated based on category distribution or you can add them manually.</p>
+                  <p>No questions added yet. Click "Add Question" to begin building your assessment.</p>
                 </div>
               )}
             </div>
@@ -1209,7 +1231,7 @@ const PreAssessment = () => {
             <div className="pre-form-note">
               <FontAwesomeIcon icon={faInfoCircle} />
               <p>
-                The assessment structure will be submitted for admin approval. You can add and edit specific questions after creating the basic structure.
+                The assessment structure will be submitted for admin approval. All questions must be added before submission.
               </p>
             </div>
           </form>
@@ -1235,22 +1257,22 @@ const PreAssessment = () => {
                 <div className="pre-form-group">
                   <label htmlFor="questionId">
                     Question ID:
-                    <Tooltip text="Unique identifier for this question (e.g., AK_001, PA_002)" />
+                    <Tooltip text="Unique identifier for this question (auto-generated)" />
                   </label>
                   <input
                     type="text"
                     id="questionId"
                     name="questionId"
                     value={currentQuestionData.questionId || ''}
-                    onChange={handleQuestionDataChange}
-                    placeholder="e.g., AK_001"
-                    required
+                    readOnly
+                    className="pre-readonly-input"
+                    placeholder="Will be auto-generated when category is selected"
                   />
                 </div>
                 
                 <div className="pre-form-group">
                   <label htmlFor="questionTypeId">
-                    Category:
+                    Category: <span className="pre-required-field">*</span>
                     <Tooltip text="Select the reading category for this question" />
                   </label>
                   <select
@@ -1259,6 +1281,7 @@ const PreAssessment = () => {
                     value={currentQuestionData.questionTypeId || ''}
                     onChange={handleQuestionDataChange}
                     required
+                    className={!currentQuestionData.questionTypeId ? 'pre-validation-highlight' : ''}
                   >
                     <option value="">Select Category</option>
                     <option value="alphabet_knowledge">Alphabet Knowledge</option>
@@ -1267,11 +1290,14 @@ const PreAssessment = () => {
                     <option value="word_recognition">Word Recognition</option>
                     <option value="reading_comprehension">Reading Comprehension</option>
                   </select>
+                  {!currentQuestionData.questionTypeId && (
+                    <div className="pre-validation-message">Please select a category</div>
+                  )}
                 </div>
                 
                 <div className="pre-form-group">
                   <label htmlFor="questionType">
-                    Question Type:
+                    Question Type: <span className="pre-required-field">*</span>
                     <Tooltip text="Specific type within the category" />
                   </label>
                   <select
@@ -1280,20 +1306,24 @@ const PreAssessment = () => {
                     value={currentQuestionData.questionType || ''}
                     onChange={handleQuestionDataChange}
                     required
+                    disabled={!currentQuestionData.questionTypeId}
+                    className={currentQuestionData.questionTypeId && !currentQuestionData.questionType ? 'pre-validation-highlight' : ''}
                   >
                     <option value="">Select Type</option>
-                    <option value="patinig">Patinig (Vowel)</option>
-                    <option value="katinig">Katinig (Consonant)</option>
-                    <option value="tunog_letra">Tunog Letra (Letter Sound)</option>
-                    <option value="malapantig">Malapantig (Syllable)</option>
-                    <option value="word">Word</option>
-                    <option value="sentence">Sentence</option>
+                    {getCategoryQuestionTypes(currentQuestionData.questionTypeId).map(type => (
+                      <option key={type} value={type}>
+                        {type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </option>
+                    ))}
                   </select>
+                  {currentQuestionData.questionTypeId && !currentQuestionData.questionType && (
+                    <div className="pre-validation-message">Please select a question type</div>
+                  )}
                 </div>
                 
                 <div className="pre-form-group">
                   <label htmlFor="difficultyLevel">
-                    Difficulty Level:
+                    Difficulty Level: <span className="pre-required-field">*</span>
                     <Tooltip text="Select the appropriate difficulty level for this question" />
                   </label>
                   <select
@@ -1302,6 +1332,7 @@ const PreAssessment = () => {
                     value={currentQuestionData.difficultyLevel || ''}
                     onChange={handleQuestionDataChange}
                     required
+                    className={!currentQuestionData.difficultyLevel ? 'pre-validation-highlight' : ''}
                   >
                     <option value="">Select Difficulty</option>
                     <option value="low_emerging">Low Emerging</option>
@@ -1310,11 +1341,14 @@ const PreAssessment = () => {
                     <option value="transitioning">Transitioning</option>
                     <option value="at_grade_level">At Grade Level</option>
                   </select>
+                  {!currentQuestionData.difficultyLevel && (
+                    <div className="pre-validation-message">Please select a difficulty level</div>
+                  )}
                 </div>
                 
                 <div className="pre-form-group pre-full-width">
                   <label htmlFor="questionText">
-                    Question Text:
+                    Question Text: <span className="pre-required-field">*</span>
                     <Tooltip text="The question text that will be displayed to students" />
                   </label>
                   <textarea
@@ -1325,7 +1359,11 @@ const PreAssessment = () => {
                     placeholder="Enter the question text (e.g., 'Anong ang katumbas na maliit na letra?')"
                     rows={3}
                     required
+                    className={!currentQuestionData.questionText.trim() ? 'pre-validation-highlight' : ''}
                   />
+                  {!currentQuestionData.questionText.trim() && (
+                    <div className="pre-validation-message">Please enter question text</div>
+                  )}
                 </div>
                 
                 <div className="pre-form-group">
@@ -1344,7 +1382,7 @@ const PreAssessment = () => {
                 </div>
                 
                 <div className="pre-form-group">
-                  <label>
+                  <label htmlFor="questionImage" style={{ color: '#4a5568' }}>
                     Question Image:
                     <Tooltip text="Upload an image for this question" />
                   </label>
@@ -1357,6 +1395,7 @@ const PreAssessment = () => {
                         accept="image/*"
                         onChange={handleQuestionImageUpload}
                         className="pre-file-input-hidden"
+                        id="questionImage"
                       />
                     </label>
                     {currentQuestionData.questionImage && (
@@ -1380,49 +1419,17 @@ const PreAssessment = () => {
                     )}
                   </div>
                 </div>
-                
-                <div className="pre-form-group">
-                  <label>
-                    Audio:
-                    <Tooltip text="Does this question have audio?" />
-                  </label>
-                  <div className="pre-checkbox-group">
-                    <input
-                      type="checkbox"
-                      id="hasAudio"
-                      name="hasAudio"
-                      checked={currentQuestionData.hasAudio || false}
-                      onChange={(e) => setCurrentQuestionData(prev => ({
-                        ...prev,
-                        hasAudio: e.target.checked,
-                        audioUrl: e.target.checked ? prev.audioUrl : ''
-                      }))}
-                    />
-                    <label htmlFor="hasAudio">This question has audio</label>
-                  </div>
-                  
-                  {currentQuestionData.hasAudio && (
-                    <input
-                      type="text"
-                      name="audioUrl"
-                      value={currentQuestionData.audioUrl || ''}
-                      onChange={handleQuestionDataChange}
-                      placeholder="Enter audio file path (e.g., assets/audio/o_sound.mp3)"
-                      className="pre-audio-url-input"
-                    />
-                  )}
-                </div>
               </div>
               
-              {/* Answer Options Section */}
+              {/* Answer Options Section - Restricted to exactly 2 options */}
               <div className="pre-options-section">
                 <h5>
                   <FontAwesomeIcon icon={faListAlt} style={{ marginRight: '8px' }} />
-                  Answer Options
+                  Answer Options <span className="pre-required-field">*</span>
                 </h5>
                 
-                {currentQuestionData.options?.map((option, index) => (
-                  <div key={index} className="pre-option-item-editor">
+                {currentQuestionData.options.map((option, index) => (
+                  <div key={index} className={`pre-option-item-editor ${!option.optionText.trim() ? 'has-error' : ''}`}>
                     <div className="pre-option-header">
                       <span className="pre-option-label">Option {index + 1}</span>
                       <div className="pre-option-controls">
@@ -1438,16 +1445,6 @@ const PreAssessment = () => {
                             Correct Answer
                           </span>
                         </label>
-                        
-                        {currentQuestionData.options?.length > 2 && (
-                          <button
-                            type="button"
-                            className="pre-remove-option"
-                            onClick={() => handleRemoveOption(index)}
-                          >
-                            <FontAwesomeIcon icon={faTimes} />
-                          </button>
-                        )}
                       </div>
                     </div>
                     
@@ -1457,18 +1454,21 @@ const PreAssessment = () => {
                       onChange={(e) => handleOptionTextChange(index, e.target.value)}
                       placeholder={`Enter option ${index + 1} text`}
                       required
-                      className="pre-option-input"
+                      className={`pre-option-input ${!option.optionText.trim() ? 'pre-validation-highlight' : ''}`}
+                      aria-label={`Option ${index + 1} text`}
                     />
+                    {!option.optionText.trim() && (
+                      <div className="pre-validation-message">Option text is required</div>
+                    )}
                   </div>
                 ))}
-                
-                <button
-                  type="button"
-                  className="pre-add-option-btn"
-                  onClick={handleAddOption}
-                >
-                  <FontAwesomeIcon icon={faPlus} /> Add Option
-                </button>
+              </div>
+              
+              <div className="pre-form-note" style={{ marginTop: '15px' }}>
+                <FontAwesomeIcon icon={faInfoCircle} />
+                <p>
+                  Each question requires exactly 2 options, with one marked as correct. The order of options will be randomized when presented to students.
+                </p>
               </div>
               
               <div className="pre-question-form-actions">
