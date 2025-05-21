@@ -1,4 +1,3 @@
-// Updated AddActivityModal with multi-level support
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -14,6 +13,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import './AddActivityModal.css';
 
+// Modal for adding a new activity template 
 const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes }) => {
   // Form state
   const [step, setStep] = useState(1);
@@ -22,72 +22,33 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
   const [selectedCategory, setSelectedCategory] = useState(categories[0] || '');
   const [selectedType, setSelectedType] = useState(activityTypes[0]?.id || '');
   const [description, setDescription] = useState('');
-  const [contentType, setContentType] = useState('reading'); // 'reading', 'image', 'voice'
+  const [contentType, setContentType] = useState('reading'); // 'reading', 'image'
   const [formError, setFormError] = useState('');
-  const [levels, setLevels] = useState([
+  
+  // Question and content state
+  const [questions, setQuestions] = useState([
     {
       id: 1,
-      levelName: 'Level 1',
-      contentType: 'reading',
-      content: [
-        { id: 1, text: '', syllables: '', translation: '', image: null, imagePreview: null }
-      ],
-      questions: [
-        {
-          id: 1,
-          questionText: '',
-          options: ['', '', '', ''],
-          correctAnswer: 0,
-          hint: ''
-        }
-      ]
+      questionText: '',
+      options: ['', '', '', ''],
+      correctAnswer: 0,
     }
   ]);
-  const [currentLevel, setCurrentLevel] = useState(1);
+  
+  // For reading comprehension category
+  const [passageContent, setPassageContent] = useState([
+    { 
+      pageNumber: 1, 
+      text: '', 
+      image: null, 
+      imagePreview: null 
+    }
+  ]);
 
   // Reset form error when inputs change
   useEffect(() => {
     if (formError) setFormError('');
   }, [title, selectedLevel, selectedCategory, selectedType]);
-
-  // Add a new level
-  const addNewLevel = () => {
-    const newLevelId = Math.max(...levels.map(l => l.id), 0) + 1;
-    setLevels(prevLevels => [
-      ...prevLevels,
-      {
-        id: newLevelId,
-        levelName: `Level ${newLevelId}`,
-        contentType: 'reading',
-        content: [
-          { id: Date.now(), text: '', syllables: '', translation: '', image: null, imagePreview: null }
-        ],
-        questions: [
-          {
-            id: Date.now(),
-            questionText: '',
-            options: ['', '', '', ''],
-            correctAnswer: 0,
-            hint: ''
-          }
-        ]
-      }
-    ]);
-  };
-
-  // Remove a level
-  const removeLevel = (levelId) => {
-    if (levels.length <= 1) return;
-    setLevels(prevLevels => prevLevels.filter(level => level.id !== levelId));
-
-    // If we're removing the current level, switch to the first one
-    if (currentLevel === levelId) {
-      const remainingLevels = levels.filter(level => level.id !== levelId);
-      if (remainingLevels.length > 0) {
-        setCurrentLevel(remainingLevels[0].id);
-      }
-    }
-  };
 
   // Handle form submission for first step
   const handleStepOneSubmit = (e) => {
@@ -106,13 +67,111 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
   // Handle content type change
   const handleContentTypeChange = (type) => {
     setContentType(type);
+  };
 
-    // Update the current level's content type
-    setLevels(prevLevels =>
-      prevLevels.map(level =>
-        level.id === currentLevel
-          ? { ...level, contentType: type }
-          : level
+  // Add a new passage page
+  const addPassagePage = () => {
+    setPassageContent(prev => [
+      ...prev,
+      {
+        pageNumber: prev.length + 1,
+        text: '',
+        image: null,
+        imagePreview: null
+      }
+    ]);
+  };
+
+  // Remove a passage page
+  const removePassagePage = (pageIndex) => {
+    if (passageContent.length <= 1) return;
+    
+    setPassageContent(prev => 
+      prev.filter((_, idx) => idx !== pageIndex)
+        .map((page, idx) => ({
+          ...page,
+          pageNumber: idx + 1
+        }))
+    );
+  };
+
+  // Update passage text
+  const updatePassageText = (pageIndex, text) => {
+    setPassageContent(prev => 
+      prev.map((page, idx) => 
+        idx === pageIndex ? { ...page, text } : page
+      )
+    );
+  };
+
+  // Handle passage image upload
+  const handlePassageImageUpload = (pageIndex, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPassageContent(prev => 
+        prev.map((page, idx) => 
+          idx === pageIndex 
+            ? { ...page, image: file, imagePreview: reader.result } 
+            : page
+        )
+      );
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Add a new question
+  const addQuestion = () => {
+    setQuestions(prev => [
+      ...prev,
+      {
+        id: Date.now(),
+        questionText: '',
+        options: ['', '', '', ''],
+        correctAnswer: 0
+      }
+    ]);
+  };
+
+  // Remove a question
+  const removeQuestion = (questionIndex) => {
+    if (questions.length <= 1) return;
+    setQuestions(prev => prev.filter((_, idx) => idx !== questionIndex));
+  };
+
+  // Update question text
+  const updateQuestionText = (questionIndex, text) => {
+    setQuestions(prev => 
+      prev.map((question, idx) => 
+        idx === questionIndex ? { ...question, questionText: text } : question
+      )
+    );
+  };
+
+  // Update option text
+  const updateOptionText = (questionIndex, optionIndex, text) => {
+    setQuestions(prev => 
+      prev.map((question, qIdx) => {
+        if (qIdx !== questionIndex) return question;
+        
+        const newOptions = [...question.options];
+        newOptions[optionIndex] = text;
+        
+        return {
+          ...question,
+          options: newOptions
+        };
+      })
+    );
+  };
+
+  // Set correct answer
+  const setCorrectAnswer = (questionIndex, optionIndex) => {
+    setQuestions(prev => 
+      prev.map((question, idx) => 
+        idx === questionIndex ? { ...question, correctAnswer: optionIndex } : question
       )
     );
   };
@@ -121,23 +180,101 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
   const handleStepTwoSubmit = (e) => {
     e.preventDefault();
 
-    // Here you would submit the complete form data
-    console.log({
-      title,
-      antas: selectedLevel,
-      category: selectedCategory,
-      type: selectedType,
-      description,
-      levels
-    });
+    // Validate content
+    let hasError = false;
+    
+    // Check if reading passage has content (for reading comprehension)
+    if (selectedCategory === 'Reading Comprehension' && contentType === 'reading') {
+      if (passageContent.some(page => !page.text.trim())) {
+        setFormError('All passage pages must have content');
+        hasError = true;
+      }
+    }
+    
+    // Check if questions have text
+    if (questions.some(q => !q.questionText.trim())) {
+      setFormError('All questions must have text');
+      hasError = true;
+    }
+    
+    // Check if options have text
+    if (questions.some(q => q.options.some(opt => !opt.trim()))) {
+      setFormError('All options must have text');
+      hasError = true;
+    }
+    
+    if (hasError) return;
 
-    // Close the modal
-    onClose();
+    // Create the activity based on selected type and category
+    let newActivity = {
+      id: Date.now(), // Temporary ID for mock data
+      title,
+      level: selectedLevel,
+      category: selectedCategory,
+      templateType: selectedType,
+      description,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    };
+    
+    // Prepare specific data structure based on category
+    if (selectedCategory === "Reading Comprehension" && contentType === "reading") {
+      // For reading comprehension with passage
+      newActivity = {
+        ...newActivity,
+        pages: passageContent.length,
+        questions: questions.length,
+        sentenceText: passageContent.map(page => ({
+          pageNumber: page.pageNumber,
+          text: page.text,
+          image: page.image ? URL.createObjectURL(page.image) : null
+        })),
+        sentenceQuestions: questions.map((q, idx) => ({
+          questionNumber: idx + 1,
+          questionText: q.questionText,
+          sentenceCorrectAnswer: q.options[q.correctAnswer],
+          sentenceOptionAnswers: q.options
+        }))
+      };
+    } else {
+      // For other categories
+      newActivity = {
+        ...newActivity,
+        questionCount: questions.length,
+        questions: questions.map((q, idx) => ({
+          questionType: questionTypes[selectedCategory] ? questionTypes[selectedCategory][0] : '',
+          questionText: q.questionText,
+          choiceOptions: q.options.map((opt, optIdx) => ({
+            optionText: opt,
+            isCorrect: optIdx === q.correctAnswer
+          })),
+          order: idx + 1
+        }))
+      };
+    }
+
+    console.log('New activity:', newActivity);
+    
+    // Save to localStorage for testing
+    const existingActivities = JSON.parse(localStorage.getItem('mockActivities') || '[]');
+    localStorage.setItem('mockActivities', JSON.stringify([...existingActivities, newActivity]));
+    
+    // Close the modal and notify parent
+    onClose(newActivity);
   };
 
   // Go back to first step
   const goBack = () => {
     setStep(1);
+  };
+
+  // Define question types based on category
+  const questionTypes = {
+    "Alphabet Knowledge": ["patinig", "katinig"],
+    "Phonological Awareness": ["malapantig"],
+    "Decoding": ["word"],
+    "Word Recognition": ["word"],
+    "Reading Comprehension": ["sentence"]
   };
 
   return (
@@ -222,15 +359,12 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value)}
                 >
-
-
                   {activityTypes
-                    .filter(type => type.id !== 'practice')
+                    .filter(type => type.id !== 'practice') // Exclude practice type as per requirements
                     .map((type) => (
                       <option key={type.id} value={type.id}>{type.name}</option>
                     ))
                   }
-
                 </select>
               </div>
 
@@ -245,40 +379,6 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                   onChange={(e) => setDescription(e.target.value)}
                 ></textarea>
               </div>
-
-              <div className="level-management">
-                <h3 className="section-title">
-                  <FontAwesomeIcon icon={faLayerGroup} /> Activity Levels
-                </h3>
-                <p className="helper-text">
-                  You can create multiple levels for this activity. Each level can have different content types and questions.
-                </p>
-
-                <div className="level-list">
-                  {levels.map(level => (
-                    <div key={level.id} className="level-item">
-                      <span className="level-name">{level.levelName}</span>
-                      {levels.length > 1 && (
-                        <button
-                          type="button"
-                          className="remove-level-btn"
-                          onClick={() => removeLevel(level.id)}
-                        >
-                          <FontAwesomeIcon icon={faTimes} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-
-                  <button
-                    type="button"
-                    className="btn-add-level"
-                    onClick={addNewLevel}
-                  >
-                    <FontAwesomeIcon icon={faPlus} /> Add New Level
-                  </button>
-                </div>
-              </div>
             </div>
 
             <div className="modal-footer">
@@ -289,150 +389,129 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
         ) : (
           <form onSubmit={handleStepTwoSubmit}>
             <div className="modal-body">
-              <div className="level-navigation">
-                <h3 className="section-title">Configure Level:</h3>
-                <div className="level-tabs">
-                  {levels.map(level => (
-                    <button
-                      key={level.id}
-                      type="button"
-                      className={`level-tab ${level.id === currentLevel ? 'active' : ''}`}
-                      onClick={() => setCurrentLevel(level.id)}
+              {formError && (
+                <div className="form-error">
+                  <FontAwesomeIcon icon={faInfoCircle} /> {formError}
+                </div>
+              )}
+
+              {/* Content Type Selection - only for Reading Comprehension */}
+              {selectedCategory === "Reading Comprehension" && (
+                <div className="content-type-selection">
+                  <h3 className="section-title">Choose Content Type</h3>
+
+                  <div className="content-type-options">
+                    <div
+                      className={`content-type-option ${contentType === 'reading' ? 'active' : ''}`}
+                      onClick={() => handleContentTypeChange('reading')}
                     >
-                      {level.levelName}
-                    </button>
+                      <div className="content-type-icon">
+                        <FontAwesomeIcon icon={faFont} />
+                      </div>
+                      <div className="content-type-label">Reading Passage</div>
+                      <div className="content-type-desc">Reading passages with questions</div>
+                    </div>
+
+                    <div
+                      className={`content-type-option ${contentType === 'image' ? 'active' : ''}`}
+                      onClick={() => handleContentTypeChange('image')}
+                    >
+                      <div className="content-type-icon">
+                        <FontAwesomeIcon icon={faImage} />
+                      </div>
+                      <div className="content-type-label">Image Based</div>
+                      <div className="content-type-desc">Activities with visual elements</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Reading Passage Content - for Reading Comprehension */}
+              {selectedCategory === "Reading Comprehension" && contentType === 'reading' && (
+                <div className="passage-content">
+                  <h3 className="section-title">Reading Passage</h3>
+                  
+                  {passageContent.map((page, pageIndex) => (
+                    <div key={pageIndex} className="passage-page">
+                      <div className="page-header">
+                        <h4>Page {page.pageNumber}</h4>
+                        {passageContent.length > 1 && (
+                          <button
+                            type="button"
+                            className="btn-remove-page"
+                            onClick={() => removePassagePage(pageIndex)}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div className="form-group">
+                        <label className="form-label">Page Text</label>
+                        <textarea
+                          className="form-control"
+                          rows="4"
+                          placeholder="Enter the passage text for this page..."
+                          value={page.text}
+                          onChange={(e) => updatePassageText(pageIndex, e.target.value)}
+                        ></textarea>
+                      </div>
+                      
+                      <div className="form-group">
+                        <label className="form-label">Page Image (Optional)</label>
+                        <div className="image-upload-area">
+                          {page.imagePreview ? (
+                            <div className="image-preview-container">
+                              <img 
+                                src={page.imagePreview} 
+                                alt="Page preview" 
+                                className="preview-image" 
+                              />
+                              <button
+                                type="button"
+                                className="btn-remove-image"
+                                onClick={() => {
+                                  setPassageContent(prev => 
+                                    prev.map((p, idx) => 
+                                      idx === pageIndex 
+                                        ? {...p, image: null, imagePreview: null} 
+                                        : p
+                                    )
+                                  );
+                                }}
+                              >
+                                <FontAwesomeIcon icon={faTimes} /> Remove Image
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="upload-placeholder">
+                              <input
+                                type="file"
+                                id={`page-image-${pageIndex}`}
+                                className="file-input"
+                                accept="image/*"
+                                onChange={(e) => handlePassageImageUpload(pageIndex, e)}
+                              />
+                              <label htmlFor={`page-image-${pageIndex}`} className="file-label">
+                                <FontAwesomeIcon icon={faImage} />
+                                <span>Choose Image</span>
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   ))}
+                  
+                  <button
+                    type="button"
+                    className="btn-add-page"
+                    onClick={addPassagePage}
+                  >
+                    <FontAwesomeIcon icon={faPlus} /> Add Another Page
+                  </button>
                 </div>
-              </div>
-
-              <div className="content-type-selection">
-                <h3 className="section-title">Choose Content Type</h3>
-
-                <div className="content-type-options">
-                  <div
-                    className={`content-type-option ${contentType === 'reading' ? 'active' : ''}`}
-                    onClick={() => handleContentTypeChange('reading')}
-                  >
-                    <div className="content-type-icon">
-                      <FontAwesomeIcon icon={faFont} />
-                    </div>
-                    <div className="content-type-label">Text Reading</div>
-                    <div className="content-type-desc">Reading passages with questions</div>
-                  </div>
-
-                  <div
-                    className={`content-type-option ${contentType === 'image' ? 'active' : ''}`}
-                    onClick={() => handleContentTypeChange('image')}
-                  >
-                    <div className="content-type-icon">
-                      <FontAwesomeIcon icon={faImage} />
-                    </div>
-                    <div className="content-type-label">Image Based</div>
-                    <div className="content-type-desc">Activities with visual elements</div>
-                  </div>
-
-                  <div
-                    className={`content-type-option ${contentType === 'voice' ? 'active' : ''}`}
-                    onClick={() => handleContentTypeChange('voice')}
-                  >
-                    <div className="content-type-icon">
-                      <FontAwesomeIcon icon={faVolumeUp} />
-                    </div>
-                    <div className="content-type-label">Voice to Text</div>
-                    <div className="content-type-desc">Speech recognition activities</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="content-type-details">
-                {contentType === 'reading' && (
-                  <div className="text-content-form">
-                    <h3 className="section-title">Reading Passage Content</h3>
-                    <p className="helper-text">
-                      Text-based activities include reading passages, syllable exercises, and comprehension questions.
-                    </p>
-                    <div className="form-group">
-                      <label className="form-label">Passage Text</label>
-                      <textarea
-                        className="form-control"
-                        rows="4"
-                        placeholder="Enter reading passage text..."
-                      ></textarea>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Syllable Breakdown</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Ex: A-so ni Li-za (hyphenated syllables)"
-                      />
-                    </div>
-                    <button type="button" className="btn-add-section">
-                      <FontAwesomeIcon icon={faPlus} /> Add Reading Passage
-                    </button>
-                  </div>
-                )}
-
-                {contentType === 'image' && (
-                  <div className="image-content-form">
-                    <h3 className="section-title">Image Based Content</h3>
-                    <p className="helper-text">
-                      Image-based activities include visual prompts, picture matching, and visual comprehension exercises.
-                    </p>
-                    <div className="form-group">
-                      <label className="form-label">Upload Image</label>
-                      <div className="upload-placeholder">
-                        <input type="file" id="image-upload" className="file-input" accept="image/*" />
-                        <label htmlFor="image-upload" className="file-label">
-                          <FontAwesomeIcon icon={faImage} />
-                          <span>Choose Image</span>
-                        </label>
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Image Caption</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Enter caption or description of the image..."
-                      />
-                    </div>
-                    <button type="button" className="btn-add-section">
-                      <FontAwesomeIcon icon={faPlus} /> Add Image Item
-                    </button>
-                  </div>
-                )}
-
-                {contentType === 'voice' && (
-                  <div className="voice-content-form">
-                    <h3 className="section-title">Voice to Text Content</h3>
-                    <p className="helper-text">
-                      Voice-to-text activities help assess pronunciation and oral reading skills through speech recognition.
-                    </p>
-                    <div className="form-group">
-                      <label className="form-label">Text to Read</label>
-                      <textarea
-                        className="form-control"
-                        rows="3"
-                        placeholder="Enter text for students to read aloud..."
-                      ></textarea>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Sample Audio (Optional)</label>
-                      <div className="upload-placeholder">
-                        <input type="file" id="audio-upload" className="file-input" accept="audio/*" />
-                        <label htmlFor="audio-upload" className="file-label">
-                          <FontAwesomeIcon icon={faVolumeUp} />
-                          <span>Upload Audio</span>
-                        </label>
-                      </div>
-                    </div>
-                    <button type="button" className="btn-add-section">
-                      <FontAwesomeIcon icon={faPlus} /> Add Voice Prompt
-                    </button>
-                  </div>
-                )}
-              </div>
+              )}
 
               {/* Questions Section */}
               <div className="questions-section">
@@ -441,46 +520,62 @@ const AddActivityModal = ({ onClose, readingLevels, categories, activityTypes })
                   Create questions to test understanding of the content. Each question should have multiple choices.
                 </p>
 
-                <div className="question-item">
-                  <div className="form-group">
-                    <label className="form-label">Question Text</label>
-                    <textarea
-                      className="form-control"
-                      rows="2"
-                      placeholder="Enter question text..."
-                    ></textarea>
-                  </div>
+                {questions.map((question, qIndex) => (
+                  <div key={question.id} className="question-item">
+                    <div className="question-header">
+                      <h4>Question {qIndex + 1}</h4>
+                      {questions.length > 1 && (
+                        <button
+                          type="button"
+                          className="btn-remove-question"
+                          onClick={() => removeQuestion(qIndex)}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">Question Text</label>
+                      <textarea
+                        className="form-control"
+                        rows="2"
+                        placeholder="Enter question text..."
+                        value={question.questionText}
+                        onChange={(e) => updateQuestionText(qIndex, e.target.value)}
+                      ></textarea>
+                    </div>
 
-                  <div className="options-container">
-                    <label className="form-label">Answer Options</label>
-                    {[0, 1, 2, 3].map(index => (
-                      <div key={index} className="option-row">
-                        <input
-                          type="radio"
-                          id={`option-${index}`}
-                          name="correct-answer"
-                          className="option-radio"
-                        />
-                        <input
-                          type="text"
-                          className="form-control"
-                          placeholder={`Option ${index + 1}`}
-                        />
-                      </div>
-                    ))}
+                    <div className="options-container">
+                      <label className="form-label">Answer Options</label>
+                      {question.options.map((option, oIndex) => (
+                        <div key={oIndex} className="option-row">
+                          <input
+                            type="radio"
+                            id={`option-${qIndex}-${oIndex}`}
+                            name={`correct-answer-${qIndex}`}
+                            className="option-radio"
+                            checked={question.correctAnswer === oIndex}
+                            onChange={() => setCorrectAnswer(qIndex, oIndex)}
+                          />
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder={`Option ${oIndex + 1}`}
+                            value={option}
+                            onChange={(e) => updateOptionText(qIndex, oIndex, e.target.value)}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                ))}
 
-                  <div className="form-group">
-                    <label className="form-label">Hint/Explanation</label>
-                    <textarea
-                      className="form-control"
-                      rows="2"
-                      placeholder="Provide a hint or explanation that will be shown if the student answers incorrectly..."
-                    ></textarea>
-                  </div>
-                </div>
-
-                <button type="button" className="btn-add-section">
+                <button
+                  type="button"
+                  className="btn-add-question"
+                  onClick={addQuestion}
+                >
                   <FontAwesomeIcon icon={faPlus} /> Add Another Question
                 </button>
               </div>
