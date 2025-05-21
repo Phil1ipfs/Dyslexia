@@ -95,7 +95,7 @@ const SkillsOverviewSection = ({ scores, animated = false }) => {
       <div className="literexia-skills-header">
         <h3 className="literexia-section-title">
           <FaChartLine className="literexia-section-icon" />
-          Skill Performance Overview
+          Mastery Performance Overview
         </h3>
         <div className={`literexia-average-score ${averageSkillLevel.className}`}>
           <span className="literexia-average-value">{averageScore}%</span>
@@ -147,7 +147,7 @@ const SkillsOverviewSection = ({ scores, animated = false }) => {
       </div>
       
       <div className="literexia-skills-legend">
-        <div className="literexia-legend-title">Skill Levels:</div>
+        <div className="literexia-legend-title">Mastery Levels:</div>
         <div className="literexia-legend-items">
           <div className="literexia-legend-item">
             <span className="literexia-legend-marker mastered"></span>

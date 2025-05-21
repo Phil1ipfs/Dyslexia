@@ -5,8 +5,6 @@ import {
   faEye,
   faEdit,
   faTrash,
-  faLock,
-  faClock,
   faCheckCircle,
   faTimesCircle,
   faHourglassHalf,
@@ -14,18 +12,22 @@ import {
   faImage,
   faVolumeUp,
   faBookReader,
-  faMicrophone,
   faFont,
+  faQuestionCircle,
   faLayerGroup,
   faInfoCircle,
-  faExclamationTriangle,
   faCalendarAlt,
   faChevronDown,
-  faChevronUp
+  faChevronUp,
+  faList,
+  faAlignLeft,
+  faLanguage,
+  faSpellCheck,
+  faBookOpen
 } from '@fortawesome/free-solid-svg-icons';
 import './ActivityCard.css';
 
-const ActivityCard = ({ activity, onDelete }) => {
+const ActivityCard = ({ activity, templateType, onDelete }) => {
   const [expanded, setExpanded] = useState(false);
   const [showRejectionDetails, setShowRejectionDetails] = useState(false);
 
@@ -45,31 +47,76 @@ const ActivityCard = ({ activity, onDelete }) => {
     }
   };
 
-  const normalize = s => (s || '').toLowerCase();
-
-
-  // Get icon based on content type
-  const getContentTypeIcon = () => {
-    if (!activity.contentType) return faFileAlt;
-
-    const contentType = activity.contentType.toLowerCase();
-    switch (contentType) {
-      case 'reading': return faBookReader;
-      case 'image': return faImage;
-      case 'voice':
-      case 'audio': return faVolumeUp;
-      case 'interactive': return faLayerGroup;
-      default: return faFileAlt;
+  // Get icon based on template type
+  const getTemplateTypeIcon = () => {
+    switch(templateType) {
+      case 'template':
+        return faLayerGroup;
+      case 'question':
+        return faQuestionCircle;
+      case 'choice':
+        return faList;
+      case 'sentence':
+        return faBookOpen;
+      default:
+        return faFileAlt;
     }
+  };
+
+  // Get icon based on content type/question type
+  const getContentTypeIcon = () => {
+    if (!activity) return faFileAlt;
+
+    // For Question Templates
+    if (templateType === 'question') {
+      switch(activity.questionType) {
+        case 'patinig': 
+        case 'katinig': 
+          return faFont;
+        case 'malapantig': 
+          return faLanguage;
+        case 'word': 
+          return faSpellCheck;
+        default: 
+          return faQuestionCircle;
+      }
+    }
+    
+    // For Choice Templates
+    if (templateType === 'choice') {
+      if (activity.choiceType?.includes('Sound')) return faVolumeUp;
+      if (activity.hasImage) return faImage;
+      return faList;
+    }
+    
+    // For Sentence Templates (Reading Passages)
+    if (templateType === 'sentence') {
+      return faBookOpen;
+    }
+    
+    // For Assessment Templates
+    if (templateType === 'template') {
+      switch(activity.category) {
+        case 'Reading Comprehension':
+          return faBookReader;
+        case 'Alphabet Knowledge':
+          return faFont;
+        case 'Word Recognition':
+          return faSpellCheck;
+        default:
+          return faLayerGroup;
+      }
+    }
+
+    return faFileAlt;
   };
 
   // Render category tags
   const renderCategoryTags = (categories) => {
-    if (!categories || !Array.isArray(categories)) return null;
-
-    return categories.map((category, idx) => (
-      <span key={idx} className="category-tag">{category}</span>
-    ));
+    if (!categories) return null;
+    
+    const category = Array.isArray(categories) ? categories[0] : categories;
+    return <span className="category-tag">{category}</span>;
   };
 
   // Determine card type based on activity status
@@ -77,28 +124,18 @@ const ActivityCard = ({ activity, onDelete }) => {
     switch (activity.status) {
       case 'pending': return 'warning';
       case 'approved': return 'success';
-      case 'locked': return 'locked';
       case 'rejected': return 'rejected';
-      default:
-        // Default types based on activity type
-        if (activity.type === 'assessment') return 'assessment';
-        return 'primary';
+      default: return 'primary';
     }
   };
 
   // Render status badge
   const renderStatusBadge = () => {
     switch (activity.status) {
-      case 'locked':
-        return (
-          <div className="status-badge locked">
-            <FontAwesomeIcon icon={faLock} /> Approved & Locked
-          </div>
-        );
       case 'pending':
         return (
           <div className="status-badge pending">
-            <FontAwesomeIcon icon={faClock} /> Pending Approval
+            <FontAwesomeIcon icon={faHourglassHalf} /> Pending Approval
           </div>
         );
       case 'approved':
@@ -129,9 +166,9 @@ const ActivityCard = ({ activity, onDelete }) => {
             </div>
             <div className="status-message-content">
               <h4>Waiting for admin approval</h4>
-              <p>This activity cannot be edited while pending approval</p>
-              <p className="status-message-datee">
-                <FontAwesomeIcon icon={faCalendarAlt} /> Submitted: {formatDate(activity.submittedAt)}
+              <p>This template cannot be edited while pending approval</p>
+              <p className="status-message-date">
+                <FontAwesomeIcon icon={faCalendarAlt} /> Submitted: {formatDate(activity.submittedAt || activity.createdAt)}
               </p>
             </div>
           </div>
@@ -140,10 +177,10 @@ const ActivityCard = ({ activity, onDelete }) => {
         return (
           <div className="status-message-box rejected">
             <div className="status-message-icon">
-              <FontAwesomeIcon icon={faExclamationTriangle} />
+              <FontAwesomeIcon icon={faTimesCircle} />
             </div>
             <div className="status-message-content">
-              <h4>Admin has rejected this activity</h4>
+              <h4>Admin has rejected this template</h4>
               <p>Review feedback and make necessary changes before resubmitting</p>
               <button
                 className="toggle-details-btn"
@@ -158,51 +195,14 @@ const ActivityCard = ({ activity, onDelete }) => {
               {showRejectionDetails && (
                 <div className="rejection-details">
                   <p className="rejection-date">
-                    <FontAwesomeIcon icon={faCalendarAlt} /> Rejected on: {formatDate(activity.lastModified)}
+                    <FontAwesomeIcon icon={faCalendarAlt} /> Rejected on: {formatDate(activity.lastModified || activity.createdAt)}
                   </p>
                   <div className="rejection-reason">
                     <h5>Rejection Reason:</h5>
                     <p>{activity.adminRemarks || "No specific remarks provided."}</p>
                   </div>
-                  <div className="rejection-instructions">
-                    <ul>
-                      <li>Review all content for accuracy and completeness</li>
-                      <li>Maintain original content structure and types</li>
-                      <li>Fix identified issues and resubmit for approval</li>
-                    </ul>
-                  </div>
                 </div>
               )}
-            </div>
-          </div>
-        );
-      case 'locked':
-        return (
-          <div className="status-message-box locked">
-            <div className="status-message-icon">
-              <FontAwesomeIcon icon={faLock} />
-            </div>
-            <div className="status-message-content">
-              <h4>Approved & Locked</h4>
-              <p>This activity is locked and cannot be edited</p>
-              <p className="status-message-datee">
-                <FontAwesomeIcon icon={faCalendarAlt} /> Approved: {formatDate(activity.lastModified)}
-              </p>
-            </div>
-          </div>
-        );
-      case 'approved':
-        return (
-          <div className="status-message-box approved">
-            <div className="status-message-icon">
-              <FontAwesomeIcon icon={faCheckCircle} />
-            </div>
-            <div className="status-message-content">
-              <h4>Approved</h4>
-              <p>This activity is approved and ready to use</p>
-              <p className="status-message-datee">
-                <FontAwesomeIcon icon={faCalendarAlt} /> Approved: {formatDate(activity.lastModified)}
-              </p>
             </div>
           </div>
         );
@@ -211,194 +211,130 @@ const ActivityCard = ({ activity, onDelete }) => {
     }
   };
 
-  // Get levels information
-  const getLevelsInfo = () => {
-    if (activity.levels && Array.isArray(activity.levels) && activity.levels.length > 0) {
-      return `${activity.levels.length} level${activity.levels.length > 1 ? 's' : ''}`;
+  // Get template type specific details
+  const getTemplateSpecificDetails = () => {
+    if (templateType === 'question') {
+      return (
+        <>
+          <div className="metadata-row">
+            <span className="metadata-label">Question Type:</span>
+            <span className="metadata-value">{activity.questionType || 'Not specified'}</span>
+          </div>
+          <div className="metadata-row">
+            <span className="metadata-label">Applies To:</span>
+            <span className="metadata-value">{activity.applicableChoiceTypes?.join(', ') || 'Not specified'}</span>
+          </div>
+          <div className="metadata-row">
+            <span className="metadata-label">Correct Type:</span>
+            <span className="metadata-value">{activity.correctChoiceType || 'Not specified'}</span>
+          </div>
+        </>
+      );
     }
-    return "No levels defined";
-  };
-
-  // Get question types summary
-  const getQuestionTypesSummary = () => {
-    if (!activity.levels || !Array.isArray(activity.levels) || activity.levels.length === 0) {
-      return "No questions";
-    }
-
-    // Collect all questions from all levels
-    const allQuestions = activity.levels.flatMap(level => level.questions || []);
-
-    if (allQuestions.length === 0) return "No questions";
-
-    // Count question types
-    const typeCounts = {
-      text: 0,
-      image: 0,
-      audio: 0,
-      voice: 0
-    };
-
-    allQuestions.forEach(question => {
-      const type = question.contentType?.toLowerCase() || 'text';
-      typeCounts[type] = (typeCounts[type] || 0) + 1;
-    });
-
-    // Create summary string
-    const parts = [];
-
-    if (typeCounts.text) parts.push(`${typeCounts.text} text`);
-    if (typeCounts.image) parts.push(`${typeCounts.image} image`);
-    if (typeCounts.audio || typeCounts.voice) {
-      const audioCount = (typeCounts.audio || 0) + (typeCounts.voice || 0);
-      parts.push(`${audioCount} audio`);
-    }
-
-    return parts.length > 0
-      ? `${allQuestions.length} questions (${parts.join(', ')})`
-      : `${allQuestions.length} questions`;
-  };
-
-
-  // Get content type breakdown
-  const getContentTypeBreakdown = () => {
-    if (!activity.levels) return null;
-
-    const counts = {};
-    activity.levels.forEach(level => {
-      // prefer level.contentType, otherwise use activity.contentType
-      const raw = level.contentType ?? activity.contentType;
-      const type = normalize(raw) || 'unknown';
-      counts[type] = (counts[type] || 0) + 1;
-    });
-
-
-    const contentTypeCounts = {};
-
-    activity.levels.forEach(level => {
-      const rawType = level.contentType ?? activity.contentType;
-      const contentType = normalize(rawType) || 'unknown';
-
-      contentTypeCounts[contentType] = (contentTypeCounts[contentType] || 0) + 1;
-    });
-
-    return (
-      <div className="content-type-breakdown">
-        {Object.entries(contentTypeCounts).map(([type, count]) => {
-          // Choose an icon per type
-          let icon;
-          switch (type) {
-            case 'reading':
-              icon = faBookReader;
-              break;
-            case 'image':
-              icon = faImage;
-              break;
-            case 'voice':
-            case 'audio':
-              icon = faVolumeUp;
-              break;
-            case 'interactive':
-              icon = faLayerGroup;
-              break;
-            default:
-              icon = faFileAlt;
-          }
-
-          const label = type.charAt(0).toUpperCase() + type.slice(1);
-
-          return (
-            <div key={type} className="content-type-item">
-              <FontAwesomeIcon icon={icon} />
-              <span className="content-type-label">{label}</span>
-              <span className="content-type-count">{count}</span>
+    
+    if (templateType === 'choice') {
+      return (
+        <>
+          <div className="metadata-row">
+            <span className="metadata-label">Choice Type:</span>
+            <span className="metadata-value">{activity.choiceType || 'Not specified'}</span>
+          </div>
+          <div className="metadata-row">
+            <span className="metadata-label">Value:</span>
+            <span className="metadata-value">{activity.choiceValue || 'Not specified'}</span>
+          </div>
+          {activity.soundText && (
+            <div className="metadata-row">
+              <span className="metadata-label">Sound Text:</span>
+              <span className="metadata-value">{activity.soundText}</span>
             </div>
-          );
-        })}
-      </div>
-    );
+          )}
+          <div className="metadata-row">
+            <span className="metadata-label">Has Image:</span>
+            <span className="metadata-value">{activity.hasImage ? 'Yes' : 'No'}</span>
+          </div>
+          <div className="metadata-row">
+            <span className="metadata-label">Has Audio:</span>
+            <span className="metadata-value">{activity.hasAudio ? 'Yes' : 'No'}</span>
+          </div>
+        </>
+      );
+    }
+    
+    if (templateType === 'sentence') {
+      return (
+        <>
+          <div className="metadata-row">
+            <span className="metadata-label">Pages:</span>
+            <span className="metadata-value">{activity.pages || 'Not specified'}</span>
+          </div>
+          <div className="metadata-row">
+            <span className="metadata-label">Questions:</span>
+            <span className="metadata-value">{activity.questions || 'Not specified'}</span>
+          </div>
+        </>
+      );
+    }
+    
+    if (templateType === 'template') {
+      return (
+        <>
+          <div className="metadata-row">
+            <span className="metadata-label">Questions:</span>
+            <span className="metadata-value">{activity.questionCount || 'Not specified'}</span>
+          </div>
+        </>
+      );
+    }
+    
+    return null;
   };
 
-  // Render level previews
-  const renderLevelPreviews = () => {
-    if (!activity.levels || activity.levels.length === 0) return null;
-
-    return (
-      <div className="level-previews">
-        {activity.levels.map((level, index) => {
-          // 1) pick the level's own type or fall back to the activity's type
-          const rawType = level.contentType ?? activity.contentType;
-          const type = normalize(rawType) || 'unknown';
-
-          // 2) choose an icon for each type
-          let icon;
-          switch (type) {
-            case 'reading':
-              icon = faBookReader;
-              break;
-            case 'image':
-              icon = faImage;
-              break;
-            case 'voice':
-            case 'audio':
-              icon = faVolumeUp;
-              break;
-            case 'interactive':
-              icon = faLayerGroup;
-              break;
-            default:
-              icon = faFileAlt;
-          }
-
-          // 3) capitalize the label
-          const label = type.charAt(0).toUpperCase() + type.slice(1);
-
-          return (
-            <div key={level.id || index} className="level-preview-item">
-              <div className="level-preview-header">
-                <span className="level-name">
-                  {level.levelName || `Level ${index + 1}`}
-                </span>
-                <div className="level-type">
-                  <FontAwesomeIcon icon={icon} />
-                  <span>{`${label} Based`}</span>
-                </div>
-              </div>
-              <div className="level-preview-content">
-                {/* your existing passage + questions preview */}
-                {type === 'reading' && level.passage?.text && (
-                  <div className="passage-preview">
-                    <span className="preview-label">Passage:</span>
-                    <span className="preview-text">
-                      {level.passage.text.length > 60
-                        ? level.passage.text.substring(0, 60) + '…'
-                        : level.passage.text}
-                    </span>
-                  </div>
-                )}
-                <div className="questions-count">
-                  <span className="preview-label">Questions:</span>
-                  <span className="preview-text">
-                    {level.questions?.length || 0}
-                  </span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
+  // Get preview link based on template type
+  const getPreviewLink = () => {
+    // Make sure this is returning the correct path
+    switch(templateType) {
+      case 'template':
+        return `/teacher/preview-assessment/${activity.id}`;
+      case 'question':
+        return `/teacher/preview-question/${activity.id}`;
+      case 'choice':
+        return `/teacher/preview-choice/${activity.id}`;
+      case 'sentence':
+        return `/teacher/preview-passage/${activity.id}`;
+      default:
+        return `/teacher/preview-activity/${activity.id}`;
+    }
   };
 
+  // In your ActivityCard.jsx
+console.log("Preview link:", getPreviewLink());
+console.log("Activity ID:", activity.id);
+console.log("Template type:", templateType);
 
-
-
+  // Get edit link based on template type
+  const getEditLink = () => {
+    switch(templateType) {
+      case 'template':
+        return `/teacher/edit-assessment/${activity.id}`;
+      case 'question':
+        return `/teacher/edit-question/${activity.id}`;
+      case 'choice':
+        return `/teacher/edit-choice/${activity.id}`;
+      case 'sentence':
+        return `/teacher/edit-passage/${activity.id}`;
+      default:
+        return `/teacher/edit-activity/${activity.id}`;
+    }
+  };
 
   return (
     <div className={`activity-card ${getCardType()}`}>
       <div className="activity-card-header">
         <div className="activity-title-area">
           <div className="activity-icon">
-            <FontAwesomeIcon icon={getContentTypeIcon()} />
+            <FontAwesomeIcon icon={getTemplateTypeIcon()} className="template-type-icon" />
+            <FontAwesomeIcon icon={getContentTypeIcon()} className="content-type-icon" />
           </div>
           <h3 className="activity-title">{activity.title}</h3>
         </div>
@@ -408,55 +344,44 @@ const ActivityCard = ({ activity, onDelete }) => {
       <div className="activity-card-body">
         <div className="activity-metadata">
           <div className="metadata-row">
-            <span className="metadata-label">Antas:</span>
-            <span className="metadata-valuee">{activity.level}</span>
-          </div>
-
-         
-
-          <div className="metadata-row">
-            <span className="metadata-label">Type:</span>
-            <span className="metadata-valuee">
-              {activity.type === 'template' && 'Activity Template'}
-              {activity.type === 'assessment' && 'Pre-Assessment'}
-            </span>
+            <span className="metadata-label">Category:</span>
+            <span className="metadata-value">{activity.category || 'Not categorized'}</span>
           </div>
 
           <div className="metadata-row">
-            <span className="metadata-label">Structure:</span>
-            <span className="metadata-valuee">
-              {(activity.contentType === 'Reading' || activity.hasReadingPassage)
-                ? 'Reading passage with questions'
-                : 'Question-based activity'}
-            </span>
+            <span className="metadata-label">Reading Level:</span>
+            <span className="metadata-value">{activity.level || 'Not specified'}</span>
           </div>
 
           <div className="metadata-row">
-            <span className="metadata-label">Levels:</span>
-            <span className="metadata-valuee">{getLevelsInfo()}</span>
+            <span className="metadata-label">Template Type:</span>
+            <span className="metadata-value">{
+              templateType === 'template' ? 'Assessment Template' :
+              templateType === 'question' ? 'Question Template' :
+              templateType === 'choice' ? 'Choice Template' :
+              templateType === 'sentence' ? 'Reading Passage' : 'Unknown'
+            }</span>
           </div>
 
-          <div className="metadata-row">
-            <span className="metadata-label">Questions:</span>
-            <span className="metadata-valuee">{getQuestionTypesSummary()}</span>
-          </div>
+          {/* Template type specific details */}
+          {getTemplateSpecificDetails()}
 
           <div className="metadata-row">
             <span className="metadata-label">Created:</span>
-            <span className="metadata-valuee">{formatDate(activity.createdAt)}</span>
+            <span className="metadata-value">{formatDate(activity.createdAt)}</span>
           </div>
 
           {activity.lastModified && (
             <div className="metadata-row">
               <span className="metadata-label">Last Modified:</span>
-              <span className="metadata-valuee">{formatDate(activity.lastModified)}</span>
+              <span className="metadata-value">{formatDate(activity.lastModified)}</span>
             </div>
           )}
 
           {activity.description && (
             <div className="description-section">
               <span className="metadata-label">Description:</span>
-              <p className="description-textt">
+              <p className="description-text">
                 {expanded || activity.description.length <= 120
                   ? activity.description
                   : `${activity.description.substring(0, 120)}...`}
@@ -473,38 +398,24 @@ const ActivityCard = ({ activity, onDelete }) => {
             </div>
           )}
 
-          {/* Content Type Breakdown */}
-          {activity.levels && activity.levels.length > 0 && (
-            <div className="content-types-section">
-              <span className="metadata-label">Content Types:</span>
-              {getContentTypeBreakdown()}
-            </div>
-          )}
-
-          {/* Level Previews - Show on expansion or if rejected */}
-          {(expanded || activity.status === 'rejected') &&
-            renderLevelPreviews()
-          }
           {/* Status Message Box */}
           {renderStatusMessage()}
         </div>
 
         <div className="activity-actions">
-          <Link to={`/teacher/preview-activity/${activity.id}`} className="preview-btn">
-            <FontAwesomeIcon icon={faEye} /> Preview
-          </Link>
+        <Link to={`/teacher/preview-${templateType}/${activity.id}`} className="preview-btn">
+  <FontAwesomeIcon icon={faEye} /> Preview
+</Link>
 
-          {activity.status !== 'pending' && activity.status !== 'locked' && (
-            <Link to={`/teacher/edit-activity/${activity.id}`} className="edit-btn">
+          {activity.status !== 'pending' && (
+            <Link to={getEditLink()} className="edit-btn">
               <FontAwesomeIcon icon={faEdit} /> Edit
             </Link>
           )}
 
-          {activity.status === 'rejected' && (
-            <button className="delete-btn" onClick={() => onDelete(activity)}>
-              <FontAwesomeIcon icon={faTrash} /> Delete
-            </button>
-          )}
+          <button className="delete-btn" onClick={() => onDelete(activity)}>
+            <FontAwesomeIcon icon={faTrash} /> Delete
+          </button>
         </div>
       </div>
     </div>
