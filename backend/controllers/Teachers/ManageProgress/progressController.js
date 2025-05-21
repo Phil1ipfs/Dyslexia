@@ -78,10 +78,10 @@ class ProgressController {
             // console.log(`Direct collection check: 'intervention_progress' has ${await interventionProgressCollection.countDocuments({})} documents`);
 
             // If count > 0, show a sample document
-            if (await categoryResultsCollection.countDocuments({}) > 0) {
-                const sample = await categoryResultsCollection.findOne({});
-                console.log(`Sample document: ${JSON.stringify(sample, null, 2).substring(0, 200)}...`);
-            }
+            // if (await categoryResultsCollection.countDocuments({}) > 0) {
+            //     const sample = await categoryResultsCollection.findOne({});
+            //     console.log(`Sample document: ${JSON.stringify(sample, null, 2).substring(0, 200)}...`);
+            // }
 
             // List all student IDs in category_results
             const allRecords = await categoryResultsCollection.find({}).toArray();

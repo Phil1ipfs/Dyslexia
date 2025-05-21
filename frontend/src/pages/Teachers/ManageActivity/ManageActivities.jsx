@@ -7,20 +7,39 @@ import {
   faPlus,
   faFilter,
   faFileAlt,
-  faExclamationTriangle
+  faExclamationTriangle,
+  faSpinner
 } from '@fortawesome/free-solid-svg-icons';
 
 import FilterSidebar from "../../../components/TeacherPage/ManageActivity/FilterSidebar";
 import TabNavigation from "../../../components/TeacherPage/ManageActivity/TabNavigation";
 import ActivityCard from "../../../components/TeacherPage/ManageActivity/ActivityCard";
-import AddActivityModal from "../../../components/TeacherPage/ManageActivity/AddActivityModal";
 import "../../../css/Teachers/ManageActivity.css";
 
-// import {
-//   readingLevels,
-//   categories,
-//   sortOptions
-// } from "../../../data/Teachers/activityData";
+// Define reading levels, categories, and sort options
+const readingLevels = [
+  "All Levels",
+  "Low Emerging",
+  "Transitioning",
+  "Developing",
+  "Fluent"
+];
+
+const categories = [
+  "All Categories",
+  "Alphabet Knowledge",
+  "Phonological Awareness",
+  "Decoding",
+  "Word Recognition",
+  "Reading Comprehension"
+];
+
+const sortOptions = [
+  "Newest First",
+  "Oldest First", 
+  "Alphabetical A-Z",
+  "Alphabetical Z-A"
+];
 
 function ManageActivities() {
   // State variables
@@ -33,16 +52,18 @@ function ManageActivities() {
   const [activeTab, setActiveTab] = useState("templates");
   const [statusFilter, setStatusFilter] = useState("All Statuses");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(2);
+  const [itemsPerPage] = useState(6);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [activityToDelete, setActivityToDelete] = useState(null);
-  const [addModalOpen, setAddModalOpen] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [error, setError] = useState(null);
 
   // Define tabs with counts
   const [tabs, setTabs] = useState([
     { id: "templates", label: "Activity Templates", count: 0 },
-    { id: "assessments", label: "Pre-Assessments", count: 0 },
+    { id: "questions", label: "Question Templates", count: 0 },
+    { id: "choices", label: "Template Choices", count: 0 },
+    { id: "sentences", label: "Reading Passages", count: 0 },
     { id: "pending", label: "Pending Approval", count: 0 },
   ]);
 
@@ -51,7 +72,6 @@ function ManageActivities() {
     "All Statuses",
     "Approved", 
     "Pending",
-    "Locked",
     "Rejected"
   ];
 
@@ -60,42 +80,38 @@ function ManageActivities() {
     // Clear existing activities before loading new ones
     setActivities([]);
     setLoading(true);
+    setError(null);
 
     const loadAllActivities = async () => {
       try {
-        // Load mock activities from mock data module
-        // const module = await import("../../../data/Teachers/activitiesMockData");
-        const mockData = module.default;
-
-        // Get newly added activities from localStorage
+        // In a real implementation, these would be API calls to fetch different template types
+        const mockTemplateQuestions = await fetchTemplateQuestions();
+        const mockTemplateChoices = await fetchTemplateChoices();
+        const mockSentenceTemplates = await fetchSentenceTemplates();
+        const mockMainAssessments = await fetchMainAssessments();
+        
+        // Create a unified activities list that includes all template types
+        // Each record is tagged with its type for filtering in the tabs
+        const allActivities = [
+          ...mockTemplateQuestions.map(q => ({...q, templateType: 'question'})),
+          ...mockTemplateChoices.map(c => ({...c, templateType: 'choice'})),
+          ...mockSentenceTemplates.map(s => ({...s, templateType: 'sentence'})),
+          ...mockMainAssessments.map(a => ({...a, templateType: 'template'})),
+        ];
+        
+        // Get newly added activities from localStorage if they exist
         const newlyAddedActivities = JSON.parse(localStorage.getItem('mockActivities') || '[]');
-
-        // Process all activities to ensure they have the necessary properties
-        const processedActivities = [...mockData, ...newlyAddedActivities].map(activity => {
-          // Add levels property if missing
-          if (!activity.levels) {
-            return {
-              ...activity,
-              levels: Array.from({ length: Math.floor(Math.random() * 3) + 1 }, (_, i) => ({
-                id: i + 1,
-                levelName: `Level ${i + 1}`,
-                questions: Array.from({ length: Math.floor(Math.random() * 5) + 3 }, (_, j) => ({
-                  id: j + 1,
-                  contentType: ['reading', 'image', 'voice'][Math.floor(Math.random() * 3)]
-                }))
-              }))
-            };
-          }
-          return activity;
-        });
-
-        // Set activities state
-        setActivities(processedActivities);
-
+        
+        // Combine all activities
+        const combinedActivities = [...allActivities, ...newlyAddedActivities];
+        
+        setActivities(combinedActivities);
+        
         // Update tab counts
-        updateTabCounts(processedActivities);
+        updateTabCounts(combinedActivities);
       } catch (error) {
         console.error("Error loading activities:", error);
+        setError("Failed to load activity templates. Please try again later.");
         setActivities([]);
       } finally {
         setLoading(false);
@@ -104,6 +120,278 @@ function ManageActivities() {
 
     loadAllActivities();
   }, []);
+  
+  // Mock function to fetch template questions (in real app, this would be an API call)
+  const fetchTemplateQuestions = async () => {
+    // This simulates fetching template questions from your backend
+    // In a real implementation, this would make an API call to your server
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Return mock data based on the JSON files you provided
+    return [
+      {
+        id: "6829799079a34741f9cd19ef",
+        title: "Anong katumbas na maliit na letra?",
+        category: "Alphabet Knowledge",
+        questionType: "patinig",
+        level: "Low Emerging",
+        applicableChoiceTypes: ["patinigBigLetter", "patinigSmallLetter"],
+        correctChoiceType: "patinigSmallLetter",
+        status: "approved",
+        createdAt: "2025-05-01T09:00:00.000Z",
+        description: "Question template for matching uppercase and lowercase vowels"
+      },
+      {
+        id: "6829799079a34741f9cd19f0",
+        title: "Anong katumbas na malaking letra?", 
+        category: "Alphabet Knowledge",
+        questionType: "patinig",
+        level: "Low Emerging",
+        applicableChoiceTypes: ["patinigBigLetter", "patinigSmallLetter"],
+        correctChoiceType: "patinigBigLetter",
+        status: "approved",
+        createdAt: "2025-05-01T09:05:00.000Z",
+        description: "Question template for matching lowercase to uppercase vowels"
+      },
+      {
+        id: "6829799079a34741f9cd19f1",
+        title: "Anong tunog ng letra?",
+        category: "Alphabet Knowledge",
+        questionType: "patinig",
+        level: "Low Emerging",
+        applicableChoiceTypes: ["patinigBigLetter", "patinigSound"],
+        correctChoiceType: "patinigSound",
+        status: "approved",
+        createdAt: "2025-05-01T09:10:00.000Z", 
+        description: "Question template for identifying vowel sounds"
+      },
+      {
+        id: "6829799079a34741f9cd19f5",
+        title: "Kapag pinagsama ang mga pantig, ano ang mabubuo?",
+        category: "Phonological Awareness",
+        questionType: "malapantig",
+        level: "Low Emerging",
+        applicableChoiceTypes: ["malapatinigText", "wordText"],
+        correctChoiceType: "wordText",
+        status: "approved",
+        createdAt: "2025-05-01T09:30:00.000Z",
+        description: "Question template for word building from syllables"
+      },
+      {
+        id: "6829799079a34741f9cd19f8",
+        title: "Piliin ang tamang larawan para sa salitang:",
+        category: "Word Recognition",
+        questionType: "word",
+        level: "Low Emerging",
+        applicableChoiceTypes: ["wordText"],
+        correctChoiceType: "wordText",
+        status: "approved",
+        createdAt: "2025-05-01T09:45:00.000Z",
+        description: "Question template for matching words to images"
+      },
+      {
+        id: "6829799079a34741f9cd19fa",
+        title: "Paano babaybayin ang salitang ito?",
+        category: "Decoding",
+        questionType: "word",
+        level: "Low Emerging",
+        applicableChoiceTypes: ["wordText"],
+        correctChoiceType: "wordText",
+        status: "pending",
+        createdAt: "2025-05-01T09:55:00.000Z",
+        description: "Question template for spelling words"
+      }
+    ];
+  };
+
+  // Mock function to fetch template choices
+  const fetchTemplateChoices = async () => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Return mock data based on your templates_choices.json
+    return [
+      {
+        id: "68297e4979a34741f9cd1a0f",
+        title: "Letter A (Uppercase)",
+        category: "Alphabet Knowledge",
+        level: "Low Emerging",
+        choiceType: "patinigBigLetter",
+        choiceValue: "A",
+        hasImage: true,
+        status: "approved",
+        createdAt: "2025-05-01T09:00:00.000Z",
+        description: "Uppercase letter A choice template"
+      },
+      {
+        id: "68297e4979a34741f9cd1a14",
+        title: "Letter a (Lowercase)",
+        category: "Alphabet Knowledge",
+        level: "Low Emerging",
+        choiceType: "patinigSmallLetter",
+        choiceValue: "a",
+        hasImage: true,
+        status: "approved",
+        createdAt: "2025-05-01T09:05:00.000Z",
+        description: "Lowercase letter a choice template"
+      },
+      {
+        id: "68297e4979a34741f9cd1a19",
+        title: "A sound (/ah/)",
+        category: "Alphabet Knowledge",
+        level: "Low Emerging",
+        choiceType: "patinigSound",
+        soundText: "/ah/",
+        hasAudio: true,
+        status: "approved",
+        createdAt: "2025-05-01T09:10:00.000Z",
+        description: "Sound for letter A"
+      },
+      {
+        id: "6829828a79a34741f9cd1a3e",
+        title: "Syllable BA",
+        category: "Phonological Awareness",
+        level: "Low Emerging",
+        choiceType: "malapatinigText",
+        choiceValue: "BA",
+        soundText: "/ba/",
+        status: "approved",
+        createdAt: "2025-05-01T09:45:00.000Z",
+        description: "Syllable BA choice template"
+      },
+      {
+        id: "6829828a79a34741f9cd1a47",
+        title: "Word: aklat (book)",
+        category: "Word Recognition",
+        level: "Low Emerging",
+        choiceType: "wordText",
+        choiceValue: "aklat",
+        hasImage: true,
+        status: "approved",
+        createdAt: "2025-05-01T09:58:00.000Z",
+        description: "Word choice template for 'aklat'"
+      },
+      {
+        id: "6829828a79a34741f9cd1a4c",
+        title: "Word with Sound: damit (/da-mit/)",
+        category: "Decoding",
+        level: "Low Emerging",
+        choiceType: "wordText",
+        choiceValue: "damit",
+        soundText: "/da-mit/",
+        hasImage: true,
+        hasAudio: true,
+        status: "pending",
+        createdAt: "2025-05-01T10:03:00.000Z",
+        description: "Word with pronunciation for 'damit'"
+      }
+    ];
+  };
+
+  // Mock function to fetch sentence templates
+  const fetchSentenceTemplates = async () => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 700));
+    
+    // Return mock data based on your sentence_templates.json
+    return [
+      {
+        id: "68297c4379a34741f9cd1a00",
+        title: "Si Maria at ang mga Bulaklak",
+        category: "Reading Comprehension",
+        level: "Low Emerging",
+        status: "approved",
+        pages: 2,
+        questions: 3,
+        createdAt: "2025-05-01T10:30:00.000Z",
+        description: "Story about Maria finding flowers in the park"
+      },
+      {
+        id: "68297c4379a34741f9cd1a01",
+        title: "Ang Batang Matulungin",
+        category: "Reading Comprehension",
+        level: "Transitioning",
+        status: "approved",
+        pages: 2,
+        questions: 3,
+        createdAt: "2025-05-01T11:00:00.000Z",
+        description: "Story about a helpful child named Pedro"
+      },
+      {
+        id: "68297c4379a34741f9cd1a02",
+        title: "Si Lino at ang Kanyang Alagang Isda",
+        category: "Reading Comprehension",
+        level: "Developing",
+        status: "pending",
+        pages: 2,
+        questions: 3,
+        createdAt: "2025-05-01T11:30:00.000Z",
+        description: "Story about Lino and his pet fish"
+      }
+    ];
+  };
+
+  // Mock function to fetch main assessments
+  const fetchMainAssessments = async () => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Return mock data based on your main_assessment.json
+    return [
+      {
+        id: "68298fb179a34741f9cd1a01",
+        title: "Alphabet Knowledge Assessment",
+        category: "Alphabet Knowledge",
+        level: "Low Emerging",
+        questionCount: 9,
+        status: "approved",
+        createdAt: "2025-05-01T08:00:00.000Z",
+        description: "Complete assessment for alphabet knowledge"
+      },
+      {
+        id: "68298fb179a34741f9cd1a02",
+        title: "Phonological Awareness Assessment",
+        category: "Phonological Awareness",
+        level: "Low Emerging",
+        questionCount: 5,
+        status: "approved",
+        createdAt: "2025-05-01T08:45:00.000Z",
+        description: "Complete assessment for phonological awareness"
+      },
+      {
+        id: "68298fb179a34741f9cd1a03",
+        title: "Word Recognition Assessment",
+        category: "Word Recognition",
+        level: "Low Emerging",
+        questionCount: 5,
+        status: "approved",
+        createdAt: "2025-05-01T09:10:00.000Z",
+        description: "Complete assessment for word recognition"
+      },
+      {
+        id: "68298fb179a34741f9cd1a04",
+        title: "Decoding Assessment",
+        category: "Decoding",
+        level: "Low Emerging",
+        questionCount: 5,
+        status: "pending",
+        createdAt: "2025-05-01T09:35:00.000Z",
+        description: "Complete assessment for decoding skills"
+      },
+      {
+        id: "68298fb179a34741f9cd1a05",
+        title: "Reading Comprehension Assessment",
+        category: "Reading Comprehension",
+        level: "Low Emerging",
+        questionCount: 2,
+        status: "pending",
+        createdAt: "2025-05-01T10:00:00.000Z",
+        description: "Complete assessment for reading comprehension with stories"
+      }
+    ];
+  };
 
   // Function to update tab counts
   const updateTabCounts = (activitiesList) => {
@@ -111,9 +399,13 @@ function ManageActivities() {
       let count = 0;
 
       if (tab.id === 'templates') {
-        count = activitiesList.filter(a => a.type === 'template').length;
-      } else if (tab.id === 'assessments') {
-        count = activitiesList.filter(a => a.type === 'assessment').length;
+        count = activitiesList.filter(a => a.templateType === 'template').length;
+      } else if (tab.id === 'questions') {
+        count = activitiesList.filter(a => a.templateType === 'question').length;
+      } else if (tab.id === 'choices') {
+        count = activitiesList.filter(a => a.templateType === 'choice').length;
+      } else if (tab.id === 'sentences') {
+        count = activitiesList.filter(a => a.templateType === 'sentence').length;
       } else if (tab.id === 'pending') {
         count = activitiesList.filter(a => a.status === 'pending').length;
       }
@@ -130,13 +422,15 @@ function ManageActivities() {
   // Filter activities based on current filters
   const filteredActivities = activities.filter(activity => {
     // Type filter (tab selection)
-    if (activeTab === "templates" && activity.type !== "template") return false;
-    if (activeTab === "assessments" && activity.type !== "assessment") return false;
+    if (activeTab === "templates" && activity.templateType !== "template") return false;
+    if (activeTab === "questions" && activity.templateType !== "question") return false;
+    if (activeTab === "choices" && activity.templateType !== "choice") return false;
+    if (activeTab === "sentences" && activity.templateType !== "sentence") return false;
     if (activeTab === "pending" && activity.status !== "pending") return false;
     
     // Other filters
     if (selectedLevel !== "All Levels" && activity.level !== selectedLevel) return false;
-    if (selectedCategory !== "All Categories" && !activity.categories?.includes(selectedCategory)) return false;
+    if (selectedCategory !== "All Categories" && activity.category !== selectedCategory) return false;
     
     // Status filter
     if (statusFilter !== "All Statuses") {
@@ -144,8 +438,13 @@ function ManageActivities() {
       if (activity.status !== statusLower) return false;
     }
     
-    // Search filter
-    if (searchQuery && !activity.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    // Search filter - search in title and description
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const titleMatch = activity.title && activity.title.toLowerCase().includes(query);
+      const descMatch = activity.description && activity.description.toLowerCase().includes(query);
+      if (!titleMatch && !descMatch) return false;
+    }
     
     return true;
   });
@@ -187,45 +486,6 @@ function ManageActivities() {
     setCurrentPage(1);     
   };
 
-  const handleAddActivity = (newActivity) => {
-    // Create a new activity with current date and proper formatting
-    const activityToAdd = {
-      ...newActivity,
-      id: Date.now(), // Use timestamp as unique ID
-      createdAt: new Date().toISOString(),
-      status: 'pending', // New activities start as pending
-      // Add other necessary default properties
-    };
-
-    // Update both state and localStorage
-    setActivities(prevActivities => {
-      const updatedActivities = [...prevActivities, activityToAdd];
-      
-      // Update localStorage
-      const storedActivities = JSON.parse(localStorage.getItem('mockActivities') || '[]');
-      localStorage.setItem('mockActivities', JSON.stringify([...storedActivities, activityToAdd]));
-      
-      // Update tab counts with the new activity included
-      updateTabCounts(updatedActivities);
-      
-      return updatedActivities;
-    });
-
-    // Close modal
-    setAddModalOpen(false);
-    
-    // If we're on a different tab than where the activity belongs,
-    // we can optionally switch to that tab
-    if (activityToAdd.type === 'template' && activeTab !== 'templates') {
-      setActiveTab('templates');
-    } else if (activityToAdd.type === 'assessment' && activeTab !== 'assessments') {
-      setActiveTab('assessments');
-    }
-    
-    // Always reset to first page to see the new activity
-    setCurrentPage(1);
-  };
-
   const openDeleteModal = activity => {
     setActivityToDelete(activity);
     setDeleteModalOpen(true);
@@ -265,9 +525,19 @@ function ManageActivities() {
 
   const getCreateLink = () => {
     if (activeTab === "templates") return "/teacher/create-activity?type=template";
-    if (activeTab === "assessments") return "/teacher/create-pre-assessment";
+    if (activeTab === "questions") return "/teacher/create-question?type=question";
+    if (activeTab === "choices") return "/teacher/create-choice?type=choice";
+    if (activeTab === "sentences") return "/teacher/create-passage?type=sentence";
     return "/teacher/create-activity";
   };
+
+  const getCreateButtonText = () => {
+    if (activeTab === "templates") return "Add New Assessment Template";
+    if (activeTab === "questions") return "Add New Question Template";
+    if (activeTab === "choices") return "Add New Choice Template";
+    if (activeTab === "sentences") return "Add New Reading Passage";
+    return "Add New";
+  }
 
   const clearFilters = () => {
     setSelectedLevel("All Levels");
@@ -290,7 +560,7 @@ function ManageActivities() {
             <FontAwesomeIcon icon={faList} className="header-icon" />
             Manage Activities
           </h1>
-          <p className="page-subtitle">Create, edit, and manage activities for students</p>
+          <p className="page-subtitle">Create, edit, and manage activity templates and assessments</p>
         </div>
       </header>
 
@@ -350,16 +620,16 @@ function ManageActivities() {
           <div className="tab-content">
             <div className="tab-header">
               <h2 className="content-title">
-                {activeTab === "templates" && "Activity Templates"}
-                {activeTab === "assessments" && "Pre-Assessment Activities"}
-                {activeTab === "pending" && "Activities Pending Approval"}
+                {activeTab === "templates" && "Assessment Templates"}
+                {activeTab === "questions" && "Question Templates"}
+                {activeTab === "choices" && "Choice Templates"}
+                {activeTab === "sentences" && "Reading Passages"}
+                {activeTab === "pending" && "Templates Pending Approval"}
               </h2>
               {activeTab !== "pending" && (
                 <Link to={getCreateLink()} className="add-activity-btn">
                   <FontAwesomeIcon icon={faPlus} />
-                  <span>Add New {activeTab === "templates" ? "Activity Template" :
-                    activeTab === "assessments" ? "Pre-Assessment" :
-                      "Practice Module"}</span>
+                  <span>{getCreateButtonText()}</span>
                 </Link>
               )}
             </div>
@@ -367,23 +637,30 @@ function ManageActivities() {
             {/* Loading State */}
             {loading ? (
               <div className="loading-state">
-                <div className="spinner" />
-                <p>Loading activities...</p>
+                <FontAwesomeIcon icon={faSpinner} spin className="spinner" />
+                <p>Loading templates...</p>
+              </div>
+            ) : error ? (
+              <div className="error-state">
+                <FontAwesomeIcon icon={faExclamationTriangle} className="error-icon" />
+                <h3>Error Loading Data</h3>
+                <p>{error}</p>
+                <button className="retry-btn" onClick={() => window.location.reload()}>Retry</button>
               </div>
             ) : sortedActivities.length === 0 ? (
               <div className="empty-state">
                 <FontAwesomeIcon icon={faFileAlt} size="3x" className="empty-illustration" />
-                <h3>No Activities Found</h3>
-                <p>No activities match your current filters.</p>
+                <h3>No Templates Found</h3>
+                <p>No templates match your current filters.</p>
                 <button className="clear-filters-btn" onClick={clearFilters}>Clear Filters</button>
                 {activeTab !== "pending" && (
-                  <Link to={getCreateLink()} className="create-new-btn">Create New Activity</Link>
+                  <Link to={getCreateLink()} className="create-new-btn">Create New Template</Link>
                 )}
               </div>
             ) : (
               <>
                 <div className="activity-count-info">
-                  Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, sortedActivities.length)} of {sortedActivities.length} activities
+                  Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, sortedActivities.length)} of {sortedActivities.length} templates
                 </div>
                 <div className={`activities-grid ${activeTab === "pending" ? "pending-grid" : ""}`}>
                   {/* Show only the items for the current page */}
@@ -391,6 +668,7 @@ function ManageActivities() {
                     <ActivityCard
                       key={activity.id}
                       activity={activity}
+                      templateType={activity.templateType}
                       onDelete={openDeleteModal}
                     />
                   ))}
@@ -438,7 +716,7 @@ function ManageActivities() {
       {deleteModalOpen && activityToDelete && (
         <div className="modal-overlay">
           <div className="delete-modal">
-            <h3>Delete Activity</h3>
+            <h3>Delete Template</h3>
             <p>Are you sure you want to delete <strong>{activityToDelete.title}</strong>?</p>
             <p>This action cannot be undone.</p>
             <div className="modal-actions">
@@ -447,20 +725,6 @@ function ManageActivities() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Add Activity Modal */}
-      {addModalOpen && (
-        <AddActivityModal
-          onClose={() => setAddModalOpen(false)}
-          onAddActivity={handleAddActivity}
-          readingLevels={readingLevels}
-          categories={categories}
-          activityTypes={[
-            { id: "template", name: "Activity Template" },
-            { id: "assessment", name: "Pre-Assessment" },
-          ]}
-        />
       )}
     </div>
   );
