@@ -11,22 +11,20 @@ import {
   faFileAlt,
   faImage,
   faVolumeUp,
-  faBookReader,
+  faBookOpen,
   faFont,
   faQuestionCircle,
   faLayerGroup,
-  faInfoCircle,
   faCalendarAlt,
   faChevronDown,
   faChevronUp,
   faList,
-  faAlignLeft,
   faLanguage,
-  faSpellCheck,
-  faBookOpen
+  faSpellCheck
 } from '@fortawesome/free-solid-svg-icons';
 import './ActivityCard.css';
 
+// Component to display activity cards in the ManageActivities view
 const ActivityCard = ({ activity, templateType, onDelete }) => {
   const [expanded, setExpanded] = useState(false);
   const [showRejectionDetails, setShowRejectionDetails] = useState(false);
@@ -98,7 +96,7 @@ const ActivityCard = ({ activity, templateType, onDelete }) => {
     if (templateType === 'template') {
       switch(activity.category) {
         case 'Reading Comprehension':
-          return faBookReader;
+          return faBookOpen;
         case 'Alphabet Knowledge':
           return faFont;
         case 'Word Recognition':
@@ -109,24 +107,6 @@ const ActivityCard = ({ activity, templateType, onDelete }) => {
     }
 
     return faFileAlt;
-  };
-
-  // Render category tags
-  const renderCategoryTags = (categories) => {
-    if (!categories) return null;
-    
-    const category = Array.isArray(categories) ? categories[0] : categories;
-    return <span className="category-tag">{category}</span>;
-  };
-
-  // Determine card type based on activity status
-  const getCardType = () => {
-    switch (activity.status) {
-      case 'pending': return 'warning';
-      case 'approved': return 'success';
-      case 'rejected': return 'rejected';
-      default: return 'primary';
-    }
   };
 
   // Render status badge
@@ -253,10 +233,6 @@ const ActivityCard = ({ activity, templateType, onDelete }) => {
             <span className="metadata-label">Has Image:</span>
             <span className="metadata-value">{activity.hasImage ? 'Yes' : 'No'}</span>
           </div>
-          <div className="metadata-row">
-            <span className="metadata-label">Has Audio:</span>
-            <span className="metadata-value">{activity.hasAudio ? 'Yes' : 'No'}</span>
-          </div>
         </>
       );
     }
@@ -290,41 +266,13 @@ const ActivityCard = ({ activity, templateType, onDelete }) => {
     return null;
   };
 
-  // Get preview link based on template type
-  const getPreviewLink = () => {
-    // Make sure this is returning the correct path
-    switch(templateType) {
-      case 'template':
-        return `/teacher/preview-assessment/${activity.id}`;
-      case 'question':
-        return `/teacher/preview-question/${activity.id}`;
-      case 'choice':
-        return `/teacher/preview-choice/${activity.id}`;
-      case 'sentence':
-        return `/teacher/preview-passage/${activity.id}`;
-      default:
-        return `/teacher/preview-activity/${activity.id}`;
-    }
-  };
-
-  // In your ActivityCard.jsx
-console.log("Preview link:", getPreviewLink());
-console.log("Activity ID:", activity.id);
-console.log("Template type:", templateType);
-
-  // Get edit link based on template type
-  const getEditLink = () => {
-    switch(templateType) {
-      case 'template':
-        return `/teacher/edit-assessment/${activity.id}`;
-      case 'question':
-        return `/teacher/edit-question/${activity.id}`;
-      case 'choice':
-        return `/teacher/edit-choice/${activity.id}`;
-      case 'sentence':
-        return `/teacher/edit-passage/${activity.id}`;
-      default:
-        return `/teacher/edit-activity/${activity.id}`;
+  // Get card type based on activity status
+  const getCardType = () => {
+    switch (activity.status) {
+      case 'pending': return 'warning';
+      case 'approved': return 'success';
+      case 'rejected': return 'rejected';
+      default: return 'primary';
     }
   };
 
@@ -350,7 +298,7 @@ console.log("Template type:", templateType);
 
           <div className="metadata-row">
             <span className="metadata-label">Reading Level:</span>
-            <span className="metadata-value">{activity.level || 'Not specified'}</span>
+            <span className="metadata-value">{activity.level || activity.readingLevel || 'Not specified'}</span>
           </div>
 
           <div className="metadata-row">
@@ -403,12 +351,12 @@ console.log("Template type:", templateType);
         </div>
 
         <div className="activity-actions">
-        <Link to={`/teacher/preview-${templateType}/${activity.id}`} className="preview-btn">
-  <FontAwesomeIcon icon={faEye} /> Preview
-</Link>
+          <Link to={`/teacher/preview-${templateType}/${activity.id}`} className="preview-btn">
+            <FontAwesomeIcon icon={faEye} /> Preview
+          </Link>
 
           {activity.status !== 'pending' && (
-            <Link to={getEditLink()} className="edit-btn">
+            <Link to={`/teacher/edit-${templateType}/${activity.id}`} className="edit-btn">
               <FontAwesomeIcon icon={faEdit} /> Edit
             </Link>
           )}
