@@ -68,6 +68,18 @@ const PostAssessment = ({ templates }) => {
     sentenceQuestions: []
   });
   const [previewPage, setPreviewPage] = useState(0);
+  const [duplicateRestrictionDialog, setDuplicateRestrictionDialog] = useState(false);
+
+
+  const checkExistingPendingAssessment = (readingLevel, category) => {
+    return assessments.some(assessment => 
+      assessment.readingLevel === readingLevel && 
+      assessment.category === category && 
+      assessment.status === "pending"
+    );
+  };
+  
+  
   
   useEffect(() => {
     // Fetch assessments data
@@ -435,6 +447,16 @@ const PostAssessment = ({ templates }) => {
     // Validate form data
     if (!formData.readingLevel || !formData.category || formData.questions.length === 0) {
       alert("Please fill in all required fields and add at least one question.");
+      return;
+    }
+    
+    // Check if there's already a pending assessment for this combination
+    if (
+      modalType === 'create' && 
+      checkExistingPendingAssessment(formData.readingLevel, formData.category)
+    ) {
+      // Show the duplicate restriction dialog
+      setDuplicateRestrictionDialog(true);
       return;
     }
     
@@ -1548,6 +1570,50 @@ const PostAssessment = ({ templates }) => {
        <div className="pa-success-message">
          <p>Assessment submitted successfully!</p>
          <p className="pa-success-detail">Your assessment has been sent for admin approval.</p>
+       </div>
+     </div>
+   )}
+   
+   {duplicateRestrictionDialog && (
+     <div className="pa-modal-overlay">
+       <div className="pa-modal pa-restriction-dialog">
+         <div className="pa-modal-header">
+           <h3>
+             <FontAwesomeIcon icon={faExclamationTriangle} className="pa-modal-header-icon" /> 
+             Assessment Already Exists
+           </h3>
+           <button 
+             className="pa-modal-close"
+             onClick={() => setDuplicateRestrictionDialog(false)}
+           >
+             <FontAwesomeIcon icon={faTimes} />
+           </button>
+         </div>
+         
+         <div className="pa-modal-body">
+           <div className="pa-restriction-icon">
+             <FontAwesomeIcon icon={faExclamationTriangle} />
+           </div>
+           <div className="pa-restriction-message">
+             <p>A pending assessment for <strong>{formData.readingLevel}</strong> level and <strong>{formData.category}</strong> category already exists.</p>
+             <p>You cannot create multiple pending assessments for the same combination.</p>
+             <p className="pa-restriction-options">You can either:</p>
+             <ul className="pa-restriction-list">
+               <li>Wait for the existing assessment to be approved or rejected</li>
+               <li>Choose a different reading level or category</li>
+               <li>Edit the existing pending assessment</li>
+             </ul>
+           </div>
+         </div>
+         
+         <div className="pa-modal-footer">
+           <button 
+             className="pa-modal-close-btn"
+             onClick={() => setDuplicateRestrictionDialog(false)}
+           >
+             <FontAwesomeIcon icon={faArrowLeft} /> Go Back
+           </button>
+         </div>
        </div>
      </div>
    )}

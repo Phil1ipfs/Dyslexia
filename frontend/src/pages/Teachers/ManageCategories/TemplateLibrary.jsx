@@ -10,7 +10,9 @@ import {
   faPlus, faEdit, faEye, faTrash, faTimes, 
   faExclamationTriangle, faSearch, faCheckCircle,
   faInfoCircle, faLock, faLanguage, faVolumeUp,
-  faImage, faFont, faBook, faCheck, faBan
+  faImage, faFont, faBook, faCheck, faBan,
+  faPuzzlePiece, faAsterisk,
+  faFile, faFileAlt, faBookOpen, faComments
 } from '@fortawesome/free-solid-svg-icons';
 
 // Component for rendering a tooltip with an info icon
@@ -149,7 +151,7 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
   const handleEditTemplate = (template) => {
     // Check if template can be edited
     if (!canEditTemplate(template)) {
-      // Show message that only rejected templates can be edited
+      // Show message that only rejected templates can be modified. Templates that are approved or pending cannot be edited.
       alert("Only rejected templates can be modified. Templates that are approved or pending cannot be edited.");
       return;
     }
@@ -166,7 +168,7 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
   const handleDeleteConfirm = (template) => {
     // Check if template can be deleted
     if (!canDeleteTemplate(template)) {
-      // Show message that only rejected templates can be deleted
+      // Show message that only rejected templates can be deleted. Templates that are approved or pending cannot be deleted.
       alert("Only rejected templates can be deleted. Templates that are approved or pending cannot be deleted.");
       return;
     }
@@ -368,6 +370,24 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
     }
   };
 
+  // Helper to get category icon
+  const getCategoryIcon = (category) => {
+    switch(category) {
+      case "Alphabet Knowledge":
+        return faFont;
+      case "Phonological Awareness":
+        return faVolumeUp;
+      case "Decoding":
+        return faFile;
+      case "Word Recognition":
+        return faPuzzlePiece;
+      case "Reading Comprehension":
+        return faBookOpen;
+      default:
+        return faFileAlt;
+    }
+  };
+
   return (
     <div className="template-library">
       <div className="template-library-header">
@@ -427,10 +447,13 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
 
           {(nestedTabIndex === 0 || nestedTabIndex === 2) && (
             <div className="tl-filter-group">
-              <label>Category:</label>
+              <label>
+                <FontAwesomeIcon icon={faPuzzlePiece} className="tl-filter-icon" /> Category:
+              </label>
               <select
                 value={filterCategory}
                 onChange={e => setFilterCategory(e.target.value)}
+                className="tl-category-select"
               >
                 {getCategories().map(category => (
                   <option key={category} value={category}>
@@ -466,9 +489,13 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
               <div className="tl-table">
                 <div className="tl-header-row">
                   <div className="tl-header-cell">Question Text</div>
-                  <div className="tl-header-cell">Category</div>
+                  <div className="tl-header-cell">
+                    Category
+                  </div>
                   <div className="tl-header-cell">Question Type</div>
-                  <div className="tl-header-cell">Status</div>
+                  <div className="tl-header-cell">
+                  Status
+                  </div>
                   <div className="tl-header-cell">Actions</div>
                 </div>
                 
@@ -477,13 +504,16 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
                   return (
                     <div key={template._id} className="tl-row">
                       <div className="tl-cell">{template.templateText}</div>
-                      <div className="tl-cell">{template.category}</div>
+                      <div className="tl-cell">
+                        <FontAwesomeIcon icon={getCategoryIcon(template.category)} className="tl-cell-icon" />
+                        {template.category}
+                      </div>
                       <div className="tl-cell">
                         {getQuestionTypeDisplay(template.questionType)}
                       </div>
                       <div className="tl-cell">
                         <span className={`tl-status ${status.className}`}>
-                          <FontAwesomeIcon icon={status.icon} style={{ marginRight: '4px' }} /> 
+                          <FontAwesomeIcon icon={status.icon} className="tl-status-icon" /> 
                           {status.label}
                         </span>
                       </div>
@@ -535,7 +565,9 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
                   <div className="tl-header-cell">Value</div>
                   <div className="tl-header-cell">Type</div>
                   <div className="tl-header-cell">Image/Sound</div>
-                  <div className="tl-header-cell">Status</div>
+                  <div className="tl-header-cell">
+                    <FontAwesomeIcon icon={faCheckCircle} className="tl-header-icon" /> Status
+                  </div>
                   <div className="tl-header-cell">Actions</div>
                 </div>
                 
@@ -543,40 +575,22 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
                   const status = getTemplateStatusDisplay(template);
                   return (
                     <div key={template._id} className="tl-row">
-                      <div className="tl-cell">
-                        <FontAwesomeIcon 
-                          icon={getChoiceTypeIcon(template.choiceType)} 
-                          style={{ marginRight: '8px', color: '#4e5c93' }} 
-                        />
-                        {template.choiceType?.includes('Sound') 
-                          ? (template.soundText || '(No Sound)')
-                          : (template.choiceValue || '(No Value)')}
+                      <div className="tl-cell tl-choice-value">
+                        {template.choiceValue ? template.choiceValue : 
+                         template.soundText ? <span className="tl-phonetic">{template.soundText}</span> : 
+                         <FontAwesomeIcon icon={faImage} className="tl-image-placeholder" />}
                       </div>
-                      <div className="tl-cell">{getChoiceTypeDisplayName(template.choiceType)}</div>
                       <div className="tl-cell">
-                        {template.choiceImage ? (
-                          <img 
-                            src={template.choiceImage} 
-                            alt={template.choiceValue || template.soundText || 'Choice'} 
-                            className="tl-choice-image"
-                          />
-                        ) : template.choiceType?.includes('Sound') ? (
-                          <span className="tl-sound-badge">
-                            <FontAwesomeIcon icon={faVolumeUp} /> Sound
-                          </span>
-                        ) : template.choiceType === 'malapatinigText' ? (
-                          <span className="tl-malapantig-badge">
-                            <FontAwesomeIcon icon={faLanguage} /> Text Only
-                          </span>
-                        ) : (
-                          <span className="tl-no-image">
-                            <FontAwesomeIcon icon={faImage} /> No Image
-                          </span>
-                        )}
+                        {getChoiceTypeDisplayName(template.choiceType)}
+                      </div>
+                      <div className="tl-cell">
+                        <div className="tl-choice-preview">
+                          <FontAwesomeIcon icon={getChoiceTypeIcon(template.choiceType)} />
+                        </div>
                       </div>
                       <div className="tl-cell">
                         <span className={`tl-status ${status.className}`}>
-                          <FontAwesomeIcon icon={status.icon} style={{ marginRight: '4px' }} /> 
+                          <FontAwesomeIcon icon={status.icon} className="tl-status-icon" /> 
                           {status.label}
                         </span>
                       </div>
@@ -626,9 +640,13 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
               <div className="tl-table">
                 <div className="tl-header-row">
                   <div className="tl-header-cell">Title</div>
+                  <div className="tl-header-cell">
+                     Category
+                  </div>
                   <div className="tl-header-cell">Reading Level</div>
-                  <div className="tl-header-cell">Pages</div>
-                  <div className="tl-header-cell">Status</div>
+                  <div className="tl-header-cell">
+                    <FontAwesomeIcon icon={faCheckCircle} className="tl-header-icon" /> Status
+                  </div>
                   <div className="tl-header-cell">Actions</div>
                 </div>
                 
@@ -636,15 +654,15 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
                   const status = getTemplateStatusDisplay(template);
                   return (
                     <div key={template._id} className="tl-row">
+                      <div className="tl-cell">{template.title}</div>
                       <div className="tl-cell">
-                        <FontAwesomeIcon icon={faBook} style={{ marginRight: '8px', color: '#4e5c93' }} />
-                        {template.title}
+                        <FontAwesomeIcon icon={getCategoryIcon(template.category)} className="tl-cell-icon" />
+                        {template.category}
                       </div>
                       <div className="tl-cell">{template.readingLevel}</div>
-                      <div className="tl-cell">{template.sentenceText?.length || 0} pages</div>
                       <div className="tl-cell">
                         <span className={`tl-status ${status.className}`}>
-                          <FontAwesomeIcon icon={status.icon} style={{ marginRight: '4px' }} /> 
+                          <FontAwesomeIcon icon={status.icon} className="tl-status-icon" /> 
                           {status.label}
                         </span>
                       </div>
