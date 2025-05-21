@@ -1,0 +1,286 @@
+/* frontend/src/css/Teachers/ManageCategories/TemplateForm.css */
+
+.template-form-container {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .template-form-container h3 {
+    font-size: 20px;
+    color: #2c3e50;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .template-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .form-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #2c3e50;
+  }
+  
+  .form-group input, 
+  .form-group select, 
+  .form-group textarea {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+  }
+  
+  .form-group input:focus, 
+  .form-group select:focus, 
+  .form-group textarea:focus {
+    border-color: #3498db;
+    outline: none;
+  }
+  
+  .form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+  
+  .choice-types-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+  }
+  
+  .choice-type-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .choice-type-option input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .choice-type-option label {
+    font-size: 14px;
+    cursor: pointer;
+  }
+  
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+  }
+  
+  .cancel-btn, 
+  .save-btn {
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  
+  .cancel-btn {
+    background-color: #f8f9fa;
+    color: #7f8c8d;
+    border: 1px solid #ddd;
+  }
+  
+  .save-btn {
+    background-color: #3498db;
+    color: white;
+    border: none;
+  }
+  
+  .cancel-btn:hover {
+    background-color: #eee;
+  }
+  
+  .save-btn:hover {
+    background-color: #2980b9;
+  }
+  
+  .save-btn:disabled {
+    background-color: #a0c8e7;
+    cursor: not-allowed;
+  }
+  
+  .image-preview {
+    margin-top: 12px;
+    max-width: 200px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px;
+    background-color: #f8f9fa;
+  }
+  
+  .image-preview img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+  
+  .image-url-input {
+    margin-top: 8px;
+  }
+  
+  .help-text {
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-top: 6px;
+  }
+  
+  /* Specific to Sentence Template Form */
+  .sentence-form {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .sentence-pages-section,
+  .sentence-questions-section {
+    margin-top: 32px;
+  }
+  
+  .sentence-pages-section h4,
+  .sentence-questions-section h4 {
+    font-size: 18px;
+    color: #2c3e50;
+    margin-bottom: 16px;
+  }
+  
+  .page-tabs,
+  .question-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  
+  .page-tab,
+  .question-tab,
+  .add-page-btn,
+  .add-question-btn {
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+    color: #7f8c8d;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .page-tab.active,
+  .question-tab.active {
+    background-color: #3498db;
+    color: white;
+    border-color: #3498db;
+  }
+  
+  .add-page-btn,
+  .add-question-btn {
+    background-color: #e3fcef;
+    color: #0ca678;
+    border-color: #d3f9ec;
+  }
+  
+  .add-page-btn:hover,
+  .add-question-btn:hover {
+    background-color: #c3f7df;
+  }
+  
+  .page-content,
+  .question-content {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  
+  .page-content.hidden,
+  .question-content.hidden {
+    display: none;
+  }
+  
+  .page-header,
+  .question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .page-header h5,
+  .question-header h5 {
+    font-size: 16px;
+    color: #2c3e50;
+    margin: 0;
+  }
+  
+  .remove-page-btn,
+  .remove-question-btn {
+    background-color: #fdeaea;
+    color: #e74c3c;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  
+  .remove-page-btn:hover,
+  .remove-question-btn:hover {
+    background-color: #fadbd8;
+  }
+  
+  .remove-page-btn:disabled,
+  .remove-question-btn:disabled {
+    background-color: #f8f9fa;
+    color: #ccc;
+    cursor: not-allowed;
+  }
+  
+  .answer-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .option-input {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  
+  .option-input input {
+    flex: 1;
+  }
+  
+  .correct-badge {
+    background-color: #e3fcef;
+    color: #0ca678;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }

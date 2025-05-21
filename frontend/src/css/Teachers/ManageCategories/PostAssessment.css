@@ -1,0 +1,262 @@
+/* frontend/src/css/Teachers/ManageCategories/PostAssessment.css */
+
+
+.post-assessment-container {
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+  }
+  
+  .pa-header {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 24px;
+  }
+  
+  .pa-header h2 {
+    font-size: 24px;
+    color: #2c3e50;
+    margin-bottom: 8px;
+  }
+  
+  .pa-header p {
+    color: #7f8c8d;
+    margin-bottom: 16px;
+  }
+  
+  .pa-add-button {
+    align-self: flex-start;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    transition: background-color 0.3s;
+  }
+  
+  .pa-add-button i {
+    margin-right: 8px;
+  }
+  
+  .pa-add-button:hover {
+    background-color: #2980b9;
+  }
+  
+  /* Filters */
+  .pa-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+    align-items: center;
+  }
+  
+  .pa-search {
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  .pa-search input {
+    width: 100%;
+    padding: 10px 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  
+  .pa-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .pa-filter-group label {
+    font-size: 14px;
+    color: #7f8c8d;
+    white-space: nowrap;
+  }
+  
+  .pa-filter-group select {
+    padding: 10px 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 14px;
+    min-width: 150px;
+  }
+  
+  /* Assessment List */
+  .pa-assessment-list {
+    margin-top: 24px;
+  }
+  
+  .pa-loading, 
+  .pa-error {
+    text-align: center;
+    padding: 40px;
+    font-size: 18px;
+  }
+  
+  .pa-error {
+    color: #e74c3c;
+  }
+  
+  .pa-no-assessments {
+    text-align: center;
+    padding: 40px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    color: #7f8c8d;
+  }
+  
+  .pa-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .pa-header-row {
+    display: flex;
+    background-color: #f8f9fa;
+    padding: 12px 0;
+    font-weight: bold;
+    color: #2c3e50;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .pa-row {
+    display: flex;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+  }
+  
+  .pa-row:last-child {
+    border-bottom: none;
+  }
+  
+  .pa-row:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .pa-header-cell,
+  .pa-cell {
+    padding: 0 12px;
+    word-break: break-word;
+    display: flex;
+    align-items: center;
+  }
+  
+  .pa-header-cell:first-child,
+  .pa-cell:first-child {
+    padding-left: 24px;
+  }
+  
+  .pa-header-cell:last-child,
+  .pa-cell:last-child {
+    padding-right: 24px;
+  }
+  
+  /* Cell widths */
+  .pa-header-cell:nth-child(1),
+  .pa-cell:nth-child(1) {
+    flex: 2;
+  }
+  
+  .pa-header-cell:nth-child(2),
+  .pa-cell:nth-child(2) {
+    flex: 2;
+  }
+  
+  .pa-header-cell:nth-child(3),
+  .pa-cell:nth-child(3) {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .pa-header-cell:nth-child(4),
+  .pa-cell:nth-child(4) {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .pa-header-cell:nth-child(5),
+  .pa-cell:nth-child(5) {
+    flex: 2;
+    justify-content: flex-end;
+  }
+  
+  /* Status badges */
+  .pa-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  
+  .pa-active {
+    background-color: #e3fcef;
+    color: #0ca678;
+  }
+  
+  .pa-inactive {
+    background-color: #fdeaea;
+    color: #e74c3c;
+  }
+  
+  /* Actions */
+  .pa-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  
+  .pa-edit-btn,
+  .pa-preview-btn,
+  .pa-delete-btn {
+    background: none;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .pa-edit-btn {
+    color: #3498db;
+    background-color: #ebf5fb;
+  }
+  
+  .pa-preview-btn {
+    color: #6c5ce7;
+    background-color: #f1f0fe;
+  }
+  
+  .pa-delete-btn {
+    color: #e74c3c;
+    background-color: #fdeaea;
+  }
+  
+  .pa-edit-btn:hover {
+    background-color: #d6eaf8;
+  }
+  
+  .pa-preview-btn:hover {
+    background-color: #e4e3f7;
+  }
+  
+  .pa-delete-btn:hover {
+    background-color: #fadbd8;
+  }

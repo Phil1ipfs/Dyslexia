@@ -28,7 +28,7 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
     profileImageUrl = null,
   } = teacherInfo;
 
-  const fullName = [firstName,lastName]
+  const fullName = [firstName, lastName]
     .filter(Boolean)
     .join(" ");
 
@@ -42,31 +42,30 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
 
   useEffect(() => {
     const path = location.pathname;
-    
+
     // Dashboard route
     if (path.includes("/teacher/dashboard")) {
       setActive("dashboard");
     }
     // Student details and related routes
     else if (
-      path.includes("/teacher/view-student") || 
+      path.includes("/teacher/view-student") ||
       path.includes("/teacher/student-details")
     ) {
       setActive("view-student");
     }
-    // Manage activities and related routes
+    // Manage categories and related routes
     else if (
-      path.includes("/teacher/manage-activities") || 
-      path.includes("/teacher/create-activity") || 
-      path.includes("/teacher/edit-activity") ||
-      path.includes("/teacher/preview-activity") ||
-      path.includes("/teacher/manage-activity")
+      /* Manage categories and related routes */
+      path.includes("/teacher/manage-categories")
     ) {
-      setActive("manage-activities");
+      setActive("manage-categories");
     }
+
+
     // Manage progress and related routes
     else if (
-      path.includes("/teacher/manage-progress") || 
+      path.includes("/teacher/manage-progress") ||
       path.includes("/teacher/student-progress") ||
       path.includes("/teacher/pre-assessment") ||
       path.includes("/teacher/create-pre-assessment")
@@ -96,8 +95,6 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
     onLogout?.();
     navigate("/login");
   };
-  
-
 
   return (
     <div className={`sidebar`}>
@@ -106,9 +103,9 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
           <img src={cradleLogo} alt="Cradle of Learners Logo" />
           <span className="logo-text">CRADLE OF LEARNERS INC.</span>
         </div>
-    
+
       </div>
-      
+
       <div className="sidebar-user-container">
         <div className="sidebar-user-info">
           <img
@@ -124,7 +121,7 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
           </div>
         </div>
       </div>
-      
+
       <hr className="sidebar-divider" />
 
       <div className="sidebar-menu-container">
@@ -135,8 +132,12 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
           <li className={active === "view-student" ? "active" : ""} onClick={() => handleClick("view-student", "/teacher/view-student")}>
             <img src={viewStudentIcon} alt="View Student" /><span>Student Details</span>
           </li>
-          <li className={active === "manage-activities" ? "active" : ""} onClick={() => handleClick("manage-activities", "/teacher/manage-activities")}>
-            <img src={manageActivityIcon} alt="Manage Activities" /><span>Manage Categories</span>
+          <li
+            className={active === "manage-categories" ? "active" : ""}
+            onClick={() => handleClick("manage-categories", "/teacher/manage-categories")}
+          >
+            <img src={manageActivityIcon} alt="Manage Categories" />
+            <span>Manage Categories</span>
           </li>
           <li className={active === "manage-progress" ? "active" : ""} onClick={() => handleClick("manage-progress", "/teacher/manage-progress")}>
             <img src={manageProgressIcon} alt="Manage Progress" /><span>Manage Progress</span>
@@ -151,7 +152,7 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
       </div>
 
       <hr className="sidebar-divider logout-divider" />
-      
+
       <div className="sidebar-logout" onClick={handleLogoutClick}>
         <img src={logoutIcon} alt="Logout" /><span>Logout</span>
       </div>
