@@ -147,11 +147,48 @@
   background-color: rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.5);
   cursor: not-allowed;
+  opacity: 0.8;
 }
 
-.literexia-lock-icon {
+.lock-icon {
   font-size: 0.8rem;
-  margin-right: 0.25rem;
+  margin-right: 0.3rem;
+  opacity: 0.8;
+}
+
+/* Warning and success alerts */
+.literexia-warning-alert,
+.literexia-success-alert {
+  margin: 1rem 2rem 0;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--literexia-border-radius);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: slideDown 0.3s ease-out;
+}
+
+.literexia-warning-alert {
+  background-color: rgba(255, 152, 0, 0.15);
+  border-left: 4px solid var(--literexia-warning);
+  color: #9A5800;
+}
+
+.literexia-success-alert {
+  background-color: rgba(76, 175, 80, 0.15);
+  border-left: 4px solid var(--literexia-secondary);
+  color: #2E7D32;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Tab content */
