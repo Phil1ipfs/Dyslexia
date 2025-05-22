@@ -134,11 +134,10 @@
 /* Reading level specific styling */
 .literexia-detail-icon.reading-icon.reading-level-early {
   background-color: rgba(30, 84, 141, 0.1);
-  color: #1e548d;
+  color: #77abe3;
 }
 
 .literexia-detail-icon.reading-icon.reading-level-developing {
-  background-color: rgba(255, 152, 0, 0.1);
   color: #FF9800;
 }
 

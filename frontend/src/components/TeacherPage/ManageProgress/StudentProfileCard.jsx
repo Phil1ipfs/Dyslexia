@@ -5,7 +5,8 @@ import {
   FaUserGraduate,
   FaBookReader,
   FaMale,
-  FaFemale
+  FaFemale,
+  FaUsers
 } from 'react-icons/fa';
 import '../ManageProgress/css/StudentProfileCard.css';
 import S3Image from '../../S3Image';
@@ -123,13 +124,13 @@ const StudentProfileCard = ({ student }) => {
             </div>
           </div>
           <div className="literexia-detail-item">
-            <div className={`literexia-detail-icon reading-icon ${readingLevelClass}`}>
-              <FaBookReader />
+            <div className="literexia-detail-icon section-icon">
+              <FaUsers />
             </div>
             <div className="literexia-detail-content">
-              <span className="literexia-detail-label">Reading Level</span>
-              <span className={`literexia-detail-value ${readingLevelClass}`}>
-                {student.readingLevel || 'Not Assessed'}
+              <span className="literexia-detail-label">Section</span>
+              <span className="literexia-detail-value">
+                {student.section || 'Not Assigned'}
               </span>
             </div>
           </div>

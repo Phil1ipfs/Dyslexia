@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   FaArrowLeft, FaChartLine, FaBook, FaLightbulb, FaListAlt,
-  FaCheck, FaExclamationTriangle, FaEdit, FaCheckCircle, FaSpinner, FaUser, FaSave
+  FaCheck, FaExclamationTriangle, FaEdit, FaCheckCircle, FaSpinner, FaUser, FaSave,
+  FaLock
 } from 'react-icons/fa';
 
 // Import components
@@ -60,67 +61,55 @@ const StudentProgressView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pushToMobileSuccess, setPushToMobileSuccess] = useState(false);
+  const [preAssessmentCompleted, setPreAssessmentCompleted] = useState(false);
 
   /**
    * Fetch student data when component mounts or ID changes
    * This includes basic info, assessment results, and recommendations
    */
- // In your StudentProgressView.jsx, update the fetchData function and assessment tab:
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
 
-useEffect(() => {
-  const fetchData = async () => {
-    try {
-      setLoading(true);
+        // Get student details
+        const studentData = await StudentApiService.getStudentDetails(id);
+        setStudent(studentData);
 
-      // Get student details
-      const studentData = await StudentApiService.getStudentDetails(id);
-      setStudent(studentData);
+        // Get PRE-assessment results and status
+        const preAssessmentStatus = await StudentApiService.getPreAssessmentStatus(id);
+        const preAssessmentData = await StudentApiService.getPreAssessmentResults(id);
+        
+        // Check if pre-assessment is completed
+        const hasCompletedPreAssessment = preAssessmentStatus?.hasCompleted || 
+                                          preAssessmentStatus?.preAssessmentCompleted ||
+                                          (preAssessmentData && !preAssessmentData.message);
+        
+        setPreAssessmentCompleted(hasCompletedPreAssessment);
+        setAssessmentData(preAssessmentData);
 
-      // Get PRE-assessment results (updated)
-      const preAssessmentData = await StudentApiService.getPreAssessmentResults(id);
-      setAssessmentData(preAssessmentData);
+        // Get category results for the progress report
+        const categoryResults = await StudentApiService.getCategoryResults(id);
+        setProgressData(categoryResults);
+        
+        // Generate mock recommendations
+        const mockRecommendations = generateMockRecommendations(studentData);
+        setPrescriptiveRecommendations(mockRecommendations);
 
-      // Get category results for the progress report
-      const categoryResults = await StudentApiService.getCategoryResults(id);
-      setProgressData(categoryResults);
-      
-      // Generate mock recommendations
-      const mockRecommendations = generateMockRecommendations(studentData);
-      setPrescriptiveRecommendations(mockRecommendations);
+        // Initialize learning objectives
+        initializeLearningObjectives(categoryResults);
+        
+        setLoading(false);
+      } catch (err) {
+        console.error('Error loading student data:', err);
+        setError('Failed to load student data. Please try again later.');
+        setLoading(false);
+      }
+    };
 
-      // Initialize learning objectives
-      initializeLearningObjectives(categoryResults);
-      
-      setLoading(false);
-    } catch (err) {
-      console.error('Error loading student data:', err);
-      setError('Failed to load student data. Please try again later.');
-      setLoading(false);
-    }
-  };
+    fetchData();
+  }, [id]);
 
-  fetchData();
-}, [id]);
-
-// Update the assessment tab content:
-{activeTab === 'assessment' && (
-  <div className="literexia-tab-panel">
-    <div className="literexia-panel-header">
-      <h2>Pre-Assessment Results (CRLA)</h2>
-    </div>
-    <div className="literexia-panel-content">
-      {assessmentData ? (
-        <PreAssessmentResults assessmentData={assessmentData} />
-      ) : (
-        <div className="literexia-empty-state">
-          <FaExclamationTriangle />
-          <p>No pre-assessment data available for this student.</p>
-        </div>
-      )}
-    </div>
-  </div>
-)}
-  
   /**
    * Helper to initialize learning objectives based on category results
    * @param {Object} categoryResults - The category results from the API
@@ -337,6 +326,13 @@ useEffect(() => {
     navigate('/teacher/manage-progress');
   };
 
+  // Handle tab change with pre-assessment check
+  const handleTabChange = (tab) => {
+    if (tab === 'assessment' || preAssessmentCompleted) {
+      setActiveTab(tab);
+    }
+  };
+
   // Loading state
   if (loading && !student) {
     return <LoadingSpinner message="Loading student data..." />;
@@ -360,6 +356,14 @@ useEffect(() => {
         </button>
       </div>
 
+      {/* Pre-assessment required alert */}
+      {!preAssessmentCompleted && (
+        <div className="literexia-warning-alert">
+          <FaExclamationTriangle />
+          <span>This student has not completed pre-assessment yet. Other tabs will be locked until pre-assessment is completed.</span>
+        </div>
+      )}
+
       {/* Success message for push to mobile */}
       {pushToMobileSuccess && (
         <div className="literexia-success-alert">
@@ -382,29 +386,35 @@ useEffect(() => {
       <div className="literexia-tabs-navigation">
         <button
           className={`literexia-tab-button ${activeTab === 'assessment' ? 'active' : ''}`}
-          onClick={() => setActiveTab('assessment')}
+          onClick={() => handleTabChange('assessment')}
         >
           <FaChartLine /> Pre Assessment Results
         </button>
 
         <button
-          className={`literexia-tab-button ${activeTab === 'progress' ? 'active' : ''}`}
-          onClick={() => setActiveTab('progress')}
+          className={`literexia-tab-button ${activeTab === 'progress' ? 'active' : ''} ${!preAssessmentCompleted ? 'locked' : ''}`}
+          onClick={() => handleTabChange('progress')}
+          disabled={!preAssessmentCompleted}
         >
+          {!preAssessmentCompleted && <FaLock className="lock-icon" />}
           <FaChartLine /> Post Assessment Progress
         </button>
 
         <button
-          className={`literexia-tab-button ${activeTab === 'prescriptive' ? 'active' : ''}`}
-          onClick={() => setActiveTab('prescriptive')}
+          className={`literexia-tab-button ${activeTab === 'prescriptive' ? 'active' : ''} ${!preAssessmentCompleted ? 'locked' : ''}`}
+          onClick={() => handleTabChange('prescriptive')}
+          disabled={!preAssessmentCompleted}
         >
+          {!preAssessmentCompleted && <FaLock className="lock-icon" />}
           <FaLightbulb /> Prescriptive Analysis
         </button>
 
         <button
-          className={`literexia-tab-button ${activeTab === 'iep' ? 'active' : ''}`}
-          onClick={() => setActiveTab('iep')}
+          className={`literexia-tab-button ${activeTab === 'iep' ? 'active' : ''} ${!preAssessmentCompleted ? 'locked' : ''}`}
+          onClick={() => handleTabChange('iep')}
+          disabled={!preAssessmentCompleted}
         >
+          {!preAssessmentCompleted && <FaLock className="lock-icon" />}
           <FaCheckCircle /> IEP Report
         </button>
       </div>
@@ -413,15 +423,22 @@ useEffect(() => {
       <div className="literexia-tab-content">
         {/* Pre Assessment Results Tab */}
         {activeTab === 'assessment' && (
-  <div className="literexia-tab-panel">
-    <div className="literexia-panel-header">
-      <h2>Pre-Assessment Results (CRLA)</h2>
-    </div>
-    <div className="literexia-panel-content">
-      <PreAssessmentResults assessmentData={assessmentData} />
-    </div>
-  </div>
-)}
+          <div className="literexia-tab-panel">
+            <div className="literexia-panel-header">
+              <h2>Pre-Assessment Results (CRLA)</h2>
+            </div>
+            <div className="literexia-panel-content">
+              {assessmentData && !assessmentData.message ? (
+                <PreAssessmentResults assessmentData={assessmentData} />
+              ) : (
+                <div className="literexia-empty-state">
+                  <FaExclamationTriangle />
+                  <p>No pre-assessment data available for this student. The student needs to complete the pre-assessment first.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Post Assessment Progress Tab */}
         {activeTab === 'progress' && (
