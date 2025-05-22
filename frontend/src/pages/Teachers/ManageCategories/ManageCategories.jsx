@@ -1,7 +1,6 @@
 // src/pages/Teachers/ManageCategories/ManageCategories.jsx
 import React, { useState, useEffect } from "react";
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
-import AdminApproval from "./AdminApproval";
 import PostAssessment from "./PostAssessment";
 import PreAssessment from "./PreAssessment";
 import TemplateLibrary from "./TemplateLibrary";

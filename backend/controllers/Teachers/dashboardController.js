@@ -93,7 +93,7 @@ exports.getDashboardData = async (req, res) => {
     
     console.log(`Found ${studentsData.length} student records`);
     
-    // Fetch category results for performance metrics
+    // Fetch category results for performance metrics - if they exist
     const categoryResults = await CategoryResult.find({}).lean();
     console.log(`Found ${categoryResults.length} category results`);
     
@@ -103,9 +103,6 @@ exports.getDashboardData = async (req, res) => {
 
     const processedInterventions = await processInterventionData(interventionProgress, studentsData);
 
-
-
-    
     // Process students data for dashboard
     const processedData = await processStudentData(studentsData, categoryResults);
     
@@ -140,7 +137,6 @@ exports.getDashboardData = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch dashboard data', message: error.message });
   }
 };
-
 
 /**
  * Process intervention progress data
@@ -202,9 +198,6 @@ const processInterventionData = async (interventionProgress, students) => {
         };
       });
     };
-
-
-
 
 /**
  * Process student data for dashboard

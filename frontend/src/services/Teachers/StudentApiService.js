@@ -139,6 +139,7 @@ const StudentApiService = {
   // Single student details
   getStudentDetails: async (id) => {
     try {
+      // Fix the URL - add the missing 'student' part
       const { data } = await api.get(`/student/${id}`);
       return data;
     } catch (error) {
@@ -146,15 +147,55 @@ const StudentApiService = {
       throw error;
     }
   },
+// Add these methods to your existing StudentApiService
 
-  // Assessment results
-  getAssessmentResults: async (id) => {
+// Get pre-assessment results
+getPreAssessmentResults: async (id) => {
+  try {
+    const { data } = await api.get(`/student/${id}/pre-assessment-results`);
+    return data;
+  } catch (error) {
+    console.error(`Error fetching pre-assessment results for student ID ${id}:`, error);
+    
+    // Return structured empty data if no results found
+    if (error.response?.status === 404) {
+      return {
+        studentId: id,
+        hasCompleted: false,
+        message: error.response.data.message || 'No pre-assessment results found'
+      };
+    }
+    throw error;
+  }
+},
+
+// Get pre-assessment status
+getPreAssessmentStatus: async (id) => {
+  try {
+    const { data } = await api.get(`/student/${id}/pre-assessment-status`);
+    return data;
+  } catch (error) {
+    console.error(`Error fetching pre-assessment status for student ID ${id}:`, error);
+    return {
+      studentId: id,
+      hasCompleted: false,
+      preAssessmentCompleted: false
+    };
+  }
+},
+
+  // Get pre-assessment status
+  getPreAssessmentStatus: async (id) => {
     try {
-      const { data } = await api.get(`/assessment/${id}`);
+      const { data } = await api.get(`/student/${id}/pre-assessment-status`);
       return data;
     } catch (error) {
-      console.error(`Error fetching assessment results for ID ${id}:`, error);
-      throw error;
+      console.error(`Error fetching pre-assessment status for student ID ${id}:`, error);
+      return {
+        studentId: id,
+        hasCompleted: false,
+        preAssessmentCompleted: false
+      };
     }
   },
 
@@ -510,8 +551,6 @@ const StudentApiService = {
       };
     }
   },
-
-
 
   // Score-to-level helper
   getReadingLevelFromScore: (score, maxScore = 5) => {

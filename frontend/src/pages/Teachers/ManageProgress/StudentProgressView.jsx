@@ -8,7 +8,7 @@ import {
 // Import components
 import StudentProfileCard from '../../../components/TeacherPage/ManageProgress/StudentProfileCard';
 import AssessmentSummaryCard from '../../../components/TeacherPage/ManageProgress/AssessmentSummaryCard';
-import AssessmentResults from '../../../components/TeacherPage/ManageProgress/AssessmentResults';
+import PreAssessmentResults from '../../../components/TeacherPage/ManageProgress/PreAssessmentResults';
 import ProgressReport from '../../../components/TeacherPage/ManageProgress/ProgressReport';
 import PrescriptiveAnalysis from '../../../components/TeacherPage/ManageProgress/PrescriptiveAnalysis';
 import ActivityEditModal from '../../../components/TeacherPage/ManageProgress/ActivityEditModal';
@@ -65,42 +65,61 @@ const StudentProgressView = () => {
    * Fetch student data when component mounts or ID changes
    * This includes basic info, assessment results, and recommendations
    */
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-  
-        // Get student details
-        const studentData = await StudentApiService.getStudentDetails(id);
-        setStudent(studentData);
-  
-        // Get assessment results
-        const assessment = await StudentApiService.getAssessmentResults(id);
-        setAssessmentData(assessment);
-  
-        // Get category results for the progress report
-        const categoryResults = await StudentApiService.getCategoryResults(id);
-        setProgressData(categoryResults);
-        
-        // Get prescriptive recommendations (for interventions)
-        // In a real implementation, this would come from an API call based on assessment results
-        // Here we're using mock data structured according to your database schema
-        const mockRecommendations = generateMockRecommendations(studentData);
-        setPrescriptiveRecommendations(mockRecommendations);
-  
-        // Initialize learning objectives
-        initializeLearningObjectives(categoryResults);
-        
-        setLoading(false);
-      } catch (err) {
-        console.error('Error loading student data:', err);
-        setError('Failed to load student data. Please try again later.');
-        setLoading(false);
-      }
-    };
-  
-    fetchData();
-  }, [id]);
+ // In your StudentProgressView.jsx, update the fetchData function and assessment tab:
+
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+
+      // Get student details
+      const studentData = await StudentApiService.getStudentDetails(id);
+      setStudent(studentData);
+
+      // Get PRE-assessment results (updated)
+      const preAssessmentData = await StudentApiService.getPreAssessmentResults(id);
+      setAssessmentData(preAssessmentData);
+
+      // Get category results for the progress report
+      const categoryResults = await StudentApiService.getCategoryResults(id);
+      setProgressData(categoryResults);
+      
+      // Generate mock recommendations
+      const mockRecommendations = generateMockRecommendations(studentData);
+      setPrescriptiveRecommendations(mockRecommendations);
+
+      // Initialize learning objectives
+      initializeLearningObjectives(categoryResults);
+      
+      setLoading(false);
+    } catch (err) {
+      console.error('Error loading student data:', err);
+      setError('Failed to load student data. Please try again later.');
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, [id]);
+
+// Update the assessment tab content:
+{activeTab === 'assessment' && (
+  <div className="literexia-tab-panel">
+    <div className="literexia-panel-header">
+      <h2>Pre-Assessment Results (CRLA)</h2>
+    </div>
+    <div className="literexia-panel-content">
+      {assessmentData ? (
+        <PreAssessmentResults assessmentData={assessmentData} />
+      ) : (
+        <div className="literexia-empty-state">
+          <FaExclamationTriangle />
+          <p>No pre-assessment data available for this student.</p>
+        </div>
+      )}
+    </div>
+  </div>
+)}
   
   /**
    * Helper to initialize learning objectives based on category results
@@ -394,22 +413,15 @@ const StudentProgressView = () => {
       <div className="literexia-tab-content">
         {/* Pre Assessment Results Tab */}
         {activeTab === 'assessment' && (
-          <div className="literexia-tab-panel">
-            <div className="literexia-panel-header">
-              <h2>Pre-Assessment Results (CRLA)</h2>
-            </div>
-            <div className="literexia-panel-content">
-              {assessmentData ? (
-                <AssessmentResults assessmentData={assessmentData} />
-              ) : (
-                <div className="literexia-empty-state">
-                  <FaExclamationTriangle />
-                  <p>No assessment data available for this student.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+  <div className="literexia-tab-panel">
+    <div className="literexia-panel-header">
+      <h2>Pre-Assessment Results (CRLA)</h2>
+    </div>
+    <div className="literexia-panel-content">
+      <PreAssessmentResults assessmentData={assessmentData} />
+    </div>
+  </div>
+)}
 
         {/* Post Assessment Progress Tab */}
         {activeTab === 'progress' && (

@@ -312,3 +312,55 @@
     font-size: 0.85rem;
   }
 }
+
+/* Reading Level Badge Styles */
+.level-low-emerging {
+  background: linear-gradient(135deg, #FF6B8A, #FF4757) !important;
+  color: white;
+}
+
+.level-high-emerging {
+  background: linear-gradient(135deg, #FF9E40, #FF7F00) !important;
+  color: white;
+}
+
+.level-developing {
+  background: linear-gradient(135deg, #FFCD56, #FFA500) !important;
+  color: white;
+}
+
+.level-transitioning {
+  background: linear-gradient(135deg, #6C8EF4, #4A90E2) !important;
+  color: white;
+}
+
+.level-at-grade {
+  background: linear-gradient(135deg, #4BC0C0, #00B894) !important;
+  color: white;
+}
+
+.level-default {
+  background: linear-gradient(135deg, #B0B0B0, #808080) !important;
+  color: white;
+}
+
+/* Skill bar colors by category */
+.assessment-results__skill-bar--alphabet-knowledge {
+  background: linear-gradient(90deg, #FFB74D, #EF5350);
+}
+
+.assessment-results__skill-bar--phonological-awareness {
+  background: linear-gradient(90deg, #FFE082, #FFCA28);
+}
+
+.assessment-results__skill-bar--decoding {
+  background: linear-gradient(90deg, #A5D6A7, #66BB6A);
+}
+
+.assessment-results__skill-bar--word-recognition {
+  background: linear-gradient(90deg, #90CAF9, #42A5F5);
+}
+
+.assessment-results__skill-bar--reading-comprehension {
+  background: linear-gradient(90deg, #CE93D8, #AB47BC);
+}
