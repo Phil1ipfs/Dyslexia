@@ -22,7 +22,8 @@ import {
   faLock,
   faBan,
   faTrash,
-  faGraduationCap
+  faGraduationCap,
+  faExclamationCircle
 } from "@fortawesome/free-solid-svg-icons";
 import "../../../css/Teachers/ManageCategories/PreAssessment.css";
 
@@ -31,6 +32,17 @@ const Tooltip = ({ text }) => (
   <div className="pre-tooltip">
     <FontAwesomeIcon icon={faInfoCircle} className="pre-tooltip-icon" />
     <span className="pre-tooltip-text">{text}</span>
+  </div>
+);
+
+// Specific tooltip for rejection reasons
+const RejectionTooltip = ({ reason }) => (
+  <div className="pre-rejection-tooltip">
+    <FontAwesomeIcon icon={faExclamationCircle} className="pre-rejection-icon" />
+    <span className="pre-tooltip-text">
+      <strong>Rejection Reason:</strong><br />
+      {reason}
+    </span>
   </div>
 );
 
@@ -106,6 +118,7 @@ const PreAssessment = () => {
           "isActive": true,
           "createdAt": "2025-05-01T09:00:00.000Z",
           "updatedAt": "2025-05-01T09:00:00.000Z",
+          "rejectionReason": "The assessment questions are not properly balanced across difficulty levels. Please ensure there are questions from all five difficulty levels and revise the phonological awareness section.",
           "questions": [
             {
               "questionId": "AK_001",
@@ -659,6 +672,9 @@ const PreAssessment = () => {
                   ) : (
                     <span className="pre-status-badge rejected">
                       <FontAwesomeIcon icon={faBan} /> Rejected
+                      {preAssessment.rejectionReason && (
+                        <RejectionTooltip reason={preAssessment.rejectionReason} />
+                      )}
                     </span>
                   )}
                 </div>
@@ -1029,6 +1045,21 @@ const PreAssessment = () => {
         {!showQuestionEditor ? (
           // Main Assessment Form
           <form className="pre-assessment-form">
+            {/* Show rejection reason if assessment was rejected */}
+            {showEditModal && preAssessment && preAssessment.status === "rejected" && preAssessment.rejectionReason && (
+              <div className="pre-rejection-panel" style={{ marginBottom: '20px' }}>
+                <div className="pre-rejection-header">
+                  <FontAwesomeIcon icon={faExclamationCircle} /> Rejection Reason
+                </div>
+                <div className="pre-rejection-content">
+                  {preAssessment.rejectionReason}
+                  <p style={{ marginTop: '8px', fontStyle: 'italic' }}>
+                    Please address this feedback before resubmitting your pre-assessment.
+                  </p>
+                </div>
+              </div>
+            )}
+            
             <div className="pre-form-section">
               <h4>Assessment Information</h4>
               
@@ -1639,6 +1670,18 @@ const PreAssessment = () => {
                   <span className="pre-summary-label">Status:</span>
                   <span className="pre-summary-value">{preAssessment.status}</span>
                 </div>
+                
+                {/* Show rejection reason if available */}
+                {preAssessment.status === "rejected" && preAssessment.rejectionReason && (
+                  <div className="pre-rejection-panel">
+                    <div className="pre-rejection-header">
+                      <FontAwesomeIcon icon={faExclamationCircle} /> Rejection Reason
+                    </div>
+                    <div className="pre-rejection-content">
+                      {preAssessment.rejectionReason}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             

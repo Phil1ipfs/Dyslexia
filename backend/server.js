@@ -44,7 +44,6 @@ app.use(cors({
 app.use(express.json());
 app.use(requestLogger);
 
-
 const connectDB = async () => {
   try {
     // FIRST connect to the database
@@ -56,6 +55,20 @@ const connectDB = async () => {
     });
 
     console.log('✅ MongoDB Connected to test database');
+    
+    // Connect to Pre_Assessment database
+    const preAssessmentDb = mongoose.connection.useDb('Pre_Assessment');
+    console.log('✅ Connected to Pre_Assessment database');
+    
+    // List collections in Pre_Assessment database (fixed)
+    try {
+      const preAssessmentCollections = await preAssessmentDb.db.listCollections().toArray();
+      console.log('Available collections in Pre_Assessment:');
+      preAssessmentCollections.forEach(c => console.log(`- ${c.name}`));
+    } catch (err) {
+      console.warn('⚠️ Could not list Pre_Assessment collections:', err.message);
+    }
+    
     const collections = await mongoose.connection.db.listCollections().toArray();
     console.log('Available collections in test:');
     collections.forEach(c => console.log(`- ${c.name}`));
@@ -217,9 +230,6 @@ connectDB().then(() => {
   } catch (error) {
     console.warn('⚠️ Could not load roles routes:', error.message);
   }
-
-
-
 
   // Login route - adapted to work with string roles
   app.post('/api/auth/login', async (req, res) => {

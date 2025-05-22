@@ -51,7 +51,7 @@ class ProgressController {
     }
 
     /**
-     * Initialize empty records for each student across all collections
+     * Initialize prescriptive analysis records for each student
      * @param {Array} students List of student users
      */
     async initializeStudentRecords(students) {
@@ -65,31 +65,6 @@ class ProgressController {
         console.log("Available collections:");
         collections.forEach(c => console.log(`- ${c.name}`));
 
-        // Check all collections
-        try {
-            const categoryResultsCollection = mongoose.connection.db.collection('category_results');
-            const prescriptiveAnalysisCollection = mongoose.connection.db.collection('prescriptive_analysis');
-            const interventionPlanCollection = mongoose.connection.db.collection('intervention_assessment');
-            const interventionProgressCollection = mongoose.connection.db.collection('intervention_progress');
-
-            // console.log(`Direct collection check: 'category_results' has ${await categoryResultsCollection.countDocuments({})} documents`);
-            // console.log(`Direct collection check: 'prescriptive_analysis' has ${await prescriptiveAnalysisCollection.countDocuments({})} documents`);
-            // console.log(`Direct collection check: 'intervention_assessment' has ${await interventionPlanCollection.countDocuments({})} documents`);
-            // console.log(`Direct collection check: 'intervention_progress' has ${await interventionProgressCollection.countDocuments({})} documents`);
-
-            // If count > 0, show a sample document
-            // if (await categoryResultsCollection.countDocuments({}) > 0) {
-            //     const sample = await categoryResultsCollection.findOne({});
-            //     console.log(`Sample document: ${JSON.stringify(sample, null, 2).substring(0, 200)}...`);
-            // }
-
-            // List all student IDs in category_results
-            const allRecords = await categoryResultsCollection.find({}).toArray();
-            console.log(`Student IDs in category_results: ${allRecords.map(r => r.studentId).join(', ')}`);
-        } catch (error) {
-            console.error(`Error checking collections: ${error}`);
-        }
-
         // Categories for analysis
         const categories = [
             'Alphabet Knowledge',
@@ -99,90 +74,19 @@ class ProgressController {
             'Reading Comprehension'
         ];
 
-        // Standard question counts for each category based on main assessment
-        const standardQuestionCounts = {
-            'Alphabet Knowledge': 9,
-            'Phonological Awareness': 5,
-            'Word Recognition': 5,
-            'Decoding': 5,
-            'Reading Comprehension': 6
-        };
-
         console.log(`\nStarting initialization for ${students.length} students...`);
 
         // Track created records for verification
-        let createdCategoryResults = 0;
         let createdAnalyses = 0;
-        let createdPlans = 0;
-        let createdProgresses = 0;
 
-        // For each student, create/update records as needed
+        // For each student, create/update prescriptive analysis records as needed
         for (const student of students) {
-            // console.log(`\nInitializing progress tracking for student: ${student.firstName} ${student.lastName} (${student._id})`);
-
             try {
                 const studentId = new mongoose.Types.ObjectId(student._id);
                 const readingLevel = student.readingLevel || 'Low Emerging';
                 let recordsCreated = 0;
 
-                // 1. DIRECT DATABASE CHECK for category results
-                try {
-                    const categoryResultsCollection = mongoose.connection.db.collection('category_results');
-                    const directCount = await categoryResultsCollection.countDocuments({ studentId });
-                    // console.log(`Direct DB check: Student ${studentId} has ${directCount} category results`);
-                } catch (err) {
-                    console.error(`Error in direct DB check: ${err}`);
-                }
-
-                // 2. Check and create/update CategoryResult with error handling
-                try {
-
-                    const categoryResultsCollection = mongoose.connection.db.collection('category_results');
-                    const directCount = await categoryResultsCollection.countDocuments({ studentId });
-
-                    const categoryResult = await CategoryResult.findOneAndUpdate(
-                        { studentId },
-                        {
-                            $setOnInsert: {
-                                studentId,
-                                assessmentType: 'post-assessment',
-                                categories: categories.map(categoryName => ({
-                                    categoryName,
-                                    totalQuestions: standardQuestionCounts[categoryName],
-                                    correctAnswers: 0,
-                                    score: 0,
-                                    isPassed: false,
-                                    passingThreshold: 75
-                                })),
-                                overallScore: 0,
-                                allCategoriesPassed: false,
-                                readingLevelUpdated: false
-                            },
-                            // Always update the reading level
-                            readingLevel,
-                            updatedAt: new Date()
-                        },
-                        {
-                            upsert: true,
-                            new: true,
-                            setDefaultsOnInsert: true
-                        }
-                    );
-
-
-                    const isNewRecord = directCount === 0;
-                    if (isNewRecord) {
-                        console.log(`✓ Created category result record for student ${studentId}: ${categoryResult._id}`);
-                        recordsCreated++;
-                        createdCategoryResults++;
-                    } else {
-                        // console.log(`✓ Student ${studentId} already has category results: ${categoryResult._id}`);
-                    }
-                } catch (error) {
-                    console.error(`Error checking/creating category results: ${error}`);
-                }
-
-                // 3. Check and create PrescriptiveAnalysis for each category
+                // Check and create PrescriptiveAnalysis for each category
                 for (const category of categories) {
                     try {
                         const existingAnalysisCount = await PrescriptiveAnalysis.countDocuments({
@@ -211,202 +115,27 @@ class ProgressController {
                                 { readingLevel, updatedAt: new Date() },
                                 { new: true }
                             );
-                            // console.log(`✓ Student ${studentId} already has ${category} analysis: ${analysis._id}`);
                         }
                     } catch (error) {
                         console.error(`Error managing ${category} analysis: ${error}`);
                     }
                 }
-                // 4. Check and create InterventionPlan if none exists
-                try {
-                    const existingPlanCount = await InterventionPlan.countDocuments({ studentId });
 
-                    // Find existing prescriptive analysis for this student (most recent one)
-                    const prescriptiveAnalysis = await PrescriptiveAnalysis.findOne({
-                        studentId,
-                        categoryId: 'Alphabet Knowledge' // Match the intervention category
-                    });
-
-                    // Find existing category result for this student (most recent one)
-                    const categoryResult = await CategoryResult.findOne({ studentId }).sort({ createdAt: -1 });
-
-                    let interventionPlan;
-                    if (existingPlanCount === 0) {
-                        interventionPlan = await InterventionPlan.create({
-                            studentId,
-                            prescriptiveAnalysisId: prescriptiveAnalysis ? prescriptiveAnalysis._id : null,
-                            categoryResultId: categoryResult ? categoryResult._id : null,
-                            name: `Letter Recognition for ${student.firstName}`,
-                            category: 'Alphabet Knowledge', // Make sure this is explicitly set
-                            description: 'A foundation plan to build letter recognition skills',
-                            readingLevel: readingLevel,
-                            passThreshold: 75, // Include pass threshold
-                            questions: [], // Empty questions array
-                            status: 'draft'
-                        });
-
-                        console.log(`✓ Created intervention plan for student ${studentId}: ${interventionPlan._id}`);
-                        recordsCreated++;
-                        createdPlans++;
-
-                        // Try to add sample questions from main assessment
-                        try {
-                            const mainAssessmentCollection = mongoose.connection.db.collection('main_assessment');
-                            const mainAssessment = await mainAssessmentCollection.findOne({
-                                category: 'Alphabet Knowledge',
-                                readingLevel: readingLevel || 'Low Emerging'
-                            });
-
-                            if (mainAssessment && mainAssessment.questions && mainAssessment.questions.length > 0) {
-                                // Select up to 3 sample questions from main assessment
-                                const sampleQuestions = mainAssessment.questions.slice(0, 3).map((q, index) => ({
-                                    questionId: new mongoose.Types.ObjectId(),
-                                    source: 'main_assessment',
-                                    sourceQuestionId: mainAssessment._id,
-                                    questionIndex: index,
-                                    questionType: q.questionType || 'patinig',
-                                    questionText: q.questionText || 'Sample question',
-                                    questionImage: q.questionImage || null,
-                                    questionValue: q.questionValue || null,
-                                    choices: q.choices || []
-                                }));
-
-                                // Update the intervention with sample questions
-                                await InterventionPlan.findByIdAndUpdate(
-                                    interventionPlan._id,
-                                    {
-                                        questions: sampleQuestions,
-                                        updatedAt: new Date()
-                                    }
-                                );
-
-                                // Get the updated intervention with questions
-                                interventionPlan = await InterventionPlan.findById(interventionPlan._id);
-                            }
-                        } catch (err) {
-                            console.log('Could not add sample questions to intervention:', err.message);
-                        }
-
-                        const progress = await InterventionProgress.create({
-                            studentId,
-                            interventionPlanId: interventionPlan._id,
-                            completedActivities: 0,
-                            totalActivities: interventionPlan.questions ? interventionPlan.questions.length : 0,
-                            percentComplete: 0,
-                            correctAnswers: 0,
-                            incorrectAnswers: 0,
-                            percentCorrect: 0,
-                            passedThreshold: false,
-                            notes: 'Default progress record'
-                        });
-
-                        console.log(`✓ Created intervention progress for student ${studentId}: ${progress._id}`);
-                        recordsCreated++;
-                        createdProgresses++;
-
-                    } else {
-                        // Get the existing plan
-                        interventionPlan = await InterventionPlan.findOne({ studentId });
-                        // console.log(`✓ Student ${studentId} already has intervention plan: ${interventionPlan._id}`);
-
-                        // Update the reading level and foreign keys if needed
-                        const updateData = {};
-                        if (interventionPlan.readingLevel !== readingLevel) {
-                            updateData.readingLevel = readingLevel;
-                        }
-
-                        // Update prescriptive analysis reference if not set
-                        if (!interventionPlan.prescriptiveAnalysisId && prescriptiveAnalysis) {
-                            updateData.prescriptiveAnalysisId = prescriptiveAnalysis._id;
-                        }
-
-                        // Update category result reference if not set
-                        if (!interventionPlan.categoryResultId && categoryResult) {
-                            updateData.categoryResultId = categoryResult._id;
-                        }
-
-                        // Apply updates if needed
-                        if (Object.keys(updateData).length > 0) {
-                            updateData.updatedAt = new Date();
-                            await InterventionPlan.updateOne(
-                                { _id: interventionPlan._id },
-                                updateData
-                            );
-                        }
-                    }
-
-                    // 5. Check and create InterventionProgress if none exists and if plan exists
-                    if (interventionPlan) {
-                        const existingProgressCount = await InterventionProgress.countDocuments({
-                            interventionPlanId: interventionPlan._id
-                        });
-
-                        if (existingProgressCount === 0) {
-                            // Create empty intervention progress
-                            const progress = await InterventionProgress.create({
-                                studentId,
-                                interventionPlanId: interventionPlan._id,
-                                completedActivities: 0,
-                                totalActivities: interventionPlan.questions ? interventionPlan.questions.length : 0,
-                                percentComplete: 0,
-                                correctAnswers: 0,
-                                incorrectAnswers: 0,
-                                percentCorrect: 0,
-                                passedThreshold: false,
-                                notes: 'Default progress record'
-                            });
-
-                            console.log(`✓ Created intervention progress for student ${studentId}: ${progress._id}`);
-                            recordsCreated++;
-                            createdProgresses++;
-                        } else {
-                            const progress = await InterventionProgress.findOne({
-                                interventionPlanId: interventionPlan._id
-                            });
-                            // console.log(`✓ Student ${studentId} already has intervention progress: ${progress._id}`);
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Error managing intervention records: ${error}`);
-                }
-
+                // Log only if we created at least one record
                 if (recordsCreated > 0) {
-                    console.log(`Created ${recordsCreated} new records for student ${student.firstName} ${student.lastName}`);
-                } else {
-                    console.log(`No new records needed for student ${student.firstName} ${student.lastName}`);
+                    console.log(`Created ${recordsCreated} records for student: ${student.firstName} ${student.lastName}`);
                 }
-
-
-
-
             } catch (error) {
-                console.error(`Error initializing records for student ${student._id}:`, error);
+                console.error(`Error processing student: ${error}`);
             }
         }
 
-        // After initializing all students, verify the totals with direct collection checks
-        console.log("\n=== DATABASE VERIFICATION AFTER INITIALIZATION ===");
-
+        // Log final statistics
         try {
-            const categoryResultsCollection = mongoose.connection.db.collection('category_results');
-            const prescriptiveAnalysisCollection = mongoose.connection.db.collection('prescriptive_analysis');
-            const interventionPlanCollection = mongoose.connection.db.collection('intervention_assessment');
-            const interventionProgressCollection = mongoose.connection.db.collection('intervention_progress');
+            const prescriptiveAnalysisCount = await PrescriptiveAnalysis.countDocuments({});
 
-            const categoryResultCount = await categoryResultsCollection.countDocuments({});
-            const prescriptiveAnalysisCount = await prescriptiveAnalysisCollection.countDocuments({});
-            const interventionPlanCount = await interventionPlanCollection.countDocuments({});
-            const interventionProgressCount = await interventionProgressCollection.countDocuments({});
-
-            console.log(`Direct collection counts after initialization:`);
-            console.log(`- Category Results: ${categoryResultCount} records (created: ${createdCategoryResults})`);
-            console.log(`- Prescriptive Analyses: ${prescriptiveAnalysisCount} records (created: ${createdAnalyses})`);
-            console.log(`- Intervention Plans: ${interventionPlanCount} records (created: ${createdPlans})`);
-            console.log(`- Intervention Progress: ${interventionProgressCount} records (created: ${createdProgresses})`);
-
-            // List all student IDs in category_results after initialization
-            const allRecords = await categoryResultsCollection.find({}).toArray();
-            console.log(`Student IDs in category_results after initialization: ${allRecords.map(r => r.studentId).join(', ')}`);
+            console.log("\n=== DATABASE VERIFICATION AFTER INITIALIZATION ===");
+            console.log(`- Prescriptive Analysis: ${prescriptiveAnalysisCount} records (created: ${createdAnalyses})`);
         } catch (error) {
             console.error(`Error verifying record counts:`, error);
         }

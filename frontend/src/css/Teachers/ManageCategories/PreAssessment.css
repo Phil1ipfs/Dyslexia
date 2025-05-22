@@ -1599,9 +1599,10 @@
 }
 
 .pre-readonly-input {
-  background-color: #f8f9fa !important;
-  color: #6b7280 !important;
+  background-color: #f1f1f1 !important;
+  color: #718096 !important;
   cursor: not-allowed !important;
+  border-color: #e2e8f0 !important;
 }
 
 .pre-form-row {
@@ -2762,10 +2763,81 @@
   margin-left: 2px !important;
 }
 
-/* Readonly field styling */
-.pre-readonly-input {
-  background-color: #f1f1f1 !important;
-  color: #718096 !important;
-  cursor: not-allowed !important;
-  border-color: #e2e8f0 !important;
+/* Rejection tooltip styles */
+.pre-rejection-tooltip {
+  margin-left: 6px;
+  position: relative;
+  display: inline-block;
+  cursor: help;
+}
+
+.pre-rejection-icon {
+  color: #e74c3c;
+  cursor: pointer;
+  font-size: 14px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
+  }
+}
+
+.pre-rejection-tooltip .pre-tooltip-text {
+  width: 300px;
+  background-color: #e74c3c;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 6px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  line-height: 1.5;
+  font-size: 13px;
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  z-index: 1000;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: opacity 0.3s;
+}
+
+/* Add hover state for rejection tooltip */
+.pre-rejection-tooltip:hover .pre-tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Rejection panel styles */
+.pre-rejection-panel {
+  background-color: #fdeaea;
+  border: 1px solid #f5b7b1;
+  border-radius: 6px;
+  margin-top: 16px;
+  overflow: hidden;
+}
+
+.pre-rejection-header {
+  background-color: #e74c3c;
+  color: white;
+  padding: 8px 12px;
+  font-weight: 500;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pre-rejection-content {
+  padding: 12px;
+  color: #c0392b;
+  font-size: 14px;
+  line-height: 1.5;
 }

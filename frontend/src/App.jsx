@@ -18,9 +18,6 @@ import StudentProgressView from "./pages/Teachers/ManageProgress/StudentProgress
 import TeacherChatbot from "./pages/Teachers/Chatbot/TeacherChatbot"; 
 import StudentProgressPDF from './pages/Teachers/StudentProgressPDF';
 
-// Admin Pages
-import CreatePreAssessment from "./pages/Teachers/PreAssessment/CreatePreAssessment"; 
-
 // Parent Pages
 import ParentDashboard from "./pages/Parents/ParentDashboard";
 import Feedback from "./pages/Parents/Feedback";  
@@ -230,8 +227,6 @@ function App() {
           <Route path="chatbot" element={<TeacherChatbot />} />
           <Route path="student-report" element={<StudentProgressPDF />} />
           
-          {/* Pre-Assessment Routes */}
-          <Route path="create-pre-assessment" element={<CreatePreAssessment />} />
           <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 
