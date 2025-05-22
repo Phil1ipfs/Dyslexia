@@ -293,11 +293,11 @@ const PreAssessment = () => {
   // Define category-specific question types
   const getCategoryQuestionTypes = (categoryId) => {
     const categoryQuestionTypes = {
-      'alphabet_knowledge': ['patinig', 'katinig', 'malaking_titik', 'maliit_na_titik'],
-      'phonological_awareness': ['tunog_letra', 'pantig', 'rima'],
-      'decoding': ['malapantig', 'word', 'salita_larawan'],
-      'word_recognition': ['word', 'salitang_madalas_makita', 'sight_word'],
-      'reading_comprehension': ['sentence', 'talata', 'buong_kwento']
+      'alphabet_knowledge': ['patinig', 'katinig'],
+      'phonological_awareness': ['katinig', 'patinig', 'malapantig'],
+      'decoding': ['word'],
+      'word_recognition': ['word'],
+      'reading_comprehension': ['sentence']
     };
     
     return categoryId ? (categoryQuestionTypes[categoryId] || []) : [];
@@ -685,21 +685,30 @@ const PreAssessment = () => {
               <div className="pre-category-distribution">
                 <h4>Category Distribution</h4>
                 <div className="pre-category-bars">
-                  {Object.entries(preAssessment.categoryCounts).map(([category, count]) => (
-                    <div key={category} className="pre-category-bar-item">
-                      <div className="pre-category-label">
-                        {category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </div>
-                      <div className="pre-category-bar-container">
-                        <div 
-                          className="pre-category-bar" 
-                          style={{ width: `${(count / preAssessment.totalQuestions) * 100}%` }}
-                        >
-                          <span className="pre-category-count">{count}</span>
+                  {Object.entries(preAssessment.categoryCounts).map(([category, count]) => {
+                    // Count actual questions per category
+                    const questionsInCategory = preAssessment.questions.filter(q => q.questionTypeId === category).length || count;
+                    // Get max value among all categories to make bars relative to the highest count
+                    const maxCount = Math.max(...Object.values(preAssessment.categoryCounts));
+                    // Calculate percentage based on the maximum possible value
+                    const percentage = maxCount > 0 ? (questionsInCategory / maxCount) * 100 : 0;
+                    
+                    return (
+                      <div key={category} className="pre-category-bar-item">
+                        <div className="pre-category-label">
+                          {category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </div>
+                        <div className="pre-category-bar-container">
+                          <div 
+                            className="pre-category-bar" 
+                            style={{ width: `${percentage}%` }}
+                          >
+                            <span className="pre-category-count">{questionsInCategory}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -1116,9 +1125,17 @@ const PreAssessment = () => {
                   {Object.entries(formData.categoryCounts).map(([category, count]) => {
                     // Count actual questions per category
                     const questionsInCategory = formData.questions.filter(q => q.questionTypeId === category).length;
-                    const percentage = formData.questions.length > 0 
-                      ? Math.round((questionsInCategory / formData.questions.length) * 100) 
-                      : 0;
+                    
+                    // Find the maximum count across all categories
+                    const maxQuestions = Math.max(
+                      ...Object.keys(formData.categoryCounts).map(cat => 
+                        formData.questions.filter(q => q.questionTypeId === cat).length
+                      ),
+                      1 // Ensure we don't divide by zero
+                    );
+                    
+                    // Calculate percentage based on the maximum in any category
+                    const percentage = Math.round((questionsInCategory / maxQuestions) * 100);
                     
                     return (
                       <div key={category} className="pre-composition-item">
@@ -1134,7 +1151,7 @@ const PreAssessment = () => {
                           </div>
                         </div>
                         <div className="pre-composition-percentage">
-                          {percentage}%
+                          {questionsInCategory} questions
                         </div>
                       </div>
                     );

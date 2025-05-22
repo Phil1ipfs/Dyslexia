@@ -196,12 +196,6 @@ const ManageCategories = () => {
           >
             Pre-Assessment
           </Tab>
-          <Tab 
-            className={tabIndex === 3 ? "mc-tab mc-tab-active" : "mc-tab"}
-            selectedClassName="mc-tab-active"
-          >
-            Admin Approval
-          </Tab>
         </TabList>
 
         <div className="mc-tab-content">
@@ -231,13 +225,6 @@ const ManageCategories = () => {
           </TabPanel>
           <TabPanel>
             <PreAssessment />
-          </TabPanel>
-          <TabPanel>
-            <AdminApproval 
-              templates={templates} 
-              onApprove={(type, id) => {/* Handle approval */}}
-              onReject={(type, id, feedback) => {/* Handle rejection */}}
-            />
           </TabPanel>
         </div>
       </Tabs>
