@@ -4,6 +4,147 @@ import { Search, Filter, Plus, Edit, Trash2, Eye, BookOpen, Book, Clock, MoreHor
 import axios from 'axios';
 import './StudentListPage.css';
 
+const SuccessModal = ({ message, onClose }) => (
+  <div className="literexia-teacher-modal-overlay">
+    <div className="literexia-teacher-modal">
+      <div className="literexia-teacher-modal-header">
+        <h2>Success</h2>
+        <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
+      </div>
+      <div className="literexia-teacher-modal-content">
+        <p>{message}</p>
+        <button className="literexia-teacher-close-btn" onClick={onClose}>Close</button>
+      </div>
+    </div>
+  </div>
+);
+
+const ValidationErrorModal = ({ message, onClose }) => (
+  <div className="literexia-teacher-modal-overlay">
+    <div className="literexia-teacher-modal">
+      <div className="literexia-teacher-modal-header">
+        <h2>Missing Required Fields</h2>
+        <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
+      </div>
+      <div className="literexia-teacher-modal-content">
+        <p>{message}</p>
+        <button className="literexia-teacher-close-btn" onClick={onClose}>Close</button>
+      </div>
+    </div>
+  </div>
+);
+
+const AddEditStudentModal = ({ student, onClose, onSave }) => {
+  const [formData, setFormData] = useState(
+    student ? { ...student } : {
+      idNumber: '2025',
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      age: '',
+      gender: '',
+      gradeLevel: '',
+      section: '',
+      address: '',
+      profileImage: null
+    }
+  );
+  const [validationError, setValidationError] = useState('');
+
+  const requiredFields = [
+    { key: 'idNumber', label: 'ID Number' },
+    { key: 'firstName', label: 'First Name' },
+    { key: 'lastName', label: 'Last Name' },
+    { key: 'age', label: 'Age' },
+    { key: 'gender', label: 'Gender' },
+    { key: 'gradeLevel', label: 'Grade Level' },
+    { key: 'section', label: 'Section' },
+    { key: 'address', label: 'Address' }
+  ];
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleFileChange = (e) => {
+    setFormData({ ...formData, profileImage: e.target.files[0] });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const missing = requiredFields.filter(f => !formData[f.key] || formData[f.key].toString().trim() === '');
+    if (missing.length > 0) {
+      setValidationError(`Please fill out the following fields: ${missing.map(f => f.label).join(', ')}`);
+      return;
+    }
+    onSave(formData);
+  };
+
+  return (
+    <div className="literexia-teacher-modal-overlay">
+      <div className="literexia-teacher-modal">
+        <div className="literexia-teacher-modal-header">
+          <h2>{student ? 'Edit Student' : 'Add New Student'}</h2>
+          <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
+        </div>
+        <form className="literexia-teacher-modal-form" onSubmit={handleSubmit} encType="multipart/form-data">
+          <div className="form-group">
+            <label>ID Number</label>
+            <input type="text" name="idNumber" value={formData.idNumber} onChange={handleChange} className="form-input" />
+          </div>
+          <div className="form-group">
+            <label>First Name</label>
+            <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} className="form-input" />
+          </div>
+          <div className="form-group">
+            <label>Middle Name</label>
+            <input type="text" name="middleName" value={formData.middleName} onChange={handleChange} className="form-input" />
+          </div>
+          <div className="form-group">
+            <label>Last Name</label>
+            <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} className="form-input" />
+          </div>
+          <div className="form-group">
+            <label>Age</label>
+            <input type="number" name="age" value={formData.age} onChange={handleChange} className="form-input" />
+          </div>
+          <div className="form-group">
+            <label>Gender</label>
+            <select name="gender" value={formData.gender} onChange={handleChange} className="form-input">
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Grade Level</label>
+            <input type="text" name="gradeLevel" value={formData.gradeLevel} onChange={handleChange} className="form-input" />
+          </div>
+          <div className="form-group">
+            <label>Section</label>
+            <input type="text" name="section" value={formData.section} onChange={handleChange} className="form-input" />
+          </div>
+          <div className="form-group">
+            <label>Address</label>
+            <input type="text" name="address" value={formData.address} onChange={handleChange} className="form-input" />
+          </div>
+          <div className="form-group">
+            <label>Profile Image</label>
+            <input type="file" name="profileImage" accept="image/*" onChange={handleFileChange} />
+          </div>
+          <div className="literexia-teacher-modal-footer">
+            <button type="button" className="literexia-teacher-cancel-btn" onClick={onClose}>Cancel</button>
+            <button type="submit" className="literexia-teacher-save-btn">{student ? 'Update' : 'Add'}</button>
+          </div>
+        </form>
+        {validationError && <ValidationErrorModal message={validationError} onClose={() => setValidationError('')} />}
+      </div>
+    </div>
+  );
+};
+
 const StudentListPage = () => {
   // State for students data
   const [students, setStudents] = useState([]);
@@ -19,6 +160,12 @@ const StudentListPage = () => {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [showEditStudentModal, setShowEditStudentModal] = useState(false);
+  const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [validationError, setValidationError] = useState('');
   
   // Fetch students from database
   useEffect(() => {
@@ -88,20 +235,83 @@ const StudentListPage = () => {
   };
 
   // Delete student
-  const deleteStudent = (studentId) => {
-    if (window.confirm('Are you sure you want to delete this student?')) {
-      console.log(`Delete student: ${studentId}`);
-      // Delete student API call
-      const updatedStudents = students.filter(student => student.id !== studentId);
-      setStudents(updatedStudents);
-      setFilteredStudents(updatedStudents);
+  const deleteStudent = async (studentId) => {
+    if (!studentId) return;
+    try {
+      setLoading(true);
+      const response = await axios.delete(`http://localhost:5002/api/admin/manage/students/${studentId}`);
+      if (response.data.success) {
+        const updatedList = students.filter(s => s._id !== studentId);
+        setStudents(updatedList);
+        setFilteredStudents(updatedList);
+        setShowConfirmDeleteModal(false);
+        setSelectedStudent(null);
+        setSuccessMessage('Student deleted successfully!');
+        setShowSuccessModal(true);
+      } else {
+        setValidationError(response.data.message || 'Failed to delete student');
+      }
+    } catch (error) {
+      setValidationError(error.response?.data?.message || 'Failed to delete student');
+    } finally {
+      setLoading(false);
     }
   };
 
   // Add new student
-  const addNewStudent = () => {
-    console.log('Add new student');
-    // Navigate to add student page or open modal
+  const handleAddStudent = async (formData) => {
+    try {
+      setLoading(true);
+      const data = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) data.append(key, value);
+      });
+      const response = await axios.post('http://localhost:5002/api/admin/manage/students', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (response.data.success) {
+        setStudents([...students, response.data.data.studentProfile]);
+        setFilteredStudents([...students, response.data.data.studentProfile]);
+        setShowAddStudentModal(false);
+        setSuccessMessage('Student added successfully!');
+        setShowSuccessModal(true);
+      } else {
+        setValidationError(response.data.message || 'Failed to add student');
+      }
+    } catch (error) {
+      setValidationError(error.response?.data?.message || 'Failed to add student');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Edit student
+  const handleEditStudent = async (formData) => {
+    try {
+      setLoading(true);
+      const data = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) data.append(key, value);
+      });
+      const response = await axios.put(`http://localhost:5002/api/admin/manage/students/${formData._id}`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (response.data.success) {
+        const updatedList = students.map(s => s._id === formData._id ? response.data.data.studentProfile : s);
+        setStudents(updatedList);
+        setFilteredStudents(updatedList);
+        setShowEditStudentModal(false);
+        setSelectedStudent(null);
+        setSuccessMessage('Student updated successfully!');
+        setShowSuccessModal(true);
+      } else {
+        setValidationError(response.data.message || 'Failed to update student');
+      }
+    } catch (error) {
+      setValidationError(error.response?.data?.message || 'Failed to update student');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Toggle filters visibility
@@ -248,7 +458,7 @@ const StudentListPage = () => {
             <option value="recent">Recent Activity</option>
             <option value="progress">Progress</option>
           </select>
-          <button className="add-student-button" onClick={addNewStudent}>
+          <button className="add-student-button" onClick={() => setShowAddStudentModal(true)}>
             <Plus size={18} />
             <span>Add Student</span>
           </button>
@@ -323,10 +533,16 @@ const StudentListPage = () => {
                 </td>
                 <td>
                   <div className="action-buttons">
-                    <button className="edit-button">
+                    <button className="edit-button" onClick={() => {
+                      setSelectedStudent(student);
+                      setShowEditStudentModal(true);
+                    }}>
                       <Edit size={16} />
                     </button>
-                    <button className="delete-button">
+                    <button className="delete-button" onClick={() => {
+                      setSelectedStudent(student);
+                      setShowConfirmDeleteModal(true);
+                    }}>
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -385,7 +601,7 @@ const StudentListPage = () => {
               <Book size={24} />
             </div>
             <div className="insight-content">
-              <h3>Assignment Completion</h3>
+              <h3>Activity Completion</h3>
               <p>Average completed: {Math.round(students.reduce((acc, student) => acc + student.assignmentsCompleted, 0) / students.length)}</p>
             </div>
           </div>
@@ -404,85 +620,118 @@ const StudentListPage = () => {
 
       {/* Student Profile Modal */}
       {showProfileModal && selectedStudent && (
-        <div className="students-page-modal-overlay">
-          <div className="students-page-profile-modal">
-            <div className="students-page-modal-header">
+        <div className="literexia-teacher-modal-overlay">
+          <div className="literexia-teacher-profile-modal">
+            <div className="literexia-teacher-modal-header">
               <h2>Student Profile</h2>
-              <button 
-                className="students-page-modal-close"
-                onClick={() => setShowProfileModal(false)}
-              >
-                ×
-              </button>
+              <button className="literexia-teacher-modal-close" onClick={() => setShowProfileModal(false)}>×</button>
             </div>
-            
-            <div className="students-page-profile-content">
-              <div className="students-page-profile-avatar">
+            <div className="literexia-teacher-profile-content">
+              <div className="literexia-teacher-profile-avatar">
                 {selectedStudent.profileImageUrl ? (
                   <img 
                     src={selectedStudent.profileImageUrl} 
                     alt={`${selectedStudent.firstName} ${selectedStudent.lastName}`}
-                    className="students-page-profile-image"
+                    className="literexia-teacher-profile-image"
                   />
                 ) : (
                   <User size={64} />
                 )}
               </div>
-              
-              <div className="students-page-profile-details">
-                <h3 className="students-page-profile-name">
+              <div className="literexia-teacher-profile-details">
+                <h3 className="literexia-teacher-profile-name">
                   {`${selectedStudent.firstName} ${selectedStudent.lastName}`}
                 </h3>
-                
-                <div className="students-page-profile-info">
-                  <div className="students-page-profile-info-item">
-                    <span className="students-page-profile-label">ID Number:</span>
-                    <span className="students-page-profile-value">{selectedStudent.idNumber}</span>
+                <div className="literexia-teacher-profile-info">
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">ID Number:</span>
+                    <span className="literexia-teacher-profile-value">{selectedStudent.idNumber}</span>
                   </div>
-                  
-                  <div className="students-page-profile-info-item">
-                    <span className="students-page-profile-label">Email:</span>
-                    <span className="students-page-profile-value">{selectedStudent.email}</span>
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Age:</span>
+                    <span className="literexia-teacher-profile-value">{selectedStudent.age}</span>
                   </div>
-                  
-                  <div className="students-page-profile-info-item">
-                    <span className="students-page-profile-label">Age:</span>
-                    <span className="students-page-profile-value">{selectedStudent.age}</span>
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Section:</span>
+                    <span className="literexia-teacher-profile-value">{selectedStudent.section}</span>
                   </div>
-                  
-                  <div className="students-page-profile-info-item">
-                    <span className="students-page-profile-label">Reading Level:</span>
-                    <span className="students-page-profile-value">{selectedStudent.readingLevel}</span>
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Grade Level:</span>
+                    <span className="literexia-teacher-profile-value">{selectedStudent.gradeLevel}</span>
                   </div>
-                  
-                  <div className="students-page-profile-info-item">
-                    <span className="students-page-profile-label">Address:</span>
-                    <span className="students-page-profile-value">{selectedStudent.address}</span>
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Gender:</span>
+                    <span className="literexia-teacher-profile-value">{selectedStudent.gender}</span>
                   </div>
-                  
-                  <div className="students-page-profile-info-item">
-                    <span className="students-page-profile-label">Section:</span>
-                    <span className="students-page-profile-value">{selectedStudent.section}</span>
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Address:</span>
+                    <span className="literexia-teacher-profile-value">{selectedStudent.address}</span>
                   </div>
-                  
-                  <div className="students-page-profile-info-item">
-                    <span className="students-page-profile-label">Gender:</span>
-                    <span className="students-page-profile-value">{selectedStudent.gender}</span>
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Reading Level:</span>
+                    <span className="literexia-teacher-profile-value">{selectedStudent.readingLevel || 'N/A'}</span>
+                  </div>
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Reading %:</span>
+                    <span className="literexia-teacher-profile-value">{selectedStudent.readingPercentage != null ? selectedStudent.readingPercentage + '%' : 'N/A'}</span>
                   </div>
                 </div>
               </div>
             </div>
-            
-            <div className="students-page-modal-footer">
-              <button 
-                className="students-page-close-btn"
-                onClick={() => setShowProfileModal(false)}
-              >
+            <div className="literexia-teacher-profile-actions">
+              <button className="literexia-teacher-close-profile-btn" onClick={() => setShowProfileModal(false)}>
                 Close
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add Student Modal */}
+      {showAddStudentModal && (
+        <AddEditStudentModal
+          student={null}
+          onClose={() => setShowAddStudentModal(false)}
+          onSave={handleAddStudent}
+        />
+      )}
+
+      {/* Edit Student Modal */}
+      {showEditStudentModal && selectedStudent && (
+        <AddEditStudentModal
+          student={selectedStudent}
+          onClose={() => {
+            setShowEditStudentModal(false);
+            setSelectedStudent(null);
+          }}
+          onSave={handleEditStudent}
+        />
+      )}
+
+      {/* Confirm Delete Modal */}
+      {showConfirmDeleteModal && selectedStudent && (
+        <div className="literexia-teacher-modal-overlay">
+          <div className="literexia-teacher-modal">
+            <div className="literexia-teacher-modal-header">
+              <h2>Confirm Delete</h2>
+              <button className="literexia-teacher-modal-close" onClick={() => setShowConfirmDeleteModal(false)}>×</button>
+            </div>
+            <div className="literexia-teacher-modal-form">
+              <p>Are you sure you want to delete this student?</p>
+              <div className="literexia-teacher-modal-footer">
+                <button className="literexia-teacher-cancel-btn" onClick={() => setShowConfirmDeleteModal(false)}>Cancel</button>
+                <button className="literexia-teacher-confirm-delete-btn" onClick={() => { deleteStudent(selectedStudent._id); setShowConfirmDeleteModal(false); }}>Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSuccessModal && (
+        <SuccessModal message={successMessage} onClose={() => setShowSuccessModal(false)} />
+      )}
+      {validationError && (
+        <ValidationErrorModal message={validationError} onClose={() => setValidationError('')} />
       )}
     </div>
   );

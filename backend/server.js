@@ -141,6 +141,11 @@ connectDB().then(async (connected) => {
     app.use('/api/admin/manage', teacherRoutes);
     console.log('✅ Teacher and student routes registered at /api/admin/manage/*');
 
+    // Register admin parent routes
+    const parentAdminRoutes = require('./routes/Admin/parentRoutes');
+    app.use('/api/admin/manage', parentAdminRoutes);
+    console.log('✅ Parent admin routes registered at /api/admin/manage/*');
+
     // Register parent routes
     const parentRoutes = require('./routes/Parents/parentProfile');
     app.use('/api/parents', parentRoutes);

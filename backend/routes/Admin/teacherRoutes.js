@@ -1,6 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const teacherProfileController = require('../../controllers/Teachers/teacherProfileController');
+const studentAdminController = require('../../controllers/studentAdminController');
+const multer = require('multer');
+const upload = multer();
+
+console.log('teacherRoutes.js loaded');
 
 // Get all teachers
 router.get('/teachers', async (req, res) => {
@@ -102,9 +108,61 @@ router.get('/students', async (req, res) => {
     }
 });
 
+// Get student by ID
+router.get('/students/:id', async (req, res) => {
+    try {
+        const db = mongoose.connection.useDb('test');
+        const student = await db.collection('users').findOne({
+            _id: new mongoose.Types.ObjectId(req.params.id)
+        });
+
+        if (!student) {
+            return res.status(404).json({
+                success: false,
+                message: 'Student not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: { studentProfile: student }
+        });
+    } catch (error) {
+        console.error('Error fetching student:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching student',
+            error: error.message
+        });
+    }
+});
+
 // Test route to verify the router is working
 router.get('/test', (req, res) => {
     res.json({ message: 'Teacher routes are working' });
 });
+
+// Test POST route
+router.post('/teachers/test', (req, res) => {
+  res.json({ message: 'POST /teachers/test works!' });
+});
+
+// Add new teacher (Create)
+router.post('/teachers', upload.single('profileImage'), teacherProfileController.createTeacher);
+
+// Update teacher (PUT)
+router.put('/teachers/:id', upload.single('profileImage'), teacherProfileController.updateTeacher);
+
+// Delete teacher (DELETE)
+router.delete('/teachers/:id', teacherProfileController.deleteTeacher);
+
+// Add new student (Create)
+router.post('/students', upload.single('profileImage'), studentAdminController.createStudent);
+
+// Update student (PUT)
+router.put('/students/:id', upload.single('profileImage'), studentAdminController.updateStudent);
+
+// Delete student (DELETE)
+router.delete('/students/:id', studentAdminController.deleteStudent);
 
 module.exports = router; 
