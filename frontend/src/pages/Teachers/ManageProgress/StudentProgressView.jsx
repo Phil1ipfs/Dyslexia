@@ -1,3 +1,4 @@
+// src/components/TeacherPage/StudentProgressView.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -16,7 +17,9 @@ import ActivityEditModal from '../../../components/TeacherPage/ManageProgress/Ac
 import LoadingSpinner from '../../../components/TeacherPage/ManageProgress/common/LoadingSpinner';
 import ErrorMessage from '../../../components/TeacherPage/ManageProgress/common/ErrorMessage';
 
+// Import services
 import StudentApiService from '../../../services/Teachers/StudentApiService';
+import CategoryResultsService from '../../../services/Teachers/CategoryResultsService';
 
 import '../../../css/Teachers/studentProgressView.css';
 
@@ -25,20 +28,6 @@ import '../../../css/Teachers/studentProgressView.css';
  * 
  * This component displays a comprehensive view of a student's progress, assessments,
  * and allows teachers to create customized intervention activities.
- * 
- * The workflow is structured as follows:
- * 1. Student completes assessment
- * 2. Teacher reviews results (Assessment Results tab)
- * 3. If student passes all categories, they progress to next reading level
- * 4. If student fails certain categories, teacher can create targeted interventions (Prescriptive Analysis tab)
- * 5. The interventions are pushed to the student's mobile device
- * 6. Teacher monitors the student's progress on interventions
- * 
- * Each intervention is created from templates:
- * - For Alphabet Knowledge: uses patinig & katinig templates
- * - For Phonological Awareness: uses malapantig templates
- * - For Word Recognition & Decoding: uses word templates
- * - For Reading Comprehension: uses sentence templates (complete passages with questions)
  */
 const StudentProgressView = () => {
   const navigate = useNavigate();
@@ -47,7 +36,7 @@ const StudentProgressView = () => {
   // State for student data
   const [student, setStudent] = useState(null);
   const [assessmentData, setAssessmentData] = useState(null);
-  const [progressData, setProgressData] = useState(null);
+  const [categoryResults, setCategoryResults] = useState(null);
   
   // State for prescriptive analysis
   const [prescriptiveRecommendations, setPrescriptiveRecommendations] = useState([]);
@@ -82,29 +71,66 @@ const StudentProgressView = () => {
         
         // Debug logging
         console.log('Pre-assessment data received:', preAssessmentData);
-        console.log('Has skillDetails?', preAssessmentData && preAssessmentData.skillDetails ? 'Yes' : 'No');
-        if (preAssessmentData && preAssessmentData.skillDetails) {
-          console.log('Number of skill details:', preAssessmentData.skillDetails.length);
-        }
+        console.log('Pre-assessment status:', preAssessmentStatus);
         
         // Check if pre-assessment is completed
         const hasCompletedPreAssessment = preAssessmentStatus?.hasCompleted || 
                                           preAssessmentStatus?.preAssessmentCompleted ||
-                                          (preAssessmentData && !preAssessmentData.message);
+                                          (preAssessmentData && preAssessmentData.hasCompleted) ||
+                                          studentData?.preAssessmentCompleted;
         
         setPreAssessmentCompleted(hasCompletedPreAssessment);
         setAssessmentData(preAssessmentData);
 
-        // Get category results for the progress report
-        const categoryResults = await StudentApiService.getCategoryResults(id);
-        setProgressData(categoryResults);
-        
-        // Generate mock recommendations
-        const mockRecommendations = generateMockRecommendations(studentData);
-        setPrescriptiveRecommendations(mockRecommendations);
+        // Get data for progress report
+        const fetchProgressData = async () => {
+          console.log("Fetching progress data...");
+          
+          // First try getting category results
+          const categoryResults = await StudentApiService.getCategoryResults(id);
+          
+          if (categoryResults && categoryResults.categories && categoryResults.categories.length > 0) {
+            // We have valid category results data
+            console.log("Using category results data for progress report");
+            setCategoryResults(categoryResults);
+            return categoryResults;
+          }
+          
+          // If no category results, try using pre-assessment data
+          console.log("No category results found, checking pre-assessment data");
+          
+          if (preAssessmentData) {
+            // First check if pre-assessment data already has categories format
+            if (preAssessmentData.categories && preAssessmentData.categories.length > 0) {
+              console.log("Using categories from pre-assessment data");
+              setCategoryResults(preAssessmentData);
+              return preAssessmentData;
+            }
+            
+            // Otherwise try to transform skillDetails
+            if (preAssessmentData.skillDetails && preAssessmentData.skillDetails.length > 0) {
+              console.log("Transforming pre-assessment skillDetails to categories format");
+              const transformedData = CategoryResultsService.transformPreAssessmentData(preAssessmentData);
+              setCategoryResults(transformedData);
+              return transformedData;
+            }
+          }
+          
+          // If we reach here, we have no valid progress data
+          console.log("No valid progress data found");
+          setCategoryResults(null);
+          return null;
+        };
 
-        // Initialize learning objectives
-        initializeLearningObjectives(categoryResults);
+        const progressData = await fetchProgressData();
+        
+        // Initialize learning objectives if we have progress data
+        if (progressData && progressData.categories && progressData.categories.length > 0) {
+          initializeLearningObjectives(progressData);
+          generateRecommendationsFromResults(progressData, studentData);
+        } else {
+          generateMockRecommendations(studentData);
+        }
         
         setLoading(false);
       } catch (err) {
@@ -118,55 +144,178 @@ const StudentProgressView = () => {
   }, [id]);
 
   /**
-   * Validate assessment data to ensure it has the required properties
-   * @param {Object} data - The assessment data to validate
-   * @return {boolean} Whether the data is valid
-   */
-  const validateAssessmentData = (data) => {
-    // Check if we have valid assessment data
-    if (!data || data.message || !data.hasCompleted) {
-      return false;
-    }
-    
-    // Make sure we have skillDetails to display
-    if (!data.skillDetails || data.skillDetails.length === 0) {
-      return false;
-    }
-    
-    return true;
-  };
-
-  /**
    * Helper to initialize learning objectives based on category results
    * @param {Object} categoryResults - The category results from the API
    */
   const initializeLearningObjectives = (categoryResults) => {
-    if (!categoryResults || !categoryResults.categories) return;
+    if (!categoryResults || !categoryResults.categories || categoryResults.categories.length === 0) return;
     
     // Create learning objectives based on categories
-    const objectives = categoryResults.categories.map((category, index) => ({
-      id: index + 1,
-      title: `Mastering ${category.categoryName}`,
-      category: category.categoryName,
-      completed: category.isPassed,
-      assistance: category.isPassed ? 'minimal' : 'moderate',
-      remarks: category.isPassed 
-        ? `Student has achieved mastery in ${category.categoryName}.` 
-        : `Student needs additional practice in ${category.categoryName}.`,
-      isEditingRemarks: false
-    }));
+    const objectives = categoryResults.categories.map((category, index) => {
+      // Format category name for display
+      const displayName = category.categoryName
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, l => l.toUpperCase());
+        
+      return {
+        id: index + 1,
+        title: `Mastering ${displayName}`,
+        category: category.categoryName,
+        completed: category.isPassed,
+        assistance: category.isPassed ? 'minimal' : 'moderate',
+        remarks: category.isPassed 
+          ? `Student has achieved mastery in ${displayName}.` 
+          : `Student needs additional practice in ${displayName}.`,
+        isEditingRemarks: false
+      };
+    });
     
     setLearningObjectives(objectives);
   };
   
   /**
+   * Generate recommendations based on actual category results
+   * @param {Object} results - The category results
+   * @param {Object} student - The student data
+   */
+  const generateRecommendationsFromResults = (results, student) => {
+    if (!results || !results.categories || !student) return;
+    
+    // Generate recommendations for categories that need improvement
+    const recommendations = results.categories
+      .filter(category => !category.isPassed)
+      .map((category, index) => {
+        // Format category name for display
+        const displayName = category.categoryName
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, l => l.toUpperCase());
+          
+        // Select appropriate icon based on category
+        let icon;
+        let title;
+        let analysis;
+        let recommendation;
+        let questions = [];
+        
+        switch(category.categoryName.toLowerCase()) {
+          case 'alphabet_knowledge':
+          case 'alphabet knowledge':
+            title = "Letter Recognition Practice";
+            analysis = "Student struggles with distinguishing similar letters.";
+            recommendation = "Provide focused practice on distinguishing visually similar letters through systematic exposure and multisensory approaches.";
+            questions = [
+              {
+                id: 101 + index,
+                questionText: "Anong katumbas na maliit na letra?",
+                questionType: "patinig",
+                options: ["a", "e", "i"],
+                correctAnswer: 0
+              }
+            ];
+            break;
+            
+          case 'phonological_awareness':
+          case 'phonological awareness':
+            title = "Syllable Blending";
+            analysis = "Student has difficulty blending syllables to form complete words.";
+            recommendation = "Practice syllable blending with simple two-syllable words, gradually increasing complexity.";
+            questions = [
+              {
+                id: 201 + index,
+                questionText: "Kapag pinagsama ang mga pantig, ano ang mabubuo?",
+                questionType: "malapantig",
+                options: ["BOLA", "LABO", "MATA"],
+                correctAnswer: 0
+              }
+            ];
+            break;
+            
+          case 'word_recognition':
+          case 'word recognition':
+            title = "Word Recognition";
+            analysis = "Student can recognize some common words but needs more practice with less frequent vocabulary.";
+            recommendation = "Expand vocabulary through regular exposure to new words with supporting visuals.";
+            questions = [
+              {
+                id: 301 + index,
+                questionText: "Piliin ang tamang larawan para sa salitang:",
+                questionType: "word",
+                options: ["aso", "pusa", "bola"],
+                correctAnswer: 0
+              }
+            ];
+            break;
+            
+          case 'decoding':
+            title = "Sound-Letter Correspondence";
+            analysis = "Student struggles with connecting sounds to letters in unfamiliar words.";
+            recommendation = "Practice decoding skills with a structured phonics approach.";
+            questions = [
+              {
+                id: 401 + index,
+                questionText: "Paano babaybayin ang salitang ito?",
+                questionType: "word",
+                options: ["B-O-L-A", "L-O-B-A", "B-A-L-O"],
+                correctAnswer: 0
+              }
+            ];
+            break;
+            
+          case 'reading_comprehension':
+          case 'reading comprehension':
+            title = "Basic Story Comprehension";
+            analysis = "Student struggles with remembering key details from short passages.";
+            recommendation = "Practice with simple stories that include visual supports, focusing on recall of main events and characters.";
+            questions = [
+              {
+                id: 501 + index,
+                questionText: "Sino ang pangunahing tauhan sa kwento?",
+                questionType: "comprehension",
+                options: ["Si Maria", "Si Juan", "Ang ina"],
+                correctAnswer: 0
+              }
+            ];
+            break;
+            
+          default:
+            title = `${displayName} Practice`;
+            analysis = `Student needs additional practice with ${displayName.toLowerCase()}.`;
+            recommendation = `Provide structured practice in ${displayName.toLowerCase()} with regular feedback.`;
+            questions = [
+              {
+                id: 601 + index,
+                questionText: "Sample question",
+                questionType: "general",
+                options: ["Option A", "Option B", "Option C"],
+                correctAnswer: 0
+              }
+            ];
+        }
+        
+        return {
+          id: index + 1,
+          title: title,
+          category: category.categoryName,
+          readingLevel: student?.readingLevel || "Low Emerging",
+          score: category.score || 0,
+          targetScore: category.passingThreshold || 75,
+          status: "draft",
+          analysis: analysis,
+          recommendation: recommendation,
+          questions: questions
+        };
+      });
+      
+    setPrescriptiveRecommendations(recommendations);
+  };
+  
+  /**
    * Generate mock recommendations for the prescriptive analysis
    * @param {Object} student - The student data
-   * @return {Array} An array of recommendation objects
    */
   const generateMockRecommendations = (student) => {
-    // In a real implementation, these would be generated based on assessment results
-    return [
+    // Fallback recommendations
+    const mockRecommendations = [
       {
         id: 1,
         title: "Letter Recognition Practice",
@@ -214,7 +363,7 @@ const StudentProgressView = () => {
         readingLevel: student?.readingLevel || "Low Emerging",
         score: 65,
         targetScore: 75,
-        status: "pushed_to_mobile",
+        status: "draft",
         analysis: "Student can recognize some common words but needs more practice with less frequent vocabulary.",
         recommendation: "Expand vocabulary through regular exposure to new words with supporting visuals.",
         questions: [
@@ -226,38 +375,10 @@ const StudentProgressView = () => {
             correctAnswer: 0
           }
         ]
-      },
-      {
-        id: 4,
-        title: "Basic Story Comprehension",
-        category: "Reading Comprehension",
-        readingLevel: student?.readingLevel || "Low Emerging",
-        score: 40,
-        targetScore: 75,
-        status: "draft",
-        analysis: "Student struggles with remembering key details from short passages.",
-        recommendation: "Practice with simple stories that include visual supports, focusing on recall of main events and characters.",
-        sentenceTemplate: {
-          id: 1,
-          title: "Si Maria at ang mga Bulaklak",
-          sentenceText: [
-            {
-              pageNumber: 1,
-              text: "Si Maria ay pumunta sa parke. Nakita niya ang maraming bulaklak na magaganda.",
-              image: "https://example.com/images/flower_park.jpg"
-            }
-          ],
-          sentenceQuestions: [
-            {
-              questionNumber: 1,
-              questionText: "Sino ang pangunahing tauhan sa kwento?",
-              sentenceCorrectAnswer: "Si Maria",
-              sentenceOptionAnswers: ["Si Maria", "Si Juan", "Ang ina", "Ang hardinero"]
-            }
-          ]
-        }
       }
     ];
+    
+    setPrescriptiveRecommendations(mockRecommendations);
   };
 
   /**
@@ -454,7 +575,7 @@ const StudentProgressView = () => {
               <h2>Pre-Assessment Results (CRLA)</h2>
             </div>
             <div className="literexia-panel-content">
-              {assessmentData && validateAssessmentData(assessmentData) ? (
+              {assessmentData && assessmentData.skillDetails && assessmentData.skillDetails.length > 0 ? (
                 <PreAssessmentResults assessmentData={assessmentData} />
               ) : (
                 <div className="literexia-empty-state">
@@ -473,9 +594,9 @@ const StudentProgressView = () => {
               <h2>Post Assessment Progress Report</h2>
             </div>
             <div className="literexia-panel-content">
-              {progressData ? (
+              {categoryResults ? (
                 <ProgressReport
-                  progressData={progressData}
+                  progressData={categoryResults}
                   learningObjectives={learningObjectives}
                   setLearningObjectives={setLearningObjectives}
                 />
@@ -551,7 +672,11 @@ const StudentProgressView = () => {
                       {learningObjectives.map((objective) => (
                         <tr key={objective.id}>
                           <td>{objective.title}</td>
-                          <td>{objective.category}</td>
+                          <td>
+                            {objective.category
+                              .replace(/_/g, ' ')
+                              .replace(/\b\w/g, l => l.toUpperCase())}
+                          </td>
                           <td className="literexia-status-cell">
                             {objective.completed ? (
                               <span className="literexia-status-completed"><FaCheckCircle /> Mastered</span>

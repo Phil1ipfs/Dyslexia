@@ -1,22 +1,30 @@
+// src/components/TeacherPage/ManageProgress/SkillsOverviewSection.jsx
 import React, { useEffect, useRef } from 'react';
-import { FaChartLine, FaChartBar } from 'react-icons/fa';
-import './css/SkillsOverviewSection.css';
+import { FaChartLine, FaChartBar, FaFont, FaHeadphones, FaBook, FaFileAlt, FaComments } from 'react-icons/fa';
 
-const SkillsOverviewSection = ({ scores, animated = false }) => {
+import '../../../components/TeacherPage/ManageProgress/css/SkillsOverviewSection.css';
+
+const SkillsOverviewSection = ({ categories, animated = false }) => {
+  console.log("SkillsOverviewSection received categories:", categories);
+  
   const progressBarsRef = useRef({});
   
   useEffect(() => {
-    if (!animated) return;
+    if (!animated || !categories || categories.length === 0) return;
     
     // Animate progress bars after component mounts
-    Object.entries(scores).forEach(([key, value]) => {
-      if (progressBarsRef.current[key]) {
-        progressBarsRef.current[key].style.width = `${value}%`;
-      }
-    });
-  }, [animated, scores]);
+    setTimeout(() => {
+      categories.forEach(category => {
+        const key = typeof category.categoryName === 'string' ? category.categoryName : `category-${Math.random()}`;
+        if (progressBarsRef.current[key]) {
+          progressBarsRef.current[key].style.width = `${category.score || 0}%`;
+        }
+      });
+    }, 300);
+  }, [animated, categories]);
   
-  if (!scores || Object.keys(scores).length === 0) {
+  if (!categories || !Array.isArray(categories) || categories.length === 0) {
+    console.log("No valid categories to display");
     return (
       <div className="literexia-skills-empty">
         <p>No skills data available for this student.</p>
@@ -25,46 +33,58 @@ const SkillsOverviewSection = ({ scores, animated = false }) => {
   }
 
   // Map keys to display labels and determine skill categories
-  const getSkillInfo = (key) => {
-    switch(key) {
-      case 'Alphabet Knowledge':
+  const getSkillInfo = (categoryName) => {
+    if (!categoryName) return {
+      label: 'Unknown Category',
+      description: 'Reading skill assessment',
+      icon: <FaChartBar />
+    };
+    
+    const categoryNameLower = typeof categoryName === 'string' ? 
+      categoryName.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+    
+    switch(categoryNameLower) {
+      case 'alphabetknowledge':
         return { 
           label: 'Alphabet Knowledge', 
           description: 'Recognition of uppercase and lowercase letters',
-          icon: <FaChartBar />
+          icon: <FaFont />
         };
-      case 'Phonological Awareness':
+      case 'phonologicalawareness':
         return { 
           label: 'Phonological Awareness', 
           description: 'Ability to recognize and work with sounds in spoken language',
-          icon: <FaChartBar />
+          icon: <FaHeadphones />
         };
-      case 'Word Recognition':
+      case 'wordrecognition':
         return { 
           label: 'Word Recognition', 
           description: 'Ability to recognize and read words accurately',
-          icon: <FaChartBar />
+          icon: <FaBook />
         };
-      case 'Decoding':
+      case 'decoding':
         return { 
           label: 'Decoding', 
           description: 'Ability to apply knowledge of letter-sound relationships',
-          icon: <FaChartBar />
+          icon: <FaFileAlt />
         };
-      case 'Reading Comprehension':
+      case 'readingcomprehension':
         return { 
           label: 'Reading Comprehension', 
           description: 'Ability to understand and interpret text content',
-          icon: <FaChartBar />
+          icon: <FaComments />
         };
       default:
         // Create a reasonable label from the key
-        const label = key
-          .replace(/([A-Z])/g, ' $1')
-          .replace(/^./, str => str.toUpperCase());
+        const label = typeof categoryName === 'string' ?
+          categoryName
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/^./, str => str.toUpperCase())
+            .replace(/_/g, ' ') : 
+          'Unknown Category';
         
         return { 
-          label: key, 
+          label, 
           description: 'Reading skill assessment',
           icon: <FaChartBar />
         };
@@ -73,6 +93,7 @@ const SkillsOverviewSection = ({ scores, animated = false }) => {
 
   // Get skill level classification
   const getSkillLevel = (score) => {
+    score = Number(score) || 0;
     if (score >= 85) return { label: 'Mastered', className: 'mastered' };
     if (score >= 70) return { label: 'Proficient', className: 'proficient' };
     if (score >= 50) return { label: 'Developing', className: 'developing' };
@@ -81,10 +102,9 @@ const SkillsOverviewSection = ({ scores, animated = false }) => {
 
   // Calculate average score
   const calculateAverageScore = () => {
-    const values = Object.values(scores);
-    if (values.length === 0) return 0;
-    const sum = values.reduce((total, score) => total + score, 0);
-    return Math.round(sum / values.length);
+    if (categories.length === 0) return 0;
+    const sum = categories.reduce((total, category) => total + (Number(category.score) || 0), 0);
+    return Math.round(sum / categories.length);
   };
 
   const averageScore = calculateAverageScore();
@@ -98,15 +118,17 @@ const SkillsOverviewSection = ({ scores, animated = false }) => {
           Mastery Performance Overview
         </h3>
         <div className={`literexia-average-score ${averageSkillLevel.className}`}>
-          <span className="literexia-average-value">{averageScore}%</span>
+          <span className="literexia-average-valuee">{averageScore}%</span>
           <span className="literexia-average-label">{averageSkillLevel.label}</span>
         </div>
       </div>
 
       <div className="literexia-skills-grid">
-        {Object.entries(scores).map(([key, value], index) => {
-          const skillInfo = getSkillInfo(key);
-          const skillLevel = getSkillLevel(value);
+        {categories.map((category, index) => {
+          const categoryName = category.categoryName || `Category ${index + 1}`;
+          const skillInfo = getSkillInfo(categoryName);
+          const score = Number(category.score) || 0;
+          const skillLevel = getSkillLevel(score);
           
           return (
             <div 
@@ -125,18 +147,16 @@ const SkillsOverviewSection = ({ scores, animated = false }) => {
                 </div>
                 
                 <div className="literexia-skill-score">
-                  {value}%
+                  {score}%
                 </div>
               </div>
               
               <div className="literexia-skill-bar-container">
                 <div 
-                  ref={el => progressBarsRef.current[key] = el}
+                  ref={el => progressBarsRef.current[categoryName] = el}
                   className="literexia-skill-bar-fill"
-                  style={{ width: animated ? `${value}%` : '0%' }}
-                  data-value={value}
+                  style={{ width: animated ? '0%' : `${score}%` }}
                 ></div>
-                {/* Only show the Emerging label directly, no markers */}
                 <div className="literexia-skill-level-badge">
                   {skillLevel.label}
                 </div>

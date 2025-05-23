@@ -1,68 +1,72 @@
-/* ProgressReport.css - Aligned with Cradle of Learners Inc. Color Scheme */
+/* src/components/TeacherPage/ManageProgress/css/ProgressReport.css */
 
 /* Main container */
 .literexia-progress-container {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   color: #333;
   background-color: #fff;
   padding: 0;
+  max-width: 100%;
 }
 
 /* Progress info section with brain icon */
 .literexia-progress-info {
   display: flex;
   align-items: flex-start;
-  gap: 1.25rem;
+  gap: 1.5rem;
   background-color: #f4f6ff;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  border-left: 4px solid #4a5494;
+  border-radius: 12px;
+  padding: 1.75rem;
+  margin-bottom: 0.5rem;
+  border-left: 5px solid #4a5494;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .literexia-progress-info-icon {
-  font-size: 2rem;
+  font-size: 2.5rem;
   color: #4a5494;
   flex-shrink: 0;
 }
 
 .literexia-progress-info-text h3 {
   margin-top: 0;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   color: #4a5494;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 600;
 }
 
 .literexia-progress-info-text p {
   margin: 0;
   color: #4a5494;
-  font-size: 1rem;
+  font-size: 1.1rem;
   line-height: 1.6;
 }
 
 /* Summary Cards at the top */
 .literexia-summary-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .literexia-summary-card {
   background-color: #ffffff;
-  border-radius: 8px;
-  padding: 1.25rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  padding: 1.75rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
   border: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
   transition: transform 0.3s, box-shadow 0.3s;
   opacity: 0;
   transform: translateY(20px);
+  height: 100%;
+  min-height: 150px;
 }
 
 .literexia-summary-card.animate {
@@ -70,24 +74,24 @@
 }
 
 .literexia-summary-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
 }
 
 .literexia-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
 }
 
 .literexia-card-icon {
   color: #4a5494;
-  font-size: 1.5rem;
+  font-size: 2rem;
 }
 
 .literexia-card-value {
-  font-size: 2rem;
+  font-size: 1.7rem;
   font-weight: 700;
   color: #4a5494;
   line-height: 1;
@@ -99,97 +103,126 @@
 
 .literexia-card-label {
   color: #6b7280;
-  font-size: 0.9rem;
+  font-size: 1.2rem;
   font-weight: 500;
+  margin-top: auto;
 }
 
 /* Filter section */
 .literexia-filters {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1.5rem;
   background-color: #f9fafb;
-  padding: 1rem;
-  border-radius: 8px;
+  padding: 1.25rem 1.75rem;
+  border-radius: 12px;
   border: 1px solid #e5e7eb;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .literexia-filter-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   font-weight: 600;
   color: #4b5563;
+  font-size: 1.1rem;
 }
 
 .literexia-filter-group {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .literexia-filter-group label {
-  font-size: 0.875rem;
+  font-size: 1rem;
   color: #6b7280;
   margin-bottom: 0;
+  font-weight: 500;
 }
 
 .literexia-filter-select {
   flex: 1;
-  padding: 0.5rem;
+  padding: 0.75rem 1rem;
   border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border-radius: 8px;
   background-color: white;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  max-width: 300px;
 }
 
 /* Category Performance Table */
 .literexia-section-title {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 600;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.85rem;
   border-bottom: 1px solid #e5e7eb;
   color: #4a5494;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .literexia-section-icon {
   color: #4a5494;
 }
 
-.literexia-category-table-container {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-bottom: 2rem;
+.literexia-category-results {
+  margin-bottom: 2.5rem;
 }
 
-.literexia-category-table {
+.literexia-category-table-container {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2.5rem;
+}
+
+.literexia-category-tableee {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
   background-color: white;
 }
 
-.literexia-category-table th {
+.literexia-category-tableee th {
   background-color: #4a5494;
   color: white;
   font-weight: 600;
-  font-size: 0.95rem;
-  padding: 0.75rem 1rem;
+  font-size: 1.1rem;
+  padding: 1.2rem 1.5rem;
   border-bottom: 1px solid #e5e7eb;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.literexia-category-table td {
-  padding: 0.75rem 1rem;
+.literexia-category-tablee th:first-child {
+  text-align: left;
+  border-top-left-radius: 8px;
+}
+
+.literexia-category-tableee th:last-child {
+  border-top-right-radius: 8px;
+}
+
+.literexia-category-tableee td {
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid #e5e7eb;
   color: #4b5563;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
+  vertical-align: middle;
+}
+
+.literexia-category-tableee td:nth-child(2),
+.literexia-category-tableee td:nth-child(3),
+.literexia-category-tableee td:nth-child(4),
+.literexia-category-tableee td:nth-child(5) {
+  text-align: center;
 }
 
 .literexia-category-table tr:last-child td {
@@ -205,78 +238,91 @@
   animation: fadeSlideUp 0.5s forwards;
 }
 
-.literexia-category-table tr:hover {
+.literexia-category-table tr:nth-child(even) {
   background-color: #f9fafb;
+}
+
+.literexia-category-table tr:hover {
+  background-color: #f3f4f6;
 }
 
 /* Category specific styling */
 .literexia-category-label {
   display: inline-block;
-  padding: 0.35rem 0.75rem;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 0.9rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
   background-color: #eef2ff;
   color: #4a5494;
+  box-shadow: 0 2px 4px rgba(74, 84, 148, 0.1);
+  border-left: 3px solid #4a5494;
 }
 
 /* Score badges */
 .literexia-score-badgeee {
   display: inline-block;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-weight: 500;
-  font-size: 0.9rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.1rem;
   text-align: center;
-  min-width: 40px;
+  min-width: 60px;
   background-color: #eef2ff;
   color: #4a5494;
+  box-shadow: 0 2px 4px rgba(74, 84, 148, 0.1);
 }
 
 /* Status badges */
 .literexia-status-badge {
   display: inline-block;
-  padding: 0.35rem 0.75rem;
-  border-radius: 4px;
-  font-weight: 500;
-  font-size: 0.85rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
   text-align: center;
+  min-width: 120px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .literexia-status-badge.achieved {
   background-color: #e9f7ef;
-  color: #4a5494;
+  color: #16a34a;
+  border-left: 3px solid #16a34a;
 }
 
 .literexia-status-badge.in-progress {
   background-color: #fff5e6;
   color: #f59e0b;
+  border-left: 3px solid #f59e0b;
 }
 
 /* Overall Assessment Status */
 .literexia-overall-status {
   background-color: white;
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
   border: 1px solid #e5e7eb;
+  margin-top: 1rem;
 }
 
 .literexia-overall-status h3 {
   margin-top: 0;
-  margin-bottom: 0.75rem;
-  font-size: 1.15rem;
+  margin-bottom: 1rem;
+  font-size: 1.35rem;
   font-weight: 600;
 }
 
 .literexia-overall-status p {
-  margin: 0 0 1rem 0;
+  margin: 0 0 1.25rem 0;
   color: #4b5563;
-  line-height: 1.6;
+  line-height: 1.7;
+  font-size: 1.1rem;
 }
 
 .literexia-overall-status.achieved {
-  border-left: 4px solid #4a5494;
+  border-left: 6px solid #4a5494;
 }
 
 .literexia-overall-status.achieved h3 {
@@ -284,7 +330,7 @@
 }
 
 .literexia-overall-status.developing {
-  border-left: 4px solid #f59e0b;
+  border-left: 6px solid #f59e0b;
 }
 
 .literexia-overall-status.developing h3 {
@@ -293,29 +339,31 @@
 
 .literexia-focus-areas {
   background-color: #f9fafb;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-top: 1rem;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
 }
 
 .literexia-focus-areas h4 {
   margin-top: 0;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.15rem;
   color: #4a5494;
 }
 
 .literexia-focus-areas ul {
   margin: 0;
-  padding-left: 1.5rem;
+  padding-left: 1.75rem;
 }
 
 .literexia-focus-areas li {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   color: #4b5563;
   opacity: 0;
   transform: translateX(20px);
+  font-size: 1.05rem;
+  line-height: 1.6;
 }
 
 .literexia-focus-areas li.animate {
@@ -329,31 +377,262 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 3rem 1rem;
+  padding: 4rem 2rem;
   background-color: #f9fafb;
-  border-radius: 8px;
+  border-radius: 12px;
   color: #6b7280;
   border: 1px dashed #d1d5db;
 }
 
 .literexia-empty-state svg {
   color: #9ca3af;
-  margin-bottom: 1rem;
-  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  font-size: 3rem;
 }
 
 .literexia-empty-state h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.25rem;
+  margin: 0 0 0.75rem 0;
+  font-size: 1.5rem;
   color: #4b5563;
 }
 
 .literexia-empty-state p {
   margin: 0;
   max-width: 500px;
+  font-size: 1.1rem;
+  line-height: 1.6;
 }
 
-/* Animations */
+/* Skills Overview Section */
+.literexia-skills-overview {
+  background-color: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  margin-bottom: 2.5rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* Skills header */
+.literexia-skills-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.literexia-skills-header .literexia-section-title {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.literexia-average-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  background-color: #f4f7ff;
+  border-radius: 12px;
+}
+
+.literexia-average-score.mastered {
+  background-color: #e9f7ef;
+}
+
+.literexia-average-score.proficient {
+  background-color: #eef2ff;
+}
+
+.literexia-average-score.developing {
+  background-color: #fff5e6;
+}
+
+.literexia-average-score.emerging {
+  background-color: #fef2f2;
+}
+
+.literexia-average-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #4a5494;
+}
+
+.literexia-average-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+/* Skills grid */
+.literexia-skills-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.literexia-skill-card {
+  position: relative;
+  border-left: 5px solid #4a5494;
+  opacity: 0;
+  transform: translateY(20px);
+  padding-left: 1.25rem;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 1.5rem 1.5rem 1.5rem 2rem;
+}
+
+.literexia-skill-card.animate {
+  animation: fadeSlideUp 0.5s forwards;
+}
+
+.literexia-skill-content {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.literexia-skill-icon-container {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #4a5494;
+  color: white;
+  flex-shrink: 0;
+  font-size: 1.5rem;
+}
+
+.literexia-skill-info {
+  flex: 1;
+}
+
+.literexia-skill-name {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #4a5494;
+}
+
+.literexia-skill-description {
+  font-size: 1rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.literexia-skill-score {
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #4a5494;
+  text-align: right;
+  width: 5rem;
+}
+
+/* Progress bars */
+.literexia-skill-bar-container {
+  position: relative;
+  height: 0.75rem;
+  background-color: #e5e7eb;
+  border-radius: 8px;
+  overflow: visible;
+  margin-bottom: 2rem;
+}
+
+.literexia-skill-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0;
+  background-color: #4a5494;
+  border-radius: 8px;
+  transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Level badge */
+.literexia-skill-level-badge {
+  position: absolute;
+  left: 0;
+  bottom: -2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  background-color: #eef2ff;
+  color: #4a5494;
+  transition: opacity 0.5s ease;
+}
+
+/* Legend section */
+.literexia-skills-legend {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.literexia-legend-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #4b5563;
+}
+
+.literexia-legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.literexia-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.literexia-legend-marker {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+}
+
+.literexia-legend-marker.mastered {
+  background-color: #4a5494;
+}
+
+.literexia-legend-marker.proficient {
+  background-color: #6474a7;
+}
+
+.literexia-legend-marker.developing {
+  background-color: #8290c0;
+}
+
+.literexia-legend-marker.emerging {
+  background-color: #a2acd1;
+}
+
+.literexia-legend-label {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+/* Skills empty state */
+.literexia-skills-empty {
+  padding: 3rem;
+  text-align: center;
+  color: #6b7280;
+  background-color: #f9fafb;
+  border-radius: 12px;
+  font-size: 1.1rem;
+}
+
+/* Additional Animations */
 @keyframes fadeSlideUp {
   from {
     opacity: 0;
@@ -376,36 +655,20 @@
   }
 }
 
-@keyframes growWidth {
-  from {
-    width: 0%;
-  }
-  to {
-    width: var(--target-width);
-  }
-}
-
-@keyframes countUp {
-  from {
-    content: "0";
-  }
-  to {
-    content: attr(data-target);
-  }
-}
-
-.counter {
-  position: relative;
-}
-
 /* Responsive adjustments */
+@media (max-width: 1200px) {
+  .literexia-summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
   .literexia-progress-info {
     flex-direction: column;
   }
   
   .literexia-summary-cards {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
   
   .literexia-filters {
@@ -417,11 +680,45 @@
     flex-direction: column;
     align-items: flex-start;
   }
+  
+  .literexia-filter-select {
+    max-width: none;
+    width: 100%;
+  }
+  
+  .literexia-skills-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .literexia-average-score {
+    align-self: flex-start;
+  }
+  
+  .literexia-skills-legend {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
 }
 
 @media (max-width: 576px) {
-  .literexia-summary-cards {
-    grid-template-columns: 1fr;
+  .literexia-skill-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .literexia-skill-score {
+    align-self: flex-start;
+    margin-top: 0.5rem;
+    text-align: left;
+  }
+  
+  .literexia-legend-items {
+    flex-direction: column;
+    gap: 0.75rem;
   }
   
   .literexia-category-table-container {
@@ -429,6 +726,21 @@
   }
   
   .literexia-category-table {
-    min-width: 500px;
+    min-width: 600px;
   }
+}
+
+.literexia-category-table th .th-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.literexia-category-table th:first-child .th-content {
+  justify-content: flex-start;
+}
+
+.literexia-category-table th .th-icon {
+  font-size: 1rem;
 }

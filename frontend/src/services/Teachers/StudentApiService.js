@@ -686,22 +686,68 @@ const StudentApiService = {
   // Get category results for a student
   getCategoryResults: async (id) => {
     try {
-      // Fix: Correct URL pattern, removing the leading slash
+      console.log(`Fetching category results for student ID: ${id}`);
+      // Use the api instance with the correct endpoint path (no leading slash)
       const { data } = await api.get(`${id}/category-results`);
-      return data;
+      
+      console.log("Category results raw data:", data);
+      
+      // Check if we have meaningful data
+      if (data && data.categories && data.categories.length > 0) {
+        // Make sure all category objects have required properties
+        data.categories = data.categories.map(category => ({
+          categoryName: category.categoryName || 'Unknown Category',
+          totalQuestions: category.totalQuestions || 0,
+          correctAnswers: category.correctAnswers || 0,
+          score: category.score || 0,
+          isPassed: category.isPassed || (category.score >= 75),
+          passingThreshold: category.passingThreshold || 75
+        }));
+        console.log("Valid category data found with", data.categories.length, "categories");
+        return data;
+      } else {
+        // No meaningful data
+        console.log("No valid category data found in API response");
+        return null;
+      }
     } catch (error) {
-      console.error(`Error fetching category results for student ID ${id}:`, error);
-
-      // Return empty placeholder data if API fails
-      return {
-        studentId: id,
-        readingLevel: 'Not Available',
-        categories: [],
-        allCategoriesPassed: false,
-        assessmentDate: null,
-        overallScore: 0
-      };
+      console.error(`Error fetching category results for student ${id}:`, error);
+      
+      // Return null in case of error
+      return null;
     }
+  },
+
+  // Transform pre-assessment data to category results format
+  transformPreAssessmentToCategories: (preAssessmentData) => {
+    if (!preAssessmentData || !preAssessmentData.skillDetails || preAssessmentData.skillDetails.length === 0) {
+      return null;
+    }
+
+    // Create categories array from skillDetails
+    const categories = preAssessmentData.skillDetails.map(skill => ({
+      categoryName: skill.categoryName || skill.category,
+      totalQuestions: skill.total || 0,
+      correctAnswers: skill.correct || 0,
+      score: skill.score || 0,
+      isPassed: skill.score >= 75,
+      passingThreshold: 75
+    }));
+
+    // Calculate if all categories passed
+    const allCategoriesPassed = categories.every(cat => cat.isPassed);
+
+    // Format the data to match category_results structure
+    return {
+      studentId: preAssessmentData.studentId,
+      assessmentType: 'pre-assessment',
+      assessmentDate: preAssessmentData.completedAt || new Date().toISOString(),
+      categories: categories,
+      overallScore: preAssessmentData.overallScore || 0,
+      readingLevel: preAssessmentData.readingLevel || 'Not Assessed',
+      readingPercentage: preAssessmentData.overallScore || 0,
+      allCategoriesPassed: allCategoriesPassed
+    };
   },
 
   // Score-to-level helper
