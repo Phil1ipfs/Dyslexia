@@ -80,6 +80,13 @@ const StudentProgressView = () => {
         const preAssessmentStatus = await StudentApiService.getPreAssessmentStatus(id);
         const preAssessmentData = await StudentApiService.getPreAssessmentResults(id);
         
+        // Debug logging
+        console.log('Pre-assessment data received:', preAssessmentData);
+        console.log('Has skillDetails?', preAssessmentData && preAssessmentData.skillDetails ? 'Yes' : 'No');
+        if (preAssessmentData && preAssessmentData.skillDetails) {
+          console.log('Number of skill details:', preAssessmentData.skillDetails.length);
+        }
+        
         // Check if pre-assessment is completed
         const hasCompletedPreAssessment = preAssessmentStatus?.hasCompleted || 
                                           preAssessmentStatus?.preAssessmentCompleted ||
@@ -109,6 +116,25 @@ const StudentProgressView = () => {
 
     fetchData();
   }, [id]);
+
+  /**
+   * Validate assessment data to ensure it has the required properties
+   * @param {Object} data - The assessment data to validate
+   * @return {boolean} Whether the data is valid
+   */
+  const validateAssessmentData = (data) => {
+    // Check if we have valid assessment data
+    if (!data || data.message || !data.hasCompleted) {
+      return false;
+    }
+    
+    // Make sure we have skillDetails to display
+    if (!data.skillDetails || data.skillDetails.length === 0) {
+      return false;
+    }
+    
+    return true;
+  };
 
   /**
    * Helper to initialize learning objectives based on category results
@@ -428,7 +454,7 @@ const StudentProgressView = () => {
               <h2>Pre-Assessment Results (CRLA)</h2>
             </div>
             <div className="literexia-panel-content">
-              {assessmentData && !assessmentData.message ? (
+              {assessmentData && validateAssessmentData(assessmentData) ? (
                 <PreAssessmentResults assessmentData={assessmentData} />
               ) : (
                 <div className="literexia-empty-state">

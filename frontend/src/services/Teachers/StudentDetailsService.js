@@ -115,28 +115,89 @@ const StudentDetailsService = {
     // Single student details
     getStudentDetails: async (id) => {
         try {
-            const { data } = await api.get(`/student/${id}`);
+            // Use the correct path - no need for leading slash since baseURL already has /api/student
+            const { data } = await api.get(`/${id}`);
+            console.log(`Successfully fetched student details for ID ${id}`);
+            
+            // Ensure reading level is properly set
+            if (data) {
+                data.readingLevel = StudentDetailsService.convertLegacyReadingLevel(data.readingLevel);
+            }
+            
             return data;
         } catch (error) {
             console.error(`Error fetching student details for ID ${id}:`, error);
-            throw error;
+            
+            // Try alternate endpoint
+            try {
+                console.log(`Trying alternate endpoint for student details with ID ${id}`);
+                const { data } = await directApi.get(`/student/${id}`);
+                console.log(`Successfully fetched student details from alternate endpoint for ID ${id}`);
+                
+                // Ensure reading level is properly set
+                if (data) {
+                    data.readingLevel = StudentDetailsService.convertLegacyReadingLevel(data.readingLevel);
+                }
+                
+                return data;
+            } catch (alternateError) {
+                console.error(`Error fetching student details from alternate endpoint for ID ${id}:`, alternateError);
+                
+                // Create a minimal student object as fallback
+                return {
+                    id: id,
+                    name: `Student ID: ${id}`,
+                    readingLevel: 'Not Assessed',
+                    error: 'Failed to load complete student data'
+                };
+            }
         }
     },
 
     // Assessment results
     getAssessmentResults: async (id) => {
         try {
-            const { data } = await api.get(`/assessment/${id}`);
+            // Use the correct path
+            const { data } = await api.get(`/${id}/assessment`);
+            console.log(`Successfully fetched assessment results for ID ${id}`);
             return data;
         } catch (error) {
             console.error(`Error fetching assessment results for ID ${id}:`, error);
-            throw error;
+            
+            // Try alternate endpoint
+            try {
+                console.log(`Trying alternate endpoint for assessment results with ID ${id}`);
+                const { data } = await directApi.get(`/student/${id}/assessment`);
+                console.log(`Successfully fetched assessment results from alternate endpoint for ID ${id}`);
+                return data;
+            } catch (alternateError) {
+                console.error(`Error fetching assessment results from alternate endpoint for ID ${id}:`, alternateError);
+                
+                // Return empty assessment data as fallback
+                return {
+                    studentId: id,
+                    readingLevel: 'Not Assessed',
+                    recommendedLevel: 'Not Assessed',
+                    assessmentDate: null,
+                    overallScore: 0,
+                    readingPercentage: 0,
+                    skillDetails: [],
+                    allCategoriesPassed: false
+                };
+            }
         }
     },
 
     // Parent profile
     getParentProfile: async (parentId) => {
         try {
+            // Check if parentId is valid MongoDB ObjectId format
+            const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(parentId);
+            if (!isValidObjectId) {
+                console.warn(`Invalid parent ID format: ${parentId}`);
+                throw new Error('Invalid parent ID format');
+            }
+            
             console.log("Fetching parent profile for ID:", parentId);
             // Use the correct endpoint that properly accesses the database
             const { data } = await directApi.get(`/parents/profile/${parentId}`);
@@ -162,91 +223,143 @@ const StudentDetailsService = {
         }
     },
 
-
-// In StudentDetailsService.js, update the getParentProfileWithFallback method to fall back to student.parent:
-
-getParentProfileWithFallback: async (parentId, student = null) => {
-    try {
-      // If we already have parent info from the student object, use it
-      if (student && student.parent && typeof student.parent === 'object' && 
-          student.parent.name && student.parent.profileImageUrl) {
-        console.log("Using parent info directly from student object:", student.parent);
-        return student.parent;
-      }
-      
-      if (!parentId) {
-        console.log("No parent ID provided, returning null");
-        return null;
-      }
-  
-      console.log("Fetching parent profile with ID:", parentId);
-      
-      try {
-        const { data } = await directApi.get(`/parents/profile/${parentId}`, {
-          timeout: 8000 // Longer timeout since it checks multiple DBs
-        });
-        
-        if (data) {
-          console.log("Parent profile successfully retrieved from API:", data);
-          
-          // Ensure the profileImageUrl has a cache-busting parameter
-          if (data.profileImageUrl) {
-            const cacheBuster = Date.now();
-            data.profileImageUrl = data.profileImageUrl.includes('?') 
-              ? `${data.profileImageUrl}&t=${cacheBuster}` 
-              : `${data.profileImageUrl}?t=${cacheBuster}`;
+    // In StudentDetailsService.js, update the getParentProfileWithFallback method to fall back to student.parent:
+    getParentProfileWithFallback: async (parentId, student = null) => {
+        try {
+          // If we already have parent info from the student object, use it
+          if (student && student.parent && typeof student.parent === 'object' && 
+              student.parent.name && student.parent.profileImageUrl) {
+            console.log("Using parent info directly from student object:", student.parent);
+            return student.parent;
           }
           
-          return data;
+          if (!parentId) {
+            console.log("No parent ID provided, returning null");
+            return null;
+          }
+    
+          console.log("Fetching parent profile with ID:", parentId);
+          
+          try {
+            const { data } = await directApi.get(`/parents/profile/${parentId}`, {
+              timeout: 8000 // Longer timeout since it checks multiple DBs
+            });
+            
+            if (data) {
+              console.log("Parent profile successfully retrieved from API:", data);
+              
+              // Ensure the profileImageUrl has a cache-busting parameter
+              if (data.profileImageUrl) {
+                const cacheBuster = Date.now();
+                data.profileImageUrl = data.profileImageUrl.includes('?') 
+                  ? `${data.profileImageUrl}&t=${cacheBuster}` 
+                  : `${data.profileImageUrl}?t=${cacheBuster}`;
+              }
+              
+              return data;
+            }
+          } catch (e) {
+            console.warn("Parent fetch from API failed:", e.message);
+            
+            // If the student object has parent info, use it as a fallback
+            if (student && student.parent && typeof student.parent === 'object') {
+              console.log("Falling back to parent info from student object:", student.parent);
+              return student.parent;
+            }
+          }
+          
+          console.warn("No parent profile found, returning null");
+          return null;
+        } catch (err) {
+          console.warn("Error in getParentProfileWithFallback:", err);
+          return null;
         }
-      } catch (e) {
-        console.warn("Parent fetch from API failed:", e.message);
-        
-        // If the student object has parent info, use it as a fallback
-        if (student && student.parent && typeof student.parent === 'object') {
-          console.log("Falling back to parent info from student object:", student.parent);
-          return student.parent;
-        }
-      }
-      
-      console.warn("No parent profile found, returning null");
-      return null;
-    } catch (err) {
-      console.warn("Error in getParentProfileWithFallback:", err);
-      return null;
-    }
-  },
+    },
 
     // Progress data
     getProgressData: async (id) => {
         try {
-            const { data } = await api.get(`/progress/${id}`);
+            const { data } = await api.get(`/${id}/progress`);
+            console.log(`Successfully fetched progress data for ID ${id}`);
             return data;
         } catch (error) {
             console.error(`Error fetching progress data for ID ${id}:`, error);
-            throw error;
+            
+            // Try alternate endpoint
+            try {
+                console.log(`Trying alternate endpoint for progress data with ID ${id}`);
+                const { data } = await directApi.get(`/student/${id}/progress`);
+                console.log(`Successfully fetched progress data from alternate endpoint for ID ${id}`);
+                return data;
+            } catch (alternateError) {
+                console.error(`Error fetching progress data from alternate endpoint for ID ${id}:`, alternateError);
+                
+                // Return empty progress data as fallback
+                return {
+                    studentId: id,
+                    activities: [],
+                    completedActivities: 0,
+                    totalActivities: 0,
+                    completionRate: 0,
+                    lastActivityDate: null
+                };
+            }
         }
     },
 
     // Recommended lessons
     getRecommendedLessons: async (id) => {
         try {
-            const { data } = await api.get(`/recommended-lessons/${id}`);
+            const { data } = await api.get(`/${id}/recommended-lessons`);
+            console.log(`Successfully fetched recommended lessons for ID ${id}`);
             return data;
         } catch (error) {
             console.error(`Error fetching recommended lessons for ID ${id}:`, error);
-            throw error;
+            
+            // Try alternate endpoint
+            try {
+                console.log(`Trying alternate endpoint for recommended lessons with ID ${id}`);
+                const { data } = await directApi.get(`/student/${id}/recommended-lessons`);
+                console.log(`Successfully fetched recommended lessons from alternate endpoint for ID ${id}`);
+                return data;
+            } catch (alternateError) {
+                console.error(`Error fetching recommended lessons from alternate endpoint for ID ${id}:`, alternateError);
+                
+                // Return empty lessons data as fallback
+                return {
+                    studentId: id,
+                    lessons: [],
+                    message: 'No recommended lessons available'
+                };
+            }
         }
     },
 
     // Prescriptive recommendations
     getPrescriptiveRecommendations: async (id) => {
         try {
-            const { data } = await api.get(`/prescriptive-recommendations/${id}`);
+            const { data } = await api.get(`/${id}/prescriptive-recommendations`);
+            console.log(`Successfully fetched prescriptive recommendations for ID ${id}`);
             return data;
         } catch (error) {
             console.error(`Error fetching prescriptive recommendations for ID ${id}:`, error);
-            throw error;
+            
+            // Try alternate endpoint
+            try {
+                console.log(`Trying alternate endpoint for prescriptive recommendations with ID ${id}`);
+                const { data } = await directApi.get(`/student/${id}/prescriptive-recommendations`);
+                console.log(`Successfully fetched prescriptive recommendations from alternate endpoint for ID ${id}`);
+                return data;
+            } catch (alternateError) {
+                console.error(`Error fetching prescriptive recommendations from alternate endpoint for ID ${id}:`, alternateError);
+                
+                // Return empty recommendations data as fallback
+                return {
+                    studentId: id,
+                    recommendations: [],
+                    message: 'No prescriptive recommendations available'
+                };
+            }
         }
     },
 
@@ -257,10 +370,15 @@ getParentProfileWithFallback: async (parentId, student = null) => {
                 `/update-activity/${activityId}`,
                 updatedActivity
             );
+            console.log(`Successfully updated activity ${activityId}`);
             return data;
         } catch (error) {
             console.error(`Error updating activity ${activityId}:`, error);
-            throw error;
+            return {
+                success: false,
+                message: 'Failed to update activity',
+                error: error.message
+            };
         }
     },
 
@@ -268,13 +386,18 @@ getParentProfileWithFallback: async (parentId, student = null) => {
     updateStudentAddress: async (studentId, address) => {
         try {
             const { data } = await api.patch(
-                `/student/${studentId}/address`,
+                `/${studentId}/address`,
                 { address }
             );
+            console.log(`Successfully updated address for student ${studentId}`);
             return data;
         } catch (error) {
             console.error(`Error updating student address for ID ${studentId}:`, error);
-            throw error;
+            return {
+                success: false,
+                message: 'Failed to update student address',
+                error: error.message
+            };
         }
     },
 
@@ -282,13 +405,18 @@ getParentProfileWithFallback: async (parentId, student = null) => {
     linkParentToStudent: async (studentId, parentId) => {
         try {
             const { data } = await api.post(
-                `/student/${studentId}/link-parent`,
+                `/${studentId}/link-parent`,
                 { parentId }
             );
+            console.log(`Successfully linked parent ${parentId} to student ${studentId}`);
             return data;
         } catch (error) {
             console.error(`Error linking parent ${parentId} to student ${studentId}:`, error);
-            throw error;
+            return {
+                success: false,
+                message: 'Failed to link parent to student',
+                error: error.message
+            };
         }
     },
 
@@ -296,26 +424,36 @@ getParentProfileWithFallback: async (parentId, student = null) => {
     sendProgressReport: async (studentId, reportData) => {
         try {
             const { data } = await api.post(
-                `/progress-report/${studentId}/send`,
+                `/${studentId}/progress-report/send`,
                 reportData
             );
+            console.log(`Successfully sent progress report for student ${studentId}`);
             return data;
         } catch (error) {
             console.error(`Error sending progress report for student ${studentId}:`, error);
-            throw error;
+            return {
+                success: false,
+                message: 'Failed to send progress report',
+                error: error.message
+            };
         }
     },
 
     // Export progress report to PDF
     exportProgressReport: async (studentId, includeInterventions = true) => {
         try {
-            const { data } = await api.get(`/progress-report/${studentId}/export`, {
+            const { data } = await api.get(`/${studentId}/progress-report/export`, {
                 params: { includeInterventions }
             });
+            console.log(`Successfully exported progress report for student ${studentId}`);
             return data;
         } catch (error) {
             console.error(`Error exporting progress report for student ${studentId}:`, error);
-            throw error;
+            return {
+                success: false,
+                message: 'Failed to export progress report',
+                error: error.message
+            };
         }
     },
 
@@ -348,6 +486,9 @@ getParentProfileWithFallback: async (parentId, student = null) => {
 
     // Legacy ↔ CRLA DEPED level conversion
     convertLegacyReadingLevel: (oldLevel) => {
+        if (!oldLevel) return 'Not Assessed';
+        if (oldLevel === false) return 'Not Assessed';
+        
         const map = {
             'Antas 1': 'Low Emerging',
             'Antas 2': 'Developing',

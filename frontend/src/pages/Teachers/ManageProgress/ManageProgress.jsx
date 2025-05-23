@@ -55,6 +55,7 @@ const ManageProgress = () => {
   const [error, setError] = useState(null);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [readingLevels, setReadingLevels] = useState([]);
+  const [parentProfiles, setParentProfiles] = useState({});
   const itemsPerPage = 6;
 
   useEffect(() => {
@@ -77,11 +78,65 @@ const ManageProgress = () => {
           throw new Error('Invalid response format');
         }
 
+        // Fetch parent profiles for each student
+        const parentIds = data.students
+          .filter(student => student.parentId)
+          .map(student => student.parentId);
+        
+        // Create a unique set of parent IDs to avoid duplicate fetches
+        const uniqueParentIds = [...new Set(parentIds)].filter(id => id); // Filter out null/undefined
+        
+        console.log(`Found ${uniqueParentIds.length} unique parent IDs to fetch`);
+        
+        const parentProfilesData = {};
+        
+        // Fetch parent profiles in parallel with a limit of 5 concurrent requests
+        const fetchParentBatch = async (batch) => {
+          return Promise.all(
+            batch.map(async (parentId) => {
+              try {
+                const parentProfile = await StudentApiService.getParentProfileWithFallback(parentId);
+                parentProfilesData[parentId] = parentProfile;
+                console.log(`Successfully fetched parent profile for ID ${parentId}`);
+              } catch (err) {
+                console.error(`Error fetching parent profile for ID ${parentId}:`, err);
+                // Still add a placeholder to avoid repeated failed requests
+                parentProfilesData[parentId] = {
+                  name: `Parent ID: ${parentId.substring(0, 8)}...`,
+                  firstName: null,
+                  lastName: null
+                };
+              }
+            })
+          );
+        };
+        
+        // Process in batches of 5
+        const batchSize = 5;
+        for (let i = 0; i < uniqueParentIds.length; i += batchSize) {
+          const batch = uniqueParentIds.slice(i, i + batchSize);
+          await fetchParentBatch(batch);
+        }
+        
+        setParentProfiles(parentProfilesData);
         setStudents(data.students);
 
         // Get reading levels
-        const readingLevelsData = await StudentApiService.getReadingLevels();
-        setReadingLevels(readingLevelsData);
+        try {
+          const readingLevelsData = await StudentApiService.getReadingLevels();
+          setReadingLevels(readingLevelsData);
+        } catch (readingLevelsError) {
+          console.error("Error fetching reading levels:", readingLevelsError);
+          // Use default reading levels as fallback
+          setReadingLevels([
+            'Low Emerging',
+            'High Emerging',
+            'Developing',
+            'Transitioning',
+            'At Grade Level',
+            'Not Assessed'
+          ]);
+        }
 
         setLoading(false);
       } catch (err) {
@@ -251,6 +306,40 @@ const ManageProgress = () => {
       default:
         return <FaBookReader />;
     }
+  };
+
+  // Function to get parent name from parent profile
+  const getParentName = (student) => {
+    // If student has no parentId or we don't have the profile, check for parentName
+    if (!student.parentId || !parentProfiles[student.parentId]) {
+      return student.parentName || "Not specified";
+    }
+    
+    const parentProfile = parentProfiles[student.parentId];
+    
+    // If we have a name directly, use it
+    if (parentProfile.name && parentProfile.name !== `Parent ID: ${student.parentId.substring(0, 8)}...`) {
+      return parentProfile.name;
+    }
+    
+    // Build the full name from the parent profile
+    if (parentProfile.firstName && parentProfile.lastName) {
+      const middleName = parentProfile.middleName ? ` ${parentProfile.middleName}` : '';
+      return `${parentProfile.firstName}${middleName} ${parentProfile.lastName}`;
+    }
+    
+    // If we have either first or last name
+    if (parentProfile.firstName || parentProfile.lastName) {
+      return `${parentProfile.firstName || ''} ${parentProfile.lastName || ''}`.trim();
+    }
+    
+    // Fallback to name field if available
+    if (parentProfile.name) {
+      return parentProfile.name;
+    }
+    
+    // Final fallback
+    return student.parentName || "Not specified";
   };
 
   return (
@@ -484,7 +573,7 @@ const ManageProgress = () => {
 
                         <div className="mp-parent-info">
                           <div className="mp-parent-label">Parent or Guardian:</div>
-                          <div className="mp-parent-name">{student.parentName || "Not specified"}</div>
+                          <div className="mp-parent-name">{getParentName(student)}</div>
                         </div>
 
                         <div className="mp-btn-wrapper">
