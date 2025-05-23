@@ -113,6 +113,131 @@
   letter-spacing: -0.01em;
 }
 
+/* Weekly Assessment Tracker */
+.literexia-weekly-tracker {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  margin-bottom: 1.5rem;
+}
+
+.literexia-weekly-tracker-filters {
+  margin-bottom: 1rem;
+}
+
+.literexia-weekly-tracker-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.literexia-completion-bar {
+  margin-bottom: 1rem;
+}
+
+.literexia-completion-bar-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.literexia-completion-count {
+  font-weight: 600;
+  color: #4a5494;
+}
+
+.literexia-completion-bar-container {
+  height: 0.75rem;
+  background-color: #e5e7eb;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.literexia-completion-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: #4a5494;
+  border-radius: 6px;
+  transition: width 1s ease;
+}
+
+.literexia-completion-bar-percentage {
+  position: absolute;
+  top: 0;
+  right: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  line-height: 0.75rem;
+}
+
+.literexia-category-completion h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #4b5563;
+  margin: 0 0 1rem 0;
+}
+
+.literexia-category-completion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.literexia-category-completion-item {
+  margin-bottom: 0.75rem;
+}
+
+.literexia-category-completion-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.literexia-category-completion-name {
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.literexia-category-completion-count {
+  font-weight: 600;
+  color: #4a5494;
+}
+
+.literexia-category-completion-bar-container {
+  height: 0.4rem;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.literexia-category-completion-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s ease;
+}
+
+.literexia-category-completion-bar-fill.achieved {
+  background-color: #4a5494;
+}
+
+.literexia-category-completion-bar-fill.developing {
+  background-color: #f59e0b;
+}
+
+.literexia-category-completion-bar-fill.emerging {
+  background-color: #ef4444;
+}
+
 /* Filter section */
 .literexia-filters {
   display: flex;
@@ -293,6 +418,90 @@
   background-color: #fff5e6;
   color: #f59e0b;
   border: 1px solid #fef3c7;
+}
+
+/* View Recommendations Button */
+.literexia-view-recommendations-btn {
+  background-color: #4a5494;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.literexia-view-recommendations-btn:hover {
+  background-color: #3b4376;
+}
+
+/* Categories Needing Attention */
+.literexia-categories-attention {
+  display: flex;
+  gap: 1rem;
+  background-color: #fff5e6;
+  border: 1px solid #fef3c7;
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.literexia-attention-icon {
+  color: #f59e0b;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.literexia-attention-message {
+  flex: 1;
+}
+
+.literexia-attention-message h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.literexia-attention-message p {
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  color: #92400e;
+}
+
+.literexia-attention-categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.literexia-attention-category {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.literexia-attention-category-name {
+  font-weight: 500;
+  color: #92400e;
+  margin-bottom: 0.25rem;
+}
+
+.literexia-attention-category-score {
+  font-weight: 600;
+  color: #f59e0b;
+}
+
+.literexia-attention-category-gap {
+  font-size: 0.75rem;
+  color: #92400e;
+  opacity: 0.8;
 }
 
 /* Overall Assessment Status */
@@ -661,6 +870,14 @@
   .literexia-summary-cards {
     grid-template-columns: repeat(2, 1fr);
   }
+  
+  .literexia-category-completion-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .literexia-attention-categories {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 768px) {
@@ -701,6 +918,18 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+  }
+  
+  .literexia-category-completion-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .literexia-attention-categories {
+    grid-template-columns: 1fr;
+  }
+  
+  .literexia-categories-attention {
+    flex-direction: column;
   }
 }
 

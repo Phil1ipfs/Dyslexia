@@ -1,6 +1,17 @@
 // src/components/TeacherPage/ManageProgress/SkillsOverviewSection.jsx
 import React, { useEffect, useRef } from 'react';
-import { FaChartLine, FaChartBar, FaFont, FaHeadphones, FaBook, FaFileAlt, FaComments } from 'react-icons/fa';
+import { 
+  FaChartLine, 
+  FaChartBar, 
+  FaFont, 
+  FaHeadphones, 
+  FaBook, 
+  FaFileAlt, 
+  FaComments, 
+  FaExclamationTriangle,
+  FaArrowRight,
+  FaLightbulb
+} from 'react-icons/fa';
 
 import '../../../components/TeacherPage/ManageProgress/css/SkillsOverviewSection.css';
 
@@ -37,7 +48,8 @@ const SkillsOverviewSection = ({ categories, animated = false }) => {
     if (!categoryName) return {
       label: 'Unknown Category',
       description: 'Reading skill assessment',
-      icon: <FaChartBar />
+      icon: <FaChartBar />,
+      errorPatterns: []
     };
     
     const categoryNameLower = typeof categoryName === 'string' ? 
@@ -48,31 +60,56 @@ const SkillsOverviewSection = ({ categories, animated = false }) => {
         return { 
           label: 'Alphabet Knowledge', 
           description: 'Recognition of uppercase and lowercase letters',
-          icon: <FaFont />
+          icon: <FaFont />,
+          errorPatterns: [
+            { type: 'Uppercase vs. Lowercase', description: 'Difficulty distinguishing uppercase from lowercase letters' },
+            { type: 'Similar Letter Forms', description: 'Confusion between similar-looking letters like b/d, p/q, m/w' }
+          ],
+          questionTypes: ['Patinig (Vowels)', 'Katinig (Consonants)']
         };
       case 'phonologicalawareness':
         return { 
           label: 'Phonological Awareness', 
           description: 'Ability to recognize and work with sounds in spoken language',
-          icon: <FaHeadphones />
+          icon: <FaHeadphones />,
+          errorPatterns: [
+            { type: 'Sound Blending', description: 'Difficulty combining sounds to form words' },
+            { type: 'Sound Identification', description: 'Trouble identifying individual sounds in words' }
+          ],
+          questionTypes: ['Malapantig (Syllables)', 'Tunog (Sounds)']
         };
       case 'wordrecognition':
         return { 
           label: 'Word Recognition', 
           description: 'Ability to recognize and read words accurately',
-          icon: <FaBook />
+          icon: <FaBook />,
+          errorPatterns: [
+            { type: 'Sight Words', description: 'Difficulty with common sight words' },
+            { type: 'Word Length', description: 'Struggles with longer, multi-syllable words' }
+          ],
+          questionTypes: ['Sight Words', 'Regular Words']
         };
       case 'decoding':
         return { 
           label: 'Decoding', 
           description: 'Ability to apply knowledge of letter-sound relationships',
-          icon: <FaFileAlt />
+          icon: <FaFileAlt />,
+          errorPatterns: [
+            { type: 'Letter-Sound Correspondence', description: 'Inconsistent application of letter-sound rules' },
+            { type: 'Syllable Patterns', description: 'Difficulty breaking words into syllables' }
+          ],
+          questionTypes: ['Word', 'Buoin Salita (Word Formation)']
         };
       case 'readingcomprehension':
         return { 
           label: 'Reading Comprehension', 
           description: 'Ability to understand and interpret text content',
-          icon: <FaComments />
+          icon: <FaComments />,
+          errorPatterns: [
+            { type: 'Literal Comprehension', description: 'Difficulty recalling explicit information from text' },
+            { type: 'Inferential Comprehension', description: 'Struggles making connections beyond explicit text' }
+          ],
+          questionTypes: ['Detail Questions', 'Main Idea Questions']
         };
       default:
         // Create a reasonable label from the key
@@ -86,7 +123,8 @@ const SkillsOverviewSection = ({ categories, animated = false }) => {
         return { 
           label, 
           description: 'Reading skill assessment',
-          icon: <FaChartBar />
+          icon: <FaChartBar />,
+          errorPatterns: []
         };
     }
   };
@@ -110,6 +148,21 @@ const SkillsOverviewSection = ({ categories, animated = false }) => {
   const averageScore = calculateAverageScore();
   const averageSkillLevel = getSkillLevel(averageScore);
 
+  // Generate a mock error pattern for demo purposes
+  const getErrorPattern = (category) => {
+    const skillInfo = getSkillInfo(category.categoryName);
+    const score = Number(category.score) || 0;
+    
+    // Only show error patterns for scores below 75
+    if (score >= 75 || !skillInfo.errorPatterns || skillInfo.errorPatterns.length === 0) {
+      return null;
+    }
+    
+    // Select an error pattern based on score
+    const patternIndex = score < 50 ? 0 : 1;
+    return skillInfo.errorPatterns[patternIndex % skillInfo.errorPatterns.length];
+  };
+
   return (
     <div className="literexia-skills-overview">
       <div className="literexia-skills-header">
@@ -129,6 +182,7 @@ const SkillsOverviewSection = ({ categories, animated = false }) => {
           const skillInfo = getSkillInfo(categoryName);
           const score = Number(category.score) || 0;
           const skillLevel = getSkillLevel(score);
+          const errorPattern = getErrorPattern(category);
           
           return (
             <div 
@@ -144,6 +198,17 @@ const SkillsOverviewSection = ({ categories, animated = false }) => {
                 <div className="literexia-skill-info">
                   <h4 className="literexia-skill-name">{skillInfo.label}</h4>
                   <div className="literexia-skill-description">{skillInfo.description}</div>
+                  
+                  {skillInfo.questionTypes && skillInfo.questionTypes.length > 0 && (
+                    <div className="literexia-skill-question-types">
+                      <span className="literexia-skill-question-types-label">Question Types:</span>
+                      <div className="literexia-skill-question-types-items">
+                        {skillInfo.questionTypes.map((type, i) => (
+                          <span key={i} className="literexia-skill-question-type">{type}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="literexia-skill-score">
@@ -160,7 +225,45 @@ const SkillsOverviewSection = ({ categories, animated = false }) => {
                 <div className="literexia-skill-level-badge">
                   {skillLevel.label}
                 </div>
+                
+                {/* Add 75% threshold indicator */}
+                <div className="literexia-threshold-indicator">
+                  <div className="literexia-threshold-line"></div>
+                  <div className="literexia-threshold-label">75%</div>
+                </div>
               </div>
+              
+              {/* Error Pattern Section */}
+              {errorPattern && (
+                <div className="literexia-error-pattern">
+                  <div className="literexia-error-pattern-header">
+                    <FaExclamationTriangle className="literexia-error-icon" />
+                    <span>Error Pattern Detected</span>
+                  </div>
+                  <div className="literexia-error-pattern-content">
+                    <div className="literexia-error-pattern-type">{errorPattern.type}</div>
+                    <div className="literexia-error-pattern-description">{errorPattern.description}</div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Next Assessment Focus */}
+              {score < 75 && (
+                <div className="literexia-next-focus">
+                  <div className="literexia-next-focus-header">
+                    <FaLightbulb className="literexia-next-focus-icon" />
+                    <span>Next Assessment Focus</span>
+                  </div>
+                  <div className="literexia-next-focus-content">
+                    <div className="literexia-next-focus-description">
+                      <FaArrowRight className="literexia-next-focus-arrow" />
+                      {score < 50 
+                        ? `Focus on basic ${skillInfo.label} skills and concepts` 
+                        : `Work on improving specific ${skillInfo.label} weaknesses`}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
