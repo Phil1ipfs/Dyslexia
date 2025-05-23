@@ -84,6 +84,9 @@
   opacity: 0;
   transform: translateY(20px);
   padding-left: 0.6rem;
+  padding-bottom: 0.5rem;
+  background-color: #f9fafb;
+  border-radius: 0 6px 6px 0;
 }
 
 .literexia-skill-card.animate {
@@ -95,6 +98,7 @@
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.6rem;
+  padding-top: 0.6rem;
 }
 
 .literexia-skill-icon-container {
@@ -126,6 +130,36 @@
   font-size: 0.8rem;
   color: #6b7280;
   line-height: 1.3;
+  margin-bottom: 0.4rem;
+}
+
+/* Question types section */
+.literexia-skill-question-types {
+  margin-top: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.literexia-skill-question-types-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.literexia-skill-question-types-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.literexia-skill-question-type {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  background-color: #eef2ff;
+  color: #4a5494;
+  border-radius: 4px;
+  font-weight: 500;
 }
 
 .literexia-skill-score {
@@ -143,7 +177,7 @@
   background-color: #e5e7eb;
   border-radius: 3px;
   overflow: visible;
-  margin-bottom: 1.25rem;
+  margin-bottom: 2rem;
 }
 
 .literexia-skill-bar-fill {
@@ -169,6 +203,121 @@
   background-color: #eef2ff;
   color: #4a5494;
   transition: opacity 0.5s ease;
+}
+
+/* Threshold indicator */
+.literexia-threshold-indicator {
+  position: absolute;
+  top: 0;
+  left: 75%;
+  height: 100%;
+}
+
+.literexia-threshold-line {
+  position: absolute;
+  top: -0.2rem;
+  left: 0;
+  height: 0.8rem;
+  width: 1px;
+  background-color: #4a5494;
+  opacity: 0.7;
+}
+
+.literexia-threshold-label {
+  position: absolute;
+  top: -1.5rem;
+  left: -10px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: #4a5494;
+  opacity: 0.7;
+}
+
+/* Error pattern section */
+.literexia-error-pattern {
+  margin-top: 0.5rem;
+  padding: 0.6rem;
+  background-color: #fff5e6;
+  border: 1px solid #fef3c7;
+  border-left: 3px solid #f59e0b;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+}
+
+.literexia-error-pattern-header {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.literexia-error-icon {
+  color: #f59e0b;
+  font-size: 0.75rem;
+}
+
+.literexia-error-pattern-content {
+  padding-left: 1rem;
+}
+
+.literexia-error-pattern-type {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 0.15rem;
+}
+
+.literexia-error-pattern-description {
+  font-size: 0.7rem;
+  color: #92400e;
+  line-height: 1.4;
+}
+
+/* Next assessment focus */
+.literexia-next-focus {
+  margin-top: 0.5rem;
+  padding: 0.6rem;
+  background-color: #eef2ff;
+  border: 1px solid #e0e7ff;
+  border-left: 3px solid #4a5494;
+  border-radius: 6px;
+}
+
+.literexia-next-focus-header {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4a5494;
+}
+
+.literexia-next-focus-icon {
+  color: #4a5494;
+  font-size: 0.75rem;
+}
+
+.literexia-next-focus-content {
+  padding-left: 1rem;
+}
+
+.literexia-next-focus-description {
+  display: flex;
+  gap: 0.3rem;
+  align-items: flex-start;
+  font-size: 0.7rem;
+  color: #4a5494;
+  line-height: 1.4;
+}
+
+.literexia-next-focus-arrow {
+  font-size: 0.65rem;
+  margin-top: 0.1rem;
+  flex-shrink: 0;
 }
 
 /* Legend section */

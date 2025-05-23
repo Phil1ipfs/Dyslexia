@@ -14,7 +14,9 @@ import {
   FaQuestionCircle,
   FaCheck,
   FaPercentage,
-  FaTag
+  FaTag,
+  FaHistory,
+  FaExclamationTriangle
 } from 'react-icons/fa';
 
 import SkillsOverviewSection from './SkillsOverviewSection';
@@ -25,6 +27,7 @@ const ProgressReport = ({ progressData, learningObjectives, setLearningObjective
   console.log("ProgressReport received data:", progressData);
   
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedTimeframe, setSelectedTimeframe] = useState('current');
   const [animated, setAnimated] = useState(false);
   const animatedRef = useRef(false);
   
@@ -120,6 +123,10 @@ const ProgressReport = ({ progressData, learningObjectives, setLearningObjective
   // Calculate overall score - either use the one from the API or calculate
   const overallScore = progressData.overallScore || (hasCategoryResults ? 
     Math.round(progressData.categories.reduce((total, category) => total + (Number(category.score) || 0), 0) / totalCategories) : 0);
+
+  // Determine if any categories need attention (below 75% threshold)
+  const categoriesNeedingAttention = hasCategoryResults ? 
+    progressData.categories.filter(cat => (Number(cat.score) || 0) < 75) : [];
   
   console.log("Progress metrics calculated:", {
     completionRate,
@@ -127,8 +134,17 @@ const ProgressReport = ({ progressData, learningObjectives, setLearningObjective
     correctAnswers,
     passedCategories,
     totalCategories,
-    overallScore
+    overallScore,
+    categoriesNeedingAttention: categoriesNeedingAttention.length
   });
+  
+  // Get status class based on score
+  const getStatusClass = (score) => {
+    score = Number(score) || 0;
+    if (score >= 75) return 'achieved';
+    if (score >= 50) return 'developing';
+    return 'emerging';
+  };
   
   return (
     <div className="literexia-progress-container">
@@ -195,6 +211,83 @@ const ProgressReport = ({ progressData, learningObjectives, setLearningObjective
           <div className="literexia-card-label">Reading Level</div>
         </div>
       </div>
+
+      {/* Weekly Assessment Tracker (new component) */}
+      {hasCategoryResults && (
+        <div className="literexia-weekly-tracker">
+          <h3 className="literexia-section-title">
+            <FaHistory className="literexia-section-icon" /> 
+            Weekly Assessment Tracker
+          </h3>
+          
+          <div className="literexia-weekly-tracker-filters">
+            <div className="literexia-filter-group">
+              <label htmlFor="timeframeFilter">Timeframe:</label>
+              <select 
+                id="timeframeFilter" 
+                className="literexia-filter-select"
+                value={selectedTimeframe}
+                onChange={(e) => setSelectedTimeframe(e.target.value)}
+              >
+                <option value="current">Current Week</option>
+                <option value="previous">Previous Week</option>
+                <option value="all">All Assessments</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="literexia-weekly-tracker-content">
+            <div className="literexia-completion-bar">
+              <div className="literexia-completion-bar-label">
+                <span>Weekly Progress:</span>
+                <span className="literexia-completion-count">{correctAnswers}/{totalQuestions} questions completed</span>
+              </div>
+              <div className="literexia-completion-bar-container">
+                <div 
+                  className="literexia-completion-bar-fill" 
+                  style={{width: `${Math.min(100, Math.round((correctAnswers / totalQuestions) * 100))}%`}}
+                ></div>
+                <div className="literexia-completion-bar-percentage">
+                  {Math.round((correctAnswers / totalQuestions) * 100)}%
+                </div>
+              </div>
+            </div>
+            
+            <div className="literexia-category-completion">
+              <h4>Category Completion Breakdown</h4>
+              <div className="literexia-category-completion-grid">
+                {progressData.categories.map((category, index) => {
+                  const categoryName = category.categoryName || `Category ${index + 1}`;
+                  const displayName = typeof categoryName === 'string' ?
+                    categoryName
+                      .replace(/_/g, ' ')
+                      .replace(/\b\w/g, l => l.toUpperCase()) :
+                    `Category ${index + 1}`;
+                  
+                  const correctCount = Number(category.correctAnswers) || 0;
+                  const totalCount = Number(category.totalQuestions) || 0;
+                  const percentage = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
+                  
+                  return (
+                    <div key={index} className="literexia-category-completion-item">
+                      <div className="literexia-category-completion-header">
+                        <span className="literexia-category-completion-name">{displayName}</span>
+                        <span className="literexia-category-completion-count">{correctCount}/{totalCount}</span>
+                      </div>
+                      <div className="literexia-category-completion-bar-container">
+                        <div 
+                          className={`literexia-category-completion-bar-fill ${getStatusClass(percentage)}`}
+                          style={{width: `${percentage}%`}}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Optional: Filter section */}
       {hasCategoryResults && (
@@ -268,6 +361,11 @@ const ProgressReport = ({ progressData, learningObjectives, setLearningObjective
                       <FaChartLine className="th-icon" /> Status
                     </span>
                   </th>
+                  <th>
+                    <span className="th-content">
+                      <FaExclamationTriangle className="th-icon" /> Action
+                    </span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -304,11 +402,62 @@ const ProgressReport = ({ progressData, learningObjectives, setLearningObjective
                             {isPassed ? 'Achieved' : 'In Progress'}
                           </span>
                         </td>
+                        <td>
+                          {!isPassed && (
+                            <button 
+                              className="literexia-view-recommendations-btn"
+                              onClick={() => {
+                                // This would typically navigate to or highlight the Prescriptive Analysis tab
+                                console.log(`View recommendations for ${categoryName}`);
+                                // Example navigation: history.push(`/teacher/prescriptive-analysis?category=${categoryName}`);
+                              }}
+                            >
+                              View Recommendations
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+      
+      {/* Display warning if some categories need attention */}
+      {categoriesNeedingAttention.length > 0 && (
+        <div className="literexia-categories-attention">
+          <div className="literexia-attention-icon">
+            <FaExclamationTriangle />
+          </div>
+          <div className="literexia-attention-message">
+            <h4>Categories Needing Attention</h4>
+            <p>
+              {categoriesNeedingAttention.length} {categoriesNeedingAttention.length === 1 ? 'category is' : 'categories are'} below the 75% threshold. 
+              Visit the Prescriptive Analysis tab to create targeted interventions.
+            </p>
+            <div className="literexia-attention-categories">
+              {categoriesNeedingAttention.map((category, index) => {
+                const categoryName = category.categoryName || `Category ${index + 1}`;
+                const displayName = typeof categoryName === 'string' ?
+                  categoryName
+                    .replace(/_/g, ' ')
+                    .replace(/\b\w/g, l => l.toUpperCase()) :
+                  `Category ${index + 1}`;
+                
+                const score = Number(category.score) || 0;
+                const gap = 75 - score;
+                
+                return (
+                  <div key={index} className="literexia-attention-category">
+                    <span className="literexia-attention-category-name">{displayName}</span>
+                    <span className="literexia-attention-category-score">{score}%</span>
+                    <span className="literexia-attention-category-gap">({gap}% from threshold)</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -320,8 +469,6 @@ const ProgressReport = ({ progressData, learningObjectives, setLearningObjective
           animated={animated} 
         />
       )}
-      
-
     </div>
   );
 };
