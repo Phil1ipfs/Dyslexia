@@ -17,6 +17,8 @@ import {
   Eye
 } from 'lucide-react';
 import './NavigationBar.css';
+// For public folder approach, remove the import line and use direct path
+// import cradleLogo from '/src/assets/images/cradleLogoTrans.png';
 
 const NavigationBar = ({ onLogout }) => {
   const location = useLocation();
@@ -113,12 +115,12 @@ const NavigationBar = ({ onLogout }) => {
     },
     {
       id: 'analytics',
-      label: 'Analytics',
+      label: 'Activity Management',
       icon: ChartBar,
       path: '/admin/analytics',
       subItems: [
         { id: 'visual-charts', label: 'Visual Charts', path: '/admin/visual-charts' },
-        { id: 'submission-overview', label: 'Submissions Overview', path: '/admin/submissions-overview' }
+        { id: 'submission-overview', label: 'Activity Approval', path: '/admin/submissions-overview' }
       ]
     }
   ];
@@ -140,7 +142,10 @@ const NavigationBar = ({ onLogout }) => {
   return (
     <nav className="navigation-bar">
       <div className="navigation-bar__brand">
-        <h1 className="navigation-bar__logo">LITEREXIA</h1>
+        <div className="navigation-bar__logo-container">
+          <img src="/images/cradleLogoTrans.png" alt="Cradle of Learners" className="navigation-bar__logo-image" />
+          <h1 className="navigation-bar__company-name">CRADLE OF LEARNERS INC.</h1>
+        </div>
         <div className="navigation-bar__profile">
           <div className="navigation-bar__avatar">
             {adminData?.profileImageUrl ? (
@@ -169,7 +174,7 @@ const NavigationBar = ({ onLogout }) => {
       <div className="navigation-bar__menu">
         {navigationItems.map(item => (
           <div key={item.id} className="navigation-bar__section">
-                      <Link 
+            <Link 
               to={item.path}
               className={`navigation-bar__item ${isActiveItem(item.path, item.subItems) ? 'navigation-bar__item--active' : ''}`}
               onClick={(e) => {
@@ -182,15 +187,15 @@ const NavigationBar = ({ onLogout }) => {
               <div className="navigation-bar__item-content">
                 <item.icon className="navigation-bar__icon" size={20} />
                 <span className="navigation-bar__label">{item.label}</span>
-          </div>
+              </div>
               {item.subItems.length > 0 && (
                 <div className="navigation-bar__expand-icon">
                   {expandedSections.includes(item.id) ? 
                     <ChevronDown size={16} /> : 
                     <ChevronRight size={16} />
                   }
-            </div>
-          )}
+                </div>
+              )}
             </Link>
 
             {item.subItems.length > 0 && expandedSections.includes(item.id) && (
@@ -203,10 +208,10 @@ const NavigationBar = ({ onLogout }) => {
                   >
                     <span className="navigation-bar__sublabel">{subItem.label}</span>
                   </Link>
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </div>
 

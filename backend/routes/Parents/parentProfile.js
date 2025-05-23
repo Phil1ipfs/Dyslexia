@@ -244,41 +244,37 @@ router.put('/profile', authenticateToken, authorize('parent'), async (req, res) 
 router.get('/children', authenticateToken, authorize('parent'), async (req, res) => {
   try {
     const userId = req.user.id;
-    
-    // Connect to Literexia database
-    const literexiaDb = mongoose.connection.useDb('Literexia');
-    const parentCollection = literexiaDb.collection('parent');
-    const studentCollection = literexiaDb.collection('student');
 
-    // Find parent profile
-    let parentProfile = null;
-    if (mongoose.Types.ObjectId.isValid(userId)) {
-      parentProfile = await parentCollection.findOne({
-        userId: new mongoose.Types.ObjectId(userId)
-      });
-    }
-    if (!parentProfile && req.user.email) {
-      parentProfile = await parentCollection.findOne({
-        email: req.user.email
-      });
-    }
+    // Find parent profile in the correct collection
+    const parentDb = mongoose.connection.useDb('parent');
+    const parentProfile = await parentDb.collection('parent_profile').findOne({
+      $or: [
+        { userId: mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId },
+        { userId: userId }
+      ]
+    });
 
     if (!parentProfile) {
       return res.status(404).json({ message: 'Parent profile not found' });
     }
 
-    // Find children associated with this parent
-    const children = await studentCollection.find({
-      parentId: parentProfile._id
-    }).toArray();
+    // If parentProfile has a children array, fetch student details from test.users
+    if (parentProfile.children && Array.isArray(parentProfile.children) && parentProfile.children.length > 0) {
+      const testDb = mongoose.connection.useDb('test');
+      // Only use valid ObjectIds
+      const childrenObjectIds = parentProfile.children
+        .map(id => id.toString())
+        .filter(id => mongoose.Types.ObjectId.isValid(id))
+        .map(id => new mongoose.Types.ObjectId(id));
 
-    if (children && children.length > 0) {
-      return res.json(children);
-    }
+      if (childrenObjectIds.length === 0) {
+        return res.json([]);
+      }
 
-    // If no children found in student collection, check parent profile
-    if (parentProfile.children && Array.isArray(parentProfile.children)) {
-      return res.json(parentProfile.children);
+      const students = await testDb.collection('users').find({
+        _id: { $in: childrenObjectIds }
+      }).toArray();
+      return res.json(students);
     }
 
     // Return empty array if no children found

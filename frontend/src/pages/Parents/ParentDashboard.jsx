@@ -15,7 +15,8 @@ const ParentDashboard = () => {
     address: "",
     civilStatus: "",
     dateOfBirth: "",
-    gender: ""
+    gender: "",
+    profileImageUrl: ""
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -81,7 +82,8 @@ const ParentDashboard = () => {
           address: profileResponse.data.address || "",
           civilStatus: profileResponse.data.civilStatus || "",
           dateOfBirth: profileResponse.data.dateOfBirth || "",
-          gender: profileResponse.data.gender || ""
+          gender: profileResponse.data.gender || "",
+          profileImageUrl: profileResponse.data.profileImageUrl || ""
         });
         
         console.log("Profile data loaded from database:", profileResponse.data);
@@ -205,6 +207,33 @@ const ParentDashboard = () => {
     }
   };
 
+  // After fetching parent profile, if personalInfo.children exists and is non-empty, fetch each child's student profile from the backend and display them in the Children Enrolled section.
+  useEffect(() => {
+    if (personalInfo.children && personalInfo.children.length > 0) {
+      const fetchChildren = async () => {
+        try {
+          const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+          const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5002";
+          const responses = await Promise.all(
+            personalInfo.children.map(childId =>
+              axios.get(`${BASE_URL}/api/admin/manage/students/${childId}`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              })
+            )
+          );
+          setChildren(responses.map(res => res.data.data.studentProfile));
+        } catch (error) {
+          setChildren([]);
+        }
+      };
+      fetchChildren();
+    } else {
+      setChildren([]);
+    }
+  }, [personalInfo.children]);
+
   return (
     <div className="parent-dashboard-container">
       {/* Loading indicator */}
@@ -228,7 +257,11 @@ const ParentDashboard = () => {
         {/* Profile header section with basic info */}
         <div className="profile-header-section">
           <div className="profile-avatar-container">
-            <img src={parent1} alt="Parent Avatar" className="profile-avatar" />
+            <img 
+              src={personalInfo.profileImageUrl || parent1} 
+              alt="Parent Avatar" 
+              className="profile-avatar" 
+            />
           </div>
           
           <div className="profile-basic-info">
@@ -376,18 +409,20 @@ const ParentDashboard = () => {
         {/* Children Information Section - Dynamically loaded from database */}
         <div className="information-section">
           <h3 className="section-title">Children Enrolled</h3>
-          <div className="children-info">
+          <div className="children-info" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
             {children.length > 0 ? (
               children.map((child, index) => (
-                <div key={index} className="child-card">
+                <div key={index} className="child-card" style={{ display: 'flex', alignItems: 'center', background: '#fff', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', padding: '12px 20px', minWidth: '280px', maxWidth: '350px', width: '100%', gap: '16px' }}>
                   <img 
                     src={child.profileImage || student1} 
                     alt={`${child.firstName || ''} ${child.lastName || ''}`} 
-                    className="child-image" 
+                    className="child-image"
+                    style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'cover', marginRight: '12px', border: '2px solid #e5e7eb' }}
                   />
-                  <div className="child-details">
-                    <h4>{`${child.firstName || ''} ${child.middleName ? child.middleName + ' ' : ''}${child.lastName || ''}`}</h4>
-                    <p>Student ID: {child.studentId || 'N/A'}</p>
+                  <div className="child-details" style={{ flex: 1 }}>
+                    <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>{`${child.firstName || ''} ${child.middleName ? child.middleName + ' ' : ''}${child.lastName || ''}`}</h4>
+                    <div style={{ fontSize: '0.97rem', color: '#444', marginTop: 2 }}>Student ID: <span style={{ fontWeight: 500 }}>{child.idNumber || 'N/A'}</span></div>
+                    <div style={{ fontSize: '0.97rem', color: '#444', marginTop: 2 }}>Section: <span style={{ fontWeight: 500 }}>{child.section || 'N/A'}</span></div>
                   </div>
                 </div>
               ))

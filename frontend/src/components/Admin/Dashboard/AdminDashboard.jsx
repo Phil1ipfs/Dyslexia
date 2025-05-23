@@ -4,6 +4,7 @@ import { Bell, Users, BookOpen, Activity, AlertTriangle, CheckCircle, Clock, Eye
 import { useNavigate } from 'react-router-dom';
 import '../../../css/Admin/Dashboard/AdminDashboard.css';
 import { adminDashboardService } from '../../../services/adminDashboardService';
+import { UserTypeChart, UserRegistrationChart } from '../Charts';
 
 // Icon components for dashboard cards
 const UserIcon = () => (
@@ -199,6 +200,51 @@ const AdminDashboard = () => {
           loading={loading}
           onView={handleViewParents}
         />
+      </div>
+
+      {/* User Analytics Section */}
+      <div className="admin-dashboard__section" style={{ marginBottom: 32 }}>
+        <h2 className="admin-dashboard__section-title">User Analytics</h2>
+        <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+          {/* User Type Distribution Pie Chart */}
+          <div style={{ flex: 1, minWidth: 320, maxWidth: 400 }}>
+            <UserTypeChart
+              data={{
+                labels: ['Admins', 'Teachers', 'Students', 'Parents'],
+                datasets: [
+                  {
+                    data: [
+                      stats.users.admins || 0,
+                      stats.users.teachers || 0,
+                      stats.users.students || 0,
+                      stats.users.parents || 0
+                    ]
+                  }
+                ]
+              }}
+            />
+            <div style={{ textAlign: 'center', fontSize: 13, color: '#64748b', marginTop: 8 }}>User Role Distribution</div>
+          </div>
+          {/* User Growth Bar Chart */}
+          <div style={{ flex: 2, minWidth: 320, maxWidth: 600 }}>
+            <UserRegistrationChart
+              data={{
+                labels: ['This Month', 'This Week', 'Today'],
+                datasets: [
+                  {
+                    label: 'User Growth',
+                    data: [
+                      stats.users.userGrowth?.month || 0,
+                      stats.users.userGrowth?.week || 0,
+                      stats.users.userGrowth?.day || 0
+                    ]
+                  }
+                ]
+              }}
+            />
+            <div style={{ textAlign: 'center', fontSize: 13, color: '#64748b', marginTop: 8 }}>User Growth</div>
+          </div>
+        </div>
       </div>
 
       {/* Academic Performance Row */}

@@ -6,6 +6,9 @@ const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const s3Client = require('../../config/s3');
 const path = require('path');
 const slugify = require('slugify'); // Add this dependency if not already installed
+const multer = require('multer');
+const upload = multer();
+const uploadToS3 = require('../../utils/s3Upload');
 
 /**
  * Helper function to safely convert a string to ObjectId
@@ -120,12 +123,10 @@ const getUserModel = async () => {
  * Get the profile collection from mobile_literexia database
  */
 const getProfileCollection = async () => {
-  // Connect to the mobile_literexia database
-  const db = mongoose.connection.useDb('mobile_literexia');
-  // Use teachers.profile collection (not profile)
-  return db.collection('teachers.profile');
+  // Connect to the teachers database
+  const db = mongoose.connection.useDb('teachers');
+  return db.collection('profile');
 };
-
 
 /**
  * Create or get the correct profile with the known ID
@@ -165,28 +166,7 @@ const getOrCreateCorrectProfile = async (req) => {
       return profile;
     }
   }
-   
 };
-
-  // If not found by user ID, try by email
-  if (req.user.email) {
-    profile = await profileCollection.findOne({ email: req.user.email });
-    if (profile) {
-      console.log('Found profile by email:', profile._id);
-      // Update profile with userId if needed
-      if (req.user.id && !profile.userId) {
-        const userId = toObjectId(req.user.id);
-        await profileCollection.updateOne(
-          { _id: profile._id },
-          { $set: { userId, updatedAt: new Date() } }
-        );
-        profile.userId = userId;
-        profile.updatedAt = new Date();
-      }
-      return profile;
-    }
-  }
-  
 
 /**
  * Get teacher profile
@@ -259,9 +239,6 @@ exports.initializeProfile = async (req, res) => {
 
 /**
  * Update teacher profile
-
-/**
- * Update teacher profile with proper synchronization to users_web
  */
 exports.updateProfile = async (req, res) => {
   try {
@@ -770,5 +747,183 @@ exports.getCurrentProfileImage = async (req, res) => {
   } catch (err) {
     console.error(`Error fetching profile image:`, err);
     res.status(500).json({ error: 'Server error', details: err.message });
+  }
+};
+
+/**
+ * Create a new teacher (profile + user)
+ */
+exports.createTeacher = async (req, res) => {
+  try {
+    // 1. Extract teacher details from request body
+    const {
+      firstName, lastName, middleName, position, contact, address,
+      civilStatus, dob, emergencyContact, gender, email
+    } = req.body;
+
+    // Handle profile image upload if file is present
+    let profileImageUrl = '';
+    if (req.file) {
+      profileImageUrl = await uploadToS3(req.file, 'teacher-profiles');
+    }
+
+    // Check for duplicate email in teachers.profile
+    const profileCollection = await getProfileCollection();
+    const existing = await profileCollection.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'This email is already registered.' });
+    }
+
+    // 2. Generate a random 8-character password
+    const generatePassword = (length = 8) => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let password = '';
+      for (let i = 0; i < length; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return password;
+    };
+    const password = generatePassword(8);
+
+    // 3. Hash the password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // 4. Create user in users_web.users
+    const User = await getUserModel();
+    const userDoc = new User({
+      email,
+      passwordHash,
+      roles: new mongoose.Types.ObjectId('681b690af9fd9071c6ac2f3a'), // Teacher role as ObjectId
+      updatedAt: new Date()
+    });
+    await userDoc.save();
+
+    // 5. Create teacher profile in teachers.profile
+    const now = new Date();
+    const profileDoc = {
+      userId: userDoc._id,
+      firstName,
+      lastName,
+      middleName: middleName || '',
+      position,
+      contact,
+      profileImageUrl: profileImageUrl || '',
+      createdAt: now,
+      updatedAt: now,
+      address,
+      civilStatus,
+      dob,
+      gender,
+      email
+    };
+    console.log('Inserting teacher profile:', profileDoc);
+    const insertResult = await profileCollection.insertOne(profileDoc);
+    console.log('Insert result:', insertResult);
+
+    // 6. Respond with credentials for admin to display
+    res.json({
+      success: true,
+      message: 'Teacher created successfully',
+      data: {
+        teacherProfile: profileDoc,
+        credentials: { email, password }
+      }
+    });
+  } catch (err) {
+    console.error('Error creating teacher:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+};
+
+exports.updateTeacher = async (req, res) => {
+  try {
+    const teacherId = req.params.id;
+    const {
+      firstName, lastName, middleName, position, contact, address,
+      civilStatus, dob, gender, email
+    } = req.body;
+
+    // Update teacher profile in teachers.profile
+    const profileCollection = await getProfileCollection();
+    const updateData = {
+      firstName,
+      lastName,
+      middleName: middleName || '',
+      position,
+      contact,
+      address,
+      civilStatus,
+      dob,
+      gender,
+      email,
+      updatedAt: new Date()
+    };
+
+    // Handle profile image upload if file is present
+    if (req.file) {
+      const profileImageUrl = await uploadToS3(req.file, 'teacher-profiles');
+      updateData.profileImageUrl = profileImageUrl;
+    }
+
+    // Always fetch the updated document
+    await profileCollection.updateOne(
+      { _id: new mongoose.Types.ObjectId(teacherId) },
+      { $set: updateData }
+    );
+    const updatedProfile = await profileCollection.findOne({ _id: new mongoose.Types.ObjectId(teacherId) });
+    if (!updatedProfile) {
+      return res.status(404).json({ success: false, message: 'Teacher not found' });
+    }
+    // Also update user in users_web.users if email is changed
+    if (email && updatedProfile.userId) {
+      const User = await getUserModel();
+      await User.updateOne(
+        { _id: updatedProfile.userId },
+        { $set: { email, updatedAt: new Date() } }
+      );
+    }
+    res.json({
+      success: true,
+      message: 'Teacher updated successfully',
+      data: { teacherProfile: updatedProfile }
+    });
+  } catch (err) {
+    console.error('Error updating teacher:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+};
+
+exports.deleteTeacher = async (req, res) => {
+  try {
+    const teacherId = req.params.id;
+    console.log('Delete request for teacherId:', teacherId);
+    const profileCollection = await getProfileCollection();
+    // Log all documents before delete
+    const allBefore = await profileCollection.find({}).toArray();
+    console.log('All profiles before delete:', allBefore.map(doc => doc._id.toString()));
+    // Find the profile to get userId
+    const profile = await profileCollection.findOne({ _id: new mongoose.Types.ObjectId(teacherId) });
+    console.log('Profile found for delete:', profile);
+    if (!profile) {
+      return res.status(404).json({ success: false, message: 'Teacher not found' });
+    }
+    // Delete the profile
+    const deleteResult = await profileCollection.deleteOne({ _id: new mongoose.Types.ObjectId(teacherId) });
+    console.log('Profile delete result:', deleteResult);
+    // Log all documents after delete
+    const allAfter = await profileCollection.find({}).toArray();
+    console.log('All profiles after delete:', allAfter.map(doc => doc._id.toString()));
+    if (deleteResult.deletedCount === 0) {
+      return res.status(500).json({ success: false, message: 'Failed to delete teacher profile' });
+    }
+    // Delete the user in users_web.users
+    if (profile.userId) {
+      const User = await getUserModel();
+      await User.deleteOne({ _id: profile.userId });
+    }
+    res.json({ success: true, message: 'Teacher deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting teacher:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
   }
 };

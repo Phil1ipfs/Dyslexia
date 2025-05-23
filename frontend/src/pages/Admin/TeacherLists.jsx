@@ -3,6 +3,53 @@ import { Search, Trash2, Edit, ChevronDown, User, UserPlus, Filter, Plus } from 
 import axios from 'axios';
 import './TeacherLists.css';
 
+const CredentialsModal = ({ credentials, onClose }) => (
+  <div className="literexia-teacher-modal-overlay">
+    <div className="literexia-teacher-modal">
+      <div className="literexia-teacher-modal-header">
+        <h2>Teacher Credentials</h2>
+        <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
+      </div>
+      <div className="literexia-teacher-modal-form">
+        <p><strong>Email:</strong> {credentials.email}</p>
+        <p><strong>Password:</strong> {credentials.password}</p>
+        <p>Share these credentials with the teacher.</p>
+        <button className="literexia-teacher-save-btn" onClick={onClose}>Close</button>
+      </div>
+    </div>
+  </div>
+);
+
+const SuccessModal = ({ message, onClose }) => (
+  <div className="literexia-teacher-modal-overlay">
+    <div className="literexia-teacher-modal">
+      <div className="literexia-teacher-modal-header">
+        <h2>Success</h2>
+        <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
+      </div>
+      <div className="literexia-teacher-modal-form">
+        <p>{message}</p>
+        <button className="literexia-teacher-save-btn" onClick={onClose}>Close</button>
+      </div>
+    </div>
+  </div>
+);
+
+const ValidationErrorModal = ({ message, onClose }) => (
+  <div className="literexia-teacher-modal-overlay">
+    <div className="literexia-teacher-modal">
+      <div className="literexia-teacher-modal-header">
+        <h2>Error</h2>
+        <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
+      </div>
+      <div className="literexia-teacher-modal-form">
+        <p>{message}</p>
+        <button className="literexia-teacher-save-btn" onClick={onClose}>Close</button>
+      </div>
+    </div>
+  </div>
+);
+
 const TeacherLists = () => {
   const [teachers, setTeachers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -15,6 +62,11 @@ const TeacherLists = () => {
   const [teacherToDelete, setTeacherToDelete] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [newCredentials, setNewCredentials] = useState(null);
+  const [validationError, setValidationError] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Fetch teachers from database
   useEffect(() => {
@@ -64,34 +116,85 @@ const TeacherLists = () => {
     setIsConfirmDeleteOpen(true);
   };
 
-  // Handler for actual deletion
-  const handleDeleteTeacher = () => {
+  // Handler for actual deletion (calls backend)
+  const handleDeleteTeacher = async () => {
     if (teacherToDelete) {
-      const updatedTeachers = teachers.filter(teacher => teacher._id !== teacherToDelete._id);
-      setTeachers(updatedTeachers);
-      setIsConfirmDeleteOpen(false);
-      setTeacherToDelete(null);
+      try {
+        setLoading(true);
+        const response = await axios.delete(`http://localhost:5002/api/admin/manage/teachers/${teacherToDelete._id}`);
+        if (response.data.success) {
+          const updatedTeachers = teachers.filter(teacher => teacher._id !== teacherToDelete._id);
+          setTeachers(updatedTeachers);
+          setSuccessMessage('Teacher deleted successfully');
+          setShowSuccessModal(true);
+        } else {
+          alert(response.data.message || 'Failed to delete teacher');
+        }
+      } catch (error) {
+        alert(error.response?.data?.message || 'Failed to delete teacher');
+      } finally {
+        setLoading(false);
+        setIsConfirmDeleteOpen(false);
+        setTeacherToDelete(null);
+      }
     }
   };
 
-  // Add new teacher handler
-  const handleAddNewTeacher = (newTeacher) => {
-    const teacherWithId = {
-      ...newTeacher,
-      _id: (teachers.length + 1).toString()
-    };
-    setTeachers([...teachers, teacherWithId]);
-    setShowAddTeacherModal(false);
+  // Add new teacher handler (calls backend)
+  const handleAddNewTeacher = async (formData) => {
+    try {
+      setLoading(true);
+      const data = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) data.append(key, value);
+      });
+      const response = await axios.post('http://localhost:5002/api/admin/manage/teachers', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (response.data.success) {
+        setTeachers([...teachers, response.data.data.teacherProfile]);
+        setShowAddTeacherModal(false);
+        setNewCredentials(response.data.data.credentials);
+        setShowCredentialsModal(true);
+      } else {
+        setValidationError(response.data.message || 'Failed to add teacher');
+      }
+    } catch (error) {
+      setValidationError(error.response?.data?.message || 'Failed to add teacher');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Update existing teacher handler
-  const handleUpdateTeacher = (updatedTeacher) => {
-    const updatedTeachers = teachers.map(teacher => 
-      teacher._id === updatedTeacher._id ? updatedTeacher : teacher
-    );
-    setTeachers(updatedTeachers);
-    setShowAddTeacherModal(false);
-    setSelectedTeacher(null);
+  // Update existing teacher handler (calls backend)
+  const handleUpdateTeacher = async (formData) => {
+    try {
+      setLoading(true);
+      const data = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) data.append(key, value);
+      });
+      const response = await axios.put(`http://localhost:5002/api/admin/manage/teachers/${formData._id}`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (response.data.success) {
+        // Refetch teachers from backend to get latest profile image
+        const refreshed = await axios.get('http://localhost:5002/api/admin/manage/teachers');
+        if (refreshed.data.success) {
+          setTeachers(refreshed.data.data);
+        }
+        setShowAddTeacherModal(false);
+        setSelectedTeacher(null);
+        setSuccessMessage('Edited Successfully');
+        setShowSuccessModal(true);
+      } else {
+        setValidationError(response.data.message || 'Failed to update teacher');
+      }
+    } catch (error) {
+      setValidationError(error.response?.data?.message || 'Failed to update teacher');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -278,7 +381,7 @@ const TeacherLists = () => {
               <div className="literexia-teacher-profile-avatar">
                 {selectedTeacher.profileImageUrl ? (
                   <img 
-                    src={selectedTeacher.profileImageUrl} 
+                    src={selectedTeacher.profileImageUrl + '?t=' + Date.now()} 
                     alt={`${selectedTeacher.firstName} ${selectedTeacher.lastName}`}
                     className="literexia-teacher-profile-image"
                   />
@@ -334,7 +437,7 @@ const TeacherLists = () => {
       )}
 
       {/* Confirm Delete Modal */}
-      {isConfirmDeleteOpen && (
+      {isConfirmDeleteOpen && teacherToDelete && (
         <ConfirmDeleteModal
           teacher={teacherToDelete}
           onCancel={() => {
@@ -344,27 +447,66 @@ const TeacherLists = () => {
           onConfirm={handleDeleteTeacher}
         />
       )}
+
+      {/* Credentials Modal */}
+      {showCredentialsModal && newCredentials && (
+        <CredentialsModal 
+          credentials={newCredentials} 
+          onClose={() => {
+            setShowCredentialsModal(false);
+            setNewCredentials(null);
+          }}
+        />
+      )}
+
+      {/* Validation Error Modal */}
+      {validationError && (
+        <ValidationErrorModal message={validationError} onClose={() => setValidationError('')} />
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <SuccessModal 
+          message={successMessage} 
+          onClose={() => setShowSuccessModal(false)}
+        />
+      )}
     </div>
   );
 };
 
-// AddEditTeacherModal Component
+// Refactor AddEditTeacherModal
 const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
   const [formData, setFormData] = useState(
-    teacher ? 
-    { ...teacher } : 
-    {
-      name: '',
-      email: '',
+    teacher ? { ...teacher } : {
+      firstName: '',
+      lastName: '',
+      middleName: '',
+      position: '',
+      contact: '',
+      profileImage: null,
       address: '',
-      phone: '',
-      subjects: [],
-      dateJoined: new Date().toISOString().split('T')[0]
+      civilStatus: '',
+      dob: '',
+      gender: '',
+      email: ''
     }
   );
 
-  const [subjectInput, setSubjectInput] = useState('');
-  
+  const requiredFields = [
+    { key: 'firstName', label: 'First Name' },
+    { key: 'lastName', label: 'Last Name' },
+    { key: 'position', label: 'Position' },
+    { key: 'contact', label: 'Contact' },
+    { key: 'address', label: 'Address' },
+    { key: 'civilStatus', label: 'Civil Status' },
+    { key: 'dob', label: 'Date of Birth' },
+    { key: 'gender', label: 'Gender' },
+    { key: 'email', label: 'Email' }
+  ];
+
+  const [validationErrorLocal, setValidationErrorLocal] = useState('');
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -373,24 +515,18 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
     });
   };
 
-  const handleAddSubject = () => {
-    if (subjectInput.trim()) {
-      setFormData({
-        ...formData,
-        subjects: [...formData.subjects, subjectInput.trim()]
-      });
-      setSubjectInput('');
+  const handleFileChange = (e) => {
+    setFormData({ ...formData, profileImage: e.target.files[0] });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Validation: check all required fields
+    const missing = requiredFields.filter(f => !formData[f.key] || formData[f.key].toString().trim() === '');
+    if (missing.length > 0) {
+      setValidationErrorLocal(`Please fill out the following fields: ${missing.map(f => f.label).join(', ')}`);
+      return;
     }
-  };
-
-  const handleRemoveSubject = (indexToRemove) => {
-    setFormData({
-      ...formData,
-      subjects: formData.subjects.filter((_, index) => index !== indexToRemove)
-    });
-  };
-
-  const handleSubmit = () => {
     onSave(formData);
   };
 
@@ -401,125 +537,75 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
           <h2>{teacher ? 'Edit Teacher' : 'Add New Teacher'}</h2>
           <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
         </div>
-        <div className="literexia-teacher-modal-form">
-          <div className="literexia-teacher-form-group">
-            <label>Full Name</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              className="literexia-teacher-input"
-            />
+        <form className="literexia-teacher-modal-form" onSubmit={handleSubmit} encType="multipart/form-data">
+          <div className="form-group">
+            <label>First Name</label>
+            <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} required className="form-input" />
           </div>
-          
-          <div className="literexia-teacher-form-group">
-            <label>Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="literexia-teacher-input"
-            />
+          <div className="form-group">
+            <label>Middle Name</label>
+            <input type="text" name="middleName" value={formData.middleName} onChange={handleChange} className="form-input" />
           </div>
-          
-          <div className="literexia-teacher-form-group">
+          <div className="form-group">
+            <label>Last Name</label>
+            <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} required className="form-input" />
+          </div>
+          <div className="form-group">
+            <label>Position</label>
+            <input type="text" name="position" value={formData.position} onChange={handleChange} className="form-input" />
+          </div>
+          <div className="form-group">
+            <label>Contact</label>
+            <input type="text" name="contact" value={formData.contact} onChange={handleChange} className="form-input" />
+          </div>
+          <div className="form-group">
+            <label>Profile Image</label>
+            <input type="file" name="profileImage" accept="image/*" onChange={handleFileChange} />
+          </div>
+          <div className="form-group">
             <label>Address</label>
-            <input
-              type="text"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              required
-              className="literexia-teacher-input"
-            />
+            <input type="text" name="address" value={formData.address} onChange={handleChange} className="form-input" />
           </div>
-          
-          <div className="literexia-teacher-form-group">
-            <label>Phone Number</label>
-            <input
-              type="text"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              required
-              className="literexia-teacher-input"
-            />
+          <div className="form-group">
+            <label>Civil Status</label>
+            <select name="civilStatus" value={formData.civilStatus} onChange={handleChange} className="form-input">
+              <option value="">Select Civil Status</option>
+              <option value="Single">Single</option>
+              <option value="Married">Married</option>
+              <option value="Widowed">Widowed</option>
+              <option value="Separated">Separated</option>
+              <option value="Divorced">Divorced</option>
+            </select>
           </div>
-          
-          <div className="literexia-teacher-form-group">
-            <label>Date Joined</label>
-            <input
-              type="date"
-              name="dateJoined"
-              value={formData.dateJoined}
-              onChange={handleChange}
-              required
-              className="literexia-teacher-input"
-            />
+          <div className="form-group">
+            <label>Date of Birth</label>
+            <input type="date" name="dob" value={formData.dob} onChange={handleChange} className="form-input" />
           </div>
-          
-          <div className="literexia-teacher-form-group">
-            <label>Subjects</label>
-            <div className="literexia-teacher-subject-input-container">
-              <input
-                type="text"
-                value={subjectInput}
-                onChange={(e) => setSubjectInput(e.target.value)}
-                className="literexia-teacher-input"
-                placeholder="Add a subject"
-              />
-              <button 
-                type="button" 
-                onClick={handleAddSubject}
-                className="literexia-teacher-add-subject-btn"
-              >
-                Add
-              </button>
-            </div>
-            
-            <div className="literexia-teacher-subjects-list">
-              {formData.subjects.map((subject, index) => (
-                <div key={index} className="literexia-teacher-subject-tag">
-                  {subject}
-                  <button 
-                    type="button"
-                    onClick={() => handleRemoveSubject(index)}
-                    className="literexia-teacher-remove-subject"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
+          <div className="form-group">
+            <label>Gender</label>
+            <select name="gender" value={formData.gender} onChange={handleChange} className="form-input">
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
-          
+          <div className="form-group">
+            <label>Email</label>
+            <input type="email" name="email" value={formData.email} onChange={handleChange} required className="form-input" />
+          </div>
           <div className="literexia-teacher-form-actions">
-            <button 
-              type="button" 
-              onClick={onClose}
-              className="literexia-teacher-cancel-btn"
-            >
-              Cancel
-            </button>
-            <button 
-              type="button"
-              onClick={handleSubmit}
-              className="literexia-teacher-save-btn"
-            >
-              {teacher ? 'Update Teacher' : 'Add Teacher'}
-            </button>
+            <button type="button" onClick={onClose} className="literexia-teacher-cancel-btn">Cancel</button>
+            <button type="submit" className="literexia-teacher-save-btn">{teacher ? 'Update Teacher' : 'Add Teacher'}</button>
           </div>
-        </div>
+        </form>
+        {validationErrorLocal && <ValidationErrorModal message={validationErrorLocal} onClose={() => setValidationErrorLocal('')} />}
       </div>
     </div>
   );
 };
 
-// ConfirmDeleteModal Component
+// Add a custom confirmation modal
 const ConfirmDeleteModal = ({ teacher, onCancel, onConfirm }) => {
   return (
     <div className="literexia-teacher-modal-overlay">
@@ -528,25 +614,13 @@ const ConfirmDeleteModal = ({ teacher, onCancel, onConfirm }) => {
           <h2>Confirm Delete</h2>
           <button className="literexia-teacher-modal-close" onClick={onCancel}>×</button>
         </div>
-        
         <div className="literexia-teacher-confirm-content">
-          <p>Are you sure you want to delete teacher <strong>{teacher.name}</strong>?</p>
+          <p>Are you sure you want to delete teacher <strong>{teacher.firstName} {teacher.lastName}</strong>?</p>
           <p>This action cannot be undone.</p>
         </div>
-        
         <div className="literexia-teacher-confirm-actions">
-          <button 
-            className="literexia-teacher-cancel-btn"
-            onClick={onCancel}
-          >
-            Cancel
-          </button>
-          <button 
-            className="literexia-teacher-confirm-delete-btn"
-            onClick={onConfirm}
-          >
-            Delete
-          </button>
+          <button className="literexia-teacher-cancel-btn" onClick={onCancel}>Cancel</button>
+          <button className="literexia-teacher-confirm-delete-btn" onClick={onConfirm}>Delete</button>
         </div>
       </div>
     </div>
