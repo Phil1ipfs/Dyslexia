@@ -583,8 +583,8 @@ exports.getSections = async (req, res) => {
 // Get reading levels
 exports.getReadingLevels = async (req, res) => {
   try {
-    // This could be from a database query if you have a reading levels collection
-    // For now, return a static list with the updated reading level hierarchy
+    // Return the standardized list of reading levels
+    // This ensures consistency across the application
     const readingLevels = [
       'Low Emerging',
       'High Emerging',
@@ -593,12 +593,16 @@ exports.getReadingLevels = async (req, res) => {
       'At Grade Level',
       'Not Assessed'
     ];
+    
+    console.log('Returning reading levels:', readingLevels);
     res.json(readingLevels);
   } catch (error) {
     console.error('Error fetching reading levels:', error);
-    res.status(500).json({ message: 'Error fetching reading levels', error: error.message });
+    res.status(500).json({ 
+      message: 'Error fetching reading levels', 
+      error: error.message 
+    });
   }
-  
 };
 
 

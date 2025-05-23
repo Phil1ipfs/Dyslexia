@@ -1,4 +1,4 @@
-// src/services/StudentApiService.js //Manage Progress Service
+// src/services/StudentApiService.js
 import axios from 'axios';
 
 // Create axios instance with baseURL, timeouts, JSON headers
@@ -139,58 +139,57 @@ const StudentApiService = {
   // Single student details
   getStudentDetails: async (id) => {
     try {
-      // Fix the URL - add the missing 'student' part
-      const { data } = await api.get(`/student/${id}`);
+      // Fix: Correct URL pattern, avoiding duplicate "student" in path
+      const { data } = await api.get(`/${id}`);
       return data;
     } catch (error) {
       console.error(`Error fetching student details for ID ${id}:`, error);
       throw error;
     }
   },
-// Add these methods to your existing StudentApiService
 
-// Get pre-assessment results
-getPreAssessmentResults: async (id) => {
-  try {
-    const { data } = await api.get(`/student/${id}/pre-assessment-results`);
-    return data;
-  } catch (error) {
-    console.error(`Error fetching pre-assessment results for student ID ${id}:`, error);
-    
-    // Return structured empty data if no results found
-    if (error.response?.status === 404) {
-      return {
-        studentId: id,
-        hasCompleted: false,
-        message: error.response.data.message || 'No pre-assessment results found'
-      };
+  // Get pre-assessment results
+  getPreAssessmentResults: async (id) => {
+    try {
+      console.log(`Calling pre-assessment results with ID: ${id}`);
+      // Use the api instance with the correct endpoint path (no leading slash)
+      const { data } = await api.get(`${id}/pre-assessment-results`);
+      console.log("Success! Received pre-assessment data:", data);
+      
+      // Ensure skillDetails is always an array
+      if (data && !data.skillDetails) {
+        data.skillDetails = [];
+      }
+      
+      return data;
+    } catch (error) {
+      console.error(`Error fetching pre-assessment results for student ID ${id}:`, error);
+      console.error(`Full URL attempted: ${error.config?.url}`);
+      
+      // Return structured empty data if no results found
+      if (error.response?.status === 404) {
+        return {
+          studentId: id,
+          hasCompleted: false,
+          skillDetails: [], // Add empty skillDetails array
+          message: error.response.data.message || 'No pre-assessment results found'
+        };
+      }
+      throw error;
     }
-    throw error;
-  }
-},
-
-// Get pre-assessment status
-getPreAssessmentStatus: async (id) => {
-  try {
-    const { data } = await api.get(`/student/${id}/pre-assessment-status`);
-    return data;
-  } catch (error) {
-    console.error(`Error fetching pre-assessment status for student ID ${id}:`, error);
-    return {
-      studentId: id,
-      hasCompleted: false,
-      preAssessmentCompleted: false
-    };
-  }
-},
+  },
 
   // Get pre-assessment status
   getPreAssessmentStatus: async (id) => {
     try {
-      const { data } = await api.get(`/student/${id}/pre-assessment-status`);
+      console.log(`Calling pre-assessment status with ID: ${id}`);
+      // Use the api instance with the correct endpoint path (no leading slash)
+      const { data } = await api.get(`${id}/pre-assessment-status`);
+      console.log("Success! Received pre-assessment status:", data);
       return data;
     } catch (error) {
       console.error(`Error fetching pre-assessment status for student ID ${id}:`, error);
+      console.error(`Full URL attempted: ${error.config?.url}`);
       return {
         studentId: id,
         hasCompleted: false,
@@ -202,21 +201,49 @@ getPreAssessmentStatus: async (id) => {
   // Parent profile
   getParentProfile: async (parentId) => {
     try {
-      // Use the correct endpoint that properly accesses the database
-      const { data } = await directApi.get(`/parents/profile/${parentId}`);
-
-      // If data is returned correctly, process it to ensure consistent format
-      if (data) {
-        // Process name fields if needed
-        if (data.firstName || data.lastName) {
-          let fullName = data.firstName || '';
-          if (data.middleName) fullName += ` ${data.middleName}`;
-          if (data.lastName) fullName += ` ${data.lastName}`;
-          data.name = fullName.trim();
-        }
-
-        return data;
+      // Check if parentId is valid MongoDB ObjectId format
+      const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(parentId);
+      if (!isValidObjectId) {
+        console.warn(`Invalid parent ID format: ${parentId}`);
+        throw new Error('Invalid parent ID format');
       }
+      
+      console.log(`Fetching parent profile for ID: ${parentId}`);
+      
+      // Try the main endpoint first
+      try {
+        const { data } = await directApi.get(`/parents/profile/${parentId}`);
+        
+        // If data is returned correctly, process it to ensure consistent format
+        if (data) {
+          console.log("Parent profile data received:", data);
+          
+          // Process name fields if needed
+          if (data.firstName || data.lastName) {
+            let fullName = data.firstName || '';
+            if (data.middleName) fullName += ` ${data.middleName}`;
+            if (data.lastName) fullName += ` ${data.lastName}`;
+            data.name = fullName.trim();
+          }
+          
+          return data;
+        }
+      } catch (mainEndpointError) {
+        console.warn(`Main parent endpoint failed for ID ${parentId}, trying fallback:`, mainEndpointError);
+        
+        // Try fallback endpoint
+        try {
+          const { data } = await directApi.get(`/dashboard/parent/${parentId}`);
+          if (data) {
+            console.log("Parent profile data received from fallback:", data);
+            return data;
+          }
+        } catch (fallbackError) {
+          console.warn(`Fallback parent endpoint failed for ID ${parentId}:`, fallbackError);
+          // Let it continue to the error handling below
+        }
+      }
+      
       throw new Error('No data returned from parent profile API');
     } catch (error) {
       console.error('Error fetching parent profile:', error);
@@ -227,6 +254,10 @@ getPreAssessmentStatus: async (id) => {
   // Parent profile with fallback
   getParentProfileWithFallback: async (parentId) => {
     try {
+      if (!parentId) {
+        throw new Error('No parent ID provided');
+      }
+      
       const profile = await StudentApiService.getParentProfile(parentId);
 
       // Only apply a fallback if the profileImageUrl is null or undefined
@@ -238,9 +269,12 @@ getPreAssessmentStatus: async (id) => {
 
       return profile;
     } catch (err) {
-      console.warn("Falling back to empty parent profile", err);
+      console.warn(`Falling back to empty parent profile for ID ${parentId}:`, err);
       return {
-        name: null,
+        name: `Parent of ID: ${parentId.substring(0, 8)}...`,
+        firstName: null,
+        middleName: null,
+        lastName: null,
         email: null,
         contact: null,
         address: null,
@@ -255,7 +289,8 @@ getPreAssessmentStatus: async (id) => {
   // Progress data
   getProgressData: async (id) => {
     try {
-      const { data } = await api.get(`/progress/${id}`);
+      // Fix: Correct URL pattern, avoiding duplicate "student" in path
+      const { data } = await api.get(`/${id}/progress`);
       return data;
     } catch (error) {
       console.error(`Error fetching progress data for ID ${id}:`, error);
@@ -266,7 +301,8 @@ getPreAssessmentStatus: async (id) => {
   // Recommended lessons
   getRecommendedLessons: async (id) => {
     try {
-      const { data } = await api.get(`/recommended-lessons/${id}`);
+      // Fix: Correct URL pattern, avoiding duplicate "student" in path
+      const { data } = await api.get(`/${id}/recommended-lessons`);
       return data;
     } catch (error) {
       console.error(`Error fetching recommended lessons for ID ${id}:`, error);
@@ -277,7 +313,8 @@ getPreAssessmentStatus: async (id) => {
   // Prescriptive recommendations
   getPrescriptiveRecommendations: async (id) => {
     try {
-      const { data } = await api.get(`/prescriptive-recommendations/${id}`);
+      // Fix: Correct URL pattern, avoiding duplicate "student" in path
+      const { data } = await api.get(`/${id}/prescriptive-recommendations`);
       return data;
     } catch (error) {
       console.error(`Error fetching prescriptive recommendations for ID ${id}:`, error);
@@ -288,6 +325,7 @@ getPreAssessmentStatus: async (id) => {
   // Assign lessons
   assignLessonsToStudent: async (studentId, lessonIds) => {
     try {
+      // Fix: Correct URL pattern, avoiding duplicate "student" in path
       const { data } = await api.post(
         `/assign-lessons/${studentId}`,
         { lessonIds }
@@ -316,8 +354,9 @@ getPreAssessmentStatus: async (id) => {
   // Patch student address
   updateStudentAddress: async (studentId, address) => {
     try {
+      // Fix: Correct URL pattern, avoiding duplicate "student" in path
       const { data } = await api.patch(
-        `/student/${studentId}/address`,
+        `/${studentId}/address`,
         { address }
       );
       return data;
@@ -330,8 +369,9 @@ getPreAssessmentStatus: async (id) => {
   // Link a parent to a student
   linkParentToStudent: async (studentId, parentId) => {
     try {
+      // Fix: Correct URL pattern, avoiding duplicate "student" in path
       const { data } = await api.post(
-        `/student/${studentId}/link-parent`,
+        `/${studentId}/link-parent`,
         { parentId }
       );
       return data;
@@ -409,6 +449,15 @@ getPreAssessmentStatus: async (id) => {
           'At Grade Level': '#4BC0C0'
         };
 
+        // Define levelMapping if it doesn't exist
+        const levelMapping = {
+          'Low Emerging': 'Low Emerging',
+          'High Emerging': 'High Emerging',
+          'Developing': 'Developing',
+          'Transitioning': 'Transitioning', 
+          'At Grade Level': 'At Grade Level',
+          'Not Assessed': 'Not Assessed'
+        };
 
         students.forEach(student => {
           const rawLevel = student.readingLevel || 'Not Assessed';
@@ -481,22 +530,75 @@ getPreAssessmentStatus: async (id) => {
   // Static lookup endpoints
   getGradeLevels: async () => {
     try {
-      const { data } = await api.get('/grade-levels');
-      return data;
+      // First, try to get grade levels from the API
+      try {
+        // Fix: Use the correct endpoint path with no leading slash
+        const { data } = await api.get('grade-levels');
+        console.log("Successfully fetched grade levels from API:", data);
+        return data;
+      } catch (apiError) {
+        console.warn('Error fetching grade levels from API, trying dashboard API:', apiError);
+        
+        // Try alternate endpoint
+        try {
+          const { data } = await directApi.get('/dashboard/grade-levels');
+          console.log("Successfully fetched grade levels from dashboard API:", data);
+          return data;
+        } catch (dashboardError) {
+          console.warn('Error fetching grade levels from dashboard API, using static fallback:', dashboardError);
+        }
+        
+        // If all API endpoints fail, use the static fallback
+        return [
+          'Kindergarten',
+          'Grade 1',
+          'Grade 2',
+          'Grade 3',
+          'Grade 4',
+          'Grade 5',
+          'Grade 6'
+        ];
+      }
     } catch (error) {
       // Fallback to static list
       console.warn('Error fetching grade levels:', error);
-      return ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'];
+      return ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'];
     }
   },
 
   getReadingLevels: async () => {
     try {
-      const { data } = await api.get('/reading-levels');
-      return data;
+      // First, try to get reading levels from the API
+      try {
+        // Fix: Use the correct endpoint path with no leading slash
+        const { data } = await api.get('reading-levels');
+        console.log("Successfully fetched reading levels from API:", data);
+        return data;
+      } catch (apiError) {
+        console.warn('Error fetching reading levels from API, using fallback:', apiError);
+        
+        // Try alternate endpoint
+        try {
+          const { data } = await directApi.get('/dashboard/reading-levels');
+          console.log("Successfully fetched reading levels from dashboard API:", data);
+          return data;
+        } catch (dashboardError) {
+          console.warn('Error fetching reading levels from dashboard API, using static fallback:', dashboardError);
+        }
+        
+        // If all API endpoints fail, use the static fallback
+        return [
+          'Low Emerging',
+          'High Emerging',
+          'Developing',
+          'Transitioning',
+          'At Grade Level',
+          'Not Assessed'
+        ];
+      }
     } catch (error) {
-      // Fallback to static list
-      console.warn('Error fetching reading levels:', error);
+      console.error('Error in getReadingLevels function:', error);
+      // Final fallback to ensure we always return something
       return [
         'Low Emerging',
         'High Emerging',
@@ -532,10 +634,60 @@ getPreAssessmentStatus: async (id) => {
     return classMap[level] || 'mp-level-1';
   },
 
+  // Get sections/classes
+  getSections: async () => {
+    try {
+      // First, try to get sections from the API
+      try {
+        // Fix: Use the correct endpoint path with no leading slash
+        const { data } = await api.get('sections');
+        console.log("Successfully fetched sections from API:", data);
+        return data;
+      } catch (apiError) {
+        console.warn('Error fetching sections from API, trying dashboard API:', apiError);
+        
+        // Try alternate endpoint
+        try {
+          const { data } = await directApi.get('/dashboard/sections');
+          console.log("Successfully fetched sections from dashboard API:", data);
+          return data;
+        } catch (dashboardError) {
+          console.warn('Error fetching sections from dashboard API, using static fallback:', dashboardError);
+        }
+        
+        // If all API endpoints fail, use the static fallback
+        return [
+          'Sampaguita', 
+          'Rosal', 
+          'Rosa', 
+          'Lily', 
+          'Orchid',
+          'Unity',
+          'Peace',
+          'Dignity'
+        ];
+      }
+    } catch (error) {
+      // Fallback to static list
+      console.warn('Error fetching sections:', error);
+      return [
+        'Sampaguita', 
+        'Rosal', 
+        'Rosa', 
+        'Lily', 
+        'Orchid',
+        'Unity',
+        'Peace',
+        'Dignity'
+      ];
+    }
+  },
+
   // Get category results for a student
   getCategoryResults: async (id) => {
     try {
-      const { data } = await api.get(`/student/${id}/category-results`);
+      // Fix: Correct URL pattern, removing the leading slash
+      const { data } = await api.get(`${id}/category-results`);
       return data;
     } catch (error) {
       console.error(`Error fetching category results for student ID ${id}:`, error);
@@ -562,6 +714,4 @@ getPreAssessmentStatus: async (id) => {
   }
 };
 
-
 export default StudentApiService;
-

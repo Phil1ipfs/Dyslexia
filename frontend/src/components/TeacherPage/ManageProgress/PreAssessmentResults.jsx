@@ -30,6 +30,17 @@ const PreAssessmentResults = ({ assessmentData }) => {
     );
   }
 
+  // Check if skillDetails is missing
+  if (!assessmentData.skillDetails || assessmentData.skillDetails.length === 0) {
+    return (
+      <div className="pre-assessment-results__empty-state">
+        <FaInfoCircle size={48} />
+        <h3>Incomplete Pre-Assessment Data</h3>
+        <p>The pre-assessment data is missing skill details. Please contact support if this issue persists.</p>
+      </div>
+    );
+  }
+
   const toggleSkillExpansion = (categoryKey) => {
     setExpandedSkills(prev => ({
       ...prev,
@@ -180,9 +191,9 @@ const PreAssessmentResults = ({ assessmentData }) => {
               <FaUser />
             </div>
             <div className="pre-assessment-results__overview-item-content">
-              <div className="pre-assessment-results__overview-item-label">Part 1 Score</div>
+              <div className="pre-assessment-results__overview-item-label">Score</div>
               <div className="pre-assessment-results__overview-item-value">
-                {assessmentData.part1Score}/30
+                {assessmentData.part1Score}/20
               </div>
             </div>
           </div>

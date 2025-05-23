@@ -470,7 +470,7 @@ const renderParentImage = () => {
                 <FaSchool />
               </div>
               <div className="sdx-detail-content">
-                <span className="sdx-detail-label">Grade</span>
+                <span className="sdx-detail-label">Grade </span>
                 <span className="sdx-detail-value">{student.gradeLevel || 'Grade 1'}</span>
               </div>
             </div>

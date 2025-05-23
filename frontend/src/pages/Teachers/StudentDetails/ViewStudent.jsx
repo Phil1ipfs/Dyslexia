@@ -556,9 +556,6 @@ const ViewStudent = () => {
                             (displayName || '').split(' ').map(n => n[0] || '').join('').toUpperCase()
                           )}
                         </div>
-
-
-
                         <div className="vs-student-basic-info">
                           <h3 className="vs-student-name">{displayName}</h3>
                           <span className="vs-student-id">
@@ -568,7 +565,7 @@ const ViewStudent = () => {
                           </span>
                         </div>
                         <div className={`vs-reading-badge ${levelClass}`}>
-                          {displayReadingLevel}
+                          {sections}
                         </div>
                       </div>
 
@@ -578,7 +575,7 @@ const ViewStudent = () => {
                             <FaUserGraduate />
                           </div>
                           <span className="vs-info-text">
-                            {student.gradeLevel?.replace('Grade ', '') || '1'}
+                            {student.gradeLevel?.replace('Grade ', '') || 'Grade 1'}
                           </span>
 
                           <div className="vs-info-icon" style={{ marginLeft: 'auto' }}>

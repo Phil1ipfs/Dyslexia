@@ -7,7 +7,9 @@ const getPreAssessmentDb = () => mongoose.connection.useDb('Pre_Assessment'); //
 exports.getPreAssessmentResults = async (req, res) => {
   try {
     const studentId = req.params.id;
-    console.log('Getting pre-assessment results for student:', studentId);
+    console.log('⭐ Getting pre-assessment results for student ID:', studentId);
+    console.log('⭐ Full request path:', req.originalUrl);
+    console.log('⭐ Request method:', req.method);
     
     // Get collections from correct databases
     const usersCollection = getTestDb().collection('users');
@@ -18,33 +20,39 @@ exports.getPreAssessmentResults = async (req, res) => {
     let student;
     try {
       // Try as ObjectId first
+      console.log('Attempting to find student with ObjectId:', studentId);
       student = await usersCollection.findOne({ _id: new mongoose.Types.ObjectId(studentId) });
     } catch (err) {
       // If not valid ObjectId, try as idNumber
+      console.log('Not a valid ObjectId, trying as idNumber:', studentId);
       student = await usersCollection.findOne({ idNumber: studentId });
     }
     
     if (!student) {
+      console.log('❌ Student not found with ID:', studentId);
       return res.status(404).json({ message: 'Student not found' });
     }
     
-    console.log('Found student:', student.firstName, student.lastName);
+    console.log('✅ Found student:', student.firstName, student.lastName);
     
     // Find user responses from Pre_Assessment database
-    let userResponses = await userResponsesCollection.findOne({
-      userId: student.idNumber?.toString()
-    });
+    // Try multiple ways to match the user ID
+    let userResponses = null;
+    const possibleUserIds = [
+      student.idNumber?.toString(),
+      student._id.toString(),
+      studentId
+    ];
     
-    if (!userResponses) {
+    // Try each possible user ID until we find a match
+    for (const userId of possibleUserIds) {
+      if (!userId) continue;
+      
       userResponses = await userResponsesCollection.findOne({
-        userId: student._id.toString()
+        userId: userId
       });
-    }
-    
-    if (!userResponses) {
-      userResponses = await userResponsesCollection.findOne({
-        userId: studentId
-      });
+      
+      if (userResponses) break;
     }
     
     if (!userResponses) {
@@ -58,12 +66,15 @@ exports.getPreAssessmentResults = async (req, res) => {
     console.log('Found user responses:', userResponses._id);
     
     // Get the pre-assessment structure from Pre_Assessment database
+    // Use FL-G1-001 as default if assessmentId is not available
+    const assessmentId = userResponses.assessmentId || "FL-G1-001";
     const preAssessment = await preAssessmentCollection.findOne({
-      assessmentId: userResponses.assessmentId || "FL-G1-001"
+      assessmentId: assessmentId
     });
     
     if (!preAssessment) {
-      return res.status(404).json({ message: 'Pre-assessment structure not found' });
+      console.error(`Pre-assessment structure not found for assessmentId: ${assessmentId}`);
+      return res.status(404).json({ message: `Pre-assessment structure not found for assessmentId: ${assessmentId}` });
     }
     
     console.log('Found pre-assessment structure:', preAssessment.title);
@@ -82,7 +93,6 @@ exports.getPreAssessmentResults = async (req, res) => {
   }
 };
 
-// Helper function to process assessment results based on your actual data structure
 async function processAssessmentResults(userResponses, preAssessment, student) {
   const results = {
     studentId: student._id,
@@ -102,6 +112,26 @@ async function processAssessmentResults(userResponses, preAssessment, student) {
     hasCompleted: true
   };
   
+  // Normalize the category scores keys to handle both formats
+  let normalizedCategoryScores = {};
+  if (userResponses.categoryScores) {
+    // Log the original category scores for debugging
+    console.log('Original category scores:', JSON.stringify(userResponses.categoryScores));
+    
+    // Process each category key to ensure consistency
+    Object.keys(userResponses.categoryScores).forEach(key => {
+      // Convert key to lowercase with underscores if it has capitals or spaces
+      const normalizedKey = key.includes(' ') ? 
+        key.toLowerCase().replace(/ /g, '_') : 
+        key.toLowerCase();
+        
+      normalizedCategoryScores[normalizedKey] = userResponses.categoryScores[key];
+    });
+    
+    // Log the normalized scores
+    console.log('Normalized category scores:', JSON.stringify(normalizedCategoryScores));
+  }
+  
   // Group questions by category
   const questionsByCategory = {};
   preAssessment.questions.forEach(question => {
@@ -112,12 +142,22 @@ async function processAssessmentResults(userResponses, preAssessment, student) {
     questionsByCategory[categoryId].push(question);
   });
   
+  // Log available categories for debugging
+  console.log('Question categories available:', Object.keys(questionsByCategory));
+  console.log('Normalized category keys available:', Object.keys(normalizedCategoryScores));
+  
   // Process each category
   Object.keys(questionsByCategory).forEach(categoryKey => {
     const categoryQuestions = questionsByCategory[categoryKey];
-    const categoryData = userResponses.categoryScores[categoryKey];
+    // Use the normalized category data or create default if missing
+    const categoryData = normalizedCategoryScores[categoryKey] || {
+      total: categoryQuestions.length,
+      correct: 0,
+      score: 0
+    };
     
-    if (!categoryData) return;
+    // Log processing info for debugging
+    console.log(`Processing category ${categoryKey} with ${categoryQuestions.length} questions`);
     
     // Special handling for reading comprehension
     if (categoryKey === 'reading_comprehension') {
@@ -191,6 +231,9 @@ async function processAssessmentResults(userResponses, preAssessment, student) {
     }
   });
   
+  // Log the final skill details to verify they were created properly
+  console.log(`Generated ${results.skillDetails.length} skill details`);
+  
   return results;
 }
 
@@ -246,6 +289,9 @@ function getCategoryDisplayName(categoryKey) {
 exports.getStudentPreAssessmentStatus = async (req, res) => {
   try {
     const studentId = req.params.id;
+    console.log('⭐ Getting pre-assessment status for student ID:', studentId);
+    console.log('⭐ Full request path:', req.originalUrl);
+    console.log('⭐ Request method:', req.method);
     
     const usersCollection = getTestDb().collection('users');
     const userResponsesCollection = getPreAssessmentDb().collection('user_responses');
@@ -253,24 +299,37 @@ exports.getStudentPreAssessmentStatus = async (req, res) => {
     // Find student from test database
     let student;
     try {
+      console.log('Attempting to find student with ObjectId:', studentId);
       student = await usersCollection.findOne({ _id: new mongoose.Types.ObjectId(studentId) });
     } catch (err) {
+      console.log('Not a valid ObjectId, trying as idNumber:', studentId);
       student = await usersCollection.findOne({ idNumber: studentId });
     }
     
     if (!student) {
+      console.log('❌ Student not found with ID:', studentId);
       return res.status(404).json({ message: 'Student not found' });
     }
     
-    // Check if student has completed pre-assessment in Pre_Assessment database
-    let hasResponses = await userResponsesCollection.findOne({
-      userId: student.idNumber?.toString()
-    });
+    console.log('✅ Found student:', student.firstName, student.lastName);
     
-    if (!hasResponses) {
+    // Try multiple ways to find user responses
+    let hasResponses = null;
+    const possibleUserIds = [
+      student.idNumber?.toString(),
+      student._id.toString(),
+      studentId
+    ];
+    
+    // Try each possible user ID until we find a match
+    for (const userId of possibleUserIds) {
+      if (!userId) continue;
+      
       hasResponses = await userResponsesCollection.findOne({
-        userId: student._id.toString()
+        userId: userId
       });
+      
+      if (hasResponses) break;
     }
     
     res.json({
