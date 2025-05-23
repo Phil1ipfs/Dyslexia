@@ -117,7 +117,7 @@ const SkillsOverviewSection = ({ categories, animated = false }) => {
           <FaChartLine className="literexia-section-icon" />
           Mastery Performance Overview
         </h3>
-        <div className={`literexia-average-score ${averageSkillLevel.className}`}>
+        <div className={`literexia-average-scoree ${averageSkillLevel.className}`}>
           <span className="literexia-average-valuee">{averageScore}%</span>
           <span className="literexia-average-label">{averageSkillLevel.label}</span>
         </div>

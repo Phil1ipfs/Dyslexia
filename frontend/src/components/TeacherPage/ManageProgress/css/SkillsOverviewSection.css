@@ -31,7 +31,7 @@
   color: #4a5494;
 }
 
-.literexia-average-score {
+.literexia-average-scoree {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -40,23 +40,23 @@
   border-radius: 8px;
 }
 
-.literexia-average-score.mastered {
+.literexia-average-scoree.mastered {
   background-color: #e9f7ef;
 }
 
-.literexia-average-score.proficient {
+.literexia-average-scoree.proficient {
   background-color: #eef2ff;
 }
 
-.literexia-average-score.developing {
+.literexia-average-scoree.developing {
   background-color: #fff5e6;
 }
 
-.literexia-average-score.emerging {
-  background-color: #fef2f2;
+.literexia-average-scoree.emerging {
+  background-color: #eef2ff;
 }
 
-.literexia-average-value {
+.literexia-average-valuee {
   font-size: 1.15rem;
   font-weight: 600;
   color: #4a5494;

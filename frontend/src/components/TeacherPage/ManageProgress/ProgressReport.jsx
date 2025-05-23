@@ -236,7 +236,7 @@ const ProgressReport = ({ progressData, learningObjectives, setLearningObjective
           </h3>
           
           <div className="literexia-category-table-container">
-            <table className="literexia-category-tableee">
+            <table className="literexia-category-tablee">
               <thead>
                 <tr>
                   <th>
@@ -317,43 +317,7 @@ const ProgressReport = ({ progressData, learningObjectives, setLearningObjective
         />
       )}
       
-      {/* Overall Assessment Status */}
-      <div className={`literexia-overall-status ${progressData.allCategoriesPassed ? 'achieved' : 'developing'}`}>
-        <h3>
-          {progressData.allCategoriesPassed 
-            ? 'Assessment Mastered!' 
-            : 'Skills Being Developed'}
-        </h3>
-        <p>
-          {progressData.allCategoriesPassed 
-            ? 'Student has mastered all categories and is ready to advance to the next reading level.' 
-            : 'Student is developing skills in some categories. Focused practice will help them advance to the next level.'}
-        </p>
-        {!progressData.allCategoriesPassed && hasCategoryResults && (
-          <div className="literexia-focus-areas">
-            <h4>Recommended Focus Areas:</h4>
-            <ul>
-              {progressData.categories
-                .filter(cat => !cat.isPassed)
-                .map((category, index) => {
-                  // Format category name for display
-                  const categoryName = category.categoryName || `Category ${index + 1}`;
-                  const displayName = typeof categoryName === 'string' ?
-                    categoryName
-                      .replace(/_/g, ' ')
-                      .replace(/\b\w/g, l => l.toUpperCase()) :
-                    `Category ${index + 1}`;
-                  
-                  return (
-                    <li key={index} className={animated ? 'animate' : ''} style={{animationDelay: `${0.2 + (0.1 * index)}s`}}>
-                      {displayName}
-                    </li>
-                  );
-                })}
-            </ul>
-          </div>
-        )}
-      </div>
+
     </div>
   );
 };
