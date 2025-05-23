@@ -10,7 +10,11 @@ import {
   FaFilter,
   FaArrowRight,
   FaBook,
-  FaListAlt
+  FaListAlt,
+  FaQuestionCircle,
+  FaCheck,
+  FaPercentage,
+  FaTag
 } from 'react-icons/fa';
 
 import SkillsOverviewSection from './SkillsOverviewSection';
@@ -241,27 +245,27 @@ const ProgressReport = ({ progressData, learningObjectives, setLearningObjective
                 <tr>
                   <th>
                     <span className="th-content">
-                      Category
+                      <FaTag className="th-icon" /> Category
                     </span>
                   </th>
                   <th>
                     <span className="th-content">
-                      Total Questions
+                      <FaQuestionCircle className="th-icon" /> Questions
                     </span>
                   </th>
                   <th>
                     <span className="th-content">
-                      Correct Answers
+                      <FaCheck className="th-icon" /> Correct
                     </span>
                   </th>
                   <th>
                     <span className="th-content">
-                      Score
+                      <FaPercentage className="th-icon" /> Score
                     </span>
                   </th>
                   <th>
                     <span className="th-content">
-                      Status
+                      <FaChartLine className="th-icon" /> Status
                     </span>
                   </th>
                 </tr>
