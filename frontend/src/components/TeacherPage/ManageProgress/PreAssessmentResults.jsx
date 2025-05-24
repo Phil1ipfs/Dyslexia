@@ -415,10 +415,7 @@ const PreAssessmentResults = ({ assessmentData }) => {
           placed at the <strong>{assessmentData.readingLevel}</strong> reading level. 
           {assessmentData.focusAreas && assessmentData.focusAreas.length > 0 && (
             <>
-              {' '}The student would benefit from additional support in the following areas:
-              <span className="pre-assessment-results__focus-value">
-                {assessmentData.focusAreas.join(', ')}.
-              </span>
+             
             </>
           )}
         </p>

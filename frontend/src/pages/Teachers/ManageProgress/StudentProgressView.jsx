@@ -51,6 +51,7 @@ const StudentProgressView = () => {
   const [error, setError] = useState(null);
   const [pushToMobileSuccess, setPushToMobileSuccess] = useState(false);
   const [preAssessmentCompleted, setPreAssessmentCompleted] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   /**
    * Fetch student data when component mounts or ID changes
@@ -597,8 +598,10 @@ const StudentProgressView = () => {
               {categoryResults ? (
                 <ProgressReport
                   progressData={categoryResults}
-                  learningObjectives={learningObjectives}
-                  setLearningObjectives={setLearningObjectives}
+                  onViewRecommendations={(category) => {
+                    setActiveTab('prescriptive');
+                    setSelectedCategory(category.categoryName);
+                  }}
                 />
               ) : (
                 <div className="literexia-empty-state">
@@ -619,9 +622,12 @@ const StudentProgressView = () => {
             <div className="literexia-panel-content">
               {prescriptiveRecommendations.length > 0 ? (
                 <PrescriptiveAnalysis
-                  recommendations={prescriptiveRecommendations}
-                  onEditActivity={handleEditActivity}
                   student={student}
+                  categoryResults={categoryResults}
+                  prescriptiveAnalyses={prescriptiveRecommendations}
+                  interventions={[]}
+                  interventionProgress={[]}
+                  onCreateActivity={handleEditActivity}
                 />
               ) : (
                 <div className="literexia-empty-state">
@@ -756,9 +762,11 @@ const StudentProgressView = () => {
       {editingActivity && (
         <ActivityEditModal
           activity={editingActivity}
+          student={student}
+          category={editingActivity?.category || 'alphabet_knowledge'}
+          analysis={prescriptiveRecommendations.find(r => r.categoryId === (editingActivity?.category || 'alphabet_knowledge'))}
           onClose={() => setEditingActivity(null)}
           onSave={handleSaveActivity}
-          student={student}
         />
       )}
 
