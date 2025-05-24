@@ -652,7 +652,49 @@ const StudentApiService = {
           console.log("Successfully fetched sections from dashboard API:", data);
           return data;
         } catch (dashboardError) {
-          console.warn('Error fetching sections from dashboard API, using static fallback:', dashboardError);
+          console.warn('Error fetching sections from dashboard API, trying users collection:', dashboardError);
+          
+          // Try to get sections from the users collection
+          try {
+            // Get all students and extract unique sections
+            const { data: studentsData } = await api.get('/students', { params: { limit: 100 } });
+            
+            if (studentsData && studentsData.students && studentsData.students.length > 0) {
+              console.log("Extracting sections from students data");
+              
+              // Extract unique sections from students
+              const sectionsSet = new Set();
+              
+              studentsData.students.forEach(student => {
+                if (student.section) {
+                  sectionsSet.add(student.section);
+                }
+              });
+              
+              const uniqueSections = Array.from(sectionsSet);
+              
+              // If we found sections, return them
+              if (uniqueSections.length > 0) {
+                console.log("Successfully extracted sections from students:", uniqueSections);
+                return uniqueSections;
+              }
+            }
+          } catch (usersError) {
+            console.warn('Error extracting sections from users collection:', usersError);
+            // Continue to fallback
+          }
+          
+          // If we couldn't get sections from the users collection, try the users API directly
+          try {
+            const { data: usersData } = await directApi.get('/users/sections');
+            if (Array.isArray(usersData)) {
+              console.log("Successfully fetched sections from users API:", usersData);
+              return usersData;
+            }
+          } catch (usersApiError) {
+            console.warn('Error fetching sections from users API:', usersApiError);
+            // Continue to fallback
+          }
         }
         
         // If all API endpoints fail, use the static fallback

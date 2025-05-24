@@ -151,12 +151,13 @@ function Sidebar({ defaultActive = "dashboard", onLogout, teacherInfo = {} }) {
         </ul>
       </div>
 
-      <hr className="sidebar-divider logout-divider" />
+      <div className="sidebar-footer-container">
+        <hr className="sidebar-divider logout-divider" />
 
-      <div className="sidebar-logout" onClick={handleLogoutClick}>
-        <img src={logoutIcon} alt="Logout" /><span>Logout</span>
+        <div className="sidebar-logout" onClick={handleLogoutClick}>
+          <img src={logoutIcon} alt="Logout" /><span>Logout</span>
+        </div>
       </div>
-
     </div>
   );
 }

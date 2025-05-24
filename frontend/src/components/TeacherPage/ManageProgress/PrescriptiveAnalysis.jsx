@@ -1,272 +1,787 @@
+// src/components/TeacherPage/ManageProgress/PrescriptiveAnalysis.jsx
 import React, { useState, useEffect } from 'react';
-import { 
-  FaEdit, 
-  FaLightbulb, 
-  FaExclamationTriangle, 
-  FaCheckCircle,
+import {
   FaInfoCircle,
+  FaExclamationTriangle,
   FaChartLine,
-  FaArrowRight,
+  FaBook,
+  FaEdit,
+  FaCheckCircle,
   FaBrain,
+  FaLightbulb,
+  FaArrowRight,
+  FaPlus,
+  FaMobile,
   FaChalkboardTeacher,
   FaHandsHelping,
-  FaMobile
+  FaSpinner,
+  FaTimes
 } from 'react-icons/fa';
+import ActivityEditModal from './ActivityEditModal';
 import './css/PrescriptiveAnalysis.css';
 
 /**
  * PrescriptiveAnalysis Component
  * 
- * This component displays AI-generated learning recommendations based on student assessment results.
- * It also provides functionality for teachers to create intervention activities for the student's mobile device.
+ * Main component for displaying prescriptive analysis and managing interventions
+ * for students who scored below 75% in specific categories.
  * 
- * The component is designed to work with the template structure described in our system:
- * - For Alphabet Knowledge, Phonological Awareness, Word Recognition, and Decoding: 
- *   It will use question templates (patinig, katinig, malapantig, word) 
- * - For Reading Comprehension:
- *   It will use sentence templates which include passage text, images, and specific questions
+ * This component shows:
+ * - Category performance breakdown
+ * - Strengths, weaknesses, and recommendations for each failing category
+ * - Current intervention activities
+ * - Teaching guides for in-person support
  * 
- * @param {Object[]} recommendations - Array of recommendation objects from prescriptive analysis
- * @param {Function} onEditActivity - Callback function when editing an activity
- * @param {Object} student - Student information object
+ * @param {Object} student - Student object from users collection
+ * @param {Object} categoryResults - Results from category_results collection
+ * @param {Array} prescriptiveAnalyses - Array from prescriptive_analysis collection
+ * @param {Array} interventions - Array from intervention_assessment collection
+ * @param {Array} interventionProgress - Array from intervention_progress collection
+ * @param {Function} onCreateActivity - Callback when new activity is created
  */
-const PrescriptiveAnalysis = ({ recommendations, onEditActivity, student }) => {
-  // If no recommendations are provided, show empty state
-  if (!recommendations || recommendations.length === 0) {
+const PrescriptiveAnalysis = ({ 
+  student, 
+  categoryResults, 
+  prescriptiveAnalyses, 
+  interventions, 
+  interventionProgress,
+  onCreateActivity 
+}) => {
+  // ===== STATE MANAGEMENT =====
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [showNeedingInterventionOnly, setShowNeedingInterventionOnly] = useState(true);
+  const [showActivityModal, setShowActivityModal] = useState(false);
+  const [editingActivity, setEditingActivity] = useState(null);
+  const [localInterventions, setLocalInterventions] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // ===== MOCK DATA FOR DEMO (Remove when connecting to backend) =====
+  const mockStudent = student || {
+    _id: "202522222",
+    firstName: "Kit Nicholas",
+    lastName: "Mark",
+    readingLevel: "Low Emerging"
+  };
+
+  const mockCategoryResults = categoryResults || {
+    _id: "683001a0e90bfb98f3462af4",
+    studentId: 202522222,
+    assessmentType: "pre-assessment",
+    assessmentDate: "2025-05-23T13:03:28.375789",
+    categories: [
+      {
+        categoryName: "alphabet_knowledge",
+        totalQuestions: 5,
+        correctAnswers: 1,
+        score: 20,
+        isPassed: false,
+        passingThreshold: 75
+      },
+      {
+        categoryName: "phonological_awareness",
+        totalQuestions: 5,
+        correctAnswers: 2,
+        score: 40,
+        isPassed: false,
+        passingThreshold: 75
+      },
+      {
+        categoryName: "decoding",
+        totalQuestions: 5,
+        correctAnswers: 0,
+        score: 0,
+        isPassed: false,
+        passingThreshold: 75
+      },
+      {
+        categoryName: "word_recognition",
+        totalQuestions: 5,
+        correctAnswers: 1,
+        score: 20,
+        isPassed: false,
+        passingThreshold: 75
+      },
+      {
+        categoryName: "reading_comprehension",
+        totalQuestions: 5,
+        correctAnswers: 0,
+        score: 0,
+        isPassed: false,
+        passingThreshold: 75
+      }
+    ],
+    overallScore: 16,
+    allCategoriesPassed: false,
+    readingLevel: "Low Emerging",
+    readingLevelUpdated: true,
+    isPreAssessment: true
+  };
+
+  const mockPrescriptiveAnalyses = prescriptiveAnalyses || [
+    {
+      _id: "682b2b47d0570f23768512c9",
+      studentId: "202522222",
+      categoryId: "alphabet_knowledge",
+      readingLevel: "Low Emerging",
+      strengths: [
+        "Can identify some uppercase letters",
+        "Recognizes the vowel 'A'"
+      ],
+      weaknesses: [
+        "Difficulty distinguishing between similar-looking letters (b/d, p/q)",
+        "Limited recognition of lowercase letters",
+        "Struggles with consonant sounds"
+      ],
+      recommendations: [
+        "Daily practice with letter recognition exercises",
+        "Use of multi-sensory approaches (tactile letters, tracing)",
+        "Focus on letter-sound correspondence for basic consonants"
+      ]
+    },
+    {
+      _id: "682b2b47d0570f23768512ce",
+      studentId: "202522222",
+      categoryId: "phonological_awareness",
+      readingLevel: "Low Emerging",
+      strengths: [
+        "Can identify initial sounds in simple words",
+        "Recognizes rhyming patterns with support"
+      ],
+      weaknesses: [
+        "Difficulty segmenting words into individual sounds",
+        "Limited ability to blend sounds together",
+        "Struggles with identifying ending sounds"
+      ],
+      recommendations: [
+        "Phoneme segmentation activities using physical counters",
+        "Sound blending games with visual supports",
+        "Rhyming activities to build pattern recognition"
+      ]
+    },
+    {
+      _id: "682b2b47d0570f23768512d1",
+      studentId: "202522222",
+      categoryId: "decoding",
+      readingLevel: "Low Emerging",
+      strengths: [],
+      weaknesses: [
+        "Unable to decode simple CVC words",
+        "Limited understanding of letter-sound relationships",
+        "Cannot apply phonics rules to unfamiliar words"
+      ],
+      recommendations: [
+        "Start with simple consonant-vowel-consonant (CVC) word building",
+        "Use picture support alongside text for context clues",
+        "Regular practice with the same word families to build confidence"
+      ]
+    },
+    {
+      _id: "682b2b47d0570f23768512d4",
+      studentId: "202522222",
+      categoryId: "word_recognition",
+      readingLevel: "Low Emerging",
+      strengths: [
+        "Can recognize a few high-frequency words"
+      ],
+      weaknesses: [
+        "Limited sight word vocabulary",
+        "Difficulty recognizing common words in different contexts",
+        "Slow word recognition speed"
+      ],
+      recommendations: [
+        "Daily practice with high-frequency word flashcards",
+        "Word recognition activities in different fonts and contexts",
+        "Timed activities to improve recognition speed"
+      ]
+    },
+    {
+      _id: "682b2b47d0570f23768512d5",
+      studentId: "202522222",
+      categoryId: "reading_comprehension",
+      readingLevel: "Low Emerging",
+      strengths: [],
+      weaknesses: [
+        "Unable to answer basic comprehension questions",
+        "Limited ability to recall story details",
+        "Struggles with understanding story sequence"
+      ],
+      recommendations: [
+        "Read-aloud sessions with simple comprehension questions",
+        "Visual story mapping activities",
+        "Sequencing activities with picture support"
+      ]
+    }
+  ];
+
+  // ===== DERIVED STATE =====
+  // Use provided data or mock data
+  const effectiveStudent = student || mockStudent;
+  const effectiveCategoryResults = categoryResults || mockCategoryResults;
+  const effectivePrescriptiveAnalyses = prescriptiveAnalyses || mockPrescriptiveAnalyses;
+  const effectiveInterventions = [...(interventions || []), ...localInterventions];
+
+  // Filter categories that need intervention (score < 75%)
+  const categoriesNeedingIntervention = effectiveCategoryResults
+    ? effectiveCategoryResults.categories.filter(cat => (Number(cat.score) || 0) < 75)
+    : [];
+
+  // ===== EFFECTS =====
+  
+  /**
+   * Auto-select first category needing intervention
+   */
+  useEffect(() => {
+    if (categoriesNeedingIntervention.length > 0 && !selectedCategory) {
+      setSelectedCategory(categoriesNeedingIntervention[0].categoryName);
+    }
+  }, [categoriesNeedingIntervention, selectedCategory]);
+
+  // ===== HELPER FUNCTIONS =====
+
+  /**
+   * Get analysis for a specific category
+   * @param {string} categoryName - Category name
+   * @return {Object|null} Analysis object or null
+   */
+  const getAnalysisForCategory = (categoryName) => {
+    return effectivePrescriptiveAnalyses.find(analysis => 
+      analysis.categoryId === categoryName
+    );
+  };
+
+  /**
+   * Get interventions for a specific category
+   * @param {string} categoryName - Category name
+   * @return {Array} Array of interventions
+   */
+  const getInterventionsForCategory = (categoryName) => {
+    return effectiveInterventions.filter(
+      intervention => intervention.category === categoryName
+    );
+  };
+
+  /**
+   * Get progress for a specific intervention
+   * @param {string} interventionId - Intervention ID
+   * @return {Object|null} Progress object or null
+   */
+  const getProgressForIntervention = (interventionId) => {
+    if (!interventionProgress) return null;
+    return interventionProgress.find(
+      progress => progress.interventionPlanId === interventionId
+    );
+  };
+
+  /**
+   * Format category name for display
+   * @param {string} categoryName - Category name
+   * @return {string} Formatted category name
+   */
+  const formatCategoryName = (categoryName) => {
+    if (!categoryName) return "Unknown Category";
+    
+    return categoryName
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // ===== EVENT HANDLERS =====
+
+  /**
+   * Handle creating new activity
+   * @param {string} category - Category name
+   * @param {Object} analysis - Analysis object
+   * @param {Object} existingActivity - Existing activity to edit (optional)
+   */
+  const handleCreateActivity = (category, analysis, existingActivity = null) => {
+    setEditingActivity(existingActivity);
+    setSelectedCategory(category);
+    setShowActivityModal(true);
+  };
+
+  /**
+   * Handle saving activity (from ActivityEditModal)
+   * @param {Object} activityData - Activity data from modal
+   */
+  const handleSaveActivity = (activityData) => {
+    setLocalInterventions(prev => {
+      const existingIndex = prev.findIndex(item => item._id === activityData._id);
+      if (existingIndex >= 0) {
+        // Update existing
+        const updated = [...prev];
+        updated[existingIndex] = activityData;
+        return updated;
+      } else {
+        // Add new
+        return [...prev, activityData];
+      }
+    });
+
+    setShowActivityModal(false);
+    setEditingActivity(null);
+
+    // Call parent callback if provided
+    if (onCreateActivity) {
+      onCreateActivity(activityData);
+    }
+  };
+
+  /**
+   * Handle pushing intervention to mobile device
+   * TODO: Connect to backend API
+   * @param {Object} intervention - Intervention to push
+   */
+  const handlePushToMobile = async (intervention) => {
+    setLoading(true);
+    try {
+      // TODO: Replace with actual API call
+      // await pushInterventionToMobile(intervention._id);
+      
+      // Mock API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Update intervention status to 'active'
+      setLocalInterventions(prev => 
+        prev.map(item => 
+          item._id === intervention._id 
+            ? { ...item, status: 'active' }
+            : item
+        )
+      );
+      
+      console.log('Intervention pushed to mobile:', intervention._id);
+    } catch (error) {
+      console.error('Error pushing intervention to mobile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ===== RENDER HELPERS =====
+
+  /**
+   * Render teaching guide for specific category
+   * @param {string} categoryName - Category name
+   * @return {JSX.Element} Teaching guide content
+   */
+  const renderTeachingGuide = (categoryName) => {
+    const guides = {
+      alphabet_knowledge: {
+        strategies: [
+          {
+            title: "Multi-sensory Letter Recognition",
+            description: "Use physical letter tiles or cards when working on letter recognition, allowing the student to see, touch, and hear the sounds simultaneously."
+          },
+          {
+            title: "Systematic Letter Introduction", 
+            description: "Practice letter identification in a systematic way, starting with the most common letters and gradually introducing similar-looking letters (b/d, p/q) separately."
+          }
+        ]
+      },
+      phonological_awareness: {
+        strategies: [
+          {
+            title: "Physical Sound Patterns",
+            description: "Practice clapping or tapping to syllable patterns, connecting physical movements to sound patterns."
+          },
+          {
+            title: "Structured Sound Practice",
+            description: "Practice breaking words into syllables, then individual sounds, following a consistent routine."
+          }
+        ]
+      },
+      word_recognition: {
+        strategies: [
+          {
+            title: "Multi-sensory Word Practice",
+            description: "Have the student trace words while saying them aloud, creating multi-sensory connections to reinforce word recognition."
+          },
+          {
+            title: "Word Family Groups",
+            description: "Create word family groups and practice them together to reinforce patterns."
+          }
+        ]
+      },
+      decoding: {
+        strategies: [
+          {
+            title: "Visual Sound Highlighting",
+            description: "Use colored markers to highlight different syllables or sounds within words as the student reads them."
+          },
+          {
+            title: "Structured Decoding Strategies",
+            description: "Teach specific decoding strategies like 'sound it out' and 'look for word chunks' with consistent practice."
+          }
+        ]
+      },
+      reading_comprehension: {
+        strategies: [
+          {
+            title: "Visual Story Mapping",
+            description: "Create visual maps or drawings to represent story elements while reading passages together."
+          },
+          {
+            title: "Structured Comprehension Questions",
+            description: "Use a structured approach to discuss stories: who, what, where, when, and why questions after each reading."
+          }
+        ]
+      }
+    };
+
+    const categoryGuide = guides[categoryName] || { strategies: [] };
+
     return (
-      <div className="literexia-empty-state">
-        <FaExclamationTriangle className="literexia-empty-icon" />
-        <h3>No Recommendations Found</h3>
-        <p>The initial assessment needs to be completed first to generate personalized recommendations.</p>
+      <div className="literexia-teaching-guide">
+        <div className="literexia-guide-header">
+          <FaChalkboardTeacher className="literexia-guide-icon" />
+          <h3>In-Person Teaching Guide for {formatCategoryName(categoryName)}</h3>
+        </div>
+        <div className="literexia-guide-content">
+          <p>
+            While using the digital activities, we recommend supporting {effectiveStudent?.firstName || "the student"}
+            with the following strategies:
+          </p>
+          <div className="literexia-strategy-list">
+            {categoryGuide.strategies.map((strategy, index) => (
+              <div key={index} className="literexia-strategy">
+                <div className="literexia-strategy-icon">
+                  <FaHandsHelping />
+                </div>
+                <div className="literexia-strategy-content">
+                  <h4>{strategy.title}</h4>
+                  <p>{strategy.description}</p>
+                </div>
+              </div>
+            ))}
+            <div className="literexia-strategy">
+              <div className="literexia-strategy-icon">
+                <FaHandsHelping />
+              </div>
+              <div className="literexia-strategy-content">
+                <h4>Immediate Feedback</h4>
+                <p>
+                  Provide immediate, specific feedback during practice sessions, highlighting what the student 
+                  did correctly before offering corrections. Gradually reduce support as {effectiveStudent?.firstName || "the student"}'s 
+                  confidence increases.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="literexia-monitoring-note">
+            <strong>Progress Monitoring:</strong> After implementing these interventions for 2-3 weeks,
+            review {effectiveStudent?.firstName || "the student"}'s progress and adjust strategies as needed.
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ===== EARLY RETURNS =====
+
+  // If no categories need intervention
+  if (categoriesNeedingIntervention.length === 0) {
+    return (
+      <div className="literexia-prescriptive-container">
+        <div className="literexia-progress-info">
+          <div className="literexia-progress-info-icon">
+            <FaCheckCircle />
+          </div>
+          <div className="literexia-progress-info-text">
+            <h3>All Categories Passed</h3>
+            <p>
+              Great news! The student has passed all categories with scores above the 75% threshold.
+              No interventions are needed at this time.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
-  
-  /**
-   * Get CSS class for category styling
-   * Maps each category to a specific color class for visual distinction
-   * 
-   * @param {string} category - The category name
-   * @return {string} CSS class name for the category
-   */
-  const getCategoryColorClass = (category) => {
-    switch (category) {
-      case 'Vowel Sound':
-      case 'Patinig':
-      case 'Alphabet Knowledge':
-        return 'literexia-patinig';
-      case 'Syllable Blending':
-      case 'Pantig':
-      case 'Phonological Awareness':
-        return 'literexia-pantig';
-      case 'Word Recognition':
-      case 'Pagkilala ng Salita':
-        return 'literexia-salita';
-      case 'Reading Comprehension':
-      case 'Pag-unawa sa Binasa':
-        return 'literexia-pag-unawa';
-      case 'Decoding':
-        return 'literexia-decoding';
-      default:
-        return '';
-    }
-  };
-  
-  /**
-   * Get status display information
-   * Maps the activity status to visual indicators and text
-   * 
-   * @param {string} status - Current status of the activity
-   * @return {Object} Object containing CSS class and display text
-   */
-  const getStatusInfo = (status) => {
-    switch (status) {
-      case 'pushed_to_mobile':
-        return { class: 'literexia-mobile', text: 'Pushed to Mobile' };
-      case 'completed':
-        return { class: 'literexia-completed', text: 'Completed' };
-      case 'in_progress':
-        return { class: 'literexia-in-progress', text: 'In Progress' };
-      default:
-        return { class: 'literexia-draft', text: 'Draft' };
-    }
-  };
-  
+
+  // ===== DERIVED DATA FOR SELECTED CATEGORY =====
+  const selectedCategoryData = effectiveCategoryResults.categories.find(
+    cat => cat.categoryName === selectedCategory
+  );
+  const selectedAnalysis = selectedCategory ? getAnalysisForCategory(selectedCategory) : null;
+  const selectedInterventions = selectedCategory ? getInterventionsForCategory(selectedCategory) : [];
+
+  // ===== MAIN RENDER =====
   return (
     <div className="literexia-prescriptive-container">
-      {/* Header Section with AI recommendation overview */}
+      {/* Header */}
       <div className="literexia-prescriptive-header">
         <div className="literexia-header-icon">
           <FaBrain />
         </div>
         <div className="literexia-head-content">
-          <h3>AI-Generated Learning Recommendations</h3>
+          <h3>Prescriptive Analysis</h3>
           <p>
-            Based on assessment results and the student's ongoing performance, 
-            our system has identified specific learning gaps and generated 
-            targeted recommendations to improve their reading skills.
+            Based on assessment results, this analysis identifies specific categories where the student 
+            needs additional support. Each category below the 75% threshold has individualized recommendations
+            and intervention activities.
           </p>
         </div>
       </div>
       
-      {/* Findings summary - Overall analysis of student's performance */}
-      <div className="literexia-summary-section">
-        <div className="literexia-summary-header">
-          <FaLightbulb className="literexia-summary-icon" />
-          <h3>Summary of Findings</h3>
+      {/* Category tabs */}
+      <div className="literexia-category-tabs">
+        <div className="literexia-tabs-header">
+          <h3>Reading Skill Categories</h3>
+          <div className="literexia-tabs-filter">
+            <label>
+              <input 
+                type="checkbox" 
+                checked={showNeedingInterventionOnly} 
+                onChange={() => setShowNeedingInterventionOnly(!showNeedingInterventionOnly)}
+              />
+              Show only categories needing intervention
+            </label>
+          </div>
         </div>
-        <div className="literexia-summary-content">
-          <p>
-            Analysis of {student?.firstName || student?.name}'s progress data indicates difficulties with 
-            <strong> letter recognition</strong> and <strong>complex syllable patterns</strong>. 
-            Their performance in activities requiring these skills has consistently been 
-            below average, with a pattern of errors suggesting phonological 
-            processing challenges common in students with dyslexia.
-          </p>
-          <p>
-            Based on their current reading level ({recommendations[0]?.readingLevel || 'Low Emerging'}) 
-            and their specific performance patterns, the system has generated 
-            personalized learning recommendations to address these gaps. 
-            The activities below are specifically designed to target their 
-            weaknesses while building on their existing strengths.
-          </p>
+        
+        <div className="literexia-tabs-container">
+          {effectiveCategoryResults.categories
+            .filter(cat => !showNeedingInterventionOnly || (Number(cat.score) || 0) < 75)
+            .map((category, index) => {
+              const categoryName = category.categoryName;
+              const displayName = formatCategoryName(categoryName);
+              const score = Number(category.score) || 0;
+              const needsIntervention = score < 75;
+              
+              return (
+                <div 
+                  key={index}
+                  className={`literexia-category-tab ${selectedCategory === categoryName ? 'active' : ''} ${needsIntervention ? 'needs-intervention' : ''}`}
+                  onClick={() => setSelectedCategory(categoryName)}
+                >
+                  <div className="literexia-tab-content">
+                    <div className="literexia-tab-name">{displayName}</div>
+                    <div className="literexia-tab-score">{score}%</div>
+                  </div>
+                  {needsIntervention && (
+                    <div className="literexia-tab-badge">
+                      <FaExclamationTriangle /> Needs Intervention
+                    </div>
+                  )}
+                </div>
+              );
+            })}
         </div>
       </div>
       
-      {/* Teaching guide for in-person instruction to complement digital activities */}
-      <div className="literexia-teaching-guide">
-        <div className="literexia-guide-header">
-          <FaChalkboardTeacher className="literexia-guide-icon" />
-          <h3>In-Person Teaching Guide</h3>
-        </div>
-        <div className="literexia-guide-content">
-          <p>
-            While using the digital activities, we recommend supporting {student?.firstName || student?.name} 
-            with the following strategies:
-          </p>
-          <div className="literexia-strategy-list">
-            <div className="literexia-strategy">
-              <div className="literexia-strategy-icon">
-                <FaHandsHelping />
+      {/* Selected category analysis */}
+      {selectedCategory && selectedCategoryData && (
+        <div className="literexia-category-analysis">
+          <div className="literexia-analysis-header">
+            <h3>{formatCategoryName(selectedCategory)} Analysis</h3>
+            <div className="literexia-analysis-metrics">
+              <div className="literexia-metric">
+                <div className="literexia-metric-label">Current Score</div>
+                <div className="literexia-metric-value">{selectedCategoryData.score}%</div>
               </div>
-              <div className="literexia-strategy-content">
-                <h4>Multi-sensory Instruction</h4>
-                <p>
-                  Use physical letter tiles or cards when working on letter recognition, allowing {student?.firstName || student?.name} to see, 
-                  touch, and hear the sounds simultaneously.
-                </p>
+              <div className="literexia-metric-arrow">
+                <FaArrowRight />
               </div>
-            </div>
-            
-            <div className="literexia-strategy">
-              <div className="literexia-strategy-icon">
-                <FaHandsHelping />
+              <div className="literexia-metric">
+                <div className="literexia-metric-label">Target Score</div>
+                <div className="literexia-metric-value">75%</div>
               </div>
-              <div className="literexia-strategy-content">
-                <h4>Syllable Tapping</h4>
-                <p>
-                  Teach {student?.firstName || student?.name} to tap syllables with their fingers while reading, 
-                  reinforcing the physical connection to syllable patterns.
-                </p>
-              </div>
-            </div>
-            
-            <div className="literexia-strategy">
-              <div className="literexia-strategy-icon">
-                <FaHandsHelping />
-              </div>
-              <div className="literexia-strategy-content">
-                <h4>Chunking Strategy</h4>
-                <p>
-                  Demonstrate how to break longer words into manageable parts, 
-                  gradually reducing support as {student?.firstName || student?.name}'s confidence increases.
-                </p>
+              <div className="literexia-metric">
+                <div className="literexia-metric-label">Gap</div>
+                <div className="literexia-metric-value">{Math.max(0, 75 - selectedCategoryData.score)}%</div>
               </div>
             </div>
           </div>
           
-          <div className="literexia-monitoring-note">
-            <strong>Progress Monitoring:</strong> After implementing these interventions for 2-3 weeks, 
-            review {student?.firstName || student?.name}'s progress and adjust strategies as needed.
+          {/* Analysis content */}
+          <div className="literexia-analysis-content">
+            {selectedAnalysis ? (
+              <>
+                <div className="literexia-analysis-grid">
+                  <div className="literexia-analysis-column">
+                    <div className="literexia-analysis-section">
+                      <h4><FaCheckCircle /> Strengths</h4>
+                      {selectedAnalysis.strengths && selectedAnalysis.strengths.length > 0 ? (
+                        <ul className="literexia-strengths-list">
+                          {selectedAnalysis.strengths.map((strength, idx) => (
+                            <li key={idx}>{strength}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="literexia-empty-info">No specific strengths identified yet.</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="literexia-analysis-column">
+                    <div className="literexia-analysis-section">
+                      <h4><FaExclamationTriangle /> Weaknesses</h4>
+                      {selectedAnalysis.weaknesses && selectedAnalysis.weaknesses.length > 0 ? (
+                        <ul className="literexia-weaknesses-list">
+                          {selectedAnalysis.weaknesses.map((weakness, idx) => (
+                            <li key={idx}>{weakness}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="literexia-empty-info">No specific weaknesses identified yet.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Recommendations */}
+                <div className="literexia-analysis-section">
+                  <h4><FaLightbulb /> Recommendations</h4>
+                  {selectedAnalysis.recommendations && selectedAnalysis.recommendations.length > 0 ? (
+                    <ul className="literexia-recommendations-list">
+                      {selectedAnalysis.recommendations.map((recommendation, idx) => (
+                        <li key={idx}>{recommendation}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="literexia-empty-info">No specific recommendations available yet.</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="literexia-empty-analysis">
+                <FaInfoCircle />
+                <p>No detailed analysis is available for this category yet. Create an intervention to address the learning gap.</p>
+              </div>
+            )}
+          </div>
+          
+          {/* Teaching guide */}
+          {renderTeachingGuide(selectedCategory)}
+          
+          {/* Current interventions */}
+          <div className="literexia-current-interventions">
+            <div className="literexia-interventions-header">
+              <h3>Current Interventions</h3>
+              <button 
+                className="literexia-create-activity-btn" 
+                onClick={() => handleCreateActivity(selectedCategory, selectedAnalysis)}
+                disabled={loading}
+              >
+                <FaPlus /> Create New Intervention Activity
+              </button>
+            </div>
+            
+            {selectedInterventions.length > 0 ? (
+              <div className="literexia-interventions-list">
+                {selectedInterventions.map((intervention, index) => {
+                  const progress = getProgressForIntervention(intervention._id);
+                  const progressPercentage = progress ? progress.percentComplete : 0;
+                  const correctPercentage = progress ? progress.percentCorrect : 0;
+                  const isPassed = progress ? progress.passedThreshold : false;
+                  
+                  return (
+                    <div key={index} className="literexia-intervention-card">
+                      <div className="literexia-intervention-header">
+                        <div className="literexia-intervention-title-container">
+                          <h4 className="literexia-intervention-title">{intervention.name}</h4>
+                          <div className="literexia-intervention-subtitle">{intervention.description}</div>
+                        </div>
+                        <div className={`literexia-intervention-status ${isPassed ? 'passed' : intervention.status}`}>
+                          {isPassed ? 'Passed' : intervention.status === 'active' ? 'Active' : 'Draft'}
+                        </div>
+                      </div>
+                      
+                      <div className="literexia-intervention-progress">
+                        <div className="literexia-progress-item">
+                          <div className="literexia-progress-label">
+                            <span>Completion</span>
+                            <span>{progressPercentage}%</span>
+                          </div>
+                          <div className="literexia-progress-bar-container">
+                            <div 
+                              className="literexia-progress-bar-fill" 
+                              style={{width: `${progressPercentage}%`}}
+                            ></div>
+                          </div>
+                        </div>
+                        
+                        <div className="literexia-progress-item">
+                          <div className="literexia-progress-label">
+                            <span>Accuracy</span>
+                            <span>{correctPercentage}%</span>
+                          </div>
+                          <div className="literexia-progress-bar-container">
+                            <div 
+                              className={`literexia-progress-bar-fill ${correctPercentage >= 75 ? 'achieved' : 'in-progress'}`}
+                              style={{width: `${correctPercentage}%`}}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="literexia-intervention-details">
+                        <div className="literexia-intervention-detail">
+                          <span className="literexia-detail-label">Reading Level:</span>
+                          <span className="literexia-detail-value">{intervention.readingLevel}</span>
+                        </div>
+                        <div className="literexia-intervention-detail">
+                          <span className="literexia-detail-label">Questions:</span>
+                          <span className="literexia-detail-value">{intervention.questions ? intervention.questions.length : 0}</span>
+                        </div>
+                        <div className="literexia-intervention-detail">
+                          <span className="literexia-detail-label">Status:</span>
+                          <span className="literexia-detail-value">{intervention.status}</span>
+                        </div>
+                        <div className="literexia-intervention-detail">
+                          <span className="literexia-detail-label">Created:</span>
+                          <span className="literexia-detail-value">
+                            {new Date(intervention.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="literexia-intervention-actions">
+                        <button 
+                          className="literexia-edit-activity-btn"
+                          onClick={() => handleCreateActivity(selectedCategory, selectedAnalysis, intervention)}
+                          disabled={loading}
+                        >
+                          <FaEdit /> Edit Activity
+                        </button>
+                        {intervention.status === 'draft' && (
+                          <button 
+                            className="literexia-push-mobile-btn"
+                            onClick={() => handlePushToMobile(intervention)}
+                            disabled={loading}
+                          >
+                            {loading ? <FaSpinner className="fa-spin" /> : <FaMobile />}
+                            Push to Mobile
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="literexia-empty-interventions">
+                <FaInfoCircle />
+                <p>No intervention activities have been created for this category yet. Create an activity to help the student improve their skills.</p>
+              </div>
+            )}
           </div>
         </div>
-      </div>
-      
-      {/* Recommended Activities/Interventions - Main list of activities that can be customized */}
-      <div className="literexia-interventions">
-        <h3 className="literexia-interventions-title">Recommended Interventions</h3>
-        
-        <div className="literexia-interventions-list">
-          {recommendations.map((rec) => (
-            <div key={rec.id} className="literexia-intervention-card">
-              <div className="literexia-intervention-header">
-                <div className={`literexia-intervention-icon ${getCategoryColorClass(rec.category)}`}>
-                  <FaLightbulb />
-                </div>
-                <div className="literexia-intervention-title-container">
-                  <h4 className="literexia-intervention-title">{rec.title}</h4>
-                  <div className="literexia-intervention-category">{rec.category}</div>
-                </div>
-                <div className={`literexia-intervention-status ${getStatusInfo(rec.status).class}`}>
-                  {getStatusInfo(rec.status).text}
-                </div>
-              </div>
-              
-              {/* Metrics showing current performance and targets */}
-              <div className="literexia-intervention-metrics">
-                <div className="literexia-metric">
-                  <div className="literexia-metric-label">Current Score</div>
-                  <div className="literexia-metric-value">{rec.score || 60}%</div>
-                </div>
-                <div className="literexia-metric-arrow">
-                  <FaArrowRight />
-                </div>
-                <div className="literexia-metric">
-                  <div className="literexia-metric-label">Target Score</div>
-                  <div className="literexia-metric-value">{rec.targetScore || 75}%</div>
-                </div>
-              </div>
-              
-              {/* Analysis and detailed recommendations */}
-              <div className="literexia-intervention-details">
-                <div className="literexia-intervention-analysis">
-                  <h5>Analysis</h5>
-                  <p>{rec.analysis || rec.rationale || 'Based on assessment results, this area needs additional focused practice.'}</p>
-                </div>
-                
-                <div className="literexia-intervention-recommendation">
-                  <h5><FaCheckCircle /> Recommendation</h5>
-                  <p>{rec.recommendation || 'Provide additional practice activities focusing on this skill area, with immediate feedback and opportunities for correction.'}</p>
-                </div>
-                
-                {/* Action buttons to edit/push activity to mobile */}
-                <div className="literexia-intervention-actions">
-                  {rec.status === 'pushed_to_mobile' ? (
-                    <div className="literexia-mobile-status">
-                      <FaMobile />
-                      <span>This activity has been pushed to the student's mobile device</span>
-                    </div>
-                  ) : (
-                    <div className="literexia-action-note">
-                      <FaInfoCircle />
-                      <span>Creating an intervention activity will help address the student's specific needs in this area.</span>
-                    </div>
-                  )}
-                  <button
-                    className="literexia-edit-activity-btn"
-                    onClick={() => onEditActivity(rec)}
-                  >
-                    <FaEdit /> {rec.status === 'pushed_to_mobile' ? 'Edit Activity' : 'Create Intervention Activity'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
+
+      {/* Activity Edit Modal */}
+      {showActivityModal && (
+        <ActivityEditModal
+          activity={editingActivity}
+          student={effectiveStudent}
+          category={selectedCategory}
+          analysis={selectedAnalysis}
+          onClose={() => setShowActivityModal(false)}
+          onSave={handleSaveActivity}
+        />
+      )}
     </div>
   );
 };
 
 export default PrescriptiveAnalysis;
-
