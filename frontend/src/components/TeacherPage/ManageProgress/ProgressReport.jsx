@@ -19,8 +19,6 @@ import {
   FaExclamationTriangle
 } from 'react-icons/fa';
 
-import SkillsOverviewSection from './SkillsOverviewSection';
-
 import '../../../components/TeacherPage/ManageProgress/css/ProgressReport.css';
 
 const ProgressReport = ({ progressData, learningObjectives, setLearningObjectives }) => {
@@ -460,14 +458,6 @@ const ProgressReport = ({ progressData, learningObjectives, setLearningObjective
             </div>
           </div>
         </div>
-      )}
-      
-      {/* Skills Overview Section - explicitly pass categories */}
-      {hasCategoryResults && (
-        <SkillsOverviewSection 
-          categories={progressData.categories} 
-          animated={animated} 
-        />
       )}
     </div>
   );
