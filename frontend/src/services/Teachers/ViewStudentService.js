@@ -4,7 +4,7 @@ import axios from 'axios';
 // Create axios instance with baseURL, timeouts, JSON headers
 const api = axios.create({
   baseURL: import.meta.env.DEV
-    ? 'http://localhost:5002/api/student'
+    ? 'http://localhost:5001/api/student'
     : '/api/student',
   timeout: 30000,
   headers: {
@@ -16,7 +16,7 @@ const api = axios.create({
 // Create a separate instance for direct backend calls
 const directApi = axios.create({
   baseURL: import.meta.env.DEV
-    ? 'http://localhost:5002/api'
+    ? 'http://localhost:5001/api'
     : '/api',
   timeout: 30000,
   headers: {

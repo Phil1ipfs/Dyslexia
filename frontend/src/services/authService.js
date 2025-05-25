@@ -1,7 +1,7 @@
 // src/services/authService.js
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 
-                (import.meta.env.DEV ? 'http://localhost:5002' : '');
+                (import.meta.env.DEV ? 'http://localhost:5001' : '');
 
 export const authService = {
   // Login user and return user data

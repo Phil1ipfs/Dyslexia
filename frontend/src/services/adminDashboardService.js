@@ -7,7 +7,7 @@
 // Configuration for the service
 const config = {
   useMockData: true,
-  apiBaseUrl: import.meta.env.VITE_API_URL || 'http://localhost:5002/api',
+  apiBaseUrl: import.meta.env.VITE_API_URL || 'http://localhost:5001/api',
   refreshInterval: 30000,
   collections: {
     users: 'users',

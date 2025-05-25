@@ -73,7 +73,7 @@ const Login = ({ onLogin }) => {
       /* ----------  API URL  ---------- */
       const BASE =
         import.meta.env.VITE_API_BASE_URL ||
-        (import.meta.env.DEV ? 'http://localhost:5002' : '');
+        (import.meta.env.DEV ? 'http://localhost:5001' : '');
 
       console.log(`Attempting login to ${BASE}/api/auth/login`);
 

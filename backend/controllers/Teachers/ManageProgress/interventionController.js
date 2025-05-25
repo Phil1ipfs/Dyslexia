@@ -386,6 +386,17 @@ class InterventionController {
         });
       }
       
+      // Validate choiceImage if present
+      if (choiceData.choiceImage) {
+        const isUrl = /^https?:\/\//.test(choiceData.choiceImage);
+        if (!isUrl) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Invalid image URL format' 
+          });
+        }
+      }
+      
       // Add user ID from auth middleware
       if (req.user) {
         choiceData.createdBy = req.user.id;
@@ -495,4 +506,5 @@ class InterventionController {
   }
 }
 
-module.exports = new InterventionController();
+// Export the class itself, not an instance
+module.exports = InterventionController;
