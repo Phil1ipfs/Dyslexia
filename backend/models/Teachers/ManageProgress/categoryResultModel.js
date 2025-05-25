@@ -12,7 +12,7 @@ const categoryResultSchema = new mongoose.Schema({
   },
   assessmentType: {
     type: String,
-    enum: ['post-assessment', 'intervention'],
+    enum: ['pre-assessment', 'post-assessment', 'intervention'],
     required: true
   },
   readingLevel: {
@@ -72,6 +72,38 @@ const categoryResultSchema = new mongoose.Schema({
   }
 }, {
   collection: 'category_results'
+});
+
+
+const PrescriptiveAnalysisService = require('../../../services/Teachers/PrescriptiveAnalysisService');
+
+// After a new category result is saved, generate prescriptive analyses
+categoryResultSchema.post('save', async function(doc) {
+  try {
+    // Import service
+    const PrescriptiveAnalysisService = require('../../../services/Teachers/PrescriptiveAnalysisService');
+    
+    console.log(`CategoryResult post-save hook triggered for student ${doc.studentId}`);
+    
+    // Step 1: Ensure the student has analysis records for all categories
+    await PrescriptiveAnalysisService.ensureStudentHasAllAnalyses(
+      doc.studentId, 
+      doc.readingLevel || 'Low Emerging'
+    );
+    
+    // Step 2: Generate analyses based on the category result
+    await PrescriptiveAnalysisService.generateAnalysesFromCategoryResults(
+      doc.studentId,
+      doc
+    );
+    
+    // Step 3: Make sure all analyses have content (even empty ones)
+    await PrescriptiveAnalysisService.regenerateEmptyAnalyses(doc.studentId);
+    
+    console.log(`Successfully generated prescriptive analyses for student ${doc.studentId}`);
+  } catch (error) {
+    console.error('Error in CategoryResult post-save hook:', error);
+  }
 });
 
 module.exports = mongoose.models.CategoryResult || mongoose.model('CategoryResult', categoryResultSchema);

@@ -78,12 +78,21 @@ class ProgressController {
 
         // Track created records for verification
         let createdAnalyses = 0;
+        let skippedStudents = 0;
 
         // For each student, create/update prescriptive analysis records as needed
         for (const student of students) {
             try {
                 const studentId = new mongoose.Types.ObjectId(student._id);
-                const readingLevel = student.readingLevel || 'Low Emerging';
+                
+                // Skip students who were never assessed
+                const readingLevel = student.readingLevel || 'Not Assessed';
+                if (readingLevel === 'Not Assessed' || readingLevel === null || student.readingLevel === null) {
+                    skippedStudents++;
+                    console.log(`Skipping student ${studentId} with readingLevel: ${readingLevel}`);
+                    continue;            // ▶️  do NOT create empty shells
+                }
+                
                 let recordsCreated = 0;
 
                 // Check and create PrescriptiveAnalysis for each category
@@ -136,6 +145,7 @@ class ProgressController {
 
             console.log("\n=== DATABASE VERIFICATION AFTER INITIALIZATION ===");
             console.log(`- Prescriptive Analysis: ${prescriptiveAnalysisCount} records (created: ${createdAnalyses})`);
+            console.log(`- Skipped ${skippedStudents} students with 'Not Assessed' or null reading level`);
         } catch (error) {
             console.error(`Error verifying record counts:`, error);
         }
@@ -234,10 +244,30 @@ class ProgressController {
                 studentId: new mongoose.Types.ObjectId(studentId)
             }).sort({ assessmentDate: -1 });
 
+            if (
+                student.readingLevel === 'Not Assessed' ||
+                assessmentResults.length === 0
+            ) {
+                return res.status(200).json({
+                    success: true,
+                    data: null
+                });
+            }
+
             // Get prescriptive analysis
-            const prescriptiveAnalysis = await PrescriptiveAnalysis.find({
-                studentId: new mongoose.Types.ObjectId(studentId)
-            });
+            const PrescriptiveAnalysisService = require('../../../services/Teachers/PrescriptiveAnalysisService');
+            let prescriptiveAnalyses = await PrescriptiveAnalysisService.getStudentAnalyses(studentId);
+
+            // If we have assessment results but no analyses, generate them
+            if (assessmentResults.length > 0 && prescriptiveAnalyses.length === 0) {
+                // Generate analyses from most recent category results
+                await PrescriptiveAnalysisService.generateAnalysesFromCategoryResults(
+                    studentId,
+                    assessmentResults[0]
+                );
+                // Fetch the newly generated analyses
+                prescriptiveAnalyses = await PrescriptiveAnalysisService.getStudentAnalyses(studentId);
+            }
 
             return res.status(200).json({
                 success: true,
@@ -249,7 +279,7 @@ class ProgressController {
                         gradeLevel: student.gradeLevel
                     },
                     assessmentResults,
-                    prescriptiveAnalysis
+                    prescriptiveAnalyses
                 }
             });
         } catch (error) {

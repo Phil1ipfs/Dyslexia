@@ -455,34 +455,74 @@ exports.getRecommendedLessons = async (req, res) => {
   }
 };
 
-exports.getPrescriptiveRecommendations = async (req, res) => {
+exports.getPrescriptiveRecommendations = async function(req, res) {
   try {
-    const id = req.params.id;
+    const { id } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid student ID format' 
+      });
+    }
 
-    // This would typically come from a prescriptive analysis collection
-    // For now, generate sample data
-    const recommendations = [
-      {
-        id: '1',
-        text: 'Daily practice matching uppercase to lowercase letters',
-        rationale: 'Student shows difficulty differentiating similar lowercase letters like b/d/p/q. Regular practice will help strengthen visual discrimination skills.'
-      },
-      {
-        id: '2',
-        text: 'Phonological awareness activities focusing on initial sounds',
-        rationale: 'Student struggles to identify beginning sounds in words. Activities that emphasize starting sounds will help build this foundation for decoding words.'
-      },
-      {
-        id: '3',
-        text: 'Guided reading with visual supports',
-        rationale: 'Student performs better with visual cues. Pairing text with relevant images will help improve comprehension and build reading confidence.'
+    // Check if student exists
+    const student = await this.getUserById(id);
+    if (!student) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Student not found' 
+      });
+    }
+
+    // Get the latest category results
+    const CategoryResult = mongoose.model('CategoryResult');
+    const categoryResults = await CategoryResult.findOne({
+      studentId: new mongoose.Types.ObjectId(id)
+    }).sort({ assessmentDate: -1 });
+
+    // 🔒 Short-circuit: no assessment → no prescriptive data
+    if (
+      student.readingLevel === 'Not Assessed' ||
+      !categoryResults
+    ) {
+      return res.status(200).json({ success: true, data: null });
+    }
+
+    // Get all prescriptive analyses for this student
+    const PrescriptiveAnalysisService = require('../../services/Teachers/PrescriptiveAnalysisService');
+    let analyses = await PrescriptiveAnalysisService.getStudentAnalyses(id);
+
+    // If we have category results but no analyses, generate them
+    if (categoryResults && (!analyses || analyses.length === 0)) {
+      // Generate analyses from category results
+      await PrescriptiveAnalysisService.generateAnalysesFromCategoryResults(
+        id,
+        categoryResults
+      );
+      // Fetch the newly generated analyses
+      analyses = await PrescriptiveAnalysisService.getStudentAnalyses(id);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        student: {
+          id: student._id,
+          name: `${student.firstName} ${student.lastName}`,
+          readingLevel: student.readingLevel || 'Not Assessed'
+        },
+        categoryResults,
+        prescriptiveAnalyses: analyses
       }
-    ];
-
-    res.json(recommendations);
+    });
   } catch (error) {
-    console.error(`Error fetching prescriptive recommendations for student ID ${req.params.id}:`, error);
-    res.status(500).json({ message: 'Error fetching prescriptive recommendations', error: error.message });
+    console.error('Error getting prescriptive recommendations:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve prescriptive recommendations',
+      error: error.message
+    });
   }
 };
 
@@ -668,5 +708,26 @@ exports.getCategoryResults = async (req, res) => {
   } catch (error) {
     console.error(`Error fetching category results for student ID ${req.params.id}:`, error);
     res.status(500).json({ message: 'Error fetching category results', error: error.message });
+  }
+};
+
+// Helper method to get user by ID
+exports.getUserById = async function(id) {
+  try {
+    // Get users collection
+    const usersCollection = getUsersDb().collection('users');
+
+    // Find user by ID or idNumber
+    const user = await usersCollection.findOne({
+      $or: [
+        { _id: mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null },
+        { idNumber: parseInt(id) || id }
+      ]
+    });
+
+    return user;
+  } catch (error) {
+    console.error(`Error fetching user by ID ${id}:`, error);
+    return null;
   }
 };
