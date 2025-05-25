@@ -384,14 +384,6 @@ connectDB().then(() => {
   }
 
   try {
-    const mainAssessmentRoutes = require('./routes/Teachers/ManageProgress/mainAssessmentRoutes');
-    app.use('/api/main-assessment', mainAssessmentRoutes);
-    console.log('✅ Loaded main assessment routes');
-  } catch (error) {
-    console.warn('⚠️ Could not load main assessment routes:', error.message);
-  }
-
-  try {
     app.use('/api/student', require('./routes/Teachers/studentRoutes'));
     console.log('✅ Loaded student routes');
   } catch (error) {
