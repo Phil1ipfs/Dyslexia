@@ -60,6 +60,8 @@ import {
   FaImage
 } from 'react-icons/fa';
 
+import './css/ActivityEditModal.css';
+
 // Utility function to normalize category names
 const normalizeCategory = (rawCategory = '') => {
   return typeof rawCategory === 'string' 
@@ -76,8 +78,20 @@ const formatCategoryName = (categoryName) => {
     .replace(/\b\w/g, l => l.toUpperCase());
 };
 
+// Simple debounce function implementation
+const debounce = (func, delay) => {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  };
+};
+
 const ActivityEditModal = ({ activity, onClose, onSave, student, category, analysis }) => {
   // ===== STATE MANAGEMENT =====
+  
+  /** quick map: { choiceId: displayText }  */
+  const [questionValueLookup, setQuestionValueLookup] = useState({});
   
   // Basic activity information
   const [title, setTitle] = useState(
@@ -135,7 +149,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   
   // Inline Creation States
   const [showNewTemplateForm, setShowNewTemplateForm] = useState(false);
-  const [showNewChoiceForm, setShowNewChoiceForm] = useState(false);
+  const [showNewChoiceFormByPair, setShowNewChoiceFormByPair] = useState({});
   const [newTemplateData, setNewTemplateData] = useState({
     templateText: '',
     questionType: '',
@@ -144,7 +158,6 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   const [newChoiceData, setNewChoiceData] = useState({
     choiceType: '',
     choiceValue: '',
-    choiceImage: '',
     soundText: ''
   });
   
@@ -157,6 +170,10 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   const [fileUploads, setFileUploads] = useState({});
   const [uploading, setUploading] = useState(false);
   const fileInputRefs = useRef({});
+  
+  // Helper function to toggle choice form for a specific pair
+  const toggleChoiceForm = (pairId, open) =>
+    setShowNewChoiceFormByPair(prev => ({ ...prev, [pairId]: open }));
   
   // ===== EFFECTS =====
   
@@ -333,18 +350,28 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   };
  
   /**
-   * Load choice templates
-   * API: GET /api/templates/choices
+   * Load choice templates for this question
+   * API: GET /api/templates/choices?choiceTypes={types}
    */
   const loadChoiceTemplates = async () => {
     try {
       // TODO: Replace with actual API call
-      // const response = await fetch('/api/templates/choices');
+      // const response = await fetch(`/api/templates/choices?choiceTypes=${getApplicableChoiceTypes(category).join(',')}`);
       // const choices = await response.json();
       
       // Mock API call - replace with actual implementation
       const choices = await mockFetchChoiceTemplates();
       setAvailableChoiceTemplates(choices);
+      
+      // build fast reverse-lookup for later synchronisation
+      setQuestionValueLookup(
+        Object.fromEntries(
+          choices.map(c => [
+            c._id,
+            c.choiceValue || c.soundText || ''
+          ])
+        )
+      );
     } catch (error) {
       console.error("Error loading choice templates:", error);
       throw error;
@@ -430,7 +457,6 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       //   body: JSON.stringify({
       //     choiceType: choiceData.choiceType,
       //     choiceValue: choiceData.choiceValue,
-      //     choiceImage: choiceData.choiceImage,
       //     soundText: choiceData.soundText,
       //     createdBy: currentTeacherId, // TODO: Get from auth context
       //     createdAt: new Date().toISOString(),
@@ -444,7 +470,6 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         _id: `new_choice_${Date.now()}`,
         choiceType: choiceData.choiceType,
         choiceValue: choiceData.choiceValue,
-        choiceImage: choiceData.choiceImage,
         soundText: choiceData.soundText,
         createdBy: "current_teacher_id", // TODO: Get from auth
         createdAt: new Date().toISOString(),
@@ -503,7 +528,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         _id: "68298fb179a34741f9cd1a01-1",
         questionType: "patinig",
         questionText: "Anong katumbas na maliit na letra?",
-        questionImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/A_big.png",
+        questionImage: null,
         questionValue: "A",
         choiceOptions: [
           { optionText: "a", isCorrect: true },
@@ -518,7 +543,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         questionType: "patinig",
         questionText: "Anong katumbas na maliit na letra?",
         questionImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/E_big.png",
-        questionValue: "E",
+        questionValue: null,
         choiceOptions: [
           { optionText: "e", isCorrect: true },
           { optionText: "a", isCorrect: false }
@@ -831,7 +856,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     
     return typeMap[questionType] || [];
   };
- 
+
   /**
    * Format choice type for display
    */
@@ -850,7 +875,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     
     return typeMap[choiceType] || choiceType;
   };
- 
+
   /**
    * Get choices by IDs from available choices
    */
@@ -929,6 +954,15 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     if (!file) return;
     
     try {
+      // Clear question value when setting an image
+      updateQuestionChoicePair(pairId, 'questionValue', '');
+      
+      // Create a local preview immediately using URL.createObjectURL
+      const localUrl = URL.createObjectURL(file);
+      
+      // Update the UI immediately with the local preview
+      updateQuestionChoicePair(pairId, 'questionImage', localUrl);
+      
       setFileUploads(prev => ({
         ...prev,
         [pairId]: { status: 'uploading', file: file.name }
@@ -937,8 +971,11 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       // Upload to S3 (simulated)
       const imageUrl = await uploadImageToS3(file);
       
-      // Update the question pair
+      // Replace temporary URL with remote one
       updateQuestionChoicePair(pairId, 'questionImage', imageUrl);
+      
+      // Clean up the local URL to avoid memory leaks
+      URL.revokeObjectURL(localUrl);
       
       // Update upload status
       setFileUploads(prev => ({
@@ -1004,21 +1041,15 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     if (!file) return;
     
     try {
-      if (currentUploadTarget) {
+      if (currentUploadTarget && currentUploadTarget.type === 'question') {
         const imageUrl = await uploadImageToS3(file, currentUploadTarget.type, currentUploadTarget.id);
         
-        // Update the appropriate state based on the target
-        if (currentUploadTarget.type === 'question') {
-          // Update question image
-          setQuestionChoicePairs(prev => 
-            prev.map(pair => 
-              pair.id === currentUploadTarget.id ? { ...pair, questionImage: imageUrl } : pair
-            )
-          );
-        } else if (currentUploadTarget.type === 'choice') {
-          // Update choice image in new choice form
-          setNewChoiceData(prev => ({ ...prev, choiceImage: imageUrl }));
-        }
+        // Update question image
+        setQuestionChoicePairs(prev => 
+          prev.map(pair => 
+            pair.id === currentUploadTarget.id ? { ...pair, questionImage: imageUrl } : pair
+          )
+        );
       }
     } catch (error) {
       console.error("Error handling file upload:", error);
@@ -1028,6 +1059,12 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     // Reset the file input
     e.target.value = null;
   };
+ 
+  /** find choice object whose text matches a Question Value */
+  const findChoiceByText = (text) =>
+    availableChoiceTemplates.find(
+      c => (c.choiceValue || c.soundText) === text
+    );
  
   // ===== EVENT HANDLERS =====
  
@@ -1147,24 +1184,33 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         category,
         readingLevel,
         passThreshold: 75,
-        questions: questionChoicePairs.map((pair, index) => ({
-          questionId: `q_${Date.now()}_${index}`,
-          source: pair.sourceType,
-          sourceQuestionId: pair.sourceId,
-          questionIndex: index,
-          questionType: pair.questionType,
-          questionText: pair.questionText,
-          questionImage: pair.questionImage,
-          questionValue: pair.questionValue,
-          choiceIds: pair.choiceIds, // References to templates_choices
-          correctChoiceId: pair.correctChoiceId,
-          // Include actual choice data for mobile app consumption
-          choices: getChoicesByIds(pair.choiceIds).map(choice => ({
-            optionText: choice.choiceValue || choice.soundText || '',
-            optionImage: choice.choiceImage,
-            isCorrect: choice._id === pair.correctChoiceId
-          }))
-        })),
+        questions: questionChoicePairs.map((pair, index) => {
+          // Get full choice objects for the selected choices
+          const selectedChoices = getChoicesByIds(pair.choiceIds);
+          
+          return {
+            questionId: `q_${Date.now()}_${index}`,
+            source: pair.sourceType,
+            sourceQuestionId: pair.sourceId,
+            questionIndex: index,
+            questionType: pair.questionType,
+            questionText: pair.questionText,
+            questionImage: pair.questionImage,
+            questionValue: pair.questionValue,
+            choiceIds: pair.choiceIds,
+            correctChoiceId: pair.correctChoiceId,
+            choices: selectedChoices.map(choice => {
+              // Handle legacy choice images if they exist
+              const optionImage = choice.choiceImage || null;
+              
+              return {
+                optionText: choice.choiceValue || choice.soundText || '',
+                optionImage,
+                isCorrect: choice._id === pair.correctChoiceId
+              };
+            })
+          };
+        }),
         status: 'draft',
         createdAt: activity?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -1237,12 +1283,30 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     setQuestionChoicePairs(prev => 
       prev.map(pair => {
         if (pair.id === pairId) {
+          // Determine whether to clear questionValue or questionImage based on the template
+          let updatedQuestionValue = '';
+          let updatedQuestionImage = null;
+          
+          // If the template is intended for images, clear question value
+          if (template.isImageTemplate) {
+            updatedQuestionValue = '';
+            // Keep any existing image
+            updatedQuestionImage = pair.questionImage;
+          } 
+          // Otherwise, clear the image and set an empty question value
+          else {
+            updatedQuestionValue = '';
+            updatedQuestionImage = null;
+          }
+          
           return {
             ...pair,
-            sourceType: 'template_question',
+            sourceType: 'template_question', // Make absolutely sure we do not look "locked"
             sourceId: template._id,
             questionType: template.questionType,
             questionText: template.templateText,
+            questionValue: updatedQuestionValue,
+            questionImage: updatedQuestionImage,
             // Clear choices when template changes
             choiceIds: [],
             correctChoiceId: null
@@ -1262,6 +1326,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         if (pair.id === pairId) {
           // Enforce exactly 2 choices
           if (pair.choiceIds.length >= 2) {
+            // Don't silently discard, show a warning instead
+            console.warn('Each question can only have two answer choices');
             return pair;
           }
           
@@ -1272,11 +1338,18 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           
           const newChoiceIds = [...pair.choiceIds, choiceId];
           
+          // autopopulate questionValue if it's still empty
+          const autoValue =
+            pair.questionValue ||
+            questionValueLookup[choiceId] ||
+            null;
+          
           return {
             ...pair,
             choiceIds: newChoiceIds,
             // Set first choice as correct if none set
-            correctChoiceId: pair.correctChoiceId || choiceId
+            correctChoiceId: pair.correctChoiceId || choiceId,
+            questionValue: autoValue
           };
         }
         return pair;
@@ -1290,13 +1363,16 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         if (pair.id === pairId) {
           const newChoiceIds = pair.choiceIds.filter(id => id !== choiceId);
           
+          // Auto-select the first remaining choice if the removed choice was correct
+          let newCorrectChoiceId = pair.correctChoiceId;
+          if (pair.correctChoiceId === choiceId) {
+            newCorrectChoiceId = newChoiceIds.length > 0 ? newChoiceIds[0] : null;
+          }
+          
           return {
             ...pair,
             choiceIds: newChoiceIds,
-            // Update correct choice if removed choice was correct
-            correctChoiceId: pair.correctChoiceId === choiceId 
-              ? (newChoiceIds.length > 0 ? newChoiceIds[0] : null)
-              : pair.correctChoiceId
+            correctChoiceId: newCorrectChoiceId
           };
         }
         return pair;
@@ -1311,6 +1387,40 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       )
     );
   };
+ 
+  // When updating question value, clear image if value is set
+  const handleQuestionValueChange = debounce((pairId, newText) => {
+    // Just update the question value without auto-adding choices
+    updateQuestionChoicePair(pairId, 'questionValue', newText);
+    
+    // If a value is being set, clear the image
+    if (newText && newText.trim() !== '') {
+      updateQuestionChoicePair(pairId, 'questionImage', null);
+    }
+    
+    // Only attempt to auto-select choices for custom questions
+    if (questionChoicePairs.find(p => p.id === pairId)?.sourceType === 'custom') {
+      const choice = findChoiceByText(newText);
+      if (!choice) return;                           // user typed something random
+  
+      setQuestionChoicePairs(prev =>
+        prev.map(pair => {
+          if (pair.id !== pairId) return pair;
+  
+          // ① Ensure the matching choice is inside choiceIds (max 2 rule)
+          let newChoiceIds = pair.choiceIds;
+          if (!newChoiceIds.includes(choice._id)) {
+            newChoiceIds = [...newChoiceIds, choice._id].slice(-2);
+          }
+  
+          // ② If no correct answer yet, set this one
+          const correctChoiceId = pair.correctChoiceId || choice._id;
+  
+          return { ...pair, choiceIds: newChoiceIds, correctChoiceId };
+        })
+      );
+    }
+  }, 200);
  
   /**
    * Inline Template Creation
@@ -1343,8 +1453,20 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   /**
    * Inline Choice Creation
    */
-  const handleCreateNewChoice = async () => {
+  const handleCreateNewChoice = async (pairId) => {
     try {
+      // Auto-fill choiceType if a matching template exists
+      if (newChoiceData.choiceValue && !newChoiceData.choiceType) {
+        const existingChoice = findChoiceValue(newChoiceData.choiceValue);
+        if (existingChoice) {
+          setNewChoiceData(prev => ({
+            ...prev,
+            choiceType: existingChoice.choiceType,
+            soundText: existingChoice.soundText || prev.soundText
+          }));
+        }
+      }
+      
       if (!validateNewChoice()) return;
       
       setSubmitting(true);
@@ -1354,10 +1476,12 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       setNewChoiceData({
         choiceType: '',
         choiceValue: '',
-        choiceImage: '',
         soundText: ''
       });
-      setShowNewChoiceForm(false);
+      toggleChoiceForm(pairId, false);
+      
+      // Add the new choice to the current pair
+      addChoiceToPair(pairId, newChoice._id);
       
       // Show success message
       console.log('New choice created:', newChoice);
@@ -1407,6 +1531,15 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         if (invalidPairs.length > 0) {
           newErrors.pairs = "All questions must have exactly 2 choices with one marked as correct";
         }
+        
+        // Add validation to check for both value and image set
+        const invalidValueImagePairs = questionChoicePairs.filter(pair => 
+          pair.questionValue && pair.questionValue.trim() !== '' && pair.questionImage
+        );
+        
+        if (invalidValueImagePairs.length > 0) {
+          newErrors.pairs = "Questions can have either a Question Value OR a Question Image, not both";
+        }
       }
     }
     
@@ -1442,6 +1575,15 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       
       if (invalidPairs.length > 0) {
         allErrors.pairs = "All questions must have exactly 2 choices with one marked as correct";
+      }
+      
+      // Add validation to check for both value and image set
+      const invalidValueImagePairs = questionChoicePairs.filter(pair => 
+        pair.questionValue && pair.questionValue.trim() !== '' && pair.questionImage
+      );
+      
+      if (invalidValueImagePairs.length > 0) {
+        allErrors.pairs = "Questions can have either a Question Value OR a Question Image, not both";
       }
     }
     
@@ -1493,6 +1635,12 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     return Object.keys(newErrors).length === 0;
   };
  
+  /** find choice object whose value matches the provided text */
+  const findChoiceValue = (val) =>
+    availableChoiceTemplates.find(c =>
+      (c.choiceValue || c.soundText) === val
+    );
+  
   /**
    * Validate new choice creation
    */
@@ -1529,13 +1677,6 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         }
       } else if (!newChoiceData.choiceValue && !newChoiceData.soundText) {
         newErrors.newChoice = "Choice value or sound text is required";
-      }
-      
-      // Image is required for these choice types
-      const imageRequiredTypes = ['patinigBigLetter', 'patinigSmallLetter', 
-                                 'katinigBigLetter', 'katinigSmallLetter', 'wordText'];
-      if (imageRequiredTypes.includes(newChoiceData.choiceType) && !newChoiceData.choiceImage) {
-        newErrors.newChoice = `Image is required for ${formatChoiceType(newChoiceData.choiceType)}`;
       }
     }
     
@@ -2019,24 +2160,83 @@ const renderQuestionChoicesStep = () => {
                   type="text"
                   value={pair.questionText || ''}
                   onChange={(e) => updateQuestionChoicePair(pair.id, 'questionText', e.target.value)}
-                  disabled={pair.sourceType === 'main_assessment'}
-                />
-                    </div>
-                    
-              <div className="literexia-form-group">
-                <label>Question Value (optional)</label>
-                <input
-                  type="text"
-                  value={pair.questionValue || ''}
-                  onChange={(e) => updateQuestionChoicePair(pair.id, 'questionValue', e.target.value)}
-                  disabled={pair.sourceType === 'main_assessment'}
-                  placeholder="e.g., A, BO + LA"
+                  readOnly={pair.sourceType === 'main_assessment' || pair.sourceType === 'template_question'}
+                  className={pair.sourceType === 'main_assessment' || pair.sourceType === 'template_question' ? 'literexia-readonly-input' : ''}
                 />
               </div>
             </div>
             
             <div className="literexia-form-group">
+              <label>Question Value</label>
+              <div className="literexia-help-text">
+                Note: You can set either Question Value OR Question Image, not both.
+              </div>
+              {(pair.sourceType === 'main_assessment') ? (
+                // For assessment questions, show a read-only input
+                <input
+                  type="text"
+                  value={pair.questionValue || ''}
+                  readOnly
+                  className="literexia-readonly-input"
+                />
+              ) : pair.sourceType === 'template_question' ? (
+                // Dropdown for template questions
+                <select
+                  value={pair.questionValue || ''}
+                  onChange={(e) => handleQuestionValueChange(pair.id, e.target.value)}
+                  className="literexia-dropdown"
+                >
+                  <option value="">-- Select Value --</option>
+                  {availableChoiceTemplates
+                    .filter(c => {
+                      // Filter by applicable choice types for current question
+                      if (pair.sourceType === 'template_question' && pair.sourceId) {
+                        const template = availableQuestionTemplates.find(t => t._id === pair.sourceId);
+                        return template ? (template.applicableChoiceTypes || []).includes(c.choiceType) : true;
+                      }
+                      return getApplicableChoiceTypes(pair.questionType).includes(c.choiceType);
+                    })
+                    .map(c => (
+                      <option 
+                        key={c._id} 
+                        value={c.choiceValue || c.soundText || ''}
+                      >
+                        {c.choiceValue || c.soundText || '(No text)'} ({formatChoiceType(c.choiceType)})
+                      </option>
+                    ))}
+                </select>
+              ) : (
+                // Datalist input for custom questions
+                <input
+                  list={`values-${pair.id}`}
+                  value={pair.questionValue || ''}
+                  onChange={(e) => handleQuestionValueChange(pair.id, e.target.value)}
+                />
+              )}
+              <datalist id={`values-${pair.id}`}>
+                {availableChoiceTemplates
+                  .filter(c => {
+                    // Filter by applicable choice types for current question
+                    if (pair.sourceType === 'template_question' && pair.sourceId) {
+                      const template = availableQuestionTemplates.find(t => t._id === pair.sourceId);
+                      return template ? (template.applicableChoiceTypes || []).includes(c.choiceType) : true;
+                    }
+                    return getApplicableChoiceTypes(pair.questionType).includes(c.choiceType);
+                  })
+                  .map(c => (
+                    <option
+                      key={c._id}
+                      value={c.choiceValue || c.soundText}
+                    />
+                  ))}
+              </datalist>
+            </div>
+            
+            <div className="literexia-form-group">
               <label>Question Image</label>
+              <div className="literexia-help-text">
+                Note: You can set either Question Image OR Question Value, not both.
+              </div>
               <div className="literexia-file-upload">
                 <input
                   type="file"
@@ -2044,31 +2244,41 @@ const renderQuestionChoicesStep = () => {
                   ref={el => fileInputRefs.current[pair.id] = el}
                   onChange={(e) => handleFileChange(e, pair.id)}
                   accept="image/*"
-                  disabled={pair.sourceType === 'main_assessment'}
                   style={{ display: 'none' }}
                 />
                 <div className="literexia-file-upload-controls">
-                  <button 
-                    type="button" 
-                    className="literexia-file-select-btn"
-                    onClick={() => fileInputRefs.current[pair.id].click()}
-                    disabled={pair.sourceType === 'main_assessment' || fileUploads[pair.id]?.status === 'uploading'}
-                  >
-                    {fileUploads[pair.id]?.status === 'uploading' ? <FaSpinner className="fa-spin" /> : <FaPlus />} 
-                    {pair.questionImage ? 'Change Image' : 'Upload Image'}
-                  </button>
-                  {pair.questionImage && (
-                    <div className="literexia-image-preview">
-                      <img src={pair.questionImage} alt="Question" />
+                  {pair.sourceType === 'main_assessment' ? (
+                    // For assessment questions, just show the image without edit buttons
+                    pair.questionImage && (
+                      <div className="literexia-image-preview">
+                        <img src={pair.questionImage} alt="Question" />
+                      </div>
+                    )
+                  ) : (
+                    // For template and custom questions, show the full edit controls
+                    <>
                       <button 
                         type="button" 
-                        className="literexia-remove-image-btn"
-                        onClick={() => updateQuestionChoicePair(pair.id, 'questionImage', null)}
-                        disabled={pair.sourceType === 'main_assessment'}
+                        className="literexia-file-select-btn"
+                        onClick={() => fileInputRefs.current[pair.id].click()}
+                        disabled={fileUploads[pair.id]?.status === 'uploading'}
                       >
-                        <FaTimes />
+                        {fileUploads[pair.id]?.status === 'uploading' ? <FaSpinner className="fa-spin" /> : <FaPlus />} 
+                        {pair.questionImage ? 'Change Image' : 'Upload Image'}
                       </button>
-                    </div>
+                      {pair.questionImage && (
+                        <div className="literexia-image-preview">
+                          <img src={pair.questionImage} alt="Question" />
+                          <button 
+                            type="button" 
+                            className="literexia-remove-image-btn"
+                            onClick={() => updateQuestionChoicePair(pair.id, 'questionImage', null)}
+                          >
+                            <FaTimes />
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                   {fileUploads[pair.id]?.status === 'uploading' && <span className="literexia-uploading">Uploading...</span>}
                   {fileUploads[pair.id]?.status === 'error' && <span className="literexia-upload-error">Upload failed. Please try again.</span>}
@@ -2085,8 +2295,8 @@ const renderQuestionChoicesStep = () => {
                 <button
                   type="button"
                   className="literexia-create-choice-btn"
-                  onClick={() => setShowNewChoiceForm(!showNewChoiceForm)}
-                  disabled={pair.choiceIds.length >= 2 || pair.sourceType === 'main_assessment'}
+                  onClick={() => toggleChoiceForm(pair.id, !showNewChoiceFormByPair[pair.id])}
+                  disabled={pair.choiceIds.length >= 2}
                 >
                   <FaPlus /> Add New Choice
                 </button>
@@ -2094,7 +2304,7 @@ const renderQuestionChoicesStep = () => {
             </div>
             
             {/* Inline New Choice Form */}
-            {isInlineCreationAllowed() && showNewChoiceForm && (
+            {isInlineCreationAllowed() && showNewChoiceFormByPair[pair.id] && (
               <div className="literexia-inline-form">
                 <h5>Create New Choice</h5>
                 <div className="literexia-form-row">
@@ -2141,61 +2351,26 @@ const renderQuestionChoicesStep = () => {
                         ...prev, choiceValue: e.target.value
                       }))}
                       placeholder="e.g., a, BOLA"
+                      list="choice-values"
                     />
+                    <datalist id="choice-values">
+                      {availableChoiceTemplates.map(c => (
+                        <option key={c._id} value={c.choiceValue || c.soundText} />
+                      ))}
+                    </datalist>
                   </div>
                 </div>
                 
-                <div className="literexia-form-row">
-                  <div className="literexia-form-group">
-                    <label>Image</label>
-                    <div className="literexia-file-upload">
-                      <input
-                        type="file"
-                        id="new-choice-image"
-                        ref={el => fileInputRefs.current.new_choice = el}
-                        onChange={handleChoiceFileChange}
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                      />
-                      <div className="literexia-file-upload-controls">
-                        <button 
-                          type="button" 
-                          className="literexia-file-select-btn"
-                          onClick={() => fileInputRefs.current.new_choice.click()}
-                          disabled={fileUploads.new_choice?.status === 'uploading'}
-                        >
-                          {fileUploads.new_choice?.status === 'uploading' ? <FaSpinner className="fa-spin" /> : <FaPlus />} 
-                          {newChoiceData.choiceImage ? 'Change Image' : 'Upload Image'}
-                        </button>
-                        {newChoiceData.choiceImage && (
-                          <div className="literexia-image-preview">
-                            <img src={newChoiceData.choiceImage} alt="Choice" />
-                            <button 
-                              type="button" 
-                              className="literexia-remove-image-btn"
-                              onClick={() => setNewChoiceData(prev => ({ ...prev, choiceImage: '' }))}
-                            >
-                              <FaTimes />
-                            </button>
-                          </div>
-                        )}
-                        {fileUploads.new_choice?.status === 'uploading' && <span className="literexia-uploading">Uploading...</span>}
-                        {fileUploads.new_choice?.status === 'error' && <span className="literexia-upload-error">Upload failed. Please try again.</span>}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="literexia-form-group">
-                    <label>Sound Text (optional)</label>
-                    <input
-                      type="text"
-                      value={newChoiceData.soundText}
-                      onChange={(e) => setNewChoiceData(prev => ({
-                        ...prev, soundText: e.target.value
-                      }))}
-                      placeholder="e.g., /ah/"
-                    />
-                  </div>
+                <div className="literexia-form-group">
+                  <label>Sound Text (optional)</label>
+                  <input
+                    type="text"
+                    value={newChoiceData.soundText}
+                    onChange={(e) => setNewChoiceData(prev => ({
+                      ...prev, soundText: e.target.value
+                    }))}
+                    placeholder="e.g., /ah/"
+                  />
                 </div>
                 
                 {errors.newChoice && (
@@ -2205,14 +2380,14 @@ const renderQuestionChoicesStep = () => {
                 <div className="literexia-inline-form-actions">
                 <button 
                    type="button" 
-                   onClick={() => setShowNewChoiceForm(false)}
+                   onClick={() => toggleChoiceForm(pair.id, false)}
                    className="literexia-cancel-btn"
                  >
                    Cancel
                  </button>
                  <button 
                    type="button" 
-                   onClick={handleCreateNewChoice}
+                   onClick={() => handleCreateNewChoice(pair.id)}
                    className="literexia-save-btn"
                    disabled={submitting}
                  >
@@ -2231,7 +2406,7 @@ const renderQuestionChoicesStep = () => {
                    // Filter by applicable choice types for current question
                    if (pair.sourceType === 'template_question' && pair.sourceId) {
                      const template = availableQuestionTemplates.find(t => t._id === pair.sourceId);
-                     return template ? template.applicableChoiceTypes.includes(choice.choiceType) : true;
+                     return template ? (template.applicableChoiceTypes || []).includes(choice.choiceType) : true;
                    }
                    return getApplicableChoiceTypes(pair.questionType).includes(choice.choiceType);
                  })
@@ -2242,10 +2417,9 @@ const renderQuestionChoicesStep = () => {
                        pair.choiceIds.includes(choice._id) ? 'selected' : ''
                      } ${
                        pair.choiceIds.length >= 2 && !pair.choiceIds.includes(choice._id) ? 'disabled' : ''
-                     } ${pair.sourceType === 'main_assessment' ? 'readonly' : ''}`}
+                     }`}
                      onClick={() => {
-                       if (pair.sourceType === 'main_assessment') return;
-                       
+                       // Allow clicking choices for both assessment and template questions
                        if (pair.choiceIds.includes(choice._id)) {
                          removeChoiceFromPair(pair.id, choice._id);
                        } else if (pair.choiceIds.length < 2) {
@@ -2253,11 +2427,6 @@ const renderQuestionChoicesStep = () => {
                        }
                      }}
                    >
-                     {choice.choiceImage && (
-                       <div className="literexia-choice-image">
-                         <img src={choice.choiceImage} alt={choice.choiceValue || choice.soundText} />
-                       </div>
-                     )}
                      <div className="literexia-choice-value">
                        {choice.choiceValue || choice.soundText || '(No text)'}
                      </div>
@@ -2292,19 +2461,13 @@ const renderQuestionChoicesStep = () => {
                                 <input
                                   type="radio"
                                   name={`correct-choice-${pair.id}`}
-                           checked={choice._id === pair.correctChoiceId}
-                           onChange={() => setCorrectChoice(pair.id, choice._id)}
-                           disabled={pair.sourceType === 'main_assessment'}
+                                  checked={choice._id === pair.correctChoiceId}
+                                  onChange={() => setCorrectChoice(pair.id, choice._id)}
                                 />
                                 <label>Correct</label>
                               </div>
                               
                        <div className="literexia-selected-choice-content">
-                                {choice.choiceImage && (
-                           <div className="literexia-selected-choice-image">
-                             <img src={choice.choiceImage} alt={choice.choiceValue || choice.soundText} />
-                                  </div>
-                                )}
                          <div className="literexia-selected-choice-value">
                            {choice.choiceValue || choice.soundText || '(No text)'}
                                 </div>
@@ -2314,7 +2477,6 @@ const renderQuestionChoicesStep = () => {
                          type="button"
                          className="literexia-remove-choice-btn"
                          onClick={() => removeChoiceFromPair(pair.id, choice._id)}
-                         disabled={pair.sourceType === 'main_assessment'}
                        >
                          <FaTrash />
                        </button>
