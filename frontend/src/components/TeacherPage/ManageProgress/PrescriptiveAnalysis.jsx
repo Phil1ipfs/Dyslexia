@@ -476,6 +476,75 @@ const PrescriptiveAnalysis = ({
     );
   };
 
+  const renderCategoryTabs = () => {
+    return (
+      <div className="literexia-category-tabs">
+        <div className="literexia-tabs-header">
+          <h3>Reading Skill Categories</h3>
+          <div className="literexia-tabs-filter">
+            <label>
+              <input 
+                type="checkbox" 
+                checked={showNeedingInterventionOnly} 
+                onChange={() => setShowNeedingInterventionOnly(!showNeedingInterventionOnly)}
+              />
+              Show only categories needing intervention
+            </label>
+          </div>
+        </div>
+        
+        <div className="literexia-tabs-container">
+          {effectiveCategoryResults.categories
+            .filter(cat => !showNeedingInterventionOnly || (Number(cat.score) || 0) < 75)
+            .map((category, index) => {
+              const categoryName = category.categoryName;
+              const displayName = formatCategoryName(categoryName);
+              const score = Number(category.score) || 0;
+              const needsIntervention = score < 75;
+              const correctAnswers = category.correctAnswers || 0;
+              const totalQuestions = category.totalQuestions || 0;
+              const statusLabel = needsIntervention ? "NEEDS ATTENTION" : "NOT STARTED";
+              const statusClass = needsIntervention ? "needs-attention" : "not-started";
+              
+              return (
+                <div 
+                  key={index}
+                  className={`literexia-category-tab ${selectedCategory === categoryName ? 'active' : ''} ${needsIntervention ? 'needs-intervention' : ''}`}
+                  onClick={() => setSelectedCategory(categoryName)}
+                >
+                  <div className="literexia-tab-content">
+                    <div className="literexia-tab-name">{displayName}</div>
+                    <div className="literexia-tab-score">{score}%</div>
+                    
+                    <div className="literexia-progress-indicators">
+                      {Array.from({ length: totalQuestions }).map((_, i) => (
+                        <div 
+                          key={i} 
+                          className={`literexia-progress-indicator ${i < correctAnswers ? 'correct' : ''}`}
+                        />
+                      ))}
+                    </div>
+                    
+                    {needsIntervention ? (
+                      <div className={`literexia-tab-badge ${statusClass}`}>
+                        <FaExclamationTriangle /> {statusLabel}
+                      </div>
+                    ) : (
+                      <div className="literexia-status-text">
+                        {correctAnswers > 0 
+                          ? `Need ${Math.ceil(totalQuestions * 0.75) - correctAnswers} more to pass` 
+                          : 'Category not yet started'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      </div>
+    );
+  };
+
   // ===== EARLY RETURNS =====
 
   // If no categories need intervention
@@ -524,50 +593,7 @@ const PrescriptiveAnalysis = ({
       </div>
       
       {/* Category tabs */}
-      <div className="literexia-category-tabs">
-        <div className="literexia-tabs-header">
-          <h3>Reading Skill Categories</h3>
-          <div className="literexia-tabs-filter">
-            <label>
-              <input 
-                type="checkbox" 
-                checked={showNeedingInterventionOnly} 
-                onChange={() => setShowNeedingInterventionOnly(!showNeedingInterventionOnly)}
-              />
-              Show only categories needing intervention
-            </label>
-          </div>
-        </div>
-        
-        <div className="literexia-tabs-container">
-          {effectiveCategoryResults.categories
-            .filter(cat => !showNeedingInterventionOnly || (Number(cat.score) || 0) < 75)
-            .map((category, index) => {
-              const categoryName = category.categoryName;
-              const displayName = formatCategoryName(categoryName);
-              const score = Number(category.score) || 0;
-              const needsIntervention = score < 75;
-              
-              return (
-                <div 
-                  key={index}
-                  className={`literexia-category-tab ${selectedCategory === categoryName ? 'active' : ''} ${needsIntervention ? 'needs-intervention' : ''}`}
-                  onClick={() => setSelectedCategory(categoryName)}
-                >
-                  <div className="literexia-tab-content">
-                    <div className="literexia-tab-name">{displayName}</div>
-                    <div className="literexia-tab-score">{score}%</div>
-                  </div>
-                  {needsIntervention && (
-                    <div className="literexia-tab-badge">
-                      <FaExclamationTriangle /> Needs Intervention
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-        </div>
-      </div>
+      {renderCategoryTabs()}
       
       {/* Selected category analysis */}
       {selectedCategory && selectedCategoryData && (
