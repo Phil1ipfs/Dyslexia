@@ -1,9 +1,6 @@
+// models/Teachers/ManageProgress/interventionPlanModel.js
 const mongoose = require('mongoose');
 
-/**
- * Model for the test.intervention_assessment collection
- * Stores intervention plans created for students who need additional support
- */
 const interventionPlanSchema = new mongoose.Schema({
   studentId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -12,23 +9,28 @@ const interventionPlanSchema = new mongoose.Schema({
   },
   prescriptiveAnalysisId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'PrescriptiveAnalysis'
+    ref: 'PrescriptiveAnalysis',
+    default: null
   },
   categoryResultId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'CategoryResult'
+    ref: 'CategoryResult',
+    default: null
   },
   name: {
     type: String,
-    required: true
+    required: true,
+    trim: true
+  },
+  description: {
+    type: String,
+    required: true,
+    trim: true
   },
   category: {
     type: String,
     required: true,
     enum: ['Alphabet Knowledge', 'Phonological Awareness', 'Word Recognition', 'Decoding', 'Reading Comprehension']
-  },
-  description: {
-    type: String
   },
   readingLevel: {
     type: String,
@@ -36,48 +38,75 @@ const interventionPlanSchema = new mongoose.Schema({
   },
   passThreshold: {
     type: Number,
-    default: 75
+    default: 75,
+    min: 0,
+    max: 100
   },
   questions: [{
     questionId: {
-      type: mongoose.Schema.Types.ObjectId
+      type: String,
+      required: true
     },
     source: {
       type: String,
-      enum: ['main_assessment', 'template'],
+      enum: ['main_assessment', 'template_question', 'custom', 'sentence_template'],
       required: true
     },
     sourceQuestionId: {
-      type: mongoose.Schema.Types.ObjectId
+      type: String,
+      default: null
     },
-    templateId: {
-      type: mongoose.Schema.Types.ObjectId
+    questionIndex: {
+      type: Number,
+      required: true
     },
-    questionIndex: Number,
     questionType: {
       type: String,
-      required: true
+      required: true,
+      enum: ['patinig', 'katinig', 'malapantig', 'word', 'sentence']
     },
     questionText: {
       type: String,
       required: true
     },
-    questionImage: String,
-    questionValue: String,
+    questionImage: {
+      type: String,
+      default: null
+    },
+    questionValue: {
+      type: String,
+      default: null
+    },
+    choiceIds: [{
+      type: String
+    }],
+    correctChoiceId: {
+      type: String,
+      default: null
+    },
     choices: [{
-      choiceText: String,
-      choiceImage: String,
-      isCorrect: Boolean
+      optionText: {
+        type: String,
+        required: true
+      },
+      optionImage: {
+        type: String,
+        default: null
+      },
+      isCorrect: {
+        type: Boolean,
+        required: true
+      }
     }]
   }],
+  sentenceTemplate: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
+  },
   status: {
     type: String,
-    enum: ['draft', 'active', 'completed', 'archived'],
+    enum: ['draft', 'active', 'completed'],
     default: 'draft'
-  },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
   },
   createdAt: {
     type: Date,
@@ -91,4 +120,40 @@ const interventionPlanSchema = new mongoose.Schema({
   collection: 'intervention_assessment'
 });
 
-module.exports = mongoose.models.InterventionPlan || mongoose.model('InterventionPlan', interventionPlanSchema);
+// Update timestamp on save
+interventionPlanSchema.pre('save', function(next) {
+  this.updatedAt = new Date();
+  next();
+});
+
+// Initialize progress record after creating a new intervention plan
+interventionPlanSchema.post('save', async function(doc) {
+  try {
+    // Check if this is a new document being created
+    if (this.isNew) {
+      const InterventionProgress = mongoose.model('InterventionProgress');
+      
+      // Create a default progress record
+      await InterventionProgress.create({
+        studentId: doc.studentId,
+        interventionPlanId: doc._id,
+        completedActivities: 0,
+        totalActivities: doc.questions.length,
+        percentComplete: 0,
+        correctAnswers: 0,
+        incorrectAnswers: 0,
+        percentCorrect: 0,
+        passedThreshold: false,
+        notes: "Default progress record"
+      });
+      
+      console.log(`Created default progress record for intervention ${doc._id}`);
+    }
+  } catch (error) {
+    console.error('Error creating intervention progress record:', error);
+  }
+});
+
+const InterventionPlan = mongoose.models.InterventionPlan || mongoose.model('InterventionPlan', interventionPlanSchema);
+
+module.exports = InterventionPlan;

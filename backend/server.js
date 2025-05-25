@@ -376,6 +376,22 @@ connectDB().then(() => {
   }
 
   try {
+    const interventionRoutes = require('./routes/Teachers/ManageProgress/interventionRoutes');
+    app.use('/api/interventions', interventionRoutes);
+    console.log('✅ Loaded intervention routes');
+  } catch (error) {
+    console.warn('⚠️ Could not load intervention routes:', error.message);
+  }
+
+  try {
+    const mainAssessmentRoutes = require('./routes/Teachers/ManageProgress/mainAssessmentRoutes');
+    app.use('/api/main-assessment', mainAssessmentRoutes);
+    console.log('✅ Loaded main assessment routes');
+  } catch (error) {
+    console.warn('⚠️ Could not load main assessment routes:', error.message);
+  }
+
+  try {
     app.use('/api/student', require('./routes/Teachers/studentRoutes'));
     console.log('✅ Loaded student routes');
   } catch (error) {
