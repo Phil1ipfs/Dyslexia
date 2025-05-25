@@ -1,14 +1,14 @@
 // services/Teachers/InterventionService.js
 const mongoose = require('mongoose');
-const InterventionPlan = require('../../../backend/models/Teachers/ManageProgress/interventionPlanModel');
-const InterventionProgress = require('../../../backend/models/Teachers/ManageProgress/interventionProgressModel');
-const InterventionResponse = require('../../../backend/models/Teachers/ManageProgress/interventionResponseModel');
-const TemplateQuestion = require('../../../backend/models/Teachers/ManageProgress/templatesQuestionsModel');
-const TemplateChoice = require('../../../backend/models/Teachers/ManageProgress/templatesChoicesModel');
-const SentenceTemplate = require('../../../backend/models/Teachers/ManageProgress/sentenceTemplateModel');
-const PrescriptiveAnalysis = require('../../../backend/models/Teachers/ManageProgress/prescriptiveAnalysisModel');
-const User = require('../../../backend/models/userModel');
-const s3Client = require('../../../backend/config/s3');
+const InterventionPlan = require('../../models/Teachers/ManageProgress/interventionPlanModel');
+const InterventionProgress = require('../../models/Teachers/ManageProgress/interventionProgressModel');
+const InterventionResponse = require('../../models/Teachers/ManageProgress/interventionResponseModel');
+const TemplateQuestion = require('../../models/Teachers/ManageProgress/templatesQuestionsModel');
+const TemplateChoice = require('../../models/Teachers/ManageProgress/templatesChoicesModel');
+const SentenceTemplate = require('../../models/Teachers/ManageProgress/sentenceTemplateModel');
+const PrescriptiveAnalysis = require('../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
+const User = require('../../models/userModel');
+const s3Client = require('../../config/s3');
 
 class InterventionService {
   /**
@@ -323,11 +323,20 @@ class InterventionService {
     try {
       const normCategory = this.normalizeCategoryName(category);
       
-      // Use the correct model - make sure TemplateQuestion is imported
-      return await TemplateQuestion.find({ 
-        category: normCategory,
-        isActive: true 
-      });
+      console.log(`Querying templates_questions with category: ${normCategory}`);
+      
+      // Use direct collection access to match how main_assessment is queried
+      const templates = await mongoose.connection.db
+        .collection('templates_questions')
+        .find({ 
+          category: normCategory,
+          isActive: true 
+        })
+        .toArray();
+      
+      console.log(`Found ${templates.length} template questions`);
+      
+      return templates;
     } catch (error) {
       console.error('Error fetching template questions:', error);
       throw error;
@@ -381,9 +390,29 @@ class InterventionService {
    */
   async createTemplateQuestion(templateData) {
     try {
-      const newTemplate = new TemplateQuestion(templateData);
-      await newTemplate.save();
-      return newTemplate;
+      console.log('Creating template question with data:', templateData);
+      
+      // Ensure the category is properly normalized
+      templateData.category = this.normalizeCategoryName(templateData.category);
+      
+      // Set default values for required fields if not provided
+      if (!templateData.isActive) templateData.isActive = true;
+      if (!templateData.isApproved) templateData.isApproved = true;
+      if (!templateData.createdAt) templateData.createdAt = new Date();
+      if (!templateData.updatedAt) templateData.updatedAt = new Date();
+      
+      // Insert directly into the collection
+      const result = await mongoose.connection.db
+        .collection('templates_questions')
+        .insertOne(templateData);
+      
+      if (!result.insertedId) {
+        throw new Error('Failed to insert template question');
+      }
+      
+      console.log(`Successfully created template question with ID: ${result.insertedId}`);
+      
+      return { ...templateData, _id: result.insertedId };
     } catch (error) {
       console.error('Error creating template question:', error);
       throw error;
@@ -414,24 +443,38 @@ class InterventionService {
    */
   async getPresignedUploadUrl(fileName, fileType) {
     try {
-      if (!s3Client || !s3Client.getSignedUrlPromise) {
+      if (!s3Client) {
         throw new Error('S3 client not properly configured');
       }
       
+      const bucketName = process.env.AWS_BUCKET_NAME || 'literexia-bucket';
+      const region = process.env.AWS_REGION || 'ap-southeast-2';
+      
+      // Create a unique key for the file
+      const key = `uploads/${Date.now()}_${fileName.replace(/\s+/g, '_')}`;
+      
       const s3Params = {
-        Bucket: process.env.AWS_S3_BUCKET,
-        Key: `uploads/${Date.now()}_${fileName}`,
+        Bucket: bucketName,
+        Key: key,
         ContentType: fileType,
         Expires: 300 // URL expires in 5 minutes
       };
       
+      console.log('Generating presigned URL with params:', {
+        bucket: bucketName,
+        key: key,
+        contentType: fileType
+      });
+      
       // Generate the pre-signed URL
       const uploadUrl = await s3Client.getSignedUrlPromise('putObject', s3Params);
+      
+      console.log('Generated presigned URL successfully');
       
       return {
         uploadUrl,
         key: s3Params.Key,
-        fileUrl: `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/${s3Params.Key}`
+        fileUrl: `https://${bucketName}.s3.${region}.amazonaws.com/${s3Params.Key}`
       };
     } catch (error) {
       console.error('Error generating pre-signed URL:', error);
@@ -459,10 +502,14 @@ class InterventionService {
       'reading_comprehension': 'Reading Comprehension'
     };
     
-    // Return the DB format that matches your JSON data
-    return Object.keys(categoryMap).find(key => 
-      categoryMap[key].toLowerCase().replace(/\s+/g, '_') === normalized
-    ) || normalized;
+    // If the input is already in the normalized format (with spaces),
+    // return it as is since that's what's in the JSON data
+    if (Object.values(categoryMap).includes(categoryName)) {
+      return categoryName;
+    }
+    
+    // Otherwise, try to map from the normalized format to the format in the JSON data
+    return categoryMap[normalized] || categoryName;
   }
   
   /**
@@ -553,4 +600,4 @@ class InterventionService {
   }
 }
 
-module.exports = new InterventionService();
+module.exports = new InterventionService(); 

@@ -1,5 +1,6 @@
 // backend/config/s3.js
-const { S3Client, ListBucketsCommand } = require('@aws-sdk/client-s3');
+const { S3Client, ListBucketsCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 require('dotenv').config();
 
 // Create S3 client
@@ -11,7 +12,17 @@ const s3Client = new S3Client({
   },
 });
 
-
+// Add method to generate presigned URLs (compatible with AWS SDK v3)
+s3Client.getSignedUrlPromise = async (operation, params) => {
+  // For 'putObject' operation
+  if (operation === 'putObject') {
+    const command = new PutObjectCommand(params);
+    return getSignedUrl(s3Client, command, { expiresIn: params.Expires || 3600 });
+  }
+  
+  // Add other operations as needed
+  throw new Error(`Unsupported operation: ${operation}`);
+};
 
 // Test S3 connection function
 const testS3Connection = async () => {

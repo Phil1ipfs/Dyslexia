@@ -22,7 +22,7 @@ const ChooseAccountType = () => {
     const fetchRoleTypes = async () => {
       try {
         const BASE = import.meta.env.VITE_API_BASE_URL || 
-                    (import.meta.env.DEV ? 'http://localhost:5002' : '');
+                    (import.meta.env.DEV ? 'http://localhost:5001' : '');
         
         // Try to fetch role definitions from API
         const response = await fetch(`${BASE}/api/roles`, {

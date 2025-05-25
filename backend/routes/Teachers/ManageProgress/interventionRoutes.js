@@ -12,18 +12,8 @@ const interventionController = new InterventionController();
 router.get('/questions/main', auth, authorize('teacher', 'admin'), 
   async (req, res) => {
     try {
-      const { category, readingLevel } = req.query;
-      
-      if (!category || !readingLevel) {
-        return res.status(400).json({
-          success: false,
-          message: 'Category and reading level are required'
-        });
-      }
-      
-      const questions = await interventionController.getMainAssessmentQuestions(req, res);
-      
-      return questions; // Controller handles the response
+      await interventionController.getMainAssessmentQuestions(req, res);
+      // Controller handles the response, so we don't need to return anything here
     } catch (error) {
       console.error('Error in GET /questions/main route:', error);
       return res.status(500).json({
@@ -39,16 +29,8 @@ router.get('/questions/main', auth, authorize('teacher', 'admin'),
 router.get('/templates/questions', auth, authorize('teacher', 'admin'), 
   async (req, res) => {
     try {
-      const { category } = req.query;
-      
-      if (!category) {
-        return res.status(400).json({
-          success: false,
-          message: 'Category is required'
-        });
-      }
-      
-      return await interventionController.getTemplateQuestions(req, res);
+      await interventionController.getTemplateQuestions(req, res);
+      // Controller handles the response
     } catch (error) {
       console.error('Error in GET /templates/questions route:', error);
       return res.status(500).json({
@@ -64,7 +46,8 @@ router.get('/templates/questions', auth, authorize('teacher', 'admin'),
 router.get('/templates/choices', auth, authorize('teacher', 'admin'), 
   async (req, res) => {
     try {
-      return await interventionController.getTemplateChoices(req, res);
+      await interventionController.getTemplateChoices(req, res);
+      // Controller handles the response
     } catch (error) {
       console.error('Error in GET /templates/choices route:', error);
       return res.status(500).json({
@@ -80,16 +63,8 @@ router.get('/templates/choices', auth, authorize('teacher', 'admin'),
 router.get('/templates/sentences', auth, authorize('teacher', 'admin'), 
   async (req, res) => {
     try {
-      const { readingLevel } = req.query;
-      
-      if (!readingLevel) {
-        return res.status(400).json({
-          success: false,
-          message: 'Reading level is required'
-        });
-      }
-      
-      return await interventionController.getSentenceTemplates(req, res);
+      await interventionController.getSentenceTemplates(req, res);
+      // Controller handles the response
     } catch (error) {
       console.error('Error in GET /templates/sentences route:', error);
       return res.status(500).json({
@@ -105,7 +80,8 @@ router.get('/templates/sentences', auth, authorize('teacher', 'admin'),
 router.post('/templates/questions', auth, authorize('teacher', 'admin'), 
   async (req, res) => {
     try {
-      return await interventionController.createTemplateQuestion(req, res);
+      await interventionController.createTemplateQuestion(req, res);
+      // Controller handles the response
     } catch (error) {
       console.error('Error in POST /templates/questions route:', error);
       return res.status(500).json({
@@ -121,7 +97,8 @@ router.post('/templates/questions', auth, authorize('teacher', 'admin'),
 router.post('/templates/choices', auth, authorize('teacher', 'admin'), 
   async (req, res) => {
     try {
-      return await interventionController.createTemplateChoice(req, res);
+      await interventionController.createTemplateChoice(req, res);
+      // Controller handles the response
     } catch (error) {
       console.error('Error in POST /templates/choices route:', error);
       return res.status(500).json({
@@ -137,7 +114,8 @@ router.post('/templates/choices', auth, authorize('teacher', 'admin'),
 router.get('/check', auth, authorize('teacher', 'admin'), 
   async (req, res) => {
     try {
-      return await interventionController.checkExistingIntervention(req, res);
+      await interventionController.checkExistingIntervention(req, res);
+      // Controller handles the response
     } catch (error) {
       console.error('Error in GET /check route:', error);
       return res.status(500).json({
@@ -153,7 +131,8 @@ router.get('/check', auth, authorize('teacher', 'admin'),
 router.get('/student/:studentId', auth, authorize('teacher', 'admin'), 
   async (req, res) => {
     try {
-      return await interventionController.getStudentInterventions(req, res);
+      await interventionController.getStudentInterventions(req, res);
+      // Controller handles the response
     } catch (error) {
       console.error('Error in GET /student/:studentId route:', error);
       return res.status(500).json({
@@ -169,7 +148,8 @@ router.get('/student/:studentId', auth, authorize('teacher', 'admin'),
 router.post('/upload-url', auth, authorize('teacher', 'admin'), 
   async (req, res) => {
     try {
-      return await interventionController.getUploadUrl(req, res);
+      await interventionController.getUploadUrl(req, res);
+      // Controller handles the response
     } catch (error) {
       console.error('Error in POST /upload-url route:', error);
       return res.status(500).json({
@@ -185,7 +165,8 @@ router.post('/upload-url', auth, authorize('teacher', 'admin'),
 router.post('/responses', auth, authorize('teacher', 'admin', 'student'), 
   async (req, res) => {
     try {
-      return await interventionController.recordResponse(req, res);
+      await interventionController.recordResponse(req, res);
+      // Controller handles the response
     } catch (error) {
       console.error('Error in POST /responses route:', error);
       return res.status(500).json({
@@ -202,7 +183,8 @@ router.post('/responses', auth, authorize('teacher', 'admin', 'student'),
 router.get('/:interventionId', auth, authorize('teacher', 'admin'), 
   async (req, res) => {
     try {
-      return await interventionController.getInterventionById(req, res);
+      await interventionController.getInterventionById(req, res);
+      // Controller handles the response
     } catch (error) {
       console.error('Error in GET /:interventionId route:', error);
       return res.status(500).json({
@@ -218,7 +200,8 @@ router.get('/:interventionId', auth, authorize('teacher', 'admin'),
 router.post('/', auth, authorize('teacher', 'admin'), 
   async (req, res) => {
     try {
-      return await interventionController.createIntervention(req, res);
+      await interventionController.createIntervention(req, res);
+      // Controller handles the response
     } catch (error) {
       console.error('Error in POST / route:', error);
       return res.status(500).json({
@@ -234,7 +217,8 @@ router.post('/', auth, authorize('teacher', 'admin'),
 router.put('/:interventionId', auth, authorize('teacher', 'admin'), 
   async (req, res) => {
     try {
-      return await interventionController.updateIntervention(req, res);
+      await interventionController.updateIntervention(req, res);
+      // Controller handles the response
     } catch (error) {
       console.error('Error in PUT /:interventionId route:', error);
       return res.status(500).json({
@@ -250,7 +234,8 @@ router.put('/:interventionId', auth, authorize('teacher', 'admin'),
 router.delete('/:interventionId', auth, authorize('teacher', 'admin'), 
   async (req, res) => {
     try {
-      return await interventionController.deleteIntervention(req, res);
+      await interventionController.deleteIntervention(req, res);
+      // Controller handles the response
     } catch (error) {
       console.error('Error in DELETE /:interventionId route:', error);
       return res.status(500).json({
@@ -266,7 +251,8 @@ router.delete('/:interventionId', auth, authorize('teacher', 'admin'),
 router.post('/:interventionId/push', auth, authorize('teacher', 'admin'), 
   async (req, res) => {
     try {
-      return await interventionController.pushToMobile(req, res);
+      await interventionController.pushToMobile(req, res);
+      // Controller handles the response
     } catch (error) {
       console.error('Error in POST /:interventionId/push route:', error);
       return res.status(500).json({
