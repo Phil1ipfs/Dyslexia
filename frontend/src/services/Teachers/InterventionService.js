@@ -276,25 +276,22 @@ class InterventionService {
    * Get main assessment questions for a category and reading level
    * @param {string} category - The category
    * @param {string} readingLevel - The reading level
-   * @returns {Promise<Array>} - The main assessment questions
+   * @returns {Promise<Array>} - The questions
    */
   async getMainAssessmentQuestions(category, readingLevel) {
     try {
-      // Normalize category and reading level
       const normCategory = this.normalizeCategoryName(category);
       const normReadingLevel = this.normalizeReadingLevel(readingLevel);
       
-      // Query the main_assessment collection directly
-      const cursor = await mongoose.connection.db
+      // Query the main_assessment collection correctly
+      const docs = await mongoose.connection.db
         .collection('main_assessment')
         .find({
           category: normCategory,
           readingLevel: normReadingLevel,
           isActive: true
         })
-        .sort({ 'questions.order': 1 });            // keep author's ordering
-      
-      const docs = await cursor.toArray();
+        .toArray();
       
       let questions = [];
       for (const doc of docs) {
@@ -303,16 +300,12 @@ class InterventionService {
         questions = questions.concat(
           doc.questions.map(q => ({
             ...q,
-            // fabricate an _id if nested docs don't have one
             _id: q._id || `${doc._id}-${q.order}`,
             category: doc.category,
             readingLevel: doc.readingLevel
           }))
         );
       }
-      
-      // optional: guarantee deterministic order across multiple docs
-      questions.sort((a, b) => a.order - b.order);
       
       return questions;
     } catch (error) {
@@ -328,9 +321,9 @@ class InterventionService {
    */
   async getTemplateQuestions(category) {
     try {
-      // Normalize category name to match database format
       const normCategory = this.normalizeCategoryName(category);
       
+      // Use the correct model - make sure TemplateQuestion is imported
       return await TemplateQuestion.find({ 
         category: normCategory,
         isActive: true 
@@ -368,9 +361,9 @@ class InterventionService {
    */
   async getSentenceTemplates(readingLevel) {
     try {
-      // Normalize reading level for comparison
       const normReadingLevel = this.normalizeReadingLevel(readingLevel);
       
+      // Use the correct model - make sure SentenceTemplate is imported
       return await SentenceTemplate.find({
         readingLevel: normReadingLevel,
         isActive: true
@@ -454,19 +447,22 @@ class InterventionService {
   normalizeCategoryName(categoryName) {
     if (!categoryName) return '';
     
-    // Convert to lowercase and replace spaces with underscores
+    // Handle both UI format ("Alphabet Knowledge") and DB format ("alphabet_knowledge")
     const normalized = categoryName.toLowerCase().replace(/\s+/g, '_');
     
-    // Handle special case for UI/DB differences
+    // Map common variations
     const categoryMap = {
-      'alphabet_knowledge': 'alphabet_knowledge',
-      'phonological_awareness': 'phonological_awareness',
-      'word_recognition': 'word_recognition',
-      'decoding': 'decoding',
-      'reading_comprehension': 'reading_comprehension'
+      'alphabet_knowledge': 'Alphabet Knowledge',
+      'phonological_awareness': 'Phonological Awareness', 
+      'word_recognition': 'Word Recognition',
+      'decoding': 'Decoding',
+      'reading_comprehension': 'Reading Comprehension'
     };
     
-    return categoryMap[normalized] || normalized;
+    // Return the DB format that matches your JSON data
+    return Object.keys(categoryMap).find(key => 
+      categoryMap[key].toLowerCase().replace(/\s+/g, '_') === normalized
+    ) || normalized;
   }
   
   /**
@@ -475,21 +471,23 @@ class InterventionService {
    * @returns {string} - The normalized reading level
    */
   normalizeReadingLevel(readingLevel) {
-    if (!readingLevel) return 'low_emerging';
+    if (!readingLevel) return 'Low Emerging';
     
-    // Convert to lowercase and replace spaces with underscores
-    const normalized = readingLevel.toLowerCase().replace(/\s+/g, '_');
-    
-    // Handle special case for UI/DB differences
+    // Handle both UI format ("Low Emerging") and any DB format
     const levelMap = {
-      'low_emerging': 'low_emerging',
-      'high_emerging': 'high_emerging',
-      'developing': 'developing',
-      'transitioning': 'transitioning',
-      'at_grade_level': 'at_grade_level'
+      'low_emerging': 'Low Emerging',
+      'high_emerging': 'High Emerging', 
+      'developing': 'Developing',
+      'transitioning': 'Transitioning',
+      'at_grade_level': 'At Grade Level'
     };
     
-    return levelMap[normalized] || normalized;
+    // Find exact match first
+    const exactMatch = Object.values(levelMap).find(level => 
+      level.toLowerCase() === readingLevel.toLowerCase()
+    );
+    
+    return exactMatch || readingLevel;
   }
   
   /**

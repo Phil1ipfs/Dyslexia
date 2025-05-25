@@ -1,18 +1,21 @@
-// models/Teachers/sentenceTemplateModel.js
+// models/Teachers/ManageProgress/sentenceTemplateModel.js
 const mongoose = require('mongoose');
 
 const sentenceTemplateSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
   category: {
     type: String,
+    required: true,
     default: 'Reading Comprehension'
   },
   readingLevel: {
     type: String,
-    required: true
+    required: true,
+    enum: ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level']
   },
   sentenceText: [{
     pageNumber: {
@@ -42,12 +45,17 @@ const sentenceTemplateSchema = new mongoose.Schema({
       required: true
     },
     sentenceOptionAnswers: [{
-      type: String
+      type: String,
+      required: true
     }]
   }],
   isApproved: {
     type: Boolean,
-    default: false
+    default: true
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -61,10 +69,6 @@ const sentenceTemplateSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
-  },
-  isActive: {
-    type: Boolean,
-    default: true
   }
 }, {
   collection: 'sentence_templates'

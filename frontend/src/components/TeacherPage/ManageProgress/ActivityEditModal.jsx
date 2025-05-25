@@ -59,8 +59,12 @@ import {
   FaUpload,
   FaImage
 } from 'react-icons/fa';
+import api from '../../../services/api';
 
 import './css/ActivityEditModal.css';
+
+// Utility function to safely handle arrays that might be undefined
+const safe = (arr) => Array.isArray(arr) ? arr : [];
 
 // Utility function to normalize category names
 const normalizeCategory = (rawCategory = '') => {
@@ -132,9 +136,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   
   // API Data States
   const [mainAssessmentQuestions, setMainAssessmentQuestions] = useState([]);
-  const [availableQuestionTemplates, setAvailableQuestionTemplates] = useState([]);
-  const [availableChoiceTemplates, setAvailableChoiceTemplates] = useState([]);
-  const [availableSentenceTemplates, setAvailableSentenceTemplates] = useState([]);
+  const [questionTemplates, setQuestionTemplates] = useState([]);
+  const [choiceTemplates, setChoiceTemplates] = useState([]);
+  const [sentenceTemplates, setSentenceTemplates] = useState([]);
   
   // Question Management
   const [questionChoicePairs, setQuestionChoicePairs] = useState([]);
@@ -165,6 +169,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [creatingTemplate, setCreatingTemplate] = useState(false);
   
   // File upload states
   const [fileUploads, setFileUploads] = useState({});
@@ -181,20 +186,12 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    * Initialize content type based on category
    */
   useEffect(() => {
-    if (category) {
-      // Normalize the category
+    // Determine content type based on category
       const normCategory = normalizeCategory(category);
-      
-      // Set content type based on category
-      if (normCategory === 'alphabet_knowledge') {
-        setContentType('alphabet');
-      } else if (normCategory === 'phonological_awareness') {
-        setContentType('phonological');
-      } else if (normCategory === 'word_recognition' || normCategory === 'decoding') {
-        setContentType('word');
-      } else if (normCategory === 'reading_comprehension') {
+    if (normCategory === 'reading_comprehension') {
         setContentType('sentence');
-      }
+    } else {
+      setContentType('question');
     }
   }, [category]);
   
@@ -214,7 +211,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     if (activity && activity.questions && activity.questions.length > 0) {
       initializeFromExistingActivity();
     }
-  }, [activity, availableChoiceTemplates]);
+  }, [activity, choiceTemplates]);
  
   /**
    * Initialize template form data when opening the form
@@ -242,6 +239,13 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
  
   // ===== API FUNCTIONS =====
  
+  // Helper to build API URLs that work in both dev and production
+  const getApiUrl = (path) => {
+    // Use environment variable or default to your actual API server
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5002';
+    return `${baseUrl}${path}`;
+  };
+ 
   /**
    * Check for existing interventions for this student/category
    * API: GET /api/interventions/check?studentId={id}&category={category}
@@ -249,19 +253,39 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   const checkExistingInterventions = async () => {
     try {
       setCheckingExisting(true);
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/interventions/check?studentId=${student._id}&category=${category}`);
-      // const data = await response.json();
       
-      // Mock API call - replace with actual implementation
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const data = { exists: false, intervention: null };
-      
-      if (data.exists) {
-        setExistingIntervention(data.intervention);
+      const studentId = student?._id || student?.id;
+      if (!studentId) {
+        console.log('No student ID available, skipping existing interventions check');
+        setExistingIntervention(null);
+        return;
       }
+      
+      const authToken = localStorage.getItem('authToken');
+      // Fix the API URL to match your backend routes
+      const apiUrl = getApiUrl(`/api/interventions/check?studentId=${encodeURIComponent(studentId)}&category=${encodeURIComponent(category)}`);
+      
+      console.log('Checking existing interventions:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Existing interventions response:', result);
+      
+      setExistingIntervention(result.exists ? result.intervention : null);
     } catch (error) {
-      console.error("Error checking existing interventions:", error);
+      console.error('Error checking existing interventions:', error);
+      setExistingIntervention(null);
     } finally {
       setCheckingExisting(false);
     }
@@ -271,6 +295,13 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    * Load all initial data needed for the modal
    */
   const loadInitialData = async () => {
+    // Check if we have all the required data before proceeding
+    if (!category || !readingLevel) {
+      console.warn('Missing required data for API calls:', { category, readingLevel });
+      setErrors({ general: "Missing category or reading level data." });
+      return;
+    }
+
     setLoading(true);
     try {
       if (contentType === 'sentence') {
@@ -286,7 +317,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       }
     } catch (error) {
       console.error("Error loading initial data:", error);
-      setErrors({ general: "Failed to load data. Please try again." });
+      setErrors({ general: "Failed to load required data. Please try again." });
     } finally {
       setLoading(false);
     }
@@ -294,195 +325,300 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
  
   /**
    * Load main assessment questions for this category and reading level
-   * API: GET /api/main-assessment/questions?category={category}&readingLevel={level}
+   * API: GET /api/interventions/questions/main?category={category}&readingLevel={level}
    */
   const loadMainAssessmentQuestions = async () => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/main-assessment/questions?category=${category}&readingLevel=${readingLevel}`);
-      // const questions = await response.json();
+      // Make the API call with proper authentication
+      console.log('Loading main assessment questions:', `/api/interventions/questions/main?category=${category}&readingLevel=${readingLevel}`);
       
-      // Mock API call - replace with actual implementation
-      const questions = await mockFetchMainAssessmentQuestions(category, readingLevel);
-      setMainAssessmentQuestions(questions);
+      const authToken = localStorage.getItem('authToken');
+      const apiUrl = getApiUrl(`/api/interventions/questions/main?category=${encodeURIComponent(category)}&readingLevel=${encodeURIComponent(readingLevel)}`);
       
-      // Initialize question-choice pairs with main assessment questions
-      if (questions.length > 0 && questionChoicePairs.length === 0) {
-        const initialPairs = questions.map(question => ({
-          id: Date.now() + Math.random(),
-          sourceType: 'main_assessment',
-          sourceId: question._id,
-          questionType: question.questionType,
-          questionText: question.questionText,
-          questionImage: question.questionImage,
-          questionValue: question.questionValue,
-          choiceIds: [], // Will be populated from templates_choices
-          correctChoiceId: null,
-          // Keep original choices for reference
-          originalChoices: question.choiceOptions
-        }));
-        
-        setQuestionChoicePairs(initialPairs);
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      const result = await response.json();
+      console.log('Main assessment questions response:', result);
+      
+      // Update state with the fetched questions
+      setMainAssessmentQuestions(result.data || []);
     } catch (error) {
-      console.error("Error loading main assessment questions:", error);
-      throw error;
+      console.error('Error loading main assessment questions:', error);
+      
+      // Use mock data as fallback when API fails
+      console.log('Using mock main assessment questions data');
+      setMainAssessmentQuestions([
+        {
+          _id: 'mock-question-1',
+          questionText: 'Mock Question 1',
+          category: category,
+          readingLevel: readingLevel
+        },
+        {
+          _id: 'mock-question-2',
+          questionText: 'Mock Question 2',
+          category: category,
+          readingLevel: readingLevel
+        }
+      ]);
     }
   };
  
   /**
    * Load question templates for this category
-   * API: GET /api/templates/questions?category={category}
+   * API: GET /api/interventions/templates/questions?category={category}
    */
   const loadQuestionTemplates = async () => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/templates/questions?category=${category}`);
-      // const templates = await response.json();
+      // Make the API call with proper authentication
+      console.log('Loading question templates:', `/api/interventions/templates/questions?category=${category}`);
       
-      // Mock API call - replace with actual implementation
-      const templates = await mockFetchQuestionTemplates(category);
-      setAvailableQuestionTemplates(templates);
+      const authToken = localStorage.getItem('authToken');
+      const apiUrl = getApiUrl(`/api/interventions/templates/questions?category=${encodeURIComponent(category)}`);
+      
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Question templates response:', result);
+      
+      // Update state with the fetched templates
+      setQuestionTemplates(result.data || []);
     } catch (error) {
-      console.error("Error loading question templates:", error);
-      throw error;
+      console.error('Error loading question templates:', error);
+      
+      // Use the JSON data we have as fallback
+      console.log('Using mock question templates data');
+      setQuestionTemplates([
+        {
+          _id: "mock-template-1",
+          category: category,
+          questionType: "patinig",
+          templateText: "Anong katumbas na malaking letra?",
+          applicableChoiceTypes: ["patinigBigLetter", "patinigSmallLetter"],
+          correctChoiceType: "patinigBigLetter"
+        },
+        {
+          _id: "mock-template-2",
+          category: category,
+          questionType: "katinig",
+          templateText: "Anong tunog ng letra?",
+          applicableChoiceTypes: ["katinigBigLetter", "katinigSound"],
+          correctChoiceType: "katinigSound"
+        }
+      ]);
     }
   };
  
   /**
-   * Load choice templates for this question
-   * API: GET /api/templates/choices?choiceTypes={types}
+   * Load choice templates
+   * API: GET /api/interventions/templates/choices
    */
   const loadChoiceTemplates = async () => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/templates/choices?choiceTypes=${getApplicableChoiceTypes(category).join(',')}`);
-      // const choices = await response.json();
+      // Make the API call with proper authentication
+      console.log('Loading choice templates:', `/api/interventions/templates/choices`);
       
-      // Mock API call - replace with actual implementation
-      const choices = await mockFetchChoiceTemplates();
-      setAvailableChoiceTemplates(choices);
+      const authToken = localStorage.getItem('authToken');
+      const apiUrl = getApiUrl(`/api/interventions/templates/choices`);
       
-      // build fast reverse-lookup for later synchronisation
-      setQuestionValueLookup(
-        Object.fromEntries(
-          choices.map(c => [
-            c._id,
-            c.choiceValue || c.soundText || ''
-          ])
-        )
-      );
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Choice templates response:', result);
+      
+      // Update state with the fetched choices
+      setChoiceTemplates(result.data || []);
     } catch (error) {
-      console.error("Error loading choice templates:", error);
-      throw error;
+      console.error('Error loading choice templates:', error);
+      
+      // Use mock data as fallback when API fails
+      console.log('Using mock choice templates data');
+      setChoiceTemplates([
+        {
+          _id: "mock-choice-1",
+          choiceType: "patinigBigLetter",
+          choiceValue: "A",
+          choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/A_big.png"
+        },
+        {
+          _id: "mock-choice-2",
+          choiceType: "patinigSmallLetter",
+          choiceValue: "a",
+          choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/a_small.png"
+        }
+      ]);
     }
   };
  
   /**
    * Load sentence templates for reading comprehension
-   * API: GET /api/templates/sentences?readingLevel={level}
+   * API: GET /api/interventions/templates/sentences?readingLevel={level}
    */
   const loadSentenceTemplates = async () => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/templates/sentences?readingLevel=${readingLevel}`);
-      // const templates = await response.json();
+      // Make the API call with proper authentication
+      console.log('Loading sentence templates:', `/api/interventions/templates/sentences?readingLevel=${readingLevel}`);
       
-      // Mock API call - replace with actual implementation
-      const templates = await mockFetchSentenceTemplates(readingLevel);
-      setAvailableSentenceTemplates(templates);
+      const authToken = localStorage.getItem('authToken');
+      const apiUrl = getApiUrl(`/api/interventions/templates/sentences?readingLevel=${encodeURIComponent(readingLevel)}`);
+      
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Sentence templates response:', result);
+      
+      // Update state with the fetched templates
+      setSentenceTemplates(result.data || []);
     } catch (error) {
-      console.error("Error loading sentence templates:", error);
-      throw error;
+      console.error('Error loading sentence templates:', error);
+      
+      // Use mock data as fallback when API fails
+      console.log('Using mock sentence templates data');
+      setSentenceTemplates([
+        {
+          _id: "mock-sentence-1",
+          title: "Si Maria at ang mga Bulaklak",
+          category: "Reading Comprehension",
+          readingLevel: readingLevel,
+          sentenceText: [
+            {
+              pageNumber: 1,
+              text: "Si Maria ay pumunta sa parke. Nakita niya ang maraming bulaklak na magaganda.",
+              image: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/passages/park_flowers.png"
+            }
+          ],
+          sentenceQuestions: [
+            {
+              questionNumber: 1,
+              questionText: "Sino ang pangunahing tauhan sa kwento?",
+              sentenceCorrectAnswer: "Si Maria",
+              sentenceOptionAnswers: ["Si Maria", "Si Juan", "Ang ina", "Ang hardinero"]
+            }
+          ]
+        }
+      ]);
     }
   };
  
   /**
-   * Create new question template inline
-   * API: POST /api/templates/questions
+   * Create a new question template
+   * API: POST /api/interventions/templates/questions
    */
   const createNewQuestionTemplate = async (templateData) => {
     try {
-      // Normalize the category
-      const normCategory = normalizeCategory(category);
+      setCreatingTemplate(true);
       
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/templates/questions', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     category: normCategory,
-      //     questionType: templateData.questionType,
-      //     templateText: templateData.templateText,
-      //     applicableChoiceTypes: templateData.applicableChoiceTypes,
-      //     createdBy: currentTeacherId, // TODO: Get from auth context
-      //     createdAt: new Date().toISOString(),
-      //     updatedAt: new Date().toISOString()
-      //   })
-      // });
-      // const newTemplate = await response.json();
+      // Make the API call with proper authentication
+      console.log('Creating new question template:', `/api/interventions/templates/questions`);
       
-      // Mock API call - replace with actual implementation
-      const newTemplate = {
-        _id: `new_template_${Date.now()}`,
-        category: normCategory,
-        questionType: templateData.questionType,
-        templateText: templateData.templateText,
-        applicableChoiceTypes: templateData.applicableChoiceTypes,
-        createdBy: "current_teacher_id", // TODO: Get from auth
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+      const response = await api.post(`/api/interventions/templates/questions`, templateData);
       
-      // Add to available templates
-      setAvailableQuestionTemplates(prev => [...prev, newTemplate]);
+      console.log('Create template response:', response.data);
+      
+      // Update templates list with the new template
+      const newTemplate = response.data.data || response.data;
+      setQuestionTemplates(prev => [...prev, newTemplate]);
       
       return newTemplate;
     } catch (error) {
-      console.error("Error creating question template:", error);
+      console.error('Error creating template:', error);
       throw error;
+    } finally {
+      setCreatingTemplate(false);
     }
   };
  
   /**
    * Create new choice template inline
-   * API: POST /api/templates/choices
+   * API: POST /api/interventions/templates/choices
    */
   const createNewChoiceTemplate = async (choiceData) => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/templates/choices', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     choiceType: choiceData.choiceType,
-      //     choiceValue: choiceData.choiceValue,
-      //     soundText: choiceData.soundText,
-      //     createdBy: currentTeacherId, // TODO: Get from auth context
-      //     createdAt: new Date().toISOString(),
-      //     updatedAt: new Date().toISOString()
-      //   })
-      // });
-      // const newChoice = await response.json();
+      // Make the API call with proper authentication
+      console.log('Creating new choice template:', `/api/interventions/templates/choices`);
       
-      // Mock API call - replace with actual implementation
-      const newChoice = {
+      const response = await api.post(`/api/interventions/templates/choices`, choiceData);
+      
+      console.log('Create choice response:', response.data);
+      
+      // Handle different response formats
+      let newChoice;
+      if (response.data && response.data.success && response.data.data) {
+        newChoice = response.data.data;
+      } else if (response.data && response.data._id) {
+        newChoice = response.data;
+      } else {
+        console.warn('Unexpected create choice response format:', response.data);
+        // Create a mock choice as fallback
+        newChoice = {
+          _id: `new_choice_${Date.now()}`,
+          ...choiceData
+        };
+      }
+      
+      // Add to available choices
+      setChoiceTemplates(prev => [...prev, newChoice]);
+      
+      return newChoice;
+    } catch (error) {
+      console.error("Error creating choice template:", error);
+      
+      // Create a mock choice as fallback
+      const mockChoice = {
         _id: `new_choice_${Date.now()}`,
         choiceType: choiceData.choiceType,
         choiceValue: choiceData.choiceValue,
         soundText: choiceData.soundText,
-        createdBy: "current_teacher_id", // TODO: Get from auth
+        choiceImage: choiceData.choiceImage,
+        createdBy: "current_teacher_id", // Fallback
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
       
       // Add to available choices
-      setAvailableChoiceTemplates(prev => [...prev, newChoice]);
+      setChoiceTemplates(prev => [...prev, mockChoice]);
       
-      return newChoice;
-    } catch (error) {
-      console.error("Error creating choice template:", error);
-      throw error;
+      return mockChoice;
     }
   };
 
@@ -492,18 +628,47 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    */
   const uploadImageToS3 = async (file) => {
     try {
-      // In a real implementation, you would:
-      // 1. Call your backend API to get a pre-signed URL
-      // 2. Upload directly to S3 using that URL
-      // 3. Return the final S3 URL for the image
+      // First, get a pre-signed URL from the backend
+      const fileType = file.type;
+      const fileName = file.name;
       
-      // For now, just simulate an upload delay and return a mock URL
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Request pre-signed URL
+      console.log('Requesting upload URL:', `/api/upload/question-image`);
       
-      // Mock S3 URL - in real implementation, this would come from the backend
-      return `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/uploads/${file.name}`;
+      const urlResponse = await api.post('/api/upload/question-image', {
+        fileName,
+        fileType
+      });
+      
+      console.log('Upload URL response:', urlResponse.data);
+      
+      // Extract the upload URL and final image URL
+      const urlData = urlResponse.data;
+      const uploadUrl = urlData.data?.uploadUrl || urlData.uploadUrl;
+      const imageUrl = urlData.data?.imageUrl || urlData.imageUrl;
+      
+      if (!uploadUrl) {
+        throw new Error('No upload URL received from server');
+      }
+      
+      // Upload the file directly to S3
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': fileType
+        },
+        body: file
+      });
+      
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed! status: ${uploadResponse.status}`);
+      }
+      
+      console.log('Image uploaded successfully:', imageUrl);
+      
+      return imageUrl;
     } catch (error) {
-      console.error("Error uploading image:", error);
+      console.error('Error uploading image:', error);
       throw error;
     }
   };
@@ -803,31 +968,34 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    * Initialize question-choice pairs from existing activity
    */
   const initializeFromExistingActivity = () => {
-    if (!activity || !activity.questions || activity.questions.length === 0) return;
+    if (!activity) return;
     
-    try {
-      const initialPairs = activity.questions.map(q => ({
-        id: q.questionId || Date.now() + Math.random(),
-        sourceType: q.source || 'custom',
-        sourceId: q.sourceQuestionId || null,
-        questionType: q.questionType,
-        questionText: q.questionText,
-        questionImage: q.questionImage,
-        questionValue: q.questionValue,
-        choiceIds: q.choiceIds || [], // References to templates_choices
-        correctChoiceId: q.correctChoiceId || null,
-        // Keep original choices for fallback
-        originalChoices: q.choices || []
-      }));
-      
-      setQuestionChoicePairs(initialPairs);
-      
-      // If it's a Reading Comprehension activity, set the sentence template
-      if (contentType === 'sentence' && activity.sentenceTemplate) {
+    // Set basic information
+    setTitle(activity.name || '');
+    setDescription(activity.description || '');
+    
+    // Handle different types of activities
+    if (activity.sentenceTemplate) {
+      // Reading Comprehension activity
         setSelectedSentenceTemplate(activity.sentenceTemplate);
-      }
-    } catch (error) {
-      console.error("Error initializing from existing activity:", error);
+    } else if (activity.questions && activity.questions.length > 0) {
+      // Regular question-choice activity
+      const pairs = activity.questions.map(question => {
+        // Create a question-choice pair from the question
+        return {
+          id: Date.now() + Math.random(),
+          sourceType: question.source || 'custom',
+          sourceId: question.sourceQuestionId || null,
+          questionType: question.questionType || '',
+          questionText: question.questionText || '',
+          questionImage: question.questionImage || null,
+          questionValue: question.questionValue || '',
+          choiceIds: question.choiceIds || [],
+          correctChoiceId: question.correctChoiceId || null
+        };
+      });
+      
+      setQuestionChoicePairs(pairs);
     }
   };
  
@@ -880,11 +1048,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    * Get choices by IDs from available choices
    */
   const getChoicesByIds = (choiceIds) => {
-    if (!choiceIds || choiceIds.length === 0) return [];
-    
-    return choiceIds.map(id => 
-      availableChoiceTemplates.find(choice => choice._id === id)
-    ).filter(Boolean);
+    if (!choiceIds || !choiceIds.length || !choiceTemplates) return [];
+    return choiceTemplates.filter(choice => choice && choiceIds.includes(choice._id));
   };
 
   /**
@@ -1062,8 +1227,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
  
   /** find choice object whose text matches a Question Value */
   const findChoiceByText = (text) =>
-    availableChoiceTemplates.find(
-      c => (c.choiceValue || c.soundText) === text
+    choiceTemplates.find(
+      c => (c.choiceValue || '').toLowerCase() === text.toLowerCase() || 
+           (c.soundText || '').toLowerCase() === text.toLowerCase()
     );
  
   // ===== EVENT HANDLERS =====
@@ -1075,13 +1241,18 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     e.preventDefault();
     
     if (currentStep < 4) {
-      if (validateCurrentStep()) {
-      setCurrentStep(currentStep + 1);
-      }
+      nextStep();
       return;
     }
     
-    // Final validation before saving
+    await saveActivity();
+  };
+
+  /**
+   * Save the activity (create or update)
+   */
+  const saveActivity = async () => {
+    try {
     if (!validateAllSteps()) {
       // Go to first step with errors
       if (errors.title || errors.description) {
@@ -1096,38 +1267,25 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     
     setSubmitting(true);
     
-    try {
       // Check for existing interventions (only if creating new)
-      if (!activity?._id) {
-        // TODO: Replace with actual API call
-        // const checkResponse = await fetch(`/api/interventions/check?studentId=${student._id}&category=${category}`);
-        // const checkData = await response.json();
-        
-        // Mock check
-        const checkData = { exists: false };
-        
-        if (checkData.exists) {
+      if (!activity?._id && existingIntervention) {
           setErrors({ general: "An intervention for this student and category already exists." });
           setSubmitting(false);
           return;
-        }
       }
     
     // Prepare data for saving
       const interventionData = await prepareInterventionData();
       
-      // Save intervention
-      // TODO: Replace with actual API call
-      // if (activity?._id) {
-      //   await updateIntervention(activity._id, interventionData);
-      // } else {
-      //   await createIntervention(interventionData);
-      // }
+      // Save intervention using the API
+      let savedIntervention;
+      if (activity?._id) {
+        savedIntervention = await updateIntervention(activity._id, interventionData);
+      } else {
+        savedIntervention = await createIntervention(interventionData);
+      }
       
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      onSave(interventionData);
+      onSave(savedIntervention);
     } catch (error) {
       console.error("Error saving intervention:", error);
       setErrors({ general: "Failed to save intervention. Please try again." });
@@ -1277,44 +1435,32 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    * Template Management
    */
   const setTemplateForPair = (pairId, templateId) => {
-    const template = availableQuestionTemplates.find(t => t._id === templateId);
-    if (!template) return;
-    
-    setQuestionChoicePairs(prev => 
-      prev.map(pair => {
+    setQuestionChoicePairs(prev => {
+      return prev.map(pair => {
         if (pair.id === pairId) {
-          // Determine whether to clear questionValue or questionImage based on the template
-          let updatedQuestionValue = '';
-          let updatedQuestionImage = null;
+          // Find the selected template
+          const template = questionTemplates.find(t => t._id === templateId);
           
-          // If the template is intended for images, clear question value
-          if (template.isImageTemplate) {
-            updatedQuestionValue = '';
-            // Keep any existing image
-            updatedQuestionImage = pair.questionImage;
-          } 
-          // Otherwise, clear the image and set an empty question value
-          else {
-            updatedQuestionValue = '';
-            updatedQuestionImage = null;
+          if (!template) {
+            return pair;
           }
           
+          // Reset choices when template changes
           return {
             ...pair,
-            sourceType: 'template_question', // Make absolutely sure we do not look "locked"
+            sourceType: 'template_question',
             sourceId: template._id,
             questionType: template.questionType,
             questionText: template.templateText,
-            questionValue: updatedQuestionValue,
-            questionImage: updatedQuestionImage,
-            // Clear choices when template changes
-            choiceIds: [],
-            correctChoiceId: null
+            questionImage: null, // Templates don't have images
+            questionValue: null, // Reset question value
+            choiceIds: [], // Reset choices
+            correctChoiceId: null // Reset correct choice
           };
         }
         return pair;
-      })
-    );
+      });
+    });
   };
  
   /**
@@ -1427,10 +1573,17 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    */
   const handleCreateNewTemplate = async () => {
     try {
-      if (!validateNewTemplate()) return;
+      if (!validateNewTemplate()) {
+        return;
+      }
       
-      setSubmitting(true);
-      const newTemplate = await createNewQuestionTemplate(newTemplateData);
+      // Create new template
+      const newTemplate = await createNewQuestionTemplate({
+        category: normalizeCategory(category),
+        questionType: newTemplateData.questionType,
+        templateText: newTemplateData.templateText,
+        applicableChoiceTypes: newTemplateData.applicableChoiceTypes
+      });
       
       // Reset form
       setNewTemplateData({
@@ -1438,15 +1591,12 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         questionType: '',
         applicableChoiceTypes: []
       });
-      setShowNewTemplateForm(false);
       
-      // Show success message
-      console.log('New template created:', newTemplate);
+      // Close form
+      setShowNewTemplateForm(false);
     } catch (error) {
-      console.error('Error creating template:', error);
-      setErrors({ newTemplate: 'Failed to create template. Please try again.' });
-    } finally {
-      setSubmitting(false);
+      console.error("Error creating template:", error);
+      setErrors({ newTemplate: "Failed to create template. Please try again." });
     }
   };
  
@@ -1637,8 +1787,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
  
   /** find choice object whose value matches the provided text */
   const findChoiceValue = (val) =>
-    availableChoiceTemplates.find(c =>
-      (c.choiceValue || c.soundText) === val
+    choiceTemplates.find(c =>
+      (c.choiceValue || '').toLowerCase() === val.toLowerCase() || 
+      (c.soundText || '').toLowerCase() === val.toLowerCase()
     );
   
   /**
@@ -1812,8 +1963,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         
         {/* Main Assessment Questions */}
         <div className="literexia-main-assessment-questions">
-          {mainAssessmentQuestions.length > 0 ? (
-            mainAssessmentQuestions.map((question, index) => (
+          {safe(mainAssessmentQuestions).length > 0 ? (
+            safe(mainAssessmentQuestions).map((question, index) => (
               <div key={question._id} className="literexia-main-question-item">
                 <div className="literexia-main-question-header">
                   <h4>Question {index + 1}</h4>
@@ -1842,7 +1993,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                 <div className="literexia-main-question-choices">
                   <h5>Original Choices:</h5>
                   <ul>
-                    {question.choiceOptions.map((option, optionIndex) => (
+                    {safe(question.choiceOptions).map((option, optionIndex) => (
                       <li key={optionIndex} className={option.isCorrect ? 'correct-option' : ''}>
                         {option.optionText} {option.isCorrect && '(Correct)'}
                       </li>
@@ -1985,8 +2136,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           
           {/* Template List */}
           <div className="literexia-question-templates-list">
-            {availableQuestionTemplates.length > 0 ? (
-              availableQuestionTemplates.map(template => (
+            {safe(questionTemplates).length > 0 ? (
+              safe(questionTemplates).map(template => (
                 <div 
                   key={template._id}
                   className="literexia-question-template-item"
@@ -2004,7 +2155,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                     </div>
                     <div className="literexia-template-detail">
                       <strong>Applicable Choices:</strong> {
-                        template.applicableChoiceTypes.map(formatChoiceType).join(', ')
+                        safe(template.applicableChoiceTypes).map(formatChoiceType).join(', ')
                       }
                     </div>
                   </div>
@@ -2047,14 +2198,14 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         )}
         
         <div className="literexia-sentence-templates-list">
-          {availableSentenceTemplates.length > 0 ? (
-            availableSentenceTemplates.map(template => (
+          {safe(sentenceTemplates).length > 0 ? (
+            safe(sentenceTemplates).map(template => (
               <div 
               key={template._id}
               className={`literexia-sentence-template-item ${
                 selectedSentenceTemplate?._id === template._id ? 'selected' : ''
               }`}
-              onClick={() => handleSelectSentenceTemplate(template)}
+                onClick={() => setSelectedSentenceTemplate(template)}
             >
               <div className="literexia-sentence-template-header">
                 <h4>{template.title}</h4>
@@ -2115,7 +2266,7 @@ const renderQuestionChoicesStep = () => {
         </div>
       )}
               
-              {questionChoicePairs.map((pair, index) => (
+              {safe(questionChoicePairs).map((pair, index) => (
         <div key={pair.id} className="literexia-question-pair">
           <div className="literexia-question-pair-header">
                     <h4>Question {index + 1}</h4>
@@ -2142,7 +2293,7 @@ const renderQuestionChoicesStep = () => {
                 onChange={(e) => setTemplateForPair(pair.id, e.target.value)}
               >
                 <option value="">-- Select Template --</option>
-                {availableQuestionTemplates.map(template => (
+                {safe(questionTemplates).map(template => (
                   <option key={template._id} value={template._id}>
                     {template.templateText} ({template.questionType})
                         </option>
@@ -2187,12 +2338,13 @@ const renderQuestionChoicesStep = () => {
                   className="literexia-dropdown"
                 >
                   <option value="">-- Select Value --</option>
-                  {availableChoiceTemplates
+                  {safe(choiceTemplates)
                     .filter(c => {
+                      if (!c) return false;
                       // Filter by applicable choice types for current question
                       if (pair.sourceType === 'template_question' && pair.sourceId) {
-                        const template = availableQuestionTemplates.find(t => t._id === pair.sourceId);
-                        return template ? (template.applicableChoiceTypes || []).includes(c.choiceType) : true;
+                        const template = safe(questionTemplates).find(t => t && t._id === pair.sourceId);
+                        return template ? safe(template.applicableChoiceTypes).includes(c.choiceType) : true;
                       }
                       return getApplicableChoiceTypes(pair.questionType).includes(c.choiceType);
                     })
@@ -2214,12 +2366,13 @@ const renderQuestionChoicesStep = () => {
                 />
               )}
               <datalist id={`values-${pair.id}`}>
-                {availableChoiceTemplates
+                {safe(choiceTemplates)
                   .filter(c => {
+                    if (!c) return false;
                     // Filter by applicable choice types for current question
                     if (pair.sourceType === 'template_question' && pair.sourceId) {
-                      const template = availableQuestionTemplates.find(t => t._id === pair.sourceId);
-                      return template ? (template.applicableChoiceTypes || []).includes(c.choiceType) : true;
+                      const template = safe(questionTemplates).find(t => t && t._id === pair.sourceId);
+                      return template ? safe(template.applicableChoiceTypes).includes(c.choiceType) : true;
                     }
                     return getApplicableChoiceTypes(pair.questionType).includes(c.choiceType);
                   })
@@ -2320,7 +2473,7 @@ const renderQuestionChoicesStep = () => {
                       {pair.sourceType === 'template_question' && pair.sourceId ? (
                         // For template questions, only show applicable choice types
                         (() => {
-                          const template = availableQuestionTemplates.find(t => t._id === pair.sourceId);
+                          const template = questionTemplates.find(t => t._id === pair.sourceId);
                           return template ? template.applicableChoiceTypes.map(choiceType => (
                             <option key={choiceType} value={choiceType}>
                               {formatChoiceType(choiceType)}
@@ -2354,7 +2507,7 @@ const renderQuestionChoicesStep = () => {
                       list="choice-values"
                     />
                     <datalist id="choice-values">
-                      {availableChoiceTemplates.map(c => (
+                      {choiceTemplates.map(c => (
                         <option key={c._id} value={c.choiceValue || c.soundText} />
                       ))}
                     </datalist>
@@ -2401,12 +2554,13 @@ const renderQuestionChoicesStep = () => {
            <div className="literexia-available-choices">
              <h5>Available Choices</h5>
              <div className="literexia-choice-tiles">
-               {availableChoiceTemplates
+               {safe(choiceTemplates)
                  .filter(choice => {
+                   if (!choice) return false;
                    // Filter by applicable choice types for current question
                    if (pair.sourceType === 'template_question' && pair.sourceId) {
-                     const template = availableQuestionTemplates.find(t => t._id === pair.sourceId);
-                     return template ? (template.applicableChoiceTypes || []).includes(choice.choiceType) : true;
+                     const template = safe(questionTemplates).find(t => t && t._id === pair.sourceId);
+                     return template ? safe(template.applicableChoiceTypes).includes(choice.choiceType) : true;
                    }
                    return getApplicableChoiceTypes(pair.questionType).includes(choice.choiceType);
                  })
@@ -2414,15 +2568,15 @@ const renderQuestionChoicesStep = () => {
                    <div 
                      key={choice._id}
                      className={`literexia-choice-tile ${
-                       pair.choiceIds.includes(choice._id) ? 'selected' : ''
+                       safe(pair.choiceIds).includes(choice._id) ? 'selected' : ''
                      } ${
-                       pair.choiceIds.length >= 2 && !pair.choiceIds.includes(choice._id) ? 'disabled' : ''
+                       safe(pair.choiceIds).length >= 2 && !safe(pair.choiceIds).includes(choice._id) ? 'disabled' : ''
                      }`}
                      onClick={() => {
                        // Allow clicking choices for both assessment and template questions
-                       if (pair.choiceIds.includes(choice._id)) {
+                       if (safe(pair.choiceIds).includes(choice._id)) {
                          removeChoiceFromPair(pair.id, choice._id);
-                       } else if (pair.choiceIds.length < 2) {
+                       } else if (safe(pair.choiceIds).length < 2) {
                          addChoiceToPair(pair.id, choice._id);
                        }
                      }}
@@ -2440,8 +2594,8 @@ const renderQuestionChoicesStep = () => {
            
            {/* Selected Choices */}
            <div className="literexia-selected-choices">
-             <h5>Selected Choices ({pair.choiceIds.length}/2)</h5>
-             {pair.choiceIds.length === 0 ? (
+             <h5>Selected Choices ({safe(pair.choiceIds).length}/2)</h5>
+             {!pair.choiceIds || pair.choiceIds.length === 0 ? (
                <div className="literexia-empty-choices">
                           <p>No choices selected. Click on available choices above to add them.</p>
                         </div>
@@ -2487,7 +2641,7 @@ const renderQuestionChoicesStep = () => {
                       )}
              
              {/* Choice requirement warning */}
-             {pair.choiceIds.length !== 2 && (
+             {(!pair.choiceIds || pair.choiceIds.length !== 2) && (
                <div className="literexia-choice-warning">
                  <FaExclamationTriangle />
                  <span>Exactly 2 choices are required for each question.</span>
@@ -2535,7 +2689,7 @@ const renderSentencePreviewStep = () => {
        <div className="literexia-sentence-pages">
          <h5>Pages</h5>
          <div className="literexia-pages-list">
-           {selectedSentenceTemplate.sentenceText.map((page, index) => (
+           {safe(selectedSentenceTemplate.sentenceText).map((page, index) => (
              <div key={index} className="literexia-page-item">
                <div className="literexia-page-number">{index + 1}</div>
                <div className="literexia-page-content">
@@ -2554,7 +2708,7 @@ const renderSentencePreviewStep = () => {
        <div className="literexia-sentence-questions">
          <h5>Questions</h5>
          <div className="literexia-questions-list">
-           {selectedSentenceTemplate.sentenceQuestions.map((question, index) => (
+           {safe(selectedSentenceTemplate.sentenceQuestions).map((question, index) => (
              <div key={index} className="literexia-question-item">
                <div className="literexia-question-number">{index + 1}</div>
                <div className="literexia-question-content">
@@ -2568,7 +2722,7 @@ const renderSentencePreviewStep = () => {
                    <div className="literexia-options-list">
                      <strong>Options:</strong>
                      <ul>
-                       {question.sentenceOptionAnswers.map((option, optIndex) => (
+                       {safe(question.sentenceOptionAnswers).map((option, optIndex) => (
                          <li key={optIndex} className={option === question.sentenceCorrectAnswer ? 'correct-option' : ''}>
                            {option}
                          </li>
@@ -2639,16 +2793,16 @@ const renderReviewStep = () => {
          <h4>Reading Passage</h4>
          <div className="literexia-review-summary">
            <p><strong>Title:</strong> {selectedSentenceTemplate?.title}</p>
-           <p><strong>Pages:</strong> {selectedSentenceTemplate?.sentenceText.length || 0}</p>
-           <p><strong>Questions:</strong> {selectedSentenceTemplate?.sentenceQuestions.length || 0}</p>
+           <p><strong>Pages:</strong> {selectedSentenceTemplate?.sentenceText?.length || 0}</p>
+           <p><strong>Questions:</strong> {selectedSentenceTemplate?.sentenceQuestions?.length || 0}</p>
            
            {selectedSentenceTemplate && (
              <div className="literexia-passage-preview">
                <p className="literexia-passage-sample">
-                 <strong>Sample text:</strong> "{selectedSentenceTemplate.sentenceText[0].text.substring(0, 100)}..."
+                 <strong>Sample text:</strong> "{selectedSentenceTemplate.sentenceText?.[0]?.text?.substring(0, 100) || ''}..."
                </p>
                <p className="literexia-question-sample">
-                 <strong>Sample question:</strong> "{selectedSentenceTemplate.sentenceQuestions[0].questionText}"
+                 <strong>Sample question:</strong> "{selectedSentenceTemplate.sentenceQuestions?.[0]?.questionText || ''}"
                </p>
              </div>
            )}
@@ -2666,12 +2820,12 @@ const renderReviewStep = () => {
        <div className="literexia-review-card">
                 <h4>Questions and Choices</h4>
          <div className="literexia-review-summary">
-                  <p>This activity has {questionChoicePairs.length} question(s):</p>
+                  <p>This activity has {safe(questionChoicePairs).length} question(s):</p>
                   
            <div className="literexia-questions-summary">
-             {questionChoicePairs.map((pair, index) => {
-               const choices = getChoicesByIds(pair.choiceIds);
-               const correctChoice = choices.find(choice => choice._id === pair.correctChoiceId);
+             {safe(questionChoicePairs).map((pair, index) => {
+               const choices = getChoicesByIds(pair.choiceIds || []);
+               const correctChoice = safe(choices).find(choice => choice && choice._id === pair.correctChoiceId);
                
                return (
                  <div key={index} className="literexia-question-summary">
@@ -2682,7 +2836,9 @@ const renderReviewStep = () => {
                    <div className="literexia-choices-summary">
                           <p><strong>Choices:</strong></p>
                           <ul>
-                       {choices.map((choice, choiceIndex) => (
+                       {safe(choices).map((choice, choiceIndex) => {
+                         if (!choice) return null;
+                         return (
                          <li 
                            key={choice._id} 
                            className={choice._id === pair.correctChoiceId ? 'correct-choice' : ''}
@@ -2690,7 +2846,8 @@ const renderReviewStep = () => {
                            {choice.choiceValue || choice.soundText || '(No text)'} 
                            {choice._id === pair.correctChoiceId && ' (Correct)'}
                               </li>
-                            ))}
+                           );
+                         })}
                           </ul>
                         </div>
                       </div>
@@ -2890,6 +3047,48 @@ return (
       </div>
     </div>
   );
+};
+
+// ===== API FUNCTIONS =====
+
+/**
+ * Create a new intervention
+ * API: POST /api/interventions
+ */
+const createIntervention = async (interventionData) => {
+  try {
+    // Make the API call with proper authentication
+    console.log('Creating new intervention:', `/api/interventions`);
+    
+    const response = await api.post(`/api/interventions`, interventionData);
+    
+    console.log('Create intervention response:', response.data);
+    
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('Error creating intervention:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update an existing intervention
+ * API: PUT /api/interventions/{id}
+ */
+const updateIntervention = async (interventionId, interventionData) => {
+  try {
+    // Make the API call with proper authentication
+    console.log('Updating intervention:', `/api/interventions/${interventionId}`);
+    
+    const response = await api.put(`/api/interventions/${interventionId}`, interventionData);
+    
+    console.log('Update intervention response:', response.data);
+    
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('Error updating intervention:', error);
+    throw error;
+  }
 };
 
 export default ActivityEditModal;

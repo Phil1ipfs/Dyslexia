@@ -190,11 +190,32 @@ const PrescriptiveAnalysis = ({
         // Always fetch fresh interventions data
         console.log('Fetching interventions for student:', sid);
         try {
-          const { data: intv } = await axios.get(`/api/progress/interventions/student/${sid}`);
-          console.log('Fetched interventions:', intv);
-          setLiveInterventions(intv);
+          // Add authentication headers to the request
+          const authToken = localStorage.getItem('authToken');
+          const response = await axios.get(`/api/progress/student/${sid}/interventions`, {
+            headers: {
+              'Authorization': `Bearer ${authToken}`
+            },
+            withCredentials: true // Include cookies if you're using cookie-based auth
+          });
+          
+          console.log('Fetched interventions response:', response);
+          
+          // Ensure we always set an array, even if the API returns null, undefined, or a non-array
+          if (Array.isArray(response.data)) {
+            setLiveInterventions(response.data);
+          } else if (response.data && Array.isArray(response.data.data)) {
+            // Handle {success: true, data: [...]} format
+            setLiveInterventions(response.data.data);
+          } else {
+            // Fallback to empty array for any other response format
+            console.warn('Unexpected interventions response format:', response.data);
+            setLiveInterventions([]);
+          }
         } catch (error) {
           console.error('Error fetching interventions:', error);
+          // Ensure we set an empty array on error
+          setLiveInterventions([]);
         }
       } catch (err) {
         console.error('PrescriptiveAnalysis fetch error:', err);
