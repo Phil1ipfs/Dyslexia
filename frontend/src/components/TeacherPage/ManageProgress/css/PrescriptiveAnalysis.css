@@ -4,7 +4,7 @@
 .literexia-prescriptive-container {
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
+  gap: 1.5rem;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   color: #333;
   background-color: #fff;
@@ -16,10 +16,10 @@
 /* Header section */
 .literexia-prescriptive-header {
   display: flex;
-  gap: 1.5rem;
+  gap: 1.25rem;
   background-color: #ffffff;
   border-radius: 16px;
-  padding: 1.5rem;
+  padding: 1.25rem;
   margin-bottom: 0.5rem;
   border-left: 4px solid #3B4F81;
   box-shadow: 0 4px 15px rgba(59, 79, 129, 0.15);
@@ -53,7 +53,7 @@
 .literexia-category-tabs {
   background-color: #ffffff;
   border-radius: 12px;
-  padding: 1.25rem 1.5rem;
+  padding: 1rem;
   box-shadow: 0 2px 8px rgba(59, 79, 129, 0.08);
   border: 1px solid #e5e7eb;
   margin-bottom: 1.5rem;
@@ -63,8 +63,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -84,50 +84,50 @@
   margin-right: 0.5rem;
 }
 
-.literexia-tabs-container {
+.literexia-tabs-containerr {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 /* Updated CSS for Reading Skill Categories - Fixed alignment and styling */
-.literexia-category-tab {
+.literexia-category-tabb {
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 0.75rem;
   cursor: pointer;
   background-color: #ffffff;
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
-  min-height: 110px;
+  min-height: 80px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
-.literexia-tab-content {
+.literexia-tab-contentt {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
-.literexia-tab-name {
+.literexia-tab-namee {
   font-weight: 600;
   color: #4a5494;
-  font-size: 0.95rem;
-  line-height: 1.3;
-  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  margin-bottom: 0.1rem;
 }
 
-.literexia-tab-score {
+.literexia-tab-scoree {
   font-weight: 700;
   color: #4a5494;
-  font-size: 1.25rem;
-  margin-bottom: 0.25rem;
+  font-size: 1.1rem;
+  margin-bottom: 0.1rem;
 }
 
 /* Progress indicators - Fixed positioning and styling */
@@ -135,14 +135,14 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  margin-bottom: 0.5rem;
-  gap: 0.3rem;
+  margin-bottom: 0.25rem;
+  gap: 0.2rem;
   flex-wrap: wrap;
 }
 
 .literexia-progress-indicator {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background-color: #e5e7eb;
   display: inline-block;
@@ -155,9 +155,9 @@
 
 /* Status text and badges - Fixed positioning */
 .literexia-status-text {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: #6b7280;
-  line-height: 1.3;
+  line-height: 1.2;
   margin-top: auto;
   font-style: italic;
 }
@@ -165,11 +165,11 @@
 .literexia-tab-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.65rem;
+  gap: 0.2rem;
+  font-size: 0.6rem;
   font-weight: 600;
-  padding: 0.2rem 0.5rem;
-  border-radius: 12px;
+  padding: 0.15rem 0.4rem;
+  border-radius: 10px;
   width: fit-content;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -190,7 +190,7 @@
 
 /* Needs intervention styling */
 .literexia-category-tab.needs-intervention {
-  border-left: 4px solid #f59e0b;
+  border-left: 3px solid #f59e0b;
   background-color: #fffbf5;
 }
 
@@ -206,21 +206,21 @@
 .literexia-category-tab.active {
   background-color: #eef2ff;
   border-color: #4a5494;
-  box-shadow: 0 4px 12px rgba(74, 84, 148, 0.15);
+  box-shadow: 0 2px 6px rgba(74, 84, 148, 0.15);
 }
 
 .literexia-category-tab.active.needs-intervention {
   background-color: #fffbf5;
   border-color: #f59e0b;
-  border-left: 4px solid #f59e0b;
+  border-left: 3px solid #f59e0b;
 }
 
 /* Hover effects */
 .literexia-category-tab:hover {
   background-color: #f9fafb;
   border-color: #d1d5db;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .literexia-category-tab.needs-intervention:hover {
@@ -772,16 +772,17 @@
     grid-template-columns: repeat(4, 1fr);
   }
 }
- 
+
 @media (max-width: 992px) {
   .literexia-tabs-container {
     grid-template-columns: repeat(3, 1fr);
   }
 }
- 
+
 @media (max-width: 768px) {
   .literexia-prescriptive-header {
     flex-direction: column;
+    gap: 1rem;
   }
   
   .literexia-tabs-header {
@@ -796,32 +797,28 @@
   
   .literexia-analysis-header {
     flex-direction: column;
-    align-items: flex-start;
     gap: 1rem;
   }
   
   .literexia-interventions-header {
     flex-direction: column;
-    align-items: flex-start;
     gap: 1rem;
   }
   
   .literexia-create-activity-btn {
     width: 100%;
-    justify-content: center;
   }
   
   .literexia-intervention-header {
     flex-direction: column;
-    gap: 0.75rem;
   }
   
   .literexia-intervention-status {
-    align-self: flex-start;
+    margin-top: 0.5rem;
   }
   
   .literexia-intervention-details {
-    grid-template-columns: 1fr 1fr;
+    flex-direction: column;
   }
   
   .literexia-intervention-actions {
@@ -831,16 +828,14 @@
   .literexia-edit-activity-btn,
   .literexia-push-mobile-btn {
     width: 100%;
-    justify-content: center;
   }
   
   .literexia-strategy {
-    flex-direction: column;
-    gap: 0.75rem;
+    padding: 1rem;
   }
   
   .literexia-strategy-icon {
-    align-self: flex-start;
+    font-size: 1.5rem;
   }
   
   .literexia-empty-interventions {
@@ -848,10 +843,10 @@
     text-align: center;
   }
 }
- 
+
 @media (max-width: 576px) {
   .literexia-intervention-details {
-    grid-template-columns: 1fr;
+    padding: 1rem;
   }
   
   .literexia-tabs-container {
@@ -859,13 +854,13 @@
   }
   
   .literexia-category-analysis,
-  .literexia-category-tabs {
+  .literexia-teaching-guide,
+  .literexia-current-interventions {
     padding: 1rem;
   }
   
   .literexia-category-tab {
-    min-height: 100px;
-    padding: 0.875rem;
+    min-height: 70px;
   }
   
   .literexia-tab-name {
@@ -873,16 +868,16 @@
   }
   
   .literexia-tab-score {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
   
   .literexia-progress-indicators {
-    gap: 0.25rem;
+    margin-bottom: 0.2rem;
   }
   
   .literexia-progress-indicator {
-    width: 7px;
-    height: 7px;
+    width: 5px;
+    height: 5px;
   }
 }
 
