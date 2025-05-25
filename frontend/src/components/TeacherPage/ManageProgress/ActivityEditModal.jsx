@@ -1,42 +1,42 @@
 /**
-* ActivityEditModal Component
-* 
-* BACKEND INTEGRATION NOTES:
-* 
-* API ENDPOINTS NEEDED:
-* 1. GET /api/main-assessment/questions?category={category}&readingLevel={level}
-* 2. GET /api/templates/questions?category={category}
-* 3. GET /api/templates/choices?choiceTypes={types}
-* 4. GET /api/templates/sentences?readingLevel={level}
-* 5. POST /api/templates/questions (for inline creation)
-* 6. POST /api/templates/choices (for inline creation)
-* 7. POST /api/upload/question-image (for S3 image uploads)
-* 8. GET /api/interventions/check?studentId={id}&category={category} (to check for duplicates)
-* 9. POST /api/interventions (to save intervention)
-* 10. PUT /api/interventions/{id} (to update intervention)
-* 
-* DATA FLOW:
-* 1. Load main assessment questions based on category + reading level
-* 2. Load available templates for question creation (restricted by category)
-* 3. Allow inline creation of new templates and choices (except for Reading Comprehension)
-* 4. Enforce exactly 2 choices per question
-* 5. Check for existing interventions before saving to prevent duplicates
-* 6. Save final intervention to intervention_assessment collection
-* 
-* JSON COLLECTIONS REFERENCED:
-* - main_assessment: Source questions for the category/level
-* - templates_questions: Reusable question templates
-* - templates_choices: Available answer choices
-* - sentence_templates: Reading comprehension passages
-* - intervention_assessment: Final saved interventions
-* 
-* @param {Object} activity - Existing activity to edit (from intervention_assessment)
-* @param {Function} onClose - Function to close the modal
-* @param {Function} onSave - Function to save the activity
-* @param {Object} student - Student information (from users collection)
-* @param {String} category - Category that needs intervention (score < 75%)
-* @param {Object} analysis - Prescriptive analysis for this category
-*/
+ * ActivityEditModal Component
+ * 
+ * BACKEND INTEGRATION NOTES:
+ * 
+ * API ENDPOINTS NEEDED:
+ * 1. GET /api/main-assessment/questions?category={category}&readingLevel={level}
+ * 2. GET /api/templates/questions?category={category}
+ * 3. GET /api/templates/choices?choiceTypes={types}
+ * 4. GET /api/templates/sentences?readingLevel={level}
+ * 5. POST /api/templates/questions (for inline creation)
+ * 6. POST /api/templates/choices (for inline creation)
+ * 7. POST /api/upload/question-image (for S3 image uploads)
+ * 8. GET /api/interventions/check?studentId={id}&category={category} (to check for duplicates)
+ * 9. POST /api/interventions (to save intervention)
+ * 10. PUT /api/interventions/{id} (to update intervention)
+ * 
+ * DATA FLOW:
+ * 1. Load main assessment questions based on category + reading level
+ * 2. Load available templates for question creation (restricted by category)
+ * 3. Allow inline creation of new templates and choices (except for Reading Comprehension)
+ * 4. Enforce exactly 2 choices per question
+ * 5. Check for existing interventions before saving to prevent duplicates
+ * 6. Save final intervention to intervention_assessment collection
+ * 
+ * JSON COLLECTIONS REFERENCED:
+ * - main_assessment: Source questions for the category/level
+ * - templates_questions: Reusable question templates
+ * - templates_choices: Available answer choices
+ * - sentence_templates: Reading comprehension passages
+ * - intervention_assessment: Final saved interventions
+ * 
+ * @param {Object} activity - Existing activity to edit (from intervention_assessment)
+ * @param {Function} onClose - Function to close the modal
+ * @param {Function} onSave - Function to save the activity
+ * @param {Object} student - Student information (from users collection)
+ * @param {String} category - Category that needs intervention (score < 75%)
+ * @param {Object} analysis - Prescriptive analysis for this category
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   FaInfoCircle, 
@@ -114,6 +114,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   
   // Update title and description after component mounts
   useEffect(() => {
+    // Log student object for debugging
+    console.log("Student object received in ActivityEditModal:", student);
+    
     if (!activity?.name) {
       setTitle(`${formatCategoryName(category)} Intervention for ${student?.firstName || 'Student'}`);
     }
@@ -151,6 +154,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   const [currentUploadTarget, setCurrentUploadTarget] = useState(null);
   const fileInputRef = useRef(null);
   
+  // Pending uploads - files that need to be uploaded when saving
+  const [pendingUploads, setPendingUploads] = useState({});
+  
   // Inline Creation States
   const [showNewTemplateForm, setShowNewTemplateForm] = useState(false);
   const [showNewChoiceFormByPair, setShowNewChoiceFormByPair] = useState({});
@@ -177,10 +183,61 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   const [uploading, setUploading] = useState(false);
   const fileInputRefs = useRef({});
   
+  // Add a useEffect to clean up object URLs when component unmounts
+  useEffect(() => {
+    // Cleanup function to revoke object URLs when component unmounts
+    return () => {
+      // Revoke all local URLs created for file previews
+      Object.values(fileUploads).forEach(upload => {
+        if (upload?.localUrl) {
+          URL.revokeObjectURL(upload.localUrl);
+        }
+      });
+    };
+  }, [fileUploads]);
+  
   // Helper function to toggle choice form for a specific pair
   const toggleChoiceForm = (pairId, open) =>
     setShowNewChoiceFormByPair(prev => ({ ...prev, [pairId]: open }));
-  
+
+  // ===== HELPER FUNCTIONS =====
+
+  /**
+   * Create a new intervention
+   * API: POST /api/interventions
+   */
+  const createIntervention = async (interventionData) => {
+    try {
+      console.log('Creating new intervention:', interventionData);
+      
+      const response = await api.interventions.create(interventionData);
+      console.log('Intervention creation response:', response.data);
+      
+      return response.data.data;
+    } catch (error) {
+      console.error('Error creating intervention:', error);
+      throw error;
+    }
+  };
+
+  /**
+   * Update an existing intervention
+   * API: PUT /api/interventions/{id}
+   */
+  const updateIntervention = async (interventionId, interventionData) => {
+    try {
+      console.log(`Updating intervention ${interventionId}:`, interventionData);
+      
+      const response = await api.interventions.update(interventionId, interventionData);
+      console.log('Intervention update response:', response.data);
+      
+      return response.data.data;
+    } catch (error) {
+      console.error('Error updating intervention:', error);
+      throw error;
+    }
+  };
+
   // ===== EFFECTS =====
   
   /**
@@ -263,9 +320,11 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     try {
       setCheckingExisting(true);
       
-      const studentId = student?._id || student?.id;
+      // Use the same student ID extraction logic as prepareInterventionData
+      const studentId = student?._id || student?.id || student?.studentId;
+      
       if (!studentId) {
-        console.log('No student ID available, skipping existing interventions check');
+        console.error('No student ID available, skipping existing interventions check. Student object:', student);
         setExistingIntervention(null);
         return;
       }
@@ -411,7 +470,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           _id: "mock-template-1",
           category: category,
           questionType: "patinig",
-          templateText: "Anong katumbas na malaking letra?",
+          templateText: "Anong katumbas na maliit na letra?",
           applicableChoiceTypes: ["patinigBigLetter", "patinigSmallLetter"],
           correctChoiceType: "patinigBigLetter"
         },
@@ -572,38 +631,77 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   };
 
   /**
-   * Upload an image to S3
-   * API: POST /api/interventions/upload-url
+   * Upload an image to S3 bucket
+   * @param {File} file - The file to upload
+   * @param {string} targetFolder - Target folder in S3 bucket (default: 'mobile')
+   * @returns {Promise<string>} - The URL of the uploaded file
    */
-  const uploadImageToS3 = async (file) => {
+  const uploadImageToS3 = async (file, targetFolder = 'mobile') => {
     try {
       setUploading(true);
       
-      // Get pre-signed URL from server
-      const response = await api.interventions.getUploadUrl(file.name, file.type);
+      // Always use mock URLs in development mode to avoid CORS issues
+      if (import.meta.env.DEV) {
+        const mockUrl = `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mock/${file.name.replace(/\s+/g, '_')}`;
+        console.log(`Using mock image URL in development: ${mockUrl}`);
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
+        return mockUrl;
+      }
+      
+      // For production: Get pre-signed URL from server
+      const response = await api.interventions.getUploadUrl(file.name, file.type, targetFolder);
       console.log('Upload URL response:', response.data);
       
       // Use the pre-signed URL to upload directly to S3
-      const { uploadUrl, fileUrl } = response.data;
+      const { uploadUrl, fileUrl } = response.data.data; // Note: data is nested inside data
       
-      await fetch(uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type
+      console.log('Uploading file to S3 using presigned URL...');
+      
+      try {
+        const uploadResponse = await fetch(uploadUrl, {
+          method: 'PUT',
+          body: file,
+          headers: {
+            'Content-Type': file.type,
+            'x-amz-acl': 'public-read'
+          }
+        });
+        
+        if (!uploadResponse.ok) {
+          throw new Error(`Upload failed with status: ${uploadResponse.status}`);
         }
-      });
-      
-      console.log('File uploaded successfully:', fileUrl);
-      return fileUrl;
+        
+        console.log('File uploaded successfully:', fileUrl);
+        return fileUrl;
+      } catch (fetchError) {
+        console.error('Error uploading file:', fetchError);
+        
+        // In development mode, use mock URL as fallback
+        if (import.meta.env.DEV) {
+          const mockUrl = `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mock/${file.name.replace(/\s+/g, '_')}`;
+          console.log(`Using mock image URL in development: ${mockUrl}`);
+          return mockUrl;
+        }
+        
+        throw fetchError; // Re-throw for production
+      }
     } catch (error) {
       console.error('Error uploading file:', error);
       
-      // Generate a mock URL for development/testing when S3 is not available
-      const mockUrl = `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mock/${file.name}`;
-      console.log('Using mock URL instead:', mockUrl);
+      // Always provide a fallback URL in development mode
+      if (import.meta.env.DEV) {
+        const mockUrl = `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mock/${file.name.replace(/\s+/g, '_')}`;
+        console.log(`Using mock image URL in development: ${mockUrl}`);
+        return mockUrl;
+      }
       
-      return mockUrl;
+      // In production, show an error message
+      setErrors(prev => ({
+        ...prev,
+        upload: `Failed to upload image: ${error.message}`
+      }));
+      
+      throw error; // Re-throw in production to handle in the calling function
     } finally {
       setUploading(false);
     }
@@ -1065,28 +1163,25 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       
       setFileUploads(prev => ({
         ...prev,
-        [pairId]: { status: 'uploading', file: file.name }
+        [pairId]: { status: 'pending', file: file.name, localUrl }
       }));
       
-      // Upload to S3 (simulated)
-      const imageUrl = await uploadImageToS3(file);
-      
-      // Replace temporary URL with remote one
-      updateQuestionChoicePair(pairId, 'questionImage', imageUrl);
-      
-      // Clean up the local URL to avoid memory leaks
-      URL.revokeObjectURL(localUrl);
-      
-      // Update upload status
-      setFileUploads(prev => ({
+      // Store the file for later upload when saving
+      setPendingUploads(prev => ({
         ...prev,
-        [pairId]: { status: 'success', file: file.name }
+        [pairId]: file
       }));
     } catch (error) {
-      console.error("Error uploading question image:", error);
+      console.error("Error handling file:", error);
       setFileUploads(prev => ({
         ...prev,
         [pairId]: { status: 'error', file: file.name }
+      }));
+      
+      // Show error message
+      setErrors(prev => ({
+        ...prev,
+        upload: `Failed to handle image: ${error.message}`
       }));
     }
     
@@ -1110,22 +1205,32 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       // Upload to S3
       const imageUrl = await uploadImageToS3(file);
       
-      // Update the choice data with the image URL
-      setNewChoiceData(prev => ({
-        ...prev,
-        choiceImage: imageUrl
-      }));
-      
-      // Update upload status
-      setFileUploads(prev => ({
-        ...prev,
-        new_choice: { status: 'success', file: file.name }
-      }));
+      if (imageUrl) {
+        // Update the choice data with the image URL
+        setNewChoiceData(prev => ({
+          ...prev,
+          choiceImage: imageUrl
+        }));
+        
+        // Update upload status
+        setFileUploads(prev => ({
+          ...prev,
+          new_choice: { status: 'success', file: file.name }
+        }));
+      } else {
+        throw new Error("Failed to get image URL");
+      }
     } catch (error) {
       console.error("Error uploading choice image:", error);
       setFileUploads(prev => ({
         ...prev,
         new_choice: { status: 'error', file: file.name }
+      }));
+      
+      // Show error message
+      setErrors(prev => ({
+        ...prev,
+        upload: `Failed to upload image: ${error.message}`
       }));
     }
     
@@ -1142,18 +1247,33 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     
     try {
       if (currentUploadTarget && currentUploadTarget.type === 'question') {
-        const imageUrl = await uploadImageToS3(file, currentUploadTarget.type, currentUploadTarget.id);
+        // Create a local preview
+        const localUrl = URL.createObjectURL(file);
         
-        // Update question image
+        // Update question image with local preview
         setQuestionChoicePairs(prev => 
           prev.map(pair => 
-            pair.id === currentUploadTarget.id ? { ...pair, questionImage: imageUrl } : pair
+            pair.id === currentUploadTarget.id ? { ...pair, questionImage: localUrl } : pair
           )
         );
+        
+        // Store the file for later upload
+        setPendingUploads(prev => ({
+          ...prev,
+          [currentUploadTarget.id]: file
+        }));
+        
+        setFileUploads(prev => ({
+          ...prev,
+          [currentUploadTarget.id]: { status: 'pending', file: file.name, localUrl }
+        }));
       }
     } catch (error) {
       console.error("Error handling file upload:", error);
-      setErrors({ upload: "Failed to upload image. Please try again." });
+      setErrors(prev => ({
+        ...prev,
+        upload: `Failed to handle image: ${error.message}`
+      }));
     }
     
     // Reset the file input
@@ -1188,28 +1308,120 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    */
   const saveActivity = async () => {
     try {
-    if (!validateAllSteps()) {
-      // Go to first step with errors
-      if (errors.title || errors.description) {
-        setCurrentStep(1);
-      } else if (errors.sentenceTemplate) {
-        setCurrentStep(2);
-      } else if (errors.pairs) {
-        setCurrentStep(3);
+      if (!validateAllSteps()) {
+        // Go to first step with errors
+        if (errors.title || errors.description) {
+          setCurrentStep(1);
+        } else if (errors.sentenceTemplate) {
+          setCurrentStep(2);
+        } else if (errors.pairs) {
+          setCurrentStep(3);
+        }
+        return;
       }
-      return;
-    }
-    
-    setSubmitting(true);
-    
+      
+      // Check if we have a valid student object with ID
+      if (!student) {
+        console.error("Missing student object when saving activity");
+        setErrors({ general: "Cannot save intervention: Student information is missing" });
+        return;
+      }
+      
+      // Log student object for debugging
+      console.log("Student object when saving:", student);
+      
+      setSubmitting(true);
+      
       // Check for existing interventions (only if creating new)
       if (!activity?._id && existingIntervention) {
-          setErrors({ general: "An intervention for this student and category already exists." });
-          setSubmitting(false);
-          return;
+        setErrors({ general: "An intervention for this student and category already exists." });
+        setSubmitting(false);
+        return;
       }
-    
-    // Prepare data for saving
+      
+      // Check for any blob URLs that haven't been uploaded yet
+      const blobUrlsExist = questionChoicePairs.some(pair => 
+        pair.questionImage && pair.questionImage.startsWith('blob:')
+      );
+      
+      if (blobUrlsExist) {
+        console.warn("Found blob URLs that need to be uploaded first");
+      }
+      
+      // Upload any pending images to S3
+      if (Object.keys(pendingUploads).length > 0) {
+        setUploading(true);
+        
+        // Update question-choice pairs with uploaded images
+        const updatedPairs = [...questionChoicePairs];
+        const localUrlsToRevoke = [];
+        
+        try {
+          for (const [pairId, file] of Object.entries(pendingUploads)) {
+            try {
+              // Store the local URL for later revocation
+              if (fileUploads[pairId]?.localUrl) {
+                localUrlsToRevoke.push(fileUploads[pairId].localUrl);
+              }
+              
+              // Update file upload status to uploading
+              setFileUploads(prev => ({
+                ...prev,
+                [pairId]: { 
+                  ...prev[pairId],
+                  status: 'uploading' 
+                }
+              }));
+              
+              // Upload to S3 in the mobile folder
+              const imageUrl = await uploadImageToS3(file, 'mobile');
+              
+              // Find and update the pair with the new image URL
+              const pairIndex = updatedPairs.findIndex(p => p.id.toString() === pairId.toString());
+              if (pairIndex !== -1) {
+                updatedPairs[pairIndex] = {
+                  ...updatedPairs[pairIndex],
+                  questionImage: imageUrl
+                };
+              }
+              
+              // Update file upload status
+              setFileUploads(prev => ({
+                ...prev,
+                [pairId]: { status: 'success', file: file.name }
+              }));
+            } catch (error) {
+              console.error(`Error uploading image for pair ${pairId}:`, error);
+              setFileUploads(prev => ({
+                ...prev,
+                [pairId]: { status: 'error', file: file.name }
+              }));
+              
+              // Don't throw here, continue with other uploads
+            }
+          }
+          
+          // Update state with uploaded images
+          setQuestionChoicePairs(updatedPairs);
+        } catch (error) {
+          console.error('Error during batch upload:', error);
+          setErrors(prev => ({
+            ...prev,
+            upload: 'Failed to upload one or more images'
+          }));
+        } finally {
+          // Clear pending uploads
+          setPendingUploads({});
+          setUploading(false);
+          
+          // Revoke object URLs to prevent memory leaks
+          localUrlsToRevoke.forEach(url => {
+            URL.revokeObjectURL(url);
+          });
+        }
+      }
+      
+      // Prepare data for saving
       const interventionData = await prepareInterventionData();
       
       // Save intervention using the API
@@ -1223,7 +1435,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       onSave(savedIntervention);
     } catch (error) {
       console.error("Error saving intervention:", error);
-      setErrors({ general: "Failed to save intervention. Please try again." });
+      setErrors({ 
+        general: `Failed to save intervention: ${error.message || 'Unknown error'}. Please try again.` 
+      });
     } finally {
       setSubmitting(false);
     }
@@ -1235,15 +1449,35 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   const prepareInterventionData = async () => {
     let interventionData;
     
+    // Ensure we have a valid student ID - try multiple properties and provide a fallback
+    const studentId = student?._id || student?.id || student?.studentId;
+    
+    if (!studentId) {
+      console.error("Missing student ID. Student object:", student);
+      throw new Error("Student ID is required to create an intervention");
+    }
+    
+    // Helper function to sanitize image URLs (replace blob URLs with null)
+    const sanitizeImageUrl = (url) => {
+      if (!url) return null;
+      // Check if it's a blob URL and return null instead
+      if (url.startsWith('blob:')) {
+        console.warn('Found blob URL that needs to be uploaded first:', url);
+        return null;
+      }
+      return url;
+    };
+    
     if (contentType === 'sentence') {
       // For Reading Comprehension, use the sentence template
       interventionData = {
-        _id: activity?._id || `intervention_${Date.now()}`,
-        studentId: student._id,
-      name: title,
-      description,
-      category,
-      readingLevel,
+        // Only include _id if editing an existing activity
+        ...(activity?._id ? { _id: activity._id } : {}),
+        studentId: studentId,
+        name: title,
+        description,
+        category,
+        readingLevel,
         passThreshold: 75,
         questions: selectedSentenceTemplate.sentenceQuestions.map((q, index) => ({
           questionId: `q_${Date.now()}_${index}`,
@@ -1259,8 +1493,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           choices: q.sentenceOptionAnswers.map((option, optIndex) => ({
             optionText: option,
             isCorrect: option === q.sentenceCorrectAnswer
-        }))
-      })),
+          }))
+        })),
         // Include the full sentence template for reference
         sentenceTemplate: selectedSentenceTemplate,
         status: 'draft',
@@ -1270,8 +1504,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     } else {
       // For other categories, use question-choice pairs
       interventionData = {
-        _id: activity?._id || `intervention_${Date.now()}`,
-        studentId: student._id,
+        // Only include _id if editing an existing activity
+        ...(activity?._id ? { _id: activity._id } : {}),
+        studentId: studentId,
         name: title,
         description,
         category,
@@ -1288,17 +1523,14 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             questionIndex: index,
             questionType: pair.questionType,
             questionText: pair.questionText,
-            questionImage: pair.questionImage,
+            questionImage: sanitizeImageUrl(pair.questionImage),
             questionValue: pair.questionValue,
             choiceIds: pair.choiceIds,
             correctChoiceId: pair.correctChoiceId,
             choices: selectedChoices.map(choice => {
-              // Handle legacy choice images if they exist
-              const optionImage = choice.choiceImage || null;
-              
               return {
                 optionText: choice.choiceValue || choice.soundText || '',
-                optionImage,
+                // Removed optionImage as images should be on the question level
                 isCorrect: choice._id === pair.correctChoiceId
               };
             })
@@ -1309,6 +1541,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         updatedAt: new Date().toISOString()
       };
     }
+    
+    // Log the prepared data for debugging
+    console.log('Prepared intervention data:', JSON.stringify(interventionData, null, 2));
     
     return interventionData;
   };
@@ -1359,6 +1594,29 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   };
  
   const updateQuestionChoicePair = (id, field, value) => {
+    // If removing an image, clean up any pending uploads and object URLs
+    if (field === 'questionImage' && value === null) {
+      // Revoke the object URL if it exists
+      if (fileUploads[id]?.localUrl) {
+        URL.revokeObjectURL(fileUploads[id].localUrl);
+      }
+      
+      // Remove from pending uploads
+      setPendingUploads(prev => {
+        const newPendingUploads = { ...prev };
+        delete newPendingUploads[id];
+        return newPendingUploads;
+      });
+      
+      // Clear file upload status
+      setFileUploads(prev => {
+        const newFileUploads = { ...prev };
+        delete newFileUploads[id];
+        return newFileUploads;
+      });
+    }
+    
+    // Update the question-choice pair
     setQuestionChoicePairs(prev => 
       prev.map(pair => 
         pair.id === id ? { ...pair, [field]: value } : pair
@@ -1556,10 +1814,14 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       
       setSubmitting(true);
       
-      // Ensure choiceImage is included in the API call
+      // Clean up data before sending
       const choiceDataToSend = {
         ...newChoiceData,
-        choiceImage: newChoiceData.choiceImage || null
+        // Convert empty strings to null
+        choiceValue: newChoiceData.choiceValue.trim() || null,
+        soundText: newChoiceData.soundText.trim() || null,
+        // Remove choiceImage as it should be on the question level
+        choiceImage: null
       };
       
       const newChoice = await createNewChoiceTemplate(choiceDataToSend);
@@ -1766,10 +2028,11 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     if (newChoiceData.choiceType) {
       if (newChoiceData.choiceType.includes('Sound')) {
         // Sound choices must have soundText
-        if (!newChoiceData.soundText) {
+        if (!newChoiceData.soundText || newChoiceData.soundText.trim() === '') {
           newErrors.newChoice = "Sound text is required for sound-based choices";
         }
-      } else if (!newChoiceData.choiceValue && !newChoiceData.soundText) {
+      } else if ((!newChoiceData.choiceValue || newChoiceData.choiceValue.trim() === '') && 
+                (!newChoiceData.soundText || newChoiceData.soundText.trim() === '')) {
         newErrors.newChoice = "Choice value or sound text is required";
       }
     }
@@ -2377,6 +2640,11 @@ const renderQuestionChoicesStep = () => {
                     </>
                   )}
                   {fileUploads[pair.id]?.status === 'uploading' && <span className="literexia-uploading">Uploading...</span>}
+                  {fileUploads[pair.id]?.status === 'pending' && (
+                    <span className="literexia-pending">
+                      <FaImage className="literexia-preview-icon" /> Image preview (will be uploaded when saving)
+                    </span>
+                  )}
                   {fileUploads[pair.id]?.status === 'error' && <span className="literexia-upload-error">Upload failed. Please try again.</span>}
                 </div>
               </div>
@@ -2447,13 +2715,7 @@ const renderQuestionChoicesStep = () => {
                         ...prev, choiceValue: e.target.value
                       }))}
                       placeholder="e.g., a, BOLA"
-                      list="choice-values"
                     />
-                    <datalist id="choice-values">
-                      {choiceTemplates.map(c => (
-                        <option key={c._id} value={c.choiceValue || c.soundText} />
-                      ))}
-                    </datalist>
                   </div>
                 </div>
                 
@@ -2775,6 +3037,11 @@ const renderReviewStep = () => {
                    <p className="literexia-question-summary-text">
                      <strong>Q{index + 1}:</strong> {pair.questionText || 'No question text'}
                      {pair.questionValue && ` (${pair.questionValue})`}
+                     {pair.questionImage && (
+                       <span className="literexia-image-indicator">
+                         <FaImage /> {fileUploads[pair.id]?.status === 'pending' ? 'Image preview (will be uploaded when saving)' : 'Has image'}
+                       </span>
+                     )}
                    </p>
                    <div className="literexia-choices-summary">
                           <p><strong>Choices:</strong></p>
@@ -2990,44 +3257,6 @@ return (
       </div>
     </div>
   );
-};
-
-// ===== API FUNCTIONS =====
-
-/**
- * Create a new intervention
- * API: POST /api/interventions
- */
-const createIntervention = async (interventionData) => {
-  try {
-    console.log('Creating new intervention:', interventionData);
-    
-    const response = await api.interventions.create(interventionData);
-    console.log('Intervention creation response:', response.data);
-    
-    return response.data.data;
-  } catch (error) {
-    console.error('Error creating intervention:', error);
-    throw error;
-  }
-};
-
-/**
- * Update an existing intervention
- * API: PUT /api/interventions/{id}
- */
-const updateIntervention = async (interventionId, interventionData) => {
-  try {
-    console.log(`Updating intervention ${interventionId}:`, interventionData);
-    
-    const response = await api.interventions.update(interventionId, interventionData);
-    console.log('Intervention update response:', response.data);
-    
-    return response.data.data;
-  } catch (error) {
-    console.error('Error updating intervention:', error);
-    throw error;
-  }
 };
 
 export default ActivityEditModal;

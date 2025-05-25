@@ -89,10 +89,6 @@ const interventionPlanSchema = new mongoose.Schema({
         type: String,
         required: true
       },
-      optionImage: {
-        type: String,
-        default: null
-      },
       isCorrect: {
         type: Boolean,
         required: true

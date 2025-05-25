@@ -426,6 +426,19 @@ class InterventionService {
    */
   async createTemplateChoice(choiceData) {
     try {
+      // Clean up empty strings to be null
+      if (choiceData.soundText === '') {
+        choiceData.soundText = null;
+      }
+      if (choiceData.choiceValue === '') {
+        choiceData.choiceValue = null;
+      }
+      
+      // Make sure at least one of choiceValue or soundText is provided
+      if (choiceData.choiceValue === null && choiceData.soundText === null) {
+        throw new Error('Either choiceValue or soundText must be provided');
+      }
+      
       const newChoice = new TemplateChoice(choiceData);
       await newChoice.save();
       return newChoice;
@@ -439,9 +452,10 @@ class InterventionService {
    * Generate a pre-signed URL for S3 uploads
    * @param {string} fileName - The file name
    * @param {string} fileType - The file type
+   * @param {string} targetFolder - The target folder in S3 bucket (default: 'mobile')
    * @returns {Promise<Object>} - The pre-signed URL
    */
-  async getPresignedUploadUrl(fileName, fileType) {
+  async getPresignedUploadUrl(fileName, fileType, targetFolder = 'mobile') {
     try {
       if (!s3Client) {
         throw new Error('S3 client not properly configured');
@@ -450,20 +464,25 @@ class InterventionService {
       const bucketName = process.env.AWS_BUCKET_NAME || 'literexia-bucket';
       const region = process.env.AWS_REGION || 'ap-southeast-2';
       
-      // Create a unique key for the file
-      const key = `uploads/${Date.now()}_${fileName.replace(/\s+/g, '_')}`;
+      // Sanitize the file name to avoid S3 issues
+      const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      
+      // Create a unique key for the file with the target folder
+      const key = `${targetFolder}/${Date.now()}_${sanitizedFileName}`;
       
       const s3Params = {
         Bucket: bucketName,
         Key: key,
         ContentType: fileType,
-        Expires: 300 // URL expires in 5 minutes
+        Expires: 300, // URL expires in 5 minutes
+        ACL: 'public-read' // Make the uploaded file publicly accessible
       };
       
       console.log('Generating presigned URL with params:', {
         bucket: bucketName,
         key: key,
-        contentType: fileType
+        contentType: fileType,
+        targetFolder
       });
       
       // Generate the pre-signed URL
@@ -471,10 +490,13 @@ class InterventionService {
       
       console.log('Generated presigned URL successfully');
       
+      // Create a direct URL to the file that will be accessible after upload
+      const fileUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${s3Params.Key}`;
+      
       return {
         uploadUrl,
         key: s3Params.Key,
-        fileUrl: `https://${bucketName}.s3.${region}.amazonaws.com/${s3Params.Key}`
+        fileUrl
       };
     } catch (error) {
       console.error('Error generating pre-signed URL:', error);

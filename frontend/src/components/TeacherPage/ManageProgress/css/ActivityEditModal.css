@@ -1167,20 +1167,31 @@
 }
 
 .literexia-uploading {
-  color: #3B4F81;
-  font-size: 0.9rem;
-  display: flex;
+  color: #0056b3;
+  font-style: italic;
+  margin-left: 10px;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+}
+
+.literexia-pending {
+  color: #6c757d;
+  font-style: italic;
+  margin-left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.literexia-preview-icon {
+  color: #3B4F81;
+  font-size: 16px;
 }
 
 .literexia-upload-error {
-  color: #e53935;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  color: #dc3545;
+  font-style: italic;
+  margin-left: 10px;
 }
 
 /* Choices Section */
@@ -2232,4 +2243,16 @@
 .literexia-create-choice-btn:focus-visible {
   outline: 2px solid #3B4F81;
   outline-offset: 2px;
+}
+
+.literexia-image-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 10px;
+  padding: 3px 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #495057;
 }

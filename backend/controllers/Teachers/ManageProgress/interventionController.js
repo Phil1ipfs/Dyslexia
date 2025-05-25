@@ -97,6 +97,9 @@ class InterventionController {
     try {
       const interventionData = req.body;
       
+      // Log the incoming data for debugging
+      console.log('Creating intervention with data:', JSON.stringify(interventionData, null, 2));
+      
       // Validate required fields
       if (!interventionData.studentId || !interventionData.category || !interventionData.readingLevel) {
         return res.status(400).json({
@@ -118,11 +121,33 @@ class InterventionController {
       });
     } catch (error) {
       console.error('Error creating intervention:', error);
-      return res.status(500).json({
+      
+      // Provide more detailed error information
+      const errorResponse = {
         success: false,
         message: 'Error creating intervention',
-        error: error.message
-      });
+        error: error.message,
+        errorType: error.name || 'UnknownError'
+      };
+      
+      // Add validation errors if available
+      if (error.name === 'ValidationError' && error.errors) {
+        errorResponse.validationErrors = Object.keys(error.errors).reduce((acc, key) => {
+          acc[key] = error.errors[key].message;
+          return acc;
+        }, {});
+      }
+      
+      // If it's a casting error, add more details
+      if (error.name === 'CastError') {
+        errorResponse.castError = {
+          path: error.path,
+          value: error.value,
+          kind: error.kind
+        };
+      }
+      
+      return res.status(500).json(errorResponse);
     }
   }
 
@@ -425,7 +450,7 @@ class InterventionController {
    */
   async getUploadUrl(req, res) {
     try {
-      const { fileName, fileType } = req.body;
+      const { fileName, fileType, targetFolder } = req.body;
       
       if (!fileName || !fileType) {
         return res.status(400).json({
@@ -434,7 +459,7 @@ class InterventionController {
         });
       }
       
-      const urlData = await InterventionService.getPresignedUploadUrl(fileName, fileType);
+      const urlData = await InterventionService.getPresignedUploadUrl(fileName, fileType, targetFolder || 'mobile');
       
       return res.status(200).json({
         success: true,

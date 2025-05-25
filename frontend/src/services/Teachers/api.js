@@ -1,4 +1,4 @@
-// src/services/api.js
+// src/services/Teachers/api.js
 import axios from 'axios';
 
 /**
@@ -130,8 +130,8 @@ export default {
       api.post('/api/interventions/templates/choices', choiceData),
       
     // Get upload URL
-    getUploadUrl: (fileName, fileType) => 
-      api.post('/api/interventions/upload-url', { fileName, fileType }),
+    getUploadUrl: (fileName, fileType, targetFolder = 'mobile') => 
+      api.post('/api/interventions/upload-url', { fileName, fileType, targetFolder }),
       
     // Record intervention response
     recordResponse: (responseData) => 

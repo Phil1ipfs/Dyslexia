@@ -3,9 +3,99 @@ const express = require('express');
 const router = express.Router();
 const InterventionController = require('../../../controllers/Teachers/ManageProgress/interventionController');
 const { auth, authorize } = require('../../../middleware/auth');
+const mongoose = require('mongoose');
 
 // Initialize controller
 const interventionController = new InterventionController();
+
+// Diagnostic route for troubleshooting (admin only)
+router.get('/debug', auth, authorize('admin'), async (req, res) => {
+  try {
+    const { studentId, category } = req.query;
+    const results = {};
+    
+    // Check MongoDB connection
+    results.mongoConnected = mongoose.connection.readyState === 1;
+    
+    // List collections
+    results.collections = await mongoose.connection.db.listCollections().toArray();
+    results.collectionNames = results.collections.map(c => c.name);
+    
+    // If studentId provided, try to find by different methods
+    if (studentId) {
+      const User = require('../../../models/userModel');
+      
+      results.studentLookups = {
+        byIdNumber: await User.findOne({ idNumber: studentId }).lean(),
+        byObjectId: mongoose.Types.ObjectId.isValid(studentId) ? 
+          await User.findById(studentId).lean() : null
+      };
+      
+      if (results.studentLookups.byIdNumber) {
+        results.studentLookups.studentObjectId = results.studentLookups.byIdNumber._id;
+      }
+      
+      // Check prescriptive analysis
+      if (category) {
+        const PrescriptiveAnalysis = require('../../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
+        
+        // Try different ways to find prescriptive analysis
+        results.prescriptiveAnalysis = {
+          byIdNumber: await PrescriptiveAnalysis.findOne({ 
+            studentIdNumber: studentId,
+            categoryId: category
+          }).lean(),
+          byObjectId: results.studentLookups.studentObjectId ? 
+            await PrescriptiveAnalysis.findOne({
+              studentId: results.studentLookups.studentObjectId,
+              categoryId: category
+            }).lean() : null
+        };
+        
+        // Check category results
+        const normalizedCategory = category.toLowerCase().replace(/\s+/g, '_');
+        
+        try {
+          results.categoryResults = {
+            byIdNumber: await mongoose.connection.db
+              .collection('category_results')
+              .findOne({
+                studentId: studentId,
+                "categories.categoryName": { $regex: new RegExp(normalizedCategory, 'i') }
+              }),
+            byNumericId: await mongoose.connection.db
+              .collection('category_results')
+              .findOne({
+                studentId: parseInt(studentId),
+                "categories.categoryName": { $regex: new RegExp(normalizedCategory, 'i') }
+              }),
+            byObjectId: results.studentLookups.studentObjectId ? 
+              await mongoose.connection.db
+                .collection('category_results')
+                .findOne({
+                  studentId: results.studentLookups.studentObjectId.toString(),
+                  "categories.categoryName": { $regex: new RegExp(normalizedCategory, 'i') }
+                }) : null
+          };
+        } catch (err) {
+          results.categoryResultsError = err.message;
+        }
+      }
+    }
+    
+    return res.status(200).json({
+      success: true,
+      data: results
+    });
+  } catch (error) {
+    console.error('Error in debug route:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error running diagnostics',
+      error: error.message
+    });
+  }
+});
 
 // API endpoints with specific paths (these must come before parameterized routes)
 // Get main assessment questions
