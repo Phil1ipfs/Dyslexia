@@ -349,9 +349,6 @@ connectDB().then(() => {
     console.warn('⚠️ Could not load teacher profile routes:', error.message);
   }
 
-
-
-
   try {
     app.use('/api/student', require('./routes/Teachers/studentRoutes'));
     console.log('✅ Loaded student routes');

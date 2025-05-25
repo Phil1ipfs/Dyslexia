@@ -493,7 +493,7 @@ const PrescriptiveAnalysis = ({
           </div>
         </div>
         
-        <div className="literexia-tabs-container">
+        <div className="literexia-tabs-containerr">
           {effectiveCategoryResults.categories
             .filter(cat => !showNeedingInterventionOnly || (Number(cat.score) || 0) < 75)
             .map((category, index) => {
@@ -509,15 +509,15 @@ const PrescriptiveAnalysis = ({
               return (
                 <div 
                   key={index}
-                  className={`literexia-category-tab ${selectedCategory === categoryName ? 'active' : ''} ${needsIntervention ? 'needs-intervention' : ''}`}
+                  className={`literexia-category-tabb ${selectedCategory === categoryName ? 'active' : ''} ${needsIntervention ? 'needs-intervention' : ''}`}
                   onClick={() => setSelectedCategory(categoryName)}
                 >
-                  <div className="literexia-tab-content">
-                    <div className="literexia-tab-name">{displayName}</div>
-                    <div className="literexia-tab-score">{score}%</div>
+                  <div className="literexia-tab-contentt">
+                    <div className="literexia-tab-namee">{displayName}</div>
+                    <div className="literexia-tab-scoree">{score}%</div>
                     
                     <div className="literexia-progress-indicators">
-                      {Array.from({ length: totalQuestions }).map((_, i) => (
+                      {Array.from({ length: Math.min(totalQuestions, 5) }).map((_, i) => (
                         <div 
                           key={i} 
                           className={`literexia-progress-indicator ${i < correctAnswers ? 'correct' : ''}`}
@@ -533,7 +533,7 @@ const PrescriptiveAnalysis = ({
                       <div className="literexia-status-text">
                         {correctAnswers > 0 
                           ? `Need ${Math.ceil(totalQuestions * 0.75) - correctAnswers} more to pass` 
-                          : 'Category not yet started'}
+                          : 'Not started'}
                       </div>
                     )}
                   </div>
