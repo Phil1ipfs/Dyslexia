@@ -1,9 +1,6 @@
+// models/Teachers/ManageProgress/interventionResponseModel.js
 const mongoose = require('mongoose');
 
-/**
- * Model for the test.intervention_responses collection
- * Records student responses to intervention activities
- */
 const interventionResponseSchema = new mongoose.Schema({
   studentId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -16,18 +13,21 @@ const interventionResponseSchema = new mongoose.Schema({
     required: true
   },
   questionId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     required: true
   },
   selectedChoice: {
-    type: String
+    type: String,
+    required: true
   },
   isCorrect: {
     type: Boolean,
     required: true
   },
   responseTime: {
-    type: Number
+    type: Number,
+    default: 0,
+    comment: 'Response time in seconds'
   },
   createdAt: {
     type: Date,
@@ -37,4 +37,6 @@ const interventionResponseSchema = new mongoose.Schema({
   collection: 'intervention_responses'
 });
 
-module.exports = mongoose.models.InterventionResponse || mongoose.model('InterventionResponse', interventionResponseSchema);
+const InterventionResponse = mongoose.models.InterventionResponse || mongoose.model('InterventionResponse', interventionResponseSchema);
+
+module.exports = InterventionResponse;

@@ -1,9 +1,6 @@
+// models/Teachers/ManageProgress/interventionProgressModel.js
 const mongoose = require('mongoose');
 
-/**
- * Model for the test.intervention_progress collection
- * Tracks student progress through intervention plans
- */
 const interventionProgressSchema = new mongoose.Schema({
   studentId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -21,11 +18,13 @@ const interventionProgressSchema = new mongoose.Schema({
   },
   totalActivities: {
     type: Number,
-    required: true
+    default: 0
   },
   percentComplete: {
     type: Number,
-    default: 0
+    default: 0,
+    min: 0,
+    max: 100
   },
   correctAnswers: {
     type: Number,
@@ -37,17 +36,21 @@ const interventionProgressSchema = new mongoose.Schema({
   },
   percentCorrect: {
     type: Number,
-    default: 0
+    default: 0,
+    min: 0,
+    max: 100
   },
   passedThreshold: {
     type: Boolean,
     default: false
   },
   lastActivity: {
-    type: Date
+    type: Date,
+    default: null
   },
   notes: {
-    type: String
+    type: String,
+    default: ''
   },
   createdAt: {
     type: Date,
@@ -61,4 +64,12 @@ const interventionProgressSchema = new mongoose.Schema({
   collection: 'intervention_progress'
 });
 
-module.exports = mongoose.models.InterventionProgress || mongoose.model('InterventionProgress', interventionProgressSchema);
+// Update timestamp on save
+interventionProgressSchema.pre('save', function(next) {
+  this.updatedAt = new Date();
+  next();
+});
+
+const InterventionProgress = mongoose.models.InterventionProgress || mongoose.model('InterventionProgress', interventionProgressSchema);
+
+module.exports = InterventionProgress;
