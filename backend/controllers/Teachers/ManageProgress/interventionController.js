@@ -1,5 +1,5 @@
 // controllers/Teachers/ManageProgress/interventionController.js
-const InterventionService = require('../../../../frontend/src/services/Teachers/InterventionService');
+const InterventionService = require('../../../services/Teachers/InterventionService');
 const User = require('../../../models/userModel');
 const mongoose = require('mongoose');
 
@@ -29,9 +29,7 @@ class InterventionController {
       });
     }
   }
-  
-// controllers/Teachers/interventionController.js (continued)
-  
+
   /**
    * Get an intervention by ID
    * @param {Object} req - Express request object
@@ -56,7 +54,7 @@ class InterventionController {
       });
     }
   }
-  
+
   /**
    * Check if an intervention exists for a student and category
    * @param {Object} req - Express request object
@@ -89,7 +87,7 @@ class InterventionController {
       });
     }
   }
-  
+
   /**
    * Create a new intervention
    * @param {Object} req - Express request object
@@ -127,7 +125,7 @@ class InterventionController {
       });
     }
   }
-  
+
   /**
    * Update an existing intervention
    * @param {Object} req - Express request object
@@ -153,7 +151,7 @@ class InterventionController {
       });
     }
   }
-  
+
   /**
    * Delete an intervention
    * @param {Object} req - Express request object
@@ -179,7 +177,7 @@ class InterventionController {
       });
     }
   }
-  
+
   /**
    * Push an intervention to mobile
    * @param {Object} req - Express request object
@@ -205,7 +203,7 @@ class InterventionController {
       });
     }
   }
-  
+
   /**
    * Get main assessment questions
    * @param {Object} req - Express request object
@@ -238,7 +236,7 @@ class InterventionController {
       });
     }
   }
-  
+
   /**
    * Get template questions
    * @param {Object} req - Express request object
@@ -271,7 +269,7 @@ class InterventionController {
       });
     }
   }
-  
+
   /**
    * Get template choices
    * @param {Object} req - Express request object
@@ -299,7 +297,7 @@ class InterventionController {
       });
     }
   }
-  
+
   /**
    * Get sentence templates
    * @param {Object} req - Express request object
@@ -332,7 +330,7 @@ class InterventionController {
       });
     }
   }
-  
+
   /**
    * Create a new template question
    * @param {Object} req - Express request object
@@ -370,7 +368,7 @@ class InterventionController {
       });
     }
   }
-  
+
   /**
    * Create a new template choice
    * @param {Object} req - Express request object
@@ -408,7 +406,7 @@ class InterventionController {
       });
     }
   }
-  
+
   /**
    * Get a pre-signed URL for S3 uploads
    * @param {Object} req - Express request object
@@ -440,7 +438,7 @@ class InterventionController {
       });
     }
   }
-  
+
   /**
    * Record a response to an intervention question
    * @param {Object} req - Express request object

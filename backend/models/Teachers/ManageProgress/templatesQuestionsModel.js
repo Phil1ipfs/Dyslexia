@@ -14,7 +14,8 @@ const templateQuestionSchema = new mongoose.Schema({
   },
   templateText: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
   applicableChoiceTypes: [{
     type: String,
@@ -22,11 +23,15 @@ const templateQuestionSchema = new mongoose.Schema({
   }],
   correctChoiceType: {
     type: String,
-    required: true
+    default: null
   },
   isApproved: {
     type: Boolean,
-    default: false
+    default: true
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -40,10 +45,6 @@ const templateQuestionSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
-  },
-  isActive: {
-    type: Boolean,
-    default: true
   }
 }, {
   collection: 'templates_questions'
