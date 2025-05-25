@@ -191,10 +191,19 @@ class PrescriptiveAnalysisService {
       let createdCount = 0;
       let updatedCount = 0;
       let populatedCount = 0;
+      let skippedCount = 0;
       
       // For each student, ensure they have analyses for all categories
       for (const student of users) {
         try {
+          // Skip students with null or "Not Assessed" reading level
+          const readingLevel = student.readingLevel || 'Not Assessed';
+          if (readingLevel === 'Not Assessed' || readingLevel === null || student.readingLevel === null) {
+            console.log(`Skipping prescriptive analyses for student ${student._id}: reading level not assessed.`);
+            skippedCount++;
+            continue;
+          }
+          
           // Use the student's ID and reading level
           const analyses = await this.ensureStudentHasAllAnalyses(
             student._id,
@@ -223,8 +232,8 @@ class PrescriptiveAnalysisService {
         }
       }
       
-      console.log(`Initialization complete. Created ${createdCount} new analyses, updated ${updatedCount} existing analyses, populated ${populatedCount} students' analyses.`);
-      return { created: createdCount, updated: updatedCount, populated: populatedCount };
+      console.log(`Initialization complete. Created ${createdCount} new analyses, updated ${updatedCount} existing analyses, populated ${populatedCount} students' analyses, skipped ${skippedCount} students.`);
+      return { created: createdCount, updated: updatedCount, populated: populatedCount, skipped: skippedCount };
     } catch (error) {
       console.error('Error initializing prescriptive analyses:', error);
       throw error;
