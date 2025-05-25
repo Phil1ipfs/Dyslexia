@@ -55,11 +55,11 @@ const connectDB = async () => {
     });
 
     console.log('✅ MongoDB Connected to test database');
-    
+
     // Connect to Pre_Assessment database
     const preAssessmentDb = mongoose.connection.useDb('Pre_Assessment');
     console.log('✅ Connected to Pre_Assessment database');
-    
+
     // List collections in Pre_Assessment database (fixed)
     try {
       const preAssessmentCollections = await preAssessmentDb.db.listCollections().toArray();
@@ -68,7 +68,7 @@ const connectDB = async () => {
     } catch (err) {
       console.warn('⚠️ Could not list Pre_Assessment collections:', err.message);
     }
-    
+
     const collections = await mongoose.connection.db.listCollections().toArray();
     console.log('Available collections in test:');
     collections.forEach(c => console.log(`- ${c.name}`));
@@ -347,6 +347,32 @@ connectDB().then(() => {
     console.log('✅ Loaded teacher profile routes');
   } catch (error) {
     console.warn('⚠️ Could not load teacher profile routes:', error.message);
+  }
+
+  // Register prescriptive analysis routes
+  try {
+    const prescriptiveAnalysisRoutes = require('./routes/Teachers/prescriptiveAnalysisRoutes');
+    app.use('/api/prescriptive-analysis', prescriptiveAnalysisRoutes);
+    console.log('✅ Loaded prescriptive analysis routes');
+  } catch (error) {
+    console.warn('⚠️ Could not load prescriptive analysis routes:', error.message);
+  }
+
+  // Also modify the progressController initialization to ensure prescriptive analysis is generated
+  // Add this after progressController.initializeCollections() is called
+  try {
+    const PrescriptiveAnalysisService = require('./services/Teachers/PrescriptiveAnalysisService');
+    // Initialize prescriptive analyses for all students
+    (async () => {
+      try {
+        await PrescriptiveAnalysisService.initializeForAllStudents();
+        console.log('✅ Initialized prescriptive analyses for all students');
+      } catch (initError) {
+        console.warn('⚠️ Could not initialize prescriptive analyses:', initError.message);
+      }
+    })();
+  } catch (error) {
+    console.warn('⚠️ Could not initialize prescriptive analyses:', error.message);
   }
 
   try {

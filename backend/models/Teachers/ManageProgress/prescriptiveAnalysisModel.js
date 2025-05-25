@@ -1,9 +1,6 @@
+// models/Teachers/ManageProgress/prescriptiveAnalysisModel.js
 const mongoose = require('mongoose');
 
-/**
- * Model for the test.prescriptive_analysis collection
- * Stores detailed analysis of student performance with strengths, weaknesses, and recommendations
- */
 const prescriptiveAnalysisSchema = new mongoose.Schema({
   studentId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -12,21 +9,29 @@ const prescriptiveAnalysisSchema = new mongoose.Schema({
   },
   categoryId: {
     type: String,
-    required: true
+    required: true,
+    enum: ['Alphabet Knowledge', 'Phonological Awareness', 'Word Recognition', 'Decoding', 'Reading Comprehension']
   },
   readingLevel: {
     type: String,
-    required: true
+    required: true,
+    enum: ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level', 'Independent']
   },
-  strengths: [{
-    type: String
-  }],
-  weaknesses: [{
-    type: String
-  }],
-  recommendations: [{
-    type: String
-  }],
+  strengths: {
+    type: [String],
+    default: [],
+    required: false
+  },
+  weaknesses: {
+    type: [String],
+    default: [],
+    required: false
+  },
+  recommendations: {
+    type: [String],
+    default: [],
+    required: false
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -43,4 +48,13 @@ const prescriptiveAnalysisSchema = new mongoose.Schema({
   collection: 'prescriptive_analysis'
 });
 
-module.exports = mongoose.models.PrescriptiveAnalysis || mongoose.model('PrescriptiveAnalysis', prescriptiveAnalysisSchema);
+// Update the 'updatedAt' field on save
+prescriptiveAnalysisSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+// Create compound index for student + category to ensure uniqueness
+prescriptiveAnalysisSchema.index({ studentId: 1, categoryId: 1 }, { unique: true });
+
+module.exports = mongoose.model('PrescriptiveAnalysis', prescriptiveAnalysisSchema);

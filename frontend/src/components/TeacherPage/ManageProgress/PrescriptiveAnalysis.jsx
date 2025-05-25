@@ -1,5 +1,6 @@
 // src/components/TeacherPage/ManageProgress/PrescriptiveAnalysis.jsx
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   FaInfoCircle,
   FaExclamationTriangle,
@@ -21,6 +22,51 @@ import ActivityEditModal from './ActivityEditModal';
 import './css/PrescriptiveAnalysis.css';
 
 /**
+ * Simple error boundary component to catch and display errors
+ * from the PrescriptiveAnalysis component
+ */
+class PrescriptiveAnalysisErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, errorMessage: '' };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, errorMessage: error.toString() };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('PrescriptiveAnalysis error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="literexia-prescriptive-container">
+          <div className="literexia-progress-info" style={{ backgroundColor: '#ffeeee', borderLeft: '4px solid #ff6b6b' }}>
+            <div className="literexia-progress-info-icon">
+              <FaExclamationTriangle style={{ color: '#ff6b6b' }} />
+            </div>
+            <div className="literexia-progress-info-text">
+              <h3>Error Loading Prescriptive Analysis</h3>
+              <p>
+                An error occurred while loading the prescriptive analysis data.
+                Please try refreshing the page or contact support if the issue persists.
+              </p>
+              <div style={{ marginTop: '10px', fontSize: '0.8rem', color: '#666' }}>
+                Error details: {this.state.errorMessage}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+/**
  * PrescriptiveAnalysis Component
  * 
  * Main component for displaying prescriptive analysis and managing interventions
@@ -38,6 +84,7 @@ import './css/PrescriptiveAnalysis.css';
  * @param {Array} interventions - Array from intervention_assessment collection
  * @param {Array} interventionProgress - Array from intervention_progress collection
  * @param {Function} onCreateActivity - Callback when new activity is created
+ * @param {string} studentId - Optional student ID if student object isn't provided
  */
 const PrescriptiveAnalysis = ({ 
   student, 
@@ -45,7 +92,8 @@ const PrescriptiveAnalysis = ({
   prescriptiveAnalyses, 
   interventions, 
   interventionProgress,
-  onCreateActivity 
+  onCreateActivity,
+  studentId 
 }) => {
   // ===== STATE MANAGEMENT =====
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -54,178 +102,75 @@ const PrescriptiveAnalysis = ({
   const [editingActivity, setEditingActivity] = useState(null);
   const [localInterventions, setLocalInterventions] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  // ===== STATE (fetched if not injected by parent) =====
+  const [liveStudent, setLiveStudent] = useState(student ?? null);
+  const [liveCategoryResults, setLiveCategoryResults] = useState(categoryResults ?? null);
+  const [liveAnalyses, setLiveAnalyses] = useState(prescriptiveAnalyses ?? null);
+  const [liveInterventions, setLiveInterventions] = useState(interventions ?? []);
 
-  // ===== MOCK DATA FOR DEMO (Remove when connecting to backend) =====
-  const mockStudent = student || {
-    _id: "202522222",
-    firstName: "Kit Nicholas",
-    lastName: "Mark",
-    readingLevel: "Low Emerging"
-  };
-
-  const mockCategoryResults = categoryResults || {
-    _id: "683001a0e90bfb98f3462af4",
-    studentId: 202522222,
-    assessmentType: "pre-assessment",
-    assessmentDate: "2025-05-23T13:03:28.375789",
-    categories: [
-      {
-        categoryName: "alphabet_knowledge",
-        totalQuestions: 5,
-        correctAnswers: 1,
-        score: 20,
-        isPassed: false,
-        passingThreshold: 75
-      },
-      {
-        categoryName: "phonological_awareness",
-        totalQuestions: 5,
-        correctAnswers: 2,
-        score: 40,
-        isPassed: false,
-        passingThreshold: 75
-      },
-      {
-        categoryName: "decoding",
-        totalQuestions: 5,
-        correctAnswers: 0,
-        score: 0,
-        isPassed: false,
-        passingThreshold: 75
-      },
-      {
-        categoryName: "word_recognition",
-        totalQuestions: 5,
-        correctAnswers: 1,
-        score: 20,
-        isPassed: false,
-        passingThreshold: 75
-      },
-      {
-        categoryName: "reading_comprehension",
-        totalQuestions: 5,
-        correctAnswers: 0,
-        score: 0,
-        isPassed: false,
-        passingThreshold: 75
-      }
-    ],
-    overallScore: 16,
-    allCategoriesPassed: false,
-    readingLevel: "Low Emerging",
-    readingLevelUpdated: true,
-    isPreAssessment: true
-  };
-
-  const mockPrescriptiveAnalyses = prescriptiveAnalyses || [
-    {
-      _id: "682b2b47d0570f23768512c9",
-      studentId: "202522222",
-      categoryId: "alphabet_knowledge",
-      readingLevel: "Low Emerging",
-      strengths: [
-        "Can identify some uppercase letters",
-        "Recognizes the vowel 'A'"
-      ],
-      weaknesses: [
-        "Difficulty distinguishing between similar-looking letters (b/d, p/q)",
-        "Limited recognition of lowercase letters",
-        "Struggles with consonant sounds"
-      ],
-      recommendations: [
-        "Daily practice with letter recognition exercises",
-        "Use of multi-sensory approaches (tactile letters, tracing)",
-        "Focus on letter-sound correspondence for basic consonants"
-      ]
-    },
-    {
-      _id: "682b2b47d0570f23768512ce",
-      studentId: "202522222",
-      categoryId: "phonological_awareness",
-      readingLevel: "Low Emerging",
-      strengths: [
-        "Can identify initial sounds in simple words",
-        "Recognizes rhyming patterns with support"
-      ],
-      weaknesses: [
-        "Difficulty segmenting words into individual sounds",
-        "Limited ability to blend sounds together",
-        "Struggles with identifying ending sounds"
-      ],
-      recommendations: [
-        "Phoneme segmentation activities using physical counters",
-        "Sound blending games with visual supports",
-        "Rhyming activities to build pattern recognition"
-      ]
-    },
-    {
-      _id: "682b2b47d0570f23768512d1",
-      studentId: "202522222",
-      categoryId: "decoding",
-      readingLevel: "Low Emerging",
-      strengths: [],
-      weaknesses: [
-        "Unable to decode simple CVC words",
-        "Limited understanding of letter-sound relationships",
-        "Cannot apply phonics rules to unfamiliar words"
-      ],
-      recommendations: [
-        "Start with simple consonant-vowel-consonant (CVC) word building",
-        "Use picture support alongside text for context clues",
-        "Regular practice with the same word families to build confidence"
-      ]
-    },
-    {
-      _id: "682b2b47d0570f23768512d4",
-      studentId: "202522222",
-      categoryId: "word_recognition",
-      readingLevel: "Low Emerging",
-      strengths: [
-        "Can recognize a few high-frequency words"
-      ],
-      weaknesses: [
-        "Limited sight word vocabulary",
-        "Difficulty recognizing common words in different contexts",
-        "Slow word recognition speed"
-      ],
-      recommendations: [
-        "Daily practice with high-frequency word flashcards",
-        "Word recognition activities in different fonts and contexts",
-        "Timed activities to improve recognition speed"
-      ]
-    },
-    {
-      _id: "682b2b47d0570f23768512d5",
-      studentId: "202522222",
-      categoryId: "reading_comprehension",
-      readingLevel: "Low Emerging",
-      strengths: [],
-      weaknesses: [
-        "Unable to answer basic comprehension questions",
-        "Limited ability to recall story details",
-        "Struggles with understanding story sequence"
-      ],
-      recommendations: [
-        "Read-aloud sessions with simple comprehension questions",
-        "Visual story mapping activities",
-        "Sequencing activities with picture support"
-      ]
-    }
-  ];
-
-  // ===== DERIVED STATE =====
-  // Use provided data or mock data
-  const effectiveStudent = student || mockStudent;
-  const effectiveCategoryResults = categoryResults || mockCategoryResults;
-  const effectivePrescriptiveAnalyses = prescriptiveAnalyses || mockPrescriptiveAnalyses;
-  const effectiveInterventions = [...(interventions || []), ...localInterventions];
+  // Merge server-created & local drafts
+  const effectiveInterventions = [...liveInterventions, ...localInterventions];
 
   // Filter categories that need intervention (score < 75%)
-  const categoriesNeedingIntervention = effectiveCategoryResults
-    ? effectiveCategoryResults.categories.filter(cat => (Number(cat.score) || 0) < 75)
+  const categoriesNeedingIntervention = liveCategoryResults
+    ? liveCategoryResults.categories.filter(cat => (Number(cat.score) || 0) < 75)
     : [];
 
   // ===== EFFECTS =====
+  
+  /**
+   * Fetch data when studentId is available and parent hasn't provided data
+   */
+  useEffect(() => {
+    // nothing to do if parent already supplied everything
+    if (liveStudent && liveCategoryResults && liveAnalyses) return;
+
+    const sid = student?.id ?? studentId;          // accept either prop
+    if (!sid) return;                              // still nothing? bail.
+
+    (async () => {
+      try {
+        setLoading(true);
+
+        // 2.1 Get student core profile
+        const { data: stu } = await axios.get(`/api/student/${sid}`);
+        setLiveStudent(stu);
+
+        // 2.2 Latest category result
+        const { data: cat } = await axios.get(`/api/progress/category-results/${sid}`);
+        setLiveCategoryResults(cat);
+
+        // 2.3 Prescriptive analyses (auto-generated by the server)
+        const { data } = await axios.get(`/api/prescriptive-analysis/student/${sid}`);
+        console.log('API Response:', data);
+        
+        // Handle different response formats
+        if (data === null) {
+          // If the API returns null, set liveAnalyses to null
+          setLiveAnalyses(null);
+        } else if (data.data) {
+          // If the API returns {success, data}, use data field
+          setLiveAnalyses(data.data);
+        } else if (Array.isArray(data)) {
+          // If the API returns the array directly
+          setLiveAnalyses(data);
+        } else {
+          // Fallback to empty array
+          console.warn('Unexpected prescriptive analysis response format:', data);
+          setLiveAnalyses([]);
+        }
+
+        // 2.4 Existing interventions
+        const { data: intv } = await axios.get(`/api/interventions/student/${sid}`);
+        setLiveInterventions(intv);
+      } catch (err) {
+        console.error('PrescriptiveAnalysis fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [student?.id, studentId, liveStudent, liveCategoryResults, liveAnalyses]);
   
   /**
    * Auto-select first category needing intervention
@@ -236,6 +181,26 @@ const PrescriptiveAnalysis = ({
     }
   }, [categoriesNeedingIntervention, selectedCategory]);
 
+  // Debug effect to log data
+  useEffect(() => {
+    console.log('Category Results:', liveCategoryResults);
+    console.log('Prescriptive Analyses:', liveAnalyses);
+    console.log('Selected Category:', selectedCategory);
+    if (selectedCategory) {
+      const analysis = getAnalysisForCategory(selectedCategory);
+      console.log('Selected Analysis:', analysis);
+      
+      // Log the structure of the analysis object
+      if (analysis) {
+        console.log('Analysis structure:', Object.keys(analysis));
+        console.log('Analysis has strengths?', Boolean(analysis.strengths));
+        console.log('Analysis has analysis?', Boolean(analysis.analysis));
+        console.log('Analysis has recommendations?', Boolean(analysis.recommendations));
+        console.log('Analysis has recommendation?', Boolean(analysis.recommendation));
+      }
+    }
+  }, [selectedCategory, liveAnalyses, liveCategoryResults]);
+
   // ===== HELPER FUNCTIONS =====
 
   /**
@@ -244,9 +209,49 @@ const PrescriptiveAnalysis = ({
    * @return {Object|null} Analysis object or null
    */
   const getAnalysisForCategory = (categoryName) => {
-    return effectivePrescriptiveAnalyses.find(analysis => 
-      analysis.categoryId === categoryName
+    console.log('Looking for analysis for category:', categoryName);
+    console.log('Available analyses:', liveAnalyses);
+    
+    if (!liveAnalyses || !categoryName) return null;
+    
+    // Normalize category name for comparison
+    const normalizedCategory = categoryName
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase());
+    
+    // Try to match by exact categoryId or category first
+    let analysis = liveAnalyses.find(analysis => 
+      (analysis && analysis.categoryId === categoryName) ||
+      (analysis && analysis.category === categoryName)
     );
+    
+    // If not found, try with formatted category name
+    if (!analysis) {
+      analysis = liveAnalyses.find(analysis => 
+        (analysis && analysis.categoryId === normalizedCategory) ||
+        (analysis && analysis.category === normalizedCategory)
+      );
+    }
+    
+    // If still not found, try case-insensitive comparison
+    if (!analysis) {
+      analysis = liveAnalyses.find(analysis => {
+        if (!analysis) return false;
+        
+        const hasMatchingCategoryId = analysis.categoryId && 
+          normalizedCategory && 
+          analysis.categoryId.toLowerCase() === normalizedCategory.toLowerCase();
+          
+        const hasMatchingCategory = analysis.category && 
+          normalizedCategory && 
+          analysis.category.toLowerCase() === normalizedCategory.toLowerCase();
+          
+        return hasMatchingCategoryId || hasMatchingCategory;
+      });
+    }
+    
+    console.log('Found analysis:', analysis);
+    return analysis;
   };
 
   /**
@@ -280,6 +285,7 @@ const PrescriptiveAnalysis = ({
   const formatCategoryName = (categoryName) => {
     if (!categoryName) return "Unknown Category";
     
+    // Format for display (e.g., "alphabet_knowledge" → "Alphabet Knowledge")
     return categoryName
       .replace(/_/g, ' ')
       .replace(/\b\w/g, l => l.toUpperCase());
@@ -438,7 +444,7 @@ const PrescriptiveAnalysis = ({
         </div>
         <div className="literexia-guide-content">
           <p>
-            While using the digital activities, we recommend supporting {effectiveStudent?.firstName || "the student"}
+            While using the digital activities, we recommend supporting {liveStudent?.firstName || "the student"}
             with the following strategies:
           </p>
           <div className="literexia-strategy-list">
@@ -461,7 +467,7 @@ const PrescriptiveAnalysis = ({
                 <h4>Immediate Feedback</h4>
                 <p>
                   Provide immediate, specific feedback during practice sessions, highlighting what the student 
-                  did correctly before offering corrections. Gradually reduce support as {effectiveStudent?.firstName || "the student"}'s 
+                  did correctly before offering corrections. Gradually reduce support as {liveStudent?.firstName || "the student"}'s 
                   confidence increases.
                 </p>
               </div>
@@ -469,7 +475,7 @@ const PrescriptiveAnalysis = ({
           </div>
           <div className="literexia-monitoring-note">
             <strong>Progress Monitoring:</strong> After implementing these interventions for 2-3 weeks,
-            review {effectiveStudent?.firstName || "the student"}'s progress and adjust strategies as needed.
+            review {liveStudent?.firstName || "the student"}'s progress and adjust strategies as needed.
           </div>
         </div>
       </div>
@@ -494,7 +500,7 @@ const PrescriptiveAnalysis = ({
         </div>
         
         <div className="literexia-tabs-containerr">
-          {effectiveCategoryResults.categories
+          {liveCategoryResults.categories
             .filter(cat => !showNeedingInterventionOnly || (Number(cat.score) || 0) < 75)
             .map((category, index) => {
               const categoryName = category.categoryName;
@@ -547,8 +553,42 @@ const PrescriptiveAnalysis = ({
 
   // ===== EARLY RETURNS =====
 
+  // Loading state
+  if (loading || !liveStudent || !liveCategoryResults || liveAnalyses === null) {
+    return (
+      <div className="literexia-loading-screen">
+        <FaSpinner className="fa-spin" /> Loading prescriptive analysis…
+      </div>
+    );
+  }
+
+  // Not assessed yet
+  if (
+    liveStudent?.readingLevel === 'Not Assessed' ||
+    !liveCategoryResults?.categories?.length
+  ) {
+    return (
+      <div className="literexia-prescriptive-container">
+        <div className="literexia-progress-info not-assessed">
+          <div className="literexia-progress-info-icon">
+            <FaInfoCircle />
+          </div>
+          <div className="literexia-progress-info-text">
+            <h3>No Prescriptive Analysis Yet</h3>
+            <p>
+              The student hasn't completed the initial post-assessment, so
+              strengths, weaknesses, and recommendations are not available.
+              Once an assessment is completed and a reading level is set,
+              prescriptive analysis will appear here automatically.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // If no categories need intervention
-  if (categoriesNeedingIntervention.length === 0) {
+  if (!categoriesNeedingIntervention || categoriesNeedingIntervention.length === 0) {
     return (
       <div className="literexia-prescriptive-container">
         <div className="literexia-progress-info">
@@ -568,10 +608,18 @@ const PrescriptiveAnalysis = ({
   }
 
   // ===== DERIVED DATA FOR SELECTED CATEGORY =====
-  const selectedCategoryData = effectiveCategoryResults.categories.find(
-    cat => cat.categoryName === selectedCategory
-  );
-  const selectedAnalysis = selectedCategory ? getAnalysisForCategory(selectedCategory) : null;
+  // Safe access to the category data and analysis
+  const selectedCategoryData = selectedCategory && liveCategoryResults?.categories ? 
+    liveCategoryResults.categories.find(cat => cat && cat.categoryName === selectedCategory) || null : null;
+    
+  // Use a try-catch block to handle any potential errors in getAnalysisForCategory
+  let selectedAnalysis = null;
+  try {
+    selectedAnalysis = selectedCategory ? getAnalysisForCategory(selectedCategory) : null;
+  } catch (error) {
+    console.error("Error getting analysis for category:", error);
+  }
+  
   const selectedInterventions = selectedCategory ? getInterventionsForCategory(selectedCategory) : [];
 
   // ===== MAIN RENDER =====
@@ -627,11 +675,16 @@ const PrescriptiveAnalysis = ({
                   <div className="literexia-analysis-column">
                     <div className="literexia-analysis-section">
                       <h4><FaCheckCircle /> Strengths</h4>
+                      {/* Check for strengths array or analysis string property */}
                       {selectedAnalysis.strengths && selectedAnalysis.strengths.length > 0 ? (
                         <ul className="literexia-strengths-list">
                           {selectedAnalysis.strengths.map((strength, idx) => (
                             <li key={idx}>{strength}</li>
                           ))}
+                        </ul>
+                      ) : selectedAnalysis.analysis ? (
+                        <ul className="literexia-strengths-list">
+                          <li>{selectedAnalysis.analysis}</li>
                         </ul>
                       ) : (
                         <p className="literexia-empty-info">No specific strengths identified yet.</p>
@@ -663,6 +716,10 @@ const PrescriptiveAnalysis = ({
                       {selectedAnalysis.recommendations.map((recommendation, idx) => (
                         <li key={idx}>{recommendation}</li>
                       ))}
+                    </ul>
+                  ) : selectedAnalysis.recommendation ? (
+                    <ul className="literexia-recommendations-list">
+                      <li>{selectedAnalysis.recommendation}</li>
                     </ul>
                   ) : (
                     <p className="literexia-empty-info">No specific recommendations available yet.</p>
@@ -799,7 +856,7 @@ const PrescriptiveAnalysis = ({
       {showActivityModal && (
         <ActivityEditModal
           activity={editingActivity}
-          student={effectiveStudent}
+          student={liveStudent}
           category={selectedCategory}
           analysis={selectedAnalysis}
           onClose={() => setShowActivityModal(false)}
@@ -810,4 +867,9 @@ const PrescriptiveAnalysis = ({
   );
 };
 
-export default PrescriptiveAnalysis;
+// Export the component wrapped in the error boundary
+export default (props) => (
+  <PrescriptiveAnalysisErrorBoundary>
+    <PrescriptiveAnalysis {...props} />
+  </PrescriptiveAnalysisErrorBoundary>
+);
