@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
@@ -39,26 +40,11 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-// Helper function to extract roles from various token formats
-const extractRoles = (decoded) => {
-  let roles = [];
-  
-  // Try to get roles from various possible locations
-  if (decoded.roles) {
-    roles = Array.isArray(decoded.roles) ? decoded.roles : [decoded.roles];
-  } else if (decoded.user && decoded.user.roles) {
-    roles = Array.isArray(decoded.user.roles) ? decoded.user.roles : [decoded.user.roles];
-  } else if (decoded.role) {
-    roles = [decoded.role];
-  } else if (decoded.userType) {
-    roles = [decoded.userType];
-  }
-
-  /**
-   * Resolves a role ID to its name from the database
-   * @param {string|Object} roleId - MongoDB ObjectId as string or object
-   * @returns {Promise<string|null>} - Role name or null if not found
-   */
+/**
+ * Resolves a role ID to its name from the database
+ * @param {string|Object} roleId - MongoDB ObjectId as string or object
+ * @returns {Promise<string|null>} - Role name or null if not found
+ */
 const resolveRoleFromId = async (roleId) => {
   try {
     if (!roleId) return null;
@@ -92,6 +78,22 @@ const resolveRoleFromId = async (roleId) => {
   } catch (err) {
     console.error('Error resolving role from ID:', err);
     return null;
+  }
+};
+
+// Helper function to extract roles from various token formats
+const extractRoles = (decoded) => {
+  let roles = [];
+  
+  // Try to get roles from various possible locations
+  if (decoded.roles) {
+    roles = Array.isArray(decoded.roles) ? decoded.roles : [decoded.roles];
+  } else if (decoded.user && decoded.user.roles) {
+    roles = Array.isArray(decoded.user.roles) ? decoded.user.roles : [decoded.user.roles];
+  } else if (decoded.role) {
+    roles = [decoded.role];
+  } else if (decoded.userType) {
+    roles = [decoded.userType];
   }
   
   // Convert to array if somehow we got a non-array
@@ -177,4 +179,4 @@ const authorize = (...allowedRoles) => {
   };
 };
 
-module.exports = { authenticateToken, authorize };
+module.exports = { authenticateToken, authorize, resolveRoleFromId };
