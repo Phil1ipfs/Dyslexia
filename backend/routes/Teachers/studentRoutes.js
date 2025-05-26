@@ -1,8 +1,10 @@
 // routes/Teachers/studentRoutes.js
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const { auth, authorize } = require('../../middleware/auth');
 const studentController = require('../../controllers/Teachers/studentController');
+const readingLevelProgressionController = require('../../controllers/Teachers/ManageProgress/readingLevelProgressionController');
 
 // Create the pre-assessment controller
 const preAssessmentController = require('../../controllers/Teachers/preAssessmentController');
@@ -44,6 +46,22 @@ router.get('/:id/category-results', auth, authorize('teacher', 'admin'), student
 // NEW PRE-ASSESSMENT ROUTES
 router.get('/:id/pre-assessment-results', auth, authorize('teacher', 'admin'), preAssessmentController.getPreAssessmentResults);
 router.get('/:id/pre-assessment-status', auth, authorize('teacher', 'admin'), preAssessmentController.getStudentPreAssessmentStatus);
+
+// Helper function to build a query for finding student documents by ID
+function buildStudentQuery(id) {
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    return { userId: new mongoose.Types.ObjectId(id) };
+  }
+  
+  // Try numeric ID if not valid ObjectId
+  const studentIdNum = parseInt(id);
+  if (!isNaN(studentIdNum)) {
+    return { userId: studentIdNum };
+  }
+  
+  // Fallback to using the string directly
+  return { userId: id };
+}
 
 /**
  * GET /api/student/category-progress/:id
