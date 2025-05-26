@@ -1,7 +1,7 @@
 // config.js
 
 // Get API base URL from environment variables or use default
-export const API_BASE_URL = 'http://localhost:5002/api';
+export const API_BASE_URL = 'http://localhost:5001/api';
 
 // Content URLs
 export const CONTENT_IMAGE_BASE_URL = `${API_BASE_URL}/api/content/images`;
