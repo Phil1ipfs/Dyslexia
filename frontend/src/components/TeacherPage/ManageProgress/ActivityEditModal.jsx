@@ -1,379 +1,1298 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * ActivityEditModal Component
+ * 
+ * BACKEND INTEGRATION NOTES:
+ * 
+ * API ENDPOINTS NEEDED:
+ * 1. GET /api/main-assessment/questions?category={category}&readingLevel={level}
+ * 2. GET /api/templates/questions?category={category}
+ * 3. GET /api/templates/choices?choiceTypes={types}
+ * 4. GET /api/templates/sentences?readingLevel={level}
+ * 5. POST /api/templates/questions (for inline creation)
+ * 6. POST /api/templates/choices (for inline creation)
+ * 7. POST /api/upload/question-image (for S3 image uploads)
+ * 8. GET /api/interventions/check?studentId={id}&category={category} (to check for duplicates)
+ * 9. POST /api/interventions (to save intervention)
+ * 10. PUT /api/interventions/{id} (to update intervention)
+ * 
+ * DATA FLOW:
+ * 1. Load main assessment questions based on category + reading level
+ * 2. Load available templates for question creation (restricted by category)
+ * 3. Allow inline creation of new templates and choices (except for Reading Comprehension)
+ * 4. Enforce exactly 2 choices per question
+ * 5. Check for existing interventions before saving to prevent duplicates
+ * 6. Save final intervention to intervention_assessment collection
+ * 
+ * JSON COLLECTIONS REFERENCED:
+ * - main_assessment: Source questions for the category/level
+ * - templates_questions: Reusable question templates
+ * - templates_choices: Available answer choices
+ * - sentence_templates: Reading comprehension passages
+ * - intervention_assessment: Final saved interventions
+ * 
+ * @param {Object} activity - Existing activity to edit (from intervention_assessment)
+ * @param {Function} onClose - Function to close the modal
+ * @param {Function} onSave - Function to save the activity
+ * @param {Object} student - Student information (from users collection)
+ * @param {String} category - Category that needs intervention (score < 75%)
+ * @param {Object} analysis - Prescriptive analysis for this category
+ */
+import React, { useState, useEffect, useRef } from 'react';
 import { 
-  FaTimes, 
-  FaEdit,
-  FaSave, 
-  FaExclamationTriangle, 
   FaInfoCircle, 
-  FaPlus, 
-  FaTrash,
-  FaUser,
-  FaImage,
-  FaFont,
-  FaHeadphones,
-  FaMicrophone,
-  FaSpinner,
-  FaQuestionCircle,
-  FaBookOpen,
+  FaExclamationTriangle,
+  FaChartLine,
+  FaEdit,
   FaCheckCircle,
-  FaMobile
+  FaPlus, 
+  FaSpinner,
+  FaTimes,
+  FaUser,
+  FaSave,
+  FaArrowRight,
+  FaTrash,
+  FaMobile,
+  FaLightbulb,
+  FaHandsHelping,
+  FaChalkboardTeacher,
+  FaBookOpen,
+  FaUpload,
+  FaImage
 } from 'react-icons/fa';
+import api from '../../../services/Teachers/api';
+
 import './css/ActivityEditModal.css';
 
-const ActivityEditModal = ({ activity, onClose, onSave, student }) => {
-  // State for basic activity info
-  const [title, setTitle] = useState(activity.title || '');
-  const [description, setDescription] = useState(activity.description || '');
-  const [difficulty, setDifficulty] = useState(activity.difficulty || 'Medium');
-  const [currentStep, setCurrentStep] = useState(1);
-  const [contentType, setContentType] = useState(activity.contentType || 'image');
+// Utility function to safely handle arrays that might be undefined
+const safe = (arr) => Array.isArray(arr) ? arr : [];
+
+// Utility function to normalize category names
+const normalizeCategory = (rawCategory = '') => {
+  return typeof rawCategory === 'string' 
+    ? rawCategory.toLowerCase().replace(/\s+/g, '_')
+    : '';
+};
+
+// Helper function to format category name - moved outside component
+const formatCategoryName = (categoryName) => {
+  if (!categoryName) return "Unknown Category";
   
-  // State for content items (based on content type)
-  const [contentItems, setContentItems] = useState(activity.content || []);
+  return categoryName
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, l => l.toUpperCase());
+};
+
+// Simple debounce function implementation
+const debounce = (func, delay) => {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  };
+};
+
+const ActivityEditModal = ({ activity, onClose, onSave, student, category, analysis }) => {
+  // ===== STATE MANAGEMENT =====
   
-  // State for questions
-  const [questions, setQuestions] = useState(activity.questions || [
-    {
-      id: 1,
-      questionText: "What sound do you hear?",
-      contentType: "image",
-      options: ["A", "E", "I", "O"],
-      correctAnswer: 0,
-      feedback: "The vowel 'A' has a deep sound."
-    },
-    {
-      id: 2,
-      questionText: "Which letter makes the 'oh' sound?",
-      contentType: "image",
-      options: ["A", "U", "O", "I"],
-      correctAnswer: 2,
-      feedback: "The letter 'O' makes the 'oh' sound."
+  /** quick map: { choiceId: displayText }  */
+  const [questionValueLookup, setQuestionValueLookup] = useState({});
+  
+  // Basic activity information
+  const [title, setTitle] = useState(
+    activity?.name || 
+    `Intervention for ${student?.firstName || 'Student'}`
+  );
+  const [description, setDescription] = useState(
+    activity?.description || 
+    `Targeted practice activities to improve skills`
+  );
+  const [readingLevel] = useState(student?.readingLevel || 'Low Emerging'); // Fixed to student's level
+  
+  // Checking for existing interventions
+  const [existingIntervention, setExistingIntervention] = useState(null);
+  const [checkingExisting, setCheckingExisting] = useState(false);
+  
+  // Update title and description after component mounts
+  useEffect(() => {
+    // Log student object for debugging
+    console.log("Student object received in ActivityEditModal:", student);
+    
+    if (!activity?.name) {
+      setTitle(`${formatCategoryName(category)} Intervention for ${student?.firstName || 'Student'}`);
     }
-  ]);
+    
+    if (!activity?.description) {
+      setDescription(`Targeted practice activities to improve ${formatCategoryName(category)} skills`);
+    }
+    
+    // Check for existing interventions for this student/category
+    if (!activity) {
+      checkExistingInterventions();
+    }
+  }, [activity, category, student]);
   
-  // Validation state
+  // Step management for wizard-style interface
+  const [currentStep, setCurrentStep] = useState(1);
+  
+  // Content type is determined by category
+  const [contentType, setContentType] = useState('');
+  
+  // API Data States
+  const [mainAssessmentQuestions, setMainAssessmentQuestions] = useState([]);
+  const [questionTemplates, setQuestionTemplates] = useState([]);
+  const [choiceTemplates, setChoiceTemplates] = useState([]);
+  const [sentenceTemplates, setSentenceTemplates] = useState([]);
+  
+  // Question Management
+  const [questionChoicePairs, setQuestionChoicePairs] = useState([]);
+  
+  // For Reading Comprehension
+  const [selectedSentenceTemplate, setSelectedSentenceTemplate] = useState(null);
+  
+  // Image Upload State
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [currentUploadTarget, setCurrentUploadTarget] = useState(null);
+  const fileInputRef = useRef(null);
+  
+  // Pending uploads - files that need to be uploaded when saving
+  const [pendingUploads, setPendingUploads] = useState({});
+  
+  // Inline Creation States
+  const [showNewTemplateForm, setShowNewTemplateForm] = useState(false);
+  const [showNewChoiceFormByPair, setShowNewChoiceFormByPair] = useState({});
+  const [newTemplateData, setNewTemplateData] = useState({
+    templateText: '',
+    questionType: '',
+    applicableChoiceTypes: []
+  });
+  const [newChoiceData, setNewChoiceData] = useState({
+    choiceType: '',
+    choiceValue: '',
+    soundText: '',
+    choiceImage: null
+  });
+  
+  // UI States
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [creatingTemplate, setCreatingTemplate] = useState(false);
   
-  // Content type definitions with icons and descriptions
-  const contentTypes = [
-    {
-      id: 'image',
-      name: 'Question with Image or Audio Based',
-      icon: FaImage,
-      description: 'Visually-driven activities with supporting captions and questions with audio or texts or images'
-    },
-    {
-      id: 'reading',
-      name: 'Reading Passages',
-      icon: FaBookOpen,
-      description: 'Text-based activities with syllable breakdowns and supporting visuals'
-    }
-  ];
+  // File upload states
+  const [fileUploads, setFileUploads] = useState({});
+  const [uploading, setUploading] = useState(false);
+  const fileInputRefs = useRef({});
   
-  // Initialize content items based on content type
+  // Add a useEffect to clean up object URLs when component unmounts
   useEffect(() => {
-    if (contentItems.length === 0) {
-      // Create default content based on type
-      if (contentType === 'reading') {
-        setContentItems([
-          {
-            id: Date.now(),
-            text: '',
-            syllables: '',
-            translation: '',
-            imageFile: null,
-            imagePreview: null,
-            audioFile: null
-          }
-        ]);
-      } else if (contentType === 'image') {
-        setContentItems([
-          {
-            id: Date.now(),
-            caption: '',
-            imageFile: null,
-            imagePreview: null
-          }
-        ]);
-      }
-    }
-  }, [contentType, contentItems]);
+    // Cleanup function to revoke object URLs when component unmounts
+    return () => {
+      // Revoke all local URLs created for file previews
+      Object.values(fileUploads).forEach(upload => {
+        if (upload?.localUrl) {
+          URL.revokeObjectURL(upload.localUrl);
+        }
+      });
+    };
+  }, [fileUploads]);
   
-  // Helper function to create default content item
-  const createDefaultContent = () => {
-    const base = { id: Date.now() };
-    
-    if (contentType === 'reading') {
-      return {
-        ...base,
-        text: '',
-        syllables: '',
-        translation: '',
-        imageFile: null,
-        imagePreview: null,
-        audioFile: null
-      };
+  // Helper function to toggle choice form for a specific pair
+  const toggleChoiceForm = (pairId, open) =>
+    setShowNewChoiceFormByPair(prev => ({ ...prev, [pairId]: open }));
+
+  // ===== HELPER FUNCTIONS =====
+
+  /**
+   * Create a new intervention
+   * API: POST /api/interventions
+   */
+  const createIntervention = async (interventionData) => {
+    try {
+      console.log('Creating new intervention:', interventionData);
+      
+      const response = await api.interventions.create(interventionData);
+      console.log('Intervention creation response:', response.data);
+      
+      return response.data.data;
+    } catch (error) {
+      console.error('Error creating intervention:', error);
+      throw error;
+    }
+  };
+
+  /**
+   * Update an existing intervention
+   * API: PUT /api/interventions/{id}
+   */
+  const updateIntervention = async (interventionId, interventionData) => {
+    try {
+      console.log(`Updating intervention ${interventionId}:`, interventionData);
+      
+      const response = await api.interventions.update(interventionId, interventionData);
+      console.log('Intervention update response:', response.data);
+      
+      return response.data.data;
+    } catch (error) {
+      console.error('Error updating intervention:', error);
+      throw error;
+    }
+  };
+
+  // ===== EFFECTS =====
+  
+  /**
+   * Initialize content type based on category
+   */
+  useEffect(() => {
+    // Determine content type based on category
+      const normCategory = normalizeCategory(category);
+    if (normCategory === 'reading_comprehension') {
+        setContentType('sentence');
     } else {
-      return {
-        ...base,
-        caption: '',
-        imageFile: null,
-        imagePreview: null
-      };
+      setContentType('question');
     }
-  };
+  }, [category]);
   
-  // Helper function to create default question
-  const createDefaultQuestion = () => {
-    return {
-      id: Date.now(),
-      questionText: '',
-      contentType: 'image',
-      options: ['', ''],
-      correctAnswer: 0,
-      hint: '',
-      imageFile: null,
-      imagePreview: null,
-      audioFile: null,
-      optionAudioFiles: [null, null],
-      optionAudioUrls: [null, null]
-    };
-  };
-  
-  // Content management functions
-  const addContentItem = () => {
-    setContentItems([...contentItems, createDefaultContent()]);
-  };
-  
-  const removeContentItem = (id) => {
-    if (contentItems.length <= 1) return;
-    setContentItems(contentItems.filter(item => item.id !== id));
-  };
-  
-  const updateContentItem = (id, field, value) => {
-    setContentItems(contentItems.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ));
-  };
-  
-  // Handle image upload for content
-  const handleContentImageUpload = (id, e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      updateContentItem(id, 'imageFile', file);
-      updateContentItem(id, 'imagePreview', reader.result);
-    };
-    reader.readAsDataURL(file);
-  };
-  
-  // Handle audio upload for content
-  const handleContentAudioUpload = (id, e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const audioUrl = URL.createObjectURL(file);
-    updateContentItem(id, 'audioFile', file);
-    updateContentItem(id, 'audioUrl', audioUrl);
-  };
-  
-  // Question management functions
-  const addQuestion = () => {
-    setQuestions([...questions, createDefaultQuestion()]);
-  };
-  
-  const removeQuestion = (id) => {
-    if (questions.length <= 1) return;
-    setQuestions(questions.filter(q => q.id !== id));
-  };
-  
-  const updateQuestion = (id, field, value) => {
-    setQuestions(questions.map(q => 
-      q.id === id ? { ...q, [field]: value } : q
-    ));
-  };
-  
-  // Handle image upload for question
-  const handleQuestionImageUpload = (id, e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      updateQuestion(id, 'imageFile', file);
-      updateQuestion(id, 'imagePreview', reader.result);
-    };
-    reader.readAsDataURL(file);
-  };
-  
-  // Handle audio upload for question
-  const handleQuestionAudioUpload = (id, e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const audioUrl = URL.createObjectURL(file);
-    updateQuestion(id, 'audioFile', file);
-    updateQuestion(id, 'audioUrl', audioUrl);
-  };
-  
-  // Option management functions
-  const updateOption = (questionId, optionIndex, value) => {
-    setQuestions(questions.map(q => 
-      q.id === questionId ? {
-        ...q,
-        options: q.options.map((opt, idx) => idx === optionIndex ? value : opt)
-      } : q
-    ));
-  };
-  
-  const addOption = (questionId) => {
-    setQuestions(questions.map(q => 
-      q.id === questionId ? {
-        ...q,
-        options: [...q.options, ''],
-        optionAudioFiles: [...(q.optionAudioFiles || []), null],
-        optionAudioUrls: [...(q.optionAudioUrls || []), null]
-      } : q
-    ));
-  };
-  
-  const removeOption = (questionId, optionIndex) => {
-    const question = questions.find(q => q.id === questionId);
-    if (!question || question.options.length <= 2) return;
-    
-    setQuestions(questions.map(q => 
-      q.id === questionId ? {
-        ...q,
-        options: q.options.filter((_, idx) => idx !== optionIndex),
-        optionAudioFiles: (q.optionAudioFiles || []).filter((_, idx) => idx !== optionIndex),
-        optionAudioUrls: (q.optionAudioUrls || []).filter((_, idx) => idx !== optionIndex),
-        correctAnswer: q.correctAnswer === optionIndex 
-          ? 0 
-          : q.correctAnswer > optionIndex 
-            ? q.correctAnswer - 1 
-            : q.correctAnswer
-      } : q
-    ));
-  };
-  
-  const setCorrectAnswer = (questionId, optionIndex) => {
-    setQuestions(questions.map(q => 
-      q.id === questionId ? { ...q, correctAnswer: optionIndex } : q
-    ));
-  };
-  
-  // Handle option audio upload
-  const handleOptionAudioUpload = (questionId, optionIndex, e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const audioUrl = URL.createObjectURL(file);
-    setQuestions(questions.map(q => 
-      q.id === questionId ? {
-        ...q,
-        optionAudioFiles: (q.optionAudioFiles || []).map((f, idx) => idx === optionIndex ? file : f),
-        optionAudioUrls: (q.optionAudioUrls || []).map((u, idx) => idx === optionIndex ? audioUrl : u)
-      } : q
-    ));
-  };
-  
-  // Remove option audio
-  const removeOptionAudio = (questionId, optionIndex) => {
-    setQuestions(questions.map(q => 
-      q.id === questionId ? {
-        ...q,
-        optionAudioFiles: (q.optionAudioFiles || []).map((f, idx) => idx === optionIndex ? null : f),
-        optionAudioUrls: (q.optionAudioUrls || []).map((u, idx) => idx === optionIndex ? null : u)
-      } : q
-    ));
-  };
-  
-  // Navigation functions
-  const nextStep = () => {
-    if (validateCurrentStep()) {
-      setCurrentStep(currentStep + 1);
+  /**
+   * Load initial data when component mounts
+   */
+  useEffect(() => {
+    if (category && readingLevel && contentType) {
+      loadInitialData();
     }
-  };
+  }, [category, readingLevel, contentType]);
   
-  const prevStep = () => {
-    setCurrentStep(currentStep - 1);
-  };
-  
-  // Validation functions
-  const validateCurrentStep = () => {
-    const newErrors = {};
-    
-    if (currentStep === 1) {
-      if (!title.trim()) {
-        newErrors.title = "Title is required";
+  /**
+   * Initialize from existing activity data if editing
+   */
+  useEffect(() => {
+    if (activity && activity.questions && activity.questions.length > 0) {
+      initializeFromExistingActivity();
+    }
+  }, [activity, choiceTemplates]);
+ 
+  /**
+   * Initialize template form data when opening the form
+   */
+  useEffect(() => {
+    if (showNewTemplateForm) {
+      // Normalize the category
+      const normCategory = normalizeCategory(category);
+      
+      // Set default question type based on category
+      const defaultQuestionType = normCategory === 'alphabet_knowledge' ? 'patinig' : 
+                                 normCategory === 'phonological_awareness' ? 'malapantig' : 
+                                 normCategory === 'word_recognition' || normCategory === 'decoding' ? 'word' : '';
+      
+      // Also set default applicable choice types based on the question type
+      const defaultChoiceTypes = getApplicableChoiceTypes(defaultQuestionType);
+      
+      // For malapantig, include both malapatinigText and wordText by default
+      let initialChoiceTypes = [];
+      if (defaultQuestionType === 'malapantig') {
+        initialChoiceTypes = ['malapatinigText', 'wordText'];
+      } else if (defaultChoiceTypes.length > 0) {
+        initialChoiceTypes = [defaultChoiceTypes[0]];
       }
       
-      if (!description.trim()) {
-        newErrors.description = "Description is required";
-      }
+      setNewTemplateData({
+        templateText: '',
+        questionType: defaultQuestionType,
+        applicableChoiceTypes: initialChoiceTypes
+      });
     }
-    else if (currentStep === 2) {
-      if (contentType === 'reading' && contentItems.some(item => !item.text.trim())) {
-        newErrors.content = "All reading passages must have text";
+  }, [showNewTemplateForm, category]);
+ 
+  // ===== API FUNCTIONS =====
+ 
+  // Helper to build API URLs that work in both dev and production
+  const getApiUrl = (path) => {
+    // Use environment variable or default to your actual API server
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    return `${baseUrl}${path}`;
+  };
+ 
+  /**
+   * Check for existing interventions for this student/category
+   * API: GET /api/interventions/check?studentId={id}&category={category}
+   */
+  const checkExistingInterventions = async () => {
+    try {
+      setCheckingExisting(true);
+      
+      // Use the same student ID extraction logic as prepareInterventionData
+      const studentId = student?._id || student?.id || student?.studentId;
+      
+      if (!studentId) {
+        console.error('No student ID available, skipping existing interventions check. Student object:', student);
+        setExistingIntervention(null);
+        return;
       }
       
-      if (contentType === 'image' && contentItems.some(item => !item.imagePreview)) {
-        newErrors.content = "All image-based content must have images";
-      }
+      console.log('Checking existing interventions:', `/api/interventions/check?studentId=${studentId}&category=${category}`);
+      
+      const response = await api.interventions.checkExisting(studentId, category);
+      console.log('Existing interventions response:', response.data);
+      
+      setExistingIntervention(response.data.exists ? response.data.intervention : null);
+    } catch (error) {
+      console.error('Error checking existing interventions:', error);
+      setExistingIntervention(null);
+    } finally {
+      setCheckingExisting(false);
     }
-    else if (currentStep === 3) {
-      if (questions.some(q => !q.questionText.trim())) {
-        newErrors.questions = "All questions must have text";
+  };
+  
+  /**
+   * Load all initial data needed for the modal
+   */
+  const loadInitialData = async () => {
+    // Check if we have all the required data before proceeding
+    if (!category || !readingLevel) {
+      console.warn('Missing required data for API calls:', { category, readingLevel });
+      setErrors({ general: "Missing category or reading level data." });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (contentType === 'sentence') {
+        // For Reading Comprehension, load sentence templates
+        await loadSentenceTemplates();
+      } else {
+        // For other categories, load data in sequence to ensure proper dependency handling
+        // First load main assessment questions (which will create question-choice pairs)
+        await loadMainAssessmentQuestions();
+        
+        // Then load question templates
+        await loadQuestionTemplates();
+        
+        // Finally load choice templates (which will match choices to the main assessment questions)
+        await loadChoiceTemplates();
+        
+        // If no question-choice pairs were created (no main assessment questions), create a default one
+        if (questionChoicePairs.length === 0 && !activity) {
+          addQuestionChoicePair();
+        }
+      }
+    } catch (error) {
+      console.error("Error loading initial data:", error);
+      setErrors({ general: "Failed to load required data. Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  };
+ 
+  /**
+   * Load main assessment questions for this category and reading level
+   * API: GET /api/interventions/questions/main?category={category}&readingLevel={level}
+   */
+  const loadMainAssessmentQuestions = async () => {
+    try {
+      // Make the API call with proper authentication
+      console.log('Loading main assessment questions:', `/api/interventions/questions/main?category=${category}&readingLevel=${readingLevel}`);
+      
+      const response = await api.interventions.getMainAssessmentQuestions(category, readingLevel);
+      console.log('Main assessment questions response:', response.data);
+      
+      // Update state with the fetched questions
+      const questions = response.data.data || [];
+      setMainAssessmentQuestions(questions);
+      
+      // If we're not editing an existing activity, create question-choice pairs from the main assessment questions
+      if (!activity && questions.length > 0) {
+        // Convert main assessment questions to question-choice pairs
+        const pairs = questions.map(question => {
+          // Find correct choice option
+          const correctOption = question.choiceOptions?.find(option => option.isCorrect);
+          
+          return {
+            id: Date.now() + Math.random(),
+            sourceType: 'main_assessment',
+            sourceId: question._id,
+            questionType: question.questionType || '',
+            questionText: question.questionText || '',
+            questionImage: question.questionImage || null,
+            questionValue: question.questionValue || '',
+            choiceIds: [], // Will be populated when choice templates are loaded
+            correctChoiceId: null // Will be populated when choice templates are loaded
+          };
+        });
+        
+        // Add these pairs to the state
+        setQuestionChoicePairs(pairs);
+      }
+    } catch (error) {
+      console.error('Error loading main assessment questions:', error);
+      
+      // Use mock data as fallback when API fails
+      console.log('Using mock main assessment questions data');
+      const mockQuestions = [
+        {
+          _id: 'mock-question-1',
+          questionText: 'Mock Question 1',
+          category: category,
+          readingLevel: readingLevel
+        },
+        {
+          _id: 'mock-question-2',
+          questionText: 'Mock Question 2',
+          category: category,
+          readingLevel: readingLevel
+        }
+      ];
+      
+      setMainAssessmentQuestions(mockQuestions);
+    }
+  };
+ 
+  /**
+   * Load question templates for this category
+   * API: GET /api/interventions/templates/questions?category={category}
+   */
+  const loadQuestionTemplates = async () => {
+    try {
+      // Make the API call with proper authentication
+      console.log('Loading question templates:', `/api/interventions/templates/questions?category=${category}`);
+      
+      const response = await api.interventions.getTemplateQuestions(category);
+      console.log('Question templates response:', response.data);
+      
+      // Update state with the fetched templates
+      setQuestionTemplates(response.data.data || []);
+    } catch (error) {
+      console.error('Error loading question templates:', error);
+      
+      // Use the JSON data we have as fallback
+      console.log('Using mock question templates data');
+      setQuestionTemplates([
+        {
+          _id: "mock-template-1",
+          category: category,
+          questionType: "patinig",
+          templateText: "Anong katumbas na maliit na letra?",
+          applicableChoiceTypes: ["patinigBigLetter", "patinigSmallLetter"],
+          correctChoiceType: "patinigBigLetter"
+        },
+        {
+          _id: "mock-template-2",
+          category: category,
+          questionType: "katinig",
+          templateText: "Anong tunog ng letra?",
+          applicableChoiceTypes: ["katinigBigLetter", "katinigSound"],
+          correctChoiceType: "katinigSound"
+        }
+      ]);
+    }
+  };
+ 
+  /**
+   * Load choice templates
+   * API: GET /api/interventions/templates/choices
+   */
+  const loadChoiceTemplates = async () => {
+    try {
+      // Make the API call with proper authentication
+      console.log('Loading choice templates:', `/api/interventions/templates/choices`);
+      
+      const response = await api.interventions.getTemplateChoices();
+      console.log('Choice templates response:', response.data);
+      
+      // Update state with the fetched choices
+      const choices = response.data.data || [];
+      setChoiceTemplates(choices);
+      
+      // After loading choices, match them with any main assessment questions
+      if (!activity && questionChoicePairs.length > 0 && mainAssessmentQuestions.length > 0) {
+        setQuestionChoicePairs(prev => 
+          prev.map(pair => {
+            // Only process main assessment questions
+            if (pair.sourceType !== 'main_assessment') return pair;
+            
+            // Find the corresponding main assessment question
+            const mainQuestion = mainAssessmentQuestions.find(q => q._id === pair.sourceId);
+            if (!mainQuestion || !mainQuestion.choiceOptions) return pair;
+            
+            // Try to find matching choices in the choice templates
+            const matchedChoiceIds = [];
+            let correctChoiceId = null;
+            
+            mainQuestion.choiceOptions.forEach(option => {
+              // Find a matching choice template
+              const matchedChoice = choices.find(c => 
+                (c.choiceValue && c.choiceValue.toLowerCase() === option.optionText.toLowerCase()) ||
+                (c.soundText && c.soundText.toLowerCase() === option.optionText.toLowerCase())
+              );
+              
+              if (matchedChoice) {
+                matchedChoiceIds.push(matchedChoice._id);
+                if (option.isCorrect) {
+                  correctChoiceId = matchedChoice._id;
+                }
+              }
+            });
+            
+            // Update the pair with matched choices
+            return {
+              ...pair,
+              choiceIds: matchedChoiceIds.length > 0 ? matchedChoiceIds : pair.choiceIds,
+              correctChoiceId: correctChoiceId || pair.correctChoiceId
+            };
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Error loading choice templates:', error);
+      
+      // Use mock data as fallback when API fails
+      console.log('Using mock choice templates data');
+      const mockChoices = [
+        {
+          _id: "mock-choice-1",
+          choiceType: "patinigBigLetter",
+          choiceValue: "A",
+          soundText: "/ah/"
+        },
+        {
+          _id: "mock-choice-2",
+          choiceType: "patinigSmallLetter",
+          choiceValue: "a",
+          soundText: "/ah/"
+        }
+      ];
+      
+      setChoiceTemplates(mockChoices);
+    }
+  };
+ 
+  /**
+   * Load sentence templates for reading comprehension
+   * API: GET /api/interventions/templates/sentences?readingLevel={level}
+   */
+  const loadSentenceTemplates = async () => {
+    try {
+      // Make the API call with proper authentication
+      console.log('Loading sentence templates:', `/api/interventions/templates/sentences?readingLevel=${readingLevel}`);
+      
+      const response = await api.interventions.getSentenceTemplates(readingLevel);
+      console.log('Sentence templates response:', response.data);
+      
+      // Update state with the fetched templates
+      setSentenceTemplates(response.data.data || []);
+    } catch (error) {
+      console.error('Error loading sentence templates:', error);
+      
+      // Use mock data as fallback when API fails
+      console.log('Using mock sentence templates data');
+      setSentenceTemplates(await mockFetchSentenceTemplates(readingLevel));
+    }
+  };
+ 
+  /**
+   * Create a new question template
+   * API: POST /api/interventions/templates/questions
+   */
+  const createNewQuestionTemplate = async (templateData) => {
+    try {
+      console.log('Creating new question template:', templateData);
+      
+      const response = await api.interventions.createTemplateQuestion(templateData);
+      console.log('Template creation response:', response.data);
+      
+      // Add the new template to the state
+      setQuestionTemplates(prev => [...prev, response.data.data]);
+      
+      return response.data.data;
+    } catch (error) {
+      console.error('Error creating question template:', error);
+      throw error;
+    }
+  };
+  
+  /**
+   * Create a new choice template
+   * API: POST /api/interventions/templates/choices
+   */
+  const createNewChoiceTemplate = async (choiceData) => {
+    try {
+      console.log('Creating new choice template:', choiceData);
+      
+      const response = await api.interventions.createTemplateChoice(choiceData);
+      console.log('Choice creation response:', response.data);
+      
+      // Add the new choice to the state
+      setChoiceTemplates(prev => [...prev, response.data.data]);
+      
+      return response.data.data;
+    } catch (error) {
+      console.error('Error creating choice template:', error);
+      throw error;
+    }
+  };
+
+  /**
+   * Upload an image to S3 bucket
+   * @param {File} file - The file to upload
+   * @param {string} targetFolder - Target folder in S3 bucket (default: 'mobile')
+   * @returns {Promise<string>} - The URL of the uploaded file
+   */
+  const uploadImageToS3 = async (file, targetFolder = 'mobile') => {
+    try {
+      setUploading(true);
+      
+      // Always use mock URLs in development mode to avoid CORS issues
+      if (import.meta.env.DEV) {
+        const mockUrl = `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mock/${file.name.replace(/\s+/g, '_')}`;
+        console.log(`Using mock image URL in development: ${mockUrl}`);
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
+        return mockUrl;
       }
       
-      if (questions.some(q => q.options.some(opt => !opt.trim()))) {
-        newErrors.options = "All options must have text";
+      // For production: Get pre-signed URL from server
+      const response = await api.interventions.getUploadUrl(file.name, file.type, targetFolder);
+      console.log('Upload URL response:', response.data);
+      
+      // Use the pre-signed URL to upload directly to S3
+      const { uploadUrl, fileUrl } = response.data.data; // Note: data is nested inside data
+      
+      console.log('Uploading file to S3 using presigned URL...');
+      
+      try {
+        const uploadResponse = await fetch(uploadUrl, {
+          method: 'PUT',
+          body: file,
+          headers: {
+            'Content-Type': file.type,
+            'x-amz-acl': 'public-read'
+          }
+        });
+        
+        if (!uploadResponse.ok) {
+          throw new Error(`Upload failed with status: ${uploadResponse.status}`);
+        }
+        
+        console.log('File uploaded successfully:', fileUrl);
+        return fileUrl;
+      } catch (fetchError) {
+        console.error('Error uploading file:', fetchError);
+        
+        // In development mode, use mock URL as fallback
+        if (import.meta.env.DEV) {
+          const mockUrl = `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mock/${file.name.replace(/\s+/g, '_')}`;
+          console.log(`Using mock image URL in development: ${mockUrl}`);
+          return mockUrl;
+        }
+        
+        throw fetchError; // Re-throw for production
       }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      
+      // Always provide a fallback URL in development mode
+      if (import.meta.env.DEV) {
+        const mockUrl = `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mock/${file.name.replace(/\s+/g, '_')}`;
+        console.log(`Using mock image URL in development: ${mockUrl}`);
+        return mockUrl;
+      }
+      
+      // In production, show an error message
+      setErrors(prev => ({
+        ...prev,
+        upload: `Failed to upload image: ${error.message}`
+      }));
+      
+      throw error; // Re-throw in production to handle in the calling function
+    } finally {
+      setUploading(false);
+    }
+  };
+ 
+  // ===== MOCK API FUNCTIONS =====
+  // TODO: Remove these when connecting to real backend
+ 
+  const mockFetchMainAssessmentQuestions = async (category, readingLevel) => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Convert reading level from UI format to database format
+    const dbReadingLevel = readingLevel.replace(/ /g, '_').toLowerCase();
+    
+    // Normalize category
+    const normCategory = normalizeCategory(category);
+    
+    // Mock data based on test.main_assessment.json structure
+    const allQuestions = [
+      // Low Emerging - Alphabet Knowledge
+      {
+        _id: "68298fb179a34741f9cd1a01-1",
+        questionType: "patinig",
+        questionText: "Anong katumbas na maliit na letra?",
+        questionImage: null,
+        questionValue: "A",
+        choiceOptions: [
+          { optionText: "a", isCorrect: true },
+          { optionText: "e", isCorrect: false }
+        ],
+        order: 1,
+        category: "alphabet_knowledge",
+        readingLevel: "low_emerging"
+      },
+      {
+        _id: "68298fb179a34741f9cd1a01-2",
+        questionType: "patinig",
+        questionText: "Anong katumbas na maliit na letra?",
+        questionImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/E_big.png",
+        questionValue: null,
+        choiceOptions: [
+          { optionText: "e", isCorrect: true },
+          { optionText: "a", isCorrect: false }
+        ],
+        order: 2,
+        category: "alphabet_knowledge",
+        readingLevel: "low_emerging"
+      },
+      
+      // Phonological Awareness
+      {
+        _id: "68298fb179a34741f9cd1a02-1",
+        questionType: "malapantig",
+        questionText: "Kapag pinagsama ang mga pantig, ano ang mabubuo?",
+        questionImage: null,
+        questionValue: "BO + LA",
+        choiceOptions: [
+          { optionText: "BOLA", isCorrect: true },
+          { optionText: "LABO", isCorrect: false }
+        ],
+        order: 1,
+        category: "phonological_awareness",
+        readingLevel: "low_emerging"
+      },
+      
+      // Word Recognition
+      {
+        _id: "68298fb179a34741f9cd1a03-1",
+        questionType: "word",
+        questionText: "Tukuyin ang angkop na salita sa larawan",
+        questionImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/words/ball.png",
+        questionValue: null,
+        choiceOptions: [
+          { optionText: "BOLA", isCorrect: true },
+          { optionText: "LABO", isCorrect: false }
+        ],
+        order: 1,
+        category: "word_recognition",
+        readingLevel: "low_emerging"
+      },
+      
+      // Decoding
+      {
+        _id: "68298fb179a34741f9cd1a04-1",
+        questionType: "word",
+        questionText: "Paano babaybayin ang salitang ito?",
+        questionImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/words/dog.png",
+        questionValue: null,
+        choiceOptions: [
+          { optionText: "A-S-O", isCorrect: true },
+          { optionText: "A-S-A", isCorrect: false }
+        ],
+        order: 1,
+        category: "decoding",
+        readingLevel: "low_emerging"
+      }
+    ];
+    
+    // Filter by category and reading level
+    return allQuestions.filter(
+      q => q.category === normCategory && q.readingLevel === dbReadingLevel
+    );
+  };
+ 
+  const mockFetchQuestionTemplates = async (category) => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Normalize category
+    const normCategory = normalizeCategory(category);
+    
+    // Mock data based on test.templates_questions.json structure
+    const allTemplates = [
+      {
+        _id: "6829799079a34741f9cd19ef",
+        category: "alphabet_knowledge",
+        questionType: "patinig",
+        templateText: "Anong katumbas na maliit na letra?",
+        applicableChoiceTypes: ["patinigBigLetter", "patinigSmallLetter"]
+      },
+      {
+        _id: "6829799079a34741f9cd19f0",
+        category: "alphabet_knowledge",
+        questionType: "patinig",
+        templateText: "Anong katumbas na malaking letra?",
+        applicableChoiceTypes: ["patinigBigLetter", "patinigSmallLetter"]
+      },
+      {
+        _id: "6829799079a34741f9cd19f2",
+        category: "alphabet_knowledge",
+        questionType: "katinig",
+        templateText: "Anong katumbas na maliit na letra?",
+        applicableChoiceTypes: ["katinigBigLetter", "katinigSmallLetter"]
+      },
+      {
+        _id: "6829799079a34741f9cd19f5",
+        category: "phonological_awareness",
+        questionType: "malapantig",
+        templateText: "Kapag pinagsama ang mga pantig, ano ang mabubuo?",
+        applicableChoiceTypes: ["malapatinigText", "wordText"]
+      },
+      {
+        _id: "6829799079a34741f9cd19f8",
+        category: "word_recognition",
+        questionType: "word",
+        templateText: "Piliin ang tamang larawan para sa salitang:",
+        applicableChoiceTypes: ["wordText"]
+      },
+      {
+        _id: "6829799079a34741f9cd19fa",
+        category: "decoding",
+        questionType: "word",
+        templateText: "Paano babaybayin ang salitang ito?",
+        applicableChoiceTypes: ["wordText"]
+      }
+    ];
+    
+    return allTemplates.filter(t => t.category === normCategory);
+  };
+ 
+  const mockFetchChoiceTemplates = async () => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Mock data based on test.templates_choices.json structure
+    return [
+      // Patinig Big Letters
+      {
+        _id: "68297e4979a34741f9cd1a0f",
+        choiceType: "patinigBigLetter",
+        choiceValue: "A",
+        choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/A_big.png",
+        soundText: null
+      },
+      {
+        _id: "68297e4979a34741f9cd1a10",
+        choiceType: "patinigBigLetter",
+        choiceValue: "E",
+        choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/E_big.png",
+        soundText: null
+      },
+      
+      // Patinig Small Letters
+      {
+        _id: "68297e4979a34741f9cd1a14",
+        choiceType: "patinigSmallLetter",
+        choiceValue: "a",
+        choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/a_small.png",
+        soundText: null
+      },
+      {
+        _id: "68297e4979a34741f9cd1a15",
+        choiceType: "patinigSmallLetter",
+        choiceValue: "e",
+        choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/e_small.png",
+        soundText: null
+      },
+      
+      // Katinig Big Letters
+      {
+        _id: "68297e4979a34741f9cd1a1e",
+        choiceType: "katinigBigLetter",
+        choiceValue: "B",
+        choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/B_big.png",
+        soundText: null
+      },
+      
+      // Katinig Small Letters
+      {
+        _id: "68297e4979a34741f9cd1a28",
+        choiceType: "katinigSmallLetter",
+        choiceValue: "b",
+        choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/b_small.png",
+        soundText: null
+      },
+      
+      // Malapantig Text
+      {
+        _id: "6829828a79a34741f9cd1a3e",
+        choiceType: "malapatinigText",
+        choiceValue: "BA",
+        choiceImage: null,
+        soundText: "/ba/"
+      },
+      {
+        _id: "80049a1b2c3d4e5f6a7b8c9d",
+        choiceType: "malapatinigText",
+        choiceValue: "BO",
+        choiceImage: null,
+        soundText: "/bo/"
+      },
+      
+      // Word Text
+      {
+        _id: "6829828a79a34741f9cd1a4b",
+        choiceType: "wordText",
+        choiceValue: "BOLA",
+        choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/words/ball.png",
+        soundText: null
+      },
+      {
+        _id: "6829828a79a34741f9cd1a48",
+        choiceType: "wordText",
+        choiceValue: "ASO",
+        choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/words/dog.png",
+        soundText: null
+      }
+    ];
+  };
+ 
+  const mockFetchSentenceTemplates = async (readingLevel) => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Mock data based on test.sentence_templates.json structure
+    const allTemplates = [
+      {
+        _id: "68297c4379a34741f9cd1a00",
+        title: "Si Maria at ang mga Bulaklak",
+        category: "reading_comprehension",
+        readingLevel: "Low Emerging",
+        sentenceText: [
+          {
+            pageNumber: 1,
+            text: "Si Maria ay pumunta sa parke. Nakita niya ang maraming bulaklak na magaganda. Siya ay natuwa at nag-uwi ng ilang bulaklak para sa kanyang ina.",
+            image: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/passages/park_flowers.png"
+          },
+          {
+            pageNumber: 2,
+            text: "Nang makita ng ina ni Maria ang mga bulaklak, siya ay ngumiti at nagyakap sa kanyang anak. Gumawa sila ng maliit na hardin sa harap ng kanilang bahay.",
+            image: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/passages/mother_garden.png"
+          }
+        ],
+        sentenceQuestions: [
+          {
+            questionNumber: 1,
+            questionText: "Sino ang pangunahing tauhan sa kwento?",
+            sentenceCorrectAnswer: "Si Maria",
+            sentenceOptionAnswers: ["Si Maria", "Si Juan", "Ang ina", "Ang hardinero"]
+          },
+          {
+            questionNumber: 2,
+            questionText: "Saan pumunta si Maria?",
+            sentenceCorrectAnswer: "Sa parke",
+            sentenceOptionAnswers: ["Sa parke", "Sa paaralan", "Sa tindahan", "Sa bahay"]
+          }
+        ]
+      }
+    ];
+    
+    return allTemplates.filter(t => t.readingLevel === readingLevel);
+  };
+ 
+  // ===== INITIALIZATION FUNCTIONS =====
+ 
+  /**
+   * Initialize question-choice pairs from existing activity
+   */
+  const initializeFromExistingActivity = () => {
+    if (!activity) return;
+    
+    // Set basic information
+    setTitle(activity.name || '');
+    setDescription(activity.description || '');
+    
+    // Handle different types of activities
+    if (activity.sentenceTemplate) {
+      // Reading Comprehension activity
+        setSelectedSentenceTemplate(activity.sentenceTemplate);
+    } else if (activity.questions && activity.questions.length > 0) {
+      // Regular question-choice activity
+      const pairs = activity.questions.map(question => {
+        // Create a question-choice pair from the question
+        return {
+          id: Date.now() + Math.random(),
+          sourceType: question.source || 'custom',
+          sourceId: question.sourceQuestionId || null,
+          questionType: question.questionType || '',
+          questionText: question.questionText || '',
+          questionImage: question.questionImage || null,
+          questionValue: question.questionValue || '',
+          choiceIds: question.choiceIds || [],
+          correctChoiceId: question.correctChoiceId || null
+        };
+      });
+      
+      setQuestionChoicePairs(pairs);
+    }
+  };
+ 
+  // ===== HELPER FUNCTIONS =====
+
+  /**
+   * Get applicable choice types for a question type
+   */
+  const getApplicableChoiceTypes = (questionType) => {
+    // Complete mapping based on the provided documentation
+    const typeMap = {
+      // Alphabet Knowledge
+      'patinig': ['patinigBigLetter', 'patinigSmallLetter', 'patinigSound'],
+      'katinig': ['katinigBigLetter', 'katinigSmallLetter', 'katinigSound'],
+      
+      // Phonological Awareness
+      'malapantig': ['malapatinigText', 'wordText'], // Restricted to only syllable text and word text
+      
+      // Word Recognition & Decoding
+      'word': ['wordText'],
+      
+      // Reading Comprehension
+      'sentence': [] // No choice types allowed - system generated only
+    };
+    
+    return typeMap[questionType] || [];
+  };
+
+  /**
+   * Format choice type for display
+   */
+  const formatChoiceType = (choiceType) => {
+    const typeMap = {
+      'patinigBigLetter': 'Uppercase Vowel Letter',
+      'patinigSmallLetter': 'Lowercase Vowel Letter',
+      'patinigSound': 'Vowel Sound',
+      'katinigBigLetter': 'Uppercase Consonant Letter',
+      'katinigSmallLetter': 'Lowercase Consonant Letter',
+      'katinigSound': 'Consonant Sound',
+      'malapatinigText': 'Syllable Text',
+      'wordText': 'Word Text',
+      'sentenceText': 'Sentence Text'
+    };
+    
+    return typeMap[choiceType] || choiceType;
+  };
+
+  /**
+   * Get choices by IDs from available choices
+   */
+  const getChoicesByIds = (choiceIds) => {
+    if (!choiceIds || !choiceIds.length || !choiceTemplates) return [];
+    return choiceTemplates.filter(choice => choice && choiceIds.includes(choice._id));
+  };
+
+  /**
+   * Get applicable question types for category
+   */
+  const getApplicableQuestionTypes = (category) => {
+    // Normalize the category
+    const normCategory = normalizeCategory(category);
+    
+    // Complete mapping based on the provided documentation
+    const typeMap = {
+      // Valid question types per category
+      'alphabet_knowledge': ['patinig', 'katinig'],
+      'phonological_awareness': ['malapantig', 'patinig', 'katinig'],
+      'word_recognition': ['word'],
+      'decoding': ['word'],
+      'reading_comprehension': ['sentence']
+    };
+    
+    return typeMap[normCategory] || [];
+  };
+
+  /**
+   * Format question type for display
+   */
+  const formatQuestionType = (questionType) => {
+    const typeMap = {
+      'patinig': 'Patinig (Vowel)',
+      'katinig': 'Katinig (Consonant)',
+      'malapantig': 'Malapantig (Syllable)',
+      'word': 'Word Recognition',
+      'sentence': 'Reading Passage'
+    };
+    
+    return typeMap[questionType] || questionType;
+  };
+
+  /**
+   * Check if inline creation is allowed for this category
+   */
+  const isInlineCreationAllowed = () => {
+    // Normalize the category
+    const normCategory = normalizeCategory(category);
+    
+    // Reading Comprehension does not allow inline creation of templates or choices
+    if (normCategory === 'reading_comprehension' || contentType === 'sentence') {
+      return false;
     }
     
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    // All other categories allow inline creation
+    return true;
+  };
+
+  /**
+   * Handle image upload click
+   */
+  const handleImageUploadClick = (targetType, targetId) => {
+    setCurrentUploadTarget({ type: targetType, id: targetId });
+    fileInputRef.current.click();
+  };
+
+  /**
+   * Handle file upload for question image
+   */
+  const handleFileChange = async (e, pairId) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    try {
+      // Clear question value when setting an image
+      updateQuestionChoicePair(pairId, 'questionValue', '');
+      
+      // Create a local preview immediately using URL.createObjectURL
+      const localUrl = URL.createObjectURL(file);
+      
+      // Update the UI immediately with the local preview
+      updateQuestionChoicePair(pairId, 'questionImage', localUrl);
+      
+      setFileUploads(prev => ({
+        ...prev,
+        [pairId]: { status: 'pending', file: file.name, localUrl }
+      }));
+      
+      // Store the file for later upload when saving
+      setPendingUploads(prev => ({
+        ...prev,
+        [pairId]: file
+      }));
+    } catch (error) {
+      console.error("Error handling file:", error);
+      setFileUploads(prev => ({
+        ...prev,
+        [pairId]: { status: 'error', file: file.name }
+      }));
+      
+      // Show error message
+      setErrors(prev => ({
+        ...prev,
+        upload: `Failed to handle image: ${error.message}`
+      }));
+    }
+    
+    // Reset the file input
+    e.target.value = null;
   };
   
-  const validateAllSteps = () => {
-    const allErrors = {};
+  /**
+   * Handle file upload for new choice creation
+   */
+  const handleChoiceFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
     
-    // Basic info validation
-    if (!title.trim()) {
-      allErrors.title = "Title is required";
+    try {
+      setFileUploads(prev => ({
+        ...prev,
+        new_choice: { status: 'uploading', file: file.name }
+      }));
+      
+      // Upload to S3
+      const imageUrl = await uploadImageToS3(file);
+      
+      if (imageUrl) {
+        // Update the choice data with the image URL
+        setNewChoiceData(prev => ({
+          ...prev,
+          choiceImage: imageUrl
+        }));
+        
+        // Update upload status
+        setFileUploads(prev => ({
+          ...prev,
+          new_choice: { status: 'success', file: file.name }
+        }));
+      } else {
+        throw new Error("Failed to get image URL");
+      }
+    } catch (error) {
+      console.error("Error uploading choice image:", error);
+      setFileUploads(prev => ({
+        ...prev,
+        new_choice: { status: 'error', file: file.name }
+      }));
+      
+      // Show error message
+      setErrors(prev => ({
+        ...prev,
+        upload: `Failed to upload image: ${error.message}`
+      }));
     }
     
-    if (!description.trim()) {
-      allErrors.description = "Description is required";
-    }
-    
-    // Content validation
-    if (contentType === 'reading' && contentItems.some(item => !item.text.trim())) {
-      allErrors.content = "All reading passages must have text";
-    }
-    
-    if (contentType === 'image' && contentItems.some(item => !item.imagePreview)) {
-      allErrors.content = "All image-based content must have images";
-    }
-    
-    // Questions validation
-    if (questions.some(q => !q.questionText.trim())) {
-      allErrors.questions = "All questions must have text";
-    }
-    
-    if (questions.some(q => q.options.some(opt => !opt.trim()))) {
-      allErrors.options = "All options must have text";
-    }
-    
-    setErrors(allErrors);
-    return Object.keys(allErrors).length === 0;
+    // Reset the file input
+    e.target.value = null;
   };
-  
-  // Form submission
-  const handleSubmit = (e) => {
+
+  /**
+   * Handle file selection for image upload
+   */
+  const handleFileSelect = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    try {
+      if (currentUploadTarget && currentUploadTarget.type === 'question') {
+        // Create a local preview
+        const localUrl = URL.createObjectURL(file);
+        
+        // Update question image with local preview
+        setQuestionChoicePairs(prev => 
+          prev.map(pair => 
+            pair.id === currentUploadTarget.id ? { ...pair, questionImage: localUrl } : pair
+          )
+        );
+        
+        // Store the file for later upload
+        setPendingUploads(prev => ({
+          ...prev,
+          [currentUploadTarget.id]: file
+        }));
+        
+        setFileUploads(prev => ({
+          ...prev,
+          [currentUploadTarget.id]: { status: 'pending', file: file.name, localUrl }
+        }));
+      }
+    } catch (error) {
+      console.error("Error handling file upload:", error);
+      setErrors(prev => ({
+        ...prev,
+        upload: `Failed to handle image: ${error.message}`
+      }));
+    }
+    
+    // Reset the file input
+    e.target.value = null;
+  };
+ 
+  /** find choice object whose text matches a Question Value */
+  const findChoiceByText = (text) =>
+    choiceTemplates.find(
+      c => (c.choiceValue || '').toLowerCase() === text.toLowerCase() || 
+           (c.soundText || '').toLowerCase() === text.toLowerCase()
+    );
+ 
+  // ===== EVENT HANDLERS =====
+ 
+  /**
+   * Handle form submission
+   */
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (currentStep < 4) {
@@ -381,744 +1300,1955 @@ const ActivityEditModal = ({ activity, onClose, onSave, student }) => {
       return;
     }
     
-    // Final validation before saving
-    if (!validateAllSteps()) {
-      // If validation fails, go to the first step with errors
-      if (errors.title || errors.description) {
-        setCurrentStep(1);
-      } else if (errors.content) {
-        setCurrentStep(2);
-      } else if (errors.questions || errors.options) {
-        setCurrentStep(3);
+    await saveActivity();
+  };
+
+  /**
+   * Save the activity (create or update)
+   */
+  const saveActivity = async () => {
+    try {
+      if (!validateAllSteps()) {
+        // Go to first step with errors
+        if (errors.title || errors.description) {
+          setCurrentStep(1);
+        } else if (errors.sentenceTemplate) {
+          setCurrentStep(2);
+        } else if (errors.pairs) {
+          setCurrentStep(3);
+        }
+        return;
       }
-      return;
+      
+      // Check if we have a valid student object with ID
+      if (!student) {
+        console.error("Missing student object when saving activity");
+        setErrors({ general: "Cannot save intervention: Student information is missing" });
+        return;
+      }
+      
+      // Log student object for debugging
+      console.log("Student object when saving:", student);
+      
+      setSubmitting(true);
+      
+      // Check for existing interventions (only if creating new)
+      if (!activity?._id && existingIntervention) {
+        setErrors({ general: "An intervention for this student and category already exists." });
+        setSubmitting(false);
+        return;
+      }
+      
+      // Check for any blob URLs that haven't been uploaded yet
+      const blobUrlsExist = questionChoicePairs.some(pair => 
+        pair.questionImage && pair.questionImage.startsWith('blob:')
+      );
+      
+      if (blobUrlsExist) {
+        console.warn("Found blob URLs that need to be uploaded first");
+      }
+      
+      // Upload any pending images to S3
+      if (Object.keys(pendingUploads).length > 0) {
+        setUploading(true);
+        
+        // Update question-choice pairs with uploaded images
+        const updatedPairs = [...questionChoicePairs];
+        const localUrlsToRevoke = [];
+        
+        try {
+          for (const [pairId, file] of Object.entries(pendingUploads)) {
+            try {
+              // Store the local URL for later revocation
+              if (fileUploads[pairId]?.localUrl) {
+                localUrlsToRevoke.push(fileUploads[pairId].localUrl);
+              }
+              
+              // Update file upload status to uploading
+              setFileUploads(prev => ({
+                ...prev,
+                [pairId]: { 
+                  ...prev[pairId],
+                  status: 'uploading' 
+                }
+              }));
+              
+              // Upload to S3 in the mobile folder
+              const imageUrl = await uploadImageToS3(file, 'mobile');
+              
+              // Find and update the pair with the new image URL
+              const pairIndex = updatedPairs.findIndex(p => p.id.toString() === pairId.toString());
+              if (pairIndex !== -1) {
+                updatedPairs[pairIndex] = {
+                  ...updatedPairs[pairIndex],
+                  questionImage: imageUrl
+                };
+              }
+              
+              // Update file upload status
+              setFileUploads(prev => ({
+                ...prev,
+                [pairId]: { status: 'success', file: file.name }
+              }));
+            } catch (error) {
+              console.error(`Error uploading image for pair ${pairId}:`, error);
+              setFileUploads(prev => ({
+                ...prev,
+                [pairId]: { status: 'error', file: file.name }
+              }));
+              
+              // Don't throw here, continue with other uploads
+            }
+          }
+          
+          // Update state with uploaded images
+          setQuestionChoicePairs(updatedPairs);
+        } catch (error) {
+          console.error('Error during batch upload:', error);
+          setErrors(prev => ({
+            ...prev,
+            upload: 'Failed to upload one or more images'
+          }));
+        } finally {
+          // Clear pending uploads
+          setPendingUploads({});
+          setUploading(false);
+          
+          // Revoke object URLs to prevent memory leaks
+          localUrlsToRevoke.forEach(url => {
+            URL.revokeObjectURL(url);
+          });
+        }
+      }
+      
+      // Prepare data for saving
+      const interventionData = await prepareInterventionData();
+      
+      // Save intervention using the API
+      let savedIntervention;
+      if (activity?._id) {
+        savedIntervention = await updateIntervention(activity._id, interventionData);
+      } else {
+        savedIntervention = await createIntervention(interventionData);
+      }
+      
+      onSave(savedIntervention);
+    } catch (error) {
+      console.error("Error saving intervention:", error);
+      setErrors({ 
+        general: `Failed to save intervention: ${error.message || 'Unknown error'}. Please try again.` 
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+ 
+  /**
+   * Prepare intervention data for saving
+   */
+  const prepareInterventionData = async () => {
+    let interventionData;
+    
+    // Ensure we have a valid student ID - try multiple properties and provide a fallback
+    const studentId = student?._id || student?.id || student?.studentId;
+    
+    if (!studentId) {
+      console.error("Missing student ID. Student object:", student);
+      throw new Error("Student ID is required to create an intervention");
     }
     
-    setSubmitting(true);
-    
-    // Prepare the data to save
-    const updatedActivity = {
-      ...activity,
-      id: activity.id,
-      title,
-      description,
-      difficulty,
-      contentType,
-      content: contentItems,
-      questions,
-      status: 'pushed_to_mobile', // Directly push to mobile
-      lastModified: new Date().toISOString()
+    // Helper function to sanitize image URLs (replace blob URLs with null)
+    const sanitizeImageUrl = (url) => {
+      if (!url) return null;
+      // Check if it's a blob URL and return null instead
+      if (url.startsWith('blob:')) {
+        console.warn('Found blob URL that needs to be uploaded first:', url);
+        return null;
+      }
+      return url;
     };
     
-    // Simulate API call
-    setTimeout(() => {
-      onSave(updatedActivity);
-      setSubmitting(false);
-    }, 1000);
+    if (contentType === 'sentence') {
+      // For Reading Comprehension, use the sentence template
+      interventionData = {
+        // Only include _id if editing an existing activity
+        ...(activity?._id ? { _id: activity._id } : {}),
+        studentId: studentId,
+        name: title,
+        description,
+        category,
+        readingLevel,
+        passThreshold: 75,
+        questions: selectedSentenceTemplate.sentenceQuestions.map((q, index) => ({
+          questionId: `q_${Date.now()}_${index}`,
+          source: 'sentence_template',
+          sourceQuestionId: selectedSentenceTemplate._id,
+          questionIndex: index,
+          questionType: 'sentence',
+          questionText: q.questionText,
+          questionImage: null,
+          questionValue: null,
+          choiceIds: [], // Sentence questions don't use choice templates
+          correctChoiceId: null,
+          choices: q.sentenceOptionAnswers.map((option, optIndex) => ({
+            optionText: option,
+            isCorrect: option === q.sentenceCorrectAnswer
+          }))
+        })),
+        // Include the full sentence template for reference
+        sentenceTemplate: selectedSentenceTemplate,
+        status: 'draft',
+        createdAt: activity?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    } else {
+      // For other categories, use question-choice pairs
+      interventionData = {
+        // Only include _id if editing an existing activity
+        ...(activity?._id ? { _id: activity._id } : {}),
+        studentId: studentId,
+        name: title,
+        description,
+        category,
+        readingLevel,
+        passThreshold: 75,
+        questions: questionChoicePairs.map((pair, index) => {
+          // Get full choice objects for the selected choices
+          const selectedChoices = getChoicesByIds(pair.choiceIds);
+          
+          return {
+            questionId: `q_${Date.now()}_${index}`,
+            source: pair.sourceType,
+            sourceQuestionId: pair.sourceId,
+            questionIndex: index,
+            questionType: pair.questionType,
+            questionText: pair.questionText,
+            questionImage: sanitizeImageUrl(pair.questionImage),
+            questionValue: pair.questionValue,
+            choiceIds: pair.choiceIds,
+            correctChoiceId: pair.correctChoiceId,
+            choices: selectedChoices.map(choice => {
+              return {
+                optionText: choice.choiceValue || choice.soundText || '',
+                // Removed optionImage as images should be on the question level
+                isCorrect: choice._id === pair.correctChoiceId
+              };
+            })
+          };
+        }),
+        status: 'draft',
+        createdAt: activity?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    }
+    
+    // Log the prepared data for debugging
+    console.log('Prepared intervention data:', JSON.stringify(interventionData, null, 2));
+    
+    return interventionData;
   };
-  
-  // Get difficulty text based on level
-  const getDifficultyText = (level) => {
-    switch(level) {
-      case 'Easy': return 'Easy - For beginners';
-      case 'Medium': return 'Medium - For those with basic knowledge';
-      case 'Hard': return 'Hard - For advanced learners';
-      default: return level;
+ 
+  /**
+   * Navigation handlers
+   */
+  const nextStep = () => {
+    if (validateCurrentStep()) {
+      setCurrentStep(currentStep + 1);
     }
   };
+ 
+  const prevStep = () => {
+    setCurrentStep(currentStep - 1);
+  };
   
-  // Render the steps content
+  /**
+   * Question-Choice Pair Management
+   */
+  const addQuestionChoicePair = () => {
+    // Normalize the category
+    const normCategory = normalizeCategory(category);
+    
+    // Get default question type based on category, not content type
+    const defaultQuestionType = normCategory === 'alphabet_knowledge' ? 'patinig' : 
+                                normCategory === 'phonological_awareness' ? 'malapantig' : 
+                                normCategory === 'word_recognition' || normCategory === 'decoding' ? 'word' : 'sentence';
+    
+    const newPair = {
+      id: Date.now(),
+      sourceType: 'custom',
+      sourceId: null,
+      questionType: defaultQuestionType,
+      questionText: '',
+      questionImage: null,
+      questionValue: null,
+      choiceIds: [],
+      correctChoiceId: null
+    };
+    
+    setQuestionChoicePairs(prev => [...prev, newPair]);
+  };
+ 
+  const removeQuestionChoicePair = (id) => {
+    if (questionChoicePairs.length <= 1) return;
+    setQuestionChoicePairs(prev => prev.filter(pair => pair.id !== id));
+  };
+ 
+  const updateQuestionChoicePair = (id, field, value) => {
+    // If removing an image, clean up any pending uploads and object URLs
+    if (field === 'questionImage' && value === null) {
+      // Revoke the object URL if it exists
+      if (fileUploads[id]?.localUrl) {
+        URL.revokeObjectURL(fileUploads[id].localUrl);
+      }
+      
+      // Remove from pending uploads
+      setPendingUploads(prev => {
+        const newPendingUploads = { ...prev };
+        delete newPendingUploads[id];
+        return newPendingUploads;
+      });
+      
+      // Clear file upload status
+      setFileUploads(prev => {
+        const newFileUploads = { ...prev };
+        delete newFileUploads[id];
+        return newFileUploads;
+      });
+    }
+    
+    // Update the question-choice pair
+    setQuestionChoicePairs(prev => 
+      prev.map(pair => 
+        pair.id === id ? { ...pair, [field]: value } : pair
+      )
+    );
+  };
+ 
+  /**
+   * Template Management
+   */
+  const setTemplateForPair = (pairId, templateId) => {
+    setQuestionChoicePairs(prev => {
+      return prev.map(pair => {
+        if (pair.id === pairId) {
+          // Find the selected template
+          const template = questionTemplates.find(t => t._id === templateId);
+          
+          if (!template) {
+            return pair;
+          }
+          
+          // Reset choices when template changes
+          return {
+            ...pair,
+            sourceType: 'template_question',
+            sourceId: template._id,
+            questionType: template.questionType,
+            questionText: template.templateText,
+            questionImage: null, // Templates don't have images
+            questionValue: null, // Reset question value
+            choiceIds: [], // Reset choices
+            correctChoiceId: null // Reset correct choice
+          };
+        }
+        return pair;
+      });
+    });
+  };
+ 
+  /**
+   * Choice Management
+   */
+  const addChoiceToPair = (pairId, choiceId) => {
+    setQuestionChoicePairs(prev => 
+      prev.map(pair => {
+        if (pair.id === pairId) {
+          // Enforce exactly 2 choices
+          if (pair.choiceIds.length >= 2) {
+            // Don't silently discard, show a warning instead
+            console.warn('Each question can only have two answer choices');
+            return pair;
+          }
+          
+          // Don't add if already present
+          if (pair.choiceIds.includes(choiceId)) {
+            return pair;
+          }
+          
+          const newChoiceIds = [...pair.choiceIds, choiceId];
+          
+          // autopopulate questionValue if it's still empty
+          const autoValue =
+            pair.questionValue ||
+            questionValueLookup[choiceId] ||
+            null;
+          
+          return {
+            ...pair,
+            choiceIds: newChoiceIds,
+            // Set first choice as correct if none set
+            correctChoiceId: pair.correctChoiceId || choiceId,
+            questionValue: autoValue
+          };
+        }
+        return pair;
+      })
+    );
+  };
+ 
+  const removeChoiceFromPair = (pairId, choiceId) => {
+    setQuestionChoicePairs(prev => 
+      prev.map(pair => {
+        if (pair.id === pairId) {
+          const newChoiceIds = pair.choiceIds.filter(id => id !== choiceId);
+          
+          // Auto-select the first remaining choice if the removed choice was correct
+          let newCorrectChoiceId = pair.correctChoiceId;
+          if (pair.correctChoiceId === choiceId) {
+            newCorrectChoiceId = newChoiceIds.length > 0 ? newChoiceIds[0] : null;
+          }
+          
+          return {
+            ...pair,
+            choiceIds: newChoiceIds,
+            correctChoiceId: newCorrectChoiceId
+          };
+        }
+        return pair;
+      })
+    );
+  };
+ 
+  const setCorrectChoice = (pairId, choiceId) => {
+    setQuestionChoicePairs(prev => 
+      prev.map(pair => 
+        pair.id === pairId ? { ...pair, correctChoiceId: choiceId } : pair
+      )
+    );
+  };
+ 
+  // When updating question value, clear image if value is set
+  const handleQuestionValueChange = debounce((pairId, newText) => {
+    // Just update the question value without auto-adding choices
+    updateQuestionChoicePair(pairId, 'questionValue', newText);
+    
+    // If a value is being set, clear the image
+    if (newText && newText.trim() !== '') {
+      updateQuestionChoicePair(pairId, 'questionImage', null);
+    }
+    
+    // Only attempt to auto-select choices for custom questions
+    if (questionChoicePairs.find(p => p.id === pairId)?.sourceType === 'custom') {
+      const choice = findChoiceByText(newText);
+      if (!choice) return;                           // user typed something random
+  
+      setQuestionChoicePairs(prev =>
+        prev.map(pair => {
+          if (pair.id !== pairId) return pair;
+  
+          // ① Ensure the matching choice is inside choiceIds (max 2 rule)
+          let newChoiceIds = pair.choiceIds;
+          if (!newChoiceIds.includes(choice._id)) {
+            newChoiceIds = [...newChoiceIds, choice._id].slice(-2);
+          }
+  
+          // ② If no correct answer yet, set this one
+          const correctChoiceId = pair.correctChoiceId || choice._id;
+  
+          return { ...pair, choiceIds: newChoiceIds, correctChoiceId };
+        })
+      );
+    }
+  }, 200);
+ 
+  /**
+   * Inline Template Creation
+   */
+  const handleCreateNewTemplate = async () => {
+    try {
+      if (!validateNewTemplate()) {
+        return;
+      }
+      
+      // Create new template
+      const newTemplate = await createNewQuestionTemplate({
+        category: normalizeCategory(category),
+        questionType: newTemplateData.questionType,
+        templateText: newTemplateData.templateText,
+        applicableChoiceTypes: newTemplateData.applicableChoiceTypes
+      });
+      
+      // Reset form
+      setNewTemplateData({
+        templateText: '',
+        questionType: '',
+        applicableChoiceTypes: []
+      });
+      
+      // Close form
+      setShowNewTemplateForm(false);
+    } catch (error) {
+      console.error("Error creating template:", error);
+      setErrors({ newTemplate: "Failed to create template. Please try again." });
+    }
+  };
+ 
+  /**
+   * Inline Choice Creation
+   */
+  const handleCreateNewChoice = async (pairId) => {
+    try {
+      // Auto-fill choiceType if a matching template exists
+      if (newChoiceData.choiceValue && !newChoiceData.choiceType) {
+        const existingChoice = findChoiceValue(newChoiceData.choiceValue);
+        if (existingChoice) {
+          setNewChoiceData(prev => ({
+            ...prev,
+            choiceType: existingChoice.choiceType,
+            soundText: existingChoice.soundText || prev.soundText
+          }));
+        }
+      }
+      
+      if (!validateNewChoice()) return;
+      
+      setSubmitting(true);
+      
+      // Clean up data before sending
+      const choiceDataToSend = {
+        ...newChoiceData,
+        // Convert empty strings to null
+        choiceValue: newChoiceData.choiceValue.trim() || null,
+        soundText: newChoiceData.soundText.trim() || null,
+        // Remove choiceImage as it should be on the question level
+        choiceImage: null
+      };
+      
+      const newChoice = await createNewChoiceTemplate(choiceDataToSend);
+      
+      // Reset form
+      setNewChoiceData({
+        choiceType: '',
+        choiceValue: '',
+        soundText: '',
+        choiceImage: null
+      });
+      toggleChoiceForm(pairId, false);
+      
+      // Add the new choice to the current pair
+      addChoiceToPair(pairId, newChoice._id);
+      
+      // Show success message
+      console.log('New choice created:', newChoice);
+    } catch (error) {
+      console.error('Error creating choice:', error);
+      setErrors({ newChoice: 'Failed to create choice. Please try again.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+ 
+  /**
+   * Sentence Template Management
+   */
+  const handleSelectSentenceTemplate = (template) => {
+    setSelectedSentenceTemplate(template);
+  };
+ 
+  // ===== VALIDATION FUNCTIONS =====
+ 
+  const validateCurrentStep = () => {
+    const newErrors = {};
+    
+    if (currentStep === 1) {
+      if (!title.trim()) {
+        newErrors.title = "Title is required";
+      }
+      if (!description.trim()) {
+        newErrors.description = "Description is required";
+      }
+    }
+    else if (currentStep === 2) {
+      if (contentType === 'sentence' && !selectedSentenceTemplate) {
+        newErrors.sentenceTemplate = "A reading passage must be selected";
+      }
+    }
+    else if (currentStep === 3) {
+      if (contentType !== 'sentence') {
+        if (questionChoicePairs.length === 0) {
+          newErrors.pairs = "At least one question must be added";
+        }
+        
+        const invalidPairs = questionChoicePairs.filter(pair => 
+          pair.choiceIds.length !== 2 || !pair.correctChoiceId
+        );
+        
+        if (invalidPairs.length > 0) {
+          newErrors.pairs = "All questions must have exactly 2 choices with one marked as correct";
+        }
+        
+        // Add validation to check for both value and image set
+        const invalidValueImagePairs = questionChoicePairs.filter(pair => 
+          pair.questionValue && pair.questionValue.trim() !== '' && pair.questionImage
+        );
+        
+        if (invalidValueImagePairs.length > 0) {
+          newErrors.pairs = "Questions can have either a Question Value OR a Question Image, not both";
+        }
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+ 
+  const validateAllSteps = () => {
+    const allErrors = {};
+    
+    // Basic info validation
+    if (!title.trim()) {
+      allErrors.title = "Title is required";
+    }
+    if (!description.trim()) {
+      allErrors.description = "Description is required";
+    }
+    
+    // Template validation
+    if (contentType === 'sentence' && !selectedSentenceTemplate) {
+      allErrors.sentenceTemplate = "A reading passage must be selected";
+    }
+    
+    // Questions validation
+    if (contentType !== 'sentence') {
+      if (questionChoicePairs.length === 0) {
+        allErrors.pairs = "At least one question must be added";
+      }
+      
+      const invalidPairs = questionChoicePairs.filter(pair => 
+        pair.choiceIds.length !== 2 || !pair.correctChoiceId
+      );
+      
+      if (invalidPairs.length > 0) {
+        allErrors.pairs = "All questions must have exactly 2 choices with one marked as correct";
+      }
+      
+      // Add validation to check for both value and image set
+      const invalidValueImagePairs = questionChoicePairs.filter(pair => 
+        pair.questionValue && pair.questionValue.trim() !== '' && pair.questionImage
+      );
+      
+      if (invalidValueImagePairs.length > 0) {
+        allErrors.pairs = "Questions can have either a Question Value OR a Question Image, not both";
+      }
+    }
+    
+    setErrors(allErrors);
+    return Object.keys(allErrors).length === 0;
+  };
+ 
+  /**
+   * Validate new template creation
+   */
+  const validateNewTemplate = () => {
+    const newErrors = {};
+    
+    if (!newTemplateData.templateText.trim()) {
+      newErrors.newTemplate = "Template text is required";
+    }
+    
+    if (!newTemplateData.questionType) {
+      newErrors.newTemplate = "Question type is required";
+    } else {
+      // Verify the question type is valid for this category
+      const validQuestionTypes = getApplicableQuestionTypes(category);
+      if (!validQuestionTypes.includes(newTemplateData.questionType)) {
+        newErrors.newTemplate = `The question type '${formatQuestionType(newTemplateData.questionType)}' is not valid for ${formatCategoryName(category)}`;
+      }
+    }
+    
+    // Only validate choice types if not a sentence question (reading comprehension)
+    if (newTemplateData.questionType !== 'sentence') {
+      if (newTemplateData.applicableChoiceTypes.length === 0) {
+        newErrors.newTemplate = "At least one applicable choice type is required";
+      } else {
+        // Verify all selected choice types are valid for this question type
+        const validChoiceTypes = getApplicableChoiceTypes(newTemplateData.questionType);
+        const invalidChoiceTypes = newTemplateData.applicableChoiceTypes.filter(
+          type => !validChoiceTypes.includes(type)
+        );
+        
+        if (invalidChoiceTypes.length > 0) {
+          newErrors.newTemplate = `The following choice types are not valid for ${formatQuestionType(newTemplateData.questionType)}: ${invalidChoiceTypes.map(formatChoiceType).join(', ')}`;
+        }
+      }
+    } else if (category === 'reading_comprehension' && newTemplateData.applicableChoiceTypes.length > 0) {
+      // Reading comprehension shouldn't have manual choice types
+      newErrors.newTemplate = "Reading Comprehension templates cannot have custom choice types";
+    }
+    
+    setErrors(prev => ({ ...prev, ...newErrors }));
+    return Object.keys(newErrors).length === 0;
+  };
+ 
+  /** find choice object whose value matches the provided text */
+  const findChoiceValue = (val) =>
+    choiceTemplates.find(c =>
+      (c.choiceValue || '').toLowerCase() === val.toLowerCase() || 
+      (c.soundText || '').toLowerCase() === val.toLowerCase()
+    );
+  
+  /**
+   * Validate new choice creation
+   */
+  const validateNewChoice = () => {
+    const newErrors = {};
+    
+    if (!newChoiceData.choiceType) {
+      newErrors.newChoice = "Choice type is required";
+    } else {
+      // Check if this choice type is valid for the current category
+      const validQuestionTypes = getApplicableQuestionTypes(category);
+      let isValidChoiceType = false;
+      
+      // Check if this choice type is valid for any question type in this category
+      for (const questionType of validQuestionTypes) {
+        const validChoiceTypes = getApplicableChoiceTypes(questionType);
+        if (validChoiceTypes.includes(newChoiceData.choiceType)) {
+          isValidChoiceType = true;
+          break;
+        }
+      }
+      
+      if (!isValidChoiceType) {
+        newErrors.newChoice = `The choice type '${formatChoiceType(newChoiceData.choiceType)}' is not valid for ${formatCategoryName(category)}`;
+      }
+    }
+    
+    // Check for required values based on the choice type
+    if (newChoiceData.choiceType) {
+      if (newChoiceData.choiceType.includes('Sound')) {
+        // Sound choices must have soundText
+        if (!newChoiceData.soundText || newChoiceData.soundText.trim() === '') {
+          newErrors.newChoice = "Sound text is required for sound-based choices";
+        }
+      } else if ((!newChoiceData.choiceValue || newChoiceData.choiceValue.trim() === '') && 
+                (!newChoiceData.soundText || newChoiceData.soundText.trim() === '')) {
+        newErrors.newChoice = "Choice value or sound text is required";
+      }
+    }
+    
+    setErrors(prev => ({ ...prev, ...newErrors }));
+    return Object.keys(newErrors).length === 0;
+  };
+ 
+  // ===== RENDER HELPER FUNCTIONS =====
+ 
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
         return renderBasicInfoStep();
       case 2:
-        return renderContentStep();
+        return renderTemplateSelectionStep();
       case 3:
-        return renderQuestionsStep();
+        return contentType === 'sentence' 
+          ? renderSentencePreviewStep() 
+          : renderQuestionChoicesStep();
       case 4:
         return renderReviewStep();
       default:
         return renderBasicInfoStep();
     }
   };
-  
-  // Step 1: Basic Information
+ 
+  /**
+   * Step 1: Basic Information
+   */
   const renderBasicInfoStep = () => {
     return (
       <div className="literexia-form-section">
-        <h3>Activity Information</h3>
-        
-        <div className="literexia-form-group">
-          <label htmlFor="title">
-            Activity Title <span className="literexia-required">*</span>
-          </label>
-          <input
-            type="text"
-            id="title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className={errors.title ? 'literexia-error' : ''}
-          />
-          {errors.title && <div className="literexia-error-message">{errors.title}</div>}
-        </div>
-        
-        <div className="literexia-form-group">
-          <label htmlFor="description">
-            Activity Description <span className="literexia-required">*</span>
-          </label>
-          <textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows="3"
-            placeholder="Provide a brief description of the learning objectives for this activity"
-            className={errors.description ? 'literexia-error' : ''}
-          ></textarea>
-          {errors.description && <div className="literexia-error-message">{errors.description}</div>}
-        </div>
-        
-        <div className="literexia-form-group">
-          <label htmlFor="difficulty">Difficulty Level</label>
-          <select
-            id="difficulty"
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value)}
-          >
-            <option value="Easy">{getDifficultyText('Easy')}</option>
-            <option value="Medium">{getDifficultyText('Medium')}</option>
-            <option value="Hard">{getDifficultyText('Hard')}</option>
-          </select>
-        </div>
-        
-        {/* Content Type Selection */}
-        <div className="literexia-content-type-selection">
-          <h3>Content Type</h3>
-          <div className="literexia-content-type-options">
-            {contentTypes.map(type => (
-              <div
-                key={type.id}
-                className={`literexia-content-type-option ${contentType === type.id ? 'active' : ''}`}
-                onClick={() => setContentType(type.id)}
-              >
-                <div className="literexia-content-type-icon">
-                  <type.icon />
-                </div>
-                <div className="literexia-content-type-details">
-                  <div className="literexia-content-type-name">{type.name}</div>
-                  <div className="literexia-content-type-description">{type.description}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-  
-  // Step 2: Content
-  const renderContentStep = () => {
-    return (
-      <div className="literexia-content-items-section">
-        <h3>
-          {contentType === 'reading' ? 'Reading Passages' : 'Image Content'}
-        </h3>
-        
-        {errors.content && (
-          <div className="literexia-error-banner">
+              <h3>Activity Information</h3>
+              
+        {existingIntervention && (
+          <div className="literexia-warning-banner">
             <FaExclamationTriangle />
-            <p>{errors.content}</p>
+            <div>
+              <p><strong>Warning:</strong> An intervention for this student and category already exists:</p>
+              <p>{existingIntervention.name}</p>
+              <p>Creating a new intervention will replace the existing one.</p>
+            </div>
           </div>
         )}
         
-        {contentItems.map((item, index) => (
-          <div key={item.id} className="literexia-content-item">
-            <div className="literexia-item-header">
-              <h4>{contentType === 'reading' ? `Passage ${index + 1}` : `Content Item ${index + 1}`}</h4>
-              <button
-                type="button"
-                className="literexia-remove-item-btn"
-                onClick={() => removeContentItem(item.id)}
-                disabled={contentItems.length <= 1}
-              >
-                <FaTrash />
-              </button>
-            </div>
-            
-            {contentType === 'reading' ? (
-              <>
-                <div className="literexia-form-group">
-                  <label>Text <span className="literexia-required">*</span></label>
-                  <textarea
-                    rows="4"
-                    value={item.text || ''}
-                    onChange={e => updateContentItem(item.id, 'text', e.target.value)}
-                    placeholder="Enter passage text..."
-                    className={errors.content ? 'literexia-error' : ''}
-                  />
-                </div>
-                
-                <div className="literexia-form-row">
-                  <div className="literexia-form-group">
-                    <label>Syllables</label>
-                    <textarea
-                      rows="2"
-                      value={item.syllables || ''}
-                      onChange={e => updateContentItem(item.id, 'syllables', e.target.value)}
-                      placeholder="e.g., syl-la-bles"
-                    />
-                  </div>
-                  <div className="literexia-form-group">
-                    <label>Notes</label>
-                    <textarea
-                      rows="2"
-                      value={item.translation || ''}
-                      onChange={e => updateContentItem(item.id, 'translation', e.target.value)}
-                      placeholder="Optional notes..."
-                    />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="literexia-form-group">
-                <label>Caption</label>
+        <div className="literexia-form-group">
+                <label htmlFor="title">
+            Activity Title <span className="literexia-required">*</span>
+                </label>
                 <input
                   type="text"
-                  value={item.caption || ''}
-                  onChange={e => updateContentItem(item.id, 'caption', e.target.value)}
-                  placeholder="Enter a caption for this image..."
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+            className={errors.title ? 'literexia-error' : ''}
+                  placeholder="Enter a title for this activity"
                 />
-              </div>
-            )}
-            
-            <div className="literexia-media-row">
-              <div className="literexia-media-column">
-                <label>Image {contentType === 'image' && <span className="literexia-required">*</span>}</label>
-                {item.imagePreview ? (
-                  <div className="literexia-image-preview">
-                    <img src={item.imagePreview} alt="" />
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        updateContentItem(item.id, 'imageFile', null);
-                        updateContentItem(item.id, 'imagePreview', null);
-                      }}
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="literexia-upload-placeholder">
-                    <FaImage /> Choose Image
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={e => handleContentImageUpload(item.id, e)} 
-                    />
-                  </label>
-                )}
+          {errors.title && <div className="literexia-error-message">{errors.title}</div>}
               </div>
               
-              <div className="literexia-media-column">
-                <label>Audio</label>
-                {item.audioUrl ? (
-                  <div className="literexia-audio-preview">
-                    <audio controls src={item.audioUrl} />
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        updateContentItem(item.id, 'audioFile', null);
-                        updateContentItem(item.id, 'audioUrl', null);
-                      }}
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="literexia-upload-placeholder">
-                    <FaHeadphones /> Upload Audio
-                    <input 
-                      type="file" 
-                      accept="audio/*" 
-                      onChange={e => handleContentAudioUpload(item.id, e)} 
-                    />
-                  </label>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-        
-        <button 
-          type="button" 
-          className="literexia-add-item-btn" 
-          onClick={addContentItem}
-        >
-          <FaPlus /> Add {contentType === 'reading' ? 'Passage' : 'Content Item'}
-        </button>
-      </div>
-    );
-  };
-  
-  // Step 3: Questions
-  const renderQuestionsStep = () => {
-    return (
-      <div className="literexia-questions-section">
-        <h3>Questions</h3>
-        
-        {(errors.questions || errors.options) && (
-          <div className="literexia-error-banner">
-            <FaExclamationTriangle />
-            <p>{errors.questions || errors.options}</p>
-          </div>
-        )}
-        
-        {questions.map((question, qIndex) => (
-          <div key={question.id} className="literexia-question-card">
-            <div className="literexia-question-header">
-              <h4>Question {qIndex + 1}</h4>
-              <button
-                type="button"
-                className="literexia-remove-question-btn"
-                onClick={() => removeQuestion(question.id)}
-                disabled={questions.length <= 1}
-              >
-                <FaTrash />
-              </button>
-            </div>
-            
-            {/* Question type selection */}
-            <div className="literexia-question-type-selection">
-              <label>Question Type</label>
-              <div className="literexia-type-buttons">
-                <button
-                  type="button"
-                  className={`literexia-type-button ${question.contentType === 'text' ? 'active' : ''}`}
-                  onClick={() => updateQuestion(question.id, 'contentType', 'text')}
-                >
-                  <FaFont />
-                  <span>Text</span>
-                </button>
-                <button
-                  type="button"
-                  className={`literexia-type-button ${question.contentType === 'image' ? 'active' : ''}`}
-                  onClick={() => updateQuestion(question.id, 'contentType', 'image')}
-                >
-                  <FaImage />
-                  <span>Image</span>
-                </button>
-                <button
-                  type="button"
-                  className={`literexia-type-button ${question.contentType === 'audio' ? 'active' : ''}`}
-                  onClick={() => updateQuestion(question.id, 'contentType', 'audio')}
-                >
-                  <FaMicrophone />
-                  <span>Audio</span>
-                </button>
-              </div>
-            </div>
-            
-            <div className="literexia-form-group">
-              <label>
-                Question Text <span className="literexia-required">*</span>
-              </label>
-              <textarea
-                value={question.questionText}
-                onChange={(e) => updateQuestion(question.id, 'questionText', e.target.value)}
-                placeholder="Enter the question text..."
-                rows="2"
-                className={errors.questions ? 'literexia-error' : ''}
-              ></textarea>
-            </div>
-            
-            {/* Media based on question type */}
-            {question.contentType === 'image' && (
-              <div className="literexia-question-media">
-                <label>Question Image</label>
-                <div className="literexia-upload-container">
-                  {question.imagePreview ? (
-                    <div className="literexia-image-preview">
-                      <img
-                        src={question.imagePreview}
-                        alt="Question visual"
-                        className="literexia-preview-image"
-                      />
-                      <button
-                        type="button"
-                        className="literexia-remove-media-btn"
-                        onClick={() => {
-                          updateQuestion(question.id, 'imageFile', null);
-                          updateQuestion(question.id, 'imagePreview', null);
-                        }}
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="literexia-upload-placeholder">
-                      <FaImage className="literexia-upload-icon" />
-                      <span>Choose Image</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleQuestionImageUpload(question.id, e)}
-                        className="literexia-file-input"
-                      />
-                    </label>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {question.contentType === 'audio' && (
-              <div className="literexia-question-media">
-                <label>Question Audio</label>
-                <div className="literexia-upload-container">
-                  {question.audioUrl ? (
-                    <div className="literexia-audio-preview">
-                      <audio
-                        controls
-                        src={question.audioUrl}
-                        className="literexia-audio-player"
-                      ></audio>
-                      <button
-                        type="button"
-                        className="literexia-remove-media-btn"
-                        onClick={() => {
-                          updateQuestion(question.id, 'audioFile', null);
-                          updateQuestion(question.id, 'audioUrl', null);
-                        }}
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="literexia-upload-placeholder">
-                      <FaHeadphones className="literexia-upload-icon" />
-                      <span>Upload Audio</span>
-                      <input
-                        type="file"
-                        accept="audio/*"
-                        onChange={(e) => handleQuestionAudioUpload(question.id, e)}
-                        className="literexia-file-input"
-                      />
-                    </label>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {/* Answer Options */}
-            <div className="literexia-options-container">
-              <div className="literexia-options-header">
-                <label>
-                  Answer Options <span className="literexia-required">*</span>
+        <div className="literexia-form-group">
+                <label htmlFor="description">
+            Activity Description <span className="literexia-required">*</span>
                 </label>
-                <button
-                  type="button"
-                  className="literexia-add-option-btn"
-                  onClick={() => addOption(question.id)}
-                >
-                  <FaPlus /> Add Option
-                </button>
+                <textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows="3"
+                  placeholder="Provide a brief description of the learning objectives for this activity"
+            className={errors.description ? 'literexia-error' : ''}
+                ></textarea>
+          {errors.description && <div className="literexia-error-message">{errors.description}</div>}
               </div>
               
-              {question.options.map((option, oIndex) => (
-                <div key={oIndex} className="literexia-option-row">
-                  <div className="literexia-option-radio">
-                    <input
-                      type="radio"
-                      id={`q${question.id}-opt${oIndex}`}
-                      name={`question-${question.id}-correct`}
-                      checked={question.correctAnswer === oIndex}
-                      onChange={() => setCorrectAnswer(question.id, oIndex)}
-                    />
-                    <label htmlFor={`q${question.id}-opt${oIndex}`}>
-                      Correct
-                    </label>
-                  </div>
-                  
-                  <input
-                    type="text"
-                    value={option}
-                    onChange={(e) => updateOption(question.id, oIndex, e.target.value)}
-                    placeholder={`Option ${oIndex + 1}`}
-                    className={errors.options ? 'literexia-error' : ''}
-                  />
-                  
-                  {/* Option audio */}
-                  <div className="literexia-option-audio-controls">
-                    {question.optionAudioUrls && question.optionAudioUrls[oIndex] ? (
-                      <div className="literexia-audio-preview">
-                        <audio
-                          controls
-                          src={question.optionAudioUrls[oIndex]}
-                          className="literexia-audio-player"
-                        ></audio>
-                        <button
-                          type="button"
-                          className="literexia-remove-media-btn"
-                          onClick={() => removeOptionAudio(question.id, oIndex)}
-                        >
-                          <FaTrash />
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="literexia-option-audio-upload">
-                        <FaHeadphones />
-                        <span>Add Audio</span>
-                        <input
-                          type="file"
-                          accept="audio/*"
-                          onChange={(e) => handleOptionAudioUpload(question.id, oIndex, e)}
-                          className="literexia-file-input"
-                        />
-                      </label>
-                    )}
-                  </div>
-                  
-                  {question.options.length > 2 && (
-                    <button
-                      type="button"
-                      className="literexia-remove-option-btn"
-                      onClick={() => removeOption(question.id, oIndex)}
-                    >
-                      <FaTrash />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-            
-            <div className="literexia-form-group">
-              <label>
-                Hint/Explanation
-                <div className="literexia-info-tooltip">
-                  <FaQuestionCircle className="literexia-tooltip-icon" />
-                  <span className="literexia-tooltip-content">This will be shown to the student after answering incorrectly.</span>
-                </div>
-              </label>
-              <textarea
-                value={question.hint || ''}
-                onChange={(e) => updateQuestion(question.id, 'hint', e.target.value)}
-                placeholder="Optional: Provide a hint or explanation for this question"
-                rows="2"
-              ></textarea>
-            </div>
+        <div className="literexia-form-group">
+          <label htmlFor="category">Category</label>
+          <input
+            type="text"
+                  id="category"
+            value={formatCategoryName(category)}
+            disabled
+            className="literexia-field-disabled"
+          />
+          <div className="literexia-help-text">
+            This intervention targets the category that needs improvement (score &lt; 75%)
           </div>
-        ))}
-        
-        <button
-          type="button"
-          className="literexia-add-question-btn"
-          onClick={addQuestion}
-        >
-          <FaPlus /> Add New Question
-        </button>
+              </div>
+              
+        <div className="literexia-form-group">
+                <label htmlFor="readingLevel">Reading Level</label>
+          <input
+            type="text"
+                  id="readingLevel"
+                  value={readingLevel}
+            disabled
+            className="literexia-field-disabled"
+          />
+          <div className="literexia-help-text">
+            Interventions use the student's current reading level
+          </div>
+              </div>
+              
+        <div className="literexia-content-type-info">
+                <h4>Content Type: {getCategoryDisplayName(category)}</h4>
+          <div className="literexia-content-type-description">
+            <p>{getCategoryDescription(category)}</p>
+          </div>
+        </div>
       </div>
     );
   };
-  
-  // Step 4: Review
-  const renderReviewStep = () => {
+ 
+  /**
+   * Step 2: Template Selection
+   */
+  const renderTemplateSelectionStep = () => {
+    if (contentType === 'sentence') {
+      return renderSentenceTemplateSelection();
+    }
+    
     return (
-      <div className="literexia-review-section">
-        <h3>Review Activity</h3>
+      <div className="literexia-form-section">
+        <h3>Questions from Assessment</h3>
         
         <div className="literexia-info-banner">
           <FaInfoCircle />
           <p>
-            Review your activity before pushing it to {student?.name}'s mobile device. 
-            Once submitted, the activity will be immediately available on their mobile app.
+            These questions are from the main assessment for {formatCategoryName(category)}. 
+            You can use these questions or create new ones using templates.
           </p>
         </div>
         
-        <div className="literexia-review-card">
-          <h4>Basic Information</h4>
-          <div className="literexia-review-details">
-            <div className="literexia-review-item">
-              <span className="literexia-review-label">Title:</span>
-              <span className="literexia-review-value">{title}</span>
+        {/* Main Assessment Questions */}
+        <div className="literexia-main-assessment-questions">
+          {safe(mainAssessmentQuestions).length > 0 ? (
+            safe(mainAssessmentQuestions).map((question, index) => (
+              <div key={question._id} className="literexia-main-question-item">
+                <div className="literexia-main-question-header">
+                  <h4>Question {index + 1}</h4>
+                  <div className="literexia-main-question-type">
+                    {question.questionType}
+                  </div>
+                </div>
+                
+                <div className="literexia-main-question-content">
+                  <div className="literexia-main-question-text">
+                    <p>{question.questionText}</p>
+                    {question.questionValue && (
+                      <div className="literexia-main-question-value">
+                        <strong>Value:</strong> {question.questionValue}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {question.questionImage && (
+                    <div className="literexia-main-question-image">
+                      <img src={question.questionImage} alt="Question" />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="literexia-main-question-choices">
+                  <h5>Original Choices:</h5>
+                  <ul>
+                    {safe(question.choiceOptions).map((option, optionIndex) => (
+                      <li key={optionIndex} className={option.isCorrect ? 'correct-option' : ''}>
+                        {option.optionText} {option.isCorrect && '(Correct)'}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="literexia-empty-state">
+              <FaExclamationTriangle className="literexia-empty-icon" />
+              <h3>No Assessment Questions Available</h3>
+              <p>No questions were found for this category and reading level.</p>
             </div>
-            <div className="literexia-review-item">
-              <span className="literexia-review-label">Description:</span>
-              <span className="literexia-review-value">{description}</span>
-            </div>
-            <div className="literexia-review-item">
-              <span className="literexia-review-label">Difficulty:</span>
-              <span className="literexia-review-value">{difficulty}</span>
-            </div>
-            <div className="literexia-review-item">
-              <span className="literexia-review-label">Content Type:</span>
-              <span className="literexia-review-value">
-                {contentType === 'reading' ? 'Reading Passages' : 'Image-based Content'}
-              </span>
-            </div>
-          </div>
-          
-          <button 
-            type="button" 
-            className="literexia-edit-step-btn"
-            onClick={() => setCurrentStep(1)}
-          >
-            <FaEdit /> Edit
-          </button>
+          )}
         </div>
         
-        <div className="literexia-review-card">
-          <h4>Content</h4>
-          <div className="literexia-review-summary">
-            <p>
-              This activity has {contentItems.length} {contentType === 'reading' ? 'reading passage(s)' : 'content item(s)'}.
-              {contentType === 'reading' && contentItems.length > 0 && contentItems[0].text && (
-                <span className="literexia-text-preview">
-                  First passage begins with: "{contentItems[0].text.substring(0, 50)}..."
-                </span>
+        <hr className="literexia-section-divider" />
+        
+        {/* Available Question Templates */}
+        <div className="literexia-template-selection">
+          <div className="literexia-template-header">
+            <h3>Question Templates</h3>
+            {isInlineCreationAllowed() && (
+              <button 
+                type="button"
+                className="literexia-create-template-btn"
+                onClick={() => setShowNewTemplateForm(!showNewTemplateForm)}
+              >
+                <FaPlus /> Create New Template
+              </button>
+            )}
+          </div>
+          
+          {/* Inline New Template Form */}
+          {isInlineCreationAllowed() && showNewTemplateForm && (
+            <div className="literexia-inline-form">
+              <h4>Create New Question Template</h4>
+              <div className="literexia-form-group">
+                <label>Template Text</label>
+                <input
+                  type="text"
+                  value={newTemplateData.templateText}
+                  onChange={(e) => setNewTemplateData(prev => ({
+                    ...prev, templateText: e.target.value
+                  }))}
+                  placeholder="Enter question template (e.g., 'Anong tunog ng letra?')"
+                />
+              </div>
+              
+              <div className="literexia-form-group">
+                <label>Question Type</label>
+                <select
+                  value={newTemplateData.questionType || (category === 'alphabet_knowledge' ? 'patinig' : 
+                                                         category === 'phonological_awareness' ? 'malapantig' : 
+                                                         category === 'word_recognition' || category === 'decoding' ? 'word' : '')}
+                  onChange={(e) => setNewTemplateData(prev => ({
+                    ...prev, questionType: e.target.value,
+                    applicableChoiceTypes: [] // Reset applicable choice types when question type changes
+                  }))}
+                >
+                  <option value="">Select Type</option>
+                  {getApplicableQuestionTypes(category).map(type => (
+                    <option key={type} value={type}>
+                      {formatQuestionType(type)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {newTemplateData.questionType && (
+                <div className="literexia-form-group">
+                  <label>Applicable Choice Types</label>
+                  
+                  {newTemplateData.questionType === 'sentence' ? (
+                    <div className="literexia-info-banner">
+                      <FaInfoCircle />
+                      <p>Reading Comprehension templates do not use manual choice types. 
+                      Questions and answers are defined in sentence templates.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="literexia-help-text">
+                        Select which choice types can be used with this question template.
+                      </div>
+                      <div className="literexia-checkbox-group">
+                        {getApplicableChoiceTypes(newTemplateData.questionType).map(choiceType => (
+                          <label key={choiceType} className="literexia-checkbox-label">
+                            <input
+                              type="checkbox"
+                              checked={newTemplateData.applicableChoiceTypes.includes(choiceType)}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setNewTemplateData(prev => ({
+                                  ...prev,
+                                  applicableChoiceTypes: checked
+                                    ? [...prev.applicableChoiceTypes, choiceType]
+                                    : prev.applicableChoiceTypes.filter(t => t !== choiceType)
+                                }));
+                              }}
+                            />
+                            {formatChoiceType(choiceType)}
+                          </label>
+                        ))}
+                      </div>
+                      
+                      {getApplicableChoiceTypes(newTemplateData.questionType).length === 0 && (
+                        <div className="literexia-error-message">
+                          No applicable choice types available for this question type.
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               )}
-            </p>
-          </div>
-          
-          <button 
-            type="button" 
-            className="literexia-edit-step-btn"
-            onClick={() => setCurrentStep(2)}
-          >
-            <FaEdit /> Edit
-          </button>
-        </div>
-        
-        <div className="literexia-review-card">
-          <h4>Questions</h4>
-          <div className="literexia-review-summary">
-            <p>This activity has {questions.length} question(s):</p>
-            <ul className="literexia-questions-summary">
-              {questions.slice(0, 3).map((q, index) => (
-                <li key={index}>
-                  <strong>Q{index + 1}:</strong> {q.questionText.length > 50 ? 
-                    q.questionText.substring(0, 50) + '...' : 
-                    q.questionText} 
-                  <span className="literexia-question-type">
-                    ({q.contentType} question with {q.options.length} options)
-                  </span>
-                </li>
-              ))}
-              {questions.length > 3 && (
-                <li>...and {questions.length - 3} more question(s)</li>
+              
+              {errors.newTemplate && (
+                <div className="literexia-error-message">{errors.newTemplate}</div>
               )}
-            </ul>
-          </div>
+              
+              <div className="literexia-inline-form-actions">
+                <button 
+                  type="button" 
+                  onClick={() => setShowNewTemplateForm(false)}
+                  className="literexia-cancel-btn"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleCreateNewTemplate}
+                  className="literexia-save-btn"
+                  disabled={submitting}
+                >
+                  {submitting ? <FaSpinner className="fa-spin" /> : 'Create Template'}
+                </button>
+                </div>
+              </div>
+          )}
           
-          <button 
-            type="button" 
-            className="literexia-edit-step-btn"
-            onClick={() => setCurrentStep(3)}
-          >
-            <FaEdit /> Edit
-          </button>
-        </div>
-        
-        <div className="literexia-push-mobile-notice">
-          <div className="literexia-notice-icon">
-            <FaMobile />
-          </div>
-          <div className="literexia-notice-content">
-            <h4>Ready to Push to Mobile</h4>
-            <p>
-              This activity will be immediately available on {student?.name}'s mobile 
-              device after submission. No administrator approval is required.
-            </p>
+          {/* Template List */}
+          <div className="literexia-question-templates-list">
+            {safe(questionTemplates).length > 0 ? (
+              safe(questionTemplates).map(template => (
+                <div 
+                  key={template._id}
+                  className="literexia-question-template-item"
+                >
+                  <div className="literexia-question-template-header">
+                    <h4>{template.templateText}</h4>
+                    <div className="literexia-question-template-type">
+                      {template.questionType}
+                </div>
+              </div>
+                  
+                  <div className="literexia-question-template-details">
+                    <div className="literexia-template-detail">
+                      <strong>Category:</strong> {formatCategoryName(template.category)}
+                    </div>
+                    <div className="literexia-template-detail">
+                      <strong>Applicable Choices:</strong> {
+                        safe(template.applicableChoiceTypes).map(formatChoiceType).join(', ')
+                      }
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="literexia-empty-state">
+                <FaExclamationTriangle className="literexia-empty-icon" />
+                <h3>No Question Templates Available</h3>
+                <p>No templates were found for this category. Create a new template above.</p>
+            </div>
+          )}
           </div>
         </div>
       </div>
     );
   };
-  
-  // Main render function
-  return (
-    <div className="literexia-modal-overlay">
-      <div className="literexia-activity-edit-modal">
-        {/* Modal Header */}
-        <div className="literexia-modal-header">
-          <div className="literexia-modal-title">
-            <h2>Customize Activity for {student?.name || 'Student'}</h2>
-            <div className="literexia-student-badge">
-              <FaUser /> {student?.readingLevel || 'Level 2'}
-            </div>
-          </div>
-          <button className="literexia-close-button" onClick={onClose}>
-            <FaTimes />
-          </button>
-        </div>
+ 
+  /**
+   * Sentence Template Selection (for Reading Comprehension)
+   */
+  const renderSentenceTemplateSelection = () => {
+    return (
+      <div className="literexia-form-section">
+        <h3>Select a Reading Passage</h3>
         
-        {/* Error banner */}
-        {Object.keys(errors).length > 0 && (
+        <div className="literexia-info-banner">
+                <FaInfoCircle />
+                <p>
+            Choose a reading passage for this activity. Each passage includes text content, 
+            supporting images, and comprehension questions tailored to the student's reading level.
+                </p>
+              </div>
+              
+        {errors.sentenceTemplate && (
           <div className="literexia-error-banner">
             <FaExclamationTriangle />
-            <p>Please fix the errors before continuing</p>
+            <p>{errors.sentenceTemplate}</p>
           </div>
         )}
         
-        {/* Steps indicator */}
-        <div className="literexia-steps-indicator">
-          <div className={`literexia-step ${currentStep >= 1 ? 'active' : ''}`} onClick={() => setCurrentStep(1)}>
-            <div className="literexia-step-number">1</div>
-            <div className="literexia-step-label">Basic Info</div>
-          </div>
-          <div className="literexia-step-connector"></div>
-          
-          <div className={`literexia-step ${currentStep >= 2 ? 'active' : ''}`} onClick={() => validateCurrentStep() && setCurrentStep(2)}>
-            <div className="literexia-step-number">2</div>
-            <div className="literexia-step-label">Content</div>
-          </div>
-          <div className="literexia-step-connector"></div>
-          
-          <div className={`literexia-step ${currentStep >= 3 ? 'active' : ''}`} onClick={() => validateCurrentStep() && setCurrentStep(3)}>
-            <div className="literexia-step-number">3</div>
-            <div className="literexia-step-label">Questions</div>
-          </div>
-          <div className="literexia-step-connector"></div>
-          
-          <div className={`literexia-step ${currentStep >= 4 ? 'active' : ''}`} onClick={() => validateCurrentStep() && setCurrentStep(4)}>
-            <div className="literexia-step-number">4</div>
-            <div className="literexia-step-label">Review</div>
-          </div>
+        <div className="literexia-sentence-templates-list">
+          {safe(sentenceTemplates).length > 0 ? (
+            safe(sentenceTemplates).map(template => (
+              <div 
+              key={template._id}
+              className={`literexia-sentence-template-item ${
+                selectedSentenceTemplate?._id === template._id ? 'selected' : ''
+              }`}
+                onClick={() => setSelectedSentenceTemplate(template)}
+            >
+              <div className="literexia-sentence-template-header">
+                <h4>{template.title}</h4>
+                <div className="literexia-sentence-template-level">
+                  {template.readingLevel}
+                      </div>
+                    </div>
+                    
+              <div className="literexia-sentence-template-preview">
+                <div className="literexia-sentence-image-preview">
+                  <img src={template.sentenceText[0].image} alt="Passage" />
+                      </div>
+                <div className="literexia-sentence-text-preview">
+                  <p>{template.sentenceText[0].text.length > 100 
+                    ? template.sentenceText[0].text.substring(0, 100) + '...' 
+                    : template.sentenceText[0].text}
+                  </p>
+                  <span className="literexia-sentence-stats">
+                    {template.sentenceText.length} page{template.sentenceText.length !== 1 ? 's' : ''} • 
+                    {template.sentenceQuestions.length} question{template.sentenceQuestions.length !== 1 ? 's' : ''}
+                  </span>
+                      </div>
+                    </div>
+                  </div>
+          ))
+        ) : (
+          <div className="literexia-empty-state">
+            <FaExclamationTriangle className="literexia-empty-icon" />
+            <h3>No Reading Passages Available</h3>
+            <p>No reading passages were found for the selected reading level.</p>
+            </div>
+          )}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Step 3: Question-Choice Pairs
+ */
+const renderQuestionChoicesStep = () => {
+  return (
+    <div className="literexia-form-section">
+              <h3>Create Questions and Choices</h3>
+              
+      <div className="literexia-info-banner">
+                <FaInfoCircle />
+                <p>
+          For each question, select exactly 2 choices and mark one as correct. 
+          You can add choices from the template library or create new ones inline.
+                </p>
+              </div>
+      
+      {errors.pairs && (
+        <div className="literexia-error-banner">
+          <FaExclamationTriangle />
+          <p>{errors.pairs}</p>
         </div>
-        
-        {/* Modal Info Banner */}
-        <div className="literexia-modal-info-banner">
-          <FaInfoCircle />
-          <p>
-            Customizing this activity will create a personalized version tailored to {student?.name || 'this student'}'s 
-            specific needs. The customized activity will be sent directly to the student's mobile device.
-          </p>
-        </div>
-        
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="literexia-edit-form">
-          {renderStepContent()}
+      )}
+              
+              {safe(questionChoicePairs).map((pair, index) => (
+        <div key={pair.id} className="literexia-question-pair">
+          <div className="literexia-question-pair-header">
+                    <h4>Question {index + 1}</h4>
+            <div className="literexia-question-source-label">
+              Source: {pair.sourceType === 'main_assessment' ? 'Assessment' : 
+                      pair.sourceType === 'template_question' ? 'Template' : 'Custom'}
+            </div>
+                    <button
+                      type="button"
+              className="literexia-remove-pair-btn"
+              onClick={() => removeQuestionChoicePair(pair.id)}
+                      disabled={questionChoicePairs.length <= 1}
+                    >
+                      <FaTrash /> Remove
+                    </button>
+                  </div>
+                  
+          {/* Template Selection */}
+          {pair.sourceType !== 'main_assessment' && (
+            <div className="literexia-question-template-selection">
+                    <label>Question Template</label>
+                    <select
+                value={pair.sourceId || ''}
+                onChange={(e) => setTemplateForPair(pair.id, e.target.value)}
+              >
+                <option value="">-- Select Template --</option>
+                {safe(questionTemplates).map(template => (
+                  <option key={template._id} value={template._id}>
+                    {template.templateText} ({template.questionType})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+          )}
           
-          {/* Form navigation */}
-          <div className="literexia-form-actions">
+          {/* Question Details */}
+          <div className="literexia-question-details">
+            <div className="literexia-form-row">
+              <div className="literexia-form-group">
+                <label>Question Text</label>
+                <input
+                  type="text"
+                  value={pair.questionText || ''}
+                  onChange={(e) => updateQuestionChoicePair(pair.id, 'questionText', e.target.value)}
+                  readOnly={pair.sourceType === 'main_assessment' || pair.sourceType === 'template_question'}
+                  className={pair.sourceType === 'main_assessment' || pair.sourceType === 'template_question' ? 'literexia-readonly-input' : ''}
+                />
+              </div>
+            </div>
+            
+            <div className="literexia-form-group">
+              <label>Question Value</label>
+              <div className="literexia-help-text">
+                Note: You can set either Question Value OR Question Image, not both.
+              </div>
+              {(pair.sourceType === 'main_assessment') ? (
+                // For assessment questions, show a read-only input
+                <input
+                  type="text"
+                  value={pair.questionValue || ''}
+                  readOnly
+                  className="literexia-readonly-input"
+                />
+              ) : pair.sourceType === 'template_question' ? (
+                // Dropdown for template questions
+                <select
+                  value={pair.questionValue || ''}
+                  onChange={(e) => handleQuestionValueChange(pair.id, e.target.value)}
+                  className="literexia-dropdown"
+                >
+                  <option value="">-- Select Value --</option>
+                  {safe(choiceTemplates)
+                    .filter(c => {
+                      if (!c) return false;
+                      // Filter by applicable choice types for current question
+                      if (pair.sourceType === 'template_question' && pair.sourceId) {
+                        const template = safe(questionTemplates).find(t => t && t._id === pair.sourceId);
+                        return template ? safe(template.applicableChoiceTypes).includes(c.choiceType) : true;
+                      }
+                      return getApplicableChoiceTypes(pair.questionType).includes(c.choiceType);
+                    })
+                    .map(c => (
+                      <option 
+                        key={c._id} 
+                        value={c.choiceValue || c.soundText || ''}
+                      >
+                        {c.choiceValue || c.soundText || '(No text)'} ({formatChoiceType(c.choiceType)})
+                      </option>
+                    ))}
+                </select>
+              ) : (
+                // Datalist input for custom questions
+                <input
+                  list={`values-${pair.id}`}
+                  value={pair.questionValue || ''}
+                  onChange={(e) => handleQuestionValueChange(pair.id, e.target.value)}
+                />
+              )}
+              <datalist id={`values-${pair.id}`}>
+                {safe(choiceTemplates)
+                  .filter(c => {
+                    if (!c) return false;
+                    // Filter by applicable choice types for current question
+                    if (pair.sourceType === 'template_question' && pair.sourceId) {
+                      const template = safe(questionTemplates).find(t => t && t._id === pair.sourceId);
+                      return template ? safe(template.applicableChoiceTypes).includes(c.choiceType) : true;
+                    }
+                    return getApplicableChoiceTypes(pair.questionType).includes(c.choiceType);
+                  })
+                  .map(c => (
+                    <option
+                      key={c._id}
+                      value={c.choiceValue || c.soundText}
+                    />
+                  ))}
+              </datalist>
+            </div>
+            
+            <div className="literexia-form-group">
+              <label>Question Image</label>
+              <div className="literexia-help-text">
+                Note: You can set either Question Image OR Question Value, not both.
+              </div>
+              <div className="literexia-file-upload">
+                <input
+                  type="file"
+                  id={`question-image-${pair.id}`}
+                  ref={el => fileInputRefs.current[pair.id] = el}
+                  onChange={(e) => handleFileChange(e, pair.id)}
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                />
+                <div className="literexia-file-upload-controls">
+                  {pair.sourceType === 'main_assessment' ? (
+                    // For assessment questions, just show the image without edit buttons
+                    pair.questionImage && (
+                      <div className="literexia-image-preview">
+                        <img src={pair.questionImage} alt="Question" />
+                      </div>
+                    )
+                  ) : (
+                    // For template and custom questions, show the full edit controls
+                    <>
+                      <button 
+                        type="button" 
+                        className="literexia-file-select-btn"
+                        onClick={() => fileInputRefs.current[pair.id].click()}
+                        disabled={fileUploads[pair.id]?.status === 'uploading'}
+                      >
+                        {fileUploads[pair.id]?.status === 'uploading' ? <FaSpinner className="fa-spin" /> : <FaPlus />} 
+                        {pair.questionImage ? 'Change Image' : 'Upload Image'}
+                      </button>
+                      {pair.questionImage && (
+                        <div className="literexia-image-preview">
+                          <img src={pair.questionImage} alt="Question" />
+                          <button 
+                            type="button" 
+                            className="literexia-remove-image-btn"
+                            onClick={() => updateQuestionChoicePair(pair.id, 'questionImage', null)}
+                          >
+                            <FaTimes />
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {fileUploads[pair.id]?.status === 'uploading' && <span className="literexia-uploading">Uploading...</span>}
+                  {fileUploads[pair.id]?.status === 'pending' && (
+                    <span className="literexia-pending">
+                      <FaImage className="literexia-preview-icon" /> Image preview (will be uploaded when saving)
+                    </span>
+                  )}
+                  {fileUploads[pair.id]?.status === 'error' && <span className="literexia-upload-error">Upload failed. Please try again.</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Choices Section */}
+          <div className="literexia-choices-selection">
+            <div className="literexia-choices-header">
+              <label>Answer Choices (Exactly 2 Required)</label>
+              {isInlineCreationAllowed() && (
+                <button
+                  type="button"
+                  className="literexia-create-choice-btn"
+                  onClick={() => toggleChoiceForm(pair.id, !showNewChoiceFormByPair[pair.id])}
+                  disabled={pair.choiceIds.length >= 2}
+                >
+                  <FaPlus /> Add New Choice
+                </button>
+              )}
+            </div>
+            
+            {/* Inline New Choice Form */}
+            {isInlineCreationAllowed() && showNewChoiceFormByPair[pair.id] && (
+              <div className="literexia-inline-form">
+                <h5>Create New Choice</h5>
+                <div className="literexia-form-row">
+                  <div className="literexia-form-group">
+                    <label>Choice Type</label>
+                    <select
+                      value={newChoiceData.choiceType}
+                      onChange={(e) => setNewChoiceData(prev => ({
+                        ...prev, choiceType: e.target.value
+                      }))}
+                    >
+                      <option value="">Select Type</option>
+                      {pair.sourceType === 'template_question' && pair.sourceId ? (
+                        // For template questions, only show applicable choice types
+                        (() => {
+                          const template = questionTemplates.find(t => t._id === pair.sourceId);
+                          return template ? template.applicableChoiceTypes.map(choiceType => (
+                            <option key={choiceType} value={choiceType}>
+                              {formatChoiceType(choiceType)}
+                            </option>
+                          )) : getApplicableChoiceTypes(pair.questionType).map(choiceType => (
+                            <option key={choiceType} value={choiceType}>
+                              {formatChoiceType(choiceType)}
+                            </option>
+                          ));
+                        })()
+                      ) : (
+                        // For custom questions, show all applicable types for the question type
+                        getApplicableChoiceTypes(pair.questionType).map(choiceType => (
+                          <option key={choiceType} value={choiceType}>
+                            {formatChoiceType(choiceType)}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                  
+                  <div className="literexia-form-group">
+                    <label>Choice Value</label>
+                    <input
+                      type="text"
+                      value={newChoiceData.choiceValue}
+                      onChange={(e) => setNewChoiceData(prev => ({
+                        ...prev, choiceValue: e.target.value
+                      }))}
+                      placeholder="e.g., a, BOLA"
+                    />
+                  </div>
+                </div>
+                
+                <div className="literexia-form-group">
+                  <label>Sound Text (optional)</label>
+                  <input
+                    type="text"
+                    value={newChoiceData.soundText}
+                    onChange={(e) => setNewChoiceData(prev => ({
+                      ...prev, soundText: e.target.value
+                    }))}
+                    placeholder="e.g., /ah/"
+                  />
+                </div>
+                
+                {errors.newChoice && (
+                  <div className="literexia-error-message">{errors.newChoice}</div>
+                )}
+                
+                <div className="literexia-inline-form-actions">
+                <button 
+                   type="button" 
+                   onClick={() => toggleChoiceForm(pair.id, false)}
+                   className="literexia-cancel-btn"
+                 >
+                   Cancel
+                 </button>
+                 <button 
+                   type="button" 
+                   onClick={() => handleCreateNewChoice(pair.id)}
+                   className="literexia-save-btn"
+                   disabled={submitting}
+                 >
+                   {submitting ? <FaSpinner className="fa-spin" /> : 'Create Choice'}
+                 </button>
+               </div>
+             </div>
+           )}
+           
+           {/* Available Choices */}
+           <div className="literexia-available-choices">
+             <h5>Available Choices</h5>
+             <div className="literexia-choice-tiles">
+               {safe(choiceTemplates)
+                 .filter(choice => {
+                   if (!choice) return false;
+                   // Filter by applicable choice types for current question
+                   if (pair.sourceType === 'template_question' && pair.sourceId) {
+                     const template = safe(questionTemplates).find(t => t && t._id === pair.sourceId);
+                     return template ? safe(template.applicableChoiceTypes).includes(choice.choiceType) : true;
+                   }
+                   return getApplicableChoiceTypes(pair.questionType).includes(choice.choiceType);
+                 })
+                 .map(choice => (
+                   <div 
+                     key={choice._id}
+                     className={`literexia-choice-tile ${
+                       safe(pair.choiceIds).includes(choice._id) ? 'selected' : ''
+                     } ${
+                       safe(pair.choiceIds).length >= 2 && !safe(pair.choiceIds).includes(choice._id) ? 'disabled' : ''
+                     }`}
+                     onClick={() => {
+                       // Allow clicking choices for both assessment and template questions
+                       if (safe(pair.choiceIds).includes(choice._id)) {
+                         removeChoiceFromPair(pair.id, choice._id);
+                       } else if (safe(pair.choiceIds).length < 2) {
+                         addChoiceToPair(pair.id, choice._id);
+                       }
+                     }}
+                   >
+                     <div className="literexia-choice-value">
+                       {choice.choiceValue || choice.soundText || '(No text)'}
+                     </div>
+                     <div className="literexia-choice-type">
+                       {formatChoiceType(choice.choiceType)}
+                     </div>
+                   </div>
+                 ))}
+             </div>
+           </div>
+           
+           {/* Selected Choices */}
+           <div className="literexia-selected-choices">
+             <h5>Selected Choices ({safe(pair.choiceIds).length}/2)</h5>
+             {!pair.choiceIds || pair.choiceIds.length === 0 ? (
+               <div className="literexia-empty-choices">
+                          <p>No choices selected. Click on available choices above to add them.</p>
+                        </div>
+                      ) : (
+               <div className="literexia-selected-choice-list">
+                 {getChoicesByIds(pair.choiceIds).map((choice, choiceIndex) => {
+                   if (!choice) return null;
+                   
+                   return (
+                     <div
+                       key={choice._id}
+                       className={`literexia-selected-choice-item ${
+                         choice._id === pair.correctChoiceId ? 'correct' : ''
+                       }`}
+                     >
+                       <div className="literexia-choice-correct-indicator">
+                                <input
+                                  type="radio"
+                                  name={`correct-choice-${pair.id}`}
+                                  checked={choice._id === pair.correctChoiceId}
+                                  onChange={() => setCorrectChoice(pair.id, choice._id)}
+                                />
+                                <label>Correct</label>
+                              </div>
+                              
+                       <div className="literexia-selected-choice-content">
+                         <div className="literexia-selected-choice-value">
+                           {choice.choiceValue || choice.soundText || '(No text)'}
+                                </div>
+                              </div>
+                       
+                       <button
+                         type="button"
+                         className="literexia-remove-choice-btn"
+                         onClick={() => removeChoiceFromPair(pair.id, choice._id)}
+                       >
+                         <FaTrash />
+                       </button>
+                            </div>
+                   );
+                 })}
+                        </div>
+                      )}
+             
+             {/* Choice requirement warning */}
+             {(!pair.choiceIds || pair.choiceIds.length !== 2) && (
+               <div className="literexia-choice-warning">
+                 <FaExclamationTriangle />
+                 <span>Exactly 2 choices are required for each question.</span>
+               </div>
+             )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              <button
+                type="button"
+       className="literexia-add-question-btn"
+       onClick={addQuestionChoicePair}
+              >
+                <FaPlus /> Add Another Question
+              </button>
+            </div>
+ );
+};
+
+/**
+* Step 3 Alternative: Sentence Preview (for Reading Comprehension)
+*/
+const renderSentencePreviewStep = () => {
+ if (!selectedSentenceTemplate) {
+   return (
+     <div className="literexia-empty-state">
+       <FaExclamationTriangle className="literexia-empty-icon" />
+       <h3>No Reading Passage Selected</h3>
+       <p>Please go back and select a reading passage.</p>
+     </div>
+   );
+ }
+ 
+ return (
+   <div className="literexia-form-section">
+     <h3>Preview Reading Passage</h3>
+     
+     <div className="literexia-sentence-preview">
+       <div className="literexia-sentence-title">
+         <h4>{selectedSentenceTemplate.title}</h4>
+       </div>
+       
+       <div className="literexia-sentence-pages">
+         <h5>Pages</h5>
+         <div className="literexia-pages-list">
+           {safe(selectedSentenceTemplate.sentenceText).map((page, index) => (
+             <div key={index} className="literexia-page-item">
+               <div className="literexia-page-number">{index + 1}</div>
+               <div className="literexia-page-content">
+                 <div className="literexia-page-image">
+                   <img src={page.image} alt={`Page ${index + 1}`} />
+                 </div>
+                 <div className="literexia-page-text">
+                   <p>{page.text}</p>
+                 </div>
+               </div>
+             </div>
+           ))}
+         </div>
+       </div>
+       
+       <div className="literexia-sentence-questions">
+         <h5>Questions</h5>
+         <div className="literexia-questions-list">
+           {safe(selectedSentenceTemplate.sentenceQuestions).map((question, index) => (
+             <div key={index} className="literexia-question-item">
+               <div className="literexia-question-number">{index + 1}</div>
+               <div className="literexia-question-content">
+                 <div className="literexia-question-text">
+                   <p>{question.questionText}</p>
+                 </div>
+                 <div className="literexia-question-options">
+                   <div className="literexia-correct-option">
+                     <strong>Correct answer:</strong> {question.sentenceCorrectAnswer}
+                   </div>
+                   <div className="literexia-options-list">
+                     <strong>Options:</strong>
+                     <ul>
+                       {safe(question.sentenceOptionAnswers).map((option, optIndex) => (
+                         <li key={optIndex} className={option === question.sentenceCorrectAnswer ? 'correct-option' : ''}>
+                           {option}
+                         </li>
+                       ))}
+                     </ul>
+                   </div>
+                 </div>
+               </div>
+             </div>
+           ))}
+         </div>
+       </div>
+     </div>
+   </div>
+ );
+};
+
+/**
+* Step 4: Review and Submit
+*/
+const renderReviewStep = () => {
+ return (
+   <div className="literexia-review-section">
+              <h3>Review Activity</h3>
+              
+     <div className="literexia-info-banner">
+                <FaInfoCircle />
+                <p>
+         Review your activity before saving. Once submitted, the activity will be available 
+         for pushing to {student?.firstName || 'the student'}'s mobile device.
+                </p>
+              </div>
+              
+     {/* Basic Information Review */}
+     <div className="literexia-review-card">
+                <h4>Basic Information</h4>
+       <div className="literexia-review-details">
+         <div className="literexia-review-item">
+           <span className="literexia-review-label">Title:</span>
+           <span className="literexia-review-value">{title}</span>
+                  </div>
+         <div className="literexia-review-item">
+           <span className="literexia-review-label">Description:</span>
+           <span className="literexia-review-value">{description}</span>
+                  </div>
+         <div className="literexia-review-item">
+           <span className="literexia-review-label">Category:</span>
+           <span className="literexia-review-value">{formatCategoryName(category)}</span>
+                  </div>
+         <div className="literexia-review-item">
+           <span className="literexia-review-label">Reading Level:</span>
+           <span className="literexia-review-value">{readingLevel}</span>
+                  </div>
+                </div>
+                
+                <button 
+                  type="button" 
+         className="literexia-edit-step-btn"
+                  onClick={() => setCurrentStep(1)}
+                >
+                  <FaEdit /> Edit
+                </button>
+              </div>
+            
+     {/* Content Review */}
+     {contentType === 'sentence' ? (
+       <div className="literexia-review-card">
+         <h4>Reading Passage</h4>
+         <div className="literexia-review-summary">
+           <p><strong>Title:</strong> {selectedSentenceTemplate?.title}</p>
+           <p><strong>Pages:</strong> {selectedSentenceTemplate?.sentenceText?.length || 0}</p>
+           <p><strong>Questions:</strong> {selectedSentenceTemplate?.sentenceQuestions?.length || 0}</p>
+           
+           {selectedSentenceTemplate && (
+             <div className="literexia-passage-preview">
+               <p className="literexia-passage-sample">
+                 <strong>Sample text:</strong> "{selectedSentenceTemplate.sentenceText?.[0]?.text?.substring(0, 100) || ''}..."
+               </p>
+               <p className="literexia-question-sample">
+                 <strong>Sample question:</strong> "{selectedSentenceTemplate.sentenceQuestions?.[0]?.questionText || ''}"
+               </p>
+             </div>
+           )}
+                </div>
+                
+                <button 
+                  type="button" 
+           className="literexia-edit-step-btn"
+                  onClick={() => setCurrentStep(2)}
+                >
+           <FaEdit /> Change Passage
+                </button>
+              </div>
+     ) : (
+       <div className="literexia-review-card">
+                <h4>Questions and Choices</h4>
+         <div className="literexia-review-summary">
+                  <p>This activity has {safe(questionChoicePairs).length} question(s):</p>
+                  
+           <div className="literexia-questions-summary">
+             {safe(questionChoicePairs).map((pair, index) => {
+               const choices = getChoicesByIds(pair.choiceIds || []);
+               const correctChoice = safe(choices).find(choice => choice && choice._id === pair.correctChoiceId);
+               
+               return (
+                 <div key={index} className="literexia-question-summary">
+                   <p className="literexia-question-summary-text">
+                     <strong>Q{index + 1}:</strong> {pair.questionText || 'No question text'}
+                     {pair.questionValue && ` (${pair.questionValue})`}
+                     {pair.questionImage && (
+                       <span className="literexia-image-indicator">
+                         <FaImage /> {fileUploads[pair.id]?.status === 'pending' ? 'Image preview (will be uploaded when saving)' : 'Has image'}
+                       </span>
+                     )}
+                   </p>
+                   <div className="literexia-choices-summary">
+                          <p><strong>Choices:</strong></p>
+                          <ul>
+                       {safe(choices).map((choice, choiceIndex) => {
+                         if (!choice) return null;
+                         return (
+                         <li 
+                           key={choice._id} 
+                           className={choice._id === pair.correctChoiceId ? 'correct-choice' : ''}
+                         >
+                           {choice.choiceValue || choice.soundText || '(No text)'} 
+                           {choice._id === pair.correctChoiceId && ' (Correct)'}
+                              </li>
+                           );
+                         })}
+                          </ul>
+                        </div>
+                      </div>
+               );
+             })}
+                  </div>
+                </div>
+                
+                <button 
+                  type="button" 
+           className="literexia-edit-step-btn"
+                  onClick={() => setCurrentStep(3)}
+                >
+           <FaEdit /> Edit Questions
+                </button>
+              </div>
+     )}
+     
+     {/* Mobile Push Notice */}
+     <div className="literexia-push-mobile-notice">
+       <div className="literexia-notice-icon">
+                  <FaMobile />
+                </div>
+       <div className="literexia-notice-content">
+         <h4>Ready to Save</h4>
+                  <p>
+           This activity will be saved as a draft and can be pushed to {student?.firstName || 'the student'}'s 
+           mobile device from the interventions list.
+                  </p>
+                </div>
+              </div>
+   </div>
+ );
+};
+
+// ===== HELPER FUNCTIONS FOR DISPLAY =====
+
+const getCategoryDisplayName = (category) => {
+ // Normalize the category
+ const normCategory = normalizeCategory(category);
+ 
+ const displayNames = {
+   'alphabet_knowledge': 'Alphabet Knowledge (Letters & Sounds)',
+   'phonological_awareness': 'Phonological Awareness (Syllables)',
+   'word_recognition': 'Word Recognition',
+   'decoding': 'Decoding',
+   'reading_comprehension': 'Reading Comprehension (Passages)'
+ };
+ return displayNames[normCategory] || 'Unknown Category';
+};
+
+const getCategoryDescription = (category) => {
+ // Normalize the category
+ const normCategory = normalizeCategory(category);
+ 
+ const descriptions = {
+   'alphabet_knowledge': "This activity will focus on letter recognition, matching uppercase and lowercase letters, and letter sounds (patinig and katinig).",
+   'phonological_awareness': "This activity will focus on syllable blending, identification, and manipulation (malapantig).",
+   'word_recognition': "This activity will focus on recognizing whole words, matching words to images, or sounding out words.",
+   'decoding': "This activity will focus on breaking down words into sounds, syllables, and letters to develop reading fluency.",
+   'reading_comprehension': "This activity will include reading passages with supporting images, followed by comprehension questions about the text."
+ };
+ return descriptions[normCategory] || "General reading exercise to improve literacy skills.";
+};
+
+// ===== LOADING STATE =====
+if (loading || checkingExisting) {
+ return (
+   <div className="literexia-modal-overlay">
+     <div className="literexia-activity-edit-modal">
+       <div className="literexia-loading-state">
+         <FaSpinner className="literexia-spinner fa-spin" />
+         <h3>Loading Activity Data...</h3>
+         <p>Please wait while we load the templates and questions.</p>
+       </div>
+     </div>
+   </div>
+ );
+}
+
+// ===== MAIN RENDER =====
+return (
+ <div className="literexia-modal-overlay">
+   {/* Hidden file input for image uploads */}
+   <input
+     type="file"
+     ref={fileInputRef}
+     style={{ display: 'none' }}
+     accept="image/png,image/jpeg,image/jpg"
+     onChange={handleFileSelect}
+   />
+   
+   <div className="literexia-activity-edit-modal">
+     {/* Modal Header */}
+     <div className="literexia-modal-header">
+       <div className="literexia-modal-title">
+         <h2>
+           {activity ? 'Edit' : 'Create'} Intervention Activity for {student?.firstName || 'Student'}
+         </h2>
+         <div className="literexia-student-badge">
+           <FaUser /> {readingLevel}
+         </div>
+       </div>
+       <button className="literexia-close-button" onClick={onClose}>
+         <FaTimes />
+       </button>
+     </div>
+     
+     {/* Error Banner */}
+     {errors.general && (
+       <div className="literexia-error-banner">
+         <FaExclamationTriangle />
+         <p>{errors.general}</p>
+            </div>
+          )}
+          
+     {/* Steps Indicator */}
+     <div className="literexia-steps-indicator">
+       <div className={`literexia-step ${currentStep >= 1 ? 'active' : ''}`} onClick={() => setCurrentStep(1)}>
+         <div className="literexia-step-number">1</div>
+         <div className="literexia-step-label">Basic Info</div>
+       </div>
+       <div className="literexia-step-connector"></div>
+       
+       <div 
+         className={`literexia-step ${currentStep >= 2 ? 'active' : ''}`} 
+         onClick={() => currentStep > 1 && setCurrentStep(2)}
+       >
+         <div className="literexia-step-number">2</div>
+         <div className="literexia-step-label">
+           {contentType === 'sentence' ? 'Select Passage' : 'Templates'}
+         </div>
+       </div>
+       <div className="literexia-step-connector"></div>
+       
+       <div 
+           className={`literexia-step ${currentStep >= 3 ? 'active' : ''}`} 
+           onClick={() => currentStep > 2 && setCurrentStep(3)}
+         >
+           <div className="literexia-step-number">3</div>
+           <div className="literexia-step-label">
+             {contentType === 'sentence' ? 'Preview' : 'Questions & Choices'}
+           </div>
+         </div>
+         <div className="literexia-step-connector"></div>
+         
+         <div 
+           className={`literexia-step ${currentStep >= 4 ? 'active' : ''}`} 
+           onClick={() => currentStep > 3 && setCurrentStep(4)}
+         >
+           <div className="literexia-step-number">4</div>
+           <div className="literexia-step-label">Review</div>
+         </div>
+       </div>
+       
+       {/* Modal Info Banner */}
+       <div className="literexia-modal-info-banner">
+         <FaInfoCircle />
+         <p>
+           This intervention activity will help address {student?.firstName || 'the student'}'s 
+           specific needs in {formatCategoryName(category)}. Questions can be sourced from assessments, 
+           templates, or created custom. All choices are editable from the template library.
+         </p>
+       </div>
+       
+       {/* Form */}
+       <form onSubmit={handleSubmit} className="literexia-edit-form">
+         {renderStepContent()}
+         
+         {/* Form Navigation */}
+         <div className="literexia-form-actions">
             {currentStep > 1 ? (
-              <button type="button" className="literexia-cancel-btn" onClick={prevStep}>
+             <button type="button" className="literexia-cancel-btn" onClick={prevStep}>
                 Back
               </button>
             ) : (
-              <button type="button" className="literexia-cancel-btn" onClick={onClose}>
+             <button type="button" className="literexia-cancel-btn" onClick={onClose}>
                 Cancel
               </button>
             )}
             
-            <button type="submit" className="literexia-save-btn" disabled={submitting}>
+           <button type="submit" className="literexia-save-btn" disabled={submitting}>
               {submitting ? (
                 <>
-                  <FaSpinner className="literexia-spinner" /> Processing...
+                 <FaSpinner className="literexia-spinner fa-spin" /> Processing...
                 </>
               ) : currentStep < 4 ? (
                 'Continue'
               ) : (
                 <>
-                  <FaSave /> Save and Push to Mobile
+                 <FaSave /> Save Activity
                 </>
               )}
             </button>

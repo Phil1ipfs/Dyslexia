@@ -9,9 +9,9 @@
 const getBackendUrl = () => {
   if (typeof window !== 'undefined' && window.location) {
     // Use the current host as fallback
-    return window.location.origin.replace('3000', '5002');
+    return window.location.origin.replace('3000', '5001');
   }
-  return 'http://localhost:5002';
+  return 'http://localhost:5001';
 };
 
 const BACKEND_URL =

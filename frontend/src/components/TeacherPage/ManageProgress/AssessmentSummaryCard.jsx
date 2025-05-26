@@ -2,10 +2,9 @@ import React from 'react';
 import { 
   FaChartLine, 
   FaStar, 
-  FaCalendarAlt, 
-  FaCheckCircle
+  FaCalendarAlt
 } from 'react-icons/fa';
-import './professional-styles.css';
+import '../ManageProgress/css/AssessmentSummaryCard.css'; 
 
 const AssessmentSummaryCard = ({ assessmentData }) => {
   if (!assessmentData) return null;
@@ -46,6 +45,8 @@ const AssessmentSummaryCard = ({ assessmentData }) => {
     readingPercentage = parseFloat(assessmentData.scores.overall);
   } else if (assessmentData.readingPercentage !== undefined) {
     readingPercentage = assessmentData.readingPercentage;
+  } else if (assessmentData.overallScore !== undefined) {
+    readingPercentage = assessmentData.overallScore;
   } else {
     readingPercentage = isAssessed ? 75 : 0; // Default only as last resort
   }
@@ -89,66 +90,50 @@ const AssessmentSummaryCard = ({ assessmentData }) => {
 
   // Get the assessment date - check multiple possible properties
   const assessmentDate = assessmentData.assessmentDate || assessmentData.lastAssessmentDate;
-
-  // Get recommended level - use recommendedLevel if available, otherwise use current level
-  const recommendedLevel = assessmentData.recommendedLevel || assessmentData.readingLevel;
   
   // Get level class
   const currentLevelClass = getReadingLevelClass(assessmentData.readingLevel);
-  const recommendedLevelClass = getReadingLevelClass(recommendedLevel);
   const scoreClass = getScoreClass(score);
   
   return (
-    <div className="reader-card reader-assessment-card">
-      <div className="reader-assessment-header">
-        <h3 className="reader-assessment-title">
-          <FaChartLine className="reader-header-icon" />
+    <div className={`literexia-assessment-card ${currentLevelClass}`}>
+      <div className="literexia-assessment-header">
+        <h3 className="literexia-assessment-title">
+          <FaChartLine className="literexia-header-icon" />
           Reading Assessment (CRLA)
         </h3>
-        <div className={`reader-score-badge ${scoreClass}`}>
+        <div className={`literexia-score-badge ${scoreClass}`}>
           {score}%
         </div>
       </div>
       
-      <div className="reader-assessment-content">
-        <div className={`reader-assessment-item ${currentLevelClass}`}>
-          <div className="reader-item-icon">
+      <div className="literexia-assessment-content">
+        <div className="literexia-assessment-item">
+          <div className={`literexia-item-icon ${currentLevelClass}`}>
             <FaStar />
           </div>
-          <div className="reader-item-content">
-            <div className="reader-item-value">
-              {assessmentData.readingLevel || "Not Assessed"}
-            </div>
-            <div className="reader-item-label">
+          <div className="literexia-item-content">
+            <div className="literexia-item-label">
               Current Reading Level
             </div>
+            <div className={`literexia-item-value ${currentLevelClass}`}>
+              {assessmentData.readingLevel || "Not Assessed"}
+            </div>
           </div>
         </div>
         
-        <div className="reader-assessment-item">
-          <div className="reader-item-icon calendar-icon">
+        <div className="literexia-assessment-item">
+          <div className="literexia-item-icon calendar-icon">
             <FaCalendarAlt />
           </div>
-          <div className="reader-item-content">
-            <div className="reader-item-value date-value">
-              {formatDate(assessmentDate)}
-            </div>
-            <div className="reader-item-label">
+          <div className="literexia-item-content">
+            <div className="literexia-item-label">
               Assessment Date
             </div>
+            <div className="literexia-item-value date-value">
+              {formatDate(assessmentDate)}
+            </div>
           </div>
-        </div>
-        
-        <div className="reader-assessment-divider"></div>
-        
-        <div className="reader-assessment-recommendation">
-          <FaCheckCircle className={`reader-recommendation-icon ${recommendedLevelClass}`} />
-          <span className="reader-recommendation-label">
-            Recommended Level:
-          </span>
-          <span className={`reader-recommendation-value ${recommendedLevelClass}`}>
-            {recommendedLevel || "Not Assessed"}
-          </span>
         </div>
       </div>
     </div>

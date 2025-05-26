@@ -1,3 +1,4 @@
+// src/pages/Teachers/StudentProgressPDF.jsx
 import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
@@ -19,8 +20,32 @@ const StudentProgressPDF = () => {
     }
   }, [student, activities, navigate]);
 
+  const getReadingLevelClass = (level) => {
+    const classMap = {
+      'Low Emerging': 'reading-level-early',
+      'High Emerging': 'reading-level-early', 
+      'Developing': 'reading-level-developing',
+      'Transitioning': 'reading-level-developing',
+      'At Grade Level': 'reading-level-fluent',
+      'Advanced': 'reading-level-advanced'
+    };
+    return classMap[level] || 'reading-level-not-assessed';
+  };
+
+  const getReadingLevelDescription = (level) => {
+    const descriptions = {
+      'Low Emerging': 'Beginning to recognize letters and sounds',
+      'High Emerging': 'Developing letter-sound connections',
+      'Developing': 'Building phonemic awareness and basic vocabulary',
+      'Transitioning': 'Building reading comprehension skills',
+      'At Grade Level': 'Can read and comprehend grade-level text',
+      'Advanced': 'Reading above grade level with strong comprehension'
+    };
+    return descriptions[level] || 'Not yet assessed - Needs initial assessment';
+  };
+
   const exportToPDF = async () => {
-    const element = progressReportRef?.current || reportRef?.current;  // whichever ref exists
+    const element = reportRef.current;
     if (!element) return;
   
     try {
@@ -47,7 +72,7 @@ const StudentProgressPDF = () => {
       remainingH -= pdfH;
       yOffset    -= pdfH;         // shift upwards for next slice
   
-      // add extra pages while there’s still image left
+      // add extra pages while there's still image left
       while (remainingH > 0) {
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', 0, yOffset, imgW, imgH);
@@ -64,8 +89,6 @@ const StudentProgressPDF = () => {
       alert('Failed to export PDF – please try again.');
     }
   };
-  
-  
 
   return (
     <div className="sdx-container">
@@ -88,7 +111,7 @@ const StudentProgressPDF = () => {
         {/* TITLE */}
         <div className="sdx-report-title-section">
           <h2 className="sdx-report-main-title">PROGRESS REPORT</h2>
-          <p className="sdx-report-school-year">S.Y. {progressReport.schoolYear}</p>
+          <p className="sdx-report-school-year">S.Y. {progressReport?.schoolYear || '2024-2025'}</p>
         </div>
 
         {/* STUDENT INFO */}
@@ -98,12 +121,27 @@ const StudentProgressPDF = () => {
             <div className="sdx-report-info-item"><strong>Age:</strong> {student.age}</div>
           </div>
           <div className="sdx-report-info-row">
-            <div className="sdx-report-info-item"><strong>Grade:</strong> {student.gradeLevel}</div>
-            <div className="sdx-report-info-item"><strong>Gender:</strong> {student.gender}</div>
+            <div className="sdx-report-info-item"><strong>Grade:</strong> {student.gradeLevel || 'Grade 1'}</div>
+            <div className="sdx-report-info-item"><strong>Gender:</strong> {student.gender || 'Not specified'}</div>
           </div>
           <div className="sdx-report-info-row">
-            <div className="sdx-report-info-item"><strong>Parent:</strong> {student.parent}</div>
-            <div className="sdx-report-info-item"><strong>Date:</strong> {progressReport.reportDate}</div>
+            <div className="sdx-report-info-item">
+              <strong>Parent:</strong> {
+                typeof student.parent === 'string' ? 
+                  student.parent : 
+                  student.parent && student.parent.name ? 
+                    student.parent.name : 'Not registered'
+              }
+            </div>
+            <div className="sdx-report-info-item"><strong>Date:</strong> {progressReport?.reportDate || new Date().toISOString().split('T')[0]}</div>
+          </div>
+          <div className="sdx-report-info-row">
+            <div className="sdx-report-info-item">
+              <strong>Reading Level:</strong> {student.readingLevel || 'Not Assessed'}
+            </div>
+            <div className="sdx-report-info-item">
+              <strong>Last Assessment:</strong> {student.lastAssessment || student.lastAssessmentDate || 'Not available'}
+            </div>
           </div>
         </div>
 
@@ -112,47 +150,67 @@ const StudentProgressPDF = () => {
           <table className="sdx-report-table">
             <thead>
               <tr>
-                <th>Lesson</th>
-                <th>Completed</th>
-                <th colSpan="3">Progress Level</th>
-                <th>Remarks</th>
+                <th className="sdx-report-th">Lesson</th>
+                <th className="sdx-report-th">Completed</th>
+                <th className="sdx-report-th" colSpan="3">Progress Level</th>
+                <th className="sdx-report-th">Remarks</th>
               </tr>
               <tr>
-                <th></th>
-                <th></th>
-                <th>Minimal support</th>
-                <th>Moderate support</th>
-                <th>Extensive support</th>
-                <th></th>
+                <th className="sdx-report-th-empty"></th>
+                <th className="sdx-report-th-empty"></th>
+                <th className="sdx-report-th-level">Minimal support</th>
+                <th className="sdx-report-th-level">Moderate support</th>
+                <th className="sdx-report-th-level">Extensive support</th>
+                <th className="sdx-report-th-empty"></th>
               </tr>
             </thead>
             <tbody>
-              {activities.map((activity, index) => (
-                <tr key={index}>
-                  <td>{activity.name}</td>
-                  <td>{activity.completed ? '✓' : ''}</td>
-                  <td>{activity.minimalSupport ? '✓' : ''}</td>
-                  <td>{activity.moderateSupport ? '✓' : ''}</td>
-                  <td>{activity.extensiveSupport ? '✓' : ''}</td>
-                  <td>{activity.remarks}</td>
+              {activities && activities.length > 0 ? (
+                activities.map((activity, index) => (
+                  <tr key={index} className="sdx-report-tr">
+                    <td className="sdx-report-td sdx-report-td-aralin">{activity.name}</td>
+                    <td className="sdx-report-td sdx-report-td-nakumpleto">
+                      {activity.completed ? "✓" : ""}
+                    </td>
+                    <td className="sdx-report-td sdx-report-td-support">
+                      {activity.minimalSupport ? "✓" : ""}
+                    </td>
+                    <td className="sdx-report-td sdx-report-td-support">
+                      {activity.moderateSupport ? "✓" : ""}
+                    </td>
+                    <td className="sdx-report-td sdx-report-td-support">
+                      {activity.extensiveSupport ? "✓" : ""}
+                    </td>
+                    <td className="sdx-report-td sdx-report-td-puna">{activity.remarks}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr className="sdx-report-tr">
+                  <td colSpan="6" className="sdx-report-td-empty">
+                    No learning activities recorded yet.
+                  </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
 
         {/* RECOMMENDATIONS */}
         <div className="sdx-report-recommendations">
-          <h3>Recommendations</h3>
-          <ul>
-            {progressReport.recommendations.map((rec, i) => (
-              <li key={i}>{rec}</li>
+          <h3 className="sdx-report-section-title">Recommendations</h3>
+          <ul className="sdx-report-rec-list">
+            {progressReport?.recommendations?.map((rec, i) => (
+              <li key={i} className="sdx-report-rec-item">{rec}</li>
             ))}
           </ul>
         </div>
 
         {/* SIGNATURE */}
         <div className="sdx-report-signatures">
+          <div className="sdx-report-signature">
+            <div className="sdx-report-sign-line"></div>
+            <p className="sdx-report-sign-name">Teacher's Signature</p>
+          </div>
           <div className="sdx-report-signature">
             <div className="sdx-report-sign-line"></div>
             <p className="sdx-report-sign-name">Principal's Signature</p>

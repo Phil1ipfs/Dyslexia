@@ -4,70 +4,126 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const { auth, authorize } = require('../../middleware/auth');
 
+// Helper function to extract ObjectId
+const getObjectId = (id) => {
+  if (!id) return null;
+  if (id instanceof mongoose.Types.ObjectId) return id;
+  if (typeof id === 'object' && id.$oid) return new mongoose.Types.ObjectId(id.$oid);
+  try {
+    return new mongoose.Types.ObjectId(id);
+  } catch (e) {
+    return null;
+  }
+};
+
 /**
  * @route GET /api/parents/profile/:id
  * @desc Get parent profile by ID
  * @access Private (teachers, admins)
  */
-router.get('/profile/:id', auth, authorize('teacher', 'guro', 'admin'), async (req, res) => {
+router.get('/profile/:id', auth, authorize('teacher', 'admin'), async (req, res) => {
   try {
     const parentId = req.params.id;
-    console.log("Starting getParentInfo for student:", req.query.studentId || 'undefined');
+    console.log("Getting parent profile for ID:", parentId);
 
     if (!parentId) {
       return res.status(400).json({ message: 'Parent ID is required' });
     }
 
-    // Convert the parentId string to ObjectId
-    console.log("ParentId found:", parentId);
-    let parentObjId;
-    try {
-      parentObjId = new mongoose.Types.ObjectId(parentId);
-      console.log("Converted parentId:", parentObjId);
-    } catch (error) {
-      return res.status(400).json({ message: 'Invalid parent ID format' });
-    }
-
-    // Get the profile collection from the mobile_literexia database
-    const mobileLiterexiaDb = mongoose.connection.useDb('parent');
-    const profileCollection = mobileLiterexiaDb.collection('profile');
+    // Try all potential parent collections in different databases
+    const databases = ['parent', 'users_web', 'test'];
+    const collections = ['parent_profile', 'parents'];
     
-    // Find parent profile
-    const parentProfile = await profileCollection.findOne({ _id: parentObjId });
-    console.log("Parent profile found:", parentProfile ? "Yes" : "No");
+    let parentProfile = null;
+    let db, collection;
+    
+    for (const dbName of databases) {
+      if (parentProfile) break;
+      
+      db = mongoose.connection.useDb(dbName);
+      console.log(`Checking database: ${dbName}`);
+      
+      // Get all collections in this database
+      const dbCollections = await db.listCollections().toArray();
+      const collectionNames = dbCollections.map(c => c.name);
+      
+      for (const colName of collections) {
+        if (!collectionNames.includes(colName)) continue;
+        
+        collection = db.collection(colName);
+        console.log(`Checking collection: ${dbName}.${colName}`);
+        
+        // Try to find by ObjectId
+        const objId = getObjectId(parentId);
+        if (objId) {
+          parentProfile = await collection.findOne({ _id: objId });
+          if (parentProfile) {
+            console.log(`Found parent in ${dbName}.${colName} by _id`);
+            break;
+          }
+        }
+        
+        // Try to find by userId
+        if (objId) {
+          parentProfile = await collection.findOne({ userId: objId });
+          if (parentProfile) {
+            console.log(`Found parent in ${dbName}.${colName} by userId`);
+            break;
+          }
+        }
+        
+        // Try string ID as a last resort
+        parentProfile = await collection.findOne({ 
+          $or: [
+            { _id: parentId },
+            { userId: parentId }
+          ]
+        });
+        
+        if (parentProfile) {
+          console.log(`Found parent in ${dbName}.${colName} by string ID`);
+          break;
+        }
+      }
+    }
 
     if (!parentProfile) {
+      console.log(`Parent profile with ID ${parentId} not found in any database`);
       return res.status(404).json({ message: 'Parent profile not found' });
     }
-
-    // Get the userId to find the email from users collection
-    const userId = parentProfile.userId;
-    console.log("Looking up email with userId:", userId);
-
-    // Find the user email in the users collection
-    const usersWebDb = mongoose.connection.useDb('users_web');
-    const usersCollection = usersWebDb.collection('users');
-    const user = await usersCollection.findOne({ _id: userId });
-    console.log("User record found:", user ? "Yes" : "No");
-
-    let email = null;
-    if (user) {
-      email = user.email;
-      console.log("Email found:", email);
+    
+    // Get the parent's email from the users collection if available
+    let userEmail = "";
+    if (parentProfile.userId) {
+      try {
+        const usersDb = mongoose.connection.useDb('users_web');
+        const usersCollection = usersDb.collection('users');
+        const userId = getObjectId(parentProfile.userId);
+        
+        if (userId) {
+          const user = await usersCollection.findOne({ _id: userId });
+          if (user) {
+            userEmail = user.email || "";
+          }
+        }
+      } catch (e) {
+        console.warn("Error fetching user email:", e);
+      }
     }
 
-    // Construct final parent info with full name
+    // Format parent information
     const firstName = parentProfile.firstName || '';
     const middleName = parentProfile.middleName || '';
     const lastName = parentProfile.lastName || '';
     
-    let fullName = firstName;
-    if (middleName) fullName += ` ${middleName}`;
-    if (lastName) fullName += ` ${lastName}`;
-
-    const parentInfo = {
-      name: fullName.trim(),
-      email: email,
+    let name = firstName;
+    if (middleName) name += ` ${middleName}`;
+    if (lastName) name += ` ${lastName}`;
+    
+    const response = {
+      id: parentProfile._id,
+      name: name.trim() || 'Unknown',
+      email: parentProfile.email || userEmail || '',
       contact: parentProfile.contact || '',
       address: parentProfile.address || '',
       civilStatus: parentProfile.civilStatus || '',
@@ -75,14 +131,16 @@ router.get('/profile/:id', auth, authorize('teacher', 'guro', 'admin'), async (r
       occupation: parentProfile.occupation || '',
       profileImageUrl: parentProfile.profileImageUrl || ''
     };
-
-    console.log("Final parent info:", parentInfo);
-
-    return res.json(parentInfo);
+    
+    console.log("Returning parent profile:", response);
+    return res.json(response);
   } catch (error) {
     console.error('Error fetching parent profile:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+
+
+
 
 module.exports = router;

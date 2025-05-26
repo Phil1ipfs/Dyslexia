@@ -131,8 +131,10 @@
   color: #3B4F81;
 }
 
+/* Reading level specific styling */
 .literexia-detail-icon.reading-icon.reading-level-early {
-  color: #1f7d67;
+  background-color: rgba(30, 84, 141, 0.1);
+  color: #77abe3;
 }
 
 .literexia-detail-icon.reading-icon.reading-level-developing {
@@ -140,16 +142,18 @@
 }
 
 .literexia-detail-icon.reading-icon.reading-level-fluent {
-  color: #3F51B5;
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
 }
 
 .literexia-detail-icon.reading-icon.reading-level-advanced {
+  background-color: rgba(63, 81, 181, 0.1);
   color: #3F51B5;
 }
 
 .literexia-detail-icon.reading-icon.reading-level-not-assessed {
   background-color: rgba(160, 158, 158, 0.1);
-  color: #ee3312;
+  color: #F9A825;
 }
 
 .literexia-detail-content {
@@ -165,29 +169,45 @@
 
 .literexia-detail-value {
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: 600;
   color: #333;
 }
 
 /* Reading level specific colors */
-.literexia-detail-value.reading-level-fluent {
-  color: #3F51B5; 
-}
-
 .literexia-detail-value.reading-level-early {
-  color: #1f7d67; /* Red for early */
+  color: #1e548d;
 }
 
 .literexia-detail-value.reading-level-developing {
-  color: #FF9800; /* Orange for developing */
+  color: #FF9800;
+}
+
+.literexia-detail-value.reading-level-fluent {
+  color: #4CAF50;
 }
 
 .literexia-detail-value.reading-level-advanced {
-  color: #3F51B5; /* Blue for advanced */
+  color: #3F51B5;
 }
 
 .literexia-detail-value.reading-level-not-assessed {
-  color: #e71509; /* Yellow/amber for not assessed */
+  color: #F9A825;
+}
+
+/* Animation */
+.literexia-student-card {
+  animation: literexiaSlideIn 0.4s ease-out;
+}
+
+@keyframes literexiaSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Responsive styles */
