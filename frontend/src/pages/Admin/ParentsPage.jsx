@@ -29,7 +29,7 @@ const CredentialsModal = ({ credentials, onClose }) => {
     try {
       setIsSending(true);
       setSendStatus(null);
-      const response = await axios.post('http://localhost:5002/api/admin/send-credentials', {
+      const response = await axios.post('http://localhost:5001/api/admin/send-credentials', {
         email: credentials.email,
         password: credentials.password,
         userType: 'parent'
@@ -201,7 +201,7 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await axios.get('http://localhost:5002/api/admin/manage/students');
+        const response = await axios.get('http://localhost:5001/api/admin/manage/students');
         if (response.data.success) {
           setStudents(response.data.data);
         } else {
@@ -356,7 +356,7 @@ const ParentsPage = () => {
     const fetchParents = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5002/api/admin/manage/parents');
+        const response = await axios.get('http://localhost:5001/api/admin/manage/parents');
         if (response.data.success) {
           // Normalize children to always be an array
           const normalizedParents = response.data.data.map(parent => ({
@@ -400,7 +400,7 @@ const ParentsPage = () => {
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) data.append(key, value);
       });
-      const response = await axios.post('http://localhost:5002/api/admin/manage/parents', data, {
+      const response = await axios.post('http://localhost:5001/api/admin/manage/parents', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {
@@ -426,7 +426,7 @@ const ParentsPage = () => {
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) data.append(key, value);
       });
-      const response = await axios.put(`http://localhost:5002/api/admin/manage/parents/${formData._id}`, data, {
+      const response = await axios.put(`http://localhost:5001/api/admin/manage/parents/${formData._id}`, data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {
@@ -453,7 +453,7 @@ const ParentsPage = () => {
     if (parentToDelete) {
       try {
         setLoading(true);
-        const response = await axios.delete(`http://localhost:5002/api/admin/manage/parents/${parentToDelete._id}`);
+        const response = await axios.delete(`http://localhost:5001/api/admin/manage/parents/${parentToDelete._id}`);
         if (response.data.success) {
           const updatedParents = parents.filter(parent => parent._id !== parentToDelete._id);
           setParents(updatedParents);
@@ -495,7 +495,7 @@ const ParentsPage = () => {
     if (selectedParent && selectedParent.children && selectedParent.children.length > 0) {
       Promise.all(
         selectedParent.children.map(childId =>
-          axios.get(`http://localhost:5002/api/admin/manage/students/${childId}`)
+          axios.get(`http://localhost:5001/api/admin/manage/students/${childId}`)
         )
       ).then(responses => {
         setViewModalChildren(responses.map(res => res.data.data.studentProfile));

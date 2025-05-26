@@ -172,7 +172,7 @@ const StudentListPage = () => {
     const fetchStudents = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5002/api/admin/manage/students');
+        const response = await axios.get('http://localhost:5001/api/admin/manage/students');
         if (response.data.success) {
           setStudents(response.data.data);
           setFilteredStudents(response.data.data);
@@ -239,7 +239,7 @@ const StudentListPage = () => {
     if (!studentId) return;
     try {
       setLoading(true);
-      const response = await axios.delete(`http://localhost:5002/api/admin/manage/students/${studentId}`);
+              const response = await axios.delete(`http://localhost:5001/api/admin/manage/students/${studentId}`);
       if (response.data.success) {
         const updatedList = students.filter(s => s._id !== studentId);
         setStudents(updatedList);
@@ -266,7 +266,7 @@ const StudentListPage = () => {
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) data.append(key, value);
       });
-      const response = await axios.post('http://localhost:5002/api/admin/manage/students', data, {
+              const response = await axios.post('http://localhost:5001/api/admin/manage/students', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {
@@ -293,7 +293,7 @@ const StudentListPage = () => {
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) data.append(key, value);
       });
-      const response = await axios.put(`http://localhost:5002/api/admin/manage/students/${formData._id}`, data, {
+      const response = await axios.put(`http://localhost:5001/api/admin/manage/students/${formData._id}`, data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {
