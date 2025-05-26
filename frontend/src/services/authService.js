@@ -4,7 +4,7 @@
 import axios from 'axios';
 
 // Get backend URL from environment variables
-const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5002';
+const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
 
 const AuthService = {
   /**

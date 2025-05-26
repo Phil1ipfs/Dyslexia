@@ -26,7 +26,7 @@ const ParentDashboard = () => {
   const [children, setChildren] = useState([]);
   
   // Base URL from environment variable or default
-  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5002";
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
 
   // Fetch parent profile data when component mounts
   useEffect(() => {
@@ -213,7 +213,7 @@ const ParentDashboard = () => {
       const fetchChildren = async () => {
         try {
           const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-          const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5002";
+          const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
           const responses = await Promise.all(
             personalInfo.children.map(childId =>
               axios.get(`${BASE_URL}/api/admin/manage/students/${childId}`, {
