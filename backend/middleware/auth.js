@@ -179,4 +179,10 @@ const authorize = (...allowedRoles) => {
   };
 };
 
-module.exports = { authenticateToken, authorize, resolveRoleFromId };
+// Export both authenticateToken and auth (as the same function) for backward compatibility
+module.exports = { 
+  authenticateToken, 
+  auth: authenticateToken, 
+  authorize, 
+  resolveRoleFromId 
+};
