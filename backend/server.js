@@ -146,6 +146,11 @@ connectDB().then(async (connected) => {
     app.use('/api/admin/manage', parentAdminRoutes);
     console.log('✅ Parent admin routes registered at /api/admin/manage/*');
 
+    // Register email routes
+    const emailRoutes = require('./routes/emailRoutes');
+    app.use('/api/admin', emailRoutes);
+    console.log('✅ Email routes registered at /api/admin/send-credentials');
+
     // Register parent routes
     const parentRoutes = require('./routes/Parents/parentProfile');
     app.use('/api/parents', parentRoutes);
@@ -155,8 +160,8 @@ connectDB().then(async (connected) => {
     const adminProfileRoutes = require('./routes/Admin/adminProfile');
     const adminDashboardRoutes = require('./routes/Admin/adminDashboard');
     app.use('/api/admin', adminProfileRoutes);
-    app.use('/api/dashboard', adminDashboardRoutes);
-    console.log('✅ Admin routes registered at /api/admin/* and /api/dashboard/*');
+    app.use('/api/admin', adminDashboardRoutes);
+    console.log('✅ Admin routes registered at /api/admin/*');
 
     // Add a test route for the students endpoint
     app.get('/api/admin/manage/students/test', (req, res) => {

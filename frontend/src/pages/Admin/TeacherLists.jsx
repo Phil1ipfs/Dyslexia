@@ -3,22 +3,63 @@ import { Search, Trash2, Edit, ChevronDown, User, UserPlus, Filter, Plus } from 
 import axios from 'axios';
 import './TeacherLists.css';
 
-const CredentialsModal = ({ credentials, onClose }) => (
-  <div className="literexia-teacher-modal-overlay">
-    <div className="literexia-teacher-modal">
-      <div className="literexia-teacher-modal-header">
-        <h2>Teacher Credentials</h2>
-        <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
-      </div>
-      <div className="literexia-teacher-modal-form">
-        <p><strong>Email:</strong> {credentials.email}</p>
-        <p><strong>Password:</strong> {credentials.password}</p>
-        <p>Share these credentials with the teacher.</p>
-        <button className="literexia-teacher-save-btn" onClick={onClose}>Close</button>
+const CredentialsModal = ({ credentials, onClose }) => {
+  const [isSending, setIsSending] = useState(false);
+  const [sendStatus, setSendStatus] = useState(null);
+
+  const handleSendCredentials = async () => {
+    try {
+      setIsSending(true);
+      setSendStatus(null);
+      const response = await axios.post('http://localhost:5002/api/admin/send-credentials', {
+        email: credentials.email,
+        password: credentials.password,
+        userType: 'teacher'
+      });
+      
+      if (response.data.success) {
+        setSendStatus({ type: 'success', message: 'Credentials sent successfully!' });
+      } else {
+        setSendStatus({ type: 'error', message: 'Failed to send credentials.' });
+      }
+    } catch (error) {
+      setSendStatus({ type: 'error', message: error.response?.data?.message || 'Failed to send credentials.' });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div className="literexia-teacher-modal-overlay">
+      <div className="literexia-teacher-modal">
+        <div className="literexia-teacher-modal-header">
+          <h2>Teacher Credentials</h2>
+          <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="literexia-teacher-modal-form">
+          <p><strong>Email:</strong> {credentials.email}</p>
+          <p><strong>Password:</strong> ********</p>
+          <p>You can send these credentials to the teacher's email.</p>
+          {sendStatus && (
+            <p className={`send-status ${sendStatus.type}`}>
+              {sendStatus.message}
+            </p>
+          )}
+          <div className="literexia-teacher-modal-actions">
+            <button 
+              className="literexia-teacher-send-btn" 
+              onClick={handleSendCredentials}
+              disabled={isSending}
+            >
+              {isSending ? 'Sending...' : 'Send Login Credentials'}
+            </button>
+            <button className="literexia-teacher-save-btn" onClick={onClose}>Close</button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const SuccessModal = ({ message, onClose }) => (
   <div className="literexia-teacher-modal-overlay">
@@ -67,6 +108,7 @@ const TeacherLists = () => {
   const [validationError, setValidationError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [sortBy, setSortBy] = useState('name-asc');
 
   // Fetch teachers from database
   useEffect(() => {
@@ -286,7 +328,7 @@ const TeacherLists = () => {
           <div className="literexia-teacher-search">
             <input 
               type="text" 
-              placeholder="Search..." 
+              placeholder="Search teachers..." 
               className="literexia-teacher-search-input"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -297,6 +339,16 @@ const TeacherLists = () => {
             <Filter size={18} />
             <span>Filter</span>
           </button>
+          <select 
+            className="literexia-teacher-sort-dropdown"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="name-asc">Name (A-Z)</option>
+            <option value="name-desc">Name (Z-A)</option>
+            <option value="recent">Recent Activity</option>
+            <option value="progress">Progress</option>
+          </select>
           <button 
             className="literexia-teacher-add-btn"
             onClick={() => {
@@ -305,7 +357,7 @@ const TeacherLists = () => {
             }}
           >
             <Plus size={18} />
-            Add New Teacher
+            <span>Add New Teacher</span>
           </button>
         </div>
       </div>

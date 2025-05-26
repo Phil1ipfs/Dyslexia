@@ -348,7 +348,7 @@ const StudentListPage = () => {
           </div>
         </div>
 
-        <div className="controls-container">
+        <div className="controls-container" style={{ backgroundColor: '#ffffff' }}>
           <div className="search-filter-container">
             <div className="search-box">
               <input
@@ -431,7 +431,7 @@ const StudentListPage = () => {
       </div>
 
       {/* Controls Section */}
-      <div className="controls-container">
+      <div className="controls-container" style={{ backgroundColor: '#ffffff' }}>
         <div className="search-filter-container">
           <div className="search-box">
             <input
@@ -458,7 +458,13 @@ const StudentListPage = () => {
             <option value="recent">Recent Activity</option>
             <option value="progress">Progress</option>
           </select>
-          <button className="add-student-button" onClick={() => setShowAddStudentModal(true)}>
+          <button 
+            className="add-student-button"
+            onClick={() => {
+              setShowAddStudentModal(true);
+              setSelectedStudent(null);
+            }}
+          >
             <Plus size={18} />
             <span>Add Student</span>
           </button>
