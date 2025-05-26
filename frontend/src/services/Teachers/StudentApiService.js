@@ -1,18 +1,11 @@
+// src/services/StudentApiService.js
 import axios from 'axios';
 
-const API_BASE_URL = (() => {
-  // Get base URL from environment variables
-  const baseUrl = import.meta?.env?.VITE_API_BASE_URL ||
-    (typeof process !== 'undefined' && process.env.REACT_APP_API_BASE_URL) ||
-    'http://localhost:5002/api';
-  
-  // Clean up the URL to ensure we don't have double /api
-  return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
-})();
-
-
+// Create axios instance with baseURL, timeouts, JSON headers
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: import.meta.env.DEV
+    ? 'http://localhost:5001/api/student'
+    : '/api/student',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -22,7 +15,9 @@ const api = axios.create({
 
 // Create a separate instance for direct backend calls
 const directApi = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: import.meta.env.DEV
+    ? 'http://localhost:5001/api'
+    : '/api',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -30,79 +25,93 @@ const directApi = axios.create({
   }
 });
 
-validateUrl: (url) => {
-  // Remove any double slashes (except in http://)
-  const cleanUrl = url.replace(/([^:])\/+/g, '$1/');
-  
-  // Check for duplicate /api/api patterns
-  if (cleanUrl.includes('/api/api/')) {
-    console.warn('⚠️ Duplicate API path detected:', cleanUrl);
-    return cleanUrl.replace('/api/api/', '/api/');
-  }
-  
-  return cleanUrl;
-}
-
-
 // REQUEST INTERCEPTOR: attach bearer token + log
-const addAuthInterceptor = (apiInstance) => {
-  apiInstance.interceptors.request.use(
-    config => {
-      const token =
-        localStorage.getItem('token') ||
-        localStorage.getItem('authToken');
-      if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`;
-      }
-      console.log(
-        `API Request: ${config.method.toUpperCase()} ${config.url}`
-      );
-      return config;
-    },
-    error => {
-      console.error('API Request Error:', error);
-      return Promise.reject(error);
+api.interceptors.request.use(
+  config => {
+    const token =
+      localStorage.getItem('token') ||
+      localStorage.getItem('authToken');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
-  );
-};
+    console.log(
+      `Student API Request: ${config.method.toUpperCase()} ${config.url}`
+    );
+    return config;
+  },
+  error => {
+    console.error('API Request Error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Apply same interceptor to directApi
+directApi.interceptors.request.use(
+  config => {
+    const token =
+      localStorage.getItem('token') ||
+      localStorage.getItem('authToken');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    console.log(
+      `Direct API Request: ${config.method.toUpperCase()} ${config.url}`
+    );
+    return config;
+  },
+  error => {
+    console.error('API Request Error:', error);
+    return Promise.reject(error);
+  }
+);
 
 // RESPONSE INTERCEPTOR: handle errors + 401 redirect
-const addResponseInterceptor = (apiInstance) => {
-  apiInstance.interceptors.response.use(
-    response => response,
-    error => {
-      if (error.response) {
-        console.error(
-          'API Error:',
-          error.response.status,
-          error.response.data
-        );
-        if (error.response.status === 401) {
-          // Don't redirect to login for all 401s - just log it
-          console.warn('Authorization failed for API request - continuing with available data');
-        }
-      } else if (error.request) {
-        console.error('API No Response:', error.request);
-      } else {
-        console.error('API Setup Error:', error.message);
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response) {
+      console.error(
+        'API Error:',
+        error.response.status,
+        error.response.data
+      );
+      if (error.response.status === 401) {
+        // Don't redirect to login for all 401s - just log it
+        console.warn('Authorization failed for API request - continuing with available data');
       }
-      return Promise.reject(error);
+    } else if (error.request) {
+      console.error('API No Response:', error.request);
+    } else {
+      console.error('API Setup Error:', error.message);
     }
-  );
-};
+    return Promise.reject(error);
+  }
+);
 
-// Apply interceptors to all API instances
-addAuthInterceptor(api);
-addAuthInterceptor(directApi);
-addResponseInterceptor(api);
-addResponseInterceptor(directApi);
+// Apply same interceptor to directApi
+directApi.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response) {
+      console.error(
+        'Direct API Error:',
+        error.response.status,
+        error.response.data
+      );
+      if (error.response.status === 401) {
+        console.warn('Authorization failed for direct API request - continuing with available data');
+      }
+    } else if (error.request) {
+      console.error('Direct API No Response:', error.request);
+    } else {
+      console.error('Direct API Setup Error:', error.message);
+    }
+    return Promise.reject(error);
+  }
+);
 
 // StudentApiService object with methods
 const StudentApiService = {
-  // =============================================
-  // STUDENT ROUTES - Core functionality
-  // =============================================
-
   // List students with optional query params (page, filters…)
   getStudents: async (params = {}) => {
     try {
@@ -114,10 +123,24 @@ const StudentApiService = {
     }
   },
 
+  // Get all students for dashboard
+  getAllStudents: async () => {
+    try {
+      const { data } = await api.get('/students', {
+        params: { limit: 100 } // Get more students for dashboard
+      });
+      return data.students || [];
+    } catch (error) {
+      console.error('Error fetching all students:', error);
+      throw error;
+    }
+  },
+
   // Single student details
   getStudentDetails: async (id) => {
     try {
-      const { data } = await api.get(`/student/${id}`);
+      // Fix: Correct URL pattern, avoiding duplicate "student" in path
+      const { data } = await api.get(`/${id}`);
       return data;
     } catch (error) {
       console.error(`Error fetching student details for ID ${id}:`, error);
@@ -125,194 +148,217 @@ const StudentApiService = {
     }
   },
 
-  // Pre-assessment results with robust fallbacks
+  // Get pre-assessment results
   getPreAssessmentResults: async (id) => {
     try {
-      try {
-        const { data } = await api.get(`/assessment/${id}`);
-        return data;
-      } catch (studentError) {
-        console.warn(`Falling back to direct API for ID ${id}:`, studentError);
-        try {
-          const { data } = await directApi.get(`/assessment/student-assessment/${id}`);
-          return data;
-        } catch (directError) {
-          console.warn("All pre-assessment endpoints failed, using default data", directError);
-          return {
-            studentId: id,
-            completedAt: new Date(),
-            score: 0,
-            readingLevel: "Not Assessed",
-            categoryScores: [
-              { categoryId: 1, categoryName: "Alphabet Knowledge", score: 0, maxScore: 3, percentage: 0 },
-              { categoryId: 2, categoryName: "Phonological Awareness", score: 0, maxScore: 3, percentage: 0 },
-              { categoryId: 3, categoryName: "Decoding", score: 0, maxScore: 3, percentage: 0 },
-              { categoryId: 4, categoryName: "Word Recognition", score: 0, maxScore: 3, percentage: 0 }
-            ],
-            totalScore: 0,
-            maxScore: 12,
-            totalPercentage: 0,
-            recommendations: []
-          };
-        }
+      console.log(`Calling pre-assessment results with ID: ${id}`);
+      // Use the api instance with the correct endpoint path (no leading slash)
+      const { data } = await api.get(`${id}/pre-assessment-results`);
+      console.log("Success! Received pre-assessment data:", data);
+      
+      // Ensure skillDetails is always an array
+      if (data && !data.skillDetails) {
+        data.skillDetails = [];
       }
+      
+      return data;
     } catch (error) {
-      console.error(`Error fetching pre-assessment results for ID ${id}:`, error);
+      console.error(`Error fetching pre-assessment results for student ID ${id}:`, error);
+      console.error(`Full URL attempted: ${error.config?.url}`);
+      
+      // Return structured empty data if no results found
+      if (error.response?.status === 404) {
+        return {
+          studentId: id,
+          hasCompleted: false,
+          skillDetails: [], // Add empty skillDetails array
+          message: error.response.data.message || 'No pre-assessment results found'
+        };
+      }
+      throw error;
+    }
+  },
+
+  // Get pre-assessment status
+  getPreAssessmentStatus: async (id) => {
+    try {
+      console.log(`Calling pre-assessment status with ID: ${id}`);
+      // Use the api instance with the correct endpoint path (no leading slash)
+      const { data } = await api.get(`${id}/pre-assessment-status`);
+      console.log("Success! Received pre-assessment status:", data);
+      return data;
+    } catch (error) {
+      console.error(`Error fetching pre-assessment status for student ID ${id}:`, error);
+      console.error(`Full URL attempted: ${error.config?.url}`);
       return {
         studentId: id,
-        completedAt: new Date(),
-        score: 0,
-        readingLevel: "Not Assessed",
-        categoryScores: [
-          { categoryId: 1, categoryName: "Alphabet Knowledge", score: 0, maxScore: 3, percentage: 0 },
-          { categoryId: 2, categoryName: "Phonological Awareness", score: 0, maxScore: 3, percentage: 0 },
-          { categoryId: 3, categoryName: "Decoding", score: 0, maxScore: 3, percentage: 0 },
-          { categoryId: 4, categoryName: "Word Recognition", score: 0, maxScore: 3, percentage: 0 }
-        ],
-        totalScore: 0,
-        maxScore: 12,
-        totalPercentage: 0,
-        recommendations: []
+        hasCompleted: false,
+        preAssessmentCompleted: false
       };
     }
   },
 
-  // Get parent profile
+  // Parent profile
   getParentProfile: async (parentId) => {
     try {
-      const { data } = await directApi.get(`/parents/profile/${parentId}`);
-
-      if (data) {
-        // Process name fields if needed
-        if (data.firstName || data.lastName) {
-          let fullName = data.firstName || '';
-          if (data.middleName) fullName += ` ${data.middleName}`;
-          if (data.lastName) fullName += ` ${data.lastName}`;
-          data.name = fullName.trim();
-        }
-
-        return data;
+      // Check if parentId is valid MongoDB ObjectId format
+      const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(parentId);
+      if (!isValidObjectId) {
+        console.warn(`Invalid parent ID format: ${parentId}`);
+        throw new Error('Invalid parent ID format');
       }
+      
+      console.log(`Fetching parent profile for ID: ${parentId}`);
+      
+      // Try the main endpoint first
+      try {
+        const { data } = await directApi.get(`/parents/profile/${parentId}`);
+        
+        // If data is returned correctly, process it to ensure consistent format
+        if (data) {
+          console.log("Parent profile data received:", data);
+          
+          // Process name fields if needed
+          if (data.firstName || data.lastName) {
+            let fullName = data.firstName || '';
+            if (data.middleName) fullName += ` ${data.middleName}`;
+            if (data.lastName) fullName += ` ${data.lastName}`;
+            data.name = fullName.trim();
+          }
+          
+          return data;
+        }
+      } catch (mainEndpointError) {
+        console.warn(`Main parent endpoint failed for ID ${parentId}, trying fallback:`, mainEndpointError);
+        
+        // Try fallback endpoint
+        try {
+          const { data } = await directApi.get(`/dashboard/parent/${parentId}`);
+          if (data) {
+            console.log("Parent profile data received from fallback:", data);
+            return data;
+          }
+        } catch (fallbackError) {
+          console.warn(`Fallback parent endpoint failed for ID ${parentId}:`, fallbackError);
+          // Let it continue to the error handling below
+        }
+      }
+      
       throw new Error('No data returned from parent profile API');
     } catch (error) {
       console.error('Error fetching parent profile:', error);
+      throw error;
+    }
+  },
+
+  // Parent profile with fallback
+  getParentProfileWithFallback: async (parentId) => {
+    try {
+      if (!parentId) {
+        throw new Error('No parent ID provided');
+      }
+      
+      const profile = await StudentApiService.getParentProfile(parentId);
+
+      // Only apply a fallback if the profileImageUrl is null or undefined
+      if (!profile.profileImageUrl) {
+        console.log("No profile image URL found, leaving it as null");
+      } else {
+        console.log("Using original S3 image URL:", profile.profileImageUrl);
+      }
+
+      return profile;
+    } catch (err) {
+      console.warn(`Falling back to empty parent profile for ID ${parentId}:`, err);
       return {
-        name: "Not connected",
-        email: "Not available",
-        contact: "Not available",
-        address: "Not provided",
-        civilStatus: "Not provided",
-        gender: "Not provided",
-        occupation: "Not provided",
+        name: `Parent of ID: ${parentId.substring(0, 8)}...`,
+        firstName: null,
+        middleName: null,
+        lastName: null,
+        email: null,
+        contact: null,
+        address: null,
+        civilStatus: null,
+        gender: null,
+        occupation: null,
         profileImageUrl: null
       };
     }
   },
 
-  // Progress data with robust fallback
+  // Progress data
   getProgressData: async (id) => {
     try {
-      try {
-        const { data } = await api.get(`/progress/${id}`);
-        return data;
-      } catch (studentApiError) {
-        console.warn(`Falling back to direct API for progress data for ID ${id}:`, studentApiError);
-        try {
-          const { data } = await directApi.get(`/student/progress/${id}`);
-          return data;
-        } catch (directApiError) {
-          console.warn("All progress data endpoints failed, using default data", directApiError);
-          return {
-            studentId: id,
-            readingLevel: "Not Assessed",
-            progressPoints: 0,
-            totalAssessments: 0,
-            completedAssessments: 0,
-            averageScore: 0,
-            categories: [],
-            lastUpdated: new Date()
-          };
-        }
-      }
+      // Fix: Correct URL pattern, avoiding duplicate "student" in path
+      const { data } = await api.get(`/${id}/progress`);
+      return data;
     } catch (error) {
       console.error(`Error fetching progress data for ID ${id}:`, error);
-      return {
-        studentId: id,
-        readingLevel: "Not Assessed",
-        progressPoints: 0,
-        totalAssessments: 0,
-        completedAssessments: 0,
-        averageScore: 0,
-        categories: [],
-        lastUpdated: new Date()
-      };
+      throw error;
     }
   },
 
   // Recommended lessons
   getRecommendedLessons: async (id) => {
     try {
-      const { data } = await api.get(`/recommended-lessons/${id}`);
+      // Fix: Correct URL pattern, avoiding duplicate "student" in path
+      const { data } = await api.get(`/${id}/recommended-lessons`);
       return data;
     } catch (error) {
       console.error(`Error fetching recommended lessons for ID ${id}:`, error);
-      // Return empty array to avoid breaking UI
-      return [];
+      throw error;
     }
   },
 
-  // Prescriptive recommendations with fallback
+  // Prescriptive recommendations
   getPrescriptiveRecommendations: async (id) => {
     try {
-      try {
-        const { data } = await api.get(`/prescriptive-recommendations/${id}`);
-        return data;
-      } catch (studentApiError) {
-        console.warn("Falling back to direct API for prescriptive recommendations", studentApiError);
-        try {
-          const { data } = await directApi.get(`/assessment/prescriptive-recommendations/${id}`);
-          return data;
-        } catch (directError) {
-          console.warn("All prescriptive recommendation endpoints failed, returning empty array", directError);
-          return [];
-        }
-      }
+      // Fix: Correct URL pattern, avoiding duplicate "student" in path
+      const { data } = await api.get(`/${id}/prescriptive-recommendations`);
+      return data;
     } catch (error) {
       console.error(`Error fetching prescriptive recommendations for ID ${id}:`, error);
-      return [];
+      throw error;
     }
   },
 
-  // Update a prescriptive activity with fallback
+  // Assign lessons
+  assignLessonsToStudent: async (studentId, lessonIds) => {
+    try {
+      // Fix: Correct URL pattern, avoiding duplicate "student" in path
+      const { data } = await api.post(
+        `/assign-lessons/${studentId}`,
+        { lessonIds }
+      );
+      return data;
+    } catch (error) {
+      console.error(`Error assigning lessons to student ${studentId}:`, error);
+      throw error;
+    }
+  },
+
+  // Update a prescriptive activity
   updateActivity: async (activityId, updatedActivity) => {
     try {
-      try {
-        const { data } = await api.put(`/update-activity/${activityId}`, updatedActivity);
-        return data;
-      } catch (studentApiError) {
-        console.warn("Falling back to direct API for updating activity", studentApiError);
-        const { data } = await directApi.put(`/assessment/update-activity/${activityId}`, updatedActivity);
-        return data;
-      }
+      const { data } = await api.put(
+        `/update-activity/${activityId}`,
+        updatedActivity
+      );
+      return data;
     } catch (error) {
       console.error(`Error updating activity ${activityId}:`, error);
-      // Return a mock success response so UI doesn't break
-      return {
-        success: true,
-        message: 'Activity updated successfully (mock response)',
-        activity: {
-          id: activityId,
-          ...updatedActivity,
-          status: 'pending_approval'
-        }
-      };
+      throw error;
     }
   },
 
-  // Update student address
+  // Patch student address
   updateStudentAddress: async (studentId, address) => {
     try {
-      const { data } = await api.patch(`/student/${studentId}/address`, { address });
+      // Fix: Correct URL pattern, avoiding duplicate "student" in path
+      const { data } = await api.patch(
+        `/${studentId}/address`,
+        { address }
+      );
       return data;
     } catch (error) {
       console.error(`Error updating student address for ID ${studentId}:`, error);
@@ -320,485 +366,250 @@ const StudentApiService = {
     }
   },
 
-  // Add these methods to StudentApiService in StudentApiService.js
-
-  getAssessmentCategories: async () => {
+  // Link a parent to a student
+  linkParentToStudent: async (studentId, parentId) => {
     try {
-      try {
-        // First try teacher progress endpoint
-        const { data } = await directApi.get('/teacher/progress/categories');
-        return data;
-      } catch (teacherApiError) {
-        console.warn("Teacher progress categories failed, trying content endpoint", teacherApiError);
-        try {
-          const { data } = await directApi.get('/content/categories');
-          return data;
-        } catch (contentApiError) {
-          console.warn("All category endpoints failed, using default categories", contentApiError);
-          // Return default categories as before
-          return [
-            {
-              categoryID: 1,
-              categoryTitle: "Alphabet Knowledge",
-              categoryDescription: "Assessment of letter recognition, uppercase and lowercase letters, and letter sounds"
-            },
-            // Add other default categories here
-          ];
-        }
-      }
+      // Fix: Correct URL pattern, avoiding duplicate "student" in path
+      const { data } = await api.post(
+        `/${studentId}/link-parent`,
+        { parentId }
+      );
+      return data;
     } catch (error) {
-      console.error('Error fetching assessment categories:', error);
-      return [];
-    }
-  },
-  
-
-
-  getMainAssessmentDetails: async () => {
-    try {
-      try {
-        const { data } = await directApi.get('/teacher/progress/main-assessments');
-        return data;
-      } catch (error) {
-        console.warn("Failed to get main assessment details from teacher progress, trying alternate endpoint", error);
-        try {
-          const { data } = await directApi.get('/assessment/main-assessments');
-          return data;
-        } catch (secondError) {
-          console.warn("All main assessment endpoints failed, returning empty array", secondError);
-          return [];
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching main assessment details:', error);
-      return [];
+      console.error(`Error linking parent ${parentId} to student ${studentId}:`, error);
+      throw error;
     }
   },
 
-  // Assign categories to a student
-  assignCategoriesToStudent: async (assignmentData) => {
+  // Get dashboard metrics
+  getDashboardMetrics: async () => {
     try {
+      // This is a custom endpoint that would need to be implemented
+      // If it's not available, we can calculate metrics from the students list
+      const { data } = await directApi.get('/dashboard/metrics');
+      return data;
+    } catch (error) {
+      console.error('Error fetching dashboard metrics:', error);
+
+      // Fallback: calculate metrics from students list
       try {
-        const { data } = await directApi.post('/teacher/progress/assign-categories', assignmentData);
-        return data;
-      } catch (teacherApiError) {
-        console.warn("Teacher API assign-categories failed, trying direct API", teacherApiError);
-        try {
-          const { data } = await directApi.post('/assessment/assign-categories', assignmentData);
-          return data;
-        } catch (directApiError) {
-          console.warn("All assign category endpoints failed, using mock response", directApiError);
-          // Return mock successful response
+        const studentsResponse = await StudentApiService.getAllStudents();
+        const students = studentsResponse.students || studentsResponse;
+
+        // Calculate metrics from students
+        const totalStudents = students.length;
+        const completedActivities = students.reduce((sum, s) =>
+          sum + (s.activitiesCompleted || 0), 0);
+        const totalActivities = students.reduce((sum, s) =>
+          sum + (s.totalActivities || 25), 0);
+        const completionRate = totalActivities > 0
+          ? Math.round((completedActivities / totalActivities) * 100)
+          : 0;
+        const averageScore = students.length > 0
+          ? Math.round(students.reduce((sum, s) =>
+            sum + (s.readingPercentage || 0), 0) / students.length)
+          : 0;
+
+        return {
+          totalStudents,
+          completedActivities,
+          totalActivities,
+          completionRate,
+          averageScore,
+          pendingEdits: Math.min(Math.floor(totalStudents / 3), 5) // Estimate
+        };
+      } catch (fallbackError) {
+        console.error('Error calculating metrics fallback:', fallbackError);
+        throw error; // Throw original error
+      }
+    }
+  },
+
+  // Get student distribution by reading level
+  getReadingLevelDistribution: async () => {
+    try {
+      // This is a custom endpoint that would need to be implemented
+      const { data } = await directApi.get('/dashboard/reading-level-distribution');
+      return data;
+    } catch (error) {
+      console.error('Error fetching reading level distribution:', error);
+
+      // Fallback: calculate from students list
+      try {
+        const studentsResponse = await StudentApiService.getAllStudents();
+        const students = studentsResponse.students || studentsResponse;
+
+        // Count students by reading level
+        const levelCounts = {};
+        const levelColors = {
+          'Low Emerging': '#FF6B8A',
+          'High Emerging': '#FF9E40',
+          'Developing': '#FFCD56',
+          'Transitioning': '#6C8EF4',
+          'At Grade Level': '#4BC0C0'
+        };
+
+        // Define levelMapping if it doesn't exist
+        const levelMapping = {
+          'Low Emerging': 'Low Emerging',
+          'High Emerging': 'High Emerging',
+          'Developing': 'Developing',
+          'Transitioning': 'Transitioning', 
+          'At Grade Level': 'At Grade Level',
+          'Not Assessed': 'Not Assessed'
+        };
+
+        students.forEach(student => {
+          const rawLevel = student.readingLevel || 'Not Assessed';
+          const normalizedLevel = levelMapping[rawLevel] || rawLevel;
+
+          if (!levelCounts[normalizedLevel]) {
+            levelCounts[normalizedLevel] = {
+              name: normalizedLevel,
+              value: 0,
+              color: levelColors[normalizedLevel] || '#B0B0B0'
+            };
+          }
+
+          levelCounts[normalizedLevel].value += 1;
+        });
+
+        return Object.values(levelCounts);
+      } catch (fallbackError) {
+        console.error('Error calculating reading level distribution fallback:', fallbackError);
+        throw error; // Throw original error
+      }
+    }
+  },
+
+  // Get students needing attention
+  getStudentsNeedingAttention: async (limit = 5) => {
+    try {
+      // This would be a custom endpoint
+      const { data } = await directApi.get('/dashboard/students-needing-attention', {
+        params: { limit }
+      });
+      return data;
+    } catch (error) {
+      console.error('Error fetching students needing attention:', error);
+
+      // Fallback: calculate from students list
+      try {
+        const studentsResponse = await StudentApiService.getAllStudents();
+        const students = studentsResponse.students || studentsResponse;
+
+        // Process students to match expected format
+        const processedStudents = students.map(student => {
+          const readingLevel = student.readingLevel || 'Not Assessed';
+          const score = student.readingPercentage || Math.floor(Math.random() * 50) + 30; // Random score as fallback
+          const completionRate = student.activitiesCompleted
+            ? Math.round((student.activitiesCompleted / (student.totalActivities || 25)) * 100)
+            : Math.floor(Math.random() * 60) + 20; // Random completion rate as fallback
+
           return {
-            success: true,
-            message: 'Categories assigned successfully (mock response)',
-            assignments: assignmentData.categories.map(cat => ({
-              assessmentId: `MA-${cat.categoryId}-${Date.now().toString().slice(-6)}`,
-              assessmentTitle: `${cat.categoryName} Assessment - ${assignmentData.readingLevel}`,
-              categoryId: cat.categoryId,
-              categoryName: cat.categoryName,
-              assignedBy: null,
-              assignedDate: new Date(),
-              targetReadingLevel: assignmentData.readingLevel,
-              passingThreshold: 75,
-              completionCount: 0,
-              totalAssigned: 1,
-              completionRate: 0,
-              instructions: `Please complete this ${cat.categoryName} assessment.`,
-              assignedStudent: [
-                {
-                  userId: assignmentData.studentId,
-                  readingLevel: assignmentData.readingLevel,
-                  status: 'pending'
-                }
-              ]
-            }))
+            id: student.id || student.idNumber || (student._id ? student._id.toString() : ''),
+            name: student.name || `${student.firstName || ''} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName || ''}`.trim(),
+            readingLevel: readingLevel,
+            lastScore: score,
+            completionRate: completionRate,
+            difficulty: student.focusAreas || 'Needs assessment to determine areas for improvement'
           };
-        }
+        });
+
+        // Sort by score and take the lowest scoring students
+        return processedStudents
+          .sort((a, b) => a.lastScore - b.lastScore)
+          .slice(0, limit);
+      } catch (fallbackError) {
+        console.error('Error calculating students needing attention fallback:', fallbackError);
+        throw error; // Throw original error
       }
-    } catch (error) {
-      console.error('Error assigning categories to student:', error);
-      // Return mock response
-      return {
-        success: true,
-        message: 'Categories assigned successfully (mock response)',
-        assignments: []
-      };
     }
   },
+
+  // Static lookup endpoints
+  getGradeLevels: async () => {
+    try {
+      // First, try to get grade levels from the API
+      try {
+        // Fix: Use the correct endpoint path with no leading slash
+        const { data } = await api.get('grade-levels');
+        console.log("Successfully fetched grade levels from API:", data);
+        return data;
+      } catch (apiError) {
+        console.warn('Error fetching grade levels from API, trying dashboard API:', apiError);
+        
+        // Try alternate endpoint
+        try {
+          const { data } = await directApi.get('/dashboard/grade-levels');
+          console.log("Successfully fetched grade levels from dashboard API:", data);
+          return data;
+        } catch (dashboardError) {
+          console.warn('Error fetching grade levels from dashboard API, using static fallback:', dashboardError);
+        }
+        
+        // If all API endpoints fail, use the static fallback
+        return [
+          'Kindergarten',
+          'Grade 1',
+          'Grade 2',
+          'Grade 3',
+          'Grade 4',
+          'Grade 5',
+          'Grade 6'
+        ];
+      }
+    } catch (error) {
+      // Fallback to static list
+      console.warn('Error fetching grade levels:', error);
+      return ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'];
+    }
+  },
+
   getReadingLevels: async () => {
     try {
+      // First, try to get reading levels from the API
       try {
-        const { data } = await directApi.get('/teacher/progress/reading-levels');
+        // Fix: Use the correct endpoint path with no leading slash
+        const { data } = await api.get('reading-levels');
+        console.log("Successfully fetched reading levels from API:", data);
         return data;
-      } catch (error) {
-        console.warn("Teacher reading levels endpoint failed, trying student endpoint", error);
+      } catch (apiError) {
+        console.warn('Error fetching reading levels from API, using fallback:', apiError);
+        
+        // Try alternate endpoint
         try {
-          const { data } = await api.get('/student/reading-levels');
+          const { data } = await directApi.get('/dashboard/reading-levels');
+          console.log("Successfully fetched reading levels from dashboard API:", data);
           return data;
-        } catch (secondError) {
-          console.warn("All reading level endpoints failed, using default levels", secondError);
-          return [
-            'Low Emerging',
-            'High Emerging',
-            'Developing',
-            'Transitioning',
-            'At Grade Level',
-            'Fluent',
-            'Not Assessed'
-          ];
+        } catch (dashboardError) {
+          console.warn('Error fetching reading levels from dashboard API, using static fallback:', dashboardError);
         }
+        
+        // If all API endpoints fail, use the static fallback
+        return [
+          'Low Emerging',
+          'High Emerging',
+          'Developing',
+          'Transitioning',
+          'At Grade Level',
+          'Not Assessed'
+        ];
       }
     } catch (error) {
-      console.error('Error fetching reading levels:', error);
+      console.error('Error in getReadingLevels function:', error);
+      // Final fallback to ensure we always return something
       return [
         'Low Emerging',
         'High Emerging',
         'Developing',
         'Transitioning',
         'At Grade Level',
-        'Fluent',
         'Not Assessed'
       ];
     }
   },
 
-  // Category progress - to be used instead of ProgressApiService in case of fallback needs
-  getCategoryProgress: async (studentId) => {
-    try {
-      try {
-        const { data } = await api.get(`/category-progress/${studentId}`);
-        return data;
-      } catch (studentApiError) {
-        console.warn("Student API category-progress failed, trying direct API", studentApiError);
-
-        // Final fallback to direct API with different path
-        try {
-          const { data } = await directApi.get(`/student/category-progress/${studentId}`);
-          return data;
-        } catch (directApiError) {
-          console.warn("All category progress endpoints failed, using default data", directApiError);
-          return {
-            userId: studentId,
-            categories: [],
-            completedCategories: 0,
-            totalCategories: 0,
-            overallProgress: 0,
-            nextCategory: null,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          };
-        }
-      }
-    } catch (error) {
-      console.error(`Error fetching category progress for student ID ${studentId}:`, error);
-      return {
-        userId: studentId,
-        categories: [],
-        completedCategories: 0,
-        totalCategories: 0,
-        overallProgress: 0,
-        nextCategory: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-    }
-  },
-
-
-  getReadingLevelProgression: async (studentId) => {
-    try {
-      try {
-        const { data } = await api.get(`/reading-level-progression/${studentId}`);
-        return data;
-      } catch (studentApiError) {
-        console.warn("Falling back to direct API for reading level progression", studentApiError);
-        try {
-          // Try different endpoint paths
-          const { data } = await directApi.get(`/teacher/progress/reading-level/${studentId}`);
-          return data;
-        } catch (directApiError) {
-          console.warn("First fallback failed, trying alternative endpoint", directApiError);
-
-          try {
-            const { data } = await directApi.get(`/teacher/progress/reading-level-progression/${studentId}`);
-            return data;
-          } catch (secondApiError) {
-            console.warn("Second fallback failed, trying assessment endpoint", secondApiError);
-
-            try {
-              const { data } = await directApi.get(`/assessment/reading-level-progression/${studentId}`);
-              return data;
-            } catch (thirdApiError) {
-              // Create default reading level progression if all else fails
-              console.warn("All reading level progression endpoints failed, using default data", thirdApiError);
-
-              // Generate the default data
-              return StudentApiService.createDefaultReadingLevelProgression(studentId);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error(`Error fetching reading level progression for student ID ${studentId}:`, error);
-      return StudentApiService.createDefaultReadingLevelProgression(studentId);
-    }
-  },
-
-  createDefaultReadingLevelProgression: (studentId) => {
-    const now = new Date();
-    // Default to Transitioning since that's what your UI is expecting
-    const readingLevel = "Transitioning";
-
-    return {
-      userId: studentId,
-      currentReadingLevel: readingLevel,
-      initialReadingLevel: readingLevel,
-      levelHistory: [{
-        readingLevel: readingLevel,
-        startDate: now
-      }],
-      advancementRequirements: {
-        currentLevel: readingLevel,
-        nextLevel: "At Grade Level",
-        requiredCategories: [4, 5],
-        completedCategories: [],
-        remainingCategories: [4, 5]
-      },
-      overallProgress: 0,
-      createdAt: now,
-      updatedAt: now
-    };
-  },
-
-
-
-  // Get assessment assignments for a student with fallback
-  getAssessmentAssignments: async (studentId) => {
-    try {
-      try {
-        // First try the student API
-        const { data } = await api.get(`/assessment-assignments/${studentId}`);
-        return data;
-      } catch (studentApiError) {
-        console.warn("Student API assessment-assignments failed, trying teacher progress API", studentApiError);
-
-        // Try teacher progress API path
-        try {
-          const { data } = await directApi.get(`/teacher/progress/assessment-assignments/${studentId}`);
-          return data;
-        } catch (teacherApiError) {
-          console.warn("Teacher API assessment-assignments failed, trying one more fallback", teacherApiError);
-
-          try {
-            const { data } = await directApi.get(`/assessment/assignment/${studentId}`);
-            return data;
-          } catch (directApiError) {
-            console.warn("All assignment endpoints failed, creating mock data", directApiError);
-
-            // Create mock data that matches the expected format
-            return createMockAssignments(studentId);
-          }
-        }
-      }
-    } catch (error) {
-      console.error(`Error fetching assessment assignments for student ID ${studentId}:`, error);
-      return createMockAssignments(studentId);
-    }
-  },
-
-
-
-  initializeStudentAfterPreAssessment: async (studentId, readingLevel = 'Low Emerging') => {
-    try {
-      console.log(`Initializing student ${studentId} after pre-assessment with reading level ${readingLevel}`);
-
-      // 1. Create category progress record
-      const categoryProgress = {
-        userId: studentId,
-        studentName: "New Student",
-        readingLevel: readingLevel,
-        categories: [
-          {
-            categoryId: 1,
-            categoryName: "Alphabet Knowledge",
-            preAssessmentCompleted: true,
-            preAssessmentScore: 60,
-            preAssessmentDate: new Date(),
-            mainAssessmentCompleted: false,
-            mainAssessmentId: null,
-            mainAssessmentScore: null,
-            passed: false,
-            passingThreshold: 75,
-            attemptCount: 0,
-            lastAttemptDate: null,
-            completionDate: null,
-            status: "pending"
-          },
-          {
-            categoryId: 2,
-            categoryName: "Phonological Awareness",
-            preAssessmentCompleted: true,
-            preAssessmentScore: 55,
-            preAssessmentDate: new Date(),
-            mainAssessmentCompleted: false,
-            mainAssessmentId: null,
-            mainAssessmentScore: null,
-            passed: false,
-            passingThreshold: 75,
-            attemptCount: 0,
-            lastAttemptDate: null,
-            completionDate: null,
-            status: "pending"
-          },
-          {
-            categoryId: 3,
-            categoryName: "Decoding",
-            preAssessmentCompleted: true,
-            preAssessmentScore: 50,
-            preAssessmentDate: new Date(),
-            mainAssessmentCompleted: false,
-            mainAssessmentId: null,
-            mainAssessmentScore: null,
-            passed: false,
-            passingThreshold: 75,
-            attemptCount: 0,
-            lastAttemptDate: null,
-            completionDate: null,
-            status: "pending"
-          },
-          {
-            categoryId: 4,
-            categoryName: "Word Recognition",
-            preAssessmentCompleted: true,
-            preAssessmentScore: 45,
-            preAssessmentDate: new Date(),
-            mainAssessmentCompleted: false,
-            mainAssessmentId: null,
-            mainAssessmentScore: null,
-            passed: false,
-            passingThreshold: 75,
-            attemptCount: 0,
-            lastAttemptDate: null,
-            completionDate: null,
-            status: "pending"
-          },
-          {
-            categoryId: 5,
-            categoryName: "Reading Comprehension",
-            preAssessmentCompleted: false,
-            preAssessmentScore: null,
-            preAssessmentDate: null,
-            mainAssessmentCompleted: false,
-            mainAssessmentId: null,
-            mainAssessmentScore: null,
-            passed: false,
-            passingThreshold: 75,
-            attemptCount: 0,
-            lastAttemptDate: null,
-            completionDate: null,
-            status: "locked"
-          }
-        ],
-        completedCategories: 0,
-        totalCategories: 5,
-        overallProgress: 0,
-        nextCategory: {
-          categoryId: 1,
-          categoryName: "Alphabet Knowledge",
-          assessmentId: null
-        },
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      // 2. Create reading level progression record
-      const readingLevelProgression = {
-        userId: studentId,
-        currentReadingLevel: readingLevel,
-        initialReadingLevel: readingLevel,
-        levelHistory: [
-          {
-            readingLevel: readingLevel,
-            startDate: new Date(),
-            endDate: null
-          }
-        ],
-        advancementRequirements: {
-          currentLevel: readingLevel,
-          nextLevel: readingLevel === 'Low Emerging' ? 'High Emerging' :
-            readingLevel === 'High Emerging' ? 'Developing' :
-              readingLevel === 'Developing' ? 'Transitioning' :
-                readingLevel === 'Transitioning' ? 'At Grade Level' :
-                  'At Grade Level',
-          requiredCategories: readingLevel === 'Low Emerging' ? [1, 2, 3] :
-            readingLevel === 'High Emerging' ? [2, 3, 4] :
-              readingLevel === 'Developing' ? [3, 4, 5] :
-                readingLevel === 'Transitioning' ? [4, 5] :
-                  [5],
-          completedCategories: [],
-          remainingCategories: readingLevel === 'Low Emerging' ? [1, 2, 3] :
-            readingLevel === 'High Emerging' ? [2, 3, 4] :
-              readingLevel === 'Developing' ? [3, 4, 5] :
-                readingLevel === 'Transitioning' ? [4, 5] :
-                  [5]
-        },
-        overallProgress: 0,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      // 3. Update student record with pre-assessment completed flag
-      const studentUpdate = {
-        readingLevel: readingLevel,
-        preAssessmentCompleted: true,
-        readingPercentage: 15,
-        lastAssessmentDate: new Date()
-      };
-
-      // 4. Create mock pre-assessment results
-      const preAssessmentResults = {
-        studentId: studentId,
-        completedAt: new Date(),
-        readingLevel: readingLevel,
-        score: 52,
-        categoryScores: [
-          { categoryId: 1, categoryName: "Alphabet Knowledge", score: 3, maxScore: 5, percentage: 60 },
-          { categoryId: 2, categoryName: "Phonological Awareness", score: 2.75, maxScore: 5, percentage: 55 },
-          { categoryId: 3, categoryName: "Decoding", score: 2.5, maxScore: 5, percentage: 50 },
-          { categoryId: 4, categoryName: "Word Recognition", score: 2.25, maxScore: 5, percentage: 45 }
-        ],
-        totalScore: 10.5,
-        maxScore: 20,
-        totalPercentage: 52.5,
-        recommendations: [
-          "Focus on Alphabet Knowledge",
-          "Practice Phonological Awareness"
-        ]
-      };
-
-      // For use in client-side only mode, return these objects
-      // In a real backend, you would save these to the database
-      return {
-        success: true,
-        message: "Student data initialized after pre-assessment",
-        categoryProgress,
-        readingLevelProgression,
-        studentUpdate,
-        preAssessmentResults,
-        isInitialized: true
-      };
-    } catch (error) {
-      console.error('Error initializing student after pre-assessment:', error);
-      return {
-        success: false,
-        message: "Error initializing student after pre-assessment",
-        error: error.message
-      };
-    }
-  },
-
-  // Helper for reading level descriptions & CSS classes
   getReadingLevelDescription: (level) => {
     const descriptions = {
       'Low Emerging': 'Nagsisimulang Matuto - Beginning to recognize letters and sounds',
@@ -821,6 +632,173 @@ const StudentApiService = {
       'Not Assessed': ''
     };
     return classMap[level] || 'mp-level-1';
+  },
+
+  // Get sections/classes
+  getSections: async () => {
+    try {
+      // First, try to get sections from the API
+      try {
+        // Fix: Use the correct endpoint path with no leading slash
+        const { data } = await api.get('sections');
+        console.log("Successfully fetched sections from API:", data);
+        return data;
+      } catch (apiError) {
+        console.warn('Error fetching sections from API, trying dashboard API:', apiError);
+        
+        // Try alternate endpoint
+        try {
+          const { data } = await directApi.get('/dashboard/sections');
+          console.log("Successfully fetched sections from dashboard API:", data);
+          return data;
+        } catch (dashboardError) {
+          console.warn('Error fetching sections from dashboard API, trying users collection:', dashboardError);
+          
+          // Try to get sections from the users collection
+          try {
+            // Get all students and extract unique sections
+            const { data: studentsData } = await api.get('/students', { params: { limit: 100 } });
+            
+            if (studentsData && studentsData.students && studentsData.students.length > 0) {
+              console.log("Extracting sections from students data");
+              
+              // Extract unique sections from students
+              const sectionsSet = new Set();
+              
+              studentsData.students.forEach(student => {
+                if (student.section) {
+                  sectionsSet.add(student.section);
+                }
+              });
+              
+              const uniqueSections = Array.from(sectionsSet);
+              
+              // If we found sections, return them
+              if (uniqueSections.length > 0) {
+                console.log("Successfully extracted sections from students:", uniqueSections);
+                return uniqueSections;
+              }
+            }
+          } catch (usersError) {
+            console.warn('Error extracting sections from users collection:', usersError);
+            // Continue to fallback
+          }
+          
+          // If we couldn't get sections from the users collection, try the users API directly
+          try {
+            const { data: usersData } = await directApi.get('/users/sections');
+            if (Array.isArray(usersData)) {
+              console.log("Successfully fetched sections from users API:", usersData);
+              return usersData;
+            }
+          } catch (usersApiError) {
+            console.warn('Error fetching sections from users API:', usersApiError);
+            // Continue to fallback
+          }
+        }
+        
+        // If all API endpoints fail, use the static fallback
+        return [
+          'Sampaguita', 
+          'Rosal', 
+          'Rosa', 
+          'Lily', 
+          'Orchid',
+          'Unity',
+          'Peace',
+          'Dignity'
+        ];
+      }
+    } catch (error) {
+      // Fallback to static list
+      console.warn('Error fetching sections:', error);
+      return [
+        'Sampaguita', 
+        'Rosal', 
+        'Rosa', 
+        'Lily', 
+        'Orchid',
+        'Unity',
+        'Peace',
+        'Dignity'
+      ];
+    }
+  },
+
+  // Get category results for a student
+  getCategoryResults: async (id) => {
+    try {
+      console.log(`Fetching category results for student ID: ${id}`);
+      // Use the api instance with the correct endpoint path (no leading slash)
+      const { data } = await api.get(`${id}/category-results`);
+      
+      console.log("Category results raw data:", data);
+      
+      // Check if we have meaningful data
+      if (data && data.categories && data.categories.length > 0) {
+        // Make sure all category objects have required properties
+        data.categories = data.categories.map(category => ({
+          categoryName: category.categoryName || 'Unknown Category',
+          totalQuestions: category.totalQuestions || 0,
+          correctAnswers: category.correctAnswers || 0,
+          score: category.score || 0,
+          isPassed: category.isPassed || (category.score >= 75),
+          passingThreshold: category.passingThreshold || 75
+        }));
+        console.log("Valid category data found with", data.categories.length, "categories");
+        return data;
+      } else {
+        // No meaningful data
+        console.log("No valid category data found in API response");
+        return null;
+      }
+    } catch (error) {
+      console.error(`Error fetching category results for student ${id}:`, error);
+      
+      // Return null in case of error
+      return null;
+    }
+  },
+
+  // Transform pre-assessment data to category results format
+  transformPreAssessmentToCategories: (preAssessmentData) => {
+    if (!preAssessmentData || !preAssessmentData.skillDetails || preAssessmentData.skillDetails.length === 0) {
+      return null;
+    }
+
+    // Create categories array from skillDetails
+    const categories = preAssessmentData.skillDetails.map(skill => ({
+      categoryName: skill.categoryName || skill.category,
+      totalQuestions: skill.total || 0,
+      correctAnswers: skill.correct || 0,
+      score: skill.score || 0,
+      isPassed: skill.score >= 75,
+      passingThreshold: 75
+    }));
+
+    // Calculate if all categories passed
+    const allCategoriesPassed = categories.every(cat => cat.isPassed);
+
+    // Format the data to match category_results structure
+    return {
+      studentId: preAssessmentData.studentId,
+      assessmentType: 'pre-assessment',
+      assessmentDate: preAssessmentData.completedAt || new Date().toISOString(),
+      categories: categories,
+      overallScore: preAssessmentData.overallScore || 0,
+      readingLevel: preAssessmentData.readingLevel || 'Not Assessed',
+      readingPercentage: preAssessmentData.overallScore || 0,
+      allCategoriesPassed: allCategoriesPassed
+    };
+  },
+
+  // Score-to-level helper
+  getReadingLevelFromScore: (score, maxScore = 5) => {
+    const pct = (score / maxScore) * 100;
+    if (pct <= 25) return 'Low Emerging';
+    if (pct <= 50) return 'Developing';
+    if (pct <= 75) return 'Transitioning';
+    return 'At Grade Level';
   }
 };
 

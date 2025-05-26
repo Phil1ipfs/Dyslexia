@@ -64,7 +64,7 @@ const Login = ({ onLogin }) => {
         return;
       }
 
-      const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002';
+      const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
       console.log('Login attempt:', {
         email: formData.email,
         expectedRole: expectedRoleType,

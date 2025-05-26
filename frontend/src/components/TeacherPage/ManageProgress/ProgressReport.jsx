@@ -1,418 +1,468 @@
-import React, { useState, useEffect } from 'react';
+// src/components/TeacherDashboard/StudentProgress/ProgressReport.jsx
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   FaInfoCircle, 
+  FaBookOpen, 
   FaChartLine, 
   FaCheckCircle, 
   FaBrain,
   FaCalendarAlt,
-  FaClock,
-  FaExclamationTriangle,
-  FaArrowUp,
+  FaFilter,
   FaArrowRight,
-  FaLock,
-  FaHourglassHalf,
-  FaSpinner,
-  FaTrophy
+  FaBook,
+  FaListAlt,
+  FaQuestionCircle,
+  FaCheck,
+  FaLightbulb,
+  FaPercentage,
+  FaTag,
+  FaHistory,
+  FaExclamationTriangle,
+  FaVolumeUp,
+  FaFileAlt,
+  FaTools,
+  FaGraduationCap
 } from 'react-icons/fa';
 
-import SkillsOverviewSection from './SkillsOverviewSection';
 import './css/ProgressReport.css';
 
-const ProgressReport = ({ 
-  progressData, 
-  categoryProgress, 
-  readingLevelInfo,
-  assessmentAssignments 
-}) => {
+const ProgressReport = ({ progressData, onViewRecommendations }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [timeRange, setTimeRange] = useState('month');
+  const [selectedTimeframe, setSelectedTimeframe] = useState('current');
+  const [animated, setAnimated] = useState(false);
+  const animatedRef = useRef(false);
   
-  if (!progressData || !categoryProgress || !readingLevelInfo) {
+  useEffect(() => {
+    if (animatedRef.current) return;
+    
+    const timer = setTimeout(() => {
+      setAnimated(true);
+      animatedRef.current = true;
+      
+      // Animate counters on page load
+      const counters = document.querySelectorAll('.student-progress-counter');
+      counters.forEach(counter => {
+        const target = parseInt(counter.getAttribute('data-target') || 0, 10);
+        const duration = 1500; // milliseconds
+        const startTime = performance.now();
+        
+        function updateCounter(currentTime) {
+          const elapsedTime = currentTime - startTime;
+          
+          if (elapsedTime < duration) {
+            const progress = elapsedTime / duration;
+            const currentValue = Math.ceil(progress * target);
+            counter.textContent = currentValue;
+            requestAnimationFrame(updateCounter);
+          } else {
+            counter.textContent = target;
+          }
+        }
+        
+        requestAnimationFrame(updateCounter);
+      });
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // Check if we have valid category results data
+  const hasCategoryResults = progressData && 
+    progressData.categories && 
+    Array.isArray(progressData.categories) && 
+    progressData.categories.length > 0;
+  
+  if (!progressData) {
     return (
-      <div className="literexia-empty-state">
-        <FaInfoCircle size={40} />
+      <div className="student-progress-empty-state">
+        <FaInfoCircle size={48} />
         <h3>No Progress Data</h3>
-        <p>No progress data available for this student. They may not have completed any assessments yet.</p>
+        <p>No progress data available for this student. They may not have completed any assessment yet.</p>
       </div>
     );
   }
   
-  // Calculate completion percentage
-  const calculateCompletionPercentage = () => {
-    if (!categoryProgress.categories) return 0;
+  // Calculate progress metrics from category results
+  const calculateCompletionRate = () => {
+    if (!hasCategoryResults) return 0;
     
-    const completedCategories = categoryProgress.categories.filter(
-      cat => cat.passed
-    ).length;
-    
-    return completedCategories > 0 
-      ? Math.round((completedCategories / categoryProgress.categories.length) * 100) 
-      : 0;
+    // Count passed categories
+    const passedCategories = progressData.categories.filter(cat => cat.isPassed).length;
+    return Math.round((passedCategories / progressData.categories.length) * 100);
   };
-  
-  // Get average score from completed assessments
-  const getAverageScore = () => {
-    if (!categoryProgress.categories) return 0;
-    
-    const completedCategories = categoryProgress.categories.filter(
-      cat => cat.mainAssessmentCompleted
-    );
-    
-    if (completedCategories.length === 0) return 0;
-    
-    const totalScore = completedCategories.reduce(
-      (sum, cat) => sum + (cat.mainAssessmentScore || 0), 
-      0
-    );
-    
-    return Math.round(totalScore / completedCategories.length);
-  };
-  
-  // Filter activities based on selected time range
-  const filterActivitiesByTime = () => {
-    if (!progressData.recentActivities) return [];
-    
-    const now = new Date();
-    const cutoffDate = new Date();
-    
-    switch (timeRange) {
-      case 'week':
-        cutoffDate.setDate(now.getDate() - 7);
-        break;
-      case 'month':
-        cutoffDate.setDate(now.getDate() - 30);
-        break;
-      case 'quarter':
-        cutoffDate.setDate(now.getDate() - 90);
-        break;
-      default:
-        cutoffDate.setDate(now.getDate() - 30);
-    }
-    
-    return progressData.recentActivities.filter(activity => {
-      const activityDate = new Date(activity.date);
-      return activityDate >= cutoffDate;
-    });
-  };
-  
-  // Filter activities by category if a specific one is selected
-  const filteredActivities = filterActivitiesByTime();
-  const filteredByCategory = selectedCategory === 'all' 
-    ? filteredActivities 
-    : filteredActivities.filter(activity => 
-        activity.category === selectedCategory || 
-        activity.category.includes(selectedCategory)
-      );
   
   // Format date for display
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
+  const formatDate = (dateString) => {
+    if (!dateString) return "Not available";
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return dateString;
+    }
   };
   
-  // Get CSS class for skill category
-  const getCategoryClass = (category) => {
-    if (!category) return '';
-    
-    const lowerCategory = category.toLowerCase();
-    
-    if (lowerCategory.includes('alphabet') || lowerCategory.includes('patinig')) {
-      return 'literexia-patinig';
+  // Calculate completion rate and other metrics
+  const completionRate = calculateCompletionRate();
+  const totalQuestions = hasCategoryResults ? 
+    progressData.categories.reduce((total, category) => total + (Number(category.totalQuestions) || 0), 0) : 0;
+  const correctAnswers = hasCategoryResults ? 
+    progressData.categories.reduce((total, category) => total + (Number(category.correctAnswers) || 0), 0) : 0;
+  const passedCategories = hasCategoryResults ? 
+    progressData.categories.filter(cat => cat.isPassed).length : 0;
+  const totalCategories = hasCategoryResults ? 
+    progressData.categories.length : 0;
+  const assessmentDate = formatDate(progressData.assessmentDate || progressData.createdAt);
+  const readingLevel = progressData.readingLevel || "Not Assessed";
+  
+  // Calculate overall score - either use the one from the API or calculate
+  const overallScore = progressData.overallScore || (hasCategoryResults ? 
+    Math.round(progressData.categories.reduce((total, category) => total + (Number(category.score) || 0), 0) / totalCategories) : 0);
+
+  // Determine if any categories need attention (below 75% threshold)
+  const categoriesNeedingAttention = hasCategoryResults ? 
+    progressData.categories.filter(cat => (Number(cat.score) || 0) < 75) : [];
+  
+  // Get status class based on score
+  const getStatusClass = (score) => {
+    score = Number(score) || 0;
+    if (score >= 75) return 'achieved';
+    if (score >= 50) return 'developing';
+    return 'emerging';
+  };
+
+  // Handle view recommendations click
+  const handleViewRecommendations = (category) => {
+    if (onViewRecommendations) {
+      onViewRecommendations(category);
     }
-    if (lowerCategory.includes('phonological') || lowerCategory.includes('pantig')) {
-      return 'literexia-pantig';
-    }
-    if (lowerCategory.includes('decoding') || lowerCategory.includes('decode')) {
-      return 'literexia-decoding';
-    }
-    if (lowerCategory.includes('word') || lowerCategory.includes('salita')) {
-      return 'literexia-word-recognition';
-    }
-    if (lowerCategory.includes('reading') || lowerCategory.includes('comprehension') || 
-        lowerCategory.includes('pag-unawa')) {
-      return 'literexia-reading-comprehension';
-    }
-    
-    return '';
   };
   
-  // Calculate completion rate and average score
-  const completionPercentage = calculateCompletionPercentage();
-  const averageScore = getAverageScore();
+  // Format category name for display
+  const formatCategoryName = (categoryName) => {
+    if (!categoryName) return "Unknown Category";
+    
+    return categoryName
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Get category icon based on category name
+  const getCategoryIcon = (category) => {
+    // Icon mapping with uniform color
+    const iconMap = {
+      'alphabet_knowledge': <FaQuestionCircle />,
+      'phonological_awareness': <FaVolumeUp />,
+      'decoding': <FaBook />,
+      'word_recognition': <FaListAlt />,
+      'reading_comprehension': <FaFileAlt />
+    };
+    
+    // Try to match category name (case insensitive)
+    const categoryLower = category ? category.toLowerCase() : '';
+    
+    for (const [key, icon] of Object.entries(iconMap)) {
+      if (categoryLower.includes(key.toLowerCase().replace('_', ' '))) {
+        return icon;
+      }
+    }
+    
+    // Default icon
+    return <FaBookOpen />;
+  };
+  
+  // Get reading level class for styling
+  const getReadingLevelClass = (level) => {
+    if (!level || level === 'Not Assessed') return 'reading-level-not-assessed';
+    
+    switch(level.toLowerCase()) {
+      case 'early':
+      case 'low emerging':
+      case 'high emerging':
+        return 'reading-level-early';
+      
+      case 'developing':
+      case 'emergent':
+        return 'reading-level-developing';
+      
+      case 'transitioning':
+      case 'at grade level':
+      case 'fluent':
+        return 'reading-level-fluent';
+      
+      case 'advanced':
+        return 'reading-level-advanced';
+      
+      default:
+        return 'reading-level-not-assessed';
+    }
+  };
   
   return (
-    <div className="literexia-progress-container">
+    <div className="student-progress-container">
       {/* Progress info section */}
-      <div className="literexia-progress-info">
-        <div className="literexia-progress-info-icon">
-          <FaBrain />
-        </div>
-        <div className="literexia-progress-info-text">
-          <h3>Reading Progress Report</h3>
+      <div className="student-progress-info">
+        <FaInfoCircle className="student-progress-info-icon" />
+        <div className="student-progress-info-text">
+          <h3>Post Assessment Progress Report</h3>
           <p>
-            This section shows the student's progress across all assigned assessment categories.
-            Track their performance, identify strengths and weaknesses, and monitor their progress
-            toward the next reading level.
+            This report shows the student's progress based on their assessment
+            completed on <strong>{assessmentDate}</strong>. Current reading level: <strong>{readingLevel}</strong>.
+            You can view their performance across the key reading skill categories.
           </p>
         </div>
       </div>
       
-      {/* Progress Summary Cards */}
-      <div className="literexia-summary-cards">
-        <div className="literexia-summary-card">
-          <div className="literexia-card-header">
-            <div className="literexia-card-icon">
+      {/* Assessment Summary Cards */}
+      <div className="student-progress-summary-cards">
+        <div className={`student-progress-summary-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0s'}}>
+          <div className="student-progress-card-header">
+            <div className="student-progress-card-icon">
               <FaCheckCircle />
             </div>
-            <div className="literexia-card-value">{completionPercentage}%</div>
+            <div className="student-progress-card-value">
+              <span className="student-progress-counter" data-target={completionRate}>{animated ? completionRate : '0'}</span>%
+            </div>
           </div>
-          <div className="literexia-card-label">Categories Completed</div>
+          <div className="student-progress-card-label">Categories Passed ({passedCategories}/{totalCategories})</div>
         </div>
         
-        <div className="literexia-summary-card">
-          <div className="literexia-card-header">
-            <div className="literexia-card-icon">
+        <div className={`student-progress-summary-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.1s'}}>
+          <div className="student-progress-card-header">
+            <div className="student-progress-card-icon">
               <FaChartLine />
             </div>
-            <div className="literexia-card-value">{averageScore}%</div>
-          </div>
-          <div className="literexia-card-label">Average Score</div>
-        </div>
-        
-        <div className="literexia-summary-card">
-          <div className="literexia-card-header">
-            <div className="literexia-card-icon">
-              <FaClock />
+            <div className="student-progress-card-value">
+              <span className="student-progress-counter" data-target={overallScore}>{animated ? overallScore : '0'}</span>%
             </div>
-            <div className="literexia-card-value">{progressData.totalTimeSpent || 0}</div>
           </div>
-          <div className="literexia-card-label">Minutes Spent</div>
+          <div className="student-progress-card-label">Average Score</div>
         </div>
-      </div>
-      
-      {/* Reading Level Progression */}
-      <div className="literexia-reading-level-progress">
-        <h3 className="literexia-section-title">
-          <FaChartLine className="literexia-section-icon" />
-          Reading Level Progression
-        </h3>
         
-        <div className="literexia-reading-level-info">
-          <div className="literexia-current-level">
-            <div className="literexia-level-label">Current Level</div>
-            <div className="literexia-level-value">{readingLevelInfo.currentReadingLevel || 'Not Assessed'}</div>
+        <div className={`student-progress-summary-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.2s'}}>
+          <div className="student-progress-card-header">
+            <div className="student-progress-card-icon">
+              <FaBookOpen />
+            </div>
+            <div className="student-progress-card-value">
+              <span className="student-progress-counter" data-target={correctAnswers}>{animated ? correctAnswers : '0'}</span>/{totalQuestions}
+            </div>
           </div>
-          
-          <div className="literexia-level-arrow">
-            <FaArrowRight />
-          </div>
-          
-          <div className="literexia-next-level">
-            <div className="literexia-level-label">Next Level</div>
-            <div className="literexia-level-value">{readingLevelInfo.advancementRequirements?.nextLevel || 'N/A'}</div>
-          </div>
-          
-          <div className="literexia-level-requirements">
-            <div className="literexia-requirements-header">
-              <div className="literexia-requirements-title">Requirements to advance</div>
-              <div className="literexia-requirements-progress">
-                {readingLevelInfo.advancementRequirements?.completedCategories?.length || 0}/
-                {readingLevelInfo.advancementRequirements?.requiredCategories?.length || 0} Categories
+          <div className="student-progress-card-label">Correct Answers</div>
+        </div>
+        
+        <div className={`student-progress-summary-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.3s'}}>
+          <div className="student-progress-card-header">
+            <div className="student-progress-card-icon">
+              <FaCalendarAlt />
+            </div>
+            <div className="student-progress-card-value">
+              <div className={`student-progress-reading-level ${getReadingLevelClass(readingLevel)}`}>
+                {readingLevel}
               </div>
             </div>
-            
-            <div className="literexia-progress-bar-wrapper">
+          </div>
+          <div className="student-progress-card-label">Reading Level</div>
+        </div>
+      </div>
+
+      {/* Combined Category Progress & Performance Section */}
+      {hasCategoryResults && (
+        <div className="student-progress-category-section">
+          <h3 className="student-progress-section-title">
+            <FaChartLine className="student-progress-section-icon" /> 
+            Reading Skills Assessment
+          </h3>
+          
+          <div className="student-progress-info" style={{ marginBottom: '1.5rem' }}>
+            <FaInfoCircle className="student-progress-info-icon" />
+            <div className="student-progress-info-text">
+              <h3>Category Performance</h3>
+              <p>
+                Each category contains sets of questions. Students need to score at least 75% to pass each category.
+                Categories below the threshold need targeted interventions to improve skills.
+              </p>
+            </div>
+          </div>
+          
+          {/* Overall Progress Bar */}
+          <div className="student-progress-completion-bar">
+            <div className="student-progress-completion-bar-label">
+              <span>Overall Progress:</span>
+              <span className="student-progress-completion-count">{correctAnswers}/{totalQuestions} questions correct ({Math.round((correctAnswers / totalQuestions) * 100)}%)</span>
+            </div>
+            <div className="student-progress-completion-bar-container">
               <div 
-                className="literexia-progress-bar"
-                style={{ 
-                  width: `${readingLevelInfo.overallProgress || 0}%`
-                }}
+                className="student-progress-completion-bar-fill" 
+                style={{width: `${Math.min(100, Math.round((correctAnswers / totalQuestions) * 100))}%`}}
               ></div>
             </div>
           </div>
-        </div>
-      </div>
-      
-      {/* Category Progress */}
-      <div className="literexia-category-progress-section">
-        <h3 className="literexia-section-title">
-          <FaChartLine className="literexia-section-icon" />
-          Category Progress
-        </h3>
-        
-        <div className="literexia-category-cards">
-          {categoryProgress.categories && categoryProgress.categories.map((category, index) => {
-            const isLocked = category.status === 'locked';
-            const isPending = category.status === 'pending';
-            const isInProgress = category.status === 'in_progress';
-            const isCompleted = category.status === 'completed';
-            
-            const progressPercentage = category.mainAssessmentScore || 0;
-            const hasPassed = category.passed;
-            
-            return (
-              <div 
-                key={category.categoryId} 
-                className={`literexia-category-card ${isLocked ? 'locked' : ''} ${isCompleted ? 'completed' : ''}`}
-              >
-                <div className={`literexia-category-icon ${getCategoryClass(category.categoryName)}`}>
-                  {isLocked && <FaLock />}
-                  {isPending && <FaHourglassHalf />}
-                  {isInProgress && <FaSpinner />}
-                  {isCompleted && <FaCheckCircle />}
-                </div>
-                
-                <div className="literexia-category-content">
-                  <h4 className="literexia-category-title">{category.categoryName}</h4>
-                  
-                  <div className="literexia-category-status">
-                    {isLocked && <span className="literexia-locked-status">Locked</span>}
-                    {isPending && <span className="literexia-pending-status">Pending</span>}
-                    {isInProgress && <span className="literexia-in-progress-status">In Progress</span>}
-                    {isCompleted && <span className="literexia-completed-status">Completed</span>}
+          
+          {/* Category Cards Grid */}
+          <div className="student-progress-category-grid">
+            {progressData.categories.map((category, index) => {
+              const categoryName = category.categoryName || `Category ${index + 1}`;
+              const displayName = typeof categoryName === 'string' ?
+                formatCategoryName(categoryName) : 
+                `Category ${index + 1}`;
+              
+              const correctCount = Number(category.correctAnswers) || 0;
+              const totalCount = Number(category.totalQuestions) || 0;
+              const score = Number(category.score) || 0;
+              const isPassed = category.isPassed || score >= 75;
+              
+              // Check if this category has interventions
+              const hasInterventions = category.interventions && category.interventions.length > 0;
+              
+              // Track intervention progress
+              const interventionProgress = category.interventionProgress || 0;
+              const showInterventionProgress = hasInterventions && interventionProgress > 0;
+              
+              // Simplified status with intervention tracking
+              let status, statusClass;
+              if (score >= 75) {
+                status = "Passed";
+                statusClass = "passed";
+              } else if (hasInterventions && interventionProgress >= 100) {
+                status = "Intervention Complete";
+                statusClass = "intervention-complete";
+              } else if (hasInterventions && interventionProgress > 0) {
+                status = "Intervention In Progress";
+                statusClass = "intervention-progress";
+              } else if (score === 0) {
+                status = "Not Started";
+                statusClass = "not-started";
+              } else if (score < 40) {
+                status = "Needs Attention";
+                statusClass = "needs-attention";
+              } else {
+                status = "In Progress";
+                statusClass = "in-progress";
+              }
+              
+              return (
+                <div key={index} className={`student-progress-category-card ${statusClass}`}>
+                  {/* Category Header */}
+                  <div className="student-progress-category-header">
+                    <div className="student-progress-category-icon">
+                      {getCategoryIcon(categoryName)}
+                    </div>
+                    <div className="student-progress-category-info">
+                      <h4>{displayName}</h4>
+                      <div className="student-progress-category-metrics">
+                        <span className="student-progress-score">{score}%</span>
+                        <span className="student-progress-count">{correctCount}/{totalCount} correct</span>
+                      </div>
+                    </div>
+                    <div className={`student-progress-status ${statusClass}`}>
+                      {status}
+                    </div>
                   </div>
                   
-                  {!isLocked && (
-                    <div className="literexia-category-details">
-                      <div className="literexia-category-progress-bar-wrapper">
-                        <div 
-                          className={`literexia-category-progress-bar ${hasPassed ? 'passed' : ''}`}
-                          style={{ width: `${progressPercentage}%` }}
-                        ></div>
+                  {/* Progress Dots */}
+                  <div className="student-progress-dots">
+                    {Array.from({ length: totalCount }).map((_, qIndex) => (
+                      <div 
+                        key={qIndex} 
+                        className={`student-progress-dot ${qIndex < correctCount ? 'correct' : 'empty'}`}
+                        title={qIndex < correctCount ? 'Correct' : 'Incorrect/Not Answered'}
+                      />
+                    ))}
+                  </div>
+                  
+                  {/* Intervention Progress (if applicable) */}
+                  {showInterventionProgress && (
+                    <div className="student-progress-intervention-status">
+                      <div className="student-progress-intervention-icon">
+                        <FaTools />
                       </div>
-                      
-                      <div className="literexia-category-stats">
-                        <div className="literexia-stat-item">
-                          <span className="literexia-stat-label">Assessment ID:</span>
-                          <span className="literexia-stat-value">{category.mainAssessmentId || 'Not assigned'}</span>
+                      <div className="student-progress-intervention-progress">
+                        <div className="student-progress-intervention-label">
+                          Intervention Progress: {interventionProgress}%
                         </div>
-                        
-                        <div className="literexia-stat-item">
-                          <span className="literexia-stat-label">Score:</span>
-                          <span className={`literexia-stat-value ${hasPassed ? 'passed-value' : ''}`}>
-                            {category.mainAssessmentScore ? `${category.mainAssessmentScore}%` : 'Not completed'}
-                          </span>
+                        <div className="student-progress-intervention-bar">
+                          <div 
+                            className="student-progress-intervention-fill"
+                            style={{ width: `${interventionProgress}%` }}
+                          ></div>
                         </div>
-                        
-                        <div className="literexia-stat-item">
-                          <span className="literexia-stat-label">Attempts:</span>
-                          <span className="literexia-stat-value">{category.attemptCount || 0}</span>
-                        </div>
-                        
-                        {category.lastAttemptDate && (
-                          <div className="literexia-stat-item">
-                            <span className="literexia-stat-label">Last Attempt:</span>
-                            <span className="literexia-stat-value">{formatDate(category.lastAttemptDate)}</span>
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}
-                </div>
-                
-                {hasPassed && (
-                  <div className="literexia-passed-badge">
-                    <FaTrophy />
-                    <span>Passed</span>
+                  
+                  {/* Action Section */}
+                  <div className="student-progress-category-action">
+                    {!isPassed ? (
+                      <>
+                        <div className="student-progress-message">
+                          {correctCount === 0 ? (
+                            <span>Category not yet started</span>
+                          ) : hasInterventions ? (
+                            <span>Intervention assigned {interventionProgress > 0 ? `(${interventionProgress}% complete)` : ''}</span>
+                          ) : (
+                            <span>Need {Math.ceil(totalCount * 0.75) - correctCount} more to pass</span>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="student-progress-success-message">
+                        <FaCheckCircle /> Category Mastered
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Unified View Recommendations Button */}
+          {categoriesNeedingAttention.length > 0 && (
+            <div className="student-progress-unified-action">
+              <button 
+                className="student-progress-unified-recommendations-btn"
+                onClick={() => handleViewRecommendations(categoriesNeedingAttention[0])}
+              >
+                <FaGraduationCap /> View Recommendations for All Categories
+                <FaArrowRight style={{ marginLeft: '0.5rem' }} />
+              </button>
+              <div className="student-progress-unified-info">
+                {categoriesNeedingAttention.length} {categoriesNeedingAttention.length === 1 ? 'category' : 'categories'} need attention
               </div>
-            );
-          })}
+            </div>
+          )}
         </div>
-      </div>
-      
-      {/* Skills Overview Section */}
-      {progressData.scores && Object.keys(progressData.scores).length > 0 && (
-        <SkillsOverviewSection scores={progressData.scores} />
       )}
       
-      {/* Recent Activities Section */}
-      <div className="literexia-recent-activities-section">
-        <div className="literexia-section-header">
-          <h3 className="literexia-section-title">
-            <FaCalendarAlt className="literexia-section-icon" />
-            Recent Activities
-          </h3>
-          
-          <div className="literexia-time-filter">
-            <label htmlFor="time-range">Time Range:</label>
-            <select 
-              id="time-range" 
-              value={timeRange} 
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="literexia-time-select"
-            >
-              <option value="week">Last 7 Days</option>
-              <option value="month">Last 30 Days</option>
-              <option value="quarter">Last 90 Days</option>
-            </select>
-            
-            <label htmlFor="category-filter" className="literexia-category-label">Category:</label>
-            <select 
-              id="category-filter" 
-              value={selectedCategory} 
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="literexia-category-select"
-            >
-              <option value="all">All Categories</option>
-              {categoryProgress.categories && categoryProgress.categories.map((cat) => (
-                <option key={cat.categoryId} value={cat.categoryName}>
-                  {cat.categoryName}
-                </option>
-              ))}
-            </select>
+      {/* Display warning if some categories need attention */}
+      {categoriesNeedingAttention.length > 0 && (
+        <div className="student-progress-categories-attention">
+          <div className="student-progress-attention-icon">
+            <FaExclamationTriangle />
+          </div>
+          <div className="student-progress-attention-message">
+            <h4>Categories Needing Attention</h4>
+            <p>
+              {categoriesNeedingAttention.length} {categoriesNeedingAttention.length === 1 ? 'category is' : 'categories are'} below the 75% threshold. 
+              View recommendations to create targeted interventions.
+            </p>
           </div>
         </div>
-        
-        {filteredByCategory.length > 0 ? (
-          <div className="literexia-activities-list">
-            {filteredByCategory.map((activity, index) => (
-              <div key={index} className="literexia-activity-card">
-                <div className={`literexia-activity-icon ${getCategoryClass(activity.category)}`}>
-                  <FaCheckCircle />
-                </div>
-                
-                <div className="literexia-activity-content">
-                  <h4 className="literexia-activity-title">{activity.title}</h4>
-                  
-                  <div className="literexia-activity-details">
-                    <div className="literexia-activity-category">
-                      <span className={`literexia-category-badge ${getCategoryClass(activity.category)}`}>
-                        {activity.category}
-                      </span>
-                    </div>
-                    
-                    <div className="literexia-activity-stats">
-                      <div className="literexia-activity-stat">
-                        <span className="literexia-stat-icon"><FaCalendarAlt /></span>
-                        <span className="literexia-stat-text">{formatDate(activity.date)}</span>
-                      </div>
-                      
-                      <div className="literexia-activity-stat">
-                        <span className="literexia-stat-icon"><FaClock /></span>
-                        <span className="literexia-stat-text">{activity.timeSpent} min</span>
-                      </div>
-                      
-                      <div className="literexia-activity-stat">
-                        <span className="literexia-stat-icon"><FaChartLine /></span>
-                        <span className="literexia-stat-text">Score: {activity.score}%</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="literexia-empty-activities">
-            <FaExclamationTriangle />
-            <p>No activities found for the selected time range and category.</p>
-          </div>
-        )}
+      )}
+
+      {/* Process Note */}
+      <div className="student-progress-process-note">
+        <FaLightbulb className="student-progress-process-note-icon" />
+        <div className="student-progress-process-note-text">
+          <p>
+            <strong>Next Steps:</strong> Based on these results, you can create personalized intervention plans in the Prescriptive Analysis tab to address specific areas where the student needs additional support.
+          </p>
+        </div>
       </div>
     </div>
   );

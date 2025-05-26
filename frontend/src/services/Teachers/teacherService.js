@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Setup axios defaults for API calls
 const api = axios.create({
-  baseURL: import.meta.env.DEV ? 'http://localhost:5002/api' : '/api',
+  baseURL: import.meta.env.DEV ? 'http://localhost:5001/api' : '/api',
   timeout: 30000, // 30 second timeout
   headers: {
     'Content-Type': 'application/json',

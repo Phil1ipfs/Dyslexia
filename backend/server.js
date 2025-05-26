@@ -8,7 +8,39 @@ const bcrypt = require('bcrypt');
 const axios = require('axios');
 const s3Client = require('./config/s3');
 const app = express();
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT || 5001;
+
+// Define userSchema at the module level so it's available throughout the file
+const userSchema = new mongoose.Schema({
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true
+  },
+  password: {
+    type: String,
+    required: true
+  },
+  roles: {
+    type: String,
+    default: 'user'
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}, {
+  timestamps: true,
+  collection: 'users'
+});
+
+// Request logger middleware
+const requestLogger = (req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+};
 
 // Apply middlewares
 app.use(cors({
@@ -23,16 +55,15 @@ app.options('*', cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Enhanced logging middleware
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-});
+app.use(requestLogger);
 
 // Test route to verify server is running
 app.get('/test', (req, res) => {
   res.json({ message: 'Server is running' });
+});
+
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working!' });
 });
 
 // Define database connection with better error handling
@@ -40,18 +71,35 @@ const connectDB = async () => {
   try {
     console.log('Attempting to connect to MongoDB...');
     
+    // FIRST connect to the database
     await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017', {
-      serverSelectionTimeoutMS: 5000 // 5 second timeout
+      dbName: 'test',
+      connectTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+      serverSelectionTimeoutMS: 60000
     });
 
+    console.log('✅ MongoDB Connected to test database');
     console.log('MongoDB Connected:', mongoose.connection.host);
     
     // Test database connections
     const testDb = mongoose.connection.useDb('test');
     const teachersDb = mongoose.connection.useDb('teachers');
     const parentDb = mongoose.connection.useDb('parent');
-    
-    // Verify collections exist
+
+    // Connect to Pre_Assessment database
+    const preAssessmentDb = mongoose.connection.useDb('Pre_Assessment');
+    console.log('✅ Connected to Pre_Assessment database');
+
+    // List collections in Pre_Assessment database
+    try {
+      const preAssessmentCollections = await preAssessmentDb.db.listCollections().toArray();
+      console.log('Available collections in Pre_Assessment:');
+      preAssessmentCollections.forEach(c => console.log(`- ${c.name}`));
+    } catch (err) {
+      console.warn('⚠️ Could not list Pre_Assessment collections:', err.message);
+    }
+
     const collections = {
       test: [],
       teachers: [],
@@ -78,6 +126,11 @@ const connectDB = async () => {
     console.log('teachers database collections:', collections.teachers.map(c => c.name));
     console.log('parent database collections:', collections.parent.map(c => c.name));
 
+    // Display collections in test database
+    const testCollections = await mongoose.connection.db.listCollections().toArray();
+    console.log('Available collections in test:');
+    testCollections.forEach(c => console.log(`- ${c.name}`));
+
     // Test collection counts
     const counts = {
       students: 0,
@@ -101,10 +154,38 @@ const connectDB = async () => {
     console.log('- Parents (parent/parent_profile):', counts.parents);
     console.log('Total users:', counts.students + counts.teachers + counts.parents);
 
+    // Initialize available databases info
+    try {
+      const db = mongoose.connection.db;
+      const adminDb = db.admin();
+      const dbInfo = await adminDb.listDatabases();
+
+      console.log('Available databases:');
+      dbInfo.databases.forEach(db => console.log(`- ${db.name}`));
+
+      // Ensure parent database exists by accessing it directly
+      console.log('Created connection to parent database');
+
+      // Ensure users_web database exists by accessing it directly
+      const usersWebDb = mongoose.connection.useDb('users_web');
+      console.log('Created connection to users_web database');
+    } catch (err) {
+      console.warn('⚠️ Could not list available databases:', err.message);
+    }
+
+    // NOW initialize the ManageProgress module
+    try {
+      const progressController = require('./controllers/Teachers/ManageProgress/progressController');
+      await progressController.initializeCollections();
+      console.log('✅ Initialized progress collections');
+    } catch (error) {
+      console.warn('⚠️ Could not initialize progress collections:', error.message);
+    }
+
     console.log('\n✅ Database setup complete');
     return true;
   } catch (error) {
-    console.error('MongoDB connection error:', error);
+    console.error('❌ MongoDB connection error:', error);
     return false;
   }
 };
@@ -122,11 +203,86 @@ mongoose.connection.on('reconnected', () => {
   console.log('MongoDB reconnected');
 });
 
-// Connect to MongoDB first
+// Authentication middleware
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    console.log('No token provided in request');
+    return res.status(401).json({ error: 'Unauthorized: No token provided' });
+  }
+
+  try {
+    const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
+    const decoded = jwt.verify(token, secretKey);
+    req.user = decoded;
+    console.log('Authenticated user:', req.user.email, 'User roles:', req.user.roles);
+    next();
+  } catch (error) {
+    console.error('Token verification failed:', error.message);
+    return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+  }
+};
+
+// Role-based authorization middleware
+const authorize = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    // Handle roles which might be a string or array from the token
+    let userRoles = req.user.roles;
+    if (typeof userRoles === 'string') {
+      userRoles = [userRoles]; // Convert string to array for consistency
+    } else if (!Array.isArray(userRoles)) {
+      userRoles = []; // Default to empty array if undefined
+    }
+
+    // Add support for Tagalog role names
+    const roleMap = {
+      'guro': 'teacher',
+      'magulang': 'parent'
+    };
+
+    // Convert any Tagalog roles to English equivalents
+    userRoles = userRoles.map(role => roleMap[role] || role);
+
+    // Check if user has at least one of the allowed roles
+    const hasAllowedRole = allowedRoles.some(role => userRoles.includes(role));
+
+    if (!hasAllowedRole) {
+      return res.status(403).json({ message: 'Access forbidden: Insufficient permissions' });
+    }
+
+    next();
+  };
+};
+
+// Connect to MongoDB first - then register routes after connection is established
 connectDB().then(async (connected) => {
   if (!connected) {
     console.error('Failed to connect to database. Server not started.');
     process.exit(1);
+  }
+
+  // Create User model after connection is established
+  const User = mongoose.models.User || mongoose.model('User', userSchema);
+  console.log('Database connected successfully - registering routes');
+  console.log('User model is targeting collection:', User.collection.name);
+
+  // Test S3 connection
+  if (s3Client.testS3Connection) {
+    s3Client.testS3Connection()
+      .then(success => {
+        if (success) {
+          console.log('S3 bucket configuration is working correctly');
+        } else {
+          console.warn('S3 bucket connection failed - image uploads may not work');
+        }
+      })
+      .catch(err => console.error('Error testing S3 connection:', err));
   }
 
   // Register routes
@@ -163,9 +319,358 @@ connectDB().then(async (connected) => {
     app.use('/api/admin', adminDashboardRoutes);
     console.log('✅ Admin routes registered at /api/admin/*');
 
+    // Register roles routes
+    try {
+      app.use('/api/roles', require('./routes/rolesRoutes'));
+      console.log('✅ Loaded roles routes');
+    } catch (error) {
+      console.warn('⚠️ Could not load roles routes:', error.message);
+    }
+
+    // Try to load teacher profile routes
+    try {
+      app.use('/api/teachers', require('./routes/Teachers/teacherProfile'));
+      console.log('✅ Loaded teacher profile routes');
+    } catch (error) {
+      console.warn('⚠️ Could not load teacher profile routes:', error.message);
+    }
+
+    // Try to load parent routes from Teachers
+    try {
+      const teacherParentRoutes = require('./routes/Teachers/parentRoutes');
+      app.use('/api/parents', teacherParentRoutes);
+      console.log('✅ Loaded teachers/parents routes with profile endpoint');
+    } catch (error) {
+      console.warn('⚠️ Could not load teachers/parent routes:', error.message);
+    }
+
+    // Register prescriptive analysis routes
+    try {
+      const prescriptiveAnalysisRoutes = require('./routes/Teachers/prescriptiveAnalysisRoutes');
+      app.use('/api/prescriptive-analysis', prescriptiveAnalysisRoutes);
+      console.log('✅ Loaded prescriptive analysis routes');
+    } catch (error) {
+      console.warn('⚠️ Could not load prescriptive analysis routes:', error.message);
+    }
+
+    // Initialize prescriptive analyses for all students
+    try {
+      const PrescriptiveAnalysisService = require('./services/Teachers/PrescriptiveAnalysisService');
+      (async () => {
+        try {
+          await PrescriptiveAnalysisService.initializeForAllStudents();
+          console.log('✅ Initialized prescriptive analyses for all students');
+        } catch (initError) {
+          console.warn('⚠️ Could not initialize prescriptive analyses:', initError.message);
+        }
+      })();
+    } catch (error) {
+      console.warn('⚠️ Could not initialize prescriptive analyses:', error.message);
+    }
+
+    // Load manage progress routes
+    try {
+      const manageProgressRoutes = require('./routes/Teachers/ManageProgress/progressRoutes');
+      app.use('/api/progress', manageProgressRoutes);
+      console.log('✅ Loaded manage progress routes');
+    } catch (error) {
+      console.warn('⚠️ Could not load manage progress routes:', error.message);
+    }
+
+    // Load intervention routes
+    try {
+      const interventionRoutes = require('./routes/Teachers/ManageProgress/interventionRoutes');
+      app.use('/api/interventions', interventionRoutes);
+      console.log('✅ Loaded intervention routes');
+    } catch (error) {
+      console.warn('⚠️ Could not load intervention routes:', error.message);
+    }
+
+    // Load student routes
+    try {
+      app.use('/api/student', require('./routes/Teachers/studentRoutes'));
+      console.log('✅ Loaded student routes');
+    } catch (error) {
+      console.warn('⚠️ Could not load student routes:', error.message);
+    }
+
+    // Load chatbot routes
+    try {
+      app.use('/api/chatbot', require('./routes/Teachers/chatbot'));
+      console.log('✅ Loaded chatbot routes');
+    } catch (error) {
+      console.warn('⚠️ Could not load chatbot routes:', error.message);
+    }
+
+    // Load dashboard routes
+    try {
+      const dashboardRoutes = require('./routes/Teachers/dashboardRoutes');
+      app.use('/api/dashboard', dashboardRoutes);
+      console.log('✅ Loaded dashboard routes');
+    } catch (error) {
+      console.warn('⚠️ Could not load dashboard routes:', error.message);
+    }
+
     // Add a test route for the students endpoint
     app.get('/api/admin/manage/students/test', (req, res) => {
       res.json({ message: 'Students endpoint is accessible' });
+    });
+
+    // Login route - adapted to work with string roles
+    app.post('/api/auth/login', async (req, res) => {
+      const { email, password } = req.body;
+
+      /* ── 1. quick validation ─────────────────────────────── */
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email & password required' });
+      }
+
+      try {
+        console.log('🔑 Login attempt:', email);
+        
+        // First, check in users_web database
+        const usersWebDb = mongoose.connection.useDb('users_web');
+        const usersCollection = usersWebDb.collection('users');
+        
+        console.log('Searching for user in DB: users_web');
+        console.log('Collection: users');
+        console.log('Query:', { email });
+
+        let user = await usersCollection.findOne({ email });
+        console.log('User query result:', user ? 'Found' : 'Not found');
+
+        if (!user) {
+          console.log('❌ User not found:', email);
+          return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        console.log('✅ User found:', user.email);
+        
+        /* ── 3. Check password ───────────────────────────────── */
+        // Determine which field has the password hash
+        let passwordField = null;
+        let passwordHash = null;
+        
+        if (user.passwordHash) {
+          passwordField = 'passwordHash';
+          passwordHash = user.passwordHash;
+        } else if (user.password) {
+          passwordField = 'password';
+          passwordHash = user.password;
+        }
+        
+        if (!passwordHash) {
+          console.error('No password hash found for user:', email);
+          return res.status(500).json({ message: 'Account configuration error' });
+        }
+        
+        console.log(`Using ${passwordField} field for verification`);
+        
+        let passwordIsValid = false;
+        
+        // Verify the password using bcrypt
+        if (passwordHash.startsWith('$2a$') || passwordHash.startsWith('$2b$')) {
+          try {
+            passwordIsValid = await bcrypt.compare(password, passwordHash);
+            console.log('Password verification result:', passwordIsValid ? 'Valid' : 'Invalid');
+          } catch (bcryptError) {
+            console.error('Bcrypt error:', bcryptError);
+            return res.status(500).json({ message: 'Authentication error' });
+          }
+        } else {
+          console.error('Invalid password hash format for user:', email);
+          return res.status(500).json({ message: 'Account configuration error' });
+        }
+        
+        if (!passwordIsValid) {
+          console.log('❌ Invalid password for user:', email);
+          return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        /* ── 4. Get user roles ───────────────────────────────── */
+        let userRoles = [];
+        
+        if (user.roles) {
+          if (typeof user.roles === 'string') {
+            userRoles = [user.roles];
+          } else if (Array.isArray(user.roles)) {
+            userRoles = user.roles;
+          } else if (user.roles.$oid) {
+            // It's an ObjectId reference - look it up in the roles collection
+            const rolesCollection = usersWebDb.collection('roles');
+            const role = await rolesCollection.findOne({ _id: new mongoose.Types.ObjectId(user.roles.$oid) });
+            
+            if (role && role.name) {
+              userRoles.push(role.name);
+            }
+          }
+        }
+        
+        console.log('User roles:', userRoles);
+        
+        // If user is a teacher, get additional profile data from teachers database
+        let teacherProfile = null;
+        if (userRoles.includes('teacher') || userRoles.includes('guro')) {
+          try {
+            const teachersDb = mongoose.connection.useDb('teachers');
+            const profileCollection = teachersDb.collection('profile');
+            
+            // Try to find by user ID first
+            teacherProfile = await profileCollection.findOne({ 
+              userId: user._id 
+            });
+            
+            // If not found by ID, try by email
+            if (!teacherProfile) {
+              teacherProfile = await profileCollection.findOne({ email: user.email });
+            }
+            
+            if (teacherProfile) {
+              console.log('Found teacher profile:', teacherProfile._id);
+            } else {
+              console.log('No teacher profile found for user:', user._id);
+            }
+          } catch (err) {
+            console.warn('Error fetching teacher profile:', err.message);
+          }
+        }
+
+        /* ── 5. sign JWT ───────────────────────────────────── */
+        const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
+        
+        const token = jwt.sign(
+          {
+            id: user._id.toString(),
+            email: user.email,
+            roles: userRoles,
+            profileId: teacherProfile ? teacherProfile._id.toString() : null
+          },
+          secretKey,
+          { 
+            expiresIn: '1h',
+            issuer: 'literexia-api',
+            subject: user._id.toString()
+          }
+        );
+
+        console.log('✅ Login success for:', email);
+        console.log('User roles for redirection:', userRoles);
+
+        /* ── 6. success response ───────────────────────────── */
+        return res.json({
+          token,
+          user: { 
+            id: user._id.toString(), 
+            email: user.email, 
+            roles: userRoles,
+            profile: teacherProfile ? {
+              id: teacherProfile._id.toString(),
+              firstName: teacherProfile.firstName,
+              lastName: teacherProfile.lastName,
+              position: teacherProfile.position
+            } : null
+          }
+        });
+
+      } catch (err) {
+        console.error('💥 Login handler error:', err);
+        return res.status(500).json({ message: 'Server error' });
+      }
+    });
+
+    // Protected route to test authentication
+    app.get('/api/protected', authenticateToken, (req, res) => {
+      res.json({
+        message: 'Protected route accessed successfully',
+        user: req.user
+      });
+    });
+
+    // Test password verification route
+    app.post('/api/auth/test-password', async (req, res) => {
+      try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+          return res.status(400).json({ message: 'Email and password are required' });
+        }
+
+        // Find the user by email
+        const user = await User.findOne({ email });
+
+        if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Test the password
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        // Handle roles which might be a string (from DB) or array (converted)
+        let userRoles = user.roles;
+        if (typeof userRoles === 'string') {
+          userRoles = [userRoles]; // Convert string to array for consistency
+        }
+
+        return res.json({
+          isMatch,
+          message: isMatch ? 'Password is valid' : 'Password is invalid',
+          user: { id: user._id, email: user.email, roles: userRoles }
+        });
+      } catch (error) {
+        console.error('Error testing password:', error);
+        return res.status(500).json({ message: 'Server error', error: error.message });
+      }
+    });
+
+    // Add S3 image proxy endpoint
+    app.get('/api/proxy-image', async (req, res) => {
+      try {
+        const { url } = req.query;
+
+        if (!url) {
+          return res.status(400).send('Missing URL parameter');
+        }
+
+        // Only allow proxying from your S3 bucket for security
+        if (!url.includes('literexia-bucket.s3.ap-southeast-2.amazonaws.com')) {
+          return res.status(403).send('Unauthorized image source');
+        }
+
+        // Fetch the image
+        const response = await axios({
+          method: 'get',
+          url: url,
+          responseType: 'arraybuffer'
+        });
+
+        // Set proper content type
+        const contentType = response.headers['content-type'];
+        res.setHeader('Content-Type', contentType);
+
+        // Add cache headers
+        res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+
+        // Return the image data
+        res.send(response.data);
+      } catch (error) {
+        console.error('Error proxying image:', error);
+        res.status(404).send('Image not found');
+      }
+    });
+
+    // Add root route
+    app.get('/', (_req, res) => res.send('API is running…'));
+
+    // 404 handler
+    app.use((req, res) => {
+      console.log(`[404] Route not found: ${req.method} ${req.url}`);
+      res.status(404).json({ error: 'Route not found' });
+    });
+
+    // Error handling middleware
+    app.use((err, req, res, next) => {
+      console.error(`[ERROR] ${err.message}`);
+      res.status(500).json({ error: 'Server error', message: err.message });
     });
 
     // Start the server

@@ -53,6 +53,46 @@ const extractRoles = (decoded) => {
   } else if (decoded.userType) {
     roles = [decoded.userType];
   }
+
+  /**
+   * Resolves a role ID to its name from the database
+   * @param {string|Object} roleId - MongoDB ObjectId as string or object
+   * @returns {Promise<string|null>} - Role name or null if not found
+   */
+const resolveRoleFromId = async (roleId) => {
+  try {
+    if (!roleId) return null;
+    
+    // Extract the ID string if it's an ObjectId object
+    let idString;
+    if (typeof roleId === 'object' && roleId.$oid) {
+      idString = roleId.$oid;
+    } else if (typeof roleId === 'object') {
+      idString = String(roleId);
+    } else {
+      idString = roleId;
+    }
+    
+    // Connect to roles collection
+    const usersDb = mongoose.connection.useDb('users_web');
+    const rolesCollection = usersDb.collection('roles');
+    
+    let roleObjId;
+    try {
+      roleObjId = new mongoose.Types.ObjectId(idString);
+    } catch (err) {
+      console.warn('Invalid ObjectId format for role:', idString);
+      return null;
+    }
+    
+    // Query the role
+    const role = await rolesCollection.findOne({ _id: roleObjId });
+    
+    return role?.name || null;
+  } catch (err) {
+    console.error('Error resolving role from ID:', err);
+    return null;
+  }
   
   // Convert to array if somehow we got a non-array
   if (!Array.isArray(roles)) {

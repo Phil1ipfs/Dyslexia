@@ -589,10 +589,6 @@ function TeacherProfile() {
                 {formData.firstName} {formData.middleName ? `${formData.middleName} ` : ''}{formData.lastName}
               </h3>
 
-              <p className="lit-employee-id">
-                <span className="lit-label">Employee ID:</span>
-                <span className="lit-value">{formData.employeeId}</span>
-              </p>
               <div className="lit-contact-edit-group">
                 <div className="lit-input-group">
                   <span className="lit-input-label">Email:</span>

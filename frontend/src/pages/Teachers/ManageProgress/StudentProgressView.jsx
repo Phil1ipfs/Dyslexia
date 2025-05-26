@@ -1,393 +1,422 @@
+// src/components/TeacherPage/StudentProgressView.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   FaArrowLeft, FaChartLine, FaBook, FaLightbulb, FaListAlt,
-  FaCheck, FaExclamationTriangle, FaEdit, FaCheckCircle, FaSpinner, FaUserAlt, FaSave
+  FaCheck, FaExclamationTriangle, FaEdit, FaCheckCircle, FaSpinner, FaUser, FaSave,
+  FaLock
 } from 'react-icons/fa';
 
 // Import components
 import StudentProfileCard from '../../../components/TeacherPage/ManageProgress/StudentProfileCard';
 import AssessmentSummaryCard from '../../../components/TeacherPage/ManageProgress/AssessmentSummaryCard';
-import AssessmentResults from '../../../components/TeacherPage/ManageProgress/AssessmentResults';
+import PreAssessmentResults from '../../../components/TeacherPage/ManageProgress/PreAssessmentResults';
 import ProgressReport from '../../../components/TeacherPage/ManageProgress/ProgressReport';
-import CategoryAssignment from '../../../components/TeacherPage/ManageProgress/CategoryAssignment';
 import PrescriptiveAnalysis from '../../../components/TeacherPage/ManageProgress/PrescriptiveAnalysis';
 import ActivityEditModal from '../../../components/TeacherPage/ManageProgress/ActivityEditModal';
 import LoadingSpinner from '../../../components/TeacherPage/ManageProgress/common/LoadingSpinner';
 import ErrorMessage from '../../../components/TeacherPage/ManageProgress/common/ErrorMessage';
-import IndividualizedEducationProgress from '../../../components/TeacherPage/ManageProgress/IndividualizedEducationProgress';
 
+// Import services
 import StudentApiService from '../../../services/Teachers/StudentApiService';
+import CategoryResultsService from '../../../services/Teachers/CategoryResultsService';
 
 import '../../../css/Teachers/studentProgressView.css';
-import '../../../components/TeacherPage/ManageProgress/css/IndividualizedEducationProgress.css';
 
+/**
+ * StudentProgressView Component
+ * 
+ * This component displays a comprehensive view of a student's progress, assessments,
+ * and allows teachers to create customized intervention activities.
+ */
 const StudentProgressView = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  // State
-  const [activeTab, setActiveTab] = useState('assessment');
+  // State for student data
   const [student, setStudent] = useState(null);
   const [assessmentData, setAssessmentData] = useState(null);
-  const [progressData, setProgressData] = useState(null);
-  const [categoryProgress, setCategoryProgress] = useState(null);
-  const [readingLevelInfo, setReadingLevelInfo] = useState(null);
-  const [assignmentData, setAssignmentData] = useState([]);
-  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [categoryResults, setCategoryResults] = useState(null);
+  
+  // State for prescriptive analysis
   const [prescriptiveRecommendations, setPrescriptiveRecommendations] = useState([]);
+  
+  // State for IEP report
+  const [learningObjectives, setLearningObjectives] = useState([]);
+  
+  // UI states
+  const [activeTab, setActiveTab] = useState('assessment');
   const [editingActivity, setEditingActivity] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [assignmentSuccess, setAssignmentSuccess] = useState(false);
-  const [categoriesAssigned, setCategoriesAssigned] = useState(false);
   const [pushToMobileSuccess, setPushToMobileSuccess] = useState(false);
-  const [learningObjectives, setLearningObjectives] = useState([]);
-  const [editingFeedback, setEditingFeedback] = useState({});
-  const [tempFeedback, setTempFeedback] = useState({});
-  const [availableCategories, setAvailableCategories] = useState([]);
-  const [mainAssessmentData, setMainAssessmentData] = useState([]);
+  const [preAssessmentCompleted, setPreAssessmentCompleted] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
-// Fetch student data
-useEffect(() => {
-const fetchData = async () => {
-  try {
-    setLoading(true);
+  /**
+   * Fetch student data when component mounts or ID changes
+   * This includes basic info, assessment results, and recommendations
+   */
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
 
-    // Get student details
-    let hasError = false;
-    let studentData;
-    
-    try {
-      studentData = await StudentApiService.getStudentDetails(id);
-      setStudent(studentData);
-    } catch (studentError) {
-      console.error('Failed to load student details:', studentError);
-      hasError = true;
-      // Create a default student object with reading level if in URL
-      const urlSearchParams = new URLSearchParams(window.location.search);
-      const readingLevel = urlSearchParams.get('readingLevel') || 'Low Emerging';
-      
-      studentData = {
-        id: id,
-        name: "Student " + id,
-        firstName: "Student",
-        lastName: id,
-        readingLevel: readingLevel,
-        gradeLevel: "Grade 1",
-        // Flag to check if this is a new pre-assessment student
-        preAssessmentCompleted: true,
-        preAssessmentJustCompleted: true
-      };
-      setStudent(studentData);
-    }
+        // Get student details
+        const studentData = await StudentApiService.getStudentDetails(id);
+        setStudent(studentData);
 
-    // Continue with other data fetching, handling each independently
-    try {
-      const assessment = await StudentApiService.getPreAssessmentResults(id);
-      setAssessmentData(assessment);
-    } catch (assessmentError) {
-      console.warn('Failed to load assessment data:', assessmentError);
-      // Assessment data is optional, continue
-    }
-
-    try {
-      const progress = await StudentApiService.getProgressData(id);
-      setProgressData(progress);
-    } catch (progressError) {
-      console.warn('Failed to load progress data:', progressError);
-      // Progress data is optional, continue
-    }
-
-    try {
-      // For student who just completed pre-assessment, try initializing
-      if (studentData?.preAssessmentCompleted && studentData?.preAssessmentJustCompleted) {
-        try {
-          console.log("Initializing student data after pre-assessment");
-          await StudentApiService.initializeStudentAfterPreAssessment(id, studentData.readingLevel);
-        } catch (initError) {
-          console.warn("Failed to initialize student after pre-assessment:", initError);
-        }
-      }
-      
-      const categoryProgressData = await StudentApiService.getCategoryProgress(id);
-      setCategoryProgress(categoryProgressData);
-      
-      // Check if any categories are already assigned
-      const hasAssignedCategories = categoryProgressData && 
-        categoryProgressData.categories && 
-        categoryProgressData.categories.some(cat => cat.status === 'in_progress');
-      
-      setCategoriesAssigned(hasAssignedCategories);
-      
-      // Initialize learning objectives based on assigned categories
-      if (hasAssignedCategories && categoryProgressData.categories) {
-        const assignedCategories = categoryProgressData.categories.filter(
-          cat => cat.status === 'in_progress' || cat.status === 'completed'
-        );
+        // Get PRE-assessment results and status
+        const preAssessmentStatus = await StudentApiService.getPreAssessmentStatus(id);
+        const preAssessmentData = await StudentApiService.getPreAssessmentResults(id);
         
-        setLearningObjectives(assignedCategories.map(cat => ({
-          id: cat.categoryId,
-          title: cat.categoryName,
-          mainAssessmentId: cat.mainAssessmentId,
-          assistance: null, // null, 'minimal', 'moderate', 'maximal'
-          remarks: '',
-          isEditingRemarks: false
-        })));
-      }
-      
-      // If categories are assigned, get prescription
-      if (hasAssignedCategories) {
-        try {
-          const recommendations = await StudentApiService.getPrescriptiveRecommendations(id);
-          setPrescriptiveRecommendations(recommendations);
-        } catch (recommendationsError) {
-          console.warn('Failed to load recommendations:', recommendationsError);
+        // Debug logging
+        console.log('Pre-assessment data received:', preAssessmentData);
+        console.log('Pre-assessment status:', preAssessmentStatus);
+        
+        // Check if pre-assessment is completed
+        const hasCompletedPreAssessment = preAssessmentStatus?.hasCompleted || 
+                                          preAssessmentStatus?.preAssessmentCompleted ||
+                                          (preAssessmentData && preAssessmentData.hasCompleted) ||
+                                          studentData?.preAssessmentCompleted;
+        
+        setPreAssessmentCompleted(hasCompletedPreAssessment);
+        setAssessmentData(preAssessmentData);
+
+        // Get data for progress report
+        const fetchProgressData = async () => {
+          console.log("Fetching progress data...");
+          
+          // First try getting category results
+          const categoryResults = await StudentApiService.getCategoryResults(id);
+          
+          if (categoryResults && categoryResults.categories && categoryResults.categories.length > 0) {
+            // We have valid category results data
+            console.log("Using category results data for progress report");
+            setCategoryResults(categoryResults);
+            return categoryResults;
+          }
+          
+          // If no category results, try using pre-assessment data
+          console.log("No category results found, checking pre-assessment data");
+          
+          if (preAssessmentData) {
+            // First check if pre-assessment data already has categories format
+            if (preAssessmentData.categories && preAssessmentData.categories.length > 0) {
+              console.log("Using categories from pre-assessment data");
+              setCategoryResults(preAssessmentData);
+              return preAssessmentData;
+            }
+            
+            // Otherwise try to transform skillDetails
+            if (preAssessmentData.skillDetails && preAssessmentData.skillDetails.length > 0) {
+              console.log("Transforming pre-assessment skillDetails to categories format");
+              const transformedData = CategoryResultsService.transformPreAssessmentData(preAssessmentData);
+              setCategoryResults(transformedData);
+              return transformedData;
+            }
+          }
+          
+          // If we reach here, we have no valid progress data
+          console.log("No valid progress data found");
+          setCategoryResults(null);
+          return null;
+        };
+
+        const progressData = await fetchProgressData();
+        
+        // Initialize learning objectives if we have progress data
+        if (progressData && progressData.categories && progressData.categories.length > 0) {
+          initializeLearningObjectives(progressData);
+          generateRecommendationsFromResults(progressData, studentData);
+        } else {
+          generateMockRecommendations(studentData);
         }
+        
+        setLoading(false);
+      } catch (err) {
+        console.error('Error loading student data:', err);
+        setError('Failed to load student data. Please try again later.');
+        setLoading(false);
       }
-    } catch (categoryError) {
-      console.warn('Failed to load category progress:', categoryError);
-      // Set default empty category progress
-      setCategoryProgress({
-        userId: id,
-        categories: [],
-        completedCategories: 0,
-        totalCategories: 0,
-        overallProgress: 0
-      });
-    }
-
-    try {
-      const readingLevelData = await StudentApiService.getReadingLevelProgression(id);
-      setReadingLevelInfo(readingLevelData);
-    } catch (readingLevelError) {
-      console.warn('Failed to load reading level info:', readingLevelError);
-    }
-
-    try {
-      const assignments = await StudentApiService.getAssessmentAssignments(id);
-      setAssignmentData(assignments);
-    } catch (assignmentsError) {
-      console.warn('Failed to load assessment assignments:', assignmentsError);
-      setAssignmentData([]);
-    }
-
-    try {
-      const categories = await StudentApiService.getAssessmentCategories();
-      setAvailableCategories(categories);
-    } catch (categoriesError) {
-      console.warn('Failed to load assessment categories:', categoriesError);
-      setAvailableCategories([]);
-    }
-
-   try {
-      // Check if getMainAssessmentDetails exists before calling it
-      if (typeof StudentApiService.getMainAssessmentDetails === 'function') {
-        const mainAssessments = await StudentApiService.getMainAssessmentDetails();
-        setMainAssessmentData(mainAssessments);
-      } else {
-        console.warn('getMainAssessmentDetails method is not defined');
-        setMainAssessmentData([]);
-      }
-    } catch (mainAssessmentsError) {
-      console.warn('Failed to load main assessment details:', mainAssessmentsError);
-      setMainAssessmentData([]);
-    }
-
- 
-
-    // If there were any critical errors, set the error state
-    if (hasError) {
-      setError('Some data could not be loaded. The view may be incomplete.');
-    }
-
-    setLoading(false);
-  } catch (err) {
-    console.error('Error loading student data:', err);
-    setError('Failed to load student data. Please try again later.');
-    setLoading(false);
-  }
-};
+    };
 
     fetchData();
   }, [id]);
 
-  // Handle category selection
-  const handleCategorySelect = (category) => {
-    // Check if category is already assigned
-    if (categoryProgress &&
-      categoryProgress.categories &&
-      categoryProgress.categories.some(cat =>
-        cat.categoryId === category.categoryID &&
-        (cat.status === 'in_progress' || cat.status === 'completed')
-      )) {
-      return;
-    }
-
-    const isSelected = selectedCategories.some(c => c.categoryID === category.categoryID);
-
-    if (isSelected) {
-      setSelectedCategories(selectedCategories.filter(c => c.categoryID !== category.categoryID));
-    } else {
-      setSelectedCategories([...selectedCategories, category]);
-    }
-  };
-
-  // Handle category assignment
-  const handleAssignCategories = async () => {
-    if (selectedCategories.length === 0) return;
-
-    try {
-      setLoading(true);
-
-      // Prepare data for assignment
-      const assignmentPayload = {
-        studentId: id,
-        readingLevel: student?.readingLevel || 'Low Emerging',
-        categories: selectedCategories.map(cat => ({
-          categoryId: cat.categoryID,
-          categoryName: cat.categoryTitle
-        }))
+  /**
+   * Helper to initialize learning objectives based on category results
+   * @param {Object} categoryResults - The category results from the API
+   */
+  const initializeLearningObjectives = (categoryResults) => {
+    if (!categoryResults || !categoryResults.categories || categoryResults.categories.length === 0) return;
+    
+    // Create learning objectives based on categories
+    const objectives = categoryResults.categories.map((category, index) => {
+      // Format category name for display
+      const displayName = category.categoryName
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, l => l.toUpperCase());
+        
+      return {
+        id: index + 1,
+        title: `Mastering ${displayName}`,
+        category: category.categoryName,
+        completed: category.isPassed,
+        assistance: category.isPassed ? 'minimal' : 'moderate',
+        remarks: category.isPassed 
+          ? `Student has achieved mastery in ${displayName}.` 
+          : `Student needs additional practice in ${displayName}.`,
+        isEditingRemarks: false
       };
-
-      // Call API to assign categories
-      const result = await StudentApiService.assignCategoriesToStudent(assignmentPayload);
-
-      if (result.success) {
-        // Refresh category progress data
-        try {
-          const updatedCategoryProgress = await StudentApiService.getCategoryProgress(id);
-          setCategoryProgress(updatedCategoryProgress);
-        } catch (progressError) {
-          console.warn('Failed to refresh category progress:', progressError);
+    });
+    
+    setLearningObjectives(objectives);
+  };
+  
+  /**
+   * Generate recommendations based on actual category results
+   * @param {Object} results - The category results
+   * @param {Object} student - The student data
+   */
+  const generateRecommendationsFromResults = (results, student) => {
+    if (!results || !results.categories || !student) return;
+    
+    // Generate recommendations for categories that need improvement
+    const recommendations = results.categories
+      .filter(category => !category.isPassed)
+      .map((category, index) => {
+        // Format category name for display
+        const displayName = category.categoryName
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, l => l.toUpperCase());
+          
+        // Select appropriate icon based on category
+        let icon;
+        let title;
+        let analysis;
+        let recommendation;
+        let questions = [];
+        
+        switch(category.categoryName.toLowerCase()) {
+          case 'alphabet_knowledge':
+          case 'alphabet knowledge':
+            title = "Letter Recognition Practice";
+            analysis = "Student struggles with distinguishing similar letters.";
+            recommendation = "Provide focused practice on distinguishing visually similar letters through systematic exposure and multisensory approaches.";
+            questions = [
+              {
+                id: 101 + index,
+                questionText: "Anong katumbas na maliit na letra?",
+                questionType: "patinig",
+                options: ["a", "e", "i"],
+                correctAnswer: 0
+              }
+            ];
+            break;
+            
+          case 'phonological_awareness':
+          case 'phonological awareness':
+            title = "Syllable Blending";
+            analysis = "Student has difficulty blending syllables to form complete words.";
+            recommendation = "Practice syllable blending with simple two-syllable words, gradually increasing complexity.";
+            questions = [
+              {
+                id: 201 + index,
+                questionText: "Kapag pinagsama ang mga pantig, ano ang mabubuo?",
+                questionType: "malapantig",
+                options: ["BOLA", "LABO", "MATA"],
+                correctAnswer: 0
+              }
+            ];
+            break;
+            
+          case 'word_recognition':
+          case 'word recognition':
+            title = "Word Recognition";
+            analysis = "Student can recognize some common words but needs more practice with less frequent vocabulary.";
+            recommendation = "Expand vocabulary through regular exposure to new words with supporting visuals.";
+            questions = [
+              {
+                id: 301 + index,
+                questionText: "Piliin ang tamang larawan para sa salitang:",
+                questionType: "word",
+                options: ["aso", "pusa", "bola"],
+                correctAnswer: 0
+              }
+            ];
+            break;
+            
+          case 'decoding':
+            title = "Sound-Letter Correspondence";
+            analysis = "Student struggles with connecting sounds to letters in unfamiliar words.";
+            recommendation = "Practice decoding skills with a structured phonics approach.";
+            questions = [
+              {
+                id: 401 + index,
+                questionText: "Paano babaybayin ang salitang ito?",
+                questionType: "word",
+                options: ["B-O-L-A", "L-O-B-A", "B-A-L-O"],
+                correctAnswer: 0
+              }
+            ];
+            break;
+            
+          case 'reading_comprehension':
+          case 'reading comprehension':
+            title = "Basic Story Comprehension";
+            analysis = "Student struggles with remembering key details from short passages.";
+            recommendation = "Practice with simple stories that include visual supports, focusing on recall of main events and characters.";
+            questions = [
+              {
+                id: 501 + index,
+                questionText: "Sino ang pangunahing tauhan sa kwento?",
+                questionType: "comprehension",
+                options: ["Si Maria", "Si Juan", "Ang ina"],
+                correctAnswer: 0
+              }
+            ];
+            break;
+            
+          default:
+            title = `${displayName} Practice`;
+            analysis = `Student needs additional practice with ${displayName.toLowerCase()}.`;
+            recommendation = `Provide structured practice in ${displayName.toLowerCase()} with regular feedback.`;
+            questions = [
+              {
+                id: 601 + index,
+                questionText: "Sample question",
+                questionType: "general",
+                options: ["Option A", "Option B", "Option C"],
+                correctAnswer: 0
+              }
+            ];
         }
-
-        // Refresh assignments data
-        try {
-          const updatedAssignments = await StudentApiService.getAssessmentAssignments(id);
-          setAssignmentData(updatedAssignments);
-        } catch (assignmentsError) {
-          console.warn('Failed to refresh assignments:', assignmentsError);
-        }
-
-        setSelectedCategories([]);
-        setAssignmentSuccess(true);
-
-        // Get prescriptive recommendations
-        try {
-          const recommendations = await StudentApiService.getPrescriptiveRecommendations(id);
-          setPrescriptiveRecommendations(recommendations);
-        } catch (recommendationsError) {
-          console.warn('Failed to load recommendations:', recommendationsError);
-        }
-
-        // Unlock the other tabs
-        setCategoriesAssigned(true);
-
-        // Reset success message after 3 seconds
-        setTimeout(() => {
-          setAssignmentSuccess(false);
-        }, 3000);
+        
+        return {
+          id: index + 1,
+          title: title,
+          category: category.categoryName,
+          readingLevel: student?.readingLevel || "Low Emerging",
+          score: category.score || 0,
+          targetScore: category.passingThreshold || 75,
+          status: "draft",
+          analysis: analysis,
+          recommendation: recommendation,
+          questions: questions
+        };
+      });
+      
+    setPrescriptiveRecommendations(recommendations);
+  };
+  
+  /**
+   * Generate mock recommendations for the prescriptive analysis
+   * @param {Object} student - The student data
+   */
+  const generateMockRecommendations = (student) => {
+    // Fallback recommendations
+    const mockRecommendations = [
+      {
+        id: 1,
+        title: "Letter Recognition Practice",
+        category: "Alphabet Knowledge",
+        readingLevel: student?.readingLevel || "Low Emerging",
+        score: 60,
+        targetScore: 75,
+        status: "draft",
+        analysis: "Student struggles with distinguishing similar letters, particularly 'b', 'd', and 'p'.",
+        recommendation: "Provide focused practice on distinguishing visually similar letters through systematic exposure and multisensory approaches.",
+        questions: [
+          {
+            id: 101,
+            questionText: "Anong katumbas na maliit na letra?",
+            questionType: "patinig",
+            options: ["a", "e", "i"],
+            correctAnswer: 0
+          }
+        ]
+      },
+      {
+        id: 2,
+        title: "Syllable Blending",
+        category: "Phonological Awareness",
+        readingLevel: student?.readingLevel || "Low Emerging",
+        score: 50,
+        targetScore: 75,
+        status: "draft",
+        analysis: "Student has difficulty blending syllables to form complete words.",
+        recommendation: "Practice syllable blending with simple two-syllable words, gradually increasing complexity.",
+        questions: [
+          {
+            id: 201,
+            questionText: "Kapag pinagsama ang mga pantig, ano ang mabubuo?",
+            questionType: "malapantig",
+            options: ["BOLA", "LABO", "MATA"],
+            correctAnswer: 0
+          }
+        ]
+      },
+      {
+        id: 3,
+        title: "Word Recognition",
+        category: "Word Recognition",
+        readingLevel: student?.readingLevel || "Low Emerging",
+        score: 65,
+        targetScore: 75,
+        status: "draft",
+        analysis: "Student can recognize some common words but needs more practice with less frequent vocabulary.",
+        recommendation: "Expand vocabulary through regular exposure to new words with supporting visuals.",
+        questions: [
+          {
+            id: 301,
+            questionText: "Piliin ang tamang larawan para sa salitang:",
+            questionType: "word",
+            options: ["aso", "pusa", "bola"],
+            correctAnswer: 0
+          }
+        ]
       }
-
-      setLoading(false);
-    } catch (err) {
-      console.error('Error assigning categories:', err);
-      setError('Failed to assign categories. Please try again.');
-      setLoading(false);
-    }
+    ];
+    
+    setPrescriptiveRecommendations(mockRecommendations);
   };
 
-  // Handle learning objective assistance level
-  const handleAssistanceChange = (categoryId, level) => {
-    setLearningObjectives(prev =>
-      prev.map(obj =>
-        obj.id === categoryId ? { ...obj, assistance: level } : obj
-      )
-    );
-  };
-
-  // Handle remarks editing
-  const toggleRemarksEditing = (categoryId) => {
-    setLearningObjectives(prev =>
-      prev.map(obj =>
-        obj.id === categoryId
-          ? { ...obj, isEditingRemarks: !obj.isEditingRemarks }
-          : obj
-      )
-    );
-  };
-
-  const handleRemarksChange = (categoryId, remarks) => {
-    setLearningObjectives(prev =>
-      prev.map(obj =>
-        obj.id === categoryId ? { ...obj, remarks } : obj
-      )
-    );
-  };
-
-  // Add this function to StudentProgressView.jsx
-  const fetchCategoryProgress = async () => {
-    try {
-      const updatedCategoryProgress = await StudentApiService.getCategoryProgress(id);
-      setCategoryProgress(updatedCategoryProgress);
-
-      // Check if any categories are now assigned
-      const hasAssignedCategories = updatedCategoryProgress &&
-        updatedCategoryProgress.categories &&
-        updatedCategoryProgress.categories.some(cat => cat.status === 'in_progress');
-
-      setCategoriesAssigned(hasAssignedCategories);
-
-      // Initialize learning objectives based on assigned categories
-      if (hasAssignedCategories && updatedCategoryProgress.categories) {
-        const assignedCategories = updatedCategoryProgress.categories.filter(
-          cat => cat.status === 'in_progress' || cat.status === 'completed'
-        );
-
-        setLearningObjectives(assignedCategories.map(cat => ({
-          id: cat.categoryId,
-          title: cat.categoryName,
-          mainAssessmentId: cat.mainAssessmentId,
-          assistance: null,
-          remarks: '',
-          isEditingRemarks: false
-        })));
-      }
-    } catch (error) {
-      console.error('Failed to refresh category progress:', error);
-    }
-  };
-
-  // Handle editing an activity
+  /**
+   * Handle editing an activity from the prescriptive analysis
+   * @param {Object} activity - The activity to edit
+   */
   const handleEditActivity = (activity) => {
     setEditingActivity(activity);
   };
 
-  // Handle saving edited activity and pushing to mobile
+  /**
+   * Handle saving an edited activity and pushing to mobile
+   * @param {Object} updatedActivity - The updated activity
+   */
   const handleSaveActivity = async (updatedActivity) => {
     try {
       setLoading(true);
-      const result = await StudentApiService.updateActivity(updatedActivity.id, updatedActivity);
+      
+      // In a real implementation, this would be an API call
+      // Here we're just updating state directly
+      
+      // Update recommendations list with the edited activity
+      const updatedRecommendations = prescriptiveRecommendations.map(rec => {
+        if (rec.id === updatedActivity.id) {
+          // Mark as pushed to mobile directly
+          return { ...rec, ...updatedActivity, status: 'pushed_to_mobile' };
+        }
+        return rec;
+      });
 
-      if (result.success) {
-        // Update recommendations
-        const updatedRecommendations = prescriptiveRecommendations.map(rec => {
-          if (rec.id === updatedActivity.id) {
-            // Mark as pushed to mobile
-            return { ...rec, ...updatedActivity, status: 'pushed_to_mobile' };
-          }
-          return rec;
-        });
+      setPrescriptiveRecommendations(updatedRecommendations);
+      setPushToMobileSuccess(true);
 
-        setPrescriptiveRecommendations(updatedRecommendations);
-        setPushToMobileSuccess(true);
-
-        // Reset success message after 3 seconds
-        setTimeout(() => {
-          setPushToMobileSuccess(false);
-        }, 3000);
-      }
+      // Reset success message after 3 seconds
+      setTimeout(() => {
+        setPushToMobileSuccess(false);
+      }, 3000);
 
       setEditingActivity(null);
       setLoading(false);
@@ -398,71 +427,68 @@ const fetchData = async () => {
     }
   };
 
-  // Handle feedback for assessment responses
-  const handleProvideFeedback = async (responseId, feedback, nextSteps) => {
-    try {
-      setLoading(true);
-      const result = await StudentApiService.provideFeedback(responseId, {
-        feedback,
-        nextSteps
-      });
-
-      if (result.success) {
-        // Refresh assessment data
-        try {
-          const updatedAssignments = await StudentApiService.getAssessmentAssignments(id);
-          setAssignmentData(updatedAssignments);
-        } catch (assignmentsError) {
-          console.warn('Failed to refresh assignments:', assignmentsError);
-        }
-
-        setEditingFeedback({});
-        setTempFeedback({});
-      }
-
-      setLoading(false);
-    } catch (err) {
-      console.error('Error providing feedback:', err);
-      setError('Failed to save feedback. Please try again.');
-      setLoading(false);
-    }
+  /**
+   * Handle assistance level change in learning objectives
+   * @param {number} objectiveId - The ID of the objective to update
+   * @param {string} level - The new assistance level
+   */
+  const handleAssistanceChange = (objectiveId, level) => {
+    setLearningObjectives(prev =>
+      prev.map(obj =>
+        obj.id === objectiveId ? { ...obj, assistance: level } : obj
+      )
+    );
   };
 
-  // Go back to students list
+  /**
+   * Toggle remarks editing state for a learning objective
+   * @param {number} objectiveId - The ID of the objective to update
+   */
+  const toggleRemarksEditing = (objectiveId) => {
+    setLearningObjectives(prev =>
+      prev.map(obj =>
+        obj.id === objectiveId
+          ? { ...obj, isEditingRemarks: !obj.isEditingRemarks }
+          : obj
+      )
+    );
+  };
+
+  /**
+   * Update remarks for a learning objective
+   * @param {number} objectiveId - The ID of the objective to update
+   * @param {string} remarks - The new remarks
+   */
+  const handleRemarksChange = (objectiveId, remarks) => {
+    setLearningObjectives(prev =>
+      prev.map(obj =>
+        obj.id === objectiveId ? { ...obj, remarks } : obj
+      )
+    );
+  };
+
+  /**
+   * Navigate back to the students list
+   */
   const goBack = () => {
     navigate('/teacher/manage-progress');
   };
 
-  // Check if a tab should be locked
-  const isTabLocked = (tabName) => {
-    if (tabName === 'assessment' || tabName === 'categories') {
-      return false;
-    }
-    return !categoriesAssigned;
-  };
-
-  // Handle tab click
-  const handleTabClick = (tabName) => {
-    if (!isTabLocked(tabName)) {
-      setActiveTab(tabName);
+  // Handle tab change with pre-assessment check
+  const handleTabChange = (tab) => {
+    if (tab === 'assessment' || preAssessmentCompleted) {
+      setActiveTab(tab);
     }
   };
 
-  // Try clearing error and reloading component
-  const handleRetry = () => {
-    setError(null);
-    setLoading(true);
-    window.location.reload();
-  };
-
-  // Show loading spinner while initial data loads
+  // Loading state
   if (loading && !student) {
     return <LoadingSpinner message="Loading student data..." />;
   }
 
-  // Show error message if critical data failed to load
+  // Error state
   if (error && !student) {
-    return <ErrorMessage message={error} retry={handleRetry} />;
+    return <ErrorMessage message={error} retry={() => window.location.reload()} />;
   }
 
   return (
@@ -470,19 +496,19 @@ const fetchData = async () => {
       {/* Header */}
       <div className="literexia-profile-header">
         <div className="literexia-header-content">
-          <h1>Student Profile and Assessment</h1>
-          <p>Review assessment results and assign categories based on reading skill level.</p>
+          <h1>Student Progress</h1>
+          <p>Review assessment results and create personalized interventions based on reading skill needs.</p>
         </div>
         <button className="literexia-btn-back" onClick={goBack}>
           <FaArrowLeft /> Back to Students List
         </button>
       </div>
 
-      {/* Warning banner for partial data load */}
-      {error && student && (
+      {/* Pre-assessment required alert */}
+      {!preAssessmentCompleted && (
         <div className="literexia-warning-alert">
           <FaExclamationTriangle />
-          {error} <button onClick={handleRetry} className="literexia-retry-link">Retry loading</button>
+          <span>This student has not completed pre-assessment yet. Other tabs will be locked until pre-assessment is completed.</span>
         </div>
       )}
 
@@ -494,7 +520,7 @@ const fetchData = async () => {
         </div>
       )}
 
-      {/* Top cards */}
+      {/* Top cards - Student info and assessment summary */}
       <div className="literexia-top-cards">
         {student && <StudentProfileCard student={student} />}
         {assessmentData && (
@@ -504,111 +530,78 @@ const fetchData = async () => {
         )}
       </div>
 
-      {/* Tabs */}
+      {/* Tabs navigation */}
       <div className="literexia-tabs-navigation">
         <button
           className={`literexia-tab-button ${activeTab === 'assessment' ? 'active' : ''}`}
-          onClick={() => handleTabClick('assessment')}
+          onClick={() => handleTabChange('assessment')}
         >
-          <FaChartLine /> Assessment Results
+          <FaChartLine /> Pre Assessment Results
         </button>
 
         <button
-          className={`literexia-tab-button ${activeTab === 'categories' ? 'active' : ''}`}
-          onClick={() => handleTabClick('categories')}
+          className={`literexia-tab-button ${activeTab === 'progress' ? 'active' : ''} ${!preAssessmentCompleted ? 'locked' : ''}`}
+          onClick={() => handleTabChange('progress')}
+          disabled={!preAssessmentCompleted}
         >
-          <FaBook /> Category Assignment
+          {!preAssessmentCompleted && <FaLock className="lock-icon" />}
+          <FaChartLine /> Post Assessment Progress
         </button>
 
         <button
-          className={`literexia-tab-button ${activeTab === 'progress' ? 'active' : ''} ${isTabLocked('progress') ? 'locked' : ''}`}
-          onClick={() => handleTabClick('progress')}
+          className={`literexia-tab-button ${activeTab === 'prescriptive' ? 'active' : ''} ${!preAssessmentCompleted ? 'locked' : ''}`}
+          onClick={() => handleTabChange('prescriptive')}
+          disabled={!preAssessmentCompleted}
         >
-          <FaChartLine /> Progress Report
-        </button>
-
-        <button
-          className={`literexia-tab-button ${activeTab === 'prescriptive' ? 'active' : ''} ${isTabLocked('prescriptive') ? 'locked' : ''}`}
-          onClick={() => handleTabClick('prescriptive')}
-        >
+          {!preAssessmentCompleted && <FaLock className="lock-icon" />}
           <FaLightbulb /> Prescriptive Analysis
         </button>
 
         <button
-          className={`literexia-tab-button ${activeTab === 'individualProgress' ? 'active' : ''} ${isTabLocked('individualProgress') ? 'locked' : ''}`}
-          onClick={() => handleTabClick('individualProgress')}
+          className={`literexia-tab-button ${activeTab === 'iep' ? 'active' : ''} ${!preAssessmentCompleted ? 'locked' : ''}`}
+          onClick={() => handleTabChange('iep')}
+          disabled={!preAssessmentCompleted}
         >
-          <FaCheckCircle /> Individualized Education Progress
+          {!preAssessmentCompleted && <FaLock className="lock-icon" />}
+          <FaCheckCircle /> IEP Report
         </button>
       </div>
 
       {/* Tab content */}
       <div className="literexia-tab-content">
+        {/* Pre Assessment Results Tab */}
         {activeTab === 'assessment' && (
           <div className="literexia-tab-panel">
             <div className="literexia-panel-header">
               <h2>Pre-Assessment Results (CRLA)</h2>
             </div>
             <div className="literexia-panel-content">
-              {assessmentData ? (
-                <AssessmentResults assessmentData={assessmentData} />
+              {assessmentData && assessmentData.skillDetails && assessmentData.skillDetails.length > 0 ? (
+                <PreAssessmentResults assessmentData={assessmentData} />
               ) : (
                 <div className="literexia-empty-state">
                   <FaExclamationTriangle />
-                  <p>No assessment data available for this student.</p>
+                  <p>No pre-assessment data available for this student. The student needs to complete the pre-assessment first.</p>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {activeTab === 'categories' && (
+        {/* Post Assessment Progress Tab */}
+        {activeTab === 'progress' && (
           <div className="literexia-tab-panel">
             <div className="literexia-panel-header">
-              <h2>Assign Assessment Categories</h2>
+              <h2>Post Assessment Progress Report</h2>
             </div>
             <div className="literexia-panel-content">
-              <h3>Assessment Categories for {student?.name || `Student ${id}`}</h3>
-              {availableCategories && availableCategories.length > 0 ? (
-                <CategoryAssignment
-                  studentId={id}
-                  studentName={student?.name || `Student ${id}`}
-                  studentReadingLevel={student?.readingLevel || 'Low Emerging'}
-                  onAssignmentComplete={(result) => {
-                    setAssignmentSuccess(true);
-                    setCategoriesAssigned(true);
-                    // Clear selection and show success message
-                    setSelectedCategories([]);
-                    setTimeout(() => setAssignmentSuccess(false), 3000);
-
-                    // Refresh category progress data
-                    fetchCategoryProgress();
-                  }}
-                />
-              ) : (
-                <div className="literexia-empty-state">
-                  <FaExclamationTriangle />
-                  <p>No assessment categories available at this time.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-
-
-        {activeTab === 'progress' && !isTabLocked('progress') && (
-          <div className="literexia-tab-panel">
-            <div className="literexia-panel-header">
-              <h2>Progress Report</h2>
-            </div>
-            <div className="literexia-panel-content">
-              {progressData && categoryProgress ? (
+              {categoryResults ? (
                 <ProgressReport
-                  progressData={progressData}
-                  categoryProgress={categoryProgress}
-                  readingLevelInfo={readingLevelInfo}
-                  assessmentAssignments={assignmentData}
+                  progressData={categoryResults}
+                  onViewRecommendations={(category) => {
+                    setActiveTab('prescriptive');
+                    setSelectedCategory(category.categoryName);
+                  }}
                 />
               ) : (
                 <div className="literexia-empty-state">
@@ -620,85 +613,159 @@ const fetchData = async () => {
           </div>
         )}
 
-        {activeTab === 'individualProgress' && !isTabLocked('individualProgress') && (
+        {/* Prescriptive Analysis Tab - For creating interventions */}
+        {activeTab === 'prescriptive' && (
+          <div className="literexia-tab-panel">
+            <div className="literexia-panel-header">
+              <h2>Prescriptive Analysis and Intervention</h2>
+            </div>
+            <div className="literexia-panel-content">
+              {(prescriptiveRecommendations && prescriptiveRecommendations.length > 0) || (student && student.readingLevel) ? (
+                <PrescriptiveAnalysis
+                  student={student}
+                  categoryResults={categoryResults}
+                  prescriptiveAnalyses={prescriptiveRecommendations}
+                  studentId={id}
+                  onCreateActivity={handleEditActivity}
+                />
+              ) : (
+                <div className="literexia-empty-state">
+                  <FaExclamationTriangle />
+                  <p>No personalized activities available for this student yet. Complete an assessment first.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* IEP Report Tab */}
+        {activeTab === 'iep' && (
           <div className="literexia-tab-panel">
             <div className="literexia-panel-header">
               <h2>Individualized Education Progress</h2>
             </div>
             <div className="literexia-panel-content">
-              {categoryProgress && categoryProgress.categories && categoryProgress.categories.some(cat =>
-                cat.status === 'in_progress' || cat.status === 'completed'
-              ) ? (
-                <IndividualizedEducationProgress
-                  assignedCategories={categoryProgress.categories.filter(
-                    cat => cat.status === 'in_progress' || cat.status === 'completed'
-                  )}
-                  progressData={progressData}
-                  learningObjectives={learningObjectives}
-                  onAssistanceChange={handleAssistanceChange}
-                  onRemarksChange={handleRemarksChange}
-                  onToggleRemarksEditing={toggleRemarksEditing}
-                />
+              <div className="literexia-iep-info">
+                <p>
+                  This section shows the student's progress in meeting individualized learning objectives.
+                  You can track their progress, adjust assistance levels, and add notes about their development.
+                </p>
+              </div>
+              
+              {learningObjectives.length > 0 ? (
+                <div className="literexia-iep-table-container">
+                  <table className="literexia-iep-table">
+                    <thead>
+                      <tr>
+                        <th>Objective</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th colSpan="3">Assistance Level</th>
+                        <th>Remarks</th>
+                      </tr>
+                      <tr className="literexia-assistance-level-header">
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th>Minimal</th>
+                        <th>Moderate</th>
+                        <th>Substantial</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {learningObjectives.map((objective) => (
+                        <tr key={objective.id}>
+                          <td>{objective.title}</td>
+                          <td>
+                            {objective.category
+                              .replace(/_/g, ' ')
+                              .replace(/\b\w/g, l => l.toUpperCase())}
+                          </td>
+                          <td className="literexia-status-cell">
+                            {objective.completed ? (
+                              <span className="literexia-status-completed"><FaCheckCircle /> Mastered</span>
+                            ) : (
+                              <span className="literexia-status-in-progress">In Progress</span>
+                            )}
+                          </td>
+                          <td className="literexia-assistance-cell">
+                            <div
+                              className={`literexia-assistance-checkbox ${objective.assistance === 'minimal' ? 'selected' : ''}`}
+                              onClick={() => handleAssistanceChange(objective.id, 'minimal')}
+                            >
+                              {objective.assistance === 'minimal' && <FaCheckCircle />}
+                            </div>
+                          </td>
+                          <td className="literexia-assistance-cell">
+                            <div
+                              className={`literexia-assistance-checkbox ${objective.assistance === 'moderate' ? 'selected' : ''}`}
+                              onClick={() => handleAssistanceChange(objective.id, 'moderate')}
+                            >
+                              {objective.assistance === 'moderate' && <FaCheckCircle />}
+                            </div>
+                          </td>
+                          <td className="literexia-assistance-cell">
+                            <div
+                              className={`literexia-assistance-checkbox ${objective.assistance === 'substantial' ? 'selected' : ''}`}
+                              onClick={() => handleAssistanceChange(objective.id, 'substantial')}
+                            >
+                              {objective.assistance === 'substantial' && <FaCheckCircle />}
+                            </div>
+                          </td>
+                          <td className="literexia-remarks-cell">
+                            {objective.isEditingRemarks ? (
+                              <div className="literexia-remarks-edit">
+                                <textarea
+                                  value={objective.remarks}
+                                  onChange={(e) => handleRemarksChange(objective.id, e.target.value)}
+                                  placeholder="Add notes..."
+                                  className="literexia-remarks-textarea"
+                                />
+                                <button
+                                  className="literexia-save-remarks-btn"
+                                  onClick={() => toggleRemarksEditing(objective.id)}
+                                >
+                                  <FaSave />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="literexia-remarks-view">
+                                <p>{objective.remarks || 'No notes yet.'}</p>
+                                <button
+                                  className="literexia-edit-remarks-btn"
+                                  onClick={() => toggleRemarksEditing(objective.id)}
+                                >
+                                  <FaEdit />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               ) : (
                 <div className="literexia-empty-state">
                   <FaExclamationTriangle />
-                  <p>No assigned categories found for this student.</p>
-                  <button
-                    className="goto-categories-btn"
-                    onClick={() => setActiveTab('categories')}
-                  >
-                    Go to Category Assignment
-                  </button>
+                  <p>No learning objectives have been defined for this student yet.</p>
                 </div>
               )}
             </div>
-          </div>
-        )}
-
-        {activeTab === 'prescriptive' && !isTabLocked('prescriptive') && (
-          <div className="literexia-tab-panel">
-            <div className="literexia-panel-header">
-              <h2>Personalized Activities</h2>
-            </div>
-            <div className="literexia-panel-content">
-              {prescriptiveRecommendations && prescriptiveRecommendations.length > 0 ? (
-                <PrescriptiveAnalysis
-                  recommendations={prescriptiveRecommendations}
-                  onEditActivity={handleEditActivity}
-                  student={student}
-                />
-              ) : (
-                <div className="literexia-empty-state">
-                  <FaExclamationTriangle />
-                  <p>No personalized activities available for this student yet.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {isTabLocked(activeTab) && activeTab !== 'assessment' && activeTab !== 'categories' && (
-          <div className="literexia-locked-content">
-            <FaLightbulb className="literexia-lock-large" />
-            <h3>This section is locked</h3>
-            <p>You need to assign assessment categories first to unlock this feature.</p>
-            <button
-              className="literexia-btn-goto-assign"
-              onClick={() => setActiveTab('categories')}
-            >
-              Go to Category Assignment
-            </button>
           </div>
         )}
       </div>
 
-      {/* Activity edit modal */}
+      {/* Activity edit modal - Opens when editing an activity */}
       {editingActivity && (
         <ActivityEditModal
           activity={editingActivity}
+          student={student}
+          category={editingActivity?.category || 'alphabet_knowledge'}
+          analysis={prescriptiveRecommendations.find(r => r.categoryId === (editingActivity?.category || 'alphabet_knowledge'))}
           onClose={() => setEditingActivity(null)}
           onSave={handleSaveActivity}
-          student={student}
         />
       )}
 

@@ -1563,3 +1563,457 @@
     gap: var(--teacherDash-space-xs);
   }
 }
+
+/* Student Intervention Progress Section */
+.teacher-intervention-section {
+  background-color: var(--teacherDash-primary-dark);
+  border-radius: var(--teacherDash-radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--teacherDash-space-xl);
+  box-shadow: var(--teacherDash-shadow-md);
+}
+
+.teacher-intervention-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--teacherDash-space-lg) var(--teacherDash-space-lg) var(--teacherDash-space-md);
+  flex-wrap: wrap;
+  gap: var(--teacherDash-space-md);
+}
+
+.teacher-intervention-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--teacherDash-text);
+  margin: 0;
+  position: relative;
+  padding-bottom: var(--teacherDash-space-xs);
+}
+
+.teacher-intervention-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 70px;
+  height: 4px;
+  background-color: var(--teacherDash-accent);
+  border-radius: 2px;
+}
+
+.teacher-intervention-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--teacherDash-space-md);
+}
+
+.teacher-reading-level-pills {
+  display: flex;
+  gap: var(--teacherDash-space-xs);
+}
+
+.teacher-level-pill {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  color: var(--teacherDash-text);
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.teacher-level-pill:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.teacher-level-pill--active {
+  background-color: var(--teacherDash-accent);
+  border-color: var(--teacherDash-accent);
+  color: #1E2A4A;
+  font-weight: 600;
+}
+
+/* Chart Container */
+.teacher-intervention-chart-container {
+  padding: var(--teacherDash-space-md) var(--teacherDash-space-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(30, 42, 74, 0.5);
+}
+
+/* Intervention Progress Table */
+.teacher-intervention-table-wrapper {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.teacher-intervention-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.teacher-intervention-table th {
+  text-align: left;
+  padding: var(--teacherDash-space-md) var(--teacherDash-space-lg);
+  font-weight: 600;
+  color: var(--teacherDash-text-muted);
+  background-color: rgba(30, 42, 74, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.teacher-intervention-table td {
+  padding: var(--teacherDash-space-md) var(--teacherDash-space-lg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--teacherDash-text);
+}
+
+.teacher-intervention-row:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.teacher-intervention-row:last-child td {
+  border-bottom: none;
+}
+
+/* Column widths */
+.teacher-student-column {
+  width: 20%;
+}
+
+.teacher-plan-column {
+  width: 20%;
+}
+
+.teacher-level-column {
+  width: 15%;
+}
+
+.teacher-completion-column {
+  width: 20%;
+}
+
+.teacher-correct-column {
+  width: 10%;
+}
+
+.teacher-action-column {
+  width: 15%;
+}
+
+/* Level Badge */
+.teacher-level-badge {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Progress Bar */
+.teacher-progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--teacherDash-space-md);
+}
+
+.teacher-progress-track {
+  flex: 1;
+  height: 10px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.teacher-progress-fill {
+  height: 100%;
+  background-color: #F3C922;
+  border-radius: 5px;
+}
+
+.teacher-progress-text {
+  font-size: 0.85rem;
+  color: var(--teacherDash-text);
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Action Buttons */
+.teacher-action-button {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  border: none;
+  white-space: nowrap;
+}
+
+.teacher-resolved-button {
+  background-color: #4BC0C0;
+  color: #1E2A4A;
+}
+
+.teacher-view-progress-button {
+  background-color: #FF9E40;
+  color: #1E2A4A;
+}
+
+.teacher-action-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* No data message */
+.teacher-no-data-cell {
+  text-align: center;
+  padding: var(--teacherDash-space-xl) !important;
+  color: var(--teacherDash-text-muted);
+  font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .teacher-intervention-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .teacher-intervention-filters {
+    width: 100%;
+    margin-top: var(--teacherDash-space-sm);
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .teacher-intervention-table-wrapper {
+    overflow-x: auto;
+  }
+  
+  .teacher-intervention-table {
+    min-width: 800px;
+  }
+}
+
+/* Intervention Detail Modal */
+.teacher-intervention-modal {
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+}
+
+.teacher-intervention-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--teacherDash-space-lg);
+}
+
+.teacher-intervention-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: var(--teacherDash-space-md);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.teacher-intervention-student-info h3 {
+  margin: 0 0 var(--teacherDash-space-xs);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--teacherDash-text);
+}
+
+.teacher-intervention-student-details {
+  display: flex;
+  align-items: center;
+  gap: var(--teacherDash-space-md);
+  margin-top: var(--teacherDash-space-xs);
+}
+
+.teacher-level-badge.modal-badge {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.teacher-intervention-date {
+  color: var(--teacherDash-text-muted);
+  font-size: 0.9rem;
+}
+
+.teacher-intervention-progress-stats {
+  display: flex;
+  gap: var(--teacherDash-space-lg);
+}
+
+.teacher-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--teacherDash-space-xs);
+}
+
+.teacher-stat-label {
+  font-size: 0.85rem;
+  color: var(--teacherDash-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.teacher-stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--teacherDash-text);
+}
+
+.teacher-stat-status {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--teacherDash-radius-pill);
+}
+
+.teacher-stat-status.passed {
+  background-color: #4BC0C0;
+  color: #1E2A4A;
+}
+
+.teacher-stat-status.in-progress {
+  background-color: #FF9E40;
+  color: #1E2A4A;
+}
+
+.teacher-intervention-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--teacherDash-space-lg);
+}
+
+.teacher-intervention-detail-section,
+.teacher-intervention-notes-section,
+.teacher-intervention-progress-chart-section {
+  background-color: rgba(59, 79, 129, 0.3);
+  border-radius: var(--teacherDash-radius-md);
+  padding: var(--teacherDash-space-md);
+  border: 1px solid var(--teacherDash-border-light);
+}
+
+.teacher-intervention-progress-chart-section {
+  grid-column: 1 / -1;
+}
+
+.teacher-intervention-detail-section h4,
+.teacher-intervention-notes-section h4,
+.teacher-intervention-progress-chart-section h4 {
+  margin: 0 0 var(--teacherDash-space-md);
+  font-size: 1.1rem;
+  color: var(--teacherDash-text);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: var(--teacherDash-space-xs);
+}
+
+.teacher-detail-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--teacherDash-space-sm);
+}
+
+.teacher-detail-label {
+  color: var(--teacherDash-text-muted);
+  font-size: 0.9rem;
+}
+
+.teacher-detail-value {
+  color: var(--teacherDash-text);
+  font-weight: 500;
+}
+
+.teacher-intervention-notes {
+  color: var(--teacherDash-text);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.teacher-no-notes {
+  color: var(--teacherDash-text-muted);
+  font-style: italic;
+}
+
+.teacher-intervention-progress-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--teacherDash-space-lg);
+}
+
+.teacher-progress-bar-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--teacherDash-space-xs);
+}
+
+.teacher-progress-label {
+  font-size: 0.9rem;
+  color: var(--teacherDash-text);
+  margin-bottom: var(--teacherDash-space-xs);
+}
+
+.teacher-modal-progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--teacherDash-space-md);
+}
+
+.teacher-modal-progress-track {
+  flex: 1;
+  height: 14px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  overflow: hidden;
+  position: relative;
+}
+
+.teacher-modal-progress-fill {
+  height: 100%;
+  border-radius: 7px;
+}
+
+.teacher-modal-progress-text {
+  font-size: 0.95rem;
+  color: var(--teacherDash-text);
+  min-width: 50px;
+  text-align: right;
+}
+
+.teacher-threshold-marker {
+  position: absolute;
+  height: 100%;
+  width: 2px;
+  background-color: #F3C922;
+  top: 0;
+}
+
+.teacher-threshold-label {
+  font-size: 0.8rem;
+  color: #F3C922;
+  text-align: right;
+  margin-top: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .teacher-intervention-summary-header {
+    flex-direction: column;
+    gap: var(--teacherDash-space-md);
+  }
+
+  .teacher-intervention-details {
+    grid-template-columns: 1fr;
+  }
+}

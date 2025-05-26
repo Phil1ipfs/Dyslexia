@@ -14,9 +14,10 @@ import {
   FaIdBadge,
   FaTags,
   FaCheck,
-  FaChevronDown
+  FaChevronDown,
+  FaTimesCircle
 } from 'react-icons/fa';
-import StudentApiService from '../../../services/Teachers/StudentApiService';
+import ViewStudentService from '../../../services/Teachers/ViewStudentService';
 import '../../../css/Teachers/ViewStudent.css';
 
 const ViewStudent = () => {
@@ -31,21 +32,35 @@ const ViewStudent = () => {
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [readingLevels, setReadingLevels] = useState([]);
+  const [sections, setSections] = useState([]);
+  const [gradeLevels, setGradeLevels] = useState([]);
 
-  // Fetch students from API
   useEffect(() => {
     const fetchStudents = async () => {
       try {
         setLoading(true);
 
-        // First get reading levels
-        const levelsData = await StudentApiService.getReadingLevels();
+        // Get reading levels, sections, and grade levels
+        const [levelsData, sectionsData, gradesData] = await Promise.all([
+          ViewStudentService.getReadingLevels(),
+          ViewStudentService.getSections(),
+          ViewStudentService.getGradeLevels()
+        ]);
+
         if (Array.isArray(levelsData)) {
           setReadingLevels(levelsData);
         }
 
+        if (Array.isArray(sectionsData)) {
+          setSections(sectionsData);
+        }
+
+        if (Array.isArray(gradesData)) {
+          setGradeLevels(gradesData);
+        }
+
         // Fetch students list
-        const studentsData = await StudentApiService.getStudents();
+        const studentsData = await ViewStudentService.getStudents();
         if (studentsData && studentsData.students) {
           setStudents(studentsData.students);
           setFilteredStudents(studentsData.students);
@@ -64,52 +79,122 @@ const ViewStudent = () => {
     fetchStudents();
   }, []);
 
-  // Filter and sort students based on search query and filters
   useEffect(() => {
-    filterAndSortStudents();
-  }, [searchQuery, readingLevelFilter, gradeFilter, classFilter, sortBy, students]);
+    if (!students || students.length === 0) return;
 
-  const filterAndSortStudents = () => {
     let filtered = [...students];
 
+    // Filter by search query
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+      const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter(student =>
-        // Only search by student name
-        student.name?.toLowerCase().includes(query)
+        student.name?.toLowerCase().includes(query) ||
+        student.firstName?.toLowerCase().includes(query) ||
+        student.lastName?.toLowerCase().includes(query)
       );
     }
 
+    // Filter by reading level (exact match)
     if (readingLevelFilter !== 'all') {
-      filtered = filtered.filter(student => student.readingLevel === readingLevelFilter);
+      filtered = filtered.filter(student => {
+        const normalizedLevel = ViewStudentService.convertLegacyReadingLevel(student.readingLevel);
+        return normalizedLevel === readingLevelFilter;
+      });
     }
 
+    // Filter by grade
     if (gradeFilter !== 'all') {
       filtered = filtered.filter(student => student.gradeLevel === gradeFilter);
     }
 
+    // Filter by section/class
     if (classFilter !== 'all') {
       filtered = filtered.filter(student => student.section === classFilter);
     }
 
+    // Sort students based on criteria
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'name':
-          return a.name?.localeCompare(b.name || '');
+          // Handle both name formats - single name field or split first/last name
+          const aName = a.name || `${a.firstName || ''} ${a.lastName || ''}`.trim();
+          const bName = b.name || `${b.firstName || ''} ${b.lastName || ''}`.trim();
+          return aName.localeCompare(bName);
         case 'grade':
           return (a.gradeLevel || '').localeCompare(b.gradeLevel || '');
         case 'reading':
-          return (a.readingLevel || '').localeCompare(b.readingLevel || '');
+          const aLevel = ViewStudentService.convertLegacyReadingLevel(a.readingLevel) || '';
+          const bLevel = ViewStudentService.convertLegacyReadingLevel(b.readingLevel) || '';
+          return aLevel.localeCompare(bLevel);
         default:
-          return a.name?.localeCompare(b.name || '');
+          return 0;
       }
     });
 
     setFilteredStudents(filtered);
+  }, [searchQuery, readingLevelFilter, gradeFilter, classFilter, sortBy, students]);
+
+  const renderParentInfo = () => {
+    // If student has parent info directly from the backend
+    if (student?.parent && (student.parent.name || student.parent.email || student.parent.contact)) {
+      return (
+        <div className="parent-info-section">
+          <div className="parent-header">
+            <h3>Parent Information</h3>
+          </div>
+          <div className="parent-details">
+            <div className="parent-name">
+              <strong>Name:</strong> {student.parent.name || 'Not provided'}
+            </div>
+            {student.parent.email && (
+              <div className="parent-email">
+                <strong>Email:</strong> {student.parent.email}
+              </div>
+            )}
+            {student.parent.contact && (
+              <div className="parent-contact">
+                <strong>Contact:</strong> {student.parent.contact}
+              </div>
+            )}
+            {student.parent.address && (
+              <div className="parent-address">
+                <strong>Address:</strong> {student.parent.address}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // If student has parentId but parent info wasn't included directly
+    if (student?.parentId) {
+      return <ParentInfoLoader parentId={student.parentId} />;
+    }
+
+    return (
+      <div className="parent-info-section">
+        <div className="parent-header">
+          <h3>Parent Information</h3>
+        </div>
+        <div className="parent-not-registered">
+          Parent/Guardian: Not registered
+        </div>
+      </div>
+    );
+  };
+
+
+
+  const clearFilters = () => {
+    setReadingLevelFilter('all');
+    setGradeFilter('all');
+    setClassFilter('all');
+    setGroupBy('none');
+    setSearchQuery('');
   };
 
   const handleViewDetails = (student) => {
-    navigate(`/teacher/student-details/${student.id}`, { state: { student } });
+    navigate(`/teacher/student-details/${student.id || student._id}`, { state: { student } });
   };
 
   const getGroupedStudents = () => {
@@ -125,7 +210,8 @@ const ViewStudent = () => {
           key = student.gradeLevel || 'Not Assigned';
           break;
         case 'reading':
-          key = student.readingLevel || 'Not Assessed';
+          // Convert legacy reading level to the new system
+          key = ViewStudentService.convertLegacyReadingLevel(student.readingLevel) || 'Not Assessed';
           break;
         case 'section':
           key = student.section || 'Not Assigned';
@@ -145,34 +231,68 @@ const ViewStudent = () => {
 
   // Get color-coded class based on reading level
   const getReadingLevelClass = (level) => {
-    if (!level || level === 'Not Assessed') return 'vs-level-na';
-    
-    switch(level.toLowerCase()) {
-      case 'early':
-        return 'vs-level-early';
-      case 'developing':
-        return 'vs-level-developing';
-      case 'fluent':
-        return 'vs-level-fluent';
-      case 'advanced':
-        return 'vs-level-advanced';
-      default:
-        return 'vs-level-na';
-    }
+    return ViewStudentService.getReadingLevelClass(
+      ViewStudentService.convertLegacyReadingLevel(level)
+    );
   };
 
   const getReadingLevelDescription = (level) => {
-    return StudentApiService.getReadingLevelDescription(level) || level;
+    return ViewStudentService.getReadingLevelDescription(
+      ViewStudentService.convertLegacyReadingLevel(level)
+    );
+  };
+
+  const getParentName = (student) => {
+    // If student has no valid data, return default
+    if (!student) return 'Not registered';
+
+    // Direct parent object with name
+    if (student.parent) {
+      // If parent has a name property, use it
+      if (typeof student.parent === 'object' && student.parent.name) {
+        return student.parent.name;
+      }
+
+      // If parent has firstName/lastName properties, construct full name
+      if (typeof student.parent === 'object' && (student.parent.firstName || student.parent.lastName)) {
+        return `${student.parent.firstName || ''} ${student.parent.middleName ? student.parent.middleName + ' ' : ''}${student.parent.lastName || ''}`.trim();
+      }
+
+      // If parent is a string, use it directly
+      if (typeof student.parent === 'string' && student.parent) {
+        return student.parent;
+      }
+    }
+
+    // For parentId - try to look up in the parent data from the JSON
+    if (student.parentId) {
+      // Use the parents data you have
+      const parentProfiles = [
+        { _id: "681a2933af165878136e05da", firstName: "Jan Mark", middleName: "Percival", lastName: "Caram" },
+        { _id: "6827575c89b0d728f9333a20", firstName: "Kit Nicholas", middleName: "Tongol", lastName: "Santiago" }
+      ];
+
+      // Find matching parent
+      const matchedParent = parentProfiles.find(p => p._id === student.parentId);
+      if (matchedParent) {
+        return `${matchedParent.firstName || ''} ${matchedParent.middleName ? matchedParent.middleName + ' ' : ''}${matchedParent.lastName || ''}`.trim();
+      }
+
+      return 'Registered'; // Default if parent ID exists but not found
+    }
+
+    return 'Not registered';
   };
 
   const groupedStudents = getGroupedStudents();
 
   // Are any filters active?
-  const hasActiveFilters = 
-    readingLevelFilter !== 'all' || 
-    gradeFilter !== 'all' || 
-    classFilter !== 'all' || 
-    groupBy !== 'none';
+  const hasActiveFilters =
+    readingLevelFilter !== 'all' ||
+    gradeFilter !== 'all' ||
+    classFilter !== 'all' ||
+    groupBy !== 'none' ||
+    searchQuery.trim() !== '';
 
   return (
     <div className="vs-container">
@@ -185,6 +305,7 @@ const ViewStudent = () => {
 
         <div className="vs-search-container">
           <div className="vs-search-wrapper">
+            <FaSearch className="vs-search-icon" />
             <input
               type="text"
               placeholder="Search students..."
@@ -192,11 +313,20 @@ const ViewStudent = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="vs-search-input"
             />
+            {searchQuery && (
+              <button
+                className="vs-clear-search"
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
+              >
+                <FaTimesCircle />
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Filters Section - Static Version */}
+      {/* Filters Section */}
       <div className="vs-filters-section">
         <div className="vs-filter-row">
           <div className="vs-filter-group">
@@ -227,7 +357,11 @@ const ViewStudent = () => {
                 className="vs-select"
               >
                 <option value="all">All Grades</option>
-                <option value="Grade 1">Grade 1</option>
+                {gradeLevels.map((grade, index) => (
+                  <option key={index} value={grade}>
+                    {grade}
+                  </option>
+                ))}
               </select>
               <FaUserGraduate className="vs-select-icon" />
             </div>
@@ -242,11 +376,11 @@ const ViewStudent = () => {
                 className="vs-select"
               >
                 <option value="all">All Sections</option>
-                <option value="Sampaguita">Sampaguita</option>
-                <option value="Rosal">Rosal</option>
-                <option value="Rosa">Rosa</option>
-                <option value="Lily">Lily</option>
-                <option value="Orchid">Orchid</option>
+                {sections.map((section, index) => (
+                  <option key={index} value={section}>
+                    {section}
+                  </option>
+                ))}
               </select>
               <FaSchool className="vs-select-icon" />
             </div>
@@ -286,15 +420,23 @@ const ViewStudent = () => {
           </div>
         </div>
       </div>
-      
-      {/* Active Filters Section (new) */}
+
+      {/* Active Filters Section */}
       {hasActiveFilters && (
         <div className="vs-active-filters">
           <div className="vs-active-filters-title">
             <FaFilter /> Active Filters:
           </div>
-          
+
           <div className="vs-active-filters-content">
+            {searchQuery && (
+              <div className="vs-filter-tag">
+                <FaSearch className="vs-filter-tag-icon" />
+                <span className="vs-filter-tag-label">Search:</span>
+                <span className="vs-filter-tag-value">{searchQuery}</span>
+              </div>
+            )}
+
             {readingLevelFilter !== 'all' && (
               <div className="vs-filter-tag">
                 <FaBookReader className="vs-filter-tag-icon" />
@@ -302,7 +444,7 @@ const ViewStudent = () => {
                 <span className="vs-filter-tag-value">{readingLevelFilter}</span>
               </div>
             )}
-            
+
             {gradeFilter !== 'all' && (
               <div className="vs-filter-tag">
                 <FaUserGraduate className="vs-filter-tag-icon" />
@@ -310,7 +452,7 @@ const ViewStudent = () => {
                 <span className="vs-filter-tag-value">{gradeFilter}</span>
               </div>
             )}
-            
+
             {classFilter !== 'all' && (
               <div className="vs-filter-tag">
                 <FaSchool className="vs-filter-tag-icon" />
@@ -318,19 +460,23 @@ const ViewStudent = () => {
                 <span className="vs-filter-tag-value">{classFilter}</span>
               </div>
             )}
-            
+
             {groupBy !== 'none' && (
               <div className="vs-filter-tag">
                 <FaLayerGroup className="vs-filter-tag-icon" />
                 <span className="vs-filter-tag-label">Grouped by:</span>
                 <span className="vs-filter-tag-value">
-                  {groupBy === 'grade' ? 'Grade' : 
-                   groupBy === 'reading' ? 'Reading Level' : 'Section'}
+                  {groupBy === 'grade' ? 'Grade' :
+                    groupBy === 'reading' ? 'Reading Level' : 'Section'}
                 </span>
               </div>
             )}
+
+            <button className="vs-clear-filters-btn" onClick={clearFilters}>
+              Clear All Filters
+            </button>
           </div>
-          
+
           <div className="vs-filter-divider"></div>
         </div>
       )}
@@ -360,6 +506,11 @@ const ViewStudent = () => {
         ) : filteredStudents.length === 0 ? (
           <div className="vs-no-results">
             <p>No students found matching your criteria.</p>
+            {hasActiveFilters && (
+              <button className="vs-clear-filters-btn vs-center" onClick={clearFilters}>
+                Clear All Filters
+              </button>
+            )}
           </div>
         ) : (
           Object.entries(groupedStudents).map(([group, students]) => (
@@ -376,33 +527,45 @@ const ViewStudent = () => {
               <div className="vs-cards-grid">
                 {students.map(student => {
                   const levelClass = getReadingLevelClass(student.readingLevel);
-                  
+                  const displayName = student.name || `${student.firstName || ''} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName || ''}`.trim();
+                  const displayReadingLevel = ViewStudentService.convertLegacyReadingLevel(student.readingLevel);
+
                   return (
-                    <div key={student.id} className="vs-student-card">
+                    <div key={student.id || student._id} className="vs-student-card">
                       <div className="vs-card-header">
                         <div className="vs-student-avatar">
                           {student.profileImageUrl ? (
                             <img
                               src={student.profileImageUrl}
-                              alt={student.name}
+                              alt={displayName}
                               className="vs-student-avatar-img"
+                              onError={(e) => {
+                                console.error("Error loading student image:", e);
+                                e.target.onerror = null;
+                                e.target.style.display = "none";
+                                // Safely set the initials as text content
+                                if (e.target.parentElement) {
+                                  e.target.parentElement.textContent = (displayName || '').split(' ')
+                                    .map(n => n[0] || '')
+                                    .join('')
+                                    .toUpperCase();
+                                }
+                              }}
                             />
                           ) : (
-                            (student.name || '').split(' ').map(n => n[0] || '').join('').toUpperCase()
+                            (displayName || '').split(' ').map(n => n[0] || '').join('').toUpperCase()
                           )}
                         </div>
                         <div className="vs-student-basic-info">
-                          <h3 className="vs-student-name">{student.name}</h3>
+                          <h3 className="vs-student-name">{displayName}</h3>
                           <span className="vs-student-id">
-  <strong>Student ID:</strong>{' '}
-  <FaIdBadge style={{ margin: '0 4px', color: '#3B4F81' }} />
-  {student.id}
-</span>
-
-
+                            <strong>Student ID:</strong>{' '}
+                            <FaIdBadge style={{ margin: '0 4px', color: '#3B4F81' }} />
+                            {student.idNumber || ''}
+                          </span>
                         </div>
                         <div className={`vs-reading-badge ${levelClass}`}>
-                          {student.readingLevel || 'Not Assessed'}
+                          {sections}
                         </div>
                       </div>
 
@@ -411,9 +574,11 @@ const ViewStudent = () => {
                           <div className="vs-info-icon">
                             <FaUserGraduate />
                           </div>
-                          <span className="vs-info-text">Grade {student.gradeLevel?.replace('Grade ', '') || '1'}</span>
-                        
-                          <div className="vs-info-icon" style={{marginLeft: 'auto'}}>
+                          <span className="vs-info-text">
+                            {student.gradeLevel?.replace('Grade ', '') || 'Grade 1'}
+                          </span>
+
+                          <div className="vs-info-icon" style={{ marginLeft: 'auto' }}>
                             <FaChild />
                           </div>
                           <span className="vs-info-text">{student.age} years old</span>
@@ -424,24 +589,19 @@ const ViewStudent = () => {
                             <FaVenusMars />
                           </div>
                           <span className="vs-info-text">{student.gender || 'Not specified'}</span>
-                          
+
                           <div className={`vs-reading-level-indicator ${levelClass}`}>
                             <FaBookReader />
-                            <span>{student.readingLevel || 'Not Assessed'}</span>
+                            <span>{displayReadingLevel}</span>
                           </div>
                         </div>
 
                         <div className="vs-parent-guardian">
                           <span className="vs-parent-label">Parent/Guardian: </span>
                           <span className="vs-parent-name">
-                            {typeof student.parent === 'string'
-                              ? student.parent
-                              : student.parent && student.parent.name
-                                ? student.parent.name
-                                : 'Not registered'}
+                            {getParentName(student)}
                           </span>
                         </div>
-
                         <button
                           className="vs-view-details-btn"
                           onClick={() => handleViewDetails(student)}
@@ -460,5 +620,6 @@ const ViewStudent = () => {
     </div>
   );
 };
+
 
 export default ViewStudent;
