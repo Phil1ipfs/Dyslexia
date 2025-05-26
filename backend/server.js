@@ -381,6 +381,11 @@ connectDB().then(async (connected) => {
         try {
           await PrescriptiveAnalysisService.initializeForAllStudents();
           console.log('✅ Initialized prescriptive analyses for all students');
+          
+          // Also update all categoryResultIds to ensure proper linking
+          console.log('Updating categoryResultIds for all analyses...');
+          await PrescriptiveAnalysisService.updateAllCategoryResultIds();
+          console.log('✅ Updated all categoryResultIds');
         } catch (initError) {
           console.warn('⚠️ Could not initialize prescriptive analyses:', initError.message);
         }
