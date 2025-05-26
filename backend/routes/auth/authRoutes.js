@@ -29,25 +29,27 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    console.log('=== LOGIN ATTEMPT ===');
-    console.log('Login attempt for:', email);
-    console.log('Password provided:', password ? `${password.substring(0, 3)}...` : 'none');
+    console.log('[2025-05-26T02:37:43.125Z] POST /api/auth/login');
+    console.log('🔑 Login attempt:', email);
     
     // Get User model from users_web database
     const usersDb = mongoose.connection.useDb('users_web');
     const usersCollection = usersDb.collection('users');
     
     // Fetch user
+    console.log('Searching for user in DB: users_web');
+    console.log('Collection: users');
+    console.log('Query:', { email });
+    
     const user = await usersCollection.findOne({ email });
 
     if (!user) {
-      console.log('User not found:', email);
+      console.log('❌ User not found:', email);
       // Use consistent error messages to prevent username enumeration
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     
-    console.log('User found:', user.email);
-    console.log('User document:', JSON.stringify(user));
+    console.log('✅ User found:', user.email);
     
     // Determine which field contains the password hash
     let passwordHash = null;
@@ -76,7 +78,7 @@ router.post('/login', async (req, res) => {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
     } catch (bcryptError) {
-      console.error('Bcrypt comparison error:', bcryptError);
+      console.error('Bcrypt error:', bcryptError);
       return res.status(500).json({ message: 'Authentication error' });
     }
 
@@ -125,6 +127,33 @@ router.post('/login', async (req, res) => {
     }
     
     console.log('Final user roles array:', userRoles);
+    
+    // If user is a teacher, get additional profile data from teachers database
+    let teacherProfile = null;
+    if (userRoles.includes('teacher') || userRoles.includes('guro')) {
+      try {
+        const teachersDb = mongoose.connection.useDb('teachers');
+        const profileCollection = teachersDb.collection('profile');
+        
+        // Try to find by user ID first
+        teacherProfile = await profileCollection.findOne({ 
+          userId: user._id 
+        });
+        
+        // If not found by ID, try by email
+        if (!teacherProfile) {
+          teacherProfile = await profileCollection.findOne({ email: user.email });
+        }
+        
+        if (teacherProfile) {
+          console.log('Found teacher profile:', teacherProfile._id);
+        } else {
+          console.log('No teacher profile found for user:', user._id);
+        }
+      } catch (err) {
+        console.warn('Error fetching teacher profile:', err.message);
+      }
+    }
 
     // Sign JWT with proper secret key from environment variables
     const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
@@ -133,12 +162,14 @@ router.post('/login', async (req, res) => {
       {
         id: user._id.toString(),
         email: user.email,
-        roles: userRoles
+        roles: userRoles,
+        profileId: teacherProfile ? teacherProfile._id.toString() : null
       },
       secretKey,
       { 
         expiresIn: '1h',
-        issuer: 'literexia-api'
+        issuer: 'literexia-api',
+        subject: user._id.toString()
       }
     );
 
@@ -151,7 +182,13 @@ router.post('/login', async (req, res) => {
       user: { 
         id: user._id.toString(), 
         email: user.email, 
-        roles: userRoles 
+        roles: userRoles,
+        profile: teacherProfile ? {
+          id: teacherProfile._id.toString(),
+          firstName: teacherProfile.firstName,
+          lastName: teacherProfile.lastName,
+          position: teacherProfile.position
+        } : null
       }
     });
 
