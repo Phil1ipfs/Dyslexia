@@ -11,10 +11,11 @@
   justify-content: space-between;
   align-items: center;
   background-color: #fff;
-  padding: 20px;
+  padding: 12px 20px;
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   margin-bottom: 20px;
+  height: 70px;
 }
 
 .parents-page-title-container {
@@ -26,26 +27,30 @@
   font-weight: 600;
   color: #333;
   margin: 0;
+  line-height: 1.2;
 }
 
 .parents-page-subtitle {
   color: #666;
-  margin: 5px 0 0;
+  margin: 2px 0 0;
   font-size: 14px;
+  line-height: 1.2;
 }
 
 /* Controls Section Styles */
 .parents-page-actions {
-  background-color: #1e293b;
+  background-color: #ffffff;
   padding: 15px 20px;
   border-radius: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .parents-page-search-container {
   display: flex;
   align-items: center;
   gap: 15px;
+  flex-wrap: nowrap;
 }
 
 .parents-page-search {
@@ -58,9 +63,10 @@
   width: 100%;
   padding: 10px 15px 10px 40px;
   border-radius: 5px;
-  border: none;
+  border: 1px solid #e5e7eb;
   outline: none;
   font-size: 14px;
+  background-color: #f9fafb;
 }
 
 .parents-page-search-icon {
@@ -71,27 +77,36 @@
   color: #666;
 }
 
-.parents-page-filters {
-  display: flex;
-  gap: 0.5rem;
-}
-
 .parents-page-filter-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: #374151;
-  color: white;
+  background-color: #f3f4f6;
+  color: #374151;
   padding: 8px 16px;
   border-radius: 5px;
   font-size: 14px;
   cursor: pointer;
-  border: none;
+  border: 1px solid #e5e7eb;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: fit-content;
 }
 
 .parents-page-filter-btn:hover {
-  background-color: #4b5563;
+  background-color: #e5e7eb;
+}
+
+.parents-page-sort-dropdown {
+  padding: 8px 16px;
+  border-radius: 5px;
+  border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  outline: none;
+  min-width: fit-content;
 }
 
 .parents-page-add-btn {
@@ -100,16 +115,19 @@
   gap: 8px;
   background-color: #4CAF50;
   color: white;
-  padding: 10px 20px;
+  padding: 8px 16px;
   border-radius: 5px;
   border: none;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: fit-content;
 }
 
 .parents-page-add-btn:hover {
-  background-color: #3e8e41;
+  background-color: #45a049;
 }
 
 /* Table Styles */
@@ -126,12 +144,17 @@
 }
 
 .parents-page-table th {
-  background-color: #6b7280;
-  color: white;
+  background-color: #6B7280;
+  color: #ffffff;
   text-align: left;
   padding: 15px 20px;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.parents-page-table thead tr {
+  background-color: #6B7280;
 }
 
 .parents-page-table td {
@@ -196,16 +219,16 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  background-color: #1e293b;
-  color: white;
-  border: none;
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .parents-page-edit-btn:hover {
-  background-color: #374151;
+  background-color: #e5e7eb;
 }
 
 .parents-page-delete-btn {
@@ -214,16 +237,16 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  background-color: #ef4444;
-  color: white;
-  border: none;
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .parents-page-delete-btn:hover {
-  background-color: #dc2626;
+  background-color: #fecaca;
 }
 
 /* Modal Styles */
@@ -713,4 +736,50 @@
 }
 .literexia-teacher-confirm-delete-btn:hover {
   background-color: #dc2626;
+}
+
+.literexia-teacher-send-btn {
+  background-color: #4CAF50;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 10px;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.literexia-teacher-send-btn:hover {
+  background-color: #45a049;
+}
+
+.literexia-teacher-send-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.literexia-teacher-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.send-status {
+  padding: 10px;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+.send-status.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.send-status.error {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
 }

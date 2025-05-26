@@ -8,7 +8,6 @@ import {
   ClipboardList, 
   ChartBar, 
   Inbox, 
-  Settings,
   LogOut,
   ChevronDown,
   ChevronRight,
@@ -216,14 +215,7 @@ const NavigationBar = ({ onLogout }) => {
       </div>
 
       <div className="navigation-bar__footer">
-        <Link to="/admin/settings" className="navigation-bar__item">
-          <div className="navigation-bar__item-content">
-            <Settings className="navigation-bar__icon" size={20} />
-            <span className="navigation-bar__label">Settings</span>
-          </div>
-        </Link>
-        
-        <button onClick={onLogout} className="navigation-bar__item navigation-bar__logout-btn">
+        <button onClick={onLogout} className="navigation-bar__logout-btn">
           <div className="navigation-bar__item-content">
             <LogOut className="navigation-bar__icon" size={20} />
             <span className="navigation-bar__label">Logout</span>

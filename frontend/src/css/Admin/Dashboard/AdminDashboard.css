@@ -1440,3 +1440,93 @@
 .admin-dashboard-card__view-btn:active {
   transform: translateY(1px);
 }
+
+.admin-dashboard__analytics-section {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+  padding: 24px;
+  margin-top: 32px;
+}
+
+.admin-dashboard__section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.admin-dashboard__chart-container {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  height: 450px;
+  position: relative;
+}
+
+/* Enhanced Tooltip Styles */
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: #fff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+  padding: 12px 16px !important;
+}
+
+.recharts-tooltip-label {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+  margin-bottom: 4px !important;
+}
+
+.recharts-tooltip-item {
+  color: #64748b !important;
+  font-size: 13px !important;
+}
+
+/* Legend Styles */
+.recharts-legend-wrapper {
+  padding-left: 24px !important;
+}
+
+.recharts-legend-item {
+  margin-bottom: 12px !important;
+}
+
+.recharts-legend-item-text {
+  color: #1e293b !important;
+  font-size: 14px !important;
+}
+
+/* Pie Chart Labels */
+.recharts-pie-label-text {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .admin-dashboard__analytics-section {
+    padding: 16px;
+  }
+
+  .admin-dashboard__chart-container {
+    height: 400px;
+  }
+
+  .recharts-legend-wrapper {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    margin-top: 24px !important;
+    padding-left: 0 !important;
+  }
+
+  .recharts-legend-item {
+    display: inline-block !important;
+    margin-right: 16px !important;
+  }
+}

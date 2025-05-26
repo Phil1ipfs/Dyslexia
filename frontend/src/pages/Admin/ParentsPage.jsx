@@ -21,22 +21,63 @@ const SuccessModal = ({ message, onClose }) => (
 );
 
 // Credentials Modal
-const CredentialsModal = ({ credentials, onClose }) => (
-  <div className="literexia-teacher-modal-overlay">
-    <div className="literexia-teacher-modal">
-      <div className="literexia-teacher-modal-header">
-        <h2>Parent Credentials</h2>
-        <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
-      </div>
-      <div className="literexia-teacher-modal-form">
-        <p><strong>Email:</strong> {credentials.email}</p>
-        <p><strong>Password:</strong> {credentials.password}</p>
-        <p>Share these credentials with the parent.</p>
-        <button className="literexia-teacher-submit-btn" onClick={onClose}>Close</button>
+const CredentialsModal = ({ credentials, onClose }) => {
+  const [isSending, setIsSending] = useState(false);
+  const [sendStatus, setSendStatus] = useState(null);
+
+  const handleSendCredentials = async () => {
+    try {
+      setIsSending(true);
+      setSendStatus(null);
+      const response = await axios.post('http://localhost:5002/api/admin/send-credentials', {
+        email: credentials.email,
+        password: credentials.password,
+        userType: 'parent'
+      });
+      
+      if (response.data.success) {
+        setSendStatus({ type: 'success', message: 'Credentials sent successfully!' });
+      } else {
+        setSendStatus({ type: 'error', message: 'Failed to send credentials.' });
+      }
+    } catch (error) {
+      setSendStatus({ type: 'error', message: error.response?.data?.message || 'Failed to send credentials.' });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div className="literexia-teacher-modal-overlay">
+      <div className="literexia-teacher-modal">
+        <div className="literexia-teacher-modal-header">
+          <h2>Parent Credentials</h2>
+          <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="literexia-teacher-modal-form">
+          <p><strong>Email:</strong> {credentials.email}</p>
+          <p><strong>Password:</strong> ********</p>
+          <p>You can send these credentials to the parent's email.</p>
+          {sendStatus && (
+            <p className={`send-status ${sendStatus.type}`}>
+              {sendStatus.message}
+            </p>
+          )}
+          <div className="literexia-teacher-modal-actions">
+            <button 
+              className="literexia-teacher-send-btn" 
+              onClick={handleSendCredentials}
+              disabled={isSending}
+            >
+              {isSending ? 'Sending...' : 'Send Login Credentials'}
+            </button>
+            <button className="literexia-teacher-submit-btn" onClick={onClose}>Close</button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Confirm Delete Modal
 const ConfirmDeleteModal = ({ parent, onCancel, onConfirm }) => (
@@ -308,6 +349,7 @@ const ParentsPage = () => {
   const [loading, setLoading] = useState(true);
   const [validationError, setValidationError] = useState('');
   const [viewModalChildren, setViewModalChildren] = useState([]);
+  const [sortBy, setSortBy] = useState('name-asc');
 
   // Fetch parents data from MongoDB
   useEffect(() => {
@@ -558,6 +600,15 @@ const ParentsPage = () => {
             <Filter size={18} />
             <span>Filter</span>
           </button>
+          <select 
+            className="parents-page-sort-dropdown"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="name-asc">Name (A-Z)</option>
+            <option value="name-desc">Name (Z-A)</option>
+            <option value="recent">Recent Activity</option>
+          </select>
           <button 
             className="parents-page-add-btn"
             onClick={() => {
