@@ -11,7 +11,7 @@ const CredentialsModal = ({ credentials, onClose }) => {
     try {
       setIsSending(true);
       setSendStatus(null);
-      const response = await axios.post('http://localhost:5002/api/admin/send-credentials', {
+      const response = await axios.post('http://localhost:5001/api/admin/send-credentials', {
         email: credentials.email,
         password: credentials.password,
         userType: 'teacher'
@@ -115,7 +115,7 @@ const TeacherLists = () => {
     const fetchTeachers = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5002/api/admin/manage/teachers');
+        const response = await axios.get('http://localhost:5001/api/admin/manage/teachers');
         if (response.data.success) {
           setTeachers(response.data.data);
         } else {
@@ -163,7 +163,7 @@ const TeacherLists = () => {
     if (teacherToDelete) {
       try {
         setLoading(true);
-        const response = await axios.delete(`http://localhost:5002/api/admin/manage/teachers/${teacherToDelete._id}`);
+        const response = await axios.delete(`http://localhost:5001/api/admin/manage/teachers/${teacherToDelete._id}`);
         if (response.data.success) {
           const updatedTeachers = teachers.filter(teacher => teacher._id !== teacherToDelete._id);
           setTeachers(updatedTeachers);
@@ -190,7 +190,7 @@ const TeacherLists = () => {
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) data.append(key, value);
       });
-      const response = await axios.post('http://localhost:5002/api/admin/manage/teachers', data, {
+      const response = await axios.post('http://localhost:5001/api/admin/manage/teachers', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {
@@ -216,12 +216,12 @@ const TeacherLists = () => {
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) data.append(key, value);
       });
-      const response = await axios.put(`http://localhost:5002/api/admin/manage/teachers/${formData._id}`, data, {
+      const response = await axios.put(`http://localhost:5001/api/admin/manage/teachers/${formData._id}`, data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {
         // Refetch teachers from backend to get latest profile image
-        const refreshed = await axios.get('http://localhost:5002/api/admin/manage/teachers');
+        const refreshed = await axios.get('http://localhost:5001/api/admin/manage/teachers');
         if (refreshed.data.success) {
           setTeachers(refreshed.data.data);
         }

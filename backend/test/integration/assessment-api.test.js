@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 // Configuration
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:5002/api';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:5001/api';
 const TEST_TEACHER_EMAIL = process.env.TEST_TEACHER_EMAIL || 'teacherr@gmail.com';
 const TEST_TEACHER_PASSWORD = process.env.TEST_TEACHER_PASSWORD || 'password123';
 const TEST_STUDENT_ID = process.env.TEST_STUDENT_ID || '68125915b88c31eb282bdac2'; // Rainer Aganan
