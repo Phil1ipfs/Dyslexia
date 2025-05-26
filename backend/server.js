@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 const s3Client = require('./config/s3');
 const app = express();
 
@@ -242,56 +243,153 @@ connectDB().then(() => {
 
     try {
       console.log('🔑 Login attempt:', email);
-      console.log('Searching for user in DB:', mongoose.connection.db.databaseName);
-      console.log('Collection:', User.collection.name);
-
-      /* ── 2. fetch user ──────────────────────────────────── */
-      // Extra debug logging to see what we're querying
+      
+      // First, check in users_web database
+      const usersWebDb = mongoose.connection.useDb('users_web');
+      const usersCollection = usersWebDb.collection('users');
+      
+      console.log('Searching for user in DB: users_web');
+      console.log('Collection: users');
       console.log('Query:', { email });
 
-      const user = await User.findOne({ email });
-
+      let user = await usersCollection.findOne({ email });
       console.log('User query result:', user ? 'Found' : 'Not found');
 
       if (!user) {
         console.log('❌ User not found:', email);
-        return res.status(400).json({ message: 'Invalid credentials' });
+        return res.status(401).json({ message: 'Invalid credentials' });
       }
 
       console.log('✅ User found:', user.email);
-      console.log('User document:', JSON.stringify(user));
-
-
-      /* ── 4. sign JWT ───────────────────────────────────── */
-      const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
-
-      // Handle roles which might be a string (from DB) or array (converted)
-      let userRoles = user.roles;
-      if (typeof userRoles === 'string') {
-        userRoles = [userRoles]; // Convert string to array for consistency in token
+      
+      /* ── 3. Check password ───────────────────────────────── */
+      // Determine which field has the password hash
+      let passwordField = null;
+      let passwordHash = null;
+      
+      if (user.passwordHash) {
+        passwordField = 'passwordHash';
+        passwordHash = user.passwordHash;
+      } else if (user.password) {
+        passwordField = 'password';
+        passwordHash = user.password;
+      }
+      
+      if (!passwordHash) {
+        console.error('No password hash found for user:', email);
+        return res.status(500).json({ message: 'Account configuration error' });
+      }
+      
+      console.log(`Using ${passwordField} field for verification`);
+      
+      let passwordIsValid = false;
+      
+      // Verify the password using bcrypt
+      if (passwordHash.startsWith('$2a$') || passwordHash.startsWith('$2b$')) {
+        try {
+          passwordIsValid = await bcrypt.compare(password, passwordHash);
+          console.log('Password verification result:', passwordIsValid ? 'Valid' : 'Invalid');
+        } catch (bcryptError) {
+          console.error('Bcrypt error:', bcryptError);
+          return res.status(500).json({ message: 'Authentication error' });
+        }
+      } else {
+        console.error('Invalid password hash format for user:', email);
+        return res.status(500).json({ message: 'Account configuration error' });
+      }
+      
+      if (!passwordIsValid) {
+        console.log('❌ Invalid password for user:', email);
+        return res.status(401).json({ message: 'Invalid credentials' });
       }
 
+      /* ── 4. Get user roles ───────────────────────────────── */
+      let userRoles = [];
+      
+      if (user.roles) {
+        if (typeof user.roles === 'string') {
+          userRoles = [user.roles];
+        } else if (Array.isArray(user.roles)) {
+          userRoles = user.roles;
+        } else if (user.roles.$oid) {
+          // It's an ObjectId reference - look it up in the roles collection
+          const rolesCollection = usersWebDb.collection('roles');
+          const role = await rolesCollection.findOne({ _id: new mongoose.Types.ObjectId(user.roles.$oid) });
+          
+          if (role && role.name) {
+            userRoles.push(role.name);
+          }
+        }
+      }
+      
+      console.log('User roles:', userRoles);
+      
+      // If user is a teacher, get additional profile data from teachers database
+      let teacherProfile = null;
+      if (userRoles.includes('teacher') || userRoles.includes('guro')) {
+        try {
+          const teachersDb = mongoose.connection.useDb('teachers');
+          const profileCollection = teachersDb.collection('profile');
+          
+          // Try to find by user ID first
+          teacherProfile = await profileCollection.findOne({ 
+            userId: user._id 
+          });
+          
+          // If not found by ID, try by email
+          if (!teacherProfile) {
+            teacherProfile = await profileCollection.findOne({ email: user.email });
+          }
+          
+          if (teacherProfile) {
+            console.log('Found teacher profile:', teacherProfile._id);
+          } else {
+            console.log('No teacher profile found for user:', user._id);
+          }
+        } catch (err) {
+          console.warn('Error fetching teacher profile:', err.message);
+        }
+      }
+
+      /* ── 5. sign JWT ───────────────────────────────────── */
+      const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
+      
       const token = jwt.sign(
         {
-          id: user._id,
+          id: user._id.toString(),
           email: user.email,
-          roles: userRoles // Now always an array in the token
+          roles: userRoles,
+          profileId: teacherProfile ? teacherProfile._id.toString() : null
         },
         secretKey,
-        { expiresIn: '1h' }
+        { 
+          expiresIn: '1h',
+          issuer: 'literexia-api',
+          subject: user._id.toString()
+        }
       );
 
       console.log('✅ Login success for:', email);
       console.log('User roles for redirection:', userRoles);
 
-      /* ── 5. success response ───────────────────────────── */
+      /* ── 6. success response ───────────────────────────── */
       return res.json({
         token,
-        user: { id: user._id, email: user.email, roles: userRoles }
+        user: { 
+          id: user._id.toString(), 
+          email: user.email, 
+          roles: userRoles,
+          profile: teacherProfile ? {
+            id: teacherProfile._id.toString(),
+            firstName: teacherProfile.firstName,
+            lastName: teacherProfile.lastName,
+            position: teacherProfile.position
+          } : null
+        }
       });
 
     } catch (err) {
-      console.error('💥 Login handler error:\n', err.stack);
+      console.error('💥 Login handler error:', err);
       return res.status(500).json({ message: 'Server error' });
     }
   });
