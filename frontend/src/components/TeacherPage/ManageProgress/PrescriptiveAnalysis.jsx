@@ -522,53 +522,7 @@ const PrescriptiveAnalysis = ({
         ]
       }
     };
-
     const categoryGuide = guides[categoryName] || { strategies: [] };
-
-    return (
-      <div className="literexia-teaching-guide">
-        <div className="literexia-guide-header">
-          <FaChalkboardTeacher className="literexia-guide-icon" />
-          <h3>In-Person Teaching Guide for {formatCategoryName(categoryName)}</h3>
-        </div>
-        <div className="literexia-guide-content">
-          <p>
-            While using the digital activities, we recommend supporting {liveStudent?.firstName || "the student"}
-            with the following strategies:
-          </p>
-          <div className="literexia-strategy-list">
-            {categoryGuide.strategies.map((strategy, index) => (
-              <div key={index} className="literexia-strategy">
-                <div className="literexia-strategy-icon">
-                  <FaHandsHelping />
-                </div>
-                <div className="literexia-strategy-content">
-                  <h4>{strategy.title}</h4>
-                  <p>{strategy.description}</p>
-                </div>
-              </div>
-            ))}
-            <div className="literexia-strategy">
-              <div className="literexia-strategy-icon">
-                <FaHandsHelping />
-              </div>
-              <div className="literexia-strategy-content">
-                <h4>Immediate Feedback</h4>
-                <p>
-                  Provide immediate, specific feedback during practice sessions, highlighting what the student 
-                  did correctly before offering corrections. Gradually reduce support as {liveStudent?.firstName || "the student"}'s 
-                  confidence increases.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="literexia-monitoring-note">
-            <strong>Progress Monitoring:</strong> After implementing these interventions for 2-3 weeks,
-            review {liveStudent?.firstName || "the student"}'s progress and adjust strategies as needed.
-          </div>
-        </div>
-      </div>
-    );
   };
 
   const renderCategoryTabs = () => {
