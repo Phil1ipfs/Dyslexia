@@ -373,14 +373,6 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load teachers/parent routes:', error.message);
     }
 
-    // Register prescriptive analysis routes
-    try {
-      const prescriptiveAnalysisRoutes = require('./routes/Teachers/prescriptiveAnalysisRoutes');
-      app.use('/api/prescriptive-analysis', prescriptiveAnalysisRoutes);
-      console.log('✅ Loaded prescriptive analysis routes');
-    } catch (error) {
-      console.warn('⚠️ Could not load prescriptive analysis routes:', error.message);
-    }
 
     // Initialize prescriptive analyses for all students
     try {

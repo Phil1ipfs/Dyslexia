@@ -462,7 +462,7 @@ class PrescriptiveAnalysisService {
           analysis.weaknesses = [
             'Significant difficulty recognizing basic letters',
             'Limited understanding of letter-sound relationships',
-            'Struggles with distinguishing between similar letters (e.g., b/d, p/q)'
+            'Struggles with distinguishing between similar letterssss (e.g., b/d, p/q)'
           ];
           analysis.recommendations = [
             'Start with a limited set of high-frequency letters',

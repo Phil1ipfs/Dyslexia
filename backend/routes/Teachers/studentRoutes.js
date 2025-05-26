@@ -4,7 +4,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const { auth, authorize } = require('../../middleware/auth');
 const studentController = require('../../controllers/Teachers/studentController');
-const readingLevelProgressionController = require('../../controllers/Teachers/ManageProgress/readingLevelProgressionController');
+// const readingLevelProgressionController = require('../../controllers/Teachers/ManageProgress/readingLevelProgressionController');
 
 // Create the pre-assessment controller
 const preAssessmentController = require('../../controllers/Teachers/preAssessmentController');
@@ -82,24 +82,6 @@ router.get('/category-progress/:id', auth, async (req, res) => {
   }
 });
 
-/**
- * GET /api/student/reading-level-progression/:id
- * Returns the reading_level_progression timeline for a student
- */
-// Reading Level Progression route
-router.get('/reading-level-progression/:id', auth, async (req, res) => {
-  try {
-    await readingLevelProgressionController.getProgression(req, res);
-  } catch (error) {
-    console.error('Error fetching reading-level-progression:', error);
-    res.status(500).json({ 
-      message: 'Error fetching reading level progression', 
-      error: error.message 
-    });
-  }
-});
-
-router.put('/reading-level/:id', auth, readingLevelProgressionController.updateReadingLevel);
 
 
 module.exports = router;
