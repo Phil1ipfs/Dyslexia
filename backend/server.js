@@ -639,6 +639,9 @@ connectDB().then(async (connected) => {
       }
     });
 
+    // Add root route
+    app.get('/', (_req, res) => res.send('API is running…'));
+
     // Add S3 image proxy endpoint
     app.get('/api/proxy-image', async (req, res) => {
       try {
@@ -675,8 +678,200 @@ connectDB().then(async (connected) => {
       }
     });
 
-    // Add root route
-    app.get('/', (_req, res) => res.send('API is running…'));
+    // Direct parent lookup endpoint for teacher use
+    app.get('/api/parent-by-id/:id', async (req, res) => {
+      try {
+        const parentId = req.params.id;
+        console.log(`[SERVER] Lookup request for parent ID: ${parentId}`);
+        
+        // Validate MongoDB ObjectId format
+        if (!/^[0-9a-fA-F]{24}$/.test(parentId)) {
+          return res.status(400).json({ error: 'Invalid parent ID format' });
+        }
+        
+        // Create ObjectId for queries
+        const objectId = new mongoose.Types.ObjectId(parentId);
+        
+        // Try different databases and collections
+        const dbsToSearch = ['Literexia', 'parent', 'users_web'];
+        const collectionsToSearch = ['parent', 'parent_profile', 'profile', 'parents'];
+        
+        let parentData = null;
+        
+        // Search through databases and collections
+        for (const dbName of dbsToSearch) {
+          if (parentData) break;
+          
+          const db = mongoose.connection.useDb(dbName);
+          console.log(`[SERVER] Searching in ${dbName} database`);
+          
+          for (const collName of collectionsToSearch) {
+            try {
+              const collection = db.collection(collName);
+              console.log(`[SERVER] Trying collection ${collName}`);
+              
+              // Query with ObjectId
+              parentData = await collection.findOne({ _id: objectId });
+              
+              if (parentData) {
+                console.log(`[SERVER] Found parent in ${dbName}.${collName}`);
+                break;
+              }
+            } catch (err) {
+              console.log(`[SERVER] Error searching ${dbName}.${collName}: ${err.message}`);
+            }
+          }
+        }
+        
+        if (parentData) {
+          // Return the found parent data
+          res.json(parentData);
+        } else {
+          // If parent not found in any database, return fallback data from JSON
+          const fallbackParents = [
+            {
+              _id: "681a2933af165878136e05da",
+              firstName: "Jan Mark",
+              middleName: "Percival",
+              lastName: "Caram",
+              email: "parent@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "6827575c89b0d728f9333a20",
+              firstName: "Kit Nicholas",
+              middleName: "Tongol",
+              lastName: "Santiago",
+              email: "parent2@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "682ca15af0bfb8e632bdfd13",
+              firstName: "Rain",
+              middleName: "Percival",
+              lastName: "Aganan",
+              email: "parentrain@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "682d75b9f7897b64cec98cc7",
+              firstName: "Kit Nicholas",
+              middleName: "Rish",
+              lastName: "Aganan",
+              email: "paraaaaaaaaaent@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "6830d880779e20b64f720f44",
+              firstName: "Kit Nicholas",
+              middleName: "Pascual",
+              lastName: "Caram",
+              email: "teacher65@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "6835ef1645a2af9158a6d5b7",
+              firstName: "Pia",
+              middleName: "Zop",
+              lastName: "Rey",
+              email: "markcaram47@icloud.comm",
+              contact: "09155933015"
+            }
+          ];
+          
+          // Find matching parent in fallback data
+          const fallbackParent = fallbackParents.find(p => p._id === parentId);
+          
+          if (fallbackParent) {
+            console.log(`[SERVER] Using fallback data for parent ID ${parentId}`);
+            res.json(fallbackParent);
+          } else {
+            res.status(404).json({ error: 'Parent not found' });
+          }
+        }
+      } catch (error) {
+        console.error('[SERVER] Error in parent lookup:', error);
+        res.status(500).json({ error: 'Server error retrieving parent data' });
+      }
+    });
+
+    // Parent profiles bulk endpoint for teacher use
+    app.get('/api/parent-profiles', async (req, res) => {
+      try {
+        console.log('[SERVER] Bulk parent profiles request');
+        
+        // First try to get from database
+        const parentDb = mongoose.connection.useDb('parent');
+        let parentProfiles = [];
+        
+        try {
+          parentProfiles = await parentDb.collection('parent_profile').find({}).toArray();
+          console.log(`[SERVER] Found ${parentProfiles.length} parent profiles in database`);
+        } catch (dbError) {
+          console.log(`[SERVER] Error fetching from database: ${dbError.message}`);
+        }
+        
+        // If no profiles found in database, return fallback data
+        if (!parentProfiles || parentProfiles.length === 0) {
+          console.log('[SERVER] Using fallback parent profile data');
+          parentProfiles = [
+            {
+              _id: "681a2933af165878136e05da",
+              firstName: "Jan Mark",
+              middleName: "Percival",
+              lastName: "Caram",
+              email: "parent@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "6827575c89b0d728f9333a20",
+              firstName: "Kit Nicholas",
+              middleName: "Tongol",
+              lastName: "Santiago",
+              email: "parent2@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "682ca15af0bfb8e632bdfd13",
+              firstName: "Rain",
+              middleName: "Percival",
+              lastName: "Aganan",
+              email: "parentrain@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "682d75b9f7897b64cec98cc7",
+              firstName: "Kit Nicholas",
+              middleName: "Rish",
+              lastName: "Aganan",
+              email: "paraaaaaaaaaent@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "6830d880779e20b64f720f44",
+              firstName: "Kit Nicholas",
+              middleName: "Pascual",
+              lastName: "Caram",
+              email: "teacher65@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "6835ef1645a2af9158a6d5b7",
+              firstName: "Pia",
+              middleName: "Zop",
+              lastName: "Rey",
+              email: "markcaram47@icloud.comm",
+              contact: "09155933015"
+            }
+          ];
+        }
+        
+        res.json(parentProfiles);
+      } catch (error) {
+        console.error('[SERVER] Error in bulk parent profiles:', error);
+        res.status(500).json({ error: 'Server error retrieving parent profiles' });
+      }
+    });
 
     // 404 handler
     app.use((req, res) => {
@@ -690,16 +885,16 @@ connectDB().then(async (connected) => {
       res.status(500).json({ error: 'Server error', message: err.message });
     });
 
-    // Start the server
-    app.listen(PORT, () => {
-      console.log(`\n✅ Server is running on port ${PORT}`);
-      console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-      console.log(`API URL: http://localhost:${PORT}`);
-    });
-
   } catch (error) {
     console.error('Error registering routes:', error);
     console.error('Error details:', error.stack);
     process.exit(1);
   }
+});
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`\n✅ Server is running on port ${PORT}`);
+  console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  console.log(`API URL: http://localhost:${PORT}`);
 });
