@@ -155,20 +155,31 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
       profileImage: null
     }
   );
-  const requiredFields = [
-    { key: 'firstName', label: 'First Name' },
-    { key: 'lastName', label: 'Last Name' },
-    { key: 'contact', label: 'Contact' },
-    { key: 'address', label: 'Address' },
-    { key: 'civilStatus', label: 'Civil Status' },
-    { key: 'dateOfBirth', label: 'Date of Birth' },
-    { key: 'gender', label: 'Gender' },
-    { key: 'email', label: 'Email' }
-  ];
-  const [validationError, setValidationErrorLocal] = useState('');
+
+  const [currentStep, setCurrentStep] = useState(1);
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
   const [students, setStudents] = useState([]);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [pendingSubmit, setPendingSubmit] = useState(null);
+  const totalSteps = 4;
+
+  const steps = [
+    {
+      title: 'Basic Info',
+      fields: ['firstName', 'middleName', 'lastName', 'email']
+    },
+    {
+      title: 'Personal Details',
+      fields: ['gender', 'dateOfBirth', 'civilStatus']
+    },
+    {
+      title: 'Contact Info',
+      fields: ['contact', 'address', 'profileImage']
+    },
+    {
+      title: 'Children',
+      fields: ['children']
+    }
+  ];
 
   // Build a set of all linked student IDs (excluding current parent's children)
   const linkedStudentIds = new Set();
@@ -178,34 +189,12 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
     }
   });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleFileChange = (e) => {
-    setFormData({ ...formData, profileImage: e.target.files[0] });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const missing = requiredFields.filter(f => !formData[f.key] || formData[f.key].toString().trim() === '');
-    if (missing.length > 0) {
-      setValidationErrorLocal(`Please fill out the following fields: ${missing.map(f => f.label).join(', ')}`);
-      return;
-    }
-    setPendingSubmit(formData);
-    setShowConfirmModal(true);
-  };
-
   useEffect(() => {
     const fetchStudents = async () => {
       try {
         const response = await axios.get('http://localhost:5001/api/admin/manage/students');
         if (response.data.success) {
           setStudents(response.data.data);
-        } else {
-          console.error("Error fetching students:", response.data.message);
         }
       } catch (error) {
         console.error("Error fetching students data:", error);
@@ -215,6 +204,238 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
     fetchStudents();
   }, []);
 
+  const validateStep = (step) => {
+    const currentFields = steps[step - 1].fields;
+    const stepErrors = {};
+    let isValid = true;
+
+    currentFields.forEach(field => {
+      if (!formData[field] && field !== 'middleName' && field !== 'profileImage' && field !== 'children') {
+        stepErrors[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required`;
+        isValid = false;
+      }
+    });
+
+    if (step === 1 && formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      stepErrors.email = 'Please enter a valid email address';
+      isValid = false;
+    }
+
+    setErrors(stepErrors);
+    return isValid;
+  };
+
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, totalSteps));
+    }
+  };
+
+  const handlePrevious = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData(prev => ({
+        ...prev,
+        profileImage: file
+      }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (validateStep(currentStep)) {
+      if (currentStep < totalSteps) {
+        handleNext();
+        return; // Prevent form submission
+      }
+    }
+  };
+
+  const handleFinalSubmit = async () => {
+    if (validateStep(currentStep)) {
+      setIsLoading(true);
+      try {
+        const dataToSubmit = {
+          ...formData,
+          children: formData.children || []
+        };
+        await onSave(dataToSubmit);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  // Update the children selection handler
+  const handleChildrenChange = (selectedOptions) => {
+    setFormData(prev => ({
+      ...prev,
+      children: selectedOptions ? selectedOptions.map(option => option.value) : []
+    }));
+  };
+
+  const getSubmitButtonText = () => {
+    if (currentStep < totalSteps) {
+      return 'Next';
+    }
+    if (isLoading) {
+      return 'Saving...';
+    }
+    return parent ? 'Update Parent' : 'Add Parent';
+  };
+
+  const renderFormFields = () => {
+    const currentFields = steps[currentStep - 1].fields;
+
+    return (
+      <div className="literexia-teacher-form-section">
+        {currentFields.map(field => {
+          if (field === 'profileImage') {
+            return (
+              <div key={field} className="literexia-teacher-form-group full-width">
+                <label className="literexia-teacher-required">Profile Image</label>
+                <div className="literexia-teacher-file-input-wrapper">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="literexia-teacher-file-input"
+                  />
+                  <div className="literexia-teacher-file-input-content">
+                    <div className="literexia-teacher-file-input-icon">📁</div>
+                    <div className="literexia-teacher-file-input-text">
+                      {formData.profileImage ? 'Change Image' : 'Upload Image'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (field === 'children') {
+            return (
+              <div key={field} className="literexia-teacher-form-group full-width">
+                <label>Link Children</label>
+                <Select
+                  isMulti
+                  options={students
+                    .filter(student =>
+                      !linkedStudentIds.has(student._id) || (formData.children || []).includes(student._id)
+                    )
+                    .map(student => ({
+                      value: student._id,
+                      label: `${student.firstName} ${student.lastName} - ID: ${student.idNumber}`
+                    }))}
+                  value={(formData.children || []).map(id => {
+                    const student = students.find(s => s._id === id);
+                    return student ? {
+                      value: id,
+                      label: `${student.firstName} ${student.lastName} - ID: ${student.idNumber}`
+                    } : null;
+                  }).filter(Boolean)}
+                  onChange={handleChildrenChange}
+                  className="literexia-teacher-select"
+                  placeholder="Select children to link..."
+                  isClearable={true}
+                />
+              </div>
+            );
+          }
+
+          if (field === 'gender') {
+            return (
+              <div key={field} className="literexia-teacher-form-group">
+                <label className="literexia-teacher-required">Gender</label>
+                <select
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  className={`literexia-teacher-input ${errors.gender ? 'error' : ''}`}
+                >
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+                {errors.gender && <div className="literexia-teacher-error-message">{errors.gender}</div>}
+              </div>
+            );
+          }
+
+          if (field === 'civilStatus') {
+            return (
+              <div key={field} className="literexia-teacher-form-group">
+                <label className="literexia-teacher-required">Civil Status</label>
+                <select
+                  name="civilStatus"
+                  value={formData.civilStatus}
+                  onChange={handleChange}
+                  className={`literexia-teacher-input ${errors.civilStatus ? 'error' : ''}`}
+                >
+                  <option value="">Select Civil Status</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Widowed">Widowed</option>
+                  <option value="Separated">Separated</option>
+                  <option value="Divorced">Divorced</option>
+                </select>
+                {errors.civilStatus && <div className="literexia-teacher-error-message">{errors.civilStatus}</div>}
+              </div>
+            );
+          }
+
+          const getFieldLabel = (field) => {
+            switch(field) {
+              case 'firstName': return 'First Name';
+              case 'middleName': return 'Middle Name';
+              case 'lastName': return 'Last Name';
+              case 'email': return 'Email';
+              case 'contact': return 'Contact';
+              case 'address': return 'Address';
+              case 'dateOfBirth': return 'Date of Birth';
+              default: return field.split(/(?=[A-Z])/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+            }
+          };
+
+          return (
+            <div key={field} className="literexia-teacher-form-group">
+              <label className="literexia-teacher-required">
+                {getFieldLabel(field)}
+              </label>
+              <input
+                type={field === 'dateOfBirth' ? 'date' : field === 'email' ? 'email' : 'text'}
+                name={field}
+                value={formData[field]}
+                onChange={handleChange}
+                className={`literexia-teacher-input ${errors[field] ? 'error' : ''}`}
+                placeholder={`Enter ${getFieldLabel(field).toLowerCase()}`}
+              />
+              {errors[field] && <div className="literexia-teacher-error-message">{errors[field]}</div>}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="literexia-teacher-modal-overlay">
       <div className="literexia-teacher-modal">
@@ -222,111 +443,69 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
           <h2>{parent ? 'Edit Parent' : 'Add New Parent'}</h2>
           <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
         </div>
-        <form className="literexia-teacher-modal-form" onSubmit={handleSubmit} encType="multipart/form-data">
-          <div className="form-group">
-            <label>First Name</label>
-            <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} required className="form-input" />
+
+        <div className="literexia-teacher-modal-form">
+          {/* Progress bar */}
+          <div className="literexia-teacher-progress">
+            <div 
+              className="literexia-teacher-progress-bar"
+              style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+            ></div>
           </div>
-          <div className="form-group">
-            <label>Middle Name</label>
-            <input type="text" name="middleName" value={formData.middleName} onChange={handleChange} className="form-input" />
+
+          {/* Steps indicator */}
+          <div className="literexia-teacher-form-steps">
+            {steps.map((step, index) => (
+              <div
+                key={step.title}
+                className={`literexia-teacher-step ${
+                  currentStep > index + 1 ? 'completed' : currentStep === index + 1 ? 'active' : ''
+                }`}
+              >
+                <div className="literexia-teacher-step-circle">
+                  {currentStep > index + 1 ? '✓' : index + 1}
+                </div>
+                <div className="literexia-teacher-step-label">{step.title}</div>
+              </div>
+            ))}
           </div>
-          <div className="form-group">
-            <label>Last Name</label>
-            <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} required className="form-input" />
-          </div>
-          <div className="form-group">
-            <label>Contact</label>
-            <input type="text" name="contact" value={formData.contact} onChange={handleChange} required className="form-input" />
-          </div>
-          <div className="form-group">
-            <label>Address</label>
-            <input type="text" name="address" value={formData.address} onChange={handleChange} required className="form-input" />
-          </div>
-          <div className="form-group">
-            <label>Civil Status</label>
-            <select name="civilStatus" value={formData.civilStatus} onChange={handleChange} required className="form-input">
-              <option value="">Select Civil Status</option>
-              <option value="Single">Single</option>
-              <option value="Married">Married</option>
-              <option value="Widowed">Widowed</option>
-              <option value="Separated">Separated</option>
-              <option value="Divorced">Divorced</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label>Date of Birth</label>
-            <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} required className="form-input" />
-          </div>
-          <div className="form-group">
-            <label>Gender</label>
-            <select name="gender" value={formData.gender} onChange={handleChange} required className="form-input">
-              <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label>Email</label>
-            <input type="email" name="email" value={formData.email} onChange={handleChange} required className="form-input" />
-          </div>
-          <div className="form-group">
-            <label>Children</label>
-            <input
-              type="text"
-              placeholder="Search for a student..."
-              value={formData.childrenSearch}
-              onChange={(e) => setFormData({ ...formData, childrenSearch: e.target.value })}
-              className="form-input"
-            />
-            <Select
-              isMulti
-              options={students
-                .filter(student =>
-                  !linkedStudentIds.has(student._id) || (formData.children || []).includes(student._id)
-                )
-                .map(student => ({
-                  value: student._id,
-                  label: `${student.firstName} ${student.lastName} - ID: ${student.idNumber}`
-                }))}
-              value={(formData.children || []).map(id => ({
-                value: id,
-                label: students.find(student => student._id === id)?.firstName + ' ' + students.find(student => student._id === id)?.lastName
-              }))}
-              onChange={(selectedOptions) => {
-                setFormData({
-                  ...formData,
-                  children: selectedOptions.map(option => option.value),
-                  childrenSearch: ''
-                });
-              }}
-              className="form-input"
-            />
-          </div>
-          <div className="form-group">
-            <label>Profile Image</label>
-            <input type="file" name="profileImage" accept="image/*" onChange={handleFileChange} />
-          </div>
-          <div className="literexia-teacher-modal-footer">
-            <button type="button" onClick={onClose} className="literexia-teacher-cancel-btn">Cancel</button>
-            <button type="submit" className="literexia-teacher-submit-btn">{parent ? 'Update Parent' : 'Add Parent'}</button>
-          </div>
-        </form>
-        {validationError && <ValidationErrorModal message={validationError} onClose={() => setValidationErrorLocal('')} />}
-        {showConfirmModal && (
-          <ConfirmChildrenModal
-            childrenList={(formData.children || []).map(id => {
-              const student = students.find(s => s._id === id);
-              return { value: id, label: student ? `${student.firstName} ${student.lastName} - ID: ${student.idNumber}` : id };
-            })}
-            onConfirm={() => {
-              setShowConfirmModal(false);
-              onSave(pendingSubmit);
-            }}
-            onCancel={() => setShowConfirmModal(false)}
-          />
-        )}
+
+          <form onSubmit={handleSubmit}>
+            {renderFormFields()}
+
+            <div className="literexia-teacher-modal-footer">
+              <div className="literexia-teacher-modal-footer-buttons">
+                {currentStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={handlePrevious}
+                    className="literexia-teacher-btn literexia-teacher-btn-secondary"
+                  >
+                    Previous
+                  </button>
+                )}
+                {currentStep < totalSteps ? (
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    className="literexia-teacher-btn literexia-teacher-btn-primary"
+                  >
+                    Next
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleFinalSubmit}
+                    className={`literexia-teacher-btn literexia-teacher-btn-primary ${isLoading ? 'literexia-teacher-loading' : ''}`}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Saving...' : (parent ? 'Update Parent' : 'Add Parent')}
+                  </button>
+                )}
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
@@ -520,16 +699,16 @@ const ParentsPage = () => {
         </div>
 
         {/* Controls Section */}
-        <div className="parents-page-actions">
-          <div className="parents-page-search-container">
-            <div className="parents-page-search">
+        <div className="parents-page-actions" style={{ backgroundColor: '#ffffff', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+          <div className="parents-page-search-container" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div className="parents-page-search" style={{ flex: '1', maxWidth: '400px', position: 'relative' }}>
               <input
                 type="text"
                 placeholder="Search..."
                 disabled
                 className="parents-page-search-input"
               />
-              <Search className="parents-page-search-icon" size={18} />
+              <Search style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
             </div>
             <button className="parents-page-filter-btn" disabled>
               <Filter size={18} />
@@ -584,19 +763,56 @@ const ParentsPage = () => {
       </div>
 
       {/* Controls Section */}
-      <div className="parents-page-actions">
-        <div className="parents-page-search-container">
-          <div className="parents-page-search">
+      <div className="parents-page-actions" style={{ 
+        backgroundColor: '#ffffff', 
+        padding: '1rem', 
+        borderRadius: '8px', 
+        marginBottom: '1.5rem',
+        width: '100%'
+      }}>
+        <div className="parents-page-search-container" style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '1rem',
+          width: '100%',
+          justifyContent: 'space-between'
+        }}>
+          <div className="parents-page-search" style={{ 
+            flex: '1', 
+            minWidth: '200px',
+            maxWidth: '500px', 
+            position: 'relative' 
+          }}>
             <input
               type="text"
               placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="parents-page-search-input"
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem 0.75rem 2.5rem',
+                borderRadius: '6px',
+                border: '1px solid #e2e8f0',
+                fontSize: '0.875rem'
+              }}
             />
-            <Search className="parents-page-search-icon" size={18} />
+            <Search style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
           </div>
-          <button className="parents-page-filter-btn">
+          <button 
+            className="parents-page-filter-btn"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem 1rem',
+              borderRadius: '6px',
+              border: '1px solid #e2e8f0',
+              backgroundColor: '#fff',
+              color: '#64748b',
+              fontSize: '0.875rem',
+              cursor: 'pointer'
+            }}
+          >
             <Filter size={18} />
             <span>Filter</span>
           </button>
@@ -604,6 +820,16 @@ const ParentsPage = () => {
             className="parents-page-sort-dropdown"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '6px',
+              border: '1px solid #e2e8f0',
+              backgroundColor: '#fff',
+              color: '#64748b',
+              fontSize: '0.875rem',
+              cursor: 'pointer',
+              minWidth: '140px'
+            }}
           >
             <option value="name-asc">Name (A-Z)</option>
             <option value="name-desc">Name (Z-A)</option>
@@ -615,6 +841,19 @@ const ParentsPage = () => {
               setIsEditing(false);
               setSelectedParent(null);
               setShowAddParentModal(true);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '6px',
+              backgroundColor: '#22c55e',
+              color: '#fff',
+              border: 'none',
+              fontSize: '0.875rem',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
             }}
           >
             <Plus size={18} />
