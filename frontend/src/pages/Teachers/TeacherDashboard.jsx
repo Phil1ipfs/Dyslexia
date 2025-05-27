@@ -482,34 +482,185 @@ const TeacherDashboard = () => {
 
 
           {/* Students Needing Attention Table */}
-          <div className="teacher-attention-table-container">
-            <table className="teacher-attention-table">
+          <div style={{
+            width: '100%',
+            maxHeight: '400px',
+            overflow: 'auto',
+            margin: '1rem 0',
+            borderRadius: '8px',
+            backgroundColor: 'rgba(59, 79, 129, 0.3)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+          }}>
+            <table style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              borderSpacing: '0',
+              tableLayout: 'fixed',
+              backgroundColor: 'transparent',
+              color: 'white'
+            }}>
               <thead>
                 <tr>
-                  <th>Student</th>
-                  <th>Reading Level</th>
-                  <th>Section</th>
-                  <th>Categories Needing Improvement</th>
-                  <th>Score</th>
-                  <th style={{ textAlign: 'left' }}>Action</th>
+                  <th style={{
+                    textAlign: 'left',
+                    fontSize: '0.85rem',
+                    fontWeight: '600',
+                    color: '#BFC9E5',
+                    padding: '12px 16px',
+                    borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
+                    backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                    position: 'sticky',
+                    top: '0',
+                    zIndex: '10',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>Student</th>
+                  <th style={{
+                    textAlign: 'left',
+                    fontSize: '0.85rem',
+                    fontWeight: '600',
+                    color: '#BFC9E5',
+                    padding: '12px 16px',
+                    borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
+                    backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                    position: 'sticky',
+                    top: '0',
+                    zIndex: '10',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    width: '15%',
+                    textAlign: 'center'
+                  }}>Reading Level</th>
+                  <th style={{
+                    textAlign: 'left',
+                    fontSize: '0.85rem',
+                    fontWeight: '600',
+                    color: '#BFC9E5',
+                    padding: '12px 16px',
+                    borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
+                    backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                    position: 'sticky',
+                    top: '0',
+                    zIndex: '10',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    width: '15%'
+                  }}>Section</th>
+                  <th style={{
+                    textAlign: 'left',
+                    fontSize: '0.85rem',
+                    fontWeight: '600',
+                    color: '#BFC9E5',
+                    padding: '12px 16px',
+                    borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
+                    backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                    position: 'sticky',
+                    top: '0',
+                    zIndex: '10',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    width: '30%'
+                  }}>Categories Needing Improvement</th>
+                  <th style={{
+                    textAlign: 'left',
+                    fontSize: '0.85rem',
+                    fontWeight: '600',
+                    color: '#BFC9E5',
+                    padding: '12px 16px',
+                    borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
+                    backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                    position: 'sticky',
+                    top: '0',
+                    zIndex: '10',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    width: '10%',
+                    textAlign: 'center'
+                  }}>Score</th>
+                  <th style={{
+                    textAlign: 'left',
+                    fontSize: '0.85rem',
+                    fontWeight: '600',
+                    color: '#BFC9E5',
+                    padding: '12px 16px',
+                    borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
+                    backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                    position: 'sticky',
+                    top: '0',
+                    zIndex: '10',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    width: '10%'
+                  }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {sectionFilteredStudents.length > 0 ? (
                   sectionFilteredStudents.map((student) => (
-                    <tr key={student.uniqueId || student.id} className="teacher-attention-row">
-                      <td>{student.name}</td>
-                      <td>
-                        <span
-                          className={`teacher-reading-level-badge teacher-reading-level-badge--${student.readingLevel.toLowerCase().replace(/\s+/g, '-')}`}
-                          style={{ backgroundColor: getReadingLevelColor(student.readingLevel) }}
-                        >
+                    <tr key={student.uniqueId || student.id} style={{
+                      transition: 'background-color 0.2s',
+                      backgroundColor: 'transparent'
+                    }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'}
+                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                      <td style={{
+                        padding: '12px 16px',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                        fontSize: '0.95rem',
+                        verticalAlign: 'middle',
+                        color: 'white',
+                        backgroundColor: 'transparent'
+                      }}>{student.name}</td>
+                      <td style={{
+                        padding: '12px 16px',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                        fontSize: '0.95rem',
+                        verticalAlign: 'middle',
+                        color: 'white',
+                        backgroundColor: 'transparent',
+                        textAlign: 'center'
+                      }}>
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '0.35rem 0.8rem',
+                          borderRadius: '20px',
+                          fontSize: '0.8rem',
+                          fontWeight: '600',
+                          color: 'white',
+                          textAlign: 'center',
+                          minWidth: '80px',
+                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+                          letterSpacing: '0.03em',
+                          backgroundColor: getReadingLevelColor(student.readingLevel)
+                        }}>
                           {student.readingLevel}
                         </span>
                       </td>
-                      <td>{student.section}</td>
-                      <td className="teacher-difficulty-cell">
-                        <span className="teacher-difficulty-text">
+                      <td style={{
+                        padding: '12px 16px',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                        fontSize: '0.95rem',
+                        verticalAlign: 'middle',
+                        color: 'white',
+                        backgroundColor: 'transparent'
+                      }}>{student.section}</td>
+                      <td style={{
+                        padding: '12px 16px',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                        fontSize: '0.95rem',
+                        verticalAlign: 'middle',
+                        color: 'white',
+                        backgroundColor: 'transparent',
+                        maxWidth: '300px'
+                      }}>
+                        <span style={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          lineHeight: 1.4
+                        }}>
                           {student.readingLevel === 'Not Assessed'
                             ? 'Needs assessment to determine areas for improvement'
                             : (student.improvementCategories && Array.isArray(student.improvementCategories)
@@ -517,10 +668,50 @@ const TeacherDashboard = () => {
                               : 'Needs assessment')}
                         </span>
                       </td>
-                      <td>{student.readingLevel === 'Not Assessed' ? 'N/A' : `${student.lastScore}%`}</td>
-                      <td>
+                      <td style={{
+                        padding: '12px 16px',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                        fontSize: '0.95rem',
+                        verticalAlign: 'middle',
+                        color: 'white',
+                        backgroundColor: 'transparent',
+                        textAlign: 'center'
+                      }}>{student.readingLevel === 'Not Assessed' ? 'N/A' : `${student.lastScore}%`}</td>
+                      <td style={{
+                        padding: '12px 16px',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                        fontSize: '0.95rem',
+                        verticalAlign: 'middle',
+                        color: 'white',
+                        backgroundColor: 'transparent'
+                      }}>
                         <button
-                          className="teacher-attention-view-button"
+                          style={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                            borderRadius: '6px',
+                            color: 'white',
+                            padding: '0.4rem 0.9rem',
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            minWidth: '70px',
+                            width: '100%',
+                            maxWidth: '100px',
+                            margin: '0 auto',
+                            display: 'block',
+                            fontWeight: '500'
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.25)';
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.2)';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
                           onClick={() => openStudentDetail(student)}
                         >
                           View
@@ -530,7 +721,14 @@ const TeacherDashboard = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>
+                    <td colSpan="6" style={{
+                      textAlign: 'center',
+                      padding: '20px',
+                      color: '#BFC9E5',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                      fontSize: '0.95rem',
+                      backgroundColor: 'transparent'
+                    }}>
                       No students found matching the current filter.
                     </td>
                   </tr>
@@ -818,52 +1016,215 @@ const TeacherDashboard = () => {
             </div>
 
             {/* Intervention Progress Table */}
-            <div className="teacher-intervention-table-wrapper">
-              <table className="teacher-intervention-table">
+            <div style={{
+              padding: '0',
+              overflowX: 'auto',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '8px',
+              backgroundColor: 'rgba(30, 42, 74, 0.3)'
+            }}>
+              <table style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                fontSize: '0.95rem',
+                backgroundColor: 'transparent',
+                color: 'white'
+              }}>
                 <thead>
                   <tr>
-                    <th className="teacher-table-cell teacher-student-column">STUDENT</th>
-                    <th className="teacher-table-cell teacher-plan-column">INTERVENTION PLAN</th>
-                    <th className="teacher-table-cell teacher-level-column">READING LEVEL</th>
-                    <th className="teacher-table-cell teacher-completion-column">COMPLETION</th>
-                    <th className="teacher-table-cell teacher-correct-column">CORRECT %</th>
-                    <th className="teacher-table-cell teacher-action-column">ACTIONS</th>
+                    <th style={{
+                      textAlign: 'left',
+                      padding: '12px 16px',
+                      fontWeight: '600',
+                      color: '#BFC9E5',
+                      backgroundColor: 'rgba(30, 42, 74, 0.3)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                      fontSize: '0.8rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}>STUDENT</th>
+                    <th style={{
+                      textAlign: 'left',
+                      padding: '12px 16px',
+                      fontWeight: '600',
+                      color: '#BFC9E5',
+                      backgroundColor: 'rgba(30, 42, 74, 0.3)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                      fontSize: '0.8rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}>INTERVENTION PLAN</th>
+                    <th style={{
+                      textAlign: 'left',
+                      padding: '12px 16px',
+                      fontWeight: '600',
+                      color: '#BFC9E5',
+                      backgroundColor: 'rgba(30, 42, 74, 0.3)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                      fontSize: '0.8rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}>READING LEVEL</th>
+                    <th style={{
+                      textAlign: 'left',
+                      padding: '12px 16px',
+                      fontWeight: '600',
+                      color: '#BFC9E5',
+                      backgroundColor: 'rgba(30, 42, 74, 0.3)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                      fontSize: '0.8rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}>COMPLETION</th>
+                    <th style={{
+                      textAlign: 'left',
+                      padding: '12px 16px',
+                      fontWeight: '600',
+                      color: '#BFC9E5',
+                      backgroundColor: 'rgba(30, 42, 74, 0.3)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                      fontSize: '0.8rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}>CORRECT %</th>
+                    <th style={{
+                      textAlign: 'left',
+                      padding: '12px 16px',
+                      fontWeight: '600',
+                      color: '#BFC9E5',
+                      backgroundColor: 'rgba(30, 42, 74, 0.3)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                      fontSize: '0.8rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}>ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredInterventionProgress && filteredInterventionProgress.length > 0 ? (
                     filteredInterventionProgress.map((progress) => (
-                      <tr key={progress._id.$oid || progress._id} className="teacher-intervention-row">
-                        <td className="teacher-table-cell teacher-student-column">{progress.studentName}</td>
-                        <td className="teacher-table-cell teacher-plan-column">Intervention Plan</td>
-                        <td className="teacher-table-cell teacher-level-column">
-                          <span className="teacher-level-badge">
+                      <tr key={progress._id.$oid || progress._id} 
+                          style={{ backgroundColor: 'transparent' }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.03)'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                        <td style={{
+                          padding: '12px 16px',
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                          color: 'white',
+                          backgroundColor: 'transparent'
+                        }}>{progress.studentName}</td>
+                        <td style={{
+                          padding: '12px 16px',
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                          color: 'white',
+                          backgroundColor: 'transparent'
+                        }}>Intervention Plan</td>
+                        <td style={{
+                          padding: '12px 16px',
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                          color: 'white',
+                          backgroundColor: 'transparent'
+                        }}>
+                          <span style={{
+                            display: 'inline-block',
+                            padding: '0.4rem 0.8rem',
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            borderRadius: '4px',
+                            fontSize: '0.85rem',
+                            fontWeight: '500'
+                          }}>
                             {progress.readingLevel || 'Not Assessed'}
                           </span>
                         </td>
-                        <td className="teacher-table-cell teacher-completion-column">
-                          <div className="teacher-progress-wrapper">
-                            <div className="teacher-progress-track">
-                              <div
-                                className="teacher-progress-fill"
-                                style={{ width: `${progress.percentComplete || 0}%` }}
+                        <td style={{
+                          padding: '12px 16px',
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                          color: 'white',
+                          backgroundColor: 'transparent'
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '1rem'
+                          }}>
+                            <div style={{
+                              flex: 1,
+                              height: '10px',
+                              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                              borderRadius: '5px',
+                              overflow: 'hidden'
+                            }}>
+                              <div 
+                                style={{
+                                  height: '100%',
+                                  backgroundColor: '#F3C922',
+                                  borderRadius: '5px',
+                                  width: `${progress.percentComplete || 0}%`
+                                }}
                               ></div>
                             </div>
-                            <span className="teacher-progress-text">{progress.percentComplete || 0}%</span>
+                            <span style={{
+                              fontSize: '0.85rem',
+                              color: 'white',
+                              minWidth: '40px',
+                              textAlign: 'right'
+                            }}>{progress.percentComplete || 0}%</span>
                           </div>
                         </td>
-                        <td className="teacher-table-cell teacher-correct-column">{progress.percentCorrect || 0}%</td>
-                        <td className="teacher-table-cell teacher-action-column">
+                        <td style={{
+                          padding: '12px 16px',
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                          color: 'white',
+                          backgroundColor: 'transparent'
+                        }}>{progress.percentCorrect || 0}%</td>
+                        <td style={{
+                          padding: '12px 16px',
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                          color: 'white',
+                          backgroundColor: 'transparent'
+                        }}>
                           {progress.passedThreshold ? (
-                            <button className="teacher-action-button teacher-resolved-button">
+                            <button style={{
+                              backgroundColor: '#4BC0C0',
+                              color: '#1E2A4A',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '6px',
+                              fontSize: '0.85rem',
+                              fontWeight: '500',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              textAlign: 'center',
+                              border: 'none',
+                              whiteSpace: 'nowrap'
+                            }}>
                               Resolved
                             </button>
                           ) : (
-                            <button
-                              className="teacher-action-button teacher-view-progress-button"
+                            <button 
+                              style={{
+                                backgroundColor: '#FF9E40',
+                                color: '#1E2A4A',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '6px',
+                                fontSize: '0.85rem',
+                                fontWeight: '500',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                textAlign: 'center',
+                                border: 'none',
+                                whiteSpace: 'nowrap'
+                              }}
+                              onMouseOver={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 3px 8px rgba(0, 0, 0, 0.2)';
+                              }}
+                              onMouseOut={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }}
                               onClick={() => openInterventionDetail(progress)}
                             >
-                              In View Progress
+                              View Progress
                             </button>
                           )}
                         </td>
@@ -871,7 +1232,14 @@ const TeacherDashboard = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" className="teacher-no-data-cell">
+                      <td colSpan="6" style={{
+                        textAlign: 'center',
+                        padding: '3rem',
+                        color: '#BFC9E5',
+                        fontStyle: 'italic',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                        backgroundColor: 'transparent'
+                      }}>
                         No intervention progress data available.
                       </td>
                     </tr>
@@ -1094,30 +1462,177 @@ const TeacherDashboard = () => {
                 </div>
 
                 {/* Students in this reading level */}
-                <div className="teacher-students-in-level">
-                  <h4>Students in this Level</h4>
-                  <div className="teacher-student-list">
-                    <table className="teacher-students-table">
+                <div style={{
+                  marginTop: '1.5rem'
+                }}>
+                  <h4 style={{
+                    fontSize: '1.1rem',
+                    marginBottom: '1rem',
+                    color: 'white',
+                    fontWeight: '600'
+                  }}>Students in this Level</h4>
+                  <div style={{
+                    backgroundColor: 'rgba(59, 79, 129, 0.3)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    overflow: 'auto',
+                    maxHeight: '300px'
+                  }}>
+                    <table style={{
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      borderSpacing: '0',
+                      backgroundColor: 'transparent',
+                      color: 'white'
+                    }}>
                       <thead>
                         <tr>
-                          <th>Student</th>
-                          <th>Section</th>
-                          <th>Grade</th>
-                          {selectedReadingLevel !== 'Not Assessed' && <th>Score</th>}
-                          <th>Action</th>
+                          <th style={{
+                            textAlign: 'left',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            color: '#BFC9E5',
+                            padding: '12px 16px',
+                            borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
+                            backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                            position: 'sticky',
+                            top: '0',
+                            zIndex: '10',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
+                          }}>Student</th>
+                          <th style={{
+                            textAlign: 'left',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            color: '#BFC9E5',
+                            padding: '12px 16px',
+                            borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
+                            backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                            position: 'sticky',
+                            top: '0',
+                            zIndex: '10',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
+                          }}>Section</th>
+                          <th style={{
+                            textAlign: 'left',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            color: '#BFC9E5',
+                            padding: '12px 16px',
+                            borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
+                            backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                            position: 'sticky',
+                            top: '0',
+                            zIndex: '10',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
+                          }}>Grade</th>
+                          {selectedReadingLevel !== 'Not Assessed' && <th style={{
+                            textAlign: 'left',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            color: '#BFC9E5',
+                            padding: '12px 16px',
+                            borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
+                            backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                            position: 'sticky',
+                            top: '0',
+                            zIndex: '10',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
+                          }}>Score</th>}
+                          <th style={{
+                            textAlign: 'left',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            color: '#BFC9E5',
+                            padding: '12px 16px',
+                            borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
+                            backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                            position: 'sticky',
+                            top: '0',
+                            zIndex: '10',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
+                          }}>Action</th>
                         </tr>
                       </thead>
                       <tbody>
                         {studentsInSelectedLevel.length > 0 ? (
                           studentsInSelectedLevel.map(student => (
-                            <tr key={student.uniqueId || student.id} className="teacher-student-row">
-                              <td>{student.name}</td>
-                              <td>{student.section}</td>
-                              <td>{student.gradeLevel}</td>
-                              {selectedReadingLevel !== 'Not Assessed' && <td>{student.lastScore}%</td>}
-                              <td>
+                            <tr key={student.uniqueId || student.id} style={{
+                              transition: 'background-color 0.2s',
+                              backgroundColor: 'transparent'
+                            }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'}
+                               onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                              <td style={{
+                                padding: '12px 16px',
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                fontSize: '0.95rem',
+                                verticalAlign: 'middle',
+                                color: 'white',
+                                backgroundColor: 'transparent'
+                              }}>{student.name}</td>
+                              <td style={{
+                                padding: '12px 16px',
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                fontSize: '0.95rem',
+                                verticalAlign: 'middle',
+                                color: 'white',
+                                backgroundColor: 'transparent'
+                              }}>{student.section}</td>
+                              <td style={{
+                                padding: '12px 16px',
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                fontSize: '0.95rem',
+                                verticalAlign: 'middle',
+                                color: 'white',
+                                backgroundColor: 'transparent'
+                              }}>{student.gradeLevel}</td>
+                              {selectedReadingLevel !== 'Not Assessed' && <td style={{
+                                padding: '12px 16px',
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                fontSize: '0.95rem',
+                                verticalAlign: 'middle',
+                                color: 'white',
+                                backgroundColor: 'transparent'
+                              }}>{student.lastScore}%</td>}
+                              <td style={{
+                                padding: '12px 16px',
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                fontSize: '0.95rem',
+                                verticalAlign: 'middle',
+                                color: 'white',
+                                backgroundColor: 'transparent'
+                              }}>
                                 <button
-                                  className="teacher-view-button"
+                                  style={{
+                                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                                    borderRadius: '6px',
+                                    color: 'white',
+                                    padding: '0.4rem 0.9rem',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    minWidth: '70px',
+                                    width: '100%',
+                                    maxWidth: '80px',
+                                    display: 'block',
+                                    fontWeight: '500'
+                                  }}
+                                  onMouseOver={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.25)';
+                                    e.currentTarget.style.transform = 'translateY(-2px)';
+                                    e.currentTarget.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.2)';
+                                  }}
+                                  onMouseOut={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = 'none';
+                                  }}
                                   onClick={() => {
                                     closeReadingLevelModal();
                                     openStudentDetail(student);
@@ -1130,7 +1645,14 @@ const TeacherDashboard = () => {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan={selectedReadingLevel !== 'Not Assessed' ? 5 : 4} style={{ textAlign: 'center' }}>
+                            <td colSpan={selectedReadingLevel !== 'Not Assessed' ? 5 : 4} style={{
+                              textAlign: 'center',
+                              padding: '20px',
+                              color: '#BFC9E5',
+                              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                              fontSize: '0.95rem',
+                              backgroundColor: 'transparent'
+                            }}>
                               No students found in this reading level.
                             </td>
                           </tr>
@@ -1142,18 +1664,74 @@ const TeacherDashboard = () => {
               </div>
             </div>
 
-            <div className="teacher-modal-footer">
+            <div style={{
+              padding: '1.5rem',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '1rem',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              backgroundColor: 'rgba(43, 58, 103, 0.5)',
+              borderRadius: '0 0 12px 12px'
+            }}>
               <button
-                className="teacher-primary-button"
+                style={{
+                  backgroundColor: '#F3C922',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#2B3A67',
+                  padding: '0.6rem 1.2rem',
+                  fontSize: '0.95rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
+                  letterSpacing: '0.03em',
+                  textTransform: 'uppercase'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = '#FFE066';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.25)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = '#F3C922';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.2)';
+                }}
                 onClick={() => {
                   closeReadingLevelModal();
-                  // Navigate to a dedicated reading level page if you have one
                   navigate('/teacher/manage-progress', { state: { readingLevel: selectedReadingLevel } });
                 }}
               >
                 See All Students
               </button>
-              <button className="teacher-secondary-button" onClick={closeReadingLevelModal}>Close</button>
+              <button 
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '6px',
+                  color: 'white',
+                  padding: '0.6rem 1.2rem',
+                  fontSize: '0.95rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  letterSpacing: '0.03em'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.2)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+                onClick={closeReadingLevelModal}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
