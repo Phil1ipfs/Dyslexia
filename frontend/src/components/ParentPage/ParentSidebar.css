@@ -1,66 +1,158 @@
-.parent-sidebar{
-    position: fixed;
-  top: 0;
-  left: 0;
-  width: 260px;
+.navigation-bar {
+  width: 280px;
   height: 100vh;
-  background-color: #465E98;
-  padding: 2rem 1.2rem;
+  background-color: #4A55A2;
+  color: #fff;
   display: flex;
   flex-direction: column;
-  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.3);
-  z-index: 999;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
 }
-.sidebar-header {
-    text-align: center;
-    margin-bottom: 2rem;
-  }
-  
-  .sidebar-header img {
-    margin-top: 2rem;
-    width: 190px;
-    object-fit: contain;
-  }
 
-  
-.sidebar-footer {
-    display: flex;
-    align-items: center;
-    padding: 0.9rem 1.2rem;
-    border-radius: 50px 0 0 50px;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-    color: white;
-    font-size: 0.95rem;
-  }
-  
-  .sidebar-footer img {
-    width: 24px;
-    margin-right: 0.8rem;
-  }
-  
-  .sidebar-footer:hover {
-    transform: translateX(6px);
-  }
-  
-  @media (max-width: 768px) {
-    .sidebar {
-      width: 80px;
-      padding: 1.2rem 0.7rem;
-    }
-    .sidebar-logo img {
-      width: 50px;
-    }
-    .sidebar-menu li span,
-    .sidebar-footer span {
-      display: none;
-    }
-    .sidebar-menu li {
-      justify-content: center;
-    }
-    .sidebar-menu li img,
-    .sidebar-footer img {
-      margin-right: 0;
-    }
-  }
+.navigation-bar__brand {
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.navigation-bar__logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.navigation-bar__logo-image {
+  width: 80px;
+  height: auto;
+}
+
+.navigation-bar__company-name {
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  color: #fff;
+  margin: 0;
+}
+
+.navigation-bar__profile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.navigation-bar__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navigation-bar__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.navigation-bar__avatar-placeholder {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.navigation-bar__profile-info {
+  flex: 1;
+}
+
+.navigation-bar__admin-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0;
+  color: #fff;
+}
+
+.navigation-bar__role {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+}
+
+.navigation-bar__menu {
+  flex: 1;
+  padding: 1.5rem 1rem;
+  overflow-y: auto;
+}
+
+.navigation-bar__section {
+  margin-bottom: 0.5rem;
+}
+
+.navigation-bar__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  color: #fff;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.navigation-bar__item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.navigation-bar__item--active {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.navigation-bar__item-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.navigation-bar__icon {
+  width: 20px;
+  height: 20px;
+  opacity: 0.9;
+}
+
+.navigation-bar__label {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.navigation-bar__footer {
+  padding: 1.5rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.navigation-bar__logout-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  background-color: transparent;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  transition: all 0.2s ease;
+}
+
+.navigation-bar__logout-btn:hover {
+  background-color: rgba(255, 68, 68, 0.9);
+  transform: translateY(-2px);
+}
   

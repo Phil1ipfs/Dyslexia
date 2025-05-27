@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Trash2, Edit, ChevronDown, User, UserPlus, Filter, Plus } from 'lucide-react';
+import { Search, Trash2, Edit, ChevronDown, User, UserPlus, Filter, Plus, X } from 'lucide-react';
 import axios from 'axios';
 import './TeacherLists.css';
 
@@ -30,14 +30,14 @@ const CredentialsModal = ({ credentials, onClose }) => {
   };
 
   return (
-  <div className="literexia-teacher-modal-overlay">
-    <div className="literexia-teacher-modal">
-      <div className="literexia-teacher-modal-header">
-        <h2>Teacher Credentials</h2>
-        <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
-      </div>
-      <div className="literexia-teacher-modal-form">
-        <p><strong>Email:</strong> {credentials.email}</p>
+    <div className="literexia-teacher-modal-overlay">
+      <div className="literexia-teacher-modal">
+        <div className="literexia-teacher-modal-header">
+          <h2>Teacher Credentials</h2>
+          <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="literexia-teacher-modal-form">
+          <p><strong>Email:</strong> {credentials.email}</p>
           <p><strong>Password:</strong> ********</p>
           <p>You can send these credentials to the teacher's email.</p>
           {sendStatus && (
@@ -53,12 +53,12 @@ const CredentialsModal = ({ credentials, onClose }) => {
             >
               {isSending ? 'Sending...' : 'Send Login Credentials'}
             </button>
-        <button className="literexia-teacher-save-btn" onClick={onClose}>Close</button>
+            <button className="literexia-teacher-save-btn" onClick={onClose}>Close</button>
           </div>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 };
 
 const SuccessModal = ({ message, onClose }) => (
@@ -323,56 +323,19 @@ const TeacherLists = () => {
       </div>
 
       {/* Controls Section */}
-      <div className="literexia-teacher-controls" style={{ 
-        backgroundColor: '#ffffff', 
-        padding: '1rem', 
-        borderRadius: '8px', 
-        marginBottom: '1.5rem',
-        width: '100%'
-      }}>
-        <div className="literexia-teacher-search-container" style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '1rem',
-          width: '100%',
-          justifyContent: 'space-between'
-        }}>
-          <div className="literexia-teacher-search" style={{ 
-            flex: '1', 
-            minWidth: '200px',
-            maxWidth: '500px', 
-            position: 'relative' 
-          }}>
+      <div className="literexia-teacher-controls">
+        <div className="literexia-teacher-search-container">
+          <div className="literexia-teacher-search">
             <input 
               type="text" 
               placeholder="Search teachers..." 
+              className="literexia-teacher-search-input"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem 0.75rem 2.5rem',
-                borderRadius: '6px',
-                border: '1px solid #e2e8f0',
-                fontSize: '0.875rem'
-              }}
             />
-            <Search style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
+            <Search className="literexia-teacher-search-icon" size={18} />
           </div>
-          <button 
-            className="literexia-teacher-filter-btn"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.75rem 1rem',
-              borderRadius: '6px',
-              border: '1px solid #e2e8f0',
-              backgroundColor: '#fff',
-              color: '#64748b',
-              fontSize: '0.875rem',
-              cursor: 'pointer'
-            }}
-          >
+          <button className="literexia-teacher-filter-btn">
             <Filter size={18} />
             <span>Filter</span>
           </button>
@@ -380,20 +343,11 @@ const TeacherLists = () => {
             className="literexia-teacher-sort-dropdown"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            style={{
-              padding: '0.75rem 1rem',
-              borderRadius: '6px',
-              border: '1px solid #e2e8f0',
-              backgroundColor: '#fff',
-              color: '#64748b',
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-              minWidth: '140px'
-            }}
           >
             <option value="name-asc">Name (A-Z)</option>
             <option value="name-desc">Name (Z-A)</option>
             <option value="recent">Recent Activity</option>
+            <option value="progress">Progress</option>
           </select>
           <button 
             className="literexia-teacher-add-btn"
@@ -401,22 +355,9 @@ const TeacherLists = () => {
               setSelectedTeacher(null);
               setShowAddTeacherModal(true);
             }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '6px',
-              backgroundColor: '#22c55e',
-              color: '#fff',
-              border: 'none',
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s'
-            }}
           >
             <Plus size={18} />
-            Add New Teacher
+            <span>Add New Teacher</span>
           </button>
         </div>
       </div>
@@ -481,74 +422,10 @@ const TeacherLists = () => {
 
       {/* Teacher Profile Modal */}
       {showTeacherProfileModal && selectedTeacher && (
-        <div className="literexia-teacher-modal-overlay">
-          <div className="literexia-teacher-modal">
-            <div className="literexia-teacher-modal-header">
-              <h2>Teacher Profile</h2>
-              <button 
-                className="literexia-teacher-modal-close"
-                onClick={() => setShowTeacherProfileModal(false)}
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="literexia-teacher-modal-content">
-              <div className="profile-header">
-                <div className="profile-avatar">
-                {selectedTeacher.profileImageUrl ? (
-                  <img 
-                    src={selectedTeacher.profileImageUrl + '?t=' + Date.now()} 
-                    alt={`${selectedTeacher.firstName} ${selectedTeacher.lastName}`}
-                      className="profile-image"
-                  />
-                ) : (
-                  <User size={64} />
-                )}
-              </div>
-                <h3 className="profile-name">
-                  {`${selectedTeacher.firstName} ${selectedTeacher.lastName}`}
-                </h3>
-              </div>
-              
-              <div className="profile-info">
-                <div className="profile-info-item">
-                  <span className="info-label">Email:</span>
-                  <span className="info-value">{selectedTeacher.email}</span>
-                  </div>
-                  
-                <div className="profile-info-item">
-                  <span className="info-label">Position:</span>
-                  <span className="info-value">{selectedTeacher.position}</span>
-                  </div>
-                  
-                <div className="profile-info-item">
-                  <span className="info-label">Contact:</span>
-                  <span className="info-value">{selectedTeacher.contact}</span>
-                  </div>
-                  
-                <div className="profile-info-item">
-                  <span className="info-label">Civil Status:</span>
-                  <span className="info-value">{selectedTeacher.civilStatus}</span>
-                  </div>
-                  
-                <div className="profile-info-item">
-                  <span className="info-label">Gender:</span>
-                  <span className="info-value">{selectedTeacher.gender}</span>
-              </div>
-            </div>
-            
-              <div className="modal-footer">
-              <button 
-                  className="close-btn"
-                onClick={() => setShowTeacherProfileModal(false)}
-              >
-                Close
-              </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ViewTeacherProfileModal 
+          teacher={selectedTeacher}
+          onClose={() => setShowTeacherProfileModal(false)}
+        />
       )}
 
       {/* Confirm Delete Modal */}
@@ -640,11 +517,6 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
       }
     });
 
-    if (step === 1 && formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      stepErrors.email = 'Please enter a valid email address';
-      isValid = false;
-    }
-
     setErrors(stepErrors);
     return isValid;
   };
@@ -680,12 +552,6 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
           allStepsValid = false;
         }
       });
-    }
-
-    // Email validation for step 1
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      allErrors.email = 'Please enter a valid email address';
-      allStepsValid = false;
     }
 
     if (!allStepsValid) {
@@ -820,6 +686,24 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
             );
           }
 
+          if (field === 'position') {
+            return (
+              <div key={field} className="literexia-teacher-form-group">
+                <label className="literexia-teacher-required">Position</label>
+                <select
+                  name="position"
+                  value={formData.position}
+                  onChange={handleChange}
+                  className={`literexia-teacher-input ${errors.position ? 'error' : ''}`}
+                >
+                  <option value="">Select Position</option>
+                  <option value="Grade 1 Teacher">Grade 1 Teacher</option>
+                </select>
+                {errors.position && <div className="literexia-teacher-error-message">{errors.position}</div>}
+              </div>
+            );
+          }
+
           const getFieldLabel = (field) => {
             switch(field) {
               case 'firstName': return 'First Name';
@@ -839,7 +723,7 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
           return (
             <div key={field} className="literexia-teacher-form-group">
               <label className={isRequired ? "literexia-teacher-required" : "literexia-teacher-optional"}>
-                {getFieldLabel(field)} {!isRequired && '(Optional)'}
+                {getFieldLabel(field)} {!isRequired ? '(Optional)' : ''}
               </label>
               <input
                 type={field === 'dob' ? 'date' : field === 'email' ? 'email' : 'text'}
@@ -923,23 +807,76 @@ const AddEditTeacherModal = ({ teacher, onClose, onSave }) => {
 };
 
 // Update the ConfirmDeleteModal component
-const ConfirmDeleteModal = ({ teacher, onCancel, onConfirm }) => (
+const ConfirmDeleteModal = ({ teacher, onCancel, onConfirm }) => {
+  return (
     <div className="literexia-teacher-modal-overlay">
-    <div className="literexia-teacher-modal">
+      <div className="literexia-teacher-confirm-modal">
         <div className="literexia-teacher-modal-header">
           <h2>Confirm Delete</h2>
           <button className="literexia-teacher-modal-close" onClick={onCancel}>×</button>
         </div>
-      <div className="literexia-teacher-modal-form">
+        <div className="literexia-teacher-confirm-content">
           <p>Are you sure you want to delete teacher <strong>{teacher.firstName} {teacher.lastName}</strong>?</p>
           <p>This action cannot be undone.</p>
-        <div className="literexia-teacher-modal-footer">
+        </div>
+        <div className="literexia-teacher-confirm-actions">
           <button className="literexia-teacher-cancel-btn" onClick={onCancel}>Cancel</button>
           <button className="literexia-teacher-confirm-delete-btn" onClick={onConfirm}>Delete</button>
-        </div>
         </div>
       </div>
     </div>
   );
+};
+
+const ViewTeacherProfileModal = ({ teacher, onClose }) => {
+  return (
+    <div className="literexia-teacher-modal-overlay">
+      <div className="literexia-teacher-modal">
+        <div className="literexia-teacher-modal-header">
+          <h2>Teacher Profile</h2>
+          <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="literexia-teacher-modal-form">
+          <div className="profile-content">
+            <div className="profile-image-container">
+              <img 
+                src={teacher.profileImage || '/images/default-avatar.png'} 
+                alt={`${teacher.firstName} ${teacher.lastName}`} 
+                className="profile-image"
+              />
+            </div>
+            <h2 className="profile-name">{teacher.firstName} {teacher.middleName} {teacher.lastName}</h2>
+
+            <div className="profile-details">
+              <div className="detail-item">
+                <span className="label">Email:</span>
+                <span className="value">{teacher.email}</span>
+              </div>
+              <div className="detail-item">
+                <span className="label">Contact:</span>
+                <span className="value">{teacher.contactNumber}</span>
+              </div>
+              <div className="detail-item">
+                <span className="label">Address:</span>
+                <span className="value">{teacher.address}</span>
+              </div>
+              <div className="detail-item">
+                <span className="label">Civil Status:</span>
+                <span className="value">{teacher.civilStatus}</span>
+              </div>
+              <div className="detail-item">
+                <span className="label">Gender:</span>
+                <span className="value">{teacher.gender}</span>
+              </div>
+            </div>
+          </div>
+          <div className="literexia-teacher-modal-footer">
+            <button className="literexia-teacher-save-btn" onClick={onClose}>Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default TeacherLists;

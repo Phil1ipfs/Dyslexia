@@ -1,7 +1,20 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { 
+  User, 
+  Mail, 
+  Phone, 
+  Calendar, 
+  MapPin,
+  Heart,
+  Book,
+  Lock,
+  X,
+  CheckCircle
+} from 'lucide-react';
 import parent1 from "../../assets/images/Parents/parent1.png";
 import student1 from "../../assets/images/Parents/student1.jpg";
+import ChangePasswordModal from "../../components/ParentPage/ChangePasswordModal";
 import "../../css/Parents/ParentDashboard.css";
 
 const ParentDashboard = () => {
@@ -19,7 +32,7 @@ const ParentDashboard = () => {
     profileImageUrl: ""
   });
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -138,75 +151,6 @@ const ParentDashboard = () => {
     }));
   };
 
-  // Toggle between edit and view mode
-  const toggleEdit = () => {
-    if (isEditing) {
-      // If canceling edit, refresh data from database
-      fetchParentData();
-    }
-    setIsEditing(!isEditing);
-  };
-
-  // Save changes to database
-  const saveChanges = async () => {
-    const userConfirmed = window.confirm(
-      "Are you sure you want to save these changes?"
-    );
-
-    if (userConfirmed) {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        // Get auth token from localStorage
-        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-        
-        if (!token) {
-          setError("No authentication token found");
-          setIsLoading(false);
-          return;
-        }
-        
-        // Format data for API
-        const updateData = {
-          firstName: personalInfo.firstName,
-          middleName: personalInfo.middleName,
-          lastName: personalInfo.lastName,
-          contactNumber: personalInfo.contactNumber,
-          address: personalInfo.address,
-          civilStatus: personalInfo.civilStatus,
-          dateOfBirth: personalInfo.dateOfBirth,
-          gender: personalInfo.gender
-        };
-        
-        // Make API request to update profile
-        const response = await axios.put(`${BASE_URL}/api/parents/profile`, updateData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        console.log("Profile updated successfully:", response.data);
-        
-        // Refresh data from database to ensure we display the latest data
-        await fetchParentData();
-        
-        setIsEditing(false);
-        setShowSuccessMessage(true);
-
-        setTimeout(() => {
-          setShowSuccessMessage(false);
-        }, 3000);
-      } catch (error) {
-        console.error("Error updating profile:", error);
-        setError(error.response?.data?.message || "Failed to update profile");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
-
   // After fetching parent profile, if personalInfo.children exists and is non-empty, fetch each child's student profile from the backend and display them in the Children Enrolled section.
   useEffect(() => {
     if (personalInfo.children && personalInfo.children.length > 0) {
@@ -246,15 +190,16 @@ const ParentDashboard = () => {
       {/* Error message */}
       {error && (
         <div className="error-message">
+          <X size={18} />
           <p>{error}</p>
         </div>
       )}
       
-      {/* Main content with white background and styling similar to Teacher Profile */}
+      {/* Main content */}
       <div className="main-content">
         <h1 className="profile-title">Parent Profile</h1>
         
-        {/* Profile header section with basic info */}
+        {/* Profile header section */}
         <div className="profile-header-section">
           <div className="profile-avatar-container">
             <img 
@@ -264,171 +209,117 @@ const ParentDashboard = () => {
             />
           </div>
           
-          <div className="profile-basic-info">
-            <div className="info-item">
-              <div className="info-label">Email:</div>
-              <input 
-                type="text" 
-                className="info-input" 
-                value={personalInfo.email} 
-                onChange={(e) => handleChange({target: {name: 'email', value: e.target.value}})}
-                readOnly={!isEditing} 
-              />
+          <div className="profile-info">
+            <div className="contact-info">
+              <div className="info-group">
+                <Mail size={18} />
+                <span>{personalInfo.email}</span>
+              </div>
+              <div className="info-group">
+                <Phone size={18} />
+                <span>{personalInfo.contactNumber}</span>
+              </div>
             </div>
-          </div>
-          
-          <div className="action-buttons">
-            <button className="edit-profile-btn" onClick={toggleEdit}>
-              {isEditing ? "Cancel" : "Edit Profile"}
+            
+            <button className="edit-profile-btn" onClick={() => setShowChangePassword(true)}>
+              <Lock size={18} />
+              Change Password
             </button>
-            {isEditing && (
-              <button className="change-password-btn" onClick={saveChanges}>
-                Save Changes
-              </button>
-            )}
           </div>
         </div>
         
         {/* Personal Information Section */}
         <div className="information-section">
-          <h3 className="section-title">Personal Information</h3>
+          <h3 className="section-title">
+            <User size={20} />
+            Personal Information
+          </h3>
           <div className="info-grid">
-            <div className="info-column">
-              <div className="form-group">
-                <label>First Name</label>
-                <input 
-                  type="text" 
-                  value={personalInfo.firstName}
-                  name="firstName"
-                  onChange={handleChange}
-                  readOnly={!isEditing}
-                  className="form-input"
-                />
+            <div className="info-field">
+              <div className="info-field-label">
+                <User size={16} />
+                First Name
               </div>
-              
-              <div className="form-group">
-                <label>Middle Name</label>
-                <input 
-                  type="text" 
-                  value={personalInfo.middleName}
-                  name="middleName"
-                  onChange={handleChange}
-                  readOnly={!isEditing}
-                  className="form-input"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label>Contact Number</label>
-                <input 
-                  type="text" 
-                  value={personalInfo.contactNumber}
-                  name="contactNumber"
-                  onChange={handleChange}
-                  readOnly={!isEditing}
-                  className="form-input"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label>Civil Status</label>
-                <input 
-                  type="text" 
-                  value={personalInfo.civilStatus}
-                  name="civilStatus"
-                  onChange={handleChange}
-                  readOnly={!isEditing}
-                  className="form-input"
-                />
-              </div>
+              <div className="info-field-value">{personalInfo.firstName}</div>
             </div>
             
-            <div className="info-column">
-              <div className="form-group">
-                <label>Last Name</label>
-                <input 
-                  type="text" 
-                  value={personalInfo.lastName}
-                  name="lastName"
-                  onChange={handleChange}
-                  readOnly={!isEditing}
-                  className="form-input"
-                />
+            <div className="info-field">
+              <div className="info-field-label">
+                <User size={16} />
+                Last Name
               </div>
-              
-              <div className="form-group">
-                <label>Date of Birth</label>
-                <input 
-                  type={isEditing ? "date" : "text"}
-                  value={personalInfo.dateOfBirth}
-                  name="dateOfBirth"
-                  onChange={handleChange}
-                  readOnly={!isEditing}
-                  className="form-input"
-                />
+              <div className="info-field-value">{personalInfo.lastName}</div>
+            </div>
+            
+            <div className="info-field">
+              <div className="info-field-label">
+                <User size={16} />
+                Middle Name
               </div>
-              
-              <div className="form-group">
-                <label>Gender</label>
-                {isEditing ? (
-                  <select
-                    value={personalInfo.gender}
-                    name="gender"
-                    onChange={handleChange}
-                    className="form-input"
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    value={personalInfo.gender}
-                    readOnly
-                    className="form-input"
-                  />
-                )}
+              <div className="info-field-value">{personalInfo.middleName || '-'}</div>
+            </div>
+            
+            <div className="info-field">
+              <div className="info-field-label">
+                <Calendar size={16} />
+                Date of Birth
               </div>
-              
-              <div className="form-group">
-                <label>Address</label>
-                <input 
-                  type="text" 
-                  value={personalInfo.address}
-                  name="address"
-                  onChange={handleChange}
-                  readOnly={!isEditing}
-                  className="form-input"
-                />
+              <div className="info-field-value">{personalInfo.dateOfBirth || '-'}</div>
+            </div>
+            
+            <div className="info-field">
+              <div className="info-field-label">
+                <Heart size={16} />
+                Civil Status
               </div>
+              <div className="info-field-value">{personalInfo.civilStatus || '-'}</div>
+            </div>
+            
+            <div className="info-field">
+              <div className="info-field-label">
+                <MapPin size={16} />
+                Address
+              </div>
+              <div className="info-field-value">{personalInfo.address || '-'}</div>
             </div>
           </div>
         </div>
         
-        {/* Children Information Section - Dynamically loaded from database */}
+        {/* Children Section */}
         <div className="information-section">
-          <h3 className="section-title">Children Enrolled</h3>
-          <div className="children-info" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+          <h3 className="section-title">
+            <Book size={20} />
+            Children Enrolled
+          </h3>
+          <div className="children-enrolled">
             {children.length > 0 ? (
               children.map((child, index) => (
-                <div key={index} className="child-card" style={{ display: 'flex', alignItems: 'center', background: '#fff', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', padding: '12px 20px', minWidth: '280px', maxWidth: '350px', width: '100%', gap: '16px' }}>
+                <div key={index} className="child-card">
                   <img 
                     src={child.profileImage || student1} 
                     alt={`${child.firstName || ''} ${child.lastName || ''}`} 
-                    className="child-image"
-                    style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'cover', marginRight: '12px', border: '2px solid #e5e7eb' }}
+                    className="child-avatar"
                   />
-                  <div className="child-details" style={{ flex: 1 }}>
-                    <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>{`${child.firstName || ''} ${child.middleName ? child.middleName + ' ' : ''}${child.lastName || ''}`}</h4>
-                    <div style={{ fontSize: '0.97rem', color: '#444', marginTop: 2 }}>Student ID: <span style={{ fontWeight: 500 }}>{child.idNumber || 'N/A'}</span></div>
-                    <div style={{ fontSize: '0.97rem', color: '#444', marginTop: 2 }}>Section: <span style={{ fontWeight: 500 }}>{child.section || 'N/A'}</span></div>
+                  <div className="child-info">
+                    <div className="child-name">
+                      {`${child.firstName || ''} ${child.middleName ? child.middleName + ' ' : ''}${child.lastName || ''}`}
+                    </div>
+                    <div className="child-details">
+                      <div>Student ID: {child.idNumber || 'N/A'}</div>
+                      <div>Section: {child.section || 'N/A'}</div>
+                    </div>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="no-children-message">
-                <p>No children enrolled yet.</p>
+              <div className="child-card">
+                <Book size={40} style={{ opacity: 0.5 }} />
+                <div className="child-info">
+                  <div className="child-name">No children enrolled yet</div>
+                  <div className="child-details">
+                    <div>Once you enroll children, they will appear here.</div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -438,8 +329,13 @@ const ParentDashboard = () => {
       {/* Success Message */}
       {showSuccessMessage && (
         <div className="success-message">
+          <CheckCircle size={18} />
           <p>Changes saved successfully!</p>
         </div>
+      )}
+      {/* Change Password Modal */}
+      {showChangePassword && (
+        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
       )}
     </div>
   );

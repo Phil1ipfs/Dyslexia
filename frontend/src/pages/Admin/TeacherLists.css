@@ -1,990 +1,944 @@
 /* Main Container Styles */
 .literexia-teacher-lists-container {
-    padding: 20px;
-    background-color: #f5f7fb;
-    min-height: auto;
-  }
-  
-  /* Header Section Styles */
-  .literexia-teacher-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #fff;
-    padding: 12px 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    margin-bottom: 20px;
-    height: 70px;
-  }
-  
-  .literexia-teacher-title-container {
-    flex: 1;
-  }
-  
-  .literexia-teacher-title {
-    font-size: 24px;
-    font-weight: 600;
-    color: #333;
-    margin: 0;
-    line-height: 1.2;
-  }
-  
-  .literexia-teacher-subtitle {
-    color: #666;
-    margin: 2px 0 0;
-    font-size: 14px;
-    line-height: 1.2;
-  }
-  
-  .literexia-teacher-image {
-    width: 180px;
-    height: 100px;
-  }
-  
-  .literexia-teacher-placeholder {
-    width: 100%;
-    height: 100%;
-    background-image: url('/api/placeholder/180/100');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-  }
-  
-  /* Controls Section Styles */
-  .literexia-teacher-controls {
-    background-color: #ffffff;
-    padding: 15px 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  }
-  
-  .literexia-teacher-search-container {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-  }
-  
-  .literexia-teacher-search {
-    position: relative;
-    flex: 1;
-    max-width: 400px;
-  }
-  
-  .literexia-teacher-search-input {
-    width: 100%;
-    padding: 10px 15px 10px 40px;
-    border-radius: 5px;
-    border: 1px solid #e5e7eb;
-    outline: none;
-    font-size: 14px;
-    background-color: #f9fafb;
-  }
-  
-  .literexia-teacher-search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #666;
-  }
-  
-  .literexia-teacher-filter-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background-color: #f3f4f6;
-    color: #374151;
-    padding: 8px 16px;
-    border-radius: 5px;
-    font-size: 14px;
-    cursor: pointer;
-    border: 1px solid #e5e7eb;
-    transition: all 0.2s ease;
-  }
-  
-  .literexia-teacher-filter-btn:hover {
-    background-color: #e5e7eb;
-  }
-  
-  .literexia-teacher-sort-dropdown {
-    padding: 8px 16px;
-    border-radius: 5px;
-    border: 1px solid #e5e7eb;
-    background-color: #f9fafb;
-    font-size: 14px;
-    color: #374151;
-    cursor: pointer;
-    outline: none;
-  }
-  
-  .literexia-teacher-add-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background-color: #4CAF50;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 5px;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-  }
-  
-  .literexia-teacher-add-btn:hover {
-    background-color: #45a049;
-  }
-  
-  /* Table Styles */
-  .literexia-teacher-table-container {
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
-  }
-  
-  .literexia-teacher-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  
-  .literexia-teacher-th {
-    background-color: #6B7280;
-    color: #ffffff;
-    text-align: left;
-    padding: 15px 20px;
-    font-weight: 600;
-    font-size: 14px;
-    border-bottom: 1px solid #e5e7eb;
-  }
-  
-  .literexia-teacher-td {
-    padding: 15px 20px;
-    border-bottom: 1px solid #f1f1f1;
-    color: #333;
-    font-size: 14px;
-  }
-  
-  .literexia-teacher-tr:last-child .literexia-teacher-td {
-    border-bottom: none;
-  }
-  
-  .literexia-teacher-tr:hover {
-    background-color: #f9fafb;
-  }
-  
-  .literexia-teacher-view-btn {
-    background-color: #3CAEA3;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    padding: 8px 12px;
-    font-size: 13px;
-    cursor: pointer;
-  }
-  
-  .literexia-teacher-view-btn:hover {
-    background-color: #2a9d8f;
-  }
-  
-  .literexia-teacher-actions {
-    display: flex;
-    gap: 10px;
-  }
-  
-  .literexia-teacher-edit-btn {
-    background-color: #f3f4f6;
-    color: #374151;
-    border: 1px solid #e5e7eb;
-    border-radius: 4px;
-    padding: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .literexia-teacher-edit-btn:hover {
-    background-color: #e5e7eb;
-  }
-  
-  .literexia-teacher-delete-btn {
-    background-color: #fee2e2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
-    border-radius: 4px;
-    padding: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .literexia-teacher-delete-btn:hover {
-    background-color: #fecaca;
-  }
-  
-  /* Modal Styles */
-  .literexia-teacher-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-  
-  .literexia-teacher-modal {
-    background-color: white;
-    border-radius: 10px;
-    width: 500px;
-    max-width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  }
-  
-  .literexia-teacher-modal-header {
-    background-color: white;
-    padding: 16px 24px;
-    border-bottom: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .literexia-teacher-modal-header h2 {
-    color: #111827;
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0;
-  }
-  
-  .literexia-teacher-modal-close {
-    background: none;
-    border: none;
-    color: #6B7280;
-    font-size: 20px;
-    cursor: pointer;
-    padding: 4px;
-  }
-  
-  .literexia-teacher-modal-content {
-    padding: 24px;
-  }
-  
-  .profile-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 32px;
-  }
-  
-  .profile-avatar {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    overflow: hidden;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #f3f4f6;
-    border: 3px solid white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  .profile-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  .profile-name {
-    font-size: 24px;
-    font-weight: 600;
-    color: #111827;
-    margin: 0;
-    text-align: center;
-  }
-  
-  .profile-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-  
-  .profile-info-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid #E5E7EB;
-  }
-  
-  .info-label {
-    font-size: 14px;
-    color: #6B7280;
-    font-weight: 500;
-  }
-  
-  .info-value {
-    font-size: 14px;
-    color: #111827;
-    font-weight: 400;
-  }
-  
-  .modal-footer {
-    display: flex;
-    justify-content: center;
-    padding-top: 24px;
-    margin-top: 8px;
-  }
-  
-  .close-btn {
-    padding: 8px 32px;
-    background-color: #6366F1;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: background-color 0.2s;
-  }
-  
-  .close-btn:hover {
-    background-color: #4F46E5;
-  }
-  
-  .literexia-teacher-progress {
-    height: 4px;
-    background-color: #e5e7eb;
-    border-radius: 2px;
-    margin-bottom: 24px;
-    overflow: hidden;
-  }
-  
-  .literexia-teacher-progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #4f46e5 0%, #6366f1 100%);
-    transition: width 0.3s ease;
-  }
-  
-  .literexia-teacher-form-steps {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 32px;
-    position: relative;
-    padding: 0 16px;
-  }
-  
-  .literexia-teacher-form-steps::before {
-    content: '';
-    position: absolute;
-    top: 16px;
-    left: 50px;
-    right: 50px;
-    height: 2px;
-    background-color: #e5e7eb;
-    z-index: 0;
-  }
-  
-  .literexia-teacher-step {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex: 1;
-  }
-  
-  .literexia-teacher-step-circle {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background-color: white;
-    border: 2px solid #e5e7eb;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    margin-bottom: 8px;
-    transition: all 0.3s ease;
-  }
-  
-  .literexia-teacher-step.active .literexia-teacher-step-circle {
-    border-color: #4f46e5;
-    background-color: #4f46e5;
-    color: white;
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
-  }
-  
-  .literexia-teacher-step.completed .literexia-teacher-step-circle {
-    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-    border-color: #4f46e5;
-    color: white;
-  }
-  
-  .literexia-teacher-step-label {
-    font-size: 0.875rem;
-    color: #6b7280;
-    text-align: center;
-  }
-  
-  .literexia-teacher-form-section {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-  
-  .literexia-teacher-form-group {
-    margin-bottom: 16px;
-  }
-  
-  .literexia-teacher-form-group.full-width {
-    grid-column: 1 / -1;
-  }
-  
-  .literexia-teacher-required::after {
-    content: '*';
-    color: #ef4444;
-    margin-left: 4px;
-  }
-  
-  .literexia-teacher-input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    color: #111827;
-    transition: all 0.2s ease;
-    background-color: #f9fafb;
-  }
-  
-  .literexia-teacher-input:focus {
-    outline: none;
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-    background-color: #ffffff;
-  }
-  
-  .literexia-teacher-input.error {
-    border-color: #ef4444;
-  }
-  
-  .literexia-teacher-error-message {
-    color: #ef4444;
-    font-size: 0.75rem;
-    margin-top: 4px;
-  }
-  
-  .literexia-teacher-file-input-wrapper {
-    position: relative;
-    width: 100%;
-    height: 120px;
-    border: 2px dashed #d1d5db;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background-color: #f9fafb;
-  }
-  
-  .literexia-teacher-file-input-wrapper:hover {
-    border-color: #4f46e5;
-    background-color: rgba(79, 70, 229, 0.05);
-  }
-  
-  .literexia-teacher-file-input {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-  }
-  
-  .literexia-teacher-file-input-content {
-    text-align: center;
-  }
-  
-  .literexia-teacher-file-input-icon {
-    font-size: 24px;
-    margin-bottom: 8px;
-  }
-  
-  .literexia-teacher-file-input-text {
-    font-size: 0.875rem;
-    color: #6b7280;
-  }
-  
-  .literexia-teacher-modal-footer {
-    border-top: 1px solid #e5e7eb;
-    padding: 20px 32px;
-    background-color: #f9fafb;
-    margin: 24px -24px -24px;
-  }
-  
-  .literexia-teacher-modal-footer-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 16px;
-  }
-  
-  .literexia-teacher-btn {
-    padding: 10px 24px;
-    border-radius: 8px;
-    font-weight: 500;
-    font-size: 0.875rem;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 120px;
-  }
-  
-  .literexia-teacher-btn-primary {
-    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-    color: white;
-    border: none;
-    transition: all 0.3s ease;
-  }
-  
-  .literexia-teacher-btn-primary:hover {
-    background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  }
-  
-  .literexia-teacher-btn-primary:disabled {
-    background-color: #a5b4fc;
-    cursor: not-allowed;
-  }
-  
-  .literexia-teacher-btn-secondary {
-    background-color: white;
-    color: #4b5563;
-    border: 1px solid #d1d5db;
-    transition: all 0.3s ease;
-  }
-  
-  .literexia-teacher-btn-secondary:hover {
-    background-color: #f9fafb;
-    border-color: #9ca3af;
-    transform: translateY(-1px);
-  }
-  
-  .literexia-teacher-loading {
-    position: relative;
-    color: transparent !important;
-  }
-  
-  .literexia-teacher-loading::after {
-    content: '';
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    top: 50%;
-    left: 50%;
-    margin: -8px 0 0 -8px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: white;
-    animation: spin 0.8s infinite linear;
-  }
-  
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  
-  .literexia-teacher-select {
-    margin-top: 8px;
-  }
-  
-  .literexia-teacher-select .select__control {
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    min-height: 38px;
-    font-size: 0.875rem;
-  }
-  
-  .literexia-teacher-select .select__control:hover {
-    border-color: #9ca3af;
-  }
-  
-  .literexia-teacher-select .select__control--is-focused {
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-  }
-  
-  .literexia-teacher-select .select__menu {
-    border-radius: 6px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    font-size: 0.875rem;
-  }
-  
-  .literexia-teacher-select .select__option {
-    padding: 8px 12px;
-  }
-  
-  .literexia-teacher-select .select__option--is-focused {
-    background-color: rgba(79, 70, 229, 0.1);
-  }
-  
-  .literexia-teacher-select .select__option--is-selected {
-    background-color: #4f46e5;
-  }
-  
-  .literexia-teacher-select .select__multi-value {
-    background-color: rgba(79, 70, 229, 0.1);
-    border-radius: 4px;
-  }
-  
-  .literexia-teacher-select .select__multi-value__label {
-    color: #4f46e5;
-    font-size: 0.875rem;
-    padding: 2px 6px;
-  }
-  
-  .literexia-teacher-select .select__multi-value__remove {
-    color: #4f46e5;
-    padding: 0 4px;
-    border-radius: 0 4px 4px 0;
-  }
-  
-  .literexia-teacher-select .select__multi-value__remove:hover {
-    background-color: #ef4444;
-    color: white;
-  }
+  padding: 20px;
+  background-color: #f5f7fb;
+  min-height: auto;
+}
 
-  .literexia-teacher-profile-image {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid #fff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
+/* Header Section Styles */
+.literexia-teacher-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #fff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  height: 70px;
+}
 
-  .literexia-teacher-profile-info {
-    display: grid;
-    gap: 16px;
-    margin-top: 24px;
-  }
+.literexia-teacher-title-container {
+  flex: 1;
+}
 
-  .literexia-teacher-profile-info-item {
-    display: grid;
-    grid-template-columns: 120px 1fr;
-    align-items: center;
-    gap: 16px;
-    padding: 8px 0;
-    border-bottom: 1px solid #e5e7eb;
-  }
+.literexia-teacher-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  line-height: 1.2;
+}
 
-  .literexia-teacher-profile-label {
-    font-weight: 600;
-    color: #4b5563;
-    font-size: 14px;
-  }
+.literexia-teacher-subtitle {
+  color: #666;
+  margin: 2px 0 0;
+  font-size: 14px;
+  line-height: 1.2;
+}
 
-  .literexia-teacher-profile-value {
-    color: #111827;
-    font-size: 14px;
-  }
+.literexia-teacher-image {
+  width: 180px;
+  height: 100px;
+}
 
-  .literexia-teacher-profile-name {
-    font-size: 24px;
-    font-weight: 600;
-    color: #111827;
-    margin: 16px 0 0;
-    text-align: center;
-  }
+.literexia-teacher-placeholder {
+  width: 100%;
+  height: 100%;
+  background-image: url('/api/placeholder/180/100');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
 
-  .literexia-teacher-profile-content {
-    padding: 32px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
+/* Controls Section Styles */
+.literexia-teacher-controls {
+  background-color: #ffffff;
+  padding: 15px 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
 
-  .literexia-teacher-profile-avatar {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    background: #f3f4f6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #9ca3af;
-  }
+.literexia-teacher-search-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
 
-  .literexia-teacher-profile-details {
-    width: 100%;
-    max-width: 480px;
-  }
+.literexia-teacher-search {
+  position: relative;
+  flex: 1;
+}
 
-  .literexia-teacher-close-profile-btn {
-    background: #4f46e5;
-    color: white;
-    border: none;
-    padding: 8px 24px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
+.literexia-teacher-search-input {
+  width: 100%;
+  padding: 10px 15px 10px 40px;
+  border-radius: 5px;
+  border: 1px solid #e5e7eb;
+  outline: none;
+  font-size: 14px;
+  background-color: #f9fafb;
+}
 
-  .literexia-teacher-close-profile-btn:hover {
-    background: #4338ca;
-  }
+.literexia-teacher-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+}
 
-  .literexia-teacher-profile-actions {
-    padding: 16px 32px;
-    border-top: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: flex-end;
-  }
+.literexia-teacher-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #f3f4f6;
+  color: #374151;
+  padding: 8px 16px;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
 
-  /* Loading and Error States */
-  .loading-spinner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 400px;
-    font-size: 18px;
-    color: #6b7280;
-  }
+.literexia-teacher-filter-btn:hover {
+  background-color: #e5e7eb;
+}
 
-  .error-message {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 400px;
-    font-size: 18px;
-    color: #dc2626;
-    text-align: center;
-    padding: 24px;
-    background: #fef2f2;
-    border: 1px solid #fee2e2;
-    border-radius: 8px;
-    margin: 24px;
-  }
+.literexia-teacher-sort-dropdown {
+  padding: 8px 16px;
+  border-radius: 5px;
+  border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  outline: none;
+}
 
-  /* Skeleton Loading Styles */
-  .skeleton-text {
-    height: 16px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: 4px;
-    width: 80%;
-  }
+.literexia-teacher-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #4CAF50;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
 
-  .skeleton-button {
-    height: 32px;
-    width: 100px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: 4px;
-  }
+.literexia-teacher-add-btn:hover {
+  background-color: #45a049;
+}
 
-  .skeleton-actions {
-    display: flex;
-    gap: 10px;
-  }
+/* Table Styles */
+.literexia-teacher-table-container {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
 
-  .skeleton-actions::before,
-  .skeleton-actions::after {
-    content: '';
-    height: 32px;
-    width: 32px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: 4px;
-  }
+.literexia-teacher-table {
+  width: 100%;
+  border-collapse: collapse;
+}
 
-  @keyframes shimmer {
-    0% {
-      background-position: 200% 0;
-    }
-    100% {
-      background-position: -200% 0;
-    }
-  }
+.literexia-teacher-th {
+  background-color: #6B7280;
+  color: #ffffff;
+  text-align: left;
+  padding: 15px 20px;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
 
-  .literexia-teacher-send-btn {
-    background-color: #4CAF50;
-    color: white;
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-right: 10px;
-    font-size: 14px;
-    transition: background-color 0.3s;
-  }
+.literexia-teacher-td {
+  padding: 15px 20px;
+  border-bottom: 1px solid #f1f1f1;
+  color: #333;
+  font-size: 14px;
+}
 
-  .literexia-teacher-send-btn:hover {
-    background-color: #45a049;
-  }
+.literexia-teacher-tr:last-child .literexia-teacher-td {
+  border-bottom: none;
+}
 
-  .literexia-teacher-send-btn:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-  }
+.literexia-teacher-tr:hover {
+  background-color: #f9fafb;
+}
 
-  .literexia-teacher-modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
-  }
+.literexia-teacher-view-btn {
+  background-color: #3CAEA3;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
 
-  .send-status {
-    padding: 10px;
-    border-radius: 4px;
-    margin: 10px 0;
-  }
+.literexia-teacher-view-btn:hover {
+  background-color: #2a9d8f;
+}
 
-  .send-status.success {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-    border: 1px solid #a5d6a7;
-  }
+.literexia-teacher-actions {
+  display: flex;
+  gap: 10px;
+}
 
-  .send-status.error {
-    background-color: #ffebee;
-    color: #c62828;
-    border: 1px solid #ef9a9a;
-  }
+.literexia-teacher-edit-btn {
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-  .literexia-teacher-table thead tr {
-    background-color: #6B7280;
-  }
+.literexia-teacher-edit-btn:hover {
+  background-color: #e5e7eb;
+}
 
-  .literexia-teacher-table th {
-    background-color: #6B7280;
-    color: #ffffff;
-    text-align: left;
-    padding: 15px 20px;
-    font-weight: 600;
-    font-size: 14px;
-    border-bottom: 1px solid #e5e7eb;
-  }
+.literexia-teacher-delete-btn {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-  /* Tooltip */
-  .literexia-teacher-tooltip {
-    position: relative;
-    display: inline-block;
-  }
+.literexia-teacher-delete-btn:hover {
+  background-color: #fecaca;
+}
 
-  .literexia-teacher-tooltip-text {
-    visibility: hidden;
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #374151;
-    color: white;
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 12px;
-    white-space: nowrap;
-    opacity: 0;
-    transition: all 0.2s ease;
-  }
+/* Modal Styles */
+.literexia-teacher-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
 
-  .literexia-teacher-tooltip:hover .literexia-teacher-tooltip-text {
-    visibility: visible;
-    opacity: 1;
-  }
+.literexia-teacher-modal,
+.literexia-teacher-profile-modal,
+.literexia-teacher-confirm-modal {
+  background-color: white;
+  border-radius: 10px;
+  width: 500px;
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
 
-  /* Success Message */
-  .literexia-teacher-success-message {
-    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-    color: #065f46;
-    padding: 16px;
-    border-radius: 8px;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  }
+.literexia-teacher-profile-modal {
+  width: 450px;
+}
 
-  /* Loading State */
-  .literexia-teacher-loading {
-    position: relative;
-    pointer-events: none;
-    opacity: 0.7;
-  }
+.literexia-teacher-confirm-modal {
+  width: 400px;
+}
 
-  .literexia-teacher-loading::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
-    border: 2px solid #4f46e5;
-    border-top-color: transparent;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
+.literexia-teacher-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
 
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
+.literexia-teacher-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
 
-  .literexia-teacher-cancel-btn {
-    background-color: #f3f4f6;
-    color: #374151;
-    border: 1px solid #e5e7eb;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
+.literexia-teacher-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
 
-  .literexia-teacher-cancel-btn:hover {
-    background-color: #e5e7eb;
-  }
+.literexia-teacher-modal-form {
+  padding: 20px;
+}
 
-  .literexia-teacher-confirm-delete-btn {
-    background-color: #ef4444;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin-left: 12px;
-  }
+.literexia-teacher-form-group {
+  margin-bottom: 15px;
+}
 
-  .literexia-teacher-confirm-delete-btn:hover {
-    background-color: #dc2626;
+.literexia-teacher-form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #555;
+}
+
+.literexia-teacher-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.literexia-teacher-subject-input-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.literexia-teacher-add-subject-btn {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 0 15px;
+  cursor: pointer;
+}
+
+.literexia-teacher-add-subject-btn:hover {
+  background-color: #2563eb;
+}
+
+.literexia-teacher-subjects-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.literexia-teacher-subject-tag {
+  background-color: #e5e7eb;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.literexia-teacher-remove-subject {
+  background: none;
+  border: none;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.literexia-teacher-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.literexia-teacher-cancel-btn {
+  background-color: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.literexia-teacher-cancel-btn:hover {
+  background-color: #4b5563;
+}
+
+.literexia-teacher-save-btn {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.literexia-teacher-save-btn:hover {
+  background-color: #2563eb;
+}
+
+/* Profile Modal Styles */
+.literexia-teacher-profile-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.literexia-teacher-profile-avatar {
+  background-color: #e5e7eb;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15px;
+  color: #6b7280;
+}
+
+.literexia-teacher-profile-name {
+  font-size: 20px;
+  color: #333;
+  margin: 0 0 15px;
+  text-align: center;
+}
+
+.literexia-teacher-profile-details {
+  width: 100%;
+}
+
+.literexia-teacher-profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.literexia-teacher-profile-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.literexia-teacher-profile-label {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.literexia-teacher-profile-value {
+  font-size: 14px;
+  color: #333;
+}
+
+.literexia-teacher-profile-subjects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.literexia-teacher-profile-subject-tag {
+  background-color: #e5e7eb;
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-size: 12px;
+}
+
+.literexia-teacher-profile-actions {
+  padding: 15px 20px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #e5e7eb;
+}
+
+.literexia-teacher-close-profile-btn {
+  background-color: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.literexia-teacher-close-profile-btn:hover {
+  background-color: #4b5563;
+}
+
+/* Confirm Delete Modal Styles */
+.literexia-teacher-confirm-content {
+  padding: 20px;
+}
+
+.literexia-teacher-confirm-content p {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: #333;
+}
+
+.literexia-teacher-confirm-actions {
+  padding: 15px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.literexia-teacher-confirm-delete-btn {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.literexia-teacher-confirm-delete-btn:hover {
+  background-color: #dc2626;
+}
+
+.literexia-teacher-profile-image {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.literexia-teacher-profile-info {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.literexia-teacher-profile-info-item {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.literexia-teacher-profile-label {
+  font-weight: 600;
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.literexia-teacher-profile-value {
+  color: #111827;
+  font-size: 14px;
+}
+
+.literexia-teacher-profile-name {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+  margin: 16px 0 0;
+  text-align: center;
+}
+
+.literexia-teacher-profile-content {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.literexia-teacher-profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+}
+
+.literexia-teacher-profile-details {
+  width: 100%;
+  max-width: 480px;
+}
+
+.literexia-teacher-close-profile-btn {
+  background: #4f46e5;
+  color: white;
+  border: none;
+  padding: 8px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.literexia-teacher-close-profile-btn:hover {
+  background: #4338ca;
+}
+
+.literexia-teacher-profile-actions {
+  padding: 16px 32px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Loading and Error States */
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  font-size: 18px;
+  color: #6b7280;
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  font-size: 18px;
+  color: #dc2626;
+  text-align: center;
+  padding: 24px;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 8px;
+  margin: 24px;
+}
+
+/* Skeleton Loading Styles */
+.skeleton-text {
+  height: 16px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  width: 80%;
+}
+
+.skeleton-button {
+  height: 32px;
+  width: 100px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeleton-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.skeleton-actions::before,
+.skeleton-actions::after {
+  content: '';
+  height: 32px;
+  width: 32px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
   }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.literexia-teacher-send-btn {
+  background-color: #4CAF50;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 10px;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.literexia-teacher-send-btn:hover {
+  background-color: #45a049;
+}
+
+.literexia-teacher-send-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.literexia-teacher-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.send-status {
+  padding: 10px;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+.send-status.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.send-status.error {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}
+
+.literexia-teacher-table thead tr {
+  background-color: #6B7280;
+}
+
+.literexia-teacher-table th {
+  background-color: #6B7280;
+  color: #ffffff;
+  text-align: left;
+  padding: 15px 20px;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Add/Edit Modal Multi-Step Styles */
+.literexia-teacher-modal .literexia-teacher-modal-form {
+  padding: 20px;
+}
+
+.literexia-teacher-progress {
+  width: 100%;
+  height: 8px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.literexia-teacher-progress-bar {
+  height: 100%;
+  background-color: #4CAF50; /* Green color for progress */
+  border-radius: 4px;
+  transition: width 0.4s ease-in-out;
+}
+
+.literexia-teacher-form-steps {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  position: relative;
+}
+
+.literexia-teacher-form-steps::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #e0e0e0;
+  transform: translateY(-50%);
+  z-index: 0;
+}
+
+.literexia-teacher-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.literexia-teacher-step-circle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #cccccc;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.literexia-teacher-step.active .literexia-teacher-step-circle {
+  background-color: #4f46e5; /* Primary color for active step */
+}
+
+.literexia-teacher-step.completed .literexia-teacher-step-circle {
+  background-color: #4CAF50; /* Green color for completed step */
+}
+
+.literexia-teacher-step-label {
+  font-size: 12px;
+  color: #333;
+  text-align: center;
+}
+
+.literexia-teacher-form-section {
+  /* Styles for each step's form fields container if needed */
+}
+
+.literexia-teacher-form-group {
+  margin-bottom: 15px;
+}
+
+.literexia-teacher-form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #555;
+}
+
+.literexia-teacher-required label::after {
+  content: ' *';
+  color: red;
+}
+
+.literexia-teacher-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  font-size: 14px;
+  box-sizing: border-box; /* Include padding and border in element's total width and height */
+}
+
+.literexia-teacher-input.error {
+  border-color: #ef4444; /* Red border for error inputs */
+}
+
+.literexia-teacher-error-message {
+  color: #ef4444;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+/* File input styling */
+.literexia-teacher-file-input-wrapper {
+  display: inline-block;
+  cursor: pointer;
+  padding: 10px 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  background-color: #f9fafb;
+  color: #333;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.literexia-teacher-file-input-wrapper:hover {
+  background-color: #e5e7eb;
+}
+
+.literexia-teacher-file-input {
+  display: none; /* Hide default file input */
+}
+
+.literexia-teacher-file-input-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.literexia-teacher-modal-footer {
+  padding: 15px 0 0 0; /* Adjust padding */
+  border-top: none; /* Remove border top */
+}
+
+.literexia-teacher-modal-footer-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.literexia-teacher-btn {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.literexia-teacher-btn-primary {
+  background-color: #3b82f6; /* Blue color for primary actions */
+  color: white;
+}
+
+.literexia-teacher-btn-primary:hover {
+  background-color: #2563eb;
+}
+
+.literexia-teacher-btn-secondary {
+  background-color: #6b7280; /* Gray color for secondary actions */
+  color: white;
+}
+
+.literexia-teacher-btn-secondary:hover {
+  background-color: #4b5563;
+}
+
+.literexia-teacher-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.literexia-teacher-loading {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.literexia-teacher-modal .literexia-teacher-modal-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex; /* Ensure flex is applied */
+  justify-content: space-between; /* Distribute space */
+  align-items: center; /* Align items vertically */
+}
+
+.literexia-teacher-modal .literexia-teacher-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.literexia-teacher-modal .literexia-teacher-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+
+/* Adjustments for file input in form-group */
+.literexia-teacher-form-group.full-width {
+  width: 100%;
+}

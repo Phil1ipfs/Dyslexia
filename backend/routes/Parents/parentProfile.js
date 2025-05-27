@@ -5,6 +5,13 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { authenticateToken, authorize } = require('../../middleware/auth');
+const parentProfileController = require('../../controllers/parentProfileController');
+
+// Debug middleware to log all incoming requests to this router
+router.use((req, res, next) => {
+  console.log('[PARENT ROUTER] Incoming:', req.method, req.originalUrl);
+  next();
+});
 
 // Get parent profile
 router.get('/profile', authenticateToken, authorize('parent', 'magulang'), async (req, res) => {
@@ -284,5 +291,8 @@ router.get('/children', authenticateToken, authorize('parent'), async (req, res)
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+
+// Add this route for password update:
+router.put('/profile/password', authenticateToken, authorize('parent'), parentProfileController.updatePassword);
 
 module.exports = router;

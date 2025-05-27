@@ -336,6 +336,12 @@ connectDB().then(async (connected) => {
     app.use('/api/admin', emailRoutes);
     console.log('✅ Email routes registered at /api/admin/send-credentials');
 
+    // Debug middleware for /api/parents
+    app.use('/api/parents', (req, res, next) => {
+      console.log('[SERVER] /api/parents route hit:', req.method, req.originalUrl);
+      next();
+    });
+
     // Register parent routes
     const parentRoutes = require('./routes/Parents/parentProfile');
     app.use('/api/parents', parentRoutes);
@@ -363,16 +369,6 @@ connectDB().then(async (connected) => {
     } catch (error) {
       console.warn('⚠️ Could not load teacher profile routes:', error.message);
     }
-
-    // Try to load parent routes from Teachers
-    try {
-      const teacherParentRoutes = require('./routes/Teachers/parentRoutes');
-      app.use('/api/parents', teacherParentRoutes);
-      console.log('✅ Loaded teachers/parents routes with profile endpoint');
-    } catch (error) {
-      console.warn('⚠️ Could not load teachers/parent routes:', error.message);
-    }
-
 
     // Initialize prescriptive analyses for all students
     try {

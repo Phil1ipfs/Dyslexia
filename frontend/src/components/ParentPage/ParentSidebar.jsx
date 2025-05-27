@@ -1,66 +1,142 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";  // Make sure to import useNavigate and useLocation
-import "./ParentSidebar.css";
-import literexiaLogo from "../../assets/images/Teachers/LITEREXIA.png";
-import logoutIcon from "../../assets/icons/Teachers/Logout.png";
-import feedbackIcon from "../../assets/icons/Parents/feedback.png";
-import profileIcon from "../../assets/icons/Parents/profile.png";
+import { Link, useLocation } from "react-router-dom";
+import axios from "axios";
+import { 
+  User,
+  BookOpen,
+  LogOut
+} from 'lucide-react';
+import './ParentSidebar.css';
 
-
-const ParentSidebar = ({ defaultActive = "dashboard", onLogout }) => {
-  const navigate = useNavigate();
+const ParentSidebar = ({ onLogout }) => {
   const location = useLocation();
-  const [active, setActive] = useState(defaultActive);
+  const [expandedSections, setExpandedSections] = useState([]);
+  const [parentData, setParentData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Base URL from environment variable or default
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
 
   useEffect(() => {
-    const path = location.pathname;
-    if (path.includes("/parent/dashboard")) {
-      setActive("dashboard");
-    } else if (path.includes("/parent/progress")) {
-      setActive("progress");
-    } else if (path.includes("/parent/feedback")) {
-      setActive("feedback");
-    } else {
-      setActive("");
-    }
-  }, [location]);
+    const fetchParentProfile = async () => {
+      try {
+        setLoading(true);
+        // Get auth token from localStorage
+        const token = localStorage.getItem('authToken') || 
+                     localStorage.getItem('token') || 
+                     JSON.parse(localStorage.getItem('userData'))?.token;
+        
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
 
-  const handleClick = (item) => {
-    setActive(item);
-    if (item === "dashboard") {
-      navigate("/parent/dashboard");
-    } else if (item === "feedback") {
-      navigate("/parent/feedback");  
-    } 
-  };
+        // Make API request to get parent profile
+        const response = await axios.get(`${BASE_URL}/api/parents/profile`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-  const handleLogoutClick = () => {
-    if (onLogout) {
-      onLogout();
+        if (response.data) {
+          setParentData({
+            firstName: response.data.firstName || "",
+            lastName: response.data.lastName || "",
+            profileImageUrl: response.data.profileImageUrl || ""
+          });
+        } else {
+          throw new Error('No profile data received');
+        }
+      } catch (err) {
+        console.error('Error in profile fetch:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchParentProfile();
+  }, []);
+
+  const navigationItems = [
+    {
+      id: 'profile',
+      label: 'Profile',
+      icon: User,
+      path: '/parent/dashboard',
+      subItems: []
+    },
+    {
+      id: 'progress',
+      label: 'View Student Progress',
+      icon: BookOpen,
+      path: '/parent/feedback',
+      subItems: []
     }
-    navigate("/login");
+  ];
+
+  const isActiveItem = (path) => {
+    return location.pathname === path;
   };
 
   return (
-    <div className="parent-sidebar">
-      <div className="sidebar-header">
-        <img src={literexiaLogo} alt="Literexia Logo" />
+    <nav className="navigation-bar">
+      <div className="navigation-bar__brand">
+        <div className="navigation-bar__logo-container">
+          <img src="/images/cradleLogoTrans.png" alt="Cradle of Learners" className="navigation-bar__logo-image" />
+          <h1 className="navigation-bar__company-name">CRADLE OF LEARNERS INC.</h1>
+        </div>
+        <div className="navigation-bar__profile">
+          <div className="navigation-bar__avatar">
+            {parentData?.profileImageUrl ? (
+              <img 
+                src={parentData.profileImageUrl} 
+                alt={`${parentData.firstName} ${parentData.lastName}`} 
+                className="navigation-bar__avatar-img"
+              />
+            ) : (
+              <span className="navigation-bar__avatar-placeholder">
+                {parentData?.firstName?.charAt(0) || 'P'}
+              </span>
+            )}
+          </div>
+          <div className="navigation-bar__profile-info">
+            <h3 className="navigation-bar__admin-name">
+              {loading ? 'Loading...' : 
+               error ? 'Error loading profile' : 
+               parentData ? `${parentData.firstName} ${parentData.lastName}` : 'Parent User'}
+            </h3>
+            <p className="navigation-bar__role">Parent</p>
+          </div>
+        </div>
       </div>
-      <ul className="sidebar-menu">
-        <li className={active === "profile" ? "active" : ""} onClick={() => handleClick("dashboard")}>
-        <img src={profileIcon} alt="Literexia Logo" />
-          <span>Profile</span>
-        </li>
-        <li className={active === "feedback" ? "active" : ""} onClick={() => handleClick("feedback")}>
-        <img src={feedbackIcon} alt="Literexia Logo" />
-          <span>View Student Progress</span>
-        </li>
-      </ul>
-      <div className="sidebar-footer" onClick={handleLogoutClick}>
-      <img src={logoutIcon} alt="Literexia Logo" />
-        <span>Logout</span>
+
+      <div className="navigation-bar__menu">
+        {navigationItems.map(item => (
+          <div key={item.id} className="navigation-bar__section">
+            <Link 
+              to={item.path}
+              className={`navigation-bar__item ${isActiveItem(item.path) ? 'navigation-bar__item--active' : ''}`}
+            >
+              <div className="navigation-bar__item-content">
+                <item.icon className="navigation-bar__icon" size={20} />
+                <span className="navigation-bar__label">{item.label}</span>
+              </div>
+            </Link>
+          </div>
+        ))}
       </div>
-    </div>
+
+      <div className="navigation-bar__footer">
+        <button onClick={onLogout} className="navigation-bar__logout-btn">
+          <div className="navigation-bar__item-content">
+            <LogOut className="navigation-bar__icon" size={20} />
+            <span className="navigation-bar__label">Logout</span>
+          </div>
+        </button>
+      </div>
+    </nav>
   );
 };
 
