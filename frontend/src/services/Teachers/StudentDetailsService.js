@@ -159,6 +159,13 @@ const StudentDetailsService = {
         try {
             // Use the correct path
             const { data } = await api.get(`/${id}/assessment`);
+            
+            // Check if the response is HTML instead of JSON
+            if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+                console.error(`Received HTML instead of JSON for assessment results ID ${id}`);
+                throw new Error('Invalid response format (HTML received)');
+            }
+            
             console.log(`Successfully fetched assessment results for ID ${id}`);
             return data;
         } catch (error) {
@@ -168,6 +175,13 @@ const StudentDetailsService = {
             try {
                 console.log(`Trying alternate endpoint for assessment results with ID ${id}`);
                 const { data } = await directApi.get(`/student/${id}/assessment`);
+                
+                // Check if the response is HTML instead of JSON
+                if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+                    console.error(`Received HTML instead of JSON for assessment results from alternate endpoint ID ${id}`);
+                    throw new Error('Invalid response format (HTML received)');
+                }
+                
                 console.log(`Successfully fetched assessment results from alternate endpoint for ID ${id}`);
                 return data;
             } catch (alternateError) {
@@ -192,6 +206,13 @@ const StudentDetailsService = {
     getReadingLevelProgress: async (id) => {
         try {
             const { data } = await api.get(`/${id}/reading-level-progress`);
+            
+            // Check if the response is HTML instead of JSON
+            if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+                console.error(`Received HTML instead of JSON for reading level progress ID ${id}`);
+                throw new Error('Invalid response format (HTML received)');
+            }
+            
             console.log(`Successfully fetched reading level progress for ID ${id}`);
             return data;
         } catch (error) {
@@ -201,6 +222,13 @@ const StudentDetailsService = {
             try {
                 console.log(`Trying alternate endpoint for reading level progress with ID ${id}`);
                 const { data } = await directApi.get(`/student/${id}/reading-level-progress`);
+                
+                // Check if the response is HTML instead of JSON
+                if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+                    console.error(`Received HTML instead of JSON for reading level progress from alternate endpoint ID ${id}`);
+                    throw new Error('Invalid response format (HTML received)');
+                }
+                
                 console.log(`Successfully fetched reading level progress from alternate endpoint for ID ${id}`);
                 return data;
             } catch (alternateError) {
@@ -246,17 +274,60 @@ const StudentDetailsService = {
     },
 
     // Add the getCategoryResults method to fetch individual question results
-    getCategoryResults: async (studentId, categoryName = null) => {
+    getCategoryResults: async (studentId) => {
         try {
-            let url = `${directApi.baseURL}/category_results?studentId=${studentId}`;
-            if (categoryName) {
-                url += `&categoryName=${categoryName}`;
+            const { data } = await api.get(`/${studentId}/category-results`);
+            
+            // Check if the response is HTML instead of JSON
+            if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+                console.error(`Received HTML instead of JSON for category results for student ID ${studentId}`);
+                throw new Error('Invalid response format (HTML received)');
             }
-            const response = await axios.get(url);
-            return response.data;
+            
+            console.log(`Successfully fetched category results for student ID ${studentId}`);
+            
+            // Check if we have meaningful data
+            if (data && data.categories && data.categories.length > 0) {
+                // Valid data, return it directly
+                console.log("Valid category data found with", data.categories.length, "categories");
+                return data;
+            } else {
+                // No meaningful data, try alternate endpoint
+                throw new Error('No valid category data found in response');
+            }
         } catch (error) {
-            console.error('Error fetching category results:', error);
-            return null;
+            console.error(`Error fetching category results for student ${studentId}:`, error);
+            
+            // Try alternate endpoint
+            try {
+                console.log(`Trying alternate endpoint for category results with student ID ${studentId}`);
+                const { data } = await directApi.get(`/student/${studentId}/category-results`);
+                
+                // Check if the response is HTML instead of JSON
+                if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+                    console.error(`Received HTML instead of JSON from alternate endpoint for category results for student ID ${studentId}`);
+                    throw new Error('Invalid response format (HTML received)');
+                }
+                
+                if (data && data.categories && data.categories.length > 0) {
+                    console.log(`Successfully fetched category results from alternate endpoint for student ID ${studentId}`);
+                    return data;
+                } else {
+                    throw new Error('No valid category data found in alternate response');
+                }
+            } catch (alternateError) {
+                console.error(`Error fetching category results from alternate endpoint for student ID ${studentId}:`, alternateError);
+                
+                // Return empty data as fallback
+                return {
+                    studentId: studentId,
+                    assessmentType: 'unknown',
+                    categories: [],
+                    overallScore: 0,
+                    readingLevel: 'Not Assessed',
+                    allCategoriesPassed: false
+                };
+            }
         }
     },
 

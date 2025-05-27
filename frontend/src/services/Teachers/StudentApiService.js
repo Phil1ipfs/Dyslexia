@@ -210,9 +210,9 @@ const StudentApiService = {
       
       console.log(`Fetching parent profile for ID: ${parentId}`);
       
-      // Try the main endpoint first
+      // Try the main endpoint first using the correct URL
       try {
-        const { data } = await directApi.get(`/parents/profile/${parentId}`);
+        const { data } = await directApi.get(`/parent-by-id/${parentId}`);
         
         // If data is returned correctly, process it to ensure consistent format
         if (data) {
@@ -233,10 +233,14 @@ const StudentApiService = {
         
         // Try fallback endpoint
         try {
-          const { data } = await directApi.get(`/dashboard/parent/${parentId}`);
-          if (data) {
-            console.log("Parent profile data received from fallback:", data);
-            return data;
+          const { data } = await directApi.get(`/parent-profiles`);
+          if (data && Array.isArray(data)) {
+            // Find the parent in the array of all parents
+            const parentData = data.find(parent => parent._id === parentId);
+            if (parentData) {
+              console.log("Parent profile data found in parent-profiles endpoint:", parentData);
+              return parentData;
+            }
           }
         } catch (fallbackError) {
           console.warn(`Fallback parent endpoint failed for ID ${parentId}:`, fallbackError);
