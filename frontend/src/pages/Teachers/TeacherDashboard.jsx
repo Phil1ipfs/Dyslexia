@@ -93,7 +93,7 @@ const TeacherDashboard = () => {
     setSelectedIntervention(intervention);
     setInterventionDetailOpen(true);
   };
-  
+
   // Add this function to handle closing the dialog
   const closeInterventionDetail = () => {
     setInterventionDetailOpen(false);
@@ -101,14 +101,14 @@ const TeacherDashboard = () => {
   };
 
   // Add this computed value for filtered intervention progress
-const filteredInterventionProgress = interventionFilter === 'all'
-? interventionProgress
-: interventionProgress.filter(progress => 
-    progress.readingLevel === interventionFilter || 
-    progress.studentReadingLevel === interventionFilter
-  );
+  const filteredInterventionProgress = interventionFilter === 'all'
+    ? interventionProgress
+    : interventionProgress.filter(progress =>
+      progress.readingLevel === interventionFilter ||
+      progress.studentReadingLevel === interventionFilter
+    );
 
-  
+
 
   /**
    * Main function to fetch all dashboard data
@@ -480,9 +480,10 @@ const filteredInterventionProgress = interventionFilter === 'all'
             </ResponsiveContainer>
           </div>
 
+
           {/* Students Needing Attention Table */}
-          <div className="teacher-students-table-container">
-            <table className="teacher-students-table">
+          <div className="teacher-attention-table-container">
+            <table className="teacher-attention-table">
               <thead>
                 <tr>
                   <th>Student</th>
@@ -496,7 +497,7 @@ const filteredInterventionProgress = interventionFilter === 'all'
               <tbody>
                 {sectionFilteredStudents.length > 0 ? (
                   sectionFilteredStudents.map((student) => (
-                    <tr key={student.uniqueId || student.id} className="teacher-student-row">
+                    <tr key={student.uniqueId || student.id} className="teacher-attention-row">
                       <td>{student.name}</td>
                       <td>
                         <span
@@ -519,7 +520,7 @@ const filteredInterventionProgress = interventionFilter === 'all'
                       <td>{student.readingLevel === 'Not Assessed' ? 'N/A' : `${student.lastScore}%`}</td>
                       <td>
                         <button
-                          className="teacher-view-button"
+                          className="teacher-attention-view-button"
                           onClick={() => openStudentDetail(student)}
                         >
                           View
@@ -538,6 +539,7 @@ const filteredInterventionProgress = interventionFilter === 'all'
             </table>
           </div>
         </div>
+
 
         {/* Main 2x2 grid structure */}
         <div className="teacher-dashboard__main-grid">
@@ -734,300 +736,300 @@ const filteredInterventionProgress = interventionFilter === 'all'
           </div>
         </div>
 
-{/* Student Intervention Progress Section */}
-<div className="teacher-dashboard__full-width">
-  <div className="teacher-intervention-section">
-    <div className="teacher-intervention-header">
-      <h2 className="teacher-intervention-title">Student Intervention Progress</h2>
-      <div className="teacher-intervention-filters">
-        <span className="teacher-filter-label">Reading Level:</span>
-        <div className="teacher-reading-level-pills">
-          <button 
-            className={`teacher-level-pill ${interventionFilter === 'all' ? 'teacher-level-pill--active' : ''}`}
-            onClick={() => setInterventionFilter('all')}
-          >
-            All
-          </button>
-          <button 
-            className={`teacher-level-pill ${interventionFilter === 'Low Emerging' ? 'teacher-level-pill--active' : ''}`}
-            onClick={() => setInterventionFilter('Low Emerging')}
-          >
-            Low Emerging
-          </button>
-          <button 
-            className={`teacher-level-pill ${interventionFilter === 'Transitioning' ? 'teacher-level-pill--active' : ''}`}
-            onClick={() => setInterventionFilter('Transitioning')}
-          >
-            Transitioning
-          </button>
-        </div>
-      </div>
-    </div>
-    
-    {/* Chart Container */}
-    <div className="teacher-intervention-chart-container">
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart
-          data={filteredInterventionProgress.map(progress => ({
-            name: progress.studentName || 'Unknown',
-            completed: progress.percentComplete || 0,
-            correct: progress.percentCorrect || 0
-          }))}
-          margin={{ top: 10, right: 30, left: 20, bottom: 60 }}
-          barGap={0}
-          barCategoryGap="20%"
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-          <XAxis 
-            dataKey="name" 
-            tick={{ fill: 'white', fontSize: 12 }} 
-            axisLine={{ stroke: 'rgba(255,255,255,0.3)' }}
-            tickLine={false}
-          />
-          <YAxis 
-            tickFormatter={(value) => `${value}%`} 
-            tick={{ fill: 'white', fontSize: 12 }} 
-            axisLine={{ stroke: 'rgba(255,255,255,0.3)' }}
-            tickLine={false}
-            domain={[0, 100]}
-            ticks={[0, 25, 50, 75, 100]}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: 'rgba(43, 58, 103, 0.9)',
-              border: '1px solid #F3C922',
-              borderRadius: '8px',
-              color: 'white'
-            }}
-            formatter={(value) => [`${value}%`, '']}
-          />
-          <ReferenceLine y={75} stroke="#F3C922" strokeWidth={1} />
-          <Bar dataKey="completed" name="Completion %" fill="#4BC0C0" radius={[4, 4, 0, 0]} maxBarSize={30} />
-          <Bar dataKey="correct" name="Correct Answers %" fill="#FF9E40" radius={[4, 4, 0, 0]} maxBarSize={30} />
-          <Legend 
-            verticalAlign="bottom" 
-            height={36} 
-            iconType="circle" 
-            iconSize={10}
-            wrapperStyle={{ paddingTop: '20px' }}
-          />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-
-    {/* Intervention Progress Table */}
-    <div className="teacher-intervention-table-wrapper">
-      <table className="teacher-intervention-table">
-        <thead>
-          <tr>
-            <th className="teacher-table-cell teacher-student-column">STUDENT</th>
-            <th className="teacher-table-cell teacher-plan-column">INTERVENTION PLAN</th>
-            <th className="teacher-table-cell teacher-level-column">READING LEVEL</th>
-            <th className="teacher-table-cell teacher-completion-column">COMPLETION</th>
-            <th className="teacher-table-cell teacher-correct-column">CORRECT %</th>
-            <th className="teacher-table-cell teacher-action-column">ACTIONS</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredInterventionProgress && filteredInterventionProgress.length > 0 ? (
-            filteredInterventionProgress.map((progress) => (
-              <tr key={progress._id.$oid || progress._id} className="teacher-intervention-row">
-                <td className="teacher-table-cell teacher-student-column">{progress.studentName}</td>
-                <td className="teacher-table-cell teacher-plan-column">Intervention Plan</td>
-                <td className="teacher-table-cell teacher-level-column">
-                  <span className="teacher-level-badge">
-                    {progress.readingLevel || 'Not Assessed'}
-                  </span>
-                </td>
-                <td className="teacher-table-cell teacher-completion-column">
-                  <div className="teacher-progress-wrapper">
-                    <div className="teacher-progress-track">
-                      <div 
-                        className="teacher-progress-fill" 
-                        style={{ width: `${progress.percentComplete || 0}%` }}
-                      ></div>
-                    </div>
-                    <span className="teacher-progress-text">{progress.percentComplete || 0}%</span>
-                  </div>
-                </td>
-                <td className="teacher-table-cell teacher-correct-column">{progress.percentCorrect || 0}%</td>
-                <td className="teacher-table-cell teacher-action-column">
-                  {progress.passedThreshold ? (
-                    <button className="teacher-action-button teacher-resolved-button">
-                      Resolved
-                    </button>
-                  ) : (
-                    <button 
-                    className="teacher-action-button teacher-view-progress-button"
-                    onClick={() => openInterventionDetail(progress)}
+        {/* Student Intervention Progress Section */}
+        <div className="teacher-dashboard__full-width">
+          <div className="teacher-intervention-section">
+            <div className="teacher-intervention-header">
+              <h2 className="teacher-intervention-title">Student Intervention Progress</h2>
+              <div className="teacher-intervention-filters">
+                <span className="teacher-filter-label">Reading Level:</span>
+                <div className="teacher-reading-level-pills">
+                  <button
+                    className={`teacher-level-pill ${interventionFilter === 'all' ? 'teacher-level-pill--active' : ''}`}
+                    onClick={() => setInterventionFilter('all')}
                   >
-                    In View Progress
+                    All
                   </button>
-                  )}
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="6" className="teacher-no-data-cell">
-                No intervention progress data available.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-{/* Intervention Detail Modal */}
-{interventionDetailOpen && selectedIntervention && (
-  <div className="teacher-modal-overlay" onClick={closeInterventionDetail}>
-    <div className="teacher-modal-content teacher-intervention-modal" onClick={(e) => e.stopPropagation()}>
-      <div className="teacher-modal-header" style={{ backgroundColor: "#FF9E40" }}>
-        <h2>Intervention Progress Summary</h2>
-        <button className="teacher-modal-close" onClick={closeInterventionDetail}>&times;</button>
-      </div>
-
-      <div className="teacher-modal-body">
-        <div className="teacher-intervention-summary">
-          <div className="teacher-intervention-summary-header">
-            <div className="teacher-intervention-student-info">
-              <h3>{selectedIntervention.studentName || 'Unknown Student'}</h3>
-              <div className="teacher-intervention-student-details">
-                <span className="teacher-level-badge modal-badge">
-                  {selectedIntervention.readingLevel || selectedIntervention.studentReadingLevel || 'Not Assessed'}
-                </span>
-                <span className="teacher-intervention-date">
-                  Last Activity: {selectedIntervention.lastActivityDate || 'N/A'}
-                </span>
+                  <button
+                    className={`teacher-level-pill ${interventionFilter === 'Low Emerging' ? 'teacher-level-pill--active' : ''}`}
+                    onClick={() => setInterventionFilter('Low Emerging')}
+                  >
+                    Low Emerging
+                  </button>
+                  <button
+                    className={`teacher-level-pill ${interventionFilter === 'Transitioning' ? 'teacher-level-pill--active' : ''}`}
+                    onClick={() => setInterventionFilter('Transitioning')}
+                  >
+                    Transitioning
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="teacher-intervention-progress-stats">
-              <div className="teacher-stat-item">
-                <span className="teacher-stat-label">Completion</span>
-                <span className="teacher-stat-value">{selectedIntervention.percentComplete || 0}%</span>
-              </div>
-              <div className="teacher-stat-item">
-                <span className="teacher-stat-label">Correct</span>
-                <span className="teacher-stat-value">{selectedIntervention.percentCorrect || 0}%</span>
-              </div>
-              <div className="teacher-stat-item">
-                <span className="teacher-stat-label">Status</span>
-                <span className={`teacher-stat-status ${selectedIntervention.passedThreshold ? 'passed' : 'in-progress'}`}>
-                  {selectedIntervention.passedThreshold ? 'Passed' : 'In Progress'}
-                </span>
-              </div>
+
+            {/* Chart Container */}
+            <div className="teacher-intervention-chart-container">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart
+                  data={filteredInterventionProgress.map(progress => ({
+                    name: progress.studentName || 'Unknown',
+                    completed: progress.percentComplete || 0,
+                    correct: progress.percentCorrect || 0
+                  }))}
+                  margin={{ top: 10, right: 30, left: 20, bottom: 60 }}
+                  barGap={0}
+                  barCategoryGap="20%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fill: 'white', fontSize: 12 }}
+                    axisLine={{ stroke: 'rgba(255,255,255,0.3)' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tickFormatter={(value) => `${value}%`}
+                    tick={{ fill: 'white', fontSize: 12 }}
+                    axisLine={{ stroke: 'rgba(255,255,255,0.3)' }}
+                    tickLine={false}
+                    domain={[0, 100]}
+                    ticks={[0, 25, 50, 75, 100]}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(43, 58, 103, 0.9)',
+                      border: '1px solid #F3C922',
+                      borderRadius: '8px',
+                      color: 'white'
+                    }}
+                    formatter={(value) => [`${value}%`, '']}
+                  />
+                  <ReferenceLine y={75} stroke="#F3C922" strokeWidth={1} />
+                  <Bar dataKey="completed" name="Completion %" fill="#4BC0C0" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                  <Bar dataKey="correct" name="Correct Answers %" fill="#FF9E40" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                  <Legend
+                    verticalAlign="bottom"
+                    height={36}
+                    iconType="circle"
+                    iconSize={10}
+                    wrapperStyle={{ paddingTop: '20px' }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Intervention Progress Table */}
+            <div className="teacher-intervention-table-wrapper">
+              <table className="teacher-intervention-table">
+                <thead>
+                  <tr>
+                    <th className="teacher-table-cell teacher-student-column">STUDENT</th>
+                    <th className="teacher-table-cell teacher-plan-column">INTERVENTION PLAN</th>
+                    <th className="teacher-table-cell teacher-level-column">READING LEVEL</th>
+                    <th className="teacher-table-cell teacher-completion-column">COMPLETION</th>
+                    <th className="teacher-table-cell teacher-correct-column">CORRECT %</th>
+                    <th className="teacher-table-cell teacher-action-column">ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredInterventionProgress && filteredInterventionProgress.length > 0 ? (
+                    filteredInterventionProgress.map((progress) => (
+                      <tr key={progress._id.$oid || progress._id} className="teacher-intervention-row">
+                        <td className="teacher-table-cell teacher-student-column">{progress.studentName}</td>
+                        <td className="teacher-table-cell teacher-plan-column">Intervention Plan</td>
+                        <td className="teacher-table-cell teacher-level-column">
+                          <span className="teacher-level-badge">
+                            {progress.readingLevel || 'Not Assessed'}
+                          </span>
+                        </td>
+                        <td className="teacher-table-cell teacher-completion-column">
+                          <div className="teacher-progress-wrapper">
+                            <div className="teacher-progress-track">
+                              <div
+                                className="teacher-progress-fill"
+                                style={{ width: `${progress.percentComplete || 0}%` }}
+                              ></div>
+                            </div>
+                            <span className="teacher-progress-text">{progress.percentComplete || 0}%</span>
+                          </div>
+                        </td>
+                        <td className="teacher-table-cell teacher-correct-column">{progress.percentCorrect || 0}%</td>
+                        <td className="teacher-table-cell teacher-action-column">
+                          {progress.passedThreshold ? (
+                            <button className="teacher-action-button teacher-resolved-button">
+                              Resolved
+                            </button>
+                          ) : (
+                            <button
+                              className="teacher-action-button teacher-view-progress-button"
+                              onClick={() => openInterventionDetail(progress)}
+                            >
+                              In View Progress
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="teacher-no-data-cell">
+                        No intervention progress data available.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
+        </div>
 
-          <div className="teacher-intervention-details">
-            <div className="teacher-intervention-detail-section">
-              <h4>Intervention Plan</h4>
-              <div className="teacher-detail-item">
-                <span className="teacher-detail-label">Plan Name:</span>
-                <span className="teacher-detail-value">{selectedIntervention.interventionPlanName || 'Intervention Plan'}</span>
+        {/* Intervention Detail Modal */}
+        {interventionDetailOpen && selectedIntervention && (
+          <div className="teacher-modal-overlay" onClick={closeInterventionDetail}>
+            <div className="teacher-modal-content teacher-intervention-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="teacher-modal-header" style={{ backgroundColor: "#FF9E40" }}>
+                <h2>Intervention Progress Summary</h2>
+                <button className="teacher-modal-close" onClick={closeInterventionDetail}>&times;</button>
               </div>
-              <div className="teacher-detail-item">
-                <span className="teacher-detail-label">Category:</span>
-                <span className="teacher-detail-value">{selectedIntervention.category || 'N/A'}</span>
-              </div>
-              <div className="teacher-detail-item">
-                <span className="teacher-detail-label">Total Activities:</span>
-                <span className="teacher-detail-value">{selectedIntervention.totalActivities || 0}</span>
-              </div>
-              <div className="teacher-detail-item">
-                <span className="teacher-detail-label">Completed Activities:</span>
-                <span className="teacher-detail-value">{selectedIntervention.completedActivities || 0}</span>
-              </div>
-              <div className="teacher-detail-item">
-                <span className="teacher-detail-label">Correct Answers:</span>
-                <span className="teacher-detail-value">{selectedIntervention.correctAnswers || 0}</span>
-              </div>
-              <div className="teacher-detail-item">
-                <span className="teacher-detail-label">Incorrect Answers:</span>
-                <span className="teacher-detail-value">{selectedIntervention.incorrectAnswers || 0}</span>
-              </div>
-            </div>
 
-            <div className="teacher-intervention-notes-section">
-              <h4>Notes</h4>
-              <div className="teacher-intervention-notes">
-                {selectedIntervention.notes ? (
-                  <p>{selectedIntervention.notes}</p>
+              <div className="teacher-modal-body">
+                <div className="teacher-intervention-summary">
+                  <div className="teacher-intervention-summary-header">
+                    <div className="teacher-intervention-student-info">
+                      <h3>{selectedIntervention.studentName || 'Unknown Student'}</h3>
+                      <div className="teacher-intervention-student-details">
+                        <span className="teacher-level-badge modal-badge">
+                          {selectedIntervention.readingLevel || selectedIntervention.studentReadingLevel || 'Not Assessed'}
+                        </span>
+                        <span className="teacher-intervention-date">
+                          Last Activity: {selectedIntervention.lastActivityDate || 'N/A'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="teacher-intervention-progress-stats">
+                      <div className="teacher-stat-item">
+                        <span className="teacher-stat-label">Completion</span>
+                        <span className="teacher-stat-value">{selectedIntervention.percentComplete || 0}%</span>
+                      </div>
+                      <div className="teacher-stat-item">
+                        <span className="teacher-stat-label">Correct</span>
+                        <span className="teacher-stat-value">{selectedIntervention.percentCorrect || 0}%</span>
+                      </div>
+                      <div className="teacher-stat-item">
+                        <span className="teacher-stat-label">Status</span>
+                        <span className={`teacher-stat-status ${selectedIntervention.passedThreshold ? 'passed' : 'in-progress'}`}>
+                          {selectedIntervention.passedThreshold ? 'Passed' : 'In Progress'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="teacher-intervention-details">
+                    <div className="teacher-intervention-detail-section">
+                      <h4>Intervention Plan</h4>
+                      <div className="teacher-detail-item">
+                        <span className="teacher-detail-label">Plan Name:</span>
+                        <span className="teacher-detail-value">{selectedIntervention.interventionPlanName || 'Intervention Plan'}</span>
+                      </div>
+                      <div className="teacher-detail-item">
+                        <span className="teacher-detail-label">Category:</span>
+                        <span className="teacher-detail-value">{selectedIntervention.category || 'N/A'}</span>
+                      </div>
+                      <div className="teacher-detail-item">
+                        <span className="teacher-detail-label">Total Activities:</span>
+                        <span className="teacher-detail-value">{selectedIntervention.totalActivities || 0}</span>
+                      </div>
+                      <div className="teacher-detail-item">
+                        <span className="teacher-detail-label">Completed Activities:</span>
+                        <span className="teacher-detail-value">{selectedIntervention.completedActivities || 0}</span>
+                      </div>
+                      <div className="teacher-detail-item">
+                        <span className="teacher-detail-label">Correct Answers:</span>
+                        <span className="teacher-detail-value">{selectedIntervention.correctAnswers || 0}</span>
+                      </div>
+                      <div className="teacher-detail-item">
+                        <span className="teacher-detail-label">Incorrect Answers:</span>
+                        <span className="teacher-detail-value">{selectedIntervention.incorrectAnswers || 0}</span>
+                      </div>
+                    </div>
+
+                    <div className="teacher-intervention-notes-section">
+                      <h4>Notes</h4>
+                      <div className="teacher-intervention-notes">
+                        {selectedIntervention.notes ? (
+                          <p>{selectedIntervention.notes}</p>
+                        ) : (
+                          <p className="teacher-no-notes">No notes available for this intervention.</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="teacher-intervention-progress-chart-section">
+                      <h4>Progress Visualization</h4>
+                      <div className="teacher-intervention-progress-bars">
+                        <div className="teacher-progress-bar-item">
+                          <span className="teacher-progress-label">Completion</span>
+                          <div className="teacher-modal-progress-wrapper">
+                            <div className="teacher-modal-progress-track">
+                              <div
+                                className="teacher-modal-progress-fill"
+                                style={{
+                                  width: `${selectedIntervention.percentComplete || 0}%`,
+                                  backgroundColor: '#4BC0C0'
+                                }}
+                              ></div>
+                            </div>
+                            <span className="teacher-modal-progress-text">{selectedIntervention.percentComplete || 0}%</span>
+                          </div>
+                        </div>
+
+                        <div className="teacher-progress-bar-item">
+                          <span className="teacher-progress-label">Correct Answers</span>
+                          <div className="teacher-modal-progress-wrapper">
+                            <div className="teacher-modal-progress-track">
+                              <div
+                                className="teacher-modal-progress-fill"
+                                style={{
+                                  width: `${selectedIntervention.percentCorrect || 0}%`,
+                                  backgroundColor: '#FF9E40'
+                                }}
+                              ></div>
+                              <div
+                                className="teacher-threshold-marker"
+                                style={{ left: '75%' }}
+                              ></div>
+                            </div>
+                            <span className="teacher-modal-progress-text">{selectedIntervention.percentCorrect || 0}%</span>
+                          </div>
+                          <div className="teacher-threshold-label">Passing Threshold: 75%</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="teacher-modal-footer">
+                {!selectedIntervention.passedThreshold ? (
+                  <button
+                    className="teacher-primary-button"
+                    onClick={() => {
+                      // Add logic to update the intervention as complete if needed
+                      closeInterventionDetail();
+                    }}
+                  >
+                  </button>
                 ) : (
-                  <p className="teacher-no-notes">No notes available for this intervention.</p>
+                  <button
+                    className="teacher-secondary-button"
+                    onClick={closeInterventionDetail}
+                  >
+                    Close
+                  </button>
                 )}
               </div>
             </div>
-
-            <div className="teacher-intervention-progress-chart-section">
-              <h4>Progress Visualization</h4>
-              <div className="teacher-intervention-progress-bars">
-                <div className="teacher-progress-bar-item">
-                  <span className="teacher-progress-label">Completion</span>
-                  <div className="teacher-modal-progress-wrapper">
-                    <div className="teacher-modal-progress-track">
-                      <div 
-                        className="teacher-modal-progress-fill" 
-                        style={{ 
-                          width: `${selectedIntervention.percentComplete || 0}%`,
-                          backgroundColor: '#4BC0C0'
-                        }}
-                      ></div>
-                    </div>
-                    <span className="teacher-modal-progress-text">{selectedIntervention.percentComplete || 0}%</span>
-                  </div>
-                </div>
-
-                <div className="teacher-progress-bar-item">
-                  <span className="teacher-progress-label">Correct Answers</span>
-                  <div className="teacher-modal-progress-wrapper">
-                    <div className="teacher-modal-progress-track">
-                      <div 
-                        className="teacher-modal-progress-fill" 
-                        style={{ 
-                          width: `${selectedIntervention.percentCorrect || 0}%`,
-                          backgroundColor: '#FF9E40'
-                        }}
-                      ></div>
-                      <div 
-                        className="teacher-threshold-marker"
-                        style={{ left: '75%' }}
-                      ></div>
-                    </div>
-                    <span className="teacher-modal-progress-text">{selectedIntervention.percentCorrect || 0}%</span>
-                  </div>
-                  <div className="teacher-threshold-label">Passing Threshold: 75%</div>
-                </div>
-              </div>
-            </div>
           </div>
-        </div>
-      </div>
-
-      <div className="teacher-modal-footer">
-        {!selectedIntervention.passedThreshold ? (
-          <button 
-            className="teacher-primary-button"
-            onClick={() => {
-              // Add logic to update the intervention as complete if needed
-              closeInterventionDetail();
-            }}
-          >
-          </button>
-        ) : (
-          <button
-            className="teacher-secondary-button" 
-            onClick={closeInterventionDetail}
-          >
-            Close
-          </button>
         )}
-      </div>
-    </div>
-  </div>
-)}
 
 
       </main>
