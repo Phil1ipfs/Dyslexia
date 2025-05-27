@@ -167,18 +167,25 @@ const StudentDetails = () => {
           const categoryResultsData = await StudentDetailsService.getCategoryResults(studentId);
           console.log("Category results loaded:", categoryResultsData);
           
-          // Organize category results by category name for easier access
-          if (categoryResultsData && Array.isArray(categoryResultsData)) {
-            const resultsByCategory = {};
-            categoryResultsData.forEach(categoryResult => {
-              if (categoryResult.categoryName) {
-                resultsByCategory[categoryResult.categoryName] = categoryResult;
-              }
-            });
-            setCategoryResults(resultsByCategory);
+          // Check if the response is HTML instead of JSON
+          if (typeof categoryResultsData === 'string' && categoryResultsData.includes('<!DOCTYPE html>')) {
+            console.error('Received HTML instead of JSON for category results');
+            setCategoryResults({});
+          } else {
+            // Organize category results by category name for easier access
+            if (categoryResultsData && categoryResultsData.categories && Array.isArray(categoryResultsData.categories)) {
+              const resultsByCategory = {};
+              categoryResultsData.categories.forEach(categoryResult => {
+                if (categoryResult.categoryName) {
+                  resultsByCategory[categoryResult.categoryName] = categoryResult;
+                }
+              });
+              setCategoryResults(resultsByCategory);
+            }
           }
         } catch (error) {
           console.error("Error fetching category results:", error);
+          setCategoryResults({});
         }
 
         // Now fetch main assessment data based on student's reading level

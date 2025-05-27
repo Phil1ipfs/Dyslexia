@@ -23,12 +23,7 @@ export default defineConfig(({ command }) => {
           target: 'http://localhost:5001',
           changeOrigin: true,
           secure: false,
-          rewrite: (path) => path.replace(/^\/api/, '')
-        },
-        '/dashboard/data': {
-          target: 'http://localhost:5001/api',
-          changeOrigin: true,
-          secure: false
+          ws: true
         }
       },
       // Allow connections from local network
@@ -52,6 +47,9 @@ export default defineConfig(({ command }) => {
           }
         }
       }
+    },
+    optimizeDeps: {
+      exclude: []
     }
   };
   
