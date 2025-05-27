@@ -488,8 +488,8 @@ const TeacherDashboard = () => {
             overflow: 'auto',
             margin: '1rem 0',
             borderRadius: '8px',
-            backgroundColor: 'rgba(59, 79, 129, 0.3)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
+            backgroundColor: 'transparent',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
             boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
           }}>
             <table style={{
@@ -504,12 +504,12 @@ const TeacherDashboard = () => {
                 <tr>
                   <th style={{
                     textAlign: 'left',
-                    fontSize: '0.85rem',
-                    fontWeight: '600',
-                    color: '#BFC9E5',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    color: 'white',
                     padding: '12px 16px',
-                    borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
-                    backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                    backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                     position: 'sticky',
                     top: '0',
                     zIndex: '10',
@@ -518,12 +518,12 @@ const TeacherDashboard = () => {
                   }}>Student</th>
                   <th style={{
                     textAlign: 'left',
-                    fontSize: '0.85rem',
-                    fontWeight: '600',
-                    color: '#BFC9E5',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    color: 'white',
                     padding: '12px 16px',
-                    borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
-                    backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                    backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                     position: 'sticky',
                     top: '0',
                     zIndex: '10',
@@ -534,12 +534,12 @@ const TeacherDashboard = () => {
                   }}>Reading Level</th>
                   <th style={{
                     textAlign: 'left',
-                    fontSize: '0.85rem',
-                    fontWeight: '600',
-                    color: '#BFC9E5',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    color: 'white',
                     padding: '12px 16px',
-                    borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
-                    backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                    backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                     position: 'sticky',
                     top: '0',
                     zIndex: '10',
@@ -549,12 +549,12 @@ const TeacherDashboard = () => {
                   }}>Section</th>
                   <th style={{
                     textAlign: 'left',
-                    fontSize: '0.85rem',
-                    fontWeight: '600',
-                    color: '#BFC9E5',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    color: 'white',
                     padding: '12px 16px',
-                    borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
-                    backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                    backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                     position: 'sticky',
                     top: '0',
                     zIndex: '10',
@@ -564,12 +564,12 @@ const TeacherDashboard = () => {
                   }}>Categories Needing Improvement</th>
                   <th style={{
                     textAlign: 'left',
-                    fontSize: '0.85rem',
-                    fontWeight: '600',
-                    color: '#BFC9E5',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    color: 'white',
                     padding: '12px 16px',
-                    borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
-                    backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                    backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                     position: 'sticky',
                     top: '0',
                     zIndex: '10',
@@ -580,12 +580,12 @@ const TeacherDashboard = () => {
                   }}>Score</th>
                   <th style={{
                     textAlign: 'left',
-                    fontSize: '0.85rem',
-                    fontWeight: '600',
-                    color: '#BFC9E5',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    color: 'white',
                     padding: '12px 16px',
-                    borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
-                    backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                    backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                     position: 'sticky',
                     top: '0',
                     zIndex: '10',
@@ -724,7 +724,7 @@ const TeacherDashboard = () => {
                     <td colSpan="6" style={{
                       textAlign: 'center',
                       padding: '20px',
-                      color: '#BFC9E5',
+                      color: 'white',
                       borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
                       fontSize: '0.95rem',
                       backgroundColor: 'transparent'
@@ -1035,66 +1035,66 @@ const TeacherDashboard = () => {
                     <th style={{
                       textAlign: 'left',
                       padding: '12px 16px',
-                      fontWeight: '600',
-                      color: '#BFC9E5',
-                      backgroundColor: 'rgba(30, 42, 74, 0.3)',
+                      fontWeight: '500',
+                      color: 'white',
+                      backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                       borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                      fontSize: '0.8rem',
+                      fontSize: '0.9rem',
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em'
                     }}>STUDENT</th>
                     <th style={{
                       textAlign: 'left',
                       padding: '12px 16px',
-                      fontWeight: '600',
-                      color: '#BFC9E5',
-                      backgroundColor: 'rgba(30, 42, 74, 0.3)',
+                      fontWeight: '500',
+                      color: 'white',
+                      backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                       borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                      fontSize: '0.8rem',
+                      fontSize: '0.9rem',
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em'
                     }}>INTERVENTION PLAN</th>
                     <th style={{
                       textAlign: 'left',
                       padding: '12px 16px',
-                      fontWeight: '600',
-                      color: '#BFC9E5',
-                      backgroundColor: 'rgba(30, 42, 74, 0.3)',
+                      fontWeight: '500',
+                      color: 'white',
+                      backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                       borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                      fontSize: '0.8rem',
+                      fontSize: '0.9rem',
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em'
                     }}>READING LEVEL</th>
                     <th style={{
                       textAlign: 'left',
                       padding: '12px 16px',
-                      fontWeight: '600',
-                      color: '#BFC9E5',
-                      backgroundColor: 'rgba(30, 42, 74, 0.3)',
+                      fontWeight: '500',
+                      color: 'white',
+                      backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                       borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                      fontSize: '0.8rem',
+                      fontSize: '0.9rem',
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em'
                     }}>COMPLETION</th>
                     <th style={{
                       textAlign: 'left',
                       padding: '12px 16px',
-                      fontWeight: '600',
-                      color: '#BFC9E5',
-                      backgroundColor: 'rgba(30, 42, 74, 0.3)',
+                      fontWeight: '500',
+                      color: 'white',
+                      backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                       borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                      fontSize: '0.8rem',
+                      fontSize: '0.9rem',
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em'
                     }}>CORRECT %</th>
                     <th style={{
                       textAlign: 'left',
                       padding: '12px 16px',
-                      fontWeight: '600',
-                      color: '#BFC9E5',
-                      backgroundColor: 'rgba(30, 42, 74, 0.3)',
+                      fontWeight: '500',
+                      color: 'white',
+                      backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                       borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                      fontSize: '0.8rem',
+                      fontSize: '0.9rem',
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em'
                     }}>ACTIONS</th>
@@ -1235,7 +1235,7 @@ const TeacherDashboard = () => {
                       <td colSpan="6" style={{
                         textAlign: 'center',
                         padding: '3rem',
-                        color: '#BFC9E5',
+                        color: 'white',
                         fontStyle: 'italic',
                         borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
                         backgroundColor: 'transparent'
@@ -1489,12 +1489,12 @@ const TeacherDashboard = () => {
                         <tr>
                           <th style={{
                             textAlign: 'left',
-                            fontSize: '0.85rem',
-                            fontWeight: '600',
-                            color: '#BFC9E5',
+                            fontSize: '0.9rem',
+                            fontWeight: '500',
+                            color: 'white',
                             padding: '12px 16px',
-                            borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
-                            backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                            backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                             position: 'sticky',
                             top: '0',
                             zIndex: '10',
@@ -1503,12 +1503,12 @@ const TeacherDashboard = () => {
                           }}>Student</th>
                           <th style={{
                             textAlign: 'left',
-                            fontSize: '0.85rem',
-                            fontWeight: '600',
-                            color: '#BFC9E5',
+                            fontSize: '0.9rem',
+                            fontWeight: '500',
+                            color: 'white',
                             padding: '12px 16px',
-                            borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
-                            backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                            backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                             position: 'sticky',
                             top: '0',
                             zIndex: '10',
@@ -1517,12 +1517,12 @@ const TeacherDashboard = () => {
                           }}>Section</th>
                           <th style={{
                             textAlign: 'left',
-                            fontSize: '0.85rem',
-                            fontWeight: '600',
-                            color: '#BFC9E5',
+                            fontSize: '0.9rem',
+                            fontWeight: '500',
+                            color: 'white',
                             padding: '12px 16px',
-                            borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
-                            backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                            backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                             position: 'sticky',
                             top: '0',
                             zIndex: '10',
@@ -1531,12 +1531,12 @@ const TeacherDashboard = () => {
                           }}>Grade</th>
                           {selectedReadingLevel !== 'Not Assessed' && <th style={{
                             textAlign: 'left',
-                            fontSize: '0.85rem',
-                            fontWeight: '600',
-                            color: '#BFC9E5',
+                            fontSize: '0.9rem',
+                            fontWeight: '500',
+                            color: 'white',
                             padding: '12px 16px',
-                            borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
-                            backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                            backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                             position: 'sticky',
                             top: '0',
                             zIndex: '10',
@@ -1545,12 +1545,12 @@ const TeacherDashboard = () => {
                           }}>Score</th>}
                           <th style={{
                             textAlign: 'left',
-                            fontSize: '0.85rem',
-                            fontWeight: '600',
-                            color: '#BFC9E5',
+                            fontSize: '0.9rem',
+                            fontWeight: '500',
+                            color: 'white',
                             padding: '12px 16px',
-                            borderBottom: '2px solid rgba(255, 255, 255, 0.1)',
-                            backgroundColor: 'rgba(43, 58, 103, 0.5)',
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                            backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
                             position: 'sticky',
                             top: '0',
                             zIndex: '10',
@@ -1648,7 +1648,7 @@ const TeacherDashboard = () => {
                             <td colSpan={selectedReadingLevel !== 'Not Assessed' ? 5 : 4} style={{
                               textAlign: 'center',
                               padding: '20px',
-                              color: '#BFC9E5',
+                              color: 'white',
                               borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
                               fontSize: '0.95rem',
                               backgroundColor: 'transparent'
