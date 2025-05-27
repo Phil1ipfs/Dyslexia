@@ -13,8 +13,10 @@ const SuccessModal = ({ message, onClose }) => (
         <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
       </div>
       <div className="literexia-teacher-modal-form">
-        <p>{message}</p>
-        <button className="literexia-teacher-submit-btn" onClick={onClose}>Close</button>
+        <p style={{ textAlign: 'center' }}>{message}</p>
+        <div className="literexia-teacher-modal-footer-buttons" style={{ justifyContent: 'center' }}>
+          <button className="literexia-teacher-save-btn" onClick={onClose}>Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -159,8 +161,7 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [students, setStudents] = useState([]);
-  const totalSteps = 4;
+  const totalSteps = 3;
 
   const steps = [
     {
@@ -169,15 +170,11 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
     },
     {
       title: 'Personal Details',
-      fields: ['gender', 'dateOfBirth', 'civilStatus']
+      fields: ['contact', 'dateOfBirth', 'gender', 'civilStatus']
     },
     {
-      title: 'Contact Info',
-      fields: ['contact', 'address', 'profileImage']
-    },
-    {
-      title: 'Children',
-      fields: ['children']
+      title: 'Address & Children & Profile',
+      fields: ['address', 'children', 'profileImage']
     }
   ];
 
@@ -189,12 +186,16 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
     }
   });
 
+  const [students, setStudents] = useState([]);
+
   useEffect(() => {
     const fetchStudents = async () => {
       try {
         const response = await axios.get('http://localhost:5001/api/admin/manage/students');
         if (response.data.success) {
           setStudents(response.data.data);
+        } else {
+          console.error("Error fetching students:", response.data.message);
         }
       } catch (error) {
         console.error("Error fetching students data:", error);
@@ -209,17 +210,18 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
     const stepErrors = {};
     let isValid = true;
 
+    const requiredFields = ['firstName', 'lastName', 'contact', 'address', 'civilStatus', 'dateOfBirth', 'gender', 'email'];
+
     currentFields.forEach(field => {
-      if (!formData[field] && field !== 'middleName' && field !== 'profileImage' && field !== 'children') {
-        stepErrors[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required`;
+      if (requiredFields.includes(field) && (!formData[field] || formData[field].toString().trim() === '')) {
+        stepErrors[field] = `${getFieldLabel(field)} is required`;
+        isValid = false;
+      }
+      if (field === 'email' && formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        stepErrors.email = 'Please enter a valid email address';
         isValid = false;
       }
     });
-
-    if (step === 1 && formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      stepErrors.email = 'Please enter a valid email address';
-      isValid = false;
-    }
 
     setErrors(stepErrors);
     return isValid;
@@ -228,90 +230,147 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
   const handleNext = () => {
     if (validateStep(currentStep)) {
       setCurrentStep(prev => Math.min(prev + 1, totalSteps));
+      setErrors({}); // Clear errors when moving to next step
     }
   };
 
   const handlePrevious = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
+    setErrors({}); // Clear errors when moving to previous step
+  };
+
+  const handleFinalSubmit = async () => {
+    // Validate all steps before final submission
+    let allStepsValid = true;
+    let allErrors = {};
+    const requiredFields = ['firstName', 'lastName', 'contact', 'address', 'civilStatus', 'dateOfBirth', 'gender', 'email'];
+
+    for (let step = 1; step <= totalSteps; step++) {
+      const currentFields = steps[step - 1].fields;
+      currentFields.forEach(field => {
+        if (requiredFields.includes(field) && (!formData[field] || formData[field].toString().trim() === '')) {
+          allErrors[field] = `${getFieldLabel(field)} is required`;
+          allStepsValid = false;
+        }
+        if (field === 'email' && formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+          allErrors.email = 'Please enter a valid email address';
+          allStepsValid = false;
+        }
+      });
+    }
+
+    if (!allStepsValid) {
+      setErrors(allErrors);
+      for (let step = 1; step <= totalSteps; step++) {
+        const currentFields = steps[step - 1].fields;
+        const hasErrorInStep = currentFields.some(field => allErrors[field]);
+        if (hasErrorInStep) {
+          setCurrentStep(step);
+          break;
+        }
+      }
+    }
+
+    if (allStepsValid) {
+      onSave(formData);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Validate current step before proceeding or submitting
+    if (!validateStep(currentStep)) {
+      return; // Stop if validation fails
+    }
+
+    if (currentStep < totalSteps) {
+      // Move to next step if not on the last step
+      handleNext();
+    } else {
+      // On the last step, proceed with final submission
+      handleFinalSubmit();
+    }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData(prev => ({
-        ...prev,
-        profileImage: file
-      }));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, profileImage: reader.result });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (validateStep(currentStep)) {
-      if (currentStep < totalSteps) {
-        handleNext();
-        return; // Prevent form submission
-      }
+  const getFieldLabel = (field) => {
+    switch(field) {
+      case 'firstName': return 'First Name';
+      case 'middleName': return 'Middle Name';
+      case 'lastName': return 'Last Name';
+      case 'contact': return 'Contact';
+      case 'address': return 'Address';
+      case 'civilStatus': return 'Civil Status';
+      case 'dateOfBirth': return 'Date of Birth';
+      case 'gender': return 'Gender';
+      case 'email': return 'Email';
+      case 'children': return 'Children';
+      case 'profileImage': return 'Profile Image';
+      default: return field.split(/(?=[A-Z])/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     }
-  };
-
-  const handleFinalSubmit = async () => {
-    if (validateStep(currentStep)) {
-      setIsLoading(true);
-      try {
-        const dataToSubmit = {
-          ...formData,
-          children: formData.children || []
-        };
-        await onSave(dataToSubmit);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
-
-  // Update the children selection handler
-  const handleChildrenChange = (selectedOptions) => {
-    setFormData(prev => ({
-      ...prev,
-      children: selectedOptions ? selectedOptions.map(option => option.value) : []
-    }));
-  };
-
-  const getSubmitButtonText = () => {
-    if (currentStep < totalSteps) {
-      return 'Next';
-    }
-    if (isLoading) {
-      return 'Saving...';
-    }
-    return parent ? 'Update Parent' : 'Add Parent';
   };
 
   const renderFormFields = () => {
     const currentFields = steps[currentStep - 1].fields;
+    const requiredFields = ['firstName', 'lastName', 'contact', 'address', 'civilStatus', 'dateOfBirth', 'gender', 'email'];
 
     return (
       <div className="literexia-teacher-form-section">
         {currentFields.map(field => {
+          const isRequired = requiredFields.includes(field);
+
+          if (field === 'children') {
+            return (
+              <div key={field} className="literexia-teacher-form-group">
+                <label className="literexia-teacher-optional">{getFieldLabel(field)} (Optional)</label>
+                <Select
+                  isMulti
+                  options={students
+                    .filter(student =>
+                      !linkedStudentIds.has(student._id) || (formData.children || []).includes(student._id)
+                    )
+                    .map(student => ({
+                      value: student._id,
+                      label: `${student.firstName} ${student.lastName} - ID: ${student.idNumber}`
+                    }))}
+                  value={(formData.children || []).map(id => ({
+                    value: id,
+                    label: students.find(student => student._id === id)?.firstName + ' ' + (students.find(student => student._id === id)?.middleName ? students.find(student => student._id === id)?.middleName + ' ' : '') + students.find(student => student._id === id)?.lastName
+                  }))}
+                  onChange={(selectedOptions) => {
+                    setFormData({
+                      ...formData,
+                      children: selectedOptions.map(option => option.value),
+                      childrenSearch: ''
+                    });
+                  }}
+                  className="literexia-teacher-input"
+                  classNamePrefix="react-select"
+                />
+                {errors[field] && <div className="literexia-teacher-error-message">{errors[field]}</div>}
+              </div>
+            );
+          }
+
           if (field === 'profileImage') {
             return (
               <div key={field} className="literexia-teacher-form-group full-width">
-                <label className="literexia-teacher-required">Profile Image</label>
+                <label className="literexia-teacher-optional">Profile Image (Optional)</label>
                 <div className="literexia-teacher-file-input-wrapper">
                   <input
                     type="file"
@@ -326,36 +385,7 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          }
-
-          if (field === 'children') {
-            return (
-              <div key={field} className="literexia-teacher-form-group full-width">
-                <label>Link Children</label>
-                <Select
-                  isMulti
-                  options={students
-                    .filter(student =>
-                      !linkedStudentIds.has(student._id) || (formData.children || []).includes(student._id)
-                    )
-                    .map(student => ({
-                      value: student._id,
-                      label: `${student.firstName} ${student.lastName} - ID: ${student.idNumber}`
-                    }))}
-                  value={(formData.children || []).map(id => {
-                    const student = students.find(s => s._id === id);
-                    return student ? {
-                      value: id,
-                      label: `${student.firstName} ${student.lastName} - ID: ${student.idNumber}`
-                    } : null;
-                  }).filter(Boolean)}
-                  onChange={handleChildrenChange}
-                  className="literexia-teacher-select"
-                  placeholder="Select children to link..."
-                  isClearable={true}
-                />
+                {errors[field] && <div className="literexia-teacher-error-message">{errors[field]}</div>}
               </div>
             );
           }
@@ -402,26 +432,15 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
             );
           }
 
-          const getFieldLabel = (field) => {
-            switch(field) {
-              case 'firstName': return 'First Name';
-              case 'middleName': return 'Middle Name';
-              case 'lastName': return 'Last Name';
-              case 'email': return 'Email';
-              case 'contact': return 'Contact';
-              case 'address': return 'Address';
-              case 'dateOfBirth': return 'Date of Birth';
-              default: return field.split(/(?=[A-Z])/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-            }
-          };
+          const inputType = field === 'dateOfBirth' ? 'date' : field === 'email' ? 'email' : 'text';
 
           return (
             <div key={field} className="literexia-teacher-form-group">
-              <label className="literexia-teacher-required">
-                {getFieldLabel(field)}
+              <label className={isRequired ? "literexia-teacher-required" : "literexia-teacher-optional"}>
+                {getFieldLabel(field)} {!isRequired ? '(Optional)' : ''}
               </label>
               <input
-                type={field === 'dateOfBirth' ? 'date' : field === 'email' ? 'email' : 'text'}
+                type={inputType}
                 name={field}
                 value={formData[field]}
                 onChange={handleChange}
@@ -443,17 +462,14 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
           <h2>{parent ? 'Edit Parent' : 'Add New Parent'}</h2>
           <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
         </div>
-
         <div className="literexia-teacher-modal-form">
-          {/* Progress bar */}
           <div className="literexia-teacher-progress">
-            <div 
+            <div
               className="literexia-teacher-progress-bar"
               style={{ width: `${(currentStep / totalSteps) * 100}%` }}
             ></div>
           </div>
 
-          {/* Steps indicator */}
           <div className="literexia-teacher-form-steps">
             {steps.map((step, index) => (
               <div
@@ -480,30 +496,21 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
                     type="button"
                     onClick={handlePrevious}
                     className="literexia-teacher-btn literexia-teacher-btn-secondary"
+                    disabled={isLoading}
                   >
                     Previous
                   </button>
                 )}
-                {currentStep < totalSteps ? (
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="literexia-teacher-btn literexia-teacher-btn-primary"
-                  >
-                    Next
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleFinalSubmit}
-                    className={`literexia-teacher-btn literexia-teacher-btn-primary ${isLoading ? 'literexia-teacher-loading' : ''}`}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Saving...' : (parent ? 'Update Parent' : 'Add Parent')}
-                  </button>
-                )}
+                <button
+                  type="submit"
+                  className={`literexia-teacher-btn literexia-teacher-btn-primary ${isLoading ? 'literexia-teacher-loading' : ''}`}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Saving...' : currentStep < totalSteps ? 'Next' : (parent ? 'Update Parent' : 'Add Parent')}
+                </button>
               </div>
             </div>
+            {errors.apiError && <div className="literexia-teacher-error-message" style={{ textAlign: 'center', marginTop: '10px' }}>{errors.apiError}</div>}
           </form>
         </div>
       </div>
@@ -699,16 +706,16 @@ const ParentsPage = () => {
         </div>
 
         {/* Controls Section */}
-        <div className="parents-page-actions" style={{ backgroundColor: '#ffffff', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
-          <div className="parents-page-search-container" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div className="parents-page-search" style={{ flex: '1', maxWidth: '400px', position: 'relative' }}>
+        <div className="parents-page-actions">
+          <div className="parents-page-search-container">
+            <div className="parents-page-search">
               <input
                 type="text"
                 placeholder="Search..."
                 disabled
                 className="parents-page-search-input"
               />
-              <Search style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
+              <Search className="parents-page-search-icon" size={18} />
             </div>
             <button className="parents-page-filter-btn" disabled>
               <Filter size={18} />
@@ -763,56 +770,19 @@ const ParentsPage = () => {
       </div>
 
       {/* Controls Section */}
-      <div className="parents-page-actions" style={{ 
-        backgroundColor: '#ffffff', 
-        padding: '1rem', 
-        borderRadius: '8px', 
-        marginBottom: '1.5rem',
-        width: '100%'
-      }}>
-        <div className="parents-page-search-container" style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '1rem',
-          width: '100%',
-          justifyContent: 'space-between'
-        }}>
-          <div className="parents-page-search" style={{ 
-            flex: '1', 
-            minWidth: '200px',
-            maxWidth: '500px', 
-            position: 'relative' 
-          }}>
+      <div className="parents-page-actions">
+        <div className="parents-page-search-container">
+          <div className="parents-page-search">
             <input
               type="text"
               placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem 0.75rem 2.5rem',
-                borderRadius: '6px',
-                border: '1px solid #e2e8f0',
-                fontSize: '0.875rem'
-              }}
+              className="parents-page-search-input"
             />
-            <Search style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
+            <Search className="parents-page-search-icon" size={18} />
           </div>
-          <button 
-            className="parents-page-filter-btn"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.75rem 1rem',
-              borderRadius: '6px',
-              border: '1px solid #e2e8f0',
-              backgroundColor: '#fff',
-              color: '#64748b',
-              fontSize: '0.875rem',
-              cursor: 'pointer'
-            }}
-          >
+          <button className="parents-page-filter-btn">
             <Filter size={18} />
             <span>Filter</span>
           </button>
@@ -820,16 +790,6 @@ const ParentsPage = () => {
             className="parents-page-sort-dropdown"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            style={{
-              padding: '0.75rem 1rem',
-              borderRadius: '6px',
-              border: '1px solid #e2e8f0',
-              backgroundColor: '#fff',
-              color: '#64748b',
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-              minWidth: '140px'
-            }}
           >
             <option value="name-asc">Name (A-Z)</option>
             <option value="name-desc">Name (Z-A)</option>
@@ -841,19 +801,6 @@ const ParentsPage = () => {
               setIsEditing(false);
               setSelectedParent(null);
               setShowAddParentModal(true);
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '6px',
-              backgroundColor: '#22c55e',
-              color: '#fff',
-              border: 'none',
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s'
             }}
           >
             <Plus size={18} />

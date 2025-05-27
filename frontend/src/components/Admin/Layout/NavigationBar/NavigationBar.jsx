@@ -118,7 +118,6 @@ const NavigationBar = ({ onLogout }) => {
       icon: ChartBar,
       path: '/admin/analytics',
       subItems: [
-        { id: 'visual-charts', label: 'Visual Charts', path: '/admin/visual-charts' },
         { id: 'submission-overview', label: 'Activity Approval', path: '/admin/submissions-overview' }
       ]
     }

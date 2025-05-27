@@ -1,6 +1,6 @@
-// src/pages/StudentList/StudentListPage.jsx
+// src/pages/Admin/StudentListPage.jsx
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, Edit, Trash2, Eye, BookOpen, Book, Clock, MoreHorizontal, User } from 'lucide-react';
+import { Search, Filter, Plus, Edit, Trash2, Eye, BookOpen, Book, Clock, MoreHorizontal, User, X } from 'lucide-react';
 import axios from 'axios';
 import './StudentListPage.css';
 
@@ -11,9 +11,11 @@ const SuccessModal = ({ message, onClose }) => (
         <h2>Success</h2>
         <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
       </div>
-      <div className="literexia-teacher-modal-form">
+      <div className="literexia-teacher-modal-form" style={{ textAlign: 'center', padding: '20px' }}>
         <p>{message}</p>
-        <button className="literexia-teacher-save-btn" onClick={onClose}>Close</button>
+        <div className="literexia-teacher-modal-footer-buttons" style={{ justifyContent: 'center', marginTop: '20px' }}>
+          <button className="literexia-teacher-save-btn" onClick={onClose}>Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -37,7 +39,7 @@ const ValidationErrorModal = ({ message, onClose }) => (
 const AddEditStudentModal = ({ student, onClose, onSave }) => {
   const [formData, setFormData] = useState(
     student ? { ...student } : {
-      idNumber: '2025',
+      idNumber: '2025', // Consider making this generated or handled by backend
       firstName: '',
       middleName: '',
       lastName: '',
@@ -53,7 +55,7 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const totalSteps = 3;
+  const totalSteps = 3; // Define total steps for student form
 
   const steps = [
     {
@@ -61,12 +63,12 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
       fields: ['idNumber', 'firstName', 'middleName', 'lastName']
     },
     {
-      title: 'Academic Info',
-      fields: ['gradeLevel', 'section', 'age']
+      title: 'Personal Details',
+      fields: ['age', 'gender']
     },
     {
-      title: 'Additional Info',
-      fields: ['gender', 'address', 'profileImage']
+      title: 'Academic & Contact',
+      fields: ['gradeLevel', 'section', 'address', 'profileImage']
     }
   ];
 
@@ -75,9 +77,17 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
     const stepErrors = {};
     let isValid = true;
 
+    // Define required fields for validation (excluding middleName and profileImage)
+    const requiredFields = ['idNumber', 'firstName', 'lastName', 'age', 'gender', 'gradeLevel', 'section', 'address'];
+
     currentFields.forEach(field => {
-      if (!formData[field] && field !== 'middleName' && field !== 'profileImage') {
-        stepErrors[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required`;
+      if (requiredFields.includes(field) && (!formData[field] || formData[field].toString().trim() === '')) {
+        stepErrors[field] = `${getFieldLabel(field)} is required`;
+        isValid = false;
+      }
+      // Add specific validations if needed (e.g., age is a number)
+      if (field === 'age' && formData.age && isNaN(formData.age)){
+        stepErrors[field] = `Age must be a number`;
         isValid = false;
       }
     });
@@ -86,34 +96,33 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
     return isValid;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    // Validate current step
-    if (!validateStep(currentStep)) {
-      return; // Stop if validation fails
-    }
-
-    if (currentStep < totalSteps) {
-      // Move to next step
-      setCurrentStep(prev => prev + 1);
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, totalSteps));
       setErrors({}); // Clear errors when moving to next step
-    } else {
-      // Final step - submit the form
-      handleFinalSubmit();
     }
   };
 
+  const handlePrevious = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+    setErrors({}); // Clear errors when moving to previous step
+  };
+
   const handleFinalSubmit = async () => {
-    // Validate all steps before final submission
+     // Validate all steps before final submission
     let allStepsValid = true;
     let allErrors = {};
+     const requiredFields = ['idNumber', 'firstName', 'lastName', 'age', 'gender', 'gradeLevel', 'section', 'address'];
 
     for (let step = 1; step <= totalSteps; step++) {
       const currentFields = steps[step - 1].fields;
       currentFields.forEach(field => {
-        if (!formData[field] && field !== 'middleName' && field !== 'profileImage') {
-          allErrors[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required`;
+        if (requiredFields.includes(field) && (!formData[field] || formData[field].toString().trim() === '')) {
+          allErrors[field] = `${getFieldLabel(field)} is required`;
+          allStepsValid = false;
+        }
+         if (field === 'age' && formData.age && isNaN(formData.age)){
+          allErrors[field] = `Age must be a number`;
           allStepsValid = false;
         }
       });
@@ -121,8 +130,8 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
 
     if (!allStepsValid) {
       setErrors(allErrors);
-      // Go back to the first step with errors
-      for (let step = 1; step <= totalSteps; step++) {
+      // Optionally, go back to the first step with errors
+       for (let step = 1; step <= totalSteps; step++) {
         const currentFields = steps[step - 1].fields;
         const hasErrorInStep = currentFields.some(field => allErrors[field]);
         if (hasErrorInStep) {
@@ -138,21 +147,20 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
       await onSave(formData);
     } catch (error) {
       console.error('Error saving student:', error);
+      // Handle specific errors if needed, e.g., show a message to the user
+       setErrors(prev => ({ ...prev, apiError: error.response?.data?.message || 'Failed to save student' }));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleNext = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, totalSteps));
-      setErrors({}); // Clear errors when moving to next step
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (currentStep < totalSteps) {
+      handleNext();
+    } else {
+      handleFinalSubmit();
     }
-  };
-
-  const handlePrevious = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
-    setErrors({}); // Clear errors when moving to previous step
   };
 
   const handleChange = (e) => {
@@ -161,9 +169,7 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
       ...prev,
       [name]: value
     }));
-    
-    // Clear error for this field when user starts typing
-    if (errors[name]) {
+     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
         [name]: ''
@@ -172,7 +178,7 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
+     const file = e.target.files[0];
     if (file) {
       setFormData(prev => ({
         ...prev,
@@ -181,82 +187,102 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
     }
   };
 
+   const getFieldLabel = (field) => {
+    switch(field) {
+      case 'idNumber': return 'ID Number';
+      case 'firstName': return 'First Name';
+      case 'middleName': return 'Middle Name';
+      case 'lastName': return 'Last Name';
+      case 'age': return 'Age';
+      case 'gender': return 'Gender';
+      case 'gradeLevel': return 'Grade Level';
+      case 'section': return 'Section';
+      case 'address': return 'Address';
+      case 'profileImage': return 'Profile Image';
+      default: return field.split(/(?=[A-Z])/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    }
+  };
+
   const renderFormFields = () => {
     const currentFields = steps[currentStep - 1].fields;
+    const requiredFields = ['idNumber', 'firstName', 'lastName', 'age', 'gender', 'gradeLevel', 'section', 'address'];
 
     return (
-      <div className="literexia-teacher-form-section">
+      <div className="literexia-teacher-form-section"> {/* Reusing teacher class for consistency */}
         {currentFields.map(field => {
+          const isRequired = requiredFields.includes(field);
+
           if (field === 'profileImage') {
-            return (
-              <div key={field} className="literexia-teacher-form-group full-width">
-                <label className="literexia-teacher-optional">Profile Image (Optional)</label>
-                <div className="literexia-teacher-file-input-wrapper">
+             return (
+              <div key={field} className="literexia-teacher-form-group full-width"> {/* Reusing teacher class for consistency */}
+                <label className="literexia-teacher-optional">Profile Image (Optional)</label> {/* Reusing teacher class for consistency */}
+                <div className="literexia-teacher-file-input-wrapper"> {/* Reusing teacher class for consistency */}
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleFileChange}
-                    className="literexia-teacher-file-input"
+                    className="literexia-teacher-file-input" /* Reusing teacher class for consistency */
                   />
-                  <div className="literexia-teacher-file-input-content">
-                    <div className="literexia-teacher-file-input-icon">📁</div>
-                    <div className="literexia-teacher-file-input-text">
+                  <div className="literexia-teacher-file-input-content"> {/* Reusing teacher class for consistency */}
+                    <div className="literexia-teacher-file-input-icon">📁</div> {/* Reusing teacher class for consistency */}
+                    <div className="literexia-teacher-file-input-text"> {/* Reusing teacher class for consistency */}
                       {formData.profileImage ? 'Change Image' : 'Upload Image'}
                     </div>
                   </div>
                 </div>
+                 {errors[field] && <div className="literexia-teacher-error-message">{errors[field]}</div>} {/* Reusing teacher class for consistency */}
               </div>
             );
           }
 
           if (field === 'gender') {
-            return (
-              <div key={field} className="literexia-teacher-form-group">
-                <label className="literexia-teacher-required">Gender</label>
+             return (
+              <div key={field} className="literexia-teacher-form-group"> {/* Reusing teacher class for consistency */}
+                <label className="literexia-teacher-required">Gender</label> {/* Reusing teacher class for consistency */}
                 <select
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
-                  className={`literexia-teacher-input ${errors.gender ? 'error' : ''}`}
+                  className={`literexia-teacher-input ${errors.gender ? 'error' : ''}`} /* Reusing teacher class for consistency */
                 >
                   <option value="">Select Gender</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>
                 </select>
-                {errors.gender && <div className="literexia-teacher-error-message">{errors.gender}</div>}
+                {errors.gender && <div className="literexia-teacher-error-message">{errors.gender}</div>} {/* Reusing teacher class for consistency */}
               </div>
             );
           }
 
           if (field === 'gradeLevel') {
             return (
-              <div key={field} className="literexia-teacher-form-group">
-                <label className="literexia-teacher-required">Grade Level</label>
+              <div key={field} className="literexia-teacher-form-group"> {/* Reusing teacher class for consistency */}
+                <label className="literexia-teacher-required">Grade Level</label> {/* Reusing teacher class for consistency */}
                 <select
                   name="gradeLevel"
                   value={formData.gradeLevel}
                   onChange={handleChange}
-                  className={`literexia-teacher-input ${errors.gradeLevel ? 'error' : ''}`}
+                  className={`literexia-teacher-input ${errors.gradeLevel ? 'error' : ''}`} /* Reusing teacher class for consistency */
                 >
                   <option value="">Select Grade Level</option>
                   <option value="Grade 1">Grade 1</option>
 
                 </select>
-                {errors.gradeLevel && <div className="literexia-teacher-error-message">{errors.gradeLevel}</div>}
+                {errors.gradeLevel && <div className="literexia-teacher-error-message">{errors.gradeLevel}</div>} {/* Reusing teacher class for consistency */}
               </div>
             );
           }
 
-          if (field === 'section') {
+           if (field === 'section') {
             return (
-              <div key={field} className="literexia-teacher-form-group">
-                <label className="literexia-teacher-required">Section</label>
+              <div key={field} className="literexia-teacher-form-group"> {/* Reusing teacher class for consistency */}
+                <label className="literexia-teacher-required">Section</label> {/* Reusing teacher class for consistency */}
                 <select
                   name="section"
                   value={formData.section}
                   onChange={handleChange}
-                  className={`literexia-teacher-input ${errors.section ? 'error' : ''}`}
+                  className={`literexia-teacher-input ${errors.section ? 'error' : ''}`} /* Reusing teacher class for consistency */
                 >
                   <option value="">Select Section</option>
                   <option value="Section 1">Section 1</option>
@@ -264,41 +290,28 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
                   <option value="Section 3">Section 3</option>
                   <option value="Section 4">Section 4</option>
                 </select>
-                {errors.section && <div className="literexia-teacher-error-message">{errors.section}</div>}
+                {errors.section && <div className="literexia-teacher-error-message">{errors.section}</div>} {/* Reusing teacher class for consistency */}
               </div>
             );
           }
 
-          const getFieldLabel = (field) => {
-            switch(field) {
-              case 'idNumber': return 'ID Number';
-              case 'firstName': return 'First Name';
-              case 'middleName': return 'Middle Name';
-              case 'lastName': return 'Last Name';
-              case 'section': return 'Section';
-              case 'age': return 'Age';
-              case 'address': return 'Address';
-              default: return field.split(/(?=[A-Z])/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-            }
-          };
-
-          const isRequired = field !== 'middleName' && field !== 'profileImage';
+          // Add specific input types for age, gradeLevel, section, address
+          const inputType = field === 'age' ? 'number' : 'text';
 
           return (
-            <div key={field} className="literexia-teacher-form-group">
-              <label className={isRequired ? "literexia-teacher-required" : "literexia-teacher-optional"}>
-                {getFieldLabel(field)} {!isRequired && '(Optional)'}
+            <div key={field} className="literexia-teacher-form-group"> {/* Reusing teacher class for consistency */}
+              <label className={isRequired ? "literexia-teacher-required" : "literexia-teacher-optional"}> {/* Reusing teacher class for consistency */}
+                {getFieldLabel(field)} {!isRequired ? '(Optional)' : ''}
               </label>
               <input
-                type={field === 'age' ? 'number' : 'text'}
+                type={inputType}
                 name={field}
                 value={formData[field]}
                 onChange={handleChange}
-                className={`literexia-teacher-input ${errors[field] ? 'error' : ''}`}
+                className={`literexia-teacher-input ${errors[field] ? 'error' : ''}`} /* Reusing teacher class for consistency */
                 placeholder={`Enter ${getFieldLabel(field).toLowerCase()}`}
-                min={field === 'age' ? "0" : undefined}
               />
-              {errors[field] && <div className="literexia-teacher-error-message">{errors[field]}</div>}
+              {errors[field] && <div className="literexia-teacher-error-message">{errors[field]}</div>} {/* Reusing teacher class for consistency */}
             </div>
           );
         })}
@@ -307,16 +320,16 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
   };
 
   return (
-    <div className="literexia-teacher-modal-overlay">
-      <div className="literexia-teacher-modal">
-        <div className="literexia-teacher-modal-header">
+    <div className="literexia-teacher-modal-overlay"> {/* Reusing teacher class for consistency */}
+      <div className="literexia-teacher-modal"> {/* Reusing teacher class for consistency */}
+        <div className="literexia-teacher-modal-header"> {/* Reusing teacher class for consistency */}
           <h2>{student ? 'Edit Student' : 'Add New Student'}</h2>
-          <button className="literexia-teacher-modal-close" onClick={onClose}>×</button>
+          <button className="literexia-teacher-modal-close" onClick={onClose}>×</button> {/* Reusing teacher class for consistency */}
         </div>
 
-        <div className="literexia-teacher-modal-form">
+        <div className="literexia-teacher-modal-form"> {/* Reusing teacher class for consistency */}
           {/* Progress bar */}
-          <div className="literexia-teacher-progress">
+          <div className="literexia-teacher-progress"> {/* Reusing teacher class for consistency */}
             <div 
               className="literexia-teacher-progress-bar"
               style={{ width: `${(currentStep / totalSteps) * 100}%` }}
@@ -324,7 +337,7 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
           </div>
 
           {/* Steps indicator */}
-          <div className="literexia-teacher-form-steps">
+          <div className="literexia-teacher-form-steps"> {/* Reusing teacher class for consistency */}
             {steps.map((step, index) => (
               <div
                 key={step.title}
@@ -332,10 +345,10 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
                   currentStep > index + 1 ? 'completed' : currentStep === index + 1 ? 'active' : ''
                 }`}
               >
-                <div className="literexia-teacher-step-circle">
+                <div className="literexia-teacher-step-circle"> {/* Reusing teacher class for consistency */}
                   {currentStep > index + 1 ? '✓' : index + 1}
                 </div>
-                <div className="literexia-teacher-step-label">{step.title}</div>
+                <div className="literexia-teacher-step-label">{step.title}</div> {/* Reusing teacher class for consistency */}
               </div>
             ))}
           </div>
@@ -343,13 +356,13 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
           <form onSubmit={handleSubmit}>
             {renderFormFields()}
 
-            <div className="literexia-teacher-modal-footer">
-              <div className="literexia-teacher-modal-footer-buttons">
+            <div className="literexia-teacher-modal-footer"> {/* Reusing teacher class for consistency */}
+              <div className="literexia-teacher-modal-footer-buttons"> {/* Reusing teacher class for consistency */}
                 {currentStep > 1 && (
                   <button
                     type="button"
                     onClick={handlePrevious}
-                    className="literexia-teacher-btn literexia-teacher-btn-secondary"
+                    className="literexia-teacher-btn literexia-teacher-btn-secondary" /* Reusing teacher class for consistency */
                     disabled={isLoading}
                   >
                     Previous
@@ -357,13 +370,14 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
                 )}
                 <button
                   type="submit"
-                  className={`literexia-teacher-btn literexia-teacher-btn-primary ${isLoading ? 'literexia-teacher-loading' : ''}`}
+                  className={`literexia-teacher-btn literexia-teacher-btn-primary ${isLoading ? 'literexia-teacher-loading' : ''}`} /* Reusing teacher class for consistency */
                   disabled={isLoading}
                 >
                   {isLoading ? 'Saving...' : currentStep < totalSteps ? 'Next' : (student ? 'Update Student' : 'Add Student')}
                 </button>
               </div>
             </div>
+              {errors.apiError && <div className="literexia-teacher-error-message" style={{ textAlign: 'center', marginTop: '10px' }}>{errors.apiError}</div>}
           </form>
         </div>
       </div>
@@ -377,7 +391,7 @@ const StudentListPage = () => {
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterBy, setFilterBy] = useState('name'); 
+  const [filterBy, setFilterBy] = useState('name');
   const [sortBy, setSortBy] = useState('name-asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [studentsPerPage] = useState(10);
@@ -391,8 +405,8 @@ const StudentListPage = () => {
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [validationError, setValidationError] = useState('');
-  
+  const [validationError, setValidationError] = useState(''); // Keep this for other validations in StudentListPage if any
+
   // Fetch students from database
   useEffect(() => {
     const fetchStudents = async () => {
@@ -454,10 +468,10 @@ const StudentListPage = () => {
     setShowProfileModal(true);
   };
 
-  // Edit student
-  const editStudent = (studentId) => {
-    console.log(`Edit student: ${studentId}`);
-    // Open edit modal or navigate to edit page
+  // Edit student (opens the AddEditStudentModal)
+  const editStudent = (student) => {
+    setSelectedStudent(student);
+    setShowEditStudentModal(true); // Use showEditStudentModal state
   };
 
   // Delete student
@@ -490,58 +504,57 @@ const StudentListPage = () => {
       setLoading(true);
       const data = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) data.append(key, value);
+        if (value !== undefined && value !== null) data.append(key, value); // Check for undefined/null
       });
-              const response = await axios.post('http://localhost:5001/api/admin/manage/students', data, {
+      const response = await axios.post('http://localhost:5001/api/admin/manage/students', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {
+        // Assuming the backend returns the new student profile
         setStudents([...students, response.data.data.studentProfile]);
-        setFilteredStudents([...students, response.data.data.studentProfile]);
+        setFilteredStudents([...students, response.data.data.studentProfile]); // Also update filtered list
         setShowAddStudentModal(false);
         setSuccessMessage('Student added successfully!');
         setShowSuccessModal(true);
       } else {
+        // Handle specific backend validation errors if needed
         setValidationError(response.data.message || 'Failed to add student');
       }
     } catch (error) {
+      // Handle network or other errors
       setValidationError(error.response?.data?.message || 'Failed to add student');
     } finally {
       setLoading(false);
     }
   };
 
-  // Edit student
-  const handleEditStudent = async (formData) => {
-    try {
-      // Validate all required fields
-      if (!formData.firstName || !formData.lastName || !formData.idNumber ||
-          !formData.gradeLevel || !formData.section || !formData.age ||
-          !formData.gender || !formData.address) {
-        setValidationError('Please complete all required fields in all steps');
-        return;
-      }
-      
+  // Edit student submission handler
+  const handleEditStudentSubmit = async (formData) => {
+     try {
       setLoading(true);
       const data = new FormData();
+       // Append all form data fields
       Object.entries(formData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) data.append(key, value);
+         if (value !== undefined && value !== null) data.append(key, value); // Check for undefined/null
       });
       const response = await axios.put(`http://localhost:5001/api/admin/manage/students/${formData._id}`, data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {
+        // Update the student in the list with the returned data
         const updatedList = students.map(s => s._id === formData._id ? response.data.data.studentProfile : s);
         setStudents(updatedList);
-        setFilteredStudents(updatedList);
-        setShowEditStudentModal(false);
-        setSelectedStudent(null);
-        setSuccessMessage('Student updated successfully!');
+        setFilteredStudents(updatedList); // Also update filtered list
+        setShowEditStudentModal(false); // Close the edit modal
+        setSelectedStudent(null); // Clear selected student
+        setSuccessMessage('Edited Successfully');
         setShowSuccessModal(true);
       } else {
+         // Handle specific backend validation errors if needed
         setValidationError(response.data.message || 'Failed to update student');
       }
     } catch (error) {
+       // Handle network or other errors
       setValidationError(error.response?.data?.message || 'Failed to update student');
     } finally {
       setLoading(false);
@@ -582,39 +595,15 @@ const StudentListPage = () => {
           </div>
         </div>
 
-        <div className="controls-container" style={{ 
-          backgroundColor: '#ffffff', 
-          padding: '1rem', 
-          borderRadius: '8px', 
-          marginBottom: '1.5rem',
-          width: '100%'
-        }}>
-          <div className="search-filter-container" style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '1rem',
-            width: '100%',
-            justifyContent: 'space-between'
-          }}>
-            <div className="search-box" style={{ 
-              flex: '1', 
-              minWidth: '200px',
-              maxWidth: '500px', 
-              position: 'relative' 
-            }}>
+        <div className="controls-container" style={{ backgroundColor: '#ffffff' }}>
+          <div className="search-filter-container">
+            <div className="search-box">
               <input
                 type="text"
                 placeholder="Search students..."
                 disabled
-                style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem 0.75rem 2.5rem',
-                  borderRadius: '6px',
-                  border: '1px solid #e2e8f0',
-                  fontSize: '0.875rem'
-                }}
               />
-              <Search style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
+              <Search size={18} />
             </div>
             <button className="filter-button" disabled>
               <Filter size={18} />
@@ -689,57 +678,18 @@ const StudentListPage = () => {
       </div>
 
       {/* Controls Section */}
-      <div className="controls-container" style={{ 
-        backgroundColor: '#ffffff', 
-        padding: '1rem', 
-        borderRadius: '8px', 
-        marginBottom: '1.5rem',
-        width: '100%'
-      }}>
-        <div className="search-filter-container" style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '1rem',
-          width: '100%',
-          justifyContent: 'space-between'
-        }}>
-          <div className="search-box" style={{ 
-            flex: '1', 
-            minWidth: '200px',
-            maxWidth: '500px', 
-            position: 'relative' 
-          }}>
+      <div className="controls-container" style={{ backgroundColor: '#ffffff' }}>
+        <div className="search-filter-container">
+          <div className="search-box">
             <input
               type="text"
               placeholder="Search students..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem 0.75rem 2.5rem',
-                borderRadius: '6px',
-                border: '1px solid #e2e8f0',
-                fontSize: '0.875rem'
-              }}
             />
-            <Search style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
+            <Search size={18} />
           </div>
-          <button 
-            className="filter-button"
-            onClick={toggleFilters}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.75rem 1rem',
-              borderRadius: '6px',
-              border: '1px solid #e2e8f0',
-              backgroundColor: '#fff',
-              color: '#64748b',
-              fontSize: '0.875rem',
-              cursor: 'pointer'
-            }}
-          >
+          <button className="filter-button" onClick={toggleFilters}>
             <Filter size={18} />
             <span>Filter</span>
           </button>
@@ -747,19 +697,11 @@ const StudentListPage = () => {
             className="sort-dropdown"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            style={{
-              padding: '0.75rem 1rem',
-              borderRadius: '6px',
-              border: '1px solid #e2e8f0',
-              backgroundColor: '#fff',
-              color: '#64748b',
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-              minWidth: '140px'
-            }}
           >
             <option value="name-asc">Name (A-Z)</option>
             <option value="name-desc">Name (Z-A)</option>
+            <option value="grade-asc">Grade (Low-High)</option>
+            <option value="grade-desc">Grade (High-Low)</option>
             <option value="recent">Recent Activity</option>
             <option value="progress">Progress</option>
           </select>
@@ -769,22 +711,9 @@ const StudentListPage = () => {
               setShowAddStudentModal(true);
               setSelectedStudent(null);
             }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '6px',
-              backgroundColor: '#22c55e',
-              color: '#fff',
-              border: 'none',
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s'
-            }}
           >
             <Plus size={18} />
-            Add Student
+            <span>Add Student</span>
           </button>
         </div>
       </div>
@@ -798,10 +727,8 @@ const StudentListPage = () => {
               onChange={(e) => setSelectedGrade(e.target.value)}
             >
               <option value="all">All Grades</option>
-              <option value="3">Grade 3</option>
-              <option value="4">Grade 4</option>
-              <option value="5">Grade 5</option>
-              <option value="6">Grade 6</option>
+              <option value="Grade 1">Grade 1</option>
+
             </select>
           </div>
           <div className="filter-group">
@@ -855,42 +782,18 @@ const StudentListPage = () => {
                     View Profile
                   </button>
                 </td>
-                <td className="literexia-teacher-actions">
-                  <div className="action-buttons" style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button 
-                      className="edit-button"
-                      onClick={() => handleEditStudent(student)}
-                      style={{
-                        padding: '0.5rem',
-                        borderRadius: '4px',
-                        border: '1px solid #e2e8f0',
-                        background: '#f8fafc',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#64748b',
-                        transition: 'all 0.2s'
-                      }}
-                    >
+                <td>
+                  <div className="action-buttons">
+                    <button className="students-table-action-btn edit" onClick={() => {
+                      setSelectedStudent(student);
+                      setShowEditStudentModal(true);
+                    }}>
                       <Edit size={16} />
                     </button>
-                    <button 
-                      className="delete-button"
-                      onClick={() => handleDeleteConfirmation(student)}
-                      style={{
-                        padding: '0.5rem',
-                        borderRadius: '4px',
-                        border: '1px solid #fecaca',
-                        background: '#fef2f2',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#ef4444',
-                        transition: 'all 0.2s'
-                      }}
-                    >
+                    <button className="students-table-action-btn delete" onClick={() => {
+                      setSelectedStudent(student);
+                      setShowConfirmDeleteModal(true);
+                    }}>
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -969,85 +872,70 @@ const StudentListPage = () => {
       {/* Student Profile Modal */}
       {showProfileModal && selectedStudent && (
         <div className="literexia-teacher-modal-overlay">
-          <div className="literexia-teacher-modal">
+          <div className="literexia-teacher-profile-modal">
             <div className="literexia-teacher-modal-header">
               <h2>Student Profile</h2>
-              <button 
-                className="literexia-teacher-modal-close"
-                onClick={() => setShowProfileModal(false)}
-              >
-                ×
-              </button>
+              <button className="literexia-teacher-modal-close" onClick={() => setShowProfileModal(false)}>×</button>
             </div>
-            
-            <div className="literexia-teacher-modal-content">
-              <div className="profile-header">
-                <div className="profile-avatar">
-                  {selectedStudent.profileImageUrl ? (
-                    <img 
-                      src={selectedStudent.profileImageUrl} 
-                      alt={`${selectedStudent.firstName} ${selectedStudent.lastName}`}
-                      className="profile-image"
-                    />
-                  ) : (
-                    <User size={64} />
-                  )}
-                </div>
-                <h3 className="profile-name">
+            <div className="literexia-teacher-profile-content">
+              <div className="literexia-teacher-profile-avatar">
+                {selectedStudent.profileImageUrl ? (
+                  <img 
+                    src={selectedStudent.profileImageUrl} 
+                    alt={`${selectedStudent.firstName} ${selectedStudent.lastName}`}
+                    className="literexia-teacher-profile-image"
+                  />
+                ) : (
+                  <User size={64} />
+                )}
+              </div>
+              <div className="literexia-teacher-profile-details">
+                <h3 className="literexia-teacher-profile-name">
                   {`${selectedStudent.firstName} ${selectedStudent.lastName}`}
                 </h3>
-              </div>
-
-              <div className="profile-info">
-                <div className="profile-info-item">
-                  <span className="info-label">ID Number:</span>
-                  <span className="info-value">{selectedStudent.idNumber}</span>
-                </div>
-
-                <div className="profile-info-item">
-                  <span className="info-label">Age:</span>
-                  <span className="info-value">{selectedStudent.age}</span>
-                </div>
-
-                <div className="profile-info-item">
-                  <span className="info-label">Gender:</span>
-                  <span className="info-value">{selectedStudent.gender}</span>
-                </div>
-
-                <div className="profile-info-item">
-                  <span className="info-label">Grade Level:</span>
-                  <span className="info-value">{selectedStudent.gradeLevel}</span>
-                </div>
-
-                <div className="profile-info-item">
-                  <span className="info-label">Section:</span>
-                  <span className="info-value">{selectedStudent.section}</span>
-                </div>
-
-                <div className="profile-info-item">
-                  <span className="info-label">Address:</span>
-                  <span className="info-value">{selectedStudent.address}</span>
-                </div>
-
-                <div className="profile-info-item">
-                  <span className="info-label">Reading Level:</span>
-                  <span className="info-value">{selectedStudent.readingLevel || 'Not Assessed'}</span>
-                </div>
-
-                <div className="profile-info-item">
-                  <span className="info-label">Reading %:</span>
-                  <span className="info-value">{selectedStudent.readingPercentage != null ? selectedStudent.readingPercentage + '%' : 'N/A'}</span>
+                <div className="literexia-teacher-profile-info">
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">ID Number:</span>
+                    <span className="literexia-teacher-profile-value">{selectedStudent.idNumber}</span>
+                  </div>
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Age:</span>
+                    <span className="literexia-teacher-profile-value">{selectedStudent.age}</span>
+                  </div>
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Section:</span>
+                    <span className="literexia-teacher-profile-value">{selectedStudent.section}</span>
+                  </div>
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Grade Level:</span>
+                    <span className="literexia-teacher-profile-value">{selectedStudent.gradeLevel}</span>
+                  </div>
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Gender:</span>
+                    <span className="literexia-teacher-profile-value">{selectedStudent.gender}</span>
+                  </div>
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Address:</span>
+                    <span className="literexia-teacher-profile-value">{selectedStudent.address}</span>
+                  </div>
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Reading Level:</span>
+                    <span className="literexia-teacher-profile-value">{selectedStudent.readingLevel || 'N/A'}</span>
+                  </div>
+                  <div className="literexia-teacher-profile-info-item">
+                    <span className="literexia-teacher-profile-label">Reading %:</span>
+                    <span className="literexia-teacher-profile-value">{selectedStudent.readingPercentage != null ? selectedStudent.readingPercentage + '%' : 'N/A'}</span>
+                  </div>
                 </div>
               </div>
-
-              <div className="modal-footer">
-                <button 
-                  className="close-btn"
-                  onClick={() => setShowProfileModal(false)}
-                >
-                  Close
-                </button>
-              </div>
+            </div>
+            <div className="literexia-teacher-profile-actions">
+              <button 
+                className="literexia-teacher-close-profile-btn"
+                onClick={() => setShowProfileModal(false)}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
@@ -1070,7 +958,7 @@ const StudentListPage = () => {
             setShowEditStudentModal(false);
             setSelectedStudent(null);
           }}
-          onSave={handleEditStudent}
+          onSave={handleEditStudentSubmit} // Use the dedicated edit handler
         />
       )}
 

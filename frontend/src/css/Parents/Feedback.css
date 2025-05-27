@@ -1,191 +1,159 @@
-
 /* General Container */
 .feedback-container {
-  padding: 2rem;
-    background-color: #3b4f81;
-    color: white;
-    height: 100%;
-    margin-left: 240px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-
-  /* padding: 2rem;
   min-height: 100vh;
-  margin-left: 240px; 
-  box-sizing: border-box; */
-  
-  /* Header Styles */
-  .feedback-header {
-    margin-bottom: 20px;
-    text-align: left;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
+  background-color: #3B4F81;
+  color: #333;
+  margin-left: 250px;
+  padding: 30px 30px 30px 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+/* Header Styles */
+.feedback-header {
+  margin-bottom: 30px;
+  text-align: left;
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.feedback-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #3B4F81;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border: none;
+  display: inline-block;
+  width: auto;
+  position: relative;
+}
+
+.feedback-header h1::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 4px;
+  background: #F3C922;
+  border-radius: 2px;
+  margin-top: 10px;
+}
+
+.feedback-header p {
+  font-size: 1.1rem;
+  color: #fff;
+  margin-top: 18px;
+  margin-bottom: 0;
+  font-weight: 400;
+}
+
+/* Table Card Styles */
+.feedback-table {
+  width: 100%;
+  max-width: 900px;
+  background-color: #fff;
+  padding: 35px 30px 30px 30px;
+  border-radius: 20px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 10px;
+  font-size: 1rem;
+  background: transparent;
+}
+
+th, td {
+  padding: 14px 18px;
+  text-align: left;
+}
+
+th {
+  background-color: #F3C922;
+  color: #333;
+  font-weight: 700;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  border-bottom: 2px solid #ebedf2;
+}
+
+tr {
+  background: #fff;
+  transition: background 0.2s;
+}
+
+tr:not(:last-child) {
+  border-bottom: 1px solid #ebedf2;
+}
+
+tr:hover {
+  background: #f8f9fa;
+}
+
+td {
+  color: #333;
+  font-size: 1rem;
+}
+
+/* Action Button */
+.view-pdf-btn {
+  background-color: #F3C922;
+  color: #333;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 6px rgba(59, 79, 129, 0.08);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.view-pdf-btn:hover {
+  background-color: #f3b11f;
+  color: #222;
+  transform: translateY(-2px);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .feedback-header, .feedback-table {
+    max-width: 98vw;
   }
-  
-  .feedback-header h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 5px;
+}
+
+@media (max-width: 768px) {
+  .feedback-container {
+    margin-left: 0;
+    padding: 15px 5px 15px 5px;
   }
-  
-  .feedback-header p {
-    font-size: 1rem;
+  .feedback-header, .feedback-table {
+    max-width: 100vw;
+    padding: 18px 5px 18px 5px;
   }
-  
-  /* Table Styles */
-  .feedback-table {
-    width: 100%;
-    max-width: 900px;
-    overflow-x: auto;
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-  
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-  }
-  
   th, td {
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
+    padding: 10px 6px;
+    font-size: 0.95rem;
   }
-  
-  th {
-    background-color: #f3c922;
-    color: #333; /* Darker text for readability */
-  }
-  
-  td {
-    color: #333; /* Dark text for better contrast */
-  }
-  
-  button {
-    background-color: #f3c922;
-    padding: 5px 10px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.9rem;
-  }
-  
-  button:hover {
-    background-color: #f3b11f;
-  }
-  
-  .view-details-btn {
-    font-size: 1rem;
-    background: #f3c922;
-    color: black;
-    padding: 8px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  
-  .view-details-btn:hover {
-    background-color: #f3b11f;
-  }
-  
-  /* Details Section */
-  .details-row td {
-    padding: 0;
-  }
-  
-  .feedback-details {
-    padding: 20px;
-    background-color: #e8e8e8;
-    border-radius: 8px;
-    margin-top: 10px;
-    color: #333; /* Ensure text inside details is readable */
-  }
-  
-  .feedback-replies {
-    margin-top: 10px;
-  }
-  
-  .feedback-replies ul {
-    list-style-type: none;
-    padding-left: 0;
-  }
-  
-  .feedback-replies ul li {
-    margin-bottom: 5px;
-  }
-  
-  .reply-input {
-    margin-top: 10px;
-  }
-  
-  .reply-input textarea {
-    padding: 10px;
+  .view-pdf-btn {
     width: 100%;
-    border-radius: 5px;
-    font-size: 1rem;
-    resize: none;
-    border: 1px solid #ddd;
+    justify-content: center;
+    font-size: 0.95rem;
+    padding: 8px 0;
   }
-  
-  .reply-input textarea:focus {
-    outline: none;
-    border-color: #f3c922;
-  }
-  
-  .reply-input button {
-    background-color: #3b4f81;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    margin-top: 10px;
-  }
-  
-  .reply-input button:hover {
-    background-color: #f3c922;
-  }
-  
-  /* Sent Button Animation */
-  .send-btn {
-    background-color: #3b4f81;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-  }
-  
-  .send-btn:hover {
-    background-color: #f3c922;
-  }
-  
-  .send-btn.sent {
-    background-color: #4caf50;
-    color: white;
-    pointer-events: none;
-    animation: pulse 1s ease-in-out;
-  }
-  
-  @keyframes pulse {
-    0% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.1);
-    }
-    100% {
-      transform: scale(1);
-    }
-  }
+}
   
