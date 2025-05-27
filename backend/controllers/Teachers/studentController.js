@@ -589,9 +589,20 @@ exports.linkParentToStudent = async (req, res) => {
 // Get available grade levels
 exports.getGradeLevels = async (req, res) => {
   try {
-    // This could be from a database query if you have a grades collection
-    // For now, return a static list
-    const gradeLevels = ['Grade 1', 'Grade 2', 'Grade 3'];
+    // Get users collection
+    const usersCollection = getUsersDb().collection('users');
+    
+    // Extract unique grade levels from users collection
+    const gradeLevelsAgg = await usersCollection.aggregate([
+      { $match: { gradeLevel: { $exists: true, $ne: null } } },
+      { $group: { _id: "$gradeLevel" } },
+      { $sort: { _id: 1 } }
+    ]).toArray();
+    
+    // Transform to array of grade level strings
+    const gradeLevels = gradeLevelsAgg.map(item => item._id);
+    
+    console.log('Returning grade levels:', gradeLevels);
     res.json(gradeLevels);
   } catch (error) {
     console.error('Error fetching grade levels:', error);
@@ -602,17 +613,20 @@ exports.getGradeLevels = async (req, res) => {
 // Get available sections/classes
 exports.getSections = async (req, res) => {
   try {
-    // For now, return a static list
-    const sections = [
-      'Sampaguita',
-      'Rosal',
-      'Rosa',
-      'Lily',
-      'Orchid',
-      'Unity',
-      'Peace',
-      'Dignity'
-    ];
+    // Get users collection
+    const usersCollection = getUsersDb().collection('users');
+    
+    // Extract unique sections from users collection
+    const sectionsAgg = await usersCollection.aggregate([
+      { $match: { section: { $exists: true, $ne: null } } },
+      { $group: { _id: "$section" } },
+      { $sort: { _id: 1 } }
+    ]).toArray();
+    
+    // Transform to array of section strings
+    const sections = sectionsAgg.map(item => item._id);
+    
+    console.log('Returning sections:', sections);
     res.json(sections);
   } catch (error) {
     console.error('Error fetching sections:', error);
@@ -623,16 +637,18 @@ exports.getSections = async (req, res) => {
 // Get reading levels
 exports.getReadingLevels = async (req, res) => {
   try {
-    // Return the standardized list of reading levels
-    // This ensures consistency across the application
-    const readingLevels = [
-      'Low Emerging',
-      'High Emerging',
-      'Developing',
-      'Transitioning',
-      'At Grade Level',
-      'Not Assessed'
-    ];
+    // Get users collection
+    const usersCollection = getUsersDb().collection('users');
+    
+    // Extract unique reading levels from users collection
+    const readingLevelsAgg = await usersCollection.aggregate([
+      { $match: { readingLevel: { $exists: true, $ne: null } } },
+      { $group: { _id: "$readingLevel" } },
+      { $sort: { _id: 1 } }
+    ]).toArray();
+    
+    // Transform to array of reading level strings
+    const readingLevels = readingLevelsAgg.map(item => item._id);
     
     console.log('Returning reading levels:', readingLevels);
     res.json(readingLevels);
