@@ -466,8 +466,8 @@ exports.getPrescriptiveRecommendations = async function(req, res) {
       });
     }
 
-    // Check if student exists
-    const student = await this.getUserById(id);
+    // Check if student exists - using the exports.getUserById helper method
+    const student = await exports.getUserById(id);
     if (!student) {
       return res.status(404).json({ 
         success: false, 
@@ -475,11 +475,15 @@ exports.getPrescriptiveRecommendations = async function(req, res) {
       });
     }
 
-    // Get the latest category results
-    const CategoryResult = mongoose.model('CategoryResult');
-    const categoryResults = await CategoryResult.findOne({
+    // Get the latest category results directly from the collection
+    const testDb = mongoose.connection.useDb('test');
+    const categoryResultsCollection = testDb.collection('category_results');
+    
+    const categoryResults = await categoryResultsCollection.findOne({
       studentId: new mongoose.Types.ObjectId(id)
-    }).sort({ assessmentDate: -1 });
+    }, {
+      sort: { assessmentDate: -1, createdAt: -1 }
+    });
 
     // 🔒 Short-circuit: no assessment → no prescriptive data
     if (
@@ -509,7 +513,7 @@ exports.getPrescriptiveRecommendations = async function(req, res) {
       data: {
         student: {
           id: student._id,
-          name: `${student.firstName} ${student.lastName}`,
+          name: student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim(),
           readingLevel: student.readingLevel || 'Not Assessed'
         },
         categoryResults,
