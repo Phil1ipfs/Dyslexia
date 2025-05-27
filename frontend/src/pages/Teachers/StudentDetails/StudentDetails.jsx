@@ -398,13 +398,13 @@ const StudentDetails = () => {
         const incorrectAnswers = totalQuestions - correctAnswers;
         
         return {
-      id: skill.id || Math.random().toString(36).substr(2, 9),
-      code: skill.category === 'Patinig' ? 'Pa' :
-        skill.category === 'Pantig' ? 'Pg' :
-          skill.category === 'Pagkilala ng Salita' ? 'PS' :
-            skill.category === 'Pag-unawa sa Binasa' ? 'PB' : 'RL',
-      name: skill.category,
-      score: skill.score || 0,
+          id: skill.id || Math.random().toString(36).substr(2, 9),
+          code: skill.category === 'Patinig' ? 'Pa' :
+            skill.category === 'Pantig' ? 'Pg' :
+              skill.category === 'Pagkilala ng Salita' ? 'PS' :
+                skill.category === 'Pag-unawa sa Binasa' ? 'PB' : 'RL',
+          name: skill.category,
+          score: skill.score || 0,
           correctAnswers: correctAnswers,
           incorrectAnswers: incorrectAnswers,
           totalQuestions: totalQuestions,
@@ -493,39 +493,39 @@ const StudentDetails = () => {
   };
 
   // In StudentDetails.jsx, update the renderParentImage function:
-const renderParentImage = () => {
-  if (parentProfile && parentProfile.profileImageUrl) {
+  const renderParentImage = () => {
+    if (parentProfile && parentProfile.profileImageUrl) {
+      return (
+        <div className="sdx-parent-avatar">
+          <img
+            src={parentProfile.profileImageUrl}
+            alt={getParentName()}
+            className="sdx-parent-avatar-img"
+            onLoad={handleParentImageLoad}
+            onError={handleParentImageError}
+          />
+          {parentImageError && retryCount < MAX_RETRIES && (
+            <div className="sdx-image-retry" onClick={retryLoadImage}>
+              <FaSync size={14} /> Retry
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const initial = parentProfile && parentProfile.name ?
+      parentProfile.name.charAt(0).toUpperCase() :
+      typeof student.parent === 'string' ?
+        student.parent.charAt(0).toUpperCase() :
+        student.parent && student.parent.name ?
+          student.parent.name.charAt(0).toUpperCase() : 'P';
+
     return (
-      <div className="sdx-parent-avatar">
-        <img
-          src={parentProfile.profileImageUrl}
-          alt={getParentName()}
-          className="sdx-parent-avatar-img"
-          onLoad={handleParentImageLoad}
-          onError={handleParentImageError}
-        />
-        {parentImageError && retryCount < MAX_RETRIES && (
-          <div className="sdx-image-retry" onClick={retryLoadImage}>
-            <FaSync size={14} /> Retry
-          </div>
-        )}
+      <div className="sdx-parent-avatar-placeholder">
+        {initial}
       </div>
     );
-  }
-
-  const initial = parentProfile && parentProfile.name ?
-    parentProfile.name.charAt(0).toUpperCase() :
-    typeof student.parent === 'string' ?
-      student.parent.charAt(0).toUpperCase() :
-      student.parent && student.parent.name ?
-        student.parent.name.charAt(0).toUpperCase() : 'P';
-
-  return (
-    <div className="sdx-parent-avatar-placeholder">
-      {initial}
-    </div>
-  );
-};
+  };
 
   // Add these functions for category selection and pagination
   const handleCategorySelect = (categoryName) => {
@@ -540,45 +540,7 @@ const renderParentImage = () => {
     
     // First try to get questions from assessmentQuestions
     if (assessmentQuestions && assessmentQuestions[selectedCategory]) {
-      const questions = assessmentQuestions[selectedCategory];
-      
-      // Check if we have category results for this category
-      const categoryResult = categoryResults[selectedCategory];
-      
-      if (categoryResult && categoryResult.categoryResults && Array.isArray(categoryResult.categoryResults)) {
-        // Create a map of the student's answers by question ID
-        const studentAnswers = {};
-        categoryResult.categoryResults.forEach(result => {
-          if (result.questionId) {
-            studentAnswers[result.questionId] = result;
-          }
-        });
-        
-        // Merge the questions with the student's answers
-        return questions.map((question, index) => {
-          // Generate a question ID based on its position (q1, q2, etc.)
-          const questionId = `q${index + 1}`;
-          const studentAnswer = studentAnswers[questionId];
-          
-          return {
-            ...question,
-            questionId: questionId,
-            studentAnswer: studentAnswer?.selectedOption || null,
-            answeredCorrectly: studentAnswer?.isCorrect || false,
-            // Add a studentAnswered property to check if the student answered this question
-            studentAnswered: Boolean(studentAnswer)
-          };
-        });
-      }
-      
-      // If no category results, just return the questions with default values
-      return questions.map((question, index) => ({
-        ...question,
-        questionId: `q${index + 1}`,
-        studentAnswer: null,
-        answeredCorrectly: false,
-        studentAnswered: false
-      }));
+      return assessmentQuestions[selectedCategory];
     }
     
     // Fallback to readingLevelProgress if we don't have data in assessmentQuestions
@@ -588,3 +550,893 @@ const renderParentImage = () => {
     }
     
     return [];
+  };
+
+  const handleNextPage = () => {
+    const questions = getQuestionsForCategory();
+    const totalPages = Math.ceil(questions.length / questionsPerPage);
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Render loading state
+  if (loading) {
+    return (
+      <div className="sdx-container">
+        <div className="vs-loading">
+          <div className="vs-loading-spinner"></div>
+          <p>Loading student details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Render "not found" state
+  if (!student) {
+    return (
+      <div className="sdx-container">
+        <div className="vs-no-results">
+          <p>Student not found.</p>
+          <button className="sdx-back-btn" onClick={goBack}>
+            <FaArrowLeft /> Back to Student List
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Main component render
+  return (
+    <div className="sdx-container">
+      {/* Header */}
+      <div className="sdx-header">
+        <button className="sdx-back-btn" onClick={goBack}>
+          <FaArrowLeft /> Back
+        </button>
+        <h1 className="sdx-title">Student and Parent Information</h1>
+        <div className="sdx-actions">
+          <button
+            className="sdx-view-report-btn"
+            onClick={() => setShowProgressReport(true)}
+          >
+            <FaFilePdf /> View Progress Report
+          </button>
+        </div>
+      </div>
+
+      {/* Student Profile Section */}
+      <div className="sdx-profile-card">
+        <div className="sdx-profile-header">
+          <div className="sdx-avatar">
+            {student.profileImageUrl ? (
+              <img
+                src={student.profileImageUrl}
+                alt={student.name}
+                className="sdx-avatar-img"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.style.display = "none";
+                  e.target.parentElement.innerText = student.name.split(' ').map(n => n[0]).join('').toUpperCase();
+                }}
+              />
+            ) : (
+              student.name.split(' ').map(n => n[0]).join('').toUpperCase()
+            )}
+          </div>
+          <div className="sdx-profile-info">
+            <h2 className="sdx-student-name">{student.name}</h2>
+            <div className="sdx-student-id">
+              <FaIdCard /> ID: {student.idNumber || student.id || student._id}
+            </div>
+          </div>
+        </div>
+
+        <div className="sdx-profile-details">
+          <div className="sdx-details-column">
+            <div className="sdx-detail-item">
+              <div className="sdx-detail-icon">
+                <FaCalendarAlt />
+              </div>
+              <div className="sdx-detail-content">
+                <span className="sdx-detail-label">Age</span>
+                <span className="sdx-detail-value">{student.age} years old</span>
+              </div>
+            </div>
+
+            <div className="sdx-detail-item">
+              <div className="sdx-detail-icon">
+                <FaSchool />
+              </div>
+              <div className="sdx-detail-content">
+                <span className="sdx-detail-label">Grade </span>
+                <span className="sdx-detail-value">{student.gradeLevel || 'Grade 1'}</span>
+              </div>
+            </div>
+
+            <div className="sdx-detail-item">
+              <div className="sdx-detail-icon">
+                <FaUsers />
+              </div>
+              <div className="sdx-detail-content">
+                <span className="sdx-detail-label">Section</span>
+                <span className="sdx-detail-value">{student.section || 'Sampaguita'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="sdx-details-column">
+            <div className="sdx-detail-item">
+              <div className="sdx-detail-icon">
+                <FaVenusMars />
+              </div>
+              <div className="sdx-detail-content">
+                <span className="sdx-detail-label">Gender</span>
+                <span className="sdx-detail-value">{student.gender || 'Not specified'}</span>
+              </div>
+            </div>
+
+            <div className="sdx-detail-item">
+              <div className="sdx-detail-icon">
+                <FaMapMarkerAlt />
+              </div>
+              <div className="sdx-detail-content">
+                <span className="sdx-detail-label">Address</span>
+                <span className="sdx-detail-value">{student.address || 'Not provided'}</span>
+              </div>
+            </div>
+
+            <div className="sdx-detail-item">
+              <div className="sdx-detail-icon">
+                <FaBookReader />
+              </div>
+              <div className="sdx-detail-content">
+                <span className="sdx-detail-label">Reading Level</span>
+                <span className="sdx-detail-value">{student.readingLevel || 'Not Assessed'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+   {/* Parent Information */}
+<div className="sdx-parent-card">
+  <h3 className="sdx-section-title">
+    <FaUser /> Parent Information
+  </h3>
+  <div className="sdx-parent-details">
+    <div className="sdx-parent-avatar">
+      {renderParentImage()}
+    </div>
+    <div className="sdx-parent-info">
+      <h4 className="sdx-parent-name">
+        {isParentConnected() ? getParentName() : 'Not connected'}
+      </h4>
+      {isParentConnected() ? (
+        <div className="sdx-parent-contact">
+          <div className="sdx-contact-item">
+            <FaEnvelope className="sdx-contact-icon" />
+            <span>
+              {parentProfile && parentProfile.email ? 
+                parentProfile.email : 
+                typeof student.parentEmail === 'string' ? 
+                  student.parentEmail : 
+                  student.parent && student.parent.email ? 
+                    student.parent.email : 'Not available'}
+            </span>
+          </div>
+          <div className="sdx-contact-item">
+            <FaPhone className="sdx-contact-icon" />
+            <span>
+              {parentProfile && parentProfile.contact ? 
+                parentProfile.contact : 
+                typeof student.parentContact === 'string' ? 
+                  student.parentContact : 
+                  student.parent && student.parent.contact ? 
+                    student.parent.contact : 'Not available'}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="sdx-parent-contact">
+          <div className="sdx-contact-item">
+            <FaEnvelope className="sdx-contact-icon" />
+            <span>Not available</span>
+          </div>
+          <div className="sdx-contact-item">
+            <FaPhone className="sdx-contact-icon" />
+            <span>Not available</span>
+          </div>
+        </div>
+      )}
+    </div>
+
+    {/* Additional parent details in grid format */}
+    <div className="sdx-parent-details-grid">
+      <div className="sdx-contact-item">
+        <FaAddressCard className="sdx-contact-icon" />
+        <div className="sdx-detail-content">
+          <span className="sdx-detail-label">Address</span>
+          <span className="sdx-detail-value">
+            {parentProfile && parentProfile.address ? 
+              parentProfile.address : 
+              student.parent && typeof student.parent === 'object' && student.parent.address ? 
+                student.parent.address : 'Not provided'}
+          </span>
+        </div>
+      </div>
+      <div className="sdx-contact-item">
+        <FaRing className="sdx-contact-icon" />
+        <div className="sdx-detail-content">
+          <span className="sdx-detail-label">Civil Status</span>
+          <span className="sdx-detail-value">
+            {parentProfile && parentProfile.civilStatus ? 
+              parentProfile.civilStatus : 
+              student.parent && typeof student.parent === 'object' && student.parent.civilStatus ? 
+                student.parent.civilStatus : 'Not provided'}
+          </span>
+        </div>
+      </div>
+      <div className="sdx-contact-item">
+        <FaVenusMars className="sdx-contact-icon" />
+        <div className="sdx-detail-content">
+          <span className="sdx-detail-label">Gender</span>
+          <span className="sdx-detail-value">
+            {parentProfile && parentProfile.gender ? 
+              parentProfile.gender : 
+              student.parent && typeof student.parent === 'object' && student.parent.gender ? 
+                student.parent.gender : 'Not provided'}
+          </span>
+        </div>
+      </div>
+      <div className="sdx-contact-item">
+        <FaBuilding className="sdx-contact-icon" />
+        <div className="sdx-detail-content">
+          <span className="sdx-detail-label">Occupation</span>
+          <span className="sdx-detail-value">
+            {parentProfile && parentProfile.occupation ? 
+              parentProfile.occupation : 
+              student.parent && typeof student.parent === 'object' && student.parent.occupation ? 
+                student.parent.occupation : 'Not provided'}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+      {/* Learning Activities and Progress Section */}
+      <div className="sdx-activities-card">
+        <h3 className="sdx-section-title">
+          <FaBookReader /> Learning Activities and Progress
+        </h3>
+
+        {activities && activities.length > 0 ? (
+          <div className="sdx-activities-table">
+            <div className="sdx-table-header">
+              <div className="sdx-header-cell sdx-activity-name">Lesson</div>
+              <div className="sdx-header-cell sdx-activity-completed">Completed</div>
+              <div className="sdx-header-cell sdx-activity-progress-label" colSpan="3">Progress Level</div>
+              <div className="sdx-header-cell sdx-activity-remarks">Remarks</div>
+            </div>
+
+            <div className="sdx-table-subheader">
+              <div className="sdx-subheader-cell sdx-placeholder"></div>
+              <div className="sdx-subheader-cell sdx-placeholder"></div>
+              <div className="sdx-subheader-cell sdx-support-level">Minimal support</div>
+              <div className="sdx-subheader-cell sdx-support-level">Moderate support</div>
+              <div className="sdx-subheader-cell sdx-support-level">Extensive support</div>
+              <div className="sdx-subheader-cell sdx-placeholder"></div>
+            </div>
+
+            {activities.map((activity, index) => (
+              <div key={index} className="sdx-table-row">
+                <div className="sdx-cell sdx-activity-name">{activity.name}</div>
+                <div className="sdx-cell sdx-activity-completed">
+                  {renderCheckbox(activity.completed)}
+                </div>
+                <div className="sdx-cell sdx-activity-support">
+                  {renderCheckbox(activity.minimalSupport)}
+                </div>
+                <div className="sdx-cell sdx-activity-support">
+                  {renderCheckbox(activity.moderateSupport)}
+                </div>
+                <div className="sdx-cell sdx-activity-support">
+                  {renderCheckbox(activity.extensiveSupport)}
+                </div>
+                <div className="sdx-cell sdx-activity-remarks">{activity.remarks}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="sdx-no-activities">
+            <p>No learning activities recorded yet.</p>
+            {!student.preAssessmentCompleted && (
+              <p>Student needs to complete pre-assessment first.</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Reading Level Progress Section */}
+      {(assessment || readingLevelProgress) && (
+        <div className="sdx-assessment-card">
+          <h3 className="sdx-section-title">
+            <FaBookReader /> Reading Level Progress
+          </h3>
+          <div className="sdx-assessment-content">
+            <div className="sdx-level-info">
+              <div className={`sdx-level-badge ${getReadingLevelClass(student.readingLevel || 'Not Assessed')}`}>
+                {student.readingLevel || 'Not Assessed'}
+              </div>
+              <div className="sdx-level-details">
+                <span className="sdx-level-name">{student.readingLevel || 'Not Assessed'}</span>
+                <span className="sdx-level-description">
+                  {getReadingLevelDescription(student.readingLevel || 'Not Assessed')}
+                </span>
+              </div>
+            </div>
+
+            {/* Category Summary Cards */}
+            <div className="sdx-category-selector">
+              <h4 className="sdx-category-selector-title">Assessment Categories</h4>
+              <div className="sdx-category-cards">
+                {formatAssessmentItems().map((skill, index) => (
+                  <div 
+                    key={index} 
+                    className={`sdx-category-card ${selectedCategory === skill.name ? 'selected' : ''}`}
+                    onClick={() => handleCategorySelect(skill.name)}
+                  >
+                    <div className="sdx-category-card-header">
+                      <span className="sdx-category-name">{skill.name}</span>
+                      <span className={`sdx-category-score ${skill.score >= 80 ? 'score-excellent' :
+                        skill.score >= 60 ? 'score-good' :
+                          skill.score >= 40 ? 'score-average' :
+                            'score-needs-improvement'
+                        }`}>{skill.score}%</span>
+                    </div>
+                    
+                    <div className="sdx-category-progress">
+                      <div 
+                        className={`sdx-category-progress-bar ${skill.score >= 80 ? 'score-excellent' :
+                          skill.score >= 60 ? 'score-good' :
+                            skill.score >= 40 ? 'score-average' :
+                              'score-needs-improvement'
+                          }`}
+                        style={{ width: `${skill.score}%` }}
+                      ></div>
+                    </div>
+                    
+                    <div className="sdx-category-details">
+                      <span className="sdx-category-correct">
+                        <span className="sdx-category-status-icon correct">✓</span> {skill.correctAnswers} correct
+                      </span>
+                      <span className="sdx-category-incorrect">
+                        <span className="sdx-category-status-icon incorrect">✗</span> {skill.incorrectAnswers} incorrect
+                      </span>
+                    </div>
+                    
+                    <div className="sdx-category-status">
+                      <span className={`sdx-category-passed-badge ${skill.isPassed ? 'passed' : 'failed'}`}>
+                        {skill.isPassed ? 'Passed' : 'Not Passed'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Question Details Section */}
+            {selectedCategory && (
+              <div className="sdx-question-details">
+                <h4 className="sdx-question-details-title">
+                  {selectedCategory} Questions
+                  {getQuestionsForCategory().length > 0 && (
+                    <span className="sdx-question-pagination-info">
+                      Page {currentPage} of {Math.ceil(getQuestionsForCategory().length / questionsPerPage)}
+                    </span>
+                  )}
+                </h4>
+                
+                <div className="sdx-questions-list">
+                  {getQuestionsForCategory().length > 0 ? (
+                    getQuestionsForCategory()
+                      .slice((currentPage - 1) * questionsPerPage, currentPage * questionsPerPage)
+                      .map((question, index) => (
+                        <div key={index} className="sdx-question-item">
+                          <div className="sdx-question-number">
+                            Q{(currentPage - 1) * questionsPerPage + index + 1}
+                          </div>
+                          <div className="sdx-question-content">
+                            <div className="sdx-question-text">
+                              <strong>Question:</strong> {question.questionText}
+                              {question.questionValue && (
+                                <div className="sdx-question-value">{question.questionValue}</div>
+                              )}
+                            </div>
+                            
+                            {question.questionImage && (
+                              <div className="sdx-question-image-container">
+                                <img 
+                                  src={question.questionImage} 
+                                  alt="Question visual" 
+                                  className="sdx-question-image" 
+                                  onError={(e) => {
+                                    console.warn("Failed to load question image:", e.target.src);
+                                    e.target.style.display = "none";
+                                  }}
+                                />
+                              </div>
+                            )}
+                            
+                            {question.choiceOptions && question.choiceOptions.length > 0 && (
+                              <div className="sdx-question-options">
+                                <div className="sdx-options-label">Options:</div>
+                                <div className="sdx-options-list">
+                                  {question.choiceOptions.map((option, optIndex) => (
+                                    <div 
+                                      key={optIndex} 
+                                      className={`sdx-option-item ${option.isCorrect ? 'correct' : ''}`}
+                                    >
+                                      <span className={`sdx-option-marker ${option.isCorrect ? 'correct' : ''}`}>
+                                        {option.isCorrect ? '✓' : '○'}
+                                      </span>
+                                      <span className="sdx-option-text">{option.optionText}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* For sentence questions with passages */}
+                            {question.passages && question.passages.length > 0 && (
+                              <div className="sdx-question-passage">
+                                <div className="sdx-passage-label">Reading Passage:</div>
+                                {question.passages.map((passage, passageIndex) => (
+                                  <div key={passageIndex} className="sdx-passage-content">
+                                    <div className="sdx-passage-page">Page {passage.pageNumber}</div>
+                                    <div className="sdx-passage-text">{passage.pageText}</div>
+                                    {passage.pageImage && (
+                                      <div className="sdx-passage-image-container">
+                                        <img 
+                                          src={passage.pageImage} 
+                                          alt={`Passage visual ${passage.pageNumber}`} 
+                                          className="sdx-passage-image"
+                                          onError={(e) => {
+                                            console.warn("Failed to load passage image:", e.target.src);
+                                            e.target.style.display = "none";
+                                          }}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* For sentence questions with subquestions */}
+                            {question.sentenceQuestions && question.sentenceQuestions.length > 0 && (
+                              <div className="sdx-question-subquestions">
+                                <div className="sdx-subquestions-label">Comprehension Questions:</div>
+                                {question.sentenceQuestions.map((subq, subqIndex) => (
+                                  <div key={subqIndex} className="sdx-subquestion-item">
+                                    <div className="sdx-subquestion-text">{subq.questionText}</div>
+                                    <div className="sdx-subquestion-options">
+                                      <div className={`sdx-suboption-item correct`}>
+                                        <span className="sdx-suboption-marker correct">✓</span>
+                                        <span className="sdx-suboption-text">{subq.correctAnswer}</span>
+                                      </div>
+                                      <div className={`sdx-suboption-item incorrect`}>
+                                        <span className="sdx-suboption-marker incorrect">✗</span>
+                                        <span className="sdx-suboption-text">{subq.incorrectAnswer}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                  ) : (
+                    <div className="sdx-no-questions">
+                      <p>No detailed questions available for this category.</p>
+                      <p>The assessment data shows overall performance but individual questions are not available.</p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Pagination Controls */}
+                {getQuestionsForCategory().length > questionsPerPage && (
+                  <div className="sdx-pagination-controls">
+                    <button 
+                      className="sdx-pagination-btn prev" 
+                      onClick={handlePrevPage}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </button>
+                    <span className="sdx-pagination-info">
+                      Page {currentPage} of {Math.ceil(getQuestionsForCategory().length / questionsPerPage)}
+                    </span>
+                    <button 
+                      className="sdx-pagination-btn next" 
+                      onClick={handleNextPage}
+                      disabled={currentPage >= Math.ceil(getQuestionsForCategory().length / questionsPerPage)}
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Send Progress Report Section */}
+      <div className="sdx-send-report-section">
+        <h3 className="sdx-section-title">
+          <FaPaperPlane /> Send Report to Parent
+        </h3>
+
+        <div className="sdx-message-box">
+          <div className="sdx-message-header">
+            <div className="sdx-message-subject">
+              <label><strong>Subject:</strong></label>
+              {isEditingFeedback ? (
+                <input
+                  type="text"
+                  value={feedbackMessage.subject}
+                  onChange={(e) => setFeedbackMessage({ ...feedbackMessage, subject: e.target.value })}
+                  className="sdx-subject-input"
+                />
+              ) : (
+                <span>{feedbackMessage.subject}</span>
+              )}
+            </div>
+            <div className="sdx-message-recipient">
+              <span>To:</span>
+              <div className="sdx-recipient-badge">
+                <FaUser className="sdx-recipient-icon" />
+                <span>{getParentName()}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="sdx-message-content">
+            {isEditingFeedback ? (
+              <textarea
+                value={feedbackMessage.content}
+                onChange={(e) => setFeedbackMessage({ ...feedbackMessage, content: e.target.value })}
+                className="sdx-message-textarea"
+                rows="6"
+              ></textarea>
+            ) : (
+              <p className="sdx-message-text">{feedbackMessage.content}</p>
+            )}
+          </div>
+
+          <div className="sdx-include-report">
+            <label className="sdx-include-report-label">
+              <input
+                type="checkbox"
+                checked={includeProgressReport}
+                onChange={() => setIncludeProgressReport(!includeProgressReport)}
+                className="sdx-include-report-checkbox"
+              />
+              <FaCheckSquare className={`sdx-checkbox-icon ${includeProgressReport ? 'checked' : ''}`} />
+              <span><strong>Include Progress Report</strong></span>
+            </label>
+          </div>
+
+          <div className="sdx-message-actions">
+            {isEditingFeedback ? (
+              <button
+                className="sdx-save-btn"
+                onClick={handleSaveFeedback}
+              >
+                <FaSave /> Save Message
+              </button>
+            ) : (
+              <button
+                className="sdx-edit-btn"
+                onClick={() => setIsEditingFeedback(true)}
+              >
+                <FaEdit /> Edit Message
+              </button>
+            )}
+
+            <button
+              className="sdx-send-btn"
+              onClick={handleSendReport}
+              disabled={isEditingFeedback}
+            >
+              <FaPaperPlane /> Send Report
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress Report Modal */}
+      {showProgressReport && (
+        <div className="sdx-modal-overlay" onClick={() => setShowProgressReport(false)}>
+          <div className="sdx-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="sdx-modal-header">
+              <h2 className="sdx-modal-title">Progress Report</h2>
+              <div className="sdx-modal-actions">
+                <button className="sdx-export-btn" onClick={exportToPDF}>
+                  <FaFilePdf /> Export as PDF
+                </button>
+                <button
+                  className="sdx-close-btn"
+                  onClick={() => setShowProgressReport(false)}
+                >
+                  <FaTimes />
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable wrapper keeps the scrollbar */}
+            <div className="sdx-scroll-wrapper">
+              {/* Printable body (FULL height) */}
+              <div className="sdx-report-printable" ref={progressReportRef}>
+                {/* Report Header */}
+                <div className="sdx-report-header">
+                  <img src={cradleLogo} alt="Cradle of Learners Logo" className="sdx-report-logo" />
+                  <div className="sdx-report-school-info">
+                    <h1 className="sdx-report-school-name">CRADLE OF LEARNERS</h1>
+                    <p className="sdx-report-school-tagline">(Inclusive School for Individualized Education), Inc.</p>
+                    <p className="sdx-report-school-address">3rd Floor TUCP Bldg. Elliptical Road Corner Maharlika St. Quezon City</p>
+                    <p className="sdx-report-school-contact">☎ 8294‑7772 | ✉ cradle.of.learners@gmail.com</p>
+                  </div>
+                </div>
+
+                <div className="sdx-modal-body">
+                  {/* Report Title */}
+                  <div className="sdx-report-title-section">
+                    <h2 className="sdx-report-main-title">PROGRESS REPORT</h2>
+                    <p className="sdx-report-school-year">S.Y. {progressReport.schoolYear}</p>
+                  </div>
+
+                  {/* Student Information */}
+                  <div className="sdx-report-student-info">
+                    <div className="sdx-report-info-row">
+                      <div className="sdx-report-info-item">
+                        <strong>Name:</strong> {student.name}
+                      </div>
+                      <div className="sdx-report-info-item">
+                        <strong>Age:</strong> {student.age}
+                      </div>
+                    </div>
+                    <div className="sdx-report-info-row">
+                      <div className="sdx-report-info-item">
+                        <strong>Grade:</strong> {student.gradeLevel || 'Grade 1'}
+                      </div>
+                      <div className="sdx-report-info-item">
+                        <strong>Gender:</strong> {student.gender || 'Not specified'}
+                      </div>
+                    </div>
+                    <div className="sdx-report-info-row">
+                      <div className="sdx-report-info-item">
+                        <strong>Parent:</strong> {getParentName()}
+                      </div>
+                      <div className="sdx-report-info-item">
+                        <strong>Date:</strong> {progressReport.reportDate}
+                      </div>
+                    </div>
+                    <div className="sdx-report-info-row">
+                      <div className="sdx-report-info-item">
+                        <strong>Reading Level:</strong> {student.readingLevel || 'Not Assessed'}
+                      </div>
+                      <div className="sdx-report-info-item">
+                        <strong>Last Assessment:</strong> {student.lastAssessment || student.lastAssessmentDate ? new Date(student.lastAssessment || student.lastAssessmentDate).toLocaleDateString() : 'Not available'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Progress Table */}
+                  <div className="sdx-report-progress-table">
+                    <table className="sdx-report-table">
+                      <thead>
+                        <tr>
+                          <th className="sdx-report-th sdx-report-th-aralin">Lesson</th>
+                          <th className="sdx-report-th sdx-report-th-nakumpleto">Completed</th>
+                          <th className="sdx-report-th sdx-report-th-antas" colSpan="3">Progress Level</th>
+                          <th className="sdx-report-th sdx-report-th-puna">Remarks</th>
+                        </tr>
+                        <tr>
+                          <th className="sdx-report-th-empty"></th>
+                          <th className="sdx-report-th-empty"></th>
+                          <th className="sdx-report-th-level">Minimal support</th>
+                          <th className="sdx-report-th-level">Moderate support</th>
+                          <th className="sdx-report-th-level">Extensive support</th>
+                          <th className="sdx-report-th-empty"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {activities && activities.length > 0 ? (
+                          activities.map((activity, index) => (
+                            <tr key={index} className="sdx-report-tr">
+                              <td className="sdx-report-td sdx-report-td-aralin">{activity.name}</td>
+                              <td className="sdx-report-td sdx-report-td-nakumpleto">
+                                {activity.completed ? "✓" : ""}
+                              </td>
+                              <td className="sdx-report-td sdx-report-td-support">
+                                {renderCheckbox(activity.minimalSupport)}
+                              </td>
+                              <td className="sdx-report-td sdx-report-td-support">
+                                {renderCheckbox(activity.moderateSupport)}
+                              </td>
+                              <td className="sdx-report-td sdx-report-td-support">
+                                {renderCheckbox(activity.extensiveSupport)}
+                              </td>
+                              <td className="sdx-report-td sdx-report-td-puna">{activity.remarks}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr className="sdx-report-tr">
+                            <td colSpan="6" className="sdx-report-td-empty">
+                              No learning activities recorded yet.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Reading Assessment Summary */}
+                  {(assessment || readingLevelProgress) && (
+                    <div className="sdx-report-assessment-summary">
+                      <h3 className="sdx-report-section-title">Reading Level Progress</h3>
+                      
+                      {/* Category Summary Cards */}
+                      <div className="sdx-report-category-cards">
+                        {formatAssessmentItems().map((skill, index) => (
+                          <div key={index} className="sdx-report-category-card">
+                            <div className="sdx-report-category-header">
+                              <span className="sdx-report-category-name">{skill.name}</span>
+                              <span className={`sdx-report-category-score ${skill.score >= 80 ? 'score-excellent' :
+                                skill.score >= 60 ? 'score-good' :
+                                  skill.score >= 40 ? 'score-average' :
+                                    'score-needs-improvement'
+                                }`}>{skill.score}%</span>
+                            </div>
+                            
+                            <div className="sdx-report-category-progress">
+                              <div 
+                                className={`sdx-report-category-progress-bar ${skill.score >= 80 ? 'score-excellent' :
+                                  skill.score >= 60 ? 'score-good' :
+                                    skill.score >= 40 ? 'score-average' :
+                                      'score-needs-improvement'
+                                  }`}
+                                style={{ width: `${skill.score}%` }}
+                              ></div>
+                            </div>
+                            
+                            <div className="sdx-report-category-details">
+                              <div className="sdx-report-category-answer-counts">
+                                <span className="sdx-report-category-correct">
+                                  ✓ {skill.correctAnswers} correct
+                                </span>
+                                <span className="sdx-report-category-incorrect">
+                                  ✗ {skill.incorrectAnswers} incorrect
+                                </span>
+                              </div>
+                              <span className={`sdx-report-category-passed ${skill.isPassed ? 'passed' : 'failed'}`}>
+                                {skill.isPassed ? 'Passed' : 'Not Passed'}
+                              </span>
+                            </div>
+                            
+                            {/* Show questions from the assessmentQuestions state instead of skill.questions */}
+                            {assessmentQuestions[skill.name] && assessmentQuestions[skill.name].length > 0 && (
+                              <div className="sdx-report-category-questions">
+                                <div className="sdx-report-questions-title">Assessment Questions:</div>
+                                {assessmentQuestions[skill.name].map((question, qIndex) => (
+                                  <div key={qIndex} className="sdx-report-question-item">
+                                    <div className="sdx-report-question-text">
+                                      {question.questionText}
+                                      {question.questionValue && (
+                                        <span className="sdx-report-question-value"> ({question.questionValue})</span>
+                                      )}
+                                    </div>
+                                    
+                                    {question.choiceOptions && question.choiceOptions.length > 0 && (
+                                      <div className="sdx-report-question-options">
+                                        {question.choiceOptions.map((option, optIndex) => (
+                                          <div 
+                                            key={optIndex} 
+                                            className={`sdx-report-option-item ${option.isCorrect ? 'correct' : ''}`}
+                                          >
+                                            <span className="sdx-report-option-marker">
+                                              {option.isCorrect ? '✓' : '○'}
+                                            </span>
+                                            <span className="sdx-report-option-text">{option.optionText}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <div className="sdx-report-overall-summary">
+                        <p className="sdx-report-overall-description">
+                          {student.name} is currently at the <strong>{student.readingLevel || 'Not Assessed'}</strong> reading level. 
+                          {student.readingLevel && student.readingLevel !== 'Not Assessed' ? 
+                            ` This means ${getReadingLevelDescription(student.readingLevel).toLowerCase()}.` : 
+                            ' An assessment is needed to determine the appropriate reading level.'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recommendations */}
+                  <div className="sdx-report-recommendations">
+                    <h3 className="sdx-report-section-title">Prescriptive Recommendations</h3>
+                    <ul className="sdx-report-rec-list">
+                      {progressReport.recommendations.map((rec, index) => (
+                        <li key={index} className="sdx-report-rec-item">{rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Signatures */}
+                  <div className="sdx-report-signatures">
+                    <div className="sdx-report-signature">
+                      <div className="sdx-report-sign-line"></div>
+                      <p className="sdx-report-sign-name">Teacher's Signature</p>
+                    </div>
+                    <div className="sdx-report-signature">
+                      <div className="sdx-report-sign-line"></div>
+                      <p className="sdx-report-sign-name">Principal's Signature</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Dialog */}
+      {showSuccessDialog && (
+        <div className="sdx-dialog-overlay">
+          <div className="sdx-dialog">
+            <div className="sdx-dialog-header">
+              <h3 className="sdx-dialog-title">
+                <FaCheckCircle className="sdx-dialog-icon" /> Success
+              </h3>
+            </div>
+            <div className="sdx-dialog-content">
+              <div className="sdx-dialog-message">
+                <p>Progress report has been successfully sent to {getParentName()}!</p>
+                <p>A copy has been saved to the student's records.</p>
+              </div>
+              <div className="sdx-dialog-actions">
+                <button
+                  className="sdx-dialog-btn sdx-dialog-btn-primary"
+                  onClick={closeSuccessDialog}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default StudentDetails;
