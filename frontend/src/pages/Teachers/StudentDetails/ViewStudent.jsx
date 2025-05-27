@@ -565,7 +565,7 @@ const ViewStudent = () => {
                           </span>
                         </div>
                         <div className={`vs-reading-badge ${levelClass}`}>
-                          {sections}
+                          {student.section || 'No Section'}
                         </div>
                       </div>
 
