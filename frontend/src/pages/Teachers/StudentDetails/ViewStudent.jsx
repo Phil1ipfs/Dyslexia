@@ -183,8 +183,6 @@ const ViewStudent = () => {
     );
   };
 
-
-
   const clearFilters = () => {
     setReadingLevelFilter('all');
     setGradeFilter('all');
@@ -266,10 +264,15 @@ const ViewStudent = () => {
 
     // For parentId - try to look up in the parent data from the JSON
     if (student.parentId) {
-      // Use the parents data you have
+      // Load all known parent profiles
+      // Updated with complete parent data from the MongoDB collection
       const parentProfiles = [
         { _id: "681a2933af165878136e05da", firstName: "Jan Mark", middleName: "Percival", lastName: "Caram" },
-        { _id: "6827575c89b0d728f9333a20", firstName: "Kit Nicholas", middleName: "Tongol", lastName: "Santiago" }
+        { _id: "6827575c89b0d728f9333a20", firstName: "Kit Nicholas", middleName: "Tongol", lastName: "Santiago" },
+        { _id: "682ca15af0bfb8e632bdfd13", firstName: "Rain", middleName: "Percival", lastName: "Aganan" },
+        { _id: "682d75b9f7897b64cec98cc7", firstName: "Kit Nicholas", middleName: "Rish", lastName: "Aganan" },
+        { _id: "6830d880779e20b64f720f44", firstName: "Kit Nicholas", middleName: "Pascual", lastName: "Caram" },
+        { _id: "6835ef1645a2af9158a6d5b7", firstName: "Pia", middleName: "Zop", lastName: "Rey" }
       ];
 
       // Find matching parent
@@ -277,8 +280,20 @@ const ViewStudent = () => {
       if (matchedParent) {
         return `${matchedParent.firstName || ''} ${matchedParent.middleName ? matchedParent.middleName + ' ' : ''}${matchedParent.lastName || ''}`.trim();
       }
-
-      return 'Registered'; // Default if parent ID exists but not found
+      
+      // If we have parentName directly available, use it
+      if (student.parentName) {
+        return student.parentName;
+      }
+      
+      // If we have parent's contact info, show that instead of just "Registered"
+      if (student.parentEmail) {
+        return student.parentEmail;
+      }
+      
+      // If we reach here, the parent has an ID but we don't have their full info yet
+      // Instead of just showing "Registered", show partial ID for reference
+      return `Registered Parent (ID: ${student.parentId.substring(0, 6)}...)`;
     }
 
     return 'Not registered';
@@ -620,6 +635,5 @@ const ViewStudent = () => {
     </div>
   );
 };
-
 
 export default ViewStudent;
