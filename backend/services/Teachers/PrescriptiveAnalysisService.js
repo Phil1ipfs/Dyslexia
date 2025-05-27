@@ -1060,6 +1060,76 @@ class PrescriptiveAnalysisService {
       throw error;
     }
   }
+
+  /**
+   * Update categoryResultId for a specific prescriptive analysis
+   * This method is used to fix missing categoryResultId fields
+   * @param {string} analysisId - Analysis ID
+   * @returns {Promise<Object>} Updated analysis
+   */
+  async updateCategoryResultId(analysisId) {
+    try {
+      // Get the analysis
+      const analysis = await PrescriptiveAnalysis.findById(analysisId);
+      
+      if (!analysis) {
+        throw new Error(`Analysis not found with ID: ${analysisId}`);
+      }
+      
+      // Skip if already has categoryResultId
+      if (analysis.categoryResultId) {
+        console.log(`Analysis ${analysisId} already has categoryResultId: ${analysis.categoryResultId}`);
+        return analysis;
+      }
+      
+      // Get the user to find their idNumber
+      const usersCollection = mongoose.connection.db.collection('users');
+      const user = await usersCollection.findOne({ 
+        _id: mongoose.Types.ObjectId.isValid(analysis.studentId) 
+          ? new mongoose.Types.ObjectId(analysis.studentId) 
+          : analysis.studentId 
+      });
+      
+      if (!user || !user.idNumber) {
+        console.log(`Could not find user with idNumber for analysis ${analysisId}`);
+        return analysis;
+      }
+      
+      // Look for category results with this idNumber
+      const categoryResults = await mongoose.model('CategoryResult').find({ 
+        studentId: user.idNumber 
+      });
+      
+      if (categoryResults.length === 0) {
+        console.log(`No category results found for student ${user.idNumber}`);
+        return analysis;
+      }
+      
+      // Find a result that contains the matching category
+      const matchingResult = categoryResults.find(result => 
+        result.categories && 
+        result.categories.some(cat => 
+          cat.categoryName && 
+          cat.categoryName.toLowerCase() === analysis.categoryId.toLowerCase()
+        )
+      );
+      
+      if (!matchingResult) {
+        console.log(`No matching category result found for ${analysis.categoryId}`);
+        return analysis;
+      }
+      
+      // Update the analysis
+      analysis.categoryResultId = matchingResult._id;
+      await analysis.save();
+      
+      console.log(`Updated analysis ${analysisId} with categoryResultId ${matchingResult._id}`);
+      return analysis;
+    } catch (error) {
+      console.error(`Error updating categoryResultId for analysis ${analysisId}:`, error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new PrescriptiveAnalysisService(); 

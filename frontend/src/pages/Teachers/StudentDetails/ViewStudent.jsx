@@ -18,6 +18,7 @@ import {
   FaTimesCircle
 } from 'react-icons/fa';
 import ViewStudentService from '../../../services/Teachers/ViewStudentService';
+import StudentDetailsService from '../../../services/Teachers/StudentDetailsService';
 import '../../../css/Teachers/ViewStudent.css';
 
 const ViewStudent = () => {
@@ -34,6 +35,35 @@ const ViewStudent = () => {
   const [readingLevels, setReadingLevels] = useState([]);
   const [sections, setSections] = useState([]);
   const [gradeLevels, setGradeLevels] = useState([]);
+  const [parentProfiles, setParentProfiles] = useState({}); // Cache for parent profiles
+  const [loadingParents, setLoadingParents] = useState(true);
+
+  // Load all parent profiles when component mounts
+  useEffect(() => {
+    const loadParentProfiles = async () => {
+      try {
+        setLoadingParents(true);
+        const parents = await StudentDetailsService.getAllParentProfiles();
+        
+        // Convert array to object map for faster lookups
+        const parentMap = {};
+        parents.forEach(parent => {
+          if (parent && parent._id) {
+            parentMap[parent._id] = parent;
+          }
+        });
+        
+        setParentProfiles(parentMap);
+        console.log("Loaded parent profiles:", Object.keys(parentMap).length);
+      } catch (error) {
+        console.error("Error loading parent profiles:", error);
+      } finally {
+        setLoadingParents(false);
+      }
+    };
+    
+    loadParentProfiles();
+  }, []);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -168,7 +198,82 @@ const ViewStudent = () => {
 
     // If student has parentId but parent info wasn't included directly
     if (student?.parentId) {
-      return <ParentInfoLoader parentId={student.parentId} />;
+      // Convert ObjectId format if needed
+      let parentIdStr = student.parentId;
+      if (typeof student.parentId === 'object' && student.parentId.$oid) {
+        parentIdStr = student.parentId.$oid;
+      }
+      
+      // Check if we have the parent profile in our cache
+      const parentProfile = parentProfiles[parentIdStr];
+      
+      if (parentProfile) {
+        // Display the cached parent profile
+        return (
+          <div className="parent-info-section">
+            <div className="parent-header">
+              <h3>Parent Information</h3>
+            </div>
+            <div className="parent-details">
+              <div className="parent-name">
+                <strong>Name:</strong> {`${parentProfile.firstName || ''} ${parentProfile.middleName ? parentProfile.middleName + ' ' : ''}${parentProfile.lastName || ''}`.trim() || 'Not provided'}
+              </div>
+              {parentProfile.email && (
+                <div className="parent-email">
+                  <strong>Email:</strong> {parentProfile.email}
+                </div>
+              )}
+              {parentProfile.contact && (
+                <div className="parent-contact">
+                  <strong>Contact:</strong> {parentProfile.contact}
+                </div>
+              )}
+              {parentProfile.contactNumber && !parentProfile.contact && (
+                <div className="parent-contact">
+                  <strong>Contact:</strong> {parentProfile.contactNumber}
+                </div>
+              )}
+              {parentProfile.address && (
+                <div className="parent-address">
+                  <strong>Address:</strong> {parentProfile.address}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+      
+      // If not in cache yet but still loading, show loading indicator
+      if (loadingParents) {
+        return (
+          <div className="parent-info-section">
+            <div className="parent-header">
+              <h3>Parent Information</h3>
+            </div>
+            <div className="parent-loading">
+              <div className="vs-loading-spinner"></div>
+              <p>Loading parent information...</p>
+            </div>
+          </div>
+        );
+      }
+      
+      // If we've finished loading but still don't have the parent info
+      return (
+        <div className="parent-info-section">
+          <div className="parent-header">
+            <h3>Parent Information</h3>
+          </div>
+          <div className="parent-details">
+            <div className="parent-name">
+              <strong>Parent ID:</strong> {parentIdStr}
+            </div>
+            <div className="parent-fetch-error">
+              <em>Could not retrieve detailed parent information</em>
+            </div>
+          </div>
+        </div>
+      );
     }
 
     return (
@@ -262,22 +367,17 @@ const ViewStudent = () => {
       }
     }
 
-    // For parentId - try to look up in the parent data from the JSON
+    // For parentId - try to look up in the cached parent data
     if (student.parentId) {
-      // Load all known parent profiles
-      // Updated with complete parent data from the MongoDB collection
-      const parentProfiles = [
-        { _id: "681a2933af165878136e05da", firstName: "Jan Mark", middleName: "Percival", lastName: "Caram" },
-        { _id: "6827575c89b0d728f9333a20", firstName: "Kit Nicholas", middleName: "Tongol", lastName: "Santiago" },
-        { _id: "682ca15af0bfb8e632bdfd13", firstName: "Rain", middleName: "Percival", lastName: "Aganan" },
-        { _id: "682d75b9f7897b64cec98cc7", firstName: "Kit Nicholas", middleName: "Rish", lastName: "Aganan" },
-        { _id: "6830d880779e20b64f720f44", firstName: "Kit Nicholas", middleName: "Pascual", lastName: "Caram" },
-        { _id: "6835ef1645a2af9158a6d5b7", firstName: "Pia", middleName: "Zop", lastName: "Rey" }
-      ];
-
-      // Find matching parent
-      const matchedParent = parentProfiles.find(p => p._id === student.parentId);
+      // Convert ObjectId format if needed
+      let parentIdStr = student.parentId;
+      if (typeof student.parentId === 'object' && student.parentId.$oid) {
+        parentIdStr = student.parentId.$oid;
+      }
+      
+      const matchedParent = parentProfiles[parentIdStr];
       if (matchedParent) {
+        // Format the full name properly
         return `${matchedParent.firstName || ''} ${matchedParent.middleName ? matchedParent.middleName + ' ' : ''}${matchedParent.lastName || ''}`.trim();
       }
       
@@ -291,9 +391,13 @@ const ViewStudent = () => {
         return student.parentEmail;
       }
       
-      // If we reach here, the parent has an ID but we don't have their full info yet
-      // Instead of just showing "Registered", show partial ID for reference
-      return `Registered Parent (ID: ${student.parentId.substring(0, 6)}...)`;
+      // If we're still loading parent data, show loading indicator
+      if (loadingParents) {
+        return "Loading parent info...";
+      }
+      
+      // If parent ID exists but we couldn't find parent data
+      return `Parent ID: ${parentIdStr.substring(0, 6)}...`;
     }
 
     return 'Not registered';
