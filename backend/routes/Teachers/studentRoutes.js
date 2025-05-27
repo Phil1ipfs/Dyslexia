@@ -80,6 +80,9 @@ router.get('/:id/parent-info', auth, authorize('teacher', 'admin'), studentContr
 // Get category results for a student (Manage Progress Post Assessment)
 router.get('/:id/category-results', auth, authorize('teacher', 'admin'), studentController.getCategoryResults);
 
+// Get reading level progress data for a student
+router.get('/:id/reading-level-progress', auth, authorize('teacher', 'admin'), studentController.getReadingLevelProgress);
+
 // NEW PRE-ASSESSMENT ROUTES
 router.get('/:id/pre-assessment-results', auth, authorize('teacher', 'admin'), preAssessmentController.getPreAssessmentResults);
 router.get('/:id/pre-assessment-status', auth, authorize('teacher', 'admin'), preAssessmentController.getStudentPreAssessmentStatus);

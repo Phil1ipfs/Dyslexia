@@ -188,6 +188,78 @@ const StudentDetailsService = {
         }
     },
 
+    // Reading level progress data
+    getReadingLevelProgress: async (id) => {
+        try {
+            const { data } = await api.get(`/${id}/reading-level-progress`);
+            console.log(`Successfully fetched reading level progress for ID ${id}`);
+            return data;
+        } catch (error) {
+            console.error(`Error fetching reading level progress for ID ${id}:`, error);
+            
+            // Try alternate endpoint
+            try {
+                console.log(`Trying alternate endpoint for reading level progress with ID ${id}`);
+                const { data } = await directApi.get(`/student/${id}/reading-level-progress`);
+                console.log(`Successfully fetched reading level progress from alternate endpoint for ID ${id}`);
+                return data;
+            } catch (alternateError) {
+                console.error(`Error fetching reading level progress from alternate endpoint for ID ${id}:`, alternateError);
+                
+                // Return empty progress data as fallback
+                return {
+                    studentId: id,
+                    readingLevel: 'Not Assessed',
+                    lastAssessmentDate: null,
+                    categories: [],
+                    overallScore: 0,
+                    allCategoriesPassed: false
+                };
+            }
+        }
+    },
+
+    // Add the getMainAssessment method after the getReadingLevelProgress method
+    getMainAssessment: async (readingLevel) => {
+        try {
+            const { data } = await directApi.get('/main-assessment', {
+                params: { readingLevel }
+            });
+            console.log(`Successfully fetched main assessment data for reading level ${readingLevel}`);
+            return data;
+        } catch (error) {
+            console.error(`Error fetching main assessment data for reading level ${readingLevel}:`, error);
+            
+            // Try alternate endpoint
+            try {
+                console.log(`Trying alternate endpoint for main assessment data with reading level ${readingLevel}`);
+                const { data } = await directApi.get(`/student/main-assessment?readingLevel=${readingLevel}`);
+                console.log(`Successfully fetched main assessment data from alternate endpoint for reading level ${readingLevel}`);
+                return data;
+            } catch (alternateError) {
+                console.error(`Error fetching main assessment data from alternate endpoint for reading level ${readingLevel}:`, alternateError);
+                
+                // Return empty data as fallback
+                return [];
+            }
+        }
+    },
+
+    // Add the getCategoryResults method to fetch individual question results
+    getCategoryResults: async (studentId, categoryName = null) => {
+        try {
+            let url = `${directApi.baseURL}/category_results?studentId=${studentId}`;
+            if (categoryName) {
+                url += `&categoryName=${categoryName}`;
+            }
+            const response = await axios.get(url);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching category results:', error);
+            return null;
+        }
+    },
+
     // Parent profile
     getParentProfile: async (parentId) => {
         try {

@@ -1,4 +1,3 @@
-// src/pages/Teachers/StudentDetails.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   FaArrowLeft,
@@ -58,7 +57,7 @@ const StudentDetails = () => {
   const [readingLevelProgress, setReadingLevelProgress] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const questionsPerPage = 9;
+  const questionsPerPage = 5;
 
   // Default progress report
   const defaultProgress = {
@@ -83,9 +82,6 @@ const StudentDetails = () => {
 
   // Add a new state variable for assessment questions
   const [assessmentQuestions, setAssessmentQuestions] = useState({});
-
-  // Add a new state variable for category results
-  const [categoryResults, setCategoryResults] = useState({});
 
   const isParentConnected = () => {
     return (
@@ -161,25 +157,6 @@ const StudentDetails = () => {
         setPrescriptiveRecommendations(recs);
         setReadingLevelProgress(readingProgressData);
         console.log("Reading level progress data loaded:", readingProgressData);
-
-        // Fetch category results for detailed question answers
-        try {
-          const categoryResultsData = await StudentDetailsService.getCategoryResults(studentId);
-          console.log("Category results loaded:", categoryResultsData);
-          
-          // Organize category results by category name for easier access
-          if (categoryResultsData && Array.isArray(categoryResultsData)) {
-            const resultsByCategory = {};
-            categoryResultsData.forEach(categoryResult => {
-              if (categoryResult.categoryName) {
-                resultsByCategory[categoryResult.categoryName] = categoryResult;
-              }
-            });
-            setCategoryResults(resultsByCategory);
-          }
-        } catch (error) {
-          console.error("Error fetching category results:", error);
-        }
 
         // Now fetch main assessment data based on student's reading level
         if (studentData && studentData.readingLevel && studentData.readingLevel !== 'Not Assessed') {
@@ -398,13 +375,13 @@ const StudentDetails = () => {
         const incorrectAnswers = totalQuestions - correctAnswers;
         
         return {
-      id: skill.id || Math.random().toString(36).substr(2, 9),
-      code: skill.category === 'Patinig' ? 'Pa' :
-        skill.category === 'Pantig' ? 'Pg' :
-          skill.category === 'Pagkilala ng Salita' ? 'PS' :
-            skill.category === 'Pag-unawa sa Binasa' ? 'PB' : 'RL',
-      name: skill.category,
-      score: skill.score || 0,
+          id: skill.id || Math.random().toString(36).substr(2, 9),
+          code: skill.category === 'Patinig' ? 'Pa' :
+            skill.category === 'Pantig' ? 'Pg' :
+              skill.category === 'Pagkilala ng Salita' ? 'PS' :
+                skill.category === 'Pag-unawa sa Binasa' ? 'PB' : 'RL',
+          name: skill.category,
+          score: skill.score || 0,
           correctAnswers: correctAnswers,
           incorrectAnswers: incorrectAnswers,
           totalQuestions: totalQuestions,
@@ -492,42 +469,41 @@ const StudentDetails = () => {
     return 'Parent';
   };
 
-  // In StudentDetails.jsx, update the renderParentImage function:
-const renderParentImage = () => {
-  if (parentProfile && parentProfile.profileImageUrl) {
+  const renderParentImage = () => {
+    if (parentProfile && parentProfile.profileImageUrl) {
+      return (
+        <div className="sdx-parent-avatar">
+          <img
+            src={parentProfile.profileImageUrl}
+            alt={getParentName()}
+            className="sdx-parent-avatar-img"
+            onLoad={handleParentImageLoad}
+            onError={handleParentImageError}
+          />
+          {parentImageError && retryCount < MAX_RETRIES && (
+            <div className="sdx-image-retry" onClick={retryLoadImage}>
+              <FaSync size={14} /> Retry
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const initial = parentProfile && parentProfile.name ?
+      parentProfile.name.charAt(0).toUpperCase() :
+      typeof student.parent === 'string' ?
+        student.parent.charAt(0).toUpperCase() :
+        student.parent && student.parent.name ?
+          student.parent.name.charAt(0).toUpperCase() : 'P';
+
     return (
-      <div className="sdx-parent-avatar">
-        <img
-          src={parentProfile.profileImageUrl}
-          alt={getParentName()}
-          className="sdx-parent-avatar-img"
-          onLoad={handleParentImageLoad}
-          onError={handleParentImageError}
-        />
-        {parentImageError && retryCount < MAX_RETRIES && (
-          <div className="sdx-image-retry" onClick={retryLoadImage}>
-            <FaSync size={14} /> Retry
-          </div>
-        )}
+      <div className="sdx-parent-avatar-placeholder">
+        {initial}
       </div>
     );
-  }
+  };
 
-  const initial = parentProfile && parentProfile.name ?
-    parentProfile.name.charAt(0).toUpperCase() :
-    typeof student.parent === 'string' ?
-      student.parent.charAt(0).toUpperCase() :
-      student.parent && student.parent.name ?
-        student.parent.name.charAt(0).toUpperCase() : 'P';
-
-  return (
-    <div className="sdx-parent-avatar-placeholder">
-      {initial}
-    </div>
-  );
-};
-
-  // Add these functions for category selection and pagination
+  // Move these functions inside the component
   const handleCategorySelect = (categoryName) => {
     setSelectedCategory(categoryName);
     setCurrentPage(1);
@@ -540,45 +516,7 @@ const renderParentImage = () => {
     
     // First try to get questions from assessmentQuestions
     if (assessmentQuestions && assessmentQuestions[selectedCategory]) {
-      const questions = assessmentQuestions[selectedCategory];
-      
-      // Check if we have category results for this category
-      const categoryResult = categoryResults[selectedCategory];
-      
-      if (categoryResult && categoryResult.categoryResults && Array.isArray(categoryResult.categoryResults)) {
-        // Create a map of the student's answers by question ID
-        const studentAnswers = {};
-        categoryResult.categoryResults.forEach(result => {
-          if (result.questionId) {
-            studentAnswers[result.questionId] = result;
-          }
-        });
-        
-        // Merge the questions with the student's answers
-        return questions.map((question, index) => {
-          // Generate a question ID based on its position (q1, q2, etc.)
-          const questionId = `q${index + 1}`;
-          const studentAnswer = studentAnswers[questionId];
-          
-          return {
-            ...question,
-            questionId: questionId,
-            studentAnswer: studentAnswer?.selectedOption || null,
-            answeredCorrectly: studentAnswer?.isCorrect || false,
-            // Add a studentAnswered property to check if the student answered this question
-            studentAnswered: Boolean(studentAnswer)
-          };
-        });
-      }
-      
-      // If no category results, just return the questions with default values
-      return questions.map((question, index) => ({
-        ...question,
-        questionId: `q${index + 1}`,
-        studentAnswer: null,
-        answeredCorrectly: false,
-        studentAnswered: false
-      }));
+      return assessmentQuestions[selectedCategory];
     }
     
     // Fallback to readingLevelProgress if we don't have data in assessmentQuestions
@@ -588,3 +526,54 @@ const renderParentImage = () => {
     }
     
     return [];
+  };
+
+  const handleNextPage = () => {
+    const questions = getQuestionsForCategory();
+    const totalPages = Math.ceil(questions.length / questionsPerPage);
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Render loading state
+  if (loading) {
+    return (
+      <div className="sdx-container">
+        <div className="vs-loading">
+          <div className="vs-loading-spinner"></div>
+          <p>Loading student details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Render "not found" state
+  if (!student) {
+    return (
+      <div className="sdx-container">
+        <div className="vs-no-results">
+          <p>Student not found.</p>
+          <button className="sdx-back-btn" onClick={goBack}>
+            <FaArrowLeft /> Back to Student List
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Main component render
+  return (
+    <div className="sdx-container">
+      {/* Component JSX continues here... */}
+    </div>
+  );
+};
+
+export default StudentDetails; 

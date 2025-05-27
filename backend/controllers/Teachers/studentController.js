@@ -731,6 +731,133 @@ exports.getCategoryResults = async (req, res) => {
   }
 };
 
+// Get reading level progress for a student
+exports.getReadingLevelProgress = async (req, res) => {
+  try {
+    const id = req.params.id;
+    
+    // Get the test database
+    const testDb = mongoose.connection.useDb('test');
+    const usersCollection = testDb.collection('users');
+    const categoryResultsCollection = testDb.collection('category_results');
+    const mainAssessmentCollection = testDb.collection('main_assessment');
+    
+    // Find the student 
+    const student = await usersCollection.findOne({
+      $or: [
+        { _id: mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null },
+        { idNumber: parseInt(id) || id }
+      ]
+    });
+    
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+    
+    // Get the student's reading level
+    const readingLevel = student.readingLevel || 'Not Assessed';
+    
+    // Find the latest category results for this student
+    const categoryResults = await categoryResultsCollection
+      .find({ 
+        $or: [
+          { studentId: student._id },
+          { studentId: student.idNumber }
+        ]
+      })
+      .sort({ assessmentDate: -1, createdAt: -1 })
+      .limit(1)
+      .toArray();
+    
+    // Get all assessment data for the student's reading level
+    const assessmentData = await mainAssessmentCollection
+      .find({ readingLevel: readingLevel })
+      .toArray();
+      
+    // Group assessment data by category
+    const assessmentsByCategory = {};
+    assessmentData.forEach(assessment => {
+      if (!assessmentsByCategory[assessment.category]) {
+        assessmentsByCategory[assessment.category] = assessment;
+      }
+    });
+    
+    // If no category results found, create empty progress data
+    if (categoryResults.length === 0) {
+      const progressData = {
+        studentId: id,
+        readingLevel: readingLevel,
+        lastAssessmentDate: student.lastAssessmentDate || null,
+        categories: Object.keys(assessmentsByCategory).map(category => ({
+          category: category,
+          totalQuestions: assessmentsByCategory[category].questions.length,
+          correctAnswers: 0,
+          score: 0,
+          isPassed: false,
+          passingThreshold: 75,
+          questions: assessmentsByCategory[category].questions.map(q => ({
+            questionType: q.questionType,
+            questionText: q.questionText,
+            questionValue: q.questionValue,
+            order: q.order,
+            isCorrect: false
+          }))
+        }))
+      };
+      
+      return res.json(progressData);
+    }
+    
+    // Get the latest category result
+    const latestResult = categoryResults[0];
+    
+    // Create the progress data structure with detailed information
+    const progressData = {
+      studentId: id,
+      readingLevel: readingLevel,
+      lastAssessmentDate: latestResult.assessmentDate || latestResult.createdAt,
+      overallScore: latestResult.overallScore,
+      allCategoriesPassed: latestResult.allCategoriesPassed,
+      categories: []
+    };
+    
+    // Map categories from results to assessment questions
+    if (latestResult.categories && latestResult.categories.length > 0) {
+      progressData.categories = latestResult.categories.map(category => {
+        const assessmentCategory = assessmentsByCategory[category.categoryName];
+        
+        // Create category data with detailed questions
+        return {
+          category: category.categoryName,
+          totalQuestions: category.totalQuestions,
+          correctAnswers: category.correctAnswers,
+          score: category.score,
+          isPassed: category.isPassed,
+          passingThreshold: category.passingThreshold || 75,
+          questions: assessmentCategory ? assessmentCategory.questions.map(q => ({
+            questionType: q.questionType,
+            questionText: q.questionText,
+            questionValue: q.questionValue,
+            order: q.order,
+            // We don't have specific correct/incorrect info per question
+            // This would need to be stored in actual assessment responses
+            isCorrect: null,
+            choiceOptions: q.choiceOptions
+          })) : []
+        };
+      });
+    }
+    
+    return res.json(progressData);
+  } catch (error) {
+    console.error(`Error fetching reading level progress for student ID ${req.params.id}:`, error);
+    res.status(500).json({ 
+      message: 'Error fetching reading level progress', 
+      error: error.message 
+    });
+  }
+};
+
 // Helper method to get user by ID
 exports.getUserById = async function(id) {
   try {

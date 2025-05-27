@@ -873,6 +873,91 @@ connectDB().then(async (connected) => {
       }
     });
 
+    // Get main assessment questions by reading level
+    app.get('/api/main-assessment', async (req, res) => {
+      try {
+        const { readingLevel } = req.query;
+        
+        if (!readingLevel) {
+          return res.status(400).json({ message: 'Reading level parameter is required' });
+        }
+        
+        // Get the test database
+        const testDb = mongoose.connection.useDb('test');
+        const mainAssessmentCollection = testDb.collection('main_assessment');
+        
+        // Find all assessment items for this reading level
+        const assessmentItems = await mainAssessmentCollection
+          .find({ readingLevel })
+          .toArray();
+        
+        if (!assessmentItems || assessmentItems.length === 0) {
+          return res.status(404).json({ 
+            message: `No assessment items found for reading level: ${readingLevel}` 
+          });
+        }
+        
+        return res.json(assessmentItems);
+      } catch (error) {
+        console.error('Error fetching main assessment data:', error);
+        res.status(500).json({ 
+          message: 'Error fetching main assessment data', 
+          error: error.message 
+        });
+      }
+    });
+
+    // Also add the endpoint to the student routes for alternative access
+    app.get('/api/student/main-assessment', async (req, res) => {
+      try {
+        const { readingLevel } = req.query;
+        
+        if (!readingLevel) {
+          return res.status(400).json({ message: 'Reading level parameter is required' });
+        }
+        
+        // Get the test database
+        const testDb = mongoose.connection.useDb('test');
+        const mainAssessmentCollection = testDb.collection('main_assessment');
+        
+        // Find all assessment items for this reading level
+        const assessmentItems = await mainAssessmentCollection
+          .find({ readingLevel })
+          .toArray();
+        
+        if (!assessmentItems || assessmentItems.length === 0) {
+          // Provide fallback data if no items found
+          const fallbackItems = [
+            {
+              readingLevel,
+              category: "Phonological Awareness",
+              questions: [
+                {
+                  questionType: "malapantig",
+                  questionText: "Kapag pinagsama ang mga pantig, ano ang mabubuo?",
+                  questionValue: "BO + LA",
+                  choiceOptions: [
+                    { optionText: "BOLA", isCorrect: true },
+                    { optionText: "LABO", isCorrect: false }
+                  ],
+                  order: 1
+                }
+              ]
+            }
+          ];
+          return res.json(fallbackItems);
+        }
+        
+        return res.json(assessmentItems);
+      } catch (error) {
+        console.error('Error fetching main assessment data:', error);
+        res.status(500).json({ 
+          message: 'Error fetching main assessment data', 
+          error: error.message 
+        });
+      }
+    });
+
     // 404 handler
     app.use((req, res) => {
       console.log(`[404] Route not found: ${req.method} ${req.url}`);
