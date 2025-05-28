@@ -3,7 +3,9 @@ import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
 // https://vitejs.dev/config/
-export default defineConfig(({ command }) => {
+export default defineConfig(({ command, mode }) => {
+  const isProd = mode === 'production';
+  
   const config = {
     plugins: [react()],
     resolve: {
@@ -23,7 +25,8 @@ export default defineConfig(({ command }) => {
           target: 'http://localhost:5001',
           changeOrigin: true,
           secure: false,
-          ws: true
+          ws: true,
+          rewrite: (path) => path
         }
       },
       // Allow connections from local network
@@ -31,7 +34,7 @@ export default defineConfig(({ command }) => {
     },
     build: {
       outDir: 'dist',
-      sourcemap: process.env.NODE_ENV !== 'production',
+      sourcemap: false,
       // Copy files from public to dist
       copyPublicDir: true,
       // Generate service worker
@@ -53,10 +56,17 @@ export default defineConfig(({ command }) => {
     }
   };
   
-  // Workaround for 404 issues in production
-  if (command === 'build') {
+  // Production specific settings
+  if (isProd) {
     // Ensure paths to assets work correctly in production
     config.base = './';
+    
+    // Provide consistent API URLs in production
+    // This ensures all URLs are relative to the deployed domain
+    config.define = {
+      ...config.define,
+      'import.meta.env.VITE_API_URL': JSON.stringify('')
+    };
   }
   
   return config;

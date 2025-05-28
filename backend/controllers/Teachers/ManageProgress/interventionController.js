@@ -529,6 +529,30 @@ class InterventionController {
       });
     }
   }
+
+  /**
+   * Update all existing interventions to add descriptions and link to prescriptive analyses
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async updateExistingInterventions(req, res) {
+    try {
+      const result = await InterventionService.updateExistingInterventions();
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Existing interventions updated successfully',
+        data: result
+      });
+    } catch (error) {
+      console.error('Error updating existing interventions:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error updating existing interventions',
+        error: error.message
+      });
+    }
+  }
 }
 
 // Export the class itself, not an instance

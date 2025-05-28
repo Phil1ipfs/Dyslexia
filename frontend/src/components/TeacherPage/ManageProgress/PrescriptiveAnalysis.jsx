@@ -273,13 +273,39 @@ const PrescriptiveAnalysis = ({
     
     if (!categoryName) return null;
     
+    // Get student ID
+    const studentId = student?._id || student?.id || studentId;
+    
     // Normalize category name for comparison
     const normalizedCategory = categoryName
       .replace(/_/g, ' ')
       .replace(/\b\w/g, l => l.toUpperCase());
     
-    // If we have analysis data from the API, try to find a match
+    // If we have analysis data from the API or MongoDB, find a match
     if (liveAnalyses && liveAnalyses.length > 0) {
+      // First, try to find MongoDB format analysis by matching studentId and categoryId
+      const mongoDbAnalysis = liveAnalyses.find(analysis => {
+        // Check if this is MongoDB format
+        if (analysis && analysis.studentId && analysis.categoryId) {
+          const analysisStudentId = typeof analysis.studentId === 'object' && analysis.studentId.$oid 
+            ? analysis.studentId.$oid
+            : analysis.studentId;
+            
+          // Match both student ID and category ID
+          return (
+            (studentId && analysisStudentId === studentId) &&
+            (analysis.categoryId === categoryName || analysis.categoryId === normalizedCategory)
+          );
+        }
+        return false;
+      });
+      
+      if (mongoDbAnalysis) {
+        console.log('Found MongoDB analysis for student and category:', mongoDbAnalysis);
+        return mongoDbAnalysis;
+      }
+      
+      // If no MongoDB match found, try alternative matching approaches
       // Try to match by exact categoryId or category first
       let analysis = liveAnalyses.find(analysis => 
         (analysis && analysis.categoryId === categoryName) ||

@@ -155,6 +155,54 @@ class InterventionService {
         throw new Error('An intervention for this student and category already exists');
       }
       
+      // Find the appropriate prescriptive analysis for this student and category
+      if (!interventionData.prescriptiveAnalysisId) {
+        const prescriptiveAnalysis = await PrescriptiveAnalysis.findOne({
+          studentId: interventionData.studentId,
+          categoryId: interventionData.category
+        });
+        
+        if (prescriptiveAnalysis) {
+          console.log(`Found matching prescriptive analysis: ${prescriptiveAnalysis._id}`);
+          interventionData.prescriptiveAnalysisId = prescriptiveAnalysis._id;
+        } else {
+          console.log(`No prescriptive analysis found for student ${interventionData.studentId} and category ${interventionData.category}`);
+        }
+      }
+      
+      // Add default descriptions for choices if not provided
+      if (interventionData.questions && Array.isArray(interventionData.questions)) {
+        interventionData.questions = interventionData.questions.map(question => {
+          if (question.choices && Array.isArray(question.choices)) {
+            question.choices = question.choices.map(choice => {
+              if (!choice.description) {
+                // Add default descriptions based on whether the choice is correct
+                if (choice.isCorrect) {
+                  choice.description = `Correct! "${choice.optionText}" is the right answer.`;
+                } else {
+                  choice.description = `Incorrect. Try again and listen carefully to the sound.`;
+                  
+                  // Add more specific feedback based on question type
+                  if (question.questionType === 'patinig') {
+                    choice.description = `Incorrect. This is not the right vowel sound. Listen carefully and try again.`;
+                  } else if (question.questionType === 'katinig') {
+                    choice.description = `Incorrect. This is not the right consonant sound. Listen carefully and try again.`;
+                  } else if (question.questionType === 'malapantig') {
+                    choice.description = `Incorrect. This is not the right syllable. Listen to the whole word and try again.`;
+                  } else if (question.questionType === 'word') {
+                    choice.description = `Incorrect. This is not the right word. Look at the letters carefully and try again.`;
+                  } else if (question.questionType === 'sentence') {
+                    choice.description = `Incorrect. This is not the right answer. Read the passage again carefully.`;
+                  }
+                }
+              }
+              return choice;
+            });
+          }
+          return question;
+        });
+      }
+      
       // Create the intervention
       const intervention = new InterventionPlan(interventionData);
       await intervention.save();
@@ -178,16 +226,65 @@ class InterventionService {
         throw new Error('Invalid intervention ID format');
       }
       
+      // Find the intervention first to check current state
+      const existingIntervention = await InterventionPlan.findById(interventionId);
+      
+      if (!existingIntervention) {
+        throw new Error('Intervention not found');
+      }
+      
+      // If prescriptiveAnalysisId is not provided, check if we should find it
+      if (!existingIntervention.prescriptiveAnalysisId && !updateData.prescriptiveAnalysisId) {
+        const prescriptiveAnalysis = await PrescriptiveAnalysis.findOne({
+          studentId: existingIntervention.studentId,
+          categoryId: existingIntervention.category
+        });
+        
+        if (prescriptiveAnalysis) {
+          console.log(`Found matching prescriptive analysis for update: ${prescriptiveAnalysis._id}`);
+          updateData.prescriptiveAnalysisId = prescriptiveAnalysis._id;
+        }
+      }
+      
+      // If questions are being updated, make sure descriptions are maintained
+      if (updateData.questions && Array.isArray(updateData.questions)) {
+        updateData.questions = updateData.questions.map(question => {
+          if (question.choices && Array.isArray(question.choices)) {
+            question.choices = question.choices.map(choice => {
+              if (!choice.description) {
+                // Add default descriptions based on whether the choice is correct
+                if (choice.isCorrect) {
+                  choice.description = `Correct! "${choice.optionText}" is the right answer.`;
+                } else {
+                  choice.description = `Incorrect. Try again and listen carefully to the sound.`;
+                  
+                  // Add more specific feedback based on question type
+                  if (question.questionType === 'patinig') {
+                    choice.description = `Incorrect. This is not the right vowel sound. Listen carefully and try again.`;
+                  } else if (question.questionType === 'katinig') {
+                    choice.description = `Incorrect. This is not the right consonant sound. Listen carefully and try again.`;
+                  } else if (question.questionType === 'malapantig') {
+                    choice.description = `Incorrect. This is not the right syllable. Listen to the whole word and try again.`;
+                  } else if (question.questionType === 'word') {
+                    choice.description = `Incorrect. This is not the right word. Look at the letters carefully and try again.`;
+                  } else if (question.questionType === 'sentence') {
+                    choice.description = `Incorrect. This is not the right answer. Read the passage again carefully.`;
+                  }
+                }
+              }
+              return choice;
+            });
+          }
+          return question;
+        });
+      }
+      
       // Find and update the intervention
       const intervention = await InterventionPlan.findByIdAndUpdate(
         interventionId,
         { $set: { ...updateData, updatedAt: new Date() } },
         { new: true, runValidators: true }
       );
-      
-      if (!intervention) {
-        throw new Error('Intervention not found');
-      }
       
       // If questions were updated, update the total activities in progress
       if (updateData.questions) {
@@ -568,6 +665,26 @@ class InterventionService {
     try {
       // Create the response record
       const response = new InterventionResponse(responseData);
+      
+      // Get intervention to determine total questions and get feedback
+      const intervention = await InterventionPlan.findById(responseData.interventionPlanId);
+      
+      if (!intervention) {
+        throw new Error('Intervention not found');
+      }
+      
+      // Find the question and choice to get the description
+      if (intervention.questions && Array.isArray(intervention.questions)) {
+        const question = intervention.questions.find(q => q.questionId === responseData.questionId);
+        if (question && question.choices && Array.isArray(question.choices)) {
+          const choice = question.choices.find(c => c.optionText === responseData.selectedChoice);
+          if (choice && choice.description) {
+            // Add the description to the response
+            response.feedbackDescription = choice.description;
+          }
+        }
+      }
+      
       await response.save();
       
       // Update progress
@@ -578,13 +695,6 @@ class InterventionService {
       
       if (!progress) {
         throw new Error('Progress record not found');
-      }
-      
-      // Get intervention to determine total questions
-      const intervention = await InterventionPlan.findById(responseData.interventionPlanId);
-      
-      if (!intervention) {
-        throw new Error('Intervention not found');
       }
       
       // Update progress metrics
@@ -617,6 +727,118 @@ class InterventionService {
       return { response, progress };
     } catch (error) {
       console.error('Error recording response:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Update all existing interventions to add descriptions and link to prescriptive analyses
+   * @returns {Promise<Object>} - Result of the update operation
+   */
+  async updateExistingInterventions() {
+    try {
+      // Get all interventions
+      const interventions = await InterventionPlan.find({});
+      console.log(`Found ${interventions.length} interventions to check and update`);
+      
+      let updatedCount = 0;
+      let prescriptiveAnalysisLinkedCount = 0;
+      let choiceDescriptionsAddedCount = 0;
+      
+      // Process each intervention
+      for (const intervention of interventions) {
+        let needsUpdate = false;
+        let interventionData = intervention.toObject();
+        
+        // Check if prescriptiveAnalysisId is missing
+        if (!intervention.prescriptiveAnalysisId) {
+          const prescriptiveAnalysis = await PrescriptiveAnalysis.findOne({
+            studentId: intervention.studentId,
+            categoryId: intervention.category
+          });
+          
+          if (prescriptiveAnalysis) {
+            console.log(`Found matching prescriptive analysis for intervention ${intervention._id}: ${prescriptiveAnalysis._id}`);
+            interventionData.prescriptiveAnalysisId = prescriptiveAnalysis._id;
+            needsUpdate = true;
+            prescriptiveAnalysisLinkedCount++;
+          }
+        }
+        
+        // Check if descriptions are missing in choices
+        if (intervention.questions && Array.isArray(intervention.questions)) {
+          let questionsUpdated = false;
+          
+          interventionData.questions = intervention.questions.map(question => {
+            let questionObj = question.toObject ? question.toObject() : { ...question };
+            
+            if (questionObj.choices && Array.isArray(questionObj.choices)) {
+              let choicesUpdated = false;
+              
+              questionObj.choices = questionObj.choices.map(choice => {
+                let choiceObj = choice.toObject ? choice.toObject() : { ...choice };
+                
+                if (!choiceObj.description) {
+                  // Add default descriptions based on whether the choice is correct
+                  if (choiceObj.isCorrect) {
+                    choiceObj.description = `Correct! "${choiceObj.optionText}" is the right answer.`;
+                  } else {
+                    choiceObj.description = `Incorrect. Try again and listen carefully to the sound.`;
+                    
+                    // Add more specific feedback based on question type
+                    if (questionObj.questionType === 'patinig') {
+                      choiceObj.description = `Incorrect. This is not the right vowel sound. Listen carefully and try again.`;
+                    } else if (questionObj.questionType === 'katinig') {
+                      choiceObj.description = `Incorrect. This is not the right consonant sound. Listen carefully and try again.`;
+                    } else if (questionObj.questionType === 'malapantig') {
+                      choiceObj.description = `Incorrect. This is not the right syllable. Listen to the whole word and try again.`;
+                    } else if (questionObj.questionType === 'word') {
+                      choiceObj.description = `Incorrect. This is not the right word. Look at the letters carefully and try again.`;
+                    } else if (questionObj.questionType === 'sentence') {
+                      choiceObj.description = `Incorrect. This is not the right answer. Read the passage again carefully.`;
+                    }
+                  }
+                  
+                  choicesUpdated = true;
+                  choiceDescriptionsAddedCount++;
+                }
+                
+                return choiceObj;
+              });
+              
+              if (choicesUpdated) {
+                questionsUpdated = true;
+              }
+            }
+            
+            return questionObj;
+          });
+          
+          if (questionsUpdated) {
+            needsUpdate = true;
+          }
+        }
+        
+        // Update the intervention if needed
+        if (needsUpdate) {
+          await InterventionPlan.findByIdAndUpdate(
+            intervention._id,
+            { $set: { ...interventionData, updatedAt: new Date() } },
+            { runValidators: true }
+          );
+          
+          updatedCount++;
+        }
+      }
+      
+      return {
+        totalInterventions: interventions.length,
+        updatedInterventions: updatedCount,
+        prescriptiveAnalysisLinked: prescriptiveAnalysisLinkedCount,
+        choiceDescriptionsAdded: choiceDescriptionsAddedCount
+      };
+    } catch (error) {
+      console.error('Error updating existing interventions:', error);
       throw error;
     }
   }

@@ -1,11 +1,15 @@
 // src/services/Teachers/ViewStudentService.js
 import axios from 'axios';
 
+// Detect production environment
+const isProd = import.meta.env.PROD;
+
+// API base URL configuration that works in both dev and production
+const API_BASE = import.meta.env.VITE_API_URL || (isProd ? '' : 'http://localhost:5001');
+
 // Create axios instance with baseURL, timeouts, JSON headers
 const api = axios.create({
-  baseURL: import.meta.env.DEV
-    ? 'http://localhost:5001/api/student'
-    : '/api/student',
+  baseURL: `${API_BASE}/api/student`,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -15,9 +19,7 @@ const api = axios.create({
 
 // Create a separate instance for direct backend calls
 const directApi = axios.create({
-  baseURL: import.meta.env.DEV
-    ? 'http://localhost:5001/api'
-    : '/api',
+  baseURL: `${API_BASE}/api`,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
