@@ -16,7 +16,9 @@ import {
   Eye,
   GraduationCap,
   School,
-  UserSquare2
+  UserSquare2,
+  PieChart,
+  Book
 } from 'lucide-react';
 import './NavigationBar.css';
 // For public folder approach, remove the import line and use direct path
@@ -113,6 +115,16 @@ const NavigationBar = ({ onLogout }) => {
         { id: 'student-list', label: 'Student List', path: '/admin/student-list', icon: GraduationCap },
         { id: 'teacher-list', label: 'Teacher List', path: '/admin/teacher-list', icon: School },
         { id: 'parent-list', label: 'Parent List', path: '/admin/parent-list', icon: UserSquare2 }
+      ]
+    },
+    {
+      id: 'assessment-results',
+      label: 'Assessments',
+      icon: PieChart,
+      path: '/admin/assessment-results-overview',
+      subItems: [
+        { id: 'pre-assessment', label: 'Pre Assessment', path: '/admin/student-assessments', icon: Book },
+        { id: 'post-assessment', label: 'Post Assessment', path: '/admin/assessment-results-overview', icon: BarChart2 }
       ]
     },
     {

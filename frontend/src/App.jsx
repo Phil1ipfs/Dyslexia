@@ -28,6 +28,9 @@ import SubmissionsOverview from './pages/Admin/SubmissionsOverview';
 import StudentListPage from './pages/Admin/StudentListPage';
 import TeacherListPage from './pages/Admin/TeacherLists';
 import ParentListPage from './pages/Admin/ParentsPage';
+import AssessmentResultsOverview from './pages/Admin/AssessmentResultsOverview';
+import StudentAssessmentResults from './pages/Admin/StudentAssessmentResults';
+import StudentAssessmentsList from './pages/Admin/StudentAssessmentsList';
 
 // Layouts
 import TeacherLayout from "./components/TeacherPage/TeacherLayout";
@@ -257,6 +260,9 @@ function App() {
           <Route path="student-list" element={<StudentListPage />} />
           <Route path="teacher-list" element={<TeacherListPage />} />
           <Route path="parent-list" element={<ParentListPage />} />
+          <Route path="assessment-results-overview" element={<AssessmentResultsOverview />} />
+          <Route path="assessment-results/:id" element={<StudentAssessmentResults />} />
+          <Route path="student-assessments" element={<StudentAssessmentsList />} />
           <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 
