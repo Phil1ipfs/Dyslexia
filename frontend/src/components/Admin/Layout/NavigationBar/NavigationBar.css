@@ -1,71 +1,72 @@
 /* src/components/Admin/Layout/NavigationBar/NavigationBar.css */
-.navigation-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
+.admin-sidebar {
   width: 260px;
   height: 100vh;
   background-color: #465E98;
-  padding: 0;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
   display: flex;
   flex-direction: column;
-  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.3);
-  z-index: 999;
-  transition: width 0.3s ease;
+  color: white;
   font-family: 'Poppins', sans-serif;
-  overflow: hidden;
+  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.3);
 }
 
-.navigation-bar__brand {
-  width: 100%;
-  padding: 1rem 0;
+.admin-sidebar__content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Header with logo and profile */
+.admin-sidebar__header {
+  padding: 1.5rem 1rem;
+}
+
+.admin-sidebar__logo {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
-.navigation-bar__logo-container {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 0.25rem;
-}
-
-.navigation-bar__logo-image {
+.admin-sidebar__logo img {
   width: 90px;
   height: 90px;
   object-fit: contain;
-  margin-bottom: 0.25rem;
 }
 
-.navigation-bar__company-name {
-  color: white;
+.admin-sidebar__logo h1 {
   font-size: 16px;
   font-weight: 600;
-  font-family: 'Poppins', sans-serif;
   text-align: center;
-  white-space: nowrap;
   margin: 0;
+  color: white;
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
-.navigation-bar__profile {
+/* Profile section */
+.admin-sidebar__profile {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem;
   background-color: rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  margin: 0 0.75rem 1.5rem;
+  padding: 0.75rem;
+  margin: 0 0.25rem;
 }
 
-.navigation-bar__avatar {
+.admin-sidebar__avatar {
   width: 45px;
   height: 45px;
   border-radius: 50%;
   overflow: hidden;
   background: linear-gradient(135deg, #87ceeb 0%, #4682b4 100%);
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -73,283 +74,253 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.navigation-bar__avatar-img {
+.admin-sidebar__avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.navigation-bar__avatar-placeholder {
-  color: white;
-  font-weight: bold;
+.admin-sidebar__avatar-placeholder {
   font-size: 1.2rem;
+  font-weight: bold;
+  color: white;
 }
 
-.navigation-bar__profile-info {
+.admin-sidebar__user-info {
   flex: 1;
   overflow: hidden;
 }
 
-.navigation-bar__admin-name {
-  font-weight: 700;
-  color: white;
+.admin-sidebar__name {
   font-size: 1rem;
+  font-weight: 700;
   margin: 0 0 2px 0;
-  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.2;
+  color: white;
 }
 
-.navigation-bar__role {
-  color: #e0e0e0;
+.admin-sidebar__role {
   font-size: 0.85rem;
-  font-weight: 400;
+  color: #e0e0e0;
   margin: 0;
+  font-weight: 400;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.navigation-bar__divider {
-  border: none;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.2);
-  margin: 0.5rem 0;
-  width: 100%;
-}
-
-.navigation-bar__logout-divider {
-  margin-top: 0;
-}
-
-.navigation-bar__menu {
+/* Navigation menu */
+.admin-sidebar__menu {
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden;
-  margin-top: 1rem;
-  padding: 0 1rem 1rem 1.5rem;
+  padding: 1.5rem 1rem;
+  margin-top: 0.5rem;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
 }
 
-.navigation-bar__menu::-webkit-scrollbar {
+.admin-sidebar__menu::-webkit-scrollbar {
   width: 4px;
 }
 
-.navigation-bar__menu::-webkit-scrollbar-track {
+.admin-sidebar__menu::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.navigation-bar__menu::-webkit-scrollbar-thumb {
+.admin-sidebar__menu::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.3);
   border-radius: 4px;
 }
 
-.navigation-bar__section {
-  margin-bottom: 1.3rem;
+.admin-sidebar__section {
+  margin-bottom: 1rem;
 }
 
-.navigation-bar__item {
+.admin-sidebar__nav-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.8rem 0.75rem;
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
   color: white;
   text-decoration: none;
-  border-radius: 10px;
   transition: all 0.3s ease;
-  background: transparent;
-  border: none;
-  width: 130%;
   cursor: pointer;
-  font-size: 0.95rem;
+  width: 100%;
   position: relative;
-  white-space: nowrap;
-  transform-origin: left center;
-  box-sizing: border-box;
 }
 
-.navigation-bar__item:hover {
+.admin-sidebar__nav-item:hover {
   background-color: rgba(255, 204, 0, 0.85);
-  transform: translateX(5px) scale(1.02);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  color: rgb(0, 0, 0);
-  width: 120%;
-  animation: pulse 0.4s ease-in-out;
-}
-
-@keyframes pulse {
-  0% { transform: translateX(0) scale(1); }
-  50% { transform: translateX(5px) scale(1.02); }
-  100% { transform: translateX(5px) scale(1.02); }
-}
-
-.navigation-bar__item--active {
-  background-color: #F3C922;
   transform: translateX(5px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  color: white;
+  color: #000;
 }
 
-.navigation-bar__item--active:hover {
+.admin-sidebar__nav-item--active {
   background-color: #F3C922;
-  animation: none;
+  color: #000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: translateX(5px);
 }
 
-.navigation-bar__item-content {
+.admin-sidebar__item-content {
   display: flex;
   align-items: center;
-  gap: 1.8rem;
+  gap: 1rem;
 }
 
-.navigation-bar__icon {
+.admin-sidebar__icon {
   width: 22px;
   height: 22px;
-  min-width: 22px;
-  flex-shrink: 0;
-  transition: all 0.3s ease;
   opacity: 0.9;
-  filter: brightness(1);
 }
 
-.navigation-bar__item--active .navigation-bar__icon {
-  opacity: 1;
-  filter: brightness(1);
-}
-
-.navigation-bar__label {
+.admin-sidebar__label {
   font-size: 0.95rem;
-  font-weight: 400;
-  line-height: 1.3;
+  font-weight: 500;
 }
 
-.navigation-bar__expand-icon {
+.admin-sidebar__expand-icon {
   color: currentColor;
   opacity: 0.7;
 }
 
-.navigation-bar__submenu {
+/* Submenu */
+.admin-sidebar__submenu {
   margin-left: 2.5rem;
   margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
-.navigation-bar__subitem {
+.admin-sidebar__submenu-item {
   display: flex;
   align-items: center;
+  gap: 0.75rem;
   padding: 0.75rem 1rem;
+  border-radius: 8px;
   color: rgba(255, 255, 255, 0.9);
   text-decoration: none;
-  border-radius: 8px;
   font-size: 0.88rem;
   transition: all 0.3s ease;
   border-left: 2px solid transparent;
-  gap: 0.5rem;
 }
 
-.navigation-bar__subitem-icon {
-  opacity: 0.9;
-}
-
-.navigation-bar__subitem:hover {
+.admin-sidebar__submenu-item:hover {
   background-color: rgba(255, 255, 255, 0.1);
   border-left-color: rgba(249, 199, 79, 0.6);
   transform: translateX(3px);
 }
 
-.navigation-bar__subitem--active {
+.admin-sidebar__submenu-item--active {
   background: rgba(249, 199, 79, 0.2);
   color: #f9c74f;
   border-left-color: #f9c74f;
   font-weight: 500;
 }
 
-.navigation-bar__footer {
-  margin-top: auto;
-  padding: 0 1rem 1rem 1.5rem;
+.admin-sidebar__submenu-icon {
+  width: 18px;
+  height: 18px;
+  opacity: 0.9;
 }
 
-.navigation-bar__logout-btn {
+/* Footer section */
+.admin-sidebar__footer {
+  padding: 1rem;
+  margin-top: auto;
+}
+
+.admin-sidebar__logout-btn {
   width: 100%;
-  padding: 0.8rem 0.8rem 0.9rem;
-  border: none;
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  cursor: pointer;
   display: flex;
   align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  border: none;
   border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
   transition: all 0.3s ease;
-  margin-top: 0.5rem;
-  margin-bottom: 1rem;
+  text-align: left;
 }
 
-.navigation-bar__logout-btn:hover {
+.admin-sidebar__logout-btn:hover {
   background-color: rgba(255, 68, 68, 0.7);
   transform: translateX(2px);
 }
 
-/* Responsive styles */
+/* Make sure the components with the sidebar have proper margin */
+.admin-dashboard-container,
+.admin-user-management-container,
+.admin-analytics-container,
+.admin-student-list-container,
+.admin-teacher-list-container,
+.admin-parent-list-container,
+.admin-submissions-overview-container,
+.admin-assessment-results-container {
+  margin-left: 260px;
+  width: calc(100% - 260px);
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .navigation-bar {
+  .admin-sidebar {
     width: 80px;
   }
   
-  .navigation-bar__logo-image {
+  .admin-sidebar__logo h1,
+  .admin-sidebar__label,
+  .admin-sidebar__user-info,
+  .admin-sidebar__expand-icon,
+  .admin-sidebar__submenu-label {
+    display: none;
+  }
+  
+  .admin-sidebar__logo img {
     width: 50px;
     height: 50px;
-    margin: 0 auto;
   }
   
-  .navigation-bar__company-name {
-    display: none;
-  }
-  
-  .navigation-bar__profile-info {
-    display: none;
-  }
-  
-  .navigation-bar__profile {
+  .admin-sidebar__profile {
     justify-content: center;
-    padding: 0.5rem 0;
+    padding: 0.5rem;
   }
   
-  .navigation-bar__item {
+  .admin-sidebar__nav-item,
+  .admin-sidebar__logout-btn {
     justify-content: center;
     padding: 0.8rem;
-    position: relative;
   }
   
-  .navigation-bar__icon {
-    margin-right: 0;
-  }
-  
-  .navigation-bar__label,
-  .navigation-bar__expand-icon,
-  .navigation-bar__sublabel {
-    display: none;
-  }
-  
-  .navigation-bar__submenu {
+  .admin-sidebar__submenu {
     margin-left: 0;
-    display: flex;
-    flex-direction: column;
     align-items: center;
   }
   
-  .navigation-bar__subitem {
+  .admin-sidebar__submenu-item {
+    justify-content: center;
     padding: 0.75rem;
-    justify-content: center;
   }
   
-  .navigation-bar__logout-btn {
-    justify-content: center;
-    padding: 0.8rem;
-    margin: 0.5rem auto 0.25rem;
-  }
-  
-  .navigation-bar__logout-btn .navigation-bar__label {
-    display: none;
+  .admin-dashboard-container,
+  .admin-user-management-container,
+  .admin-analytics-container,
+  .admin-student-list-container,
+  .admin-teacher-list-container,
+  .admin-parent-list-container,
+  .admin-submissions-overview-container,
+  .admin-assessment-results-container {
+    margin-left: 80px;
+    width: calc(100% - 80px);
   }
 }

@@ -21,8 +21,6 @@ import {
   Book
 } from 'lucide-react';
 import './NavigationBar.css';
-// For public folder approach, remove the import line and use direct path
-// import cradleLogo from '/src/assets/images/cradleLogoTrans.png';
 
 const NavigationBar = ({ onLogout }) => {
   const location = useLocation();
@@ -158,93 +156,97 @@ const NavigationBar = ({ onLogout }) => {
   };
 
   return (
-    <nav className="navigation-bar">
-      <div className="navigation-bar__brand">
-        <div className="navigation-bar__logo-container">
-          <img src="/images/cradleLogoTrans.png" alt="Cradle of Learners" className="navigation-bar__logo-image" />
-          <h1 className="navigation-bar__company-name">CRADLE OF LEARNERS INC.</h1>
-        </div>
-      </div>
-
-      <div className="navigation-bar__profile">
-        <div className="navigation-bar__avatar">
-          {adminData?.profileImageUrl ? (
-            <img 
-              src={adminData.profileImageUrl} 
-              alt={`${adminData.firstName} ${adminData.lastName}`} 
-              className="navigation-bar__avatar-img"
-            />
-          ) : (
-            <span className="navigation-bar__avatar-placeholder">
-              {adminData?.firstName?.charAt(0) || 'A'}
-            </span>
-          )}
-        </div>
-        <div className="navigation-bar__profile-info">
-          <h3 className="navigation-bar__admin-name">
-            {loading ? 'Loading...' : 
-             error ? `Error: ${error}` : 
-             adminData ? `${adminData.firstName} ${adminData.lastName}` : 'Admin User'}
-          </h3>
-          <p className="navigation-bar__role">Administrator</p>
-        </div>
-      </div>
-
-      <hr className="navigation-bar__divider" />
-
-      <div className="navigation-bar__menu">
-        {navigationItems.map(item => (
-          <div key={item.id} className="navigation-bar__section">
-            <Link 
-              to={item.subItems.length > 0 ? '#' : item.path}
-              className={`navigation-bar__item ${isActiveItem(item.path, item.subItems) ? 'navigation-bar__item--active' : ''}`}
-              onClick={(e) => {
-                if (item.subItems.length > 0) {
-                  e.preventDefault();
-                  toggleSection(item.id);
-                }
-              }}
-            >
-              <div className="navigation-bar__item-content">
-                <item.icon className="navigation-bar__icon" size={22} />
-                <span className="navigation-bar__label">{item.label}</span>
-              </div>
-              {item.subItems.length > 0 && (
-                <div className="navigation-bar__expand-icon">
-                  {expandedSections.includes(item.id) ? 
-                    <ChevronDown size={16} /> : 
-                    <ChevronRight size={16} />
-                  }
+    <nav className="admin-sidebar">
+      <div className="admin-sidebar__content">
+        {/* Logo section */}
+        <div className="admin-sidebar__header">
+          <div className="admin-sidebar__logo">
+            <img src="/images/cradleLogoTrans.png" alt="Cradle of Learners" />
+            <h1>CRADLE OF LEARNERS INC.</h1>
+          </div>
+          
+          {/* Profile section */}
+          <div className="admin-sidebar__profile">
+            <div className="admin-sidebar__avatar">
+              {adminData?.profileImageUrl ? (
+                <img 
+                  src={adminData.profileImageUrl} 
+                  alt={`${adminData.firstName} ${adminData.lastName}`} 
+                />
+              ) : (
+                <div className="admin-sidebar__avatar-placeholder">
+                  {adminData?.firstName?.charAt(0) || 'A'}
                 </div>
               )}
-            </Link>
-
-            {item.subItems.length > 0 && expandedSections.includes(item.id) && (
-              <div className="navigation-bar__submenu">
-                {item.subItems.map(subItem => (
-                  <Link 
-                    key={subItem.id}
-                    to={subItem.path}
-                    className={`navigation-bar__subitem ${isActiveSubItem(subItem.path) ? 'navigation-bar__subitem--active' : ''}`}
-                  >
-                    {subItem.icon && <subItem.icon size={18} className="navigation-bar__subitem-icon" />}
-                    <span className="navigation-bar__sublabel">{subItem.label}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
+            </div>
+            <div className="admin-sidebar__user-info">
+              <h3 className="admin-sidebar__name">
+                {loading ? 'Loading...' : 
+                error ? `Error: ${error}` : 
+                adminData ? `${adminData.firstName} ${adminData.lastName}` : 'Admin User'}
+              </h3>
+              <p className="admin-sidebar__role">Administrator</p>
+            </div>
           </div>
-        ))}
-      </div>
+        </div>
 
-      <div className="navigation-bar__footer">
-        <hr className="navigation-bar__divider navigation-bar__logout-divider" />
-        <button onClick={onLogout} className="navigation-bar__logout-btn">
-          <div className="navigation-bar__item-content">
-            <LogOut className="navigation-bar__icon" size={22} />
-            <span className="navigation-bar__label">Logout</span>
-          </div>
-        </button>
+        {/* Navigation menu */}
+        <div className="admin-sidebar__menu">
+          {navigationItems.map(item => (
+            <div key={item.id} className="admin-sidebar__section">
+              <Link 
+                to={item.subItems.length > 0 ? '#' : item.path}
+                className={`admin-sidebar__nav-item ${isActiveItem(item.path, item.subItems) ? 'admin-sidebar__nav-item--active' : ''}`}
+                onClick={(e) => {
+                  if (item.subItems.length > 0) {
+                    e.preventDefault();
+                    toggleSection(item.id);
+                  }
+                }}
+              >
+                <div className="admin-sidebar__item-content">
+                  <item.icon className="admin-sidebar__icon" />
+                  <span className="admin-sidebar__label">{item.label}</span>
+                </div>
+                {item.subItems.length > 0 && (
+                  <div className="admin-sidebar__expand-icon">
+                    {expandedSections.includes(item.id) ? 
+                      <ChevronDown size={16} /> : 
+                      <ChevronRight size={16} />
+                    }
+                  </div>
+                )}
+              </Link>
+
+              {/* Submenu items */}
+              {item.subItems.length > 0 && expandedSections.includes(item.id) && (
+                <div className="admin-sidebar__submenu">
+                  {item.subItems.map(subItem => (
+                    <Link 
+                      key={subItem.id}
+                      to={subItem.path}
+                      className={`admin-sidebar__submenu-item ${isActiveSubItem(subItem.path) ? 'admin-sidebar__submenu-item--active' : ''}`}
+                    >
+                      {subItem.icon && <subItem.icon className="admin-sidebar__submenu-icon" />}
+                      <span className="admin-sidebar__submenu-label">{subItem.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Footer section */}
+        <div className="admin-sidebar__footer">
+          <button 
+            onClick={onLogout} 
+            className="admin-sidebar__logout-btn"
+          >
+            <LogOut className="admin-sidebar__icon" />
+            <span className="admin-sidebar__label">Logout</span>
+          </button>
+        </div>
       </div>
     </nav>
   );
