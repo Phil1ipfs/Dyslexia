@@ -418,52 +418,10 @@ const StudentAssessmentResults = () => {
                     </div>
                   </div>
                   
-                  <div className="student-assessment__category-actions">
-                    <a href="#" className="student-assessment__intervention-btn">
-                      View Intervention Activities
-                    </a>
-                  </div>
                 </div>
               )}
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Difficulty Assessment */}
-      <div className="student-assessment__difficulty-section">
-        <h2 className="student-assessment__section-title">
-          <AlertTriangle size={20} />
-          Areas for Improvement & Strengths
-        </h2>
-        
-        <div className="student-assessment__difficulty-grid">
-          <div className="student-assessment__difficulty-card">
-            <h3>Areas for Improvement</h3>
-            <ul>
-              {student.difficulties.map((difficulty, index) => (
-                <li key={index}>{difficulty}</li>
-              ))}
-            </ul>
-          </div>
-          
-          <div className="student-assessment__difficulty-card">
-            <h3>Strengths</h3>
-            <ul>
-              {student.strengths.map((strength, index) => (
-                <li key={index}>{strength}</li>
-              ))}
-            </ul>
-          </div>
-          
-          <div className="student-assessment__difficulty-card">
-            <h3>Recommended Interventions</h3>
-            <ul>
-              {student.recommendations.map((recommendation, index) => (
-                <li key={index}>{recommendation}</li>
-              ))}
-            </ul>
-          </div>
         </div>
       </div>
     </div>
