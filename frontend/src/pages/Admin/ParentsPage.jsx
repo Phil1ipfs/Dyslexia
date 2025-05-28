@@ -13,11 +13,9 @@ const SuccessModal = ({ message, onClose }) => (
         <h2>Success</h2>
         <button className="admin-parent-modal-close" onClick={onClose}>×</button>
       </div>
-      <div className="admin-parent-modal-form" style={{ textAlign: 'center', padding: '20px' }}>
+      <div className="admin-parent-modal-content">
         <p>{message}</p>
-        <div className="admin-parent-modal-footer-buttons" style={{ justifyContent: 'center', marginTop: '20px' }}>
-          <button className="admin-parent-save-btn" onClick={onClose}>Close</button>
-        </div>
+        <button className="admin-parent-close-btn" onClick={onClose}>Close</button>
       </div>
     </div>
   </div>
@@ -578,23 +576,36 @@ const ParentProfileModal = ({ parent, viewModalChildren, onClose }) => {
               </div>
             </div>
             
-            <div className="admin-parent-profile-children">
-              <h4 className="admin-parent-profile-children-title">Children</h4>
+            <div className="admin-parent-profile-children-section">
+              <h4 className="admin-parent-profile-section-title">Children</h4>
               {viewModalChildren.length > 0 ? (
                 <ul className="admin-parent-profile-children-list">
                   {viewModalChildren.map(child => (
                     <li key={child._id} className="admin-parent-profile-child-item">
-                      <div className="admin-parent-profile-child-name">
-                        {child.firstName} {child.middleName ? child.middleName + ' ' : ''}{child.lastName}
+                      <div className="admin-parent-profile-child-avatar">
+                        {child.profileImageUrl ? (
+                          <img 
+                            src={child.profileImageUrl} 
+                            alt={`${child.firstName} ${child.lastName}`}
+                            className="admin-parent-profile-child-image"
+                          />
+                        ) : (
+                          <User size={28} />
+                        )}
                       </div>
-                      <div className="admin-parent-profile-child-details">
-                        ID: {child.idNumber || 'N/A'}, Section: {child.section || 'N/A'}
+                      <div className="admin-parent-profile-child-info">
+                        <div className="admin-parent-profile-child-name">
+                          {child.firstName} {child.middleName ? child.middleName + ' ' : ''}{child.lastName}
+                        </div>
+                        <div className="admin-parent-profile-child-details">
+                          ID: {child.idNumber || 'N/A'} • Section: {child.section || 'N/A'} • Grade: {child.gradeLevel || 'N/A'}
+                        </div>
                       </div>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p>No children linked to this parent.</p>
+                <p className="admin-parent-profile-no-children">No children linked to this parent.</p>
               )}
             </div>
           </div>
