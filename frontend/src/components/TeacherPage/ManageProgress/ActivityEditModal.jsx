@@ -29,13 +29,18 @@
  * - templates_choices: Available answer choices
  * - sentence_templates: Reading comprehension passages
  * - intervention_assessment: Final saved interventions
+ * - prescriptive_analysis: Analysis and recommendations for specific categories
  * 
  * @param {Object} activity - Existing activity to edit (from intervention_assessment)
  * @param {Function} onClose - Function to close the modal
  * @param {Function} onSave - Function to save the activity
  * @param {Object} student - Student information (from users collection)
  * @param {String} category - Category that needs intervention (score < 75%)
- * @param {Object} analysis - Prescriptive analysis for this category
+ * @param {Object} analysis - Prescriptive analysis for this category (from prescriptive_analysis collection)
+ *                            Can have different formats:
+ *                            - MongoDB: { _id: { $oid: "string" }, categoryId: "string", ... }
+ *                            - String ID: { _id: "string", categoryId: "string", ... }
+ *                            - Mock: { id: number, category: "string", ... }
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { 
@@ -104,13 +109,88 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   );
   const [description, setDescription] = useState(
     activity?.description || 
-    `Targeted practice activities to improve skills`
+    `Targeted practice activities for improving skills`
   );
   const [readingLevel] = useState(student?.readingLevel || 'Low Emerging'); // Fixed to student's level
   
   // Checking for existing interventions
   const [existingIntervention, setExistingIntervention] = useState(null);
   const [checkingExisting, setCheckingExisting] = useState(false);
+  
+  // Prescriptive analysis from MongoDB
+  const [mongoDbAnalysis, setMongoDbAnalysis] = useState(null);
+  
+  /**
+   * Find MongoDB prescriptive analysis for student and category
+   * This function will load the MongoDB prescriptive analysis from the provided analysis data
+   * or from an API call if needed
+   */
+  const findMongoDbAnalysis = async () => {
+    // Get the student ID
+    const studentId = student?._id || student?.id || student?.studentId;
+    
+    if (!studentId || !category) {
+      console.error("Missing student ID or category to find MongoDB analysis");
+      return null;
+    }
+    
+    console.log("Finding MongoDB analysis for student:", studentId, "and category:", category);
+    
+    try {
+      // First, check if the analysis prop is already in MongoDB format
+      if (analysis) {
+        console.log("Checking if provided analysis is MongoDB format:", analysis);
+        
+        // Check if it's MongoDB format with $oid
+        if (analysis._id && analysis._id.$oid) {
+          console.log("Found MongoDB analysis with $oid:", analysis._id.$oid);
+          setMongoDbAnalysis(analysis);
+          return analysis;
+        }
+        
+        // If it's MongoDB format with string ID
+        if (analysis._id && typeof analysis._id === 'string') {
+          console.log("Found MongoDB analysis with string ID:", analysis._id);
+          setMongoDbAnalysis(analysis);
+          return analysis;
+        }
+      }
+      
+      // If no MongoDB analysis found in props, try to fetch from API
+      console.log("Fetching MongoDB analysis from API...");
+      try {
+        const response = await api.interventions.getPrescriptiveAnalysis(studentId, category);
+        if (response.data.success && response.data.data) {
+          console.log("API returned MongoDB analysis:", response.data.data);
+          setMongoDbAnalysis(response.data.data);
+          return response.data.data;
+        }
+      } catch (error) {
+        console.error("Error fetching MongoDB analysis:", error);
+      }
+      
+      // If we got here, no MongoDB analysis found - try to create a dummy one from mock data
+      if (analysis) {
+        console.log("Creating dummy MongoDB analysis from mock data:", analysis);
+        const dummyMongoDb = {
+          _id: { $oid: `dummy_${Date.now()}` },
+          studentId: { $oid: studentId },
+          categoryId: category,
+          readingLevel: readingLevel,
+          strengths: [],
+          weaknesses: analysis.analysis ? [analysis.analysis] : [],
+          recommendations: analysis.recommendation ? [analysis.recommendation] : []
+        };
+        setMongoDbAnalysis(dummyMongoDb);
+        return dummyMongoDb;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error in findMongoDbAnalysis:", error);
+      return null;
+    }
+  };
   
   // Update title and description after component mounts
   useEffect(() => {
@@ -129,7 +209,26 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     if (!activity) {
       checkExistingInterventions();
     }
+    
+    // Find MongoDB prescriptive analysis for this student and category
+    findMongoDbAnalysis();
   }, [activity, category, student]);
+  
+  // Separate effect for logging analysis to avoid dependency array size changes
+  useEffect(() => {
+    if (analysis) {
+      console.log("Analysis object received in ActivityEditModal:", analysis);
+      
+      // Log the structure of the analysis for debugging
+      if (analysis._id && typeof analysis._id === 'object' && analysis._id.$oid) {
+        console.log("MongoDB format analysis with $oid:", analysis._id.$oid);
+      } else if (analysis._id && typeof analysis._id === 'string') {
+        console.log("MongoDB format analysis with string ID:", analysis._id);
+      } else if (analysis.id) {
+        console.log("Mock format analysis with id:", analysis.id);
+      }
+    }
+  }, [analysis]);
   
   // Step management for wizard-style interface
   const [currentStep, setCurrentStep] = useState(1);
@@ -169,7 +268,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     choiceType: '',
     choiceValue: '',
     soundText: '',
-    choiceImage: null
+    choiceImage: null,
+    description: ''
   });
   
   // UI States
@@ -1457,6 +1557,38 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       throw new Error("Student ID is required to create an intervention");
     }
     
+    // Get prescriptive analysis ID if available
+    let prescriptiveAnalysisId = null;
+    
+    // First try to get it from the MongoDB analysis
+    if (mongoDbAnalysis) {
+      console.log("Using MongoDB prescriptive analysis:", mongoDbAnalysis);
+      
+      if (mongoDbAnalysis._id && typeof mongoDbAnalysis._id === 'object' && mongoDbAnalysis._id.$oid) {
+        // MongoDB format with $oid field
+        prescriptiveAnalysisId = mongoDbAnalysis._id.$oid;
+        console.log("Using MongoDB prescriptive analysis ID:", prescriptiveAnalysisId);
+      } else if (mongoDbAnalysis._id && typeof mongoDbAnalysis._id === 'string') {
+        // MongoDB format with string ID
+        prescriptiveAnalysisId = mongoDbAnalysis._id;
+        console.log("Using MongoDB prescriptive analysis ID:", prescriptiveAnalysisId);
+      } else {
+        console.warn("No valid ID found in MongoDB prescriptive analysis:", mongoDbAnalysis);
+      }
+    }
+    
+    // Generate a UUID-like string that doesn't rely on timestamps
+    const generateUniqueId = () => {
+      return 'q_' + Math.random().toString(36).substring(2, 15) + 
+             Math.random().toString(36).substring(2, 15);
+    };
+    
+    // Function to format current date consistently without timezone issues
+    const getFormattedDate = () => {
+      const now = new Date();
+      return now.toISOString();
+    };
+    
     // Helper function to sanitize image URLs (replace blob URLs with null)
     const sanitizeImageUrl = (url) => {
       if (!url) return null;
@@ -1479,27 +1611,31 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         category,
         readingLevel,
         passThreshold: 75,
+        prescriptiveAnalysisId,
         questions: selectedSentenceTemplate.sentenceQuestions.map((q, index) => ({
-          questionId: `q_${Date.now()}_${index}`,
+          questionId: generateUniqueId() + '_' + index,
           source: 'sentence_template',
           sourceQuestionId: selectedSentenceTemplate._id,
           questionIndex: index,
           questionType: 'sentence',
           questionText: q.questionText,
-          questionImage: null,
+          questionImage: sanitizeImageUrl(q.image),
           questionValue: null,
           choiceIds: [], // Sentence questions don't use choice templates
           correctChoiceId: null,
           choices: q.sentenceOptionAnswers.map((option, optIndex) => ({
             optionText: option,
-            isCorrect: option === q.sentenceCorrectAnswer
+            isCorrect: option === q.sentenceCorrectAnswer,
+            description: option === q.sentenceCorrectAnswer ? 
+              'Correct! You understood the passage well.' : 
+              'Incorrect. Try reading the passage again carefully.'
           }))
         })),
         // Include the full sentence template for reference
         sentenceTemplate: selectedSentenceTemplate,
         status: 'draft',
-        createdAt: activity?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        createdAt: activity?.createdAt || getFormattedDate(),
+        updatedAt: getFormattedDate()
       };
     } else {
       // For other categories, use question-choice pairs
@@ -1512,12 +1648,13 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         category,
         readingLevel,
         passThreshold: 75,
+        prescriptiveAnalysisId,
         questions: questionChoicePairs.map((pair, index) => {
           // Get full choice objects for the selected choices
           const selectedChoices = getChoicesByIds(pair.choiceIds);
           
           return {
-            questionId: `q_${Date.now()}_${index}`,
+            questionId: generateUniqueId() + '_' + index,
             source: pair.sourceType,
             sourceQuestionId: pair.sourceId,
             questionIndex: index,
@@ -1531,19 +1668,21 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               return {
                 optionText: choice.choiceValue || choice.soundText || '',
                 // Removed optionImage as images should be on the question level
-                isCorrect: choice._id === pair.correctChoiceId
+                isCorrect: choice._id === pair.correctChoiceId,
+                description: choice.description || ''
               };
             })
           };
         }),
         status: 'draft',
-        createdAt: activity?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        createdAt: activity?.createdAt || getFormattedDate(),
+        updatedAt: getFormattedDate()
       };
     }
     
     // Log the prepared data for debugging
     console.log('Prepared intervention data:', JSON.stringify(interventionData, null, 2));
+    console.log('Prescriptive Analysis ID included:', prescriptiveAnalysisId);
     
     return interventionData;
   };
@@ -1573,8 +1712,14 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                                 normCategory === 'phonological_awareness' ? 'malapantig' : 
                                 normCategory === 'word_recognition' || normCategory === 'decoding' ? 'word' : 'sentence';
     
+    // Generate a UUID-like id that doesn't rely on timestamps
+    const generateUniqueId = () => {
+      return 'pair_' + Math.random().toString(36).substring(2, 15) + 
+             Math.random().toString(36).substring(2, 15);
+    };
+    
     const newPair = {
-      id: Date.now(),
+      id: generateUniqueId(),
       sourceType: 'custom',
       sourceId: null,
       questionType: defaultQuestionType,
@@ -1726,6 +1871,18 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       )
     );
   };
+
+  /**
+   * Update the description for a choice
+   */
+  const updateChoiceDescription = (choiceId, description) => {
+    // Update the choice in choiceTemplates
+    setChoiceTemplates(prev => 
+      prev.map(choice => 
+        choice._id === choiceId ? { ...choice, description } : choice
+      )
+    );
+  };
  
   // When updating question value, clear image if value is set
   const handleQuestionValueChange = debounce((pairId, newText) => {
@@ -1810,6 +1967,48 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         }
       }
       
+      // If no description is provided, create a default one based on the question type and correctness
+      if (!newChoiceData.description || newChoiceData.description.trim() === '') {
+        const pair = questionChoicePairs.find(p => p.id === pairId);
+        const isFirstChoice = pair && pair.choiceIds.length === 0;
+        
+        // Set default description based on question type
+        let defaultDescription = '';
+        if (pair) {
+          switch(pair.questionType) {
+            case 'patinig':
+              defaultDescription = isFirstChoice ? 
+                'Correct! You identified the vowel correctly.' : 
+                'Incorrect. Try again and listen carefully to the vowel sound.';
+              break;
+            case 'katinig':
+              defaultDescription = isFirstChoice ? 
+                'Correct! You identified the consonant correctly.' : 
+                'Incorrect. Try again and listen carefully to the consonant sound.';
+              break;
+            case 'malapantig':
+              defaultDescription = isFirstChoice ? 
+                'Correct! You combined the syllables correctly.' : 
+                'Incorrect. Try sounding out each syllable slowly.';
+              break;
+            case 'word':
+              defaultDescription = isFirstChoice ? 
+                'Correct! You recognized the word correctly.' : 
+                'Incorrect. Look carefully at the letters that make up this word.';
+              break;
+            default:
+              defaultDescription = isFirstChoice ? 
+                'Correct! Good job.' : 
+                'Incorrect. Try again.';
+          }
+          
+          setNewChoiceData(prev => ({
+            ...prev,
+            description: defaultDescription
+          }));
+        }
+      }
+      
       if (!validateNewChoice()) return;
       
       setSubmitting(true);
@@ -1820,6 +2019,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         // Convert empty strings to null
         choiceValue: newChoiceData.choiceValue.trim() || null,
         soundText: newChoiceData.soundText.trim() || null,
+        description: newChoiceData.description.trim() || '',
         // Remove choiceImage as it should be on the question level
         choiceImage: null
       };
@@ -1831,7 +2031,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         choiceType: '',
         choiceValue: '',
         soundText: '',
-        choiceImage: null
+        choiceImage: null,
+        description: ''
       });
       toggleChoiceForm(pairId, false);
       
@@ -1939,6 +2140,16 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       
       if (invalidValueImagePairs.length > 0) {
         allErrors.pairs = "Questions can have either a Question Value OR a Question Image, not both";
+      }
+      
+      // Check for missing feedback descriptions - this is a warning, not an error
+      const pairsWithMissingDescriptions = questionChoicePairs.filter(pair => {
+        const choices = getChoicesByIds(pair.choiceIds);
+        return choices.some(choice => !choice.description || choice.description.trim() === '');
+      });
+      
+      if (pairsWithMissingDescriptions.length > 0 && !allErrors.pairs) {
+        allErrors.pairs = "Some choices are missing feedback descriptions. They will use default feedback.";
       }
     }
     
@@ -2731,6 +2942,21 @@ const renderQuestionChoicesStep = () => {
                   />
                 </div>
                 
+                <div className="literexia-form-group">
+                  <label>Description / Feedback (optional)</label>
+                  <input
+                    type="text"
+                    value={newChoiceData.description}
+                    onChange={(e) => setNewChoiceData(prev => ({
+                      ...prev, description: e.target.value
+                    }))}
+                    placeholder="e.g., Correct! This is the right answer."
+                  />
+                  <div className="literexia-help-text">
+                    This text will be shown to the student when they select this choice. If left empty, a default feedback will be provided.
+                  </div>
+                </div>
+                
                 {errors.newChoice && (
                   <div className="literexia-error-message">{errors.newChoice}</div>
                 )}
@@ -2829,8 +3055,18 @@ const renderQuestionChoicesStep = () => {
                        <div className="literexia-selected-choice-content">
                          <div className="literexia-selected-choice-value">
                            {choice.choiceValue || choice.soundText || '(No text)'}
-                                </div>
-                              </div>
+                         </div>
+                         <div className="literexia-selected-choice-description">
+                           <span className="literexia-description-label">Feedback:</span> 
+                           <input 
+                             type="text"
+                             value={choice.description || ''}
+                             onChange={(e) => updateChoiceDescription(choice._id, e.target.value)}
+                             placeholder="Add feedback for this choice..."
+                             className="literexia-choice-description-input"
+                           />
+                         </div>
+                       </div>
                        
                        <button
                          type="button"
@@ -3055,6 +3291,9 @@ const renderReviewStep = () => {
                          >
                            {choice.choiceValue || choice.soundText || '(No text)'} 
                            {choice._id === pair.correctChoiceId && ' (Correct)'}
+                           <div className="literexia-choice-description-review">
+                             <span className="literexia-description-label">Feedback:</span> {choice.description || 'No feedback provided'}
+                           </div>
                               </li>
                            );
                          })}

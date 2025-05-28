@@ -24,6 +24,10 @@ const interventionResponseSchema = new mongoose.Schema({
     type: Boolean,
     required: true
   },
+  feedbackDescription: {
+    type: String,
+    default: ''
+  },
   responseTime: {
     type: Number,
     default: 0,

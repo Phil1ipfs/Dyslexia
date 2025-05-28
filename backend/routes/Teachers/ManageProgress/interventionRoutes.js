@@ -354,4 +354,21 @@ router.post('/:interventionId/push', auth, authorize('teacher', 'admin'),
   }
 );
 
+// Update all existing interventions (admin only)
+router.post('/update-existing', auth, authorize('admin'), 
+  async (req, res) => {
+    try {
+      const result = await interventionController.updateExistingInterventions(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in POST /update-existing route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing update request',
+        error: error.message
+      });
+    }
+  }
+);
+
 module.exports = router;

@@ -92,6 +92,11 @@ const interventionPlanSchema = new mongoose.Schema({
       isCorrect: {
         type: Boolean,
         required: true
+      },
+      description: {
+        type: String,
+        default: '',
+        trim: true
       }
     }]
   }],

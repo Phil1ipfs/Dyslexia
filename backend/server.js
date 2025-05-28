@@ -402,6 +402,15 @@ connectDB().then(async (connected) => {
     } catch (error) {
       console.warn('⚠️ Could not load intervention routes:', error.message);
     }
+    
+    // Load prescriptive analysis routes
+    try {
+      const prescriptiveAnalysisRoutes = require('./routes/Teachers/ManageProgress/prescriptiveAnalysisRoutes');
+      app.use('/api/prescriptive-analysis', prescriptiveAnalysisRoutes);
+      console.log('✅ Loaded prescriptive analysis routes');
+    } catch (error) {
+      console.warn('⚠️ Could not load prescriptive analysis routes:', error.message);
+    }
 
     // Load student routes
     try {
