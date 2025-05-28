@@ -1,3 +1,4 @@
+// src/components/Parents/ParentSidebar.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
@@ -10,7 +11,6 @@ import './ParentSidebar.css';
 
 const ParentSidebar = ({ onLogout }) => {
   const location = useLocation();
-  const [expandedSections, setExpandedSections] = useState([]);
   const [parentData, setParentData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -65,14 +65,12 @@ const ParentSidebar = ({ onLogout }) => {
       label: 'Profile',
       icon: User,
       path: '/parent/dashboard',
-      subItems: []
     },
     {
       id: 'progress',
       label: 'View Student Progress',
       icon: BookOpen,
       path: '/parent/feedback',
-      subItems: []
     }
   ];
 
@@ -81,60 +79,60 @@ const ParentSidebar = ({ onLogout }) => {
   };
 
   return (
-    <nav className="navigation-bar">
-      <div className="navigation-bar__brand">
-        <div className="navigation-bar__logo-container">
-          <img src="/images/cradleLogoTrans.png" alt="Cradle of Learners" className="navigation-bar__logo-image" />
-          <h1 className="navigation-bar__company-name">CRADLE OF LEARNERS INC.</h1>
-        </div>
-        <div className="navigation-bar__profile">
-          <div className="navigation-bar__avatar">
-            {parentData?.profileImageUrl ? (
-              <img 
-                src={parentData.profileImageUrl} 
-                alt={`${parentData.firstName} ${parentData.lastName}`} 
-                className="navigation-bar__avatar-img"
-              />
-            ) : (
-              <span className="navigation-bar__avatar-placeholder">
-                {parentData?.firstName?.charAt(0) || 'P'}
-              </span>
-            )}
+    <nav className="parent-sidebar">
+      <div className="parent-sidebar__content">
+        <div className="parent-sidebar__header">
+          <div className="parent-sidebar__logo">
+            <img src="/images/cradleLogoTrans.png" alt="Cradle of Learners" />
+            <h1>CRADLE OF LEARNERS INC.</h1>
           </div>
-          <div className="navigation-bar__profile-info">
-            <h3 className="navigation-bar__admin-name">
-              {loading ? 'Loading...' : 
-               error ? 'Error loading profile' : 
-               parentData ? `${parentData.firstName} ${parentData.lastName}` : 'Parent User'}
-            </h3>
-            <p className="navigation-bar__role">Parent</p>
+          
+          <div className="parent-sidebar__profile">
+            <div className="parent-sidebar__avatar">
+              {parentData?.profileImageUrl ? (
+                <img 
+                  src={parentData.profileImageUrl} 
+                  alt={`${parentData.firstName} ${parentData.lastName}`} 
+                />
+              ) : (
+                <div className="parent-sidebar__avatar-placeholder">
+                  {parentData?.firstName?.charAt(0) || 'P'}
+                </div>
+              )}
+            </div>
+            <div className="parent-sidebar__user-info">
+              <h3 className="parent-sidebar__name">
+                {loading ? 'Loading...' : 
+                error ? 'Error loading profile' : 
+                parentData ? `${parentData.firstName} ${parentData.lastName}` : 'Parent User'}
+              </h3>
+              <p className="parent-sidebar__role">Parent</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="navigation-bar__menu">
-        {navigationItems.map(item => (
-          <div key={item.id} className="navigation-bar__section">
+        <div className="parent-sidebar__navigation">
+          {navigationItems.map(item => (
             <Link 
+              key={item.id}
               to={item.path}
-              className={`navigation-bar__item ${isActiveItem(item.path) ? 'navigation-bar__item--active' : ''}`}
+              className={`parent-sidebar__nav-item ${isActiveItem(item.path) ? 'parent-sidebar__nav-item--active' : ''}`}
             >
-              <div className="navigation-bar__item-content">
-                <item.icon className="navigation-bar__icon" size={20} />
-                <span className="navigation-bar__label">{item.label}</span>
-              </div>
+              <item.icon className="parent-sidebar__icon" />
+              <span className="parent-sidebar__label">{item.label}</span>
             </Link>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <div className="navigation-bar__footer">
-        <button onClick={onLogout} className="navigation-bar__logout-btn">
-          <div className="navigation-bar__item-content">
-            <LogOut className="navigation-bar__icon" size={20} />
-            <span className="navigation-bar__label">Logout</span>
-          </div>
-        </button>
+        <div className="parent-sidebar__footer">
+          <button 
+            onClick={onLogout} 
+            className="parent-sidebar__logout-btn"
+          >
+            <LogOut className="parent-sidebar__icon" />
+            <span className="parent-sidebar__label">Logout</span>
+          </button>
+        </div>
       </div>
     </nav>
   );
