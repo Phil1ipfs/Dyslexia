@@ -1532,7 +1532,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         savedIntervention = await createIntervention(interventionData);
       }
       
+      // Call the onSave callback with the saved intervention
       onSave(savedIntervention);
+      
     } catch (error) {
       console.error("Error saving intervention:", error);
       setErrors({ 

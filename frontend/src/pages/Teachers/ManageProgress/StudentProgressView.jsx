@@ -419,6 +419,8 @@ const StudentProgressView = () => {
       }, 3000);
 
       setEditingActivity(null);
+      // Ensure we stay on the prescriptive analysis tab
+      setActiveTab('prescriptive');
       setLoading(false);
     } catch (err) {
       console.error('Error updating activity:', err);
