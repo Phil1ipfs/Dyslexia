@@ -820,14 +820,16 @@ const PrescriptiveAnalysis = ({
             <div className="literexia-current-interventions">
               <div className="literexia-interventions-header">
                 <h3>Current Interventions</h3>
-                <button 
-                  className="literexia-create-activity-btn" 
-                  onClick={() => handleCreateActivity(selectedCategory, selectedAnalysis)}
-                  disabled={loading}
-                  title="Create a new intervention activity"
-                >
-                  <FaPlus /> Create New Intervention Activity
-                </button>
+                {selectedInterventions.length === 0 && (
+                  <button 
+                    className="literexia-create-activity-btn" 
+                    onClick={() => handleCreateActivity(selectedCategory, selectedAnalysis)}
+                    disabled={loading}
+                    title="Create a new intervention activity"
+                  >
+                    <FaPlus /> Create New Intervention Activity
+                  </button>
+                )}
               </div>
               
               {selectedInterventions.length > 0 ? (
