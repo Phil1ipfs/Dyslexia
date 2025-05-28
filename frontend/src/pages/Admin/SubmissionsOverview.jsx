@@ -1,6 +1,6 @@
 // src/components/Admin/Submissions/SubmissionsOverview.jsx
 import React, { useState, useEffect } from 'react';
-import '../../css/Admin/Dashboard/SubmissionsOverview.css'; // We'll use a unique CSS file name
+import '../../css/Admin/Dashboard/SubmissionsOverview.css'; 
 import {
   FileCheck,
   XCircle,
