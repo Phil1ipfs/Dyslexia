@@ -6,14 +6,17 @@ import {
   Users, 
   FileCheck, 
   ClipboardList, 
-  ChartBar, 
+  BarChart2, 
   Inbox, 
   LogOut,
   ChevronDown,
   ChevronRight,
   FileText,
   Upload,
-  Eye
+  Eye,
+  GraduationCap,
+  School,
+  UserSquare2
 } from 'lucide-react';
 import './NavigationBar.css';
 // For public folder approach, remove the import line and use direct path
@@ -107,18 +110,18 @@ const NavigationBar = ({ onLogout }) => {
       icon: Users,
       path: '/admin/user-management',
       subItems: [
-        { id: 'student-list', label: 'Student List', path: '/admin/student-list' },
-        { id: 'teacher-list', label: 'Teacher List', path: '/admin/teacher-list' },
-        { id: 'parent-list', label: 'Parent List', path: '/admin/parent-list' }
+        { id: 'student-list', label: 'Student List', path: '/admin/student-list', icon: GraduationCap },
+        { id: 'teacher-list', label: 'Teacher List', path: '/admin/teacher-list', icon: School },
+        { id: 'parent-list', label: 'Parent List', path: '/admin/parent-list', icon: UserSquare2 }
       ]
     },
     {
       id: 'analytics',
       label: 'Activity Management',
-      icon: ChartBar,
+      icon: BarChart2,
       path: '/admin/analytics',
       subItems: [
-        { id: 'submission-overview', label: 'Activity Approval', path: '/admin/submissions-overview' }
+        { id: 'submission-overview', label: 'Activity Approval', path: '/admin/submissions-overview', icon: FileCheck }
       ]
     }
   ];
@@ -137,6 +140,11 @@ const NavigationBar = ({ onLogout }) => {
     return currentPath === path || subItems.some(item => currentPath === item.path);
   };
 
+  const isActiveSubItem = (path) => {
+    const currentPath = location.pathname;
+    return currentPath === path;
+  };
+
   return (
     <nav className="navigation-bar">
       <div className="navigation-bar__brand">
@@ -144,36 +152,39 @@ const NavigationBar = ({ onLogout }) => {
           <img src="/images/cradleLogoTrans.png" alt="Cradle of Learners" className="navigation-bar__logo-image" />
           <h1 className="navigation-bar__company-name">CRADLE OF LEARNERS INC.</h1>
         </div>
-        <div className="navigation-bar__profile">
-          <div className="navigation-bar__avatar">
-            {adminData?.profileImageUrl ? (
-              <img 
-                src={adminData.profileImageUrl} 
-                alt={`${adminData.firstName} ${adminData.lastName}`} 
-                className="navigation-bar__avatar-img"
-              />
-            ) : (
-              <span className="navigation-bar__avatar-placeholder">
-                {adminData?.firstName?.charAt(0) || 'A'}
-              </span>
-            )}
-          </div>
-          <div className="navigation-bar__profile-info">
-            <h3 className="navigation-bar__admin-name">
-              {loading ? 'Loading...' : 
-               error ? `Error: ${error}` : 
-               adminData ? `${adminData.firstName} ${adminData.lastName}` : 'Admin User'}
-            </h3>
-            <p className="navigation-bar__role">Administrator</p>
-          </div>
+      </div>
+
+      <div className="navigation-bar__profile">
+        <div className="navigation-bar__avatar">
+          {adminData?.profileImageUrl ? (
+            <img 
+              src={adminData.profileImageUrl} 
+              alt={`${adminData.firstName} ${adminData.lastName}`} 
+              className="navigation-bar__avatar-img"
+            />
+          ) : (
+            <span className="navigation-bar__avatar-placeholder">
+              {adminData?.firstName?.charAt(0) || 'A'}
+            </span>
+          )}
+        </div>
+        <div className="navigation-bar__profile-info">
+          <h3 className="navigation-bar__admin-name">
+            {loading ? 'Loading...' : 
+             error ? `Error: ${error}` : 
+             adminData ? `${adminData.firstName} ${adminData.lastName}` : 'Admin User'}
+          </h3>
+          <p className="navigation-bar__role">Administrator</p>
         </div>
       </div>
+
+      <hr className="navigation-bar__divider" />
 
       <div className="navigation-bar__menu">
         {navigationItems.map(item => (
           <div key={item.id} className="navigation-bar__section">
             <Link 
-              to={item.path}
+              to={item.subItems.length > 0 ? '#' : item.path}
               className={`navigation-bar__item ${isActiveItem(item.path, item.subItems) ? 'navigation-bar__item--active' : ''}`}
               onClick={(e) => {
                 if (item.subItems.length > 0) {
@@ -183,7 +194,7 @@ const NavigationBar = ({ onLogout }) => {
               }}
             >
               <div className="navigation-bar__item-content">
-                <item.icon className="navigation-bar__icon" size={20} />
+                <item.icon className="navigation-bar__icon" size={22} />
                 <span className="navigation-bar__label">{item.label}</span>
               </div>
               {item.subItems.length > 0 && (
@@ -202,8 +213,9 @@ const NavigationBar = ({ onLogout }) => {
                   <Link 
                     key={subItem.id}
                     to={subItem.path}
-                    className={`navigation-bar__subitem ${location.pathname === subItem.path ? 'navigation-bar__subitem--active' : ''}`}
+                    className={`navigation-bar__subitem ${isActiveSubItem(subItem.path) ? 'navigation-bar__subitem--active' : ''}`}
                   >
+                    {subItem.icon && <subItem.icon size={18} className="navigation-bar__subitem-icon" />}
                     <span className="navigation-bar__sublabel">{subItem.label}</span>
                   </Link>
                 ))}
@@ -214,9 +226,10 @@ const NavigationBar = ({ onLogout }) => {
       </div>
 
       <div className="navigation-bar__footer">
+        <hr className="navigation-bar__divider navigation-bar__logout-divider" />
         <button onClick={onLogout} className="navigation-bar__logout-btn">
           <div className="navigation-bar__item-content">
-            <LogOut className="navigation-bar__icon" size={20} />
+            <LogOut className="navigation-bar__icon" size={22} />
             <span className="navigation-bar__label">Logout</span>
           </div>
         </button>
