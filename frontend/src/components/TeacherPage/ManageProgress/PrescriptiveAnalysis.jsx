@@ -1,6 +1,7 @@
 // src/components/TeacherPage/ManageProgress/PrescriptiveAnalysis.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import api from '../../../services/Teachers/api';
 import {
   FaInfoCircle,
   FaExclamationTriangle,
@@ -19,6 +20,8 @@ import {
   FaTimes
 } from 'react-icons/fa';
 import ActivityEditModal from './ActivityEditModal';
+import ConfirmationDialog from './ConfirmationDialog';
+import SuccessNotification from './SuccessNotification';
 import './css/PrescriptiveAnalysis.css';
 
 // Add inline styles for elements that might not be in the CSS file
@@ -115,6 +118,15 @@ const PrescriptiveAnalysis = ({
   const [editingActivity, setEditingActivity] = useState(null);
   const [localInterventions, setLocalInterventions] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  // Dialog and notification states
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+  const [pendingIntervention, setPendingIntervention] = useState(null);
+  const [notificationMessage, setNotificationMessage] = useState({
+    title: 'Success!',
+    message: 'Intervention successfully pushed to mobile device!'
+  });
   
   // ===== STATE (fetched if not injected by parent) =====
   const [liveStudent, setLiveStudent] = useState(student ?? null);
@@ -448,33 +460,67 @@ const PrescriptiveAnalysis = ({
   };
 
   /**
-   * Handle pushing intervention to mobile device
-   * TODO: Connect to backend API
+   * Initiate pushing intervention to mobile device
+   * Shows confirmation dialog first
    * @param {Object} intervention - Intervention to push
    */
-  const handlePushToMobile = async (intervention) => {
+  const handlePushToMobile = (intervention) => {
+    // Store the intervention to be pushed and show confirmation dialog
+    setPendingIntervention(intervention);
+    setShowConfirmDialog(true);
+  };
+  
+  /**
+   * Confirm and execute pushing intervention to mobile device
+   * Called when user confirms the dialog
+   */
+  const confirmPushToMobile = async () => {
+    // Close the confirmation dialog
+    setShowConfirmDialog(false);
+    
+    if (!pendingIntervention) return;
+    
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // await pushInterventionToMobile(intervention._id);
+      // Make real API call to update status to 'active' using our API service
+      const response = await api.interventions.activate(pendingIntervention._id);
       
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Update intervention status to 'active'
-      setLocalInterventions(prev => 
-        prev.map(item => 
-          item._id === intervention._id 
-            ? { ...item, status: 'active' }
-            : item
-        )
-      );
-      
-      console.log('Intervention pushed to mobile:', intervention._id);
+      if (response.data.success) {
+        // Update local state to reflect the change
+        setLiveInterventions(prev => 
+          prev.map(item => 
+            item._id === pendingIntervention._id 
+              ? { ...item, status: 'active' }
+              : item
+          )
+        );
+        
+        // Also update local interventions in case it's there
+        setLocalInterventions(prev => 
+          prev.map(item => 
+            item._id === pendingIntervention._id 
+              ? { ...item, status: 'active' }
+              : item
+          )
+        );
+        
+        // Show success notification
+        setNotificationMessage({
+          title: 'Successfully Pushed to Mobile!',
+          message: `This intervention is now active and available on the student's mobile device.`
+        });
+        setShowSuccessNotification(true);
+        
+        console.log('Intervention pushed to mobile:', pendingIntervention._id);
+      } else {
+        throw new Error(response.data.message || "Failed to activate intervention");
+      }
     } catch (error) {
       console.error('Error pushing intervention to mobile:', error);
+      alert(`Error pushing intervention to mobile: ${error.message || "Unknown error"}`);
     } finally {
       setLoading(false);
+      setPendingIntervention(null);
     }
   };
 
@@ -852,6 +898,7 @@ const PrescriptiveAnalysis = ({
                           </div>
                         </div>
                         
+                        {/* // will be on the category_results need to fix later on  */}
                         <div className="literexia-intervention-progress">
                           <div className="literexia-progress-item">
                             <div className="literexia-progress-label">
@@ -905,19 +952,27 @@ const PrescriptiveAnalysis = ({
                           <button 
                             className="literexia-edit-activity-btn"
                             onClick={() => handleCreateActivity(selectedCategory, selectedAnalysis, intervention)}
-                            disabled={loading}
+                            disabled={loading || intervention.status === 'active'}
+                            title={intervention.status === 'active' ? 
+                              "Active interventions cannot be edited after being pushed to mobile" : 
+                              "Edit this intervention activity"}
                           >
                             <FaEdit /> Edit Activity
                           </button>
-                          {intervention.status === 'draft' && (
+                          {intervention.status === 'draft' ? (
                             <button 
                               className="literexia-push-mobile-btn"
                               onClick={() => handlePushToMobile(intervention)}
                               disabled={loading}
+                              title="Push this intervention to the student's mobile device"
                             >
-                              {loading ? <FaSpinner className="fa-spin" /> : <FaMobile />}
+                              {loading && pendingIntervention?._id === intervention._id ? <FaSpinner className="fa-spin" /> : <FaMobile />}
                               Push to Mobile
                             </button>
+                          ) : (
+                            <div className="literexia-active-status">
+                              <FaCheckCircle /> Active on Mobile
+                            </div>
                           )}
                         </div>
                       </div>
@@ -951,6 +1006,35 @@ const PrescriptiveAnalysis = ({
           analysis={selectedAnalysis}
           onClose={() => setShowActivityModal(false)}
           onSave={handleSaveActivity}
+        />
+      )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        show={showConfirmDialog}
+        title="Push Intervention to Mobile"
+        message={
+          <>
+            Are you sure you want to push this intervention to the student's mobile device?
+            <br /><br />
+            <strong>IMPORTANT:</strong> Once pushed, this intervention cannot be edited again. 
+            It will be marked as 'active' in the database and available on the student's mobile app.
+          </>
+        }
+        confirmText="Push to Mobile"
+        cancelText="Cancel"
+        icon={<FaMobile />}
+        onConfirm={confirmPushToMobile}
+        onCancel={() => setShowConfirmDialog(false)}
+      />
+
+      {/* Success Notification */}
+      {showSuccessNotification && (
+        <SuccessNotification
+          show={showSuccessNotification}
+          title={notificationMessage.title}
+          message={notificationMessage.message}
+          onDismiss={() => setShowSuccessNotification(false)}
         />
       )}
     </div>

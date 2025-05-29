@@ -310,10 +310,60 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     try {
       console.log('Creating new intervention:', interventionData);
       
-      const response = await api.interventions.create(interventionData);
-      console.log('Intervention creation response:', response.data);
+      // Validate studentId
+      if (!interventionData.studentId) {
+        throw new Error('Student ID is required');
+      }
       
-      return response.data.data;
+      // Log the student ID format for debugging
+      console.log(`Student ID type: ${typeof interventionData.studentId}`);
+      console.log(`Student ID value: ${interventionData.studentId}`);
+      
+      // Ensure questions array is valid
+      if (!interventionData.questions || !Array.isArray(interventionData.questions)) {
+        throw new Error('Questions must be a valid array');
+      }
+      
+      // Log the number of questions
+      console.log(`Number of questions: ${interventionData.questions.length}`);
+      
+      // Check for valid choices in each question
+      interventionData.questions.forEach((question, index) => {
+        if (!question.choices || !Array.isArray(question.choices)) {
+          throw new Error(`Question ${index} has invalid choices`);
+        }
+        console.log(`Question ${index} has ${question.choices.length} choices`);
+      });
+      
+      // Make the API call
+      try {
+        const response = await api.interventions.create(interventionData);
+        console.log('Intervention creation response:', response.data);
+        return response.data.data;
+      } catch (apiError) {
+        console.error('API error creating intervention:', apiError);
+        
+        // Extract and log more error details
+        if (apiError.response) {
+          console.error('API error status:', apiError.response.status);
+          console.error('API error data:', apiError.response.data);
+          
+          // If the API returned specific error information, include it in the thrown error
+          if (apiError.response.data && apiError.response.data.message) {
+            throw new Error(`API Error: ${apiError.response.data.message}`);
+          }
+          
+          // If there are validation errors, log them in detail
+          if (apiError.response.data && apiError.response.data.validationErrors) {
+            const validationErrors = apiError.response.data.validationErrors;
+            const errorFields = Object.keys(validationErrors).join(', ');
+            throw new Error(`Validation errors in fields: ${errorFields}`);
+          }
+        }
+        
+        // Re-throw the original error if we couldn't extract more information
+        throw apiError;
+      }
     } catch (error) {
       console.error('Error creating intervention:', error);
       throw error;
@@ -1772,10 +1822,14 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       }
       
       // Call the onSave callback with the saved intervention
+      console.log("Intervention saved successfully, calling onSave callback");
       onSave(savedIntervention);
       
+      // Reset to first step for next time the modal is opened
+      setCurrentStep(1);
+      
       // Close the modal after successful save
-      console.log("Intervention saved successfully, closing modal");
+      console.log("Closing modal after successful save");
       onClose();
       
     } catch (error) {
@@ -1794,12 +1848,44 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     let interventionData;
     
     // Ensure we have a valid student ID - try multiple properties and provide a fallback
-    const studentId = student?._id || student?.id || student?.studentId;
+    let studentId = null;
+    
+    if (student) {
+      // Try to get the ID from different potential properties
+      if (student._id) {
+        studentId = student._id;
+        console.log("[SAVE] Using student._id:", studentId);
+      } else if (student.id) {
+        studentId = student.id;
+        console.log("[SAVE] Using student.id:", studentId);
+      } else if (student.studentId) {
+        studentId = student.studentId;
+        console.log("[SAVE] Using student.studentId:", studentId);
+      } else if (student.idNumber) {
+        // If only idNumber is available, use that as a fallback
+        studentId = student.idNumber;
+        console.log("[SAVE] Using student.idNumber as fallback:", studentId);
+      } else {
+        // Last resort - try to find any property that might be an ID
+        const possibleIdProps = Object.keys(student).filter(
+          key => key.toLowerCase().includes('id') || key === '_id'
+        );
+        
+        if (possibleIdProps.length > 0) {
+          studentId = student[possibleIdProps[0]];
+          console.log(`[SAVE] Using student.${possibleIdProps[0]} as fallback:`, studentId);
+        }
+      }
+    }
     
     if (!studentId) {
-      console.error("Missing student ID. Student object:", student);
+      console.error("[SAVE] Missing student ID. Student object:", student);
       throw new Error("Student ID is required to create an intervention");
     }
+    
+    // Ensure studentId is a string
+    studentId = String(studentId);
+    console.log("[SAVE] Final studentId (as string):", studentId);
     
     // Get prescriptive analysis ID if available
     let prescriptiveAnalysisId = null;

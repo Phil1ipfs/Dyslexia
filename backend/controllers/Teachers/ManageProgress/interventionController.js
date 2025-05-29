@@ -101,10 +101,39 @@ class InterventionController {
       console.log('Creating intervention with data:', JSON.stringify(interventionData, null, 2));
       
       // Validate required fields
-      if (!interventionData.studentId || !interventionData.category || !interventionData.readingLevel) {
+      if (!interventionData.studentId) {
         return res.status(400).json({
           success: false,
-          message: 'Student ID, category, and reading level are required'
+          message: 'Student ID is required'
+        });
+      }
+      
+      if (!interventionData.category) {
+        return res.status(400).json({
+          success: false,
+          message: 'Category is required'
+        });
+      }
+      
+      if (!interventionData.readingLevel) {
+        return res.status(400).json({
+          success: false,
+          message: 'Reading level is required'
+        });
+      }
+      
+      // Check if questions array is present and valid
+      if (!interventionData.questions) {
+        return res.status(400).json({
+          success: false,
+          message: 'Questions array is required'
+        });
+      }
+      
+      if (!Array.isArray(interventionData.questions)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Questions must be an array'
         });
       }
       
@@ -136,6 +165,10 @@ class InterventionController {
           acc[key] = error.errors[key].message;
           return acc;
         }, {});
+        
+        console.error('Validation errors:', errorResponse.validationErrors);
+        
+        return res.status(400).json(errorResponse);
       }
       
       // If it's a casting error, add more details
@@ -145,8 +178,21 @@ class InterventionController {
           value: error.value,
           kind: error.kind
         };
+        
+        console.error('Cast error details:', errorResponse.castError);
+        
+        return res.status(400).json(errorResponse);
       }
       
+      // If there's a specific error about ObjectId, provide clearer message
+      if (error.message && error.message.includes('ObjectId')) {
+        errorResponse.hint = 'There might be an issue with the studentId format. Ensure it\'s a valid MongoDB ObjectId.';
+        console.error('ObjectId related error:', error.message);
+        
+        return res.status(400).json(errorResponse);
+      }
+      
+      // For other types of errors, return 500
       return res.status(500).json(errorResponse);
     }
   }
@@ -549,6 +595,56 @@ class InterventionController {
       return res.status(500).json({
         success: false,
         message: 'Error updating existing interventions',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Activate an intervention by setting its status to 'active'
+   * This marks it as ready for mobile delivery and prevents further editing
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async activateIntervention(req, res) {
+    try {
+      const { interventionId } = req.params;
+      
+      if (!interventionId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Intervention ID is required'
+        });
+      }
+      
+      // Log the activation attempt
+      console.log(`Activating intervention: ${interventionId}`);
+      
+      // Update the intervention status to 'active'
+      const updatedIntervention = await InterventionService.updateIntervention(
+        interventionId, 
+        { status: 'active' }
+      );
+      
+      if (!updatedIntervention) {
+        return res.status(404).json({
+          success: false,
+          message: 'Intervention not found'
+        });
+      }
+      
+      console.log(`Successfully activated intervention: ${interventionId}`);
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Intervention activated successfully',
+        data: updatedIntervention
+      });
+    } catch (error) {
+      console.error('Error activating intervention:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error activating intervention',
         error: error.message
       });
     }
