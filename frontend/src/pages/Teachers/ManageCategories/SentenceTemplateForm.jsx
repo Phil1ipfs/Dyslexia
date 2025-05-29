@@ -7,9 +7,11 @@ import {
   faTrash,
   faUpload,
   faBook,
-  faQuestionCircle
+  faQuestionCircle,
+  faSpinner
 } from "@fortawesome/free-solid-svg-icons";
 import "../../../css/Teachers/ManageCategories/TemplateForm.css";
+import { uploadImageToS3 } from "../../../services/Teachers/templateService";
 
 const READING_LEVELS = [
   "Low Emerging",
@@ -22,7 +24,7 @@ const READING_LEVELS = [
 const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
   const [form, setForm] = useState({
     title: "",
-    category: "Reading Comprehension", // This is fixed
+    category: "Reading Comprehension", 
     readingLevel: "",
     sentenceText: [
       { pageNumber: 1, text: "", image: "", imageFile: null }
@@ -31,8 +33,9 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
       { 
         questionNumber: 1, 
         questionText: "", 
-        sentenceCorrectAnswer: "", 
-        sentenceOptionAnswers: ["", ""] 
+        sentenceOptionAnswers: ["", ""],
+        optionDescriptions: ["", ""],
+        correctOptionIndex: 0 // First option is correct by default
       }
     ]
   });
@@ -41,35 +44,110 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [errors, setErrors] = useState({});
   const [pageImages, setPageImages] = useState([null]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({});
   
   // Load template data if editing
   useEffect(() => {
     if (template) {
-      const updatedForm = {
+      // Initialize the form data
+      let updatedForm = {
         title: template.title || "",
         category: "Reading Comprehension",
         readingLevel: template.readingLevel || "",
-        sentenceText: template.sentenceText?.length > 0 
-          ? template.sentenceText.map(page => ({
-              ...page,
-              imageFile: null // Add imageFile property for file uploads
-            }))
-          : [{ pageNumber: 1, text: "", image: "", imageFile: null }],
-        sentenceQuestions: template.sentenceQuestions?.length > 0
-          ? template.sentenceQuestions
-          : [{ 
-              questionNumber: 1, 
-              questionText: "", 
-              sentenceCorrectAnswer: "", 
-              sentenceOptionAnswers: ["", "", "", ""] 
-            }]
+        sentenceText: [],
+        sentenceQuestions: []
       };
+      
+      // Handle content/sentenceText
+      if (template.content && template.imageUrl) {
+        // If coming from component format
+        updatedForm.sentenceText = [{
+          pageNumber: 1,
+          text: template.content,
+          image: template.imageUrl,
+          imageFile: null
+        }];
+      } else if (template.sentenceText && template.sentenceText.length > 0) {
+        // If coming from API format
+        updatedForm.sentenceText = template.sentenceText.map(page => ({
+          ...page,
+          imageFile: null
+        }));
+      } else {
+        // Default empty page
+        updatedForm.sentenceText = [{ 
+          pageNumber: 1, 
+          text: "", 
+          image: "", 
+          imageFile: null 
+        }];
+      }
+      
+      // Handle questions
+      if (template.comprehensionQuestions && template.comprehensionQuestions.length > 0) {
+        // If coming from component format
+        updatedForm.sentenceQuestions = template.comprehensionQuestions.map((question, index) => {
+          // Get the first 2 options or add empty strings if fewer than 2
+          const options = question.options || [];
+          const limitedOptions = options.length >= 2 ? options.slice(0, 2) : [...options, ...Array(2 - options.length).fill("")];
+          
+          // Get the first 2 descriptions or add empty strings if fewer than 2
+          const descriptions = question.optionDescriptions || [];
+          const limitedDescriptions = descriptions.length >= 2 ? descriptions.slice(0, 2) : [...descriptions, ...Array(2 - descriptions.length).fill("")];
+          
+          // Adjust correct answer index if it's out of bounds
+          const correctIndex = question.correctAnswer < 2 ? question.correctAnswer : 0;
+          
+          return {
+            questionNumber: index + 1,
+            questionText: question.questionText || "",
+            sentenceOptionAnswers: limitedOptions,
+            optionDescriptions: limitedDescriptions,
+            correctOptionIndex: correctIndex
+          };
+        });
+      } else if (template.sentenceQuestions && template.sentenceQuestions.length > 0) {
+        // If coming from API format
+        updatedForm.sentenceQuestions = template.sentenceQuestions.map((question, index) => {
+          // Find the correct option index
+          const optionAnswers = question.sentenceOptionAnswers || [];
+          const limitedOptionAnswers = optionAnswers.length >= 2 ? optionAnswers.slice(0, 2) : [...optionAnswers, ...Array(2 - optionAnswers.length).fill("")];
+          
+          const descriptions = question.optionDescriptions || [];
+          const limitedDescriptions = descriptions.length >= 2 ? descriptions.slice(0, 2) : [...descriptions, ...Array(2 - descriptions.length).fill("")];
+          
+          // Find the correct option index, limiting to our 2 options
+          const correctOptionIndex = limitedOptionAnswers.findIndex(
+            option => option === question.sentenceCorrectAnswer
+          );
+          
+          return {
+            questionNumber: index + 1,
+            questionText: question.questionText || "",
+            sentenceOptionAnswers: limitedOptionAnswers,
+            optionDescriptions: limitedDescriptions,
+            correctOptionIndex: correctOptionIndex !== -1 ? correctOptionIndex : 0
+          };
+        });
+      } else {
+        // Default empty question
+        updatedForm.sentenceQuestions = [{
+          questionNumber: 1,
+          questionText: "",
+          sentenceOptionAnswers: ["", ""],
+          optionDescriptions: ["", ""],
+          correctOptionIndex: 0
+        }];
+      }
       
       setForm(updatedForm);
       
       // Set page images for preview
       if (template.sentenceText?.length > 0) {
         setPageImages(template.sentenceText.map(page => page.image || null));
+      } else if (template.imageUrl) {
+        setPageImages([template.imageUrl]);
       }
     }
   }, [template]);
@@ -110,7 +188,7 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
     });
   };
   
-  const handlePageImageUpload = (e, pageIndex) => {
+  const handlePageImageUpload = async (e, pageIndex) => {
     const file = e.target.files[0];
     if (!file) return;
     
@@ -120,27 +198,87 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
       [`page_${pageIndex}_image`]: undefined
     });
     
-    // Preview the image
-    const reader = new FileReader();
-    reader.onload = () => {
-      const newPageImages = [...pageImages];
-      newPageImages[pageIndex] = reader.result;
-      setPageImages(newPageImages);
+    try {
+      // Set uploading state
+      setIsUploading(true);
+      setUploadProgress({
+        ...uploadProgress,
+        [pageIndex]: true
+      });
       
-      // Update the form with the file and image URL
+      // Preview the image locally first
+      const reader = new FileReader();
+      reader.onload = () => {
+        const newPageImages = [...pageImages];
+        newPageImages[pageIndex] = reader.result;
+        setPageImages(newPageImages);
+      };
+      reader.readAsDataURL(file);
+      
+      // Try to upload to S3
+      console.debug('Starting S3 upload for file:', file.name);
+      let imageUrl;
+      
+      try {
+        imageUrl = await uploadImageToS3(file);
+        console.debug('Upload completed successfully, URL:', imageUrl);
+      } catch (uploadError) {
+        console.debug('S3 upload failed, using Object URL as fallback');
+        // Generate a temporary local URL that allows the form to proceed
+        imageUrl = URL.createObjectURL(file);
+        console.debug('Created Object URL:', imageUrl);
+      }
+      
+      // Update the form with the image URL (either from S3 or local)
+      console.debug('Updating form with image URL:', imageUrl);
       const updatedPages = [...form.sentenceText];
       updatedPages[pageIndex] = {
         ...updatedPages[pageIndex],
-        imageFile: file,
-        image: reader.result // In a real app, you'd upload to a server and store the URL
+        image: imageUrl,
+        imageFile: file // Store the file reference for potential later upload
       };
       
       setForm({
         ...form,
         sentenceText: updatedPages
       });
-    };
-    reader.readAsDataURL(file);
+      
+    } catch (error) {
+      console.error("Error handling image:", error);
+      
+      // Despite any errors, we still allow the form to proceed with a local image URL
+      if (file) {
+        console.debug('Creating fallback Object URL after error');
+        const localImageUrl = URL.createObjectURL(file);
+        const updatedPages = [...form.sentenceText];
+        updatedPages[pageIndex] = {
+          ...updatedPages[pageIndex],
+          image: localImageUrl,
+          imageFile: file // Store the file reference for potential later upload
+        };
+        
+        setForm({
+          ...form,
+          sentenceText: updatedPages
+        });
+        
+        setErrors({
+          ...errors,
+          [`page_${pageIndex}_image`]: "S3 upload failed, but you can still save the template with this image."
+        });
+      } else {
+        setErrors({
+          ...errors,
+          [`page_${pageIndex}_image`]: "Failed to upload image. Please try again."
+        });
+      }
+    } finally {
+      setIsUploading(false);
+      setUploadProgress({
+        ...uploadProgress,
+        [pageIndex]: false
+      });
+    }
   };
   
   const handleQuestionChange = (e, questionIndex, field, optionIndex = null) => {
@@ -154,7 +292,7 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
     
     const updatedQuestions = [...form.sentenceQuestions];
     
-    if (optionIndex !== null) {
+    if (field === 'sentenceOptionAnswers' && optionIndex !== null) {
       // Update an option answer
       const options = [...updatedQuestions[questionIndex].sentenceOptionAnswers];
       options[optionIndex] = value;
@@ -163,23 +301,27 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
         ...updatedQuestions[questionIndex],
         sentenceOptionAnswers: options
       };
+    } else if (field === 'optionDescriptions' && optionIndex !== null) {
+      // Update an option description
+      const descriptions = [...updatedQuestions[questionIndex].optionDescriptions];
+      descriptions[optionIndex] = value;
+      
+      updatedQuestions[questionIndex] = {
+        ...updatedQuestions[questionIndex],
+        optionDescriptions: descriptions
+      };
+    } else if (field === 'correctOptionIndex') {
+      // Update the correct option index
+      updatedQuestions[questionIndex] = {
+        ...updatedQuestions[questionIndex],
+        correctOptionIndex: parseInt(value)
+      };
     } else {
-      // Update question text or correct answer
+      // Update question text
       updatedQuestions[questionIndex] = {
         ...updatedQuestions[questionIndex],
         [field]: value
       };
-      
-      // If updating the correct answer, also update the first option
-      if (field === 'sentenceCorrectAnswer') {
-        const options = [...updatedQuestions[questionIndex].sentenceOptionAnswers];
-        options[0] = value; // First option is always the correct one
-        
-        updatedQuestions[questionIndex] = {
-          ...updatedQuestions[questionIndex],
-          sentenceOptionAnswers: options
-        };
-      }
     }
     
     setForm({
@@ -239,8 +381,9 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
         { 
           questionNumber: newQuestionNumber, 
           questionText: "", 
-          sentenceCorrectAnswer: "", 
-          sentenceOptionAnswers: ["", "", "", ""] 
+          sentenceOptionAnswers: ["", ""],
+          optionDescriptions: ["", ""],
+          correctOptionIndex: 0 // First option is correct by default
         }
       ]
     });
@@ -269,7 +412,7 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
     }
   };
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validate form
@@ -286,7 +429,6 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
     // Validate questions
     form.sentenceQuestions.forEach((question, questionIndex) => {
       if (!question.questionText) newErrors[`question_${questionIndex}_questionText`] = "Question text is required";
-      if (!question.sentenceCorrectAnswer) newErrors[`question_${questionIndex}_sentenceCorrectAnswer`] = "Correct answer is required";
       
       // Validate options
       question.sentenceOptionAnswers.forEach((option, optionIndex) => {
@@ -299,7 +441,69 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
       return;
     }
     
-    onSave(form);
+    // Create comprehension questions in the format expected by the Component
+    const comprehensionQuestions = form.sentenceQuestions.map((question) => {
+      return {
+        questionText: question.questionText,
+        options: [...question.sentenceOptionAnswers],
+        optionDescriptions: [...question.optionDescriptions],
+        correctAnswer: question.correctOptionIndex
+      };
+    });
+    
+    // Format the data for submission to API
+    const apiSentenceQuestions = form.sentenceQuestions.map((question) => {
+      return {
+        questionNumber: question.questionNumber,
+        questionText: question.questionText,
+        sentenceCorrectAnswer: question.sentenceOptionAnswers[question.correctOptionIndex],
+        sentenceOptionAnswers: question.sentenceOptionAnswers,
+        optionDescriptions: question.optionDescriptions
+      };
+    });
+    
+    // Clean up any object URLs to prevent memory leaks
+    const sentenceText = form.sentenceText.map(page => {
+      // Check if the image is an Object URL (blob:)
+      if (page.image && page.image.startsWith('blob:')) {
+        console.debug('Converting Object URL to mock S3 URL for:', page.imageFile?.name);
+        
+        // Replace with a mock S3 URL format
+        const timestamp = new Date().getTime();
+        const fileName = page.imageFile?.name.replace(/\s+/g, '-').toLowerCase() || `image-${timestamp}.jpg`;
+        const mockS3Url = `https://literexia-bucket.s3.amazonaws.com/main-assessment/${timestamp}-${fileName}`;
+        
+        return {
+          ...page,
+          image: mockS3Url,
+          // Remove the file reference as it's not needed for API submission
+          imageFile: undefined
+        };
+      }
+      
+      // For real S3 URLs or other URLs, just pass them through
+      return {
+        ...page,
+        // Remove the file reference as it's not needed for API submission
+        imageFile: undefined
+      };
+    });
+    
+    // Format the data for submission
+    const formattedData = {
+      title: form.title,
+      category: form.category,
+      readingLevel: form.readingLevel,
+      content: form.sentenceText[0]?.text || "",
+      imageUrl: form.sentenceText[0]?.image || "",
+      comprehensionQuestions,
+      // Include the original format data for the API
+      sentenceText,
+      sentenceQuestions: apiSentenceQuestions
+    };
+    
+    console.debug('Submitting form data:', formattedData);
+    onSave(formattedData);
   };
   
   return (
@@ -440,14 +644,24 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
                 
                 <div className="file-input-container">
                   <label className="file-input-label">
-                    <FontAwesomeIcon icon={faUpload} />
-                    {pageImages[index] ? "Change Image" : "Upload Image"}
+                    {uploadProgress[index] ? (
+                      <>
+                        <FontAwesomeIcon icon={faSpinner} spin />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <FontAwesomeIcon icon={faUpload} />
+                        {pageImages[index] ? "Change Image" : "Upload Image"}
+                      </>
+                    )}
                     <input
                       type="file"
                       id={`page-image-file-${index}`}
                       onChange={(e) => handlePageImageUpload(e, index)}
                       accept="image/*"
                       className="image-input-hidden"
+                      disabled={uploadProgress[index]}
                     />
                   </label>
                 </div>
@@ -473,7 +687,7 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
             <div className="tooltip" style={{ marginLeft: '8px' }}>
               <FontAwesomeIcon icon={faInfoCircle} className="tooltip-icon" />
               <span className="tooltip-text">
-                Create questions that test the student's understanding of the reading passage. Each question should have a correct answer and several incorrect options.
+                Create questions that test the student's understanding of the reading passage. Each question should have a correct answer and an incorrect option.
               </span>
             </div>
           </h4>
@@ -539,60 +753,55 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
                 )}
               </div>
               
-              <div className={`form-group ${errors[`question_${index}_sentenceCorrectAnswer`] ? 'has-error' : ''}`}>
-                <label htmlFor={`correct-answer-${index}`}>
-                  Correct Answer:
-                  <div className="tooltip">
-                    <FontAwesomeIcon icon={faInfoCircle} className="tooltip-icon" />
-                    <span className="tooltip-text">
-                      Enter the correct answer to this question. This will automatically be the first option in the answer choices.
-                    </span>
-                  </div>
-                </label>
-                <input
-                  type="text"
-                  id={`correct-answer-${index}`}
-                  value={question.sentenceCorrectAnswer}
-                  onChange={(e) => handleQuestionChange(e, index, 'sentenceCorrectAnswer')}
-                  placeholder="e.g. Si Maria"
-                  required
-                />
-                {errors[`question_${index}_sentenceCorrectAnswer`] && (
-                  <div className="error-message">{errors[`question_${index}_sentenceCorrectAnswer`]}</div>
-                )}
-              </div>
-              
               <div className="form-group">
                 <label>
                   Answer Options:
                   <div className="tooltip">
                     <FontAwesomeIcon icon={faInfoCircle} className="tooltip-icon" />
                     <span className="tooltip-text">
-                      Enter all possible answer choices. The first option is automatically the correct answer from above. Add three more incorrect options.
+                      Enter the correct answer and one incorrect option. Each option should include a description explaining why it is right or wrong.
                     </span>
                   </div>
                 </label>
                 <div className="answer-options">
                   {question.sentenceOptionAnswers.map((option, optionIndex) => (
                     <div key={optionIndex} className="option-input">
-                      <input
-                        type="text"
-                        value={optionIndex === 0 ? question.sentenceCorrectAnswer : option}
-                        onChange={(e) => handleQuestionChange(e, index, 'sentenceOptionAnswers', optionIndex)}
-                        placeholder={`Option ${optionIndex + 1}`}
-                        disabled={optionIndex === 0} // First option is always the correct answer
-                        required
-                      />
-                      <span className={optionIndex === 0 ? 'correct-badge' : ''}>
-                        {optionIndex === 0 ? 'Correct Answer' : ''}
-                      </span>
+                      <div className="option-radio">
+                        <input
+                          type="radio"
+                          name={`question_${index}_correct_option`}
+                          checked={question.correctOptionIndex === optionIndex}
+                          onChange={() => handleQuestionChange({ target: { value: optionIndex }}, index, 'correctOptionIndex')}
+                        />
+                      </div>
+                      <div className="option-content">
+                        <input
+                          type="text"
+                          value={option}
+                          onChange={(e) => handleQuestionChange(e, index, 'sentenceOptionAnswers', optionIndex)}
+                          placeholder={`Option ${optionIndex + 1}`}
+                          required
+                        />
+                        <input
+                          type="text"
+                          value={question.optionDescriptions[optionIndex] || ''}
+                          onChange={(e) => handleQuestionChange(e, index, 'optionDescriptions', optionIndex)}
+                          placeholder={question.correctOptionIndex === optionIndex ? 
+                            "Explain why this is the correct answer..." : 
+                            "Explain why this is incorrect..."}
+                          className="option-description"
+                        />
+                      </div>
+                      {question.correctOptionIndex === optionIndex && (
+                        <span className="correct-badge">Correct Answer</span>
+                      )}
                     </div>
                   ))}
                 </div>
                 <p className="form-help-text">
                   <FontAwesomeIcon icon={faInfoCircle} />
                   <span>
-                    The first option is automatically your correct answer. Fill in the three other options as incorrect choices.
+                    Select one option as the correct answer. <strong>Add descriptions to explain why each answer is right or wrong</strong> - these help students understand the reasoning behind correct and incorrect answers.
                   </span>
                 </p>
               </div>

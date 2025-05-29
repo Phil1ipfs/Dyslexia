@@ -403,6 +403,15 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load intervention routes:', error.message);
     }
     
+    // Load upload file routes
+    try {
+      const uploadFileRoutes = require('./routes/Teachers/uploadFile');
+      app.use('/api/teachers', uploadFileRoutes);
+      console.log('✅ Loaded upload file routes');
+    } catch (error) {
+      console.warn('⚠️ Could not load upload file routes:', error.message);
+    }
+
     // Load prescriptive analysis routes
     try {
       const prescriptiveAnalysisRoutes = require('./routes/Teachers/ManageProgress/prescriptiveAnalysisRoutes');
