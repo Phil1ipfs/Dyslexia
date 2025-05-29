@@ -78,6 +78,32 @@ const normalizeCategory = (rawCategory = '') => {
     : '';
 };
 
+/**
+ * Sanitizes the image URL by fixing any corrupted S3 URLs
+ * @param {string} url - The potentially corrupted image URL
+ * @returns {string} The sanitized image URL
+ */
+const sanitizeImageUrl = (url) => {
+  if (!url) return '';
+  
+  // Check if the URL contains JavaScript code (a sign of corruption)
+  if (url.includes('async () =>') || url.includes('function(') || url.includes('=>')) {
+    // Extract the filename from the corrupted URL if possible
+    const filenameMatch = url.match(/main-assessment\/[^/]*\/([^/]+)/);
+    const filename = filenameMatch ? filenameMatch[1] : '';
+    
+    if (filename) {
+      // Reconstruct a valid S3 URL with the extracted filename
+      return `https://literexia-bucket.s3.amazonaws.com/main-assessment/sentences/${filename}`;
+    } else {
+      console.error('Could not parse corrupted image URL:', url);
+      return '';
+    }
+  }
+  
+  return url;
+};
+
 // Helper function to format category name - moved outside component
 const formatCategoryName = (categoryName) => {
   if (!categoryName) return "Unknown Category";
@@ -739,14 +765,58 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       const response = await api.interventions.getSentenceTemplates(readingLevel);
       console.log('Sentence templates response:', response.data);
       
-      // Update state with the fetched templates
-      setSentenceTemplates(response.data.data || []);
+      // Sanitize image URLs in the templates before updating state
+      const sanitizedTemplates = (response.data.data || []).map(template => {
+        // Create a sanitized copy of the template
+        const sanitizedTemplate = { ...template };
+        
+        // Fix image URLs in sentence templates
+        if (sanitizedTemplate.sentenceText && sanitizedTemplate.sentenceText.length > 0) {
+          sanitizedTemplate.sentenceText = sanitizedTemplate.sentenceText.map(page => ({
+            ...page,
+            image: sanitizeImageUrl(page.image)
+          }));
+        }
+        
+        // Fix standalone imageUrl property if present
+        if (sanitizedTemplate.imageUrl) {
+          sanitizedTemplate.imageUrl = sanitizeImageUrl(sanitizedTemplate.imageUrl);
+        }
+        
+        return sanitizedTemplate;
+      });
+      
+      // Update state with the sanitized templates
+      setSentenceTemplates(sanitizedTemplates);
     } catch (error) {
       console.error('Error loading sentence templates:', error);
       
       // Use mock data as fallback when API fails
       console.log('Using mock sentence templates data');
-      setSentenceTemplates(await mockFetchSentenceTemplates(readingLevel));
+      const mockTemplates = await mockFetchSentenceTemplates(readingLevel);
+      
+      // Sanitize the mock templates as well
+      const sanitizedMockTemplates = mockTemplates.map(template => {
+        // Create a sanitized copy of the template
+        const sanitizedTemplate = { ...template };
+        
+        // Fix image URLs in sentence templates
+        if (sanitizedTemplate.sentenceText && sanitizedTemplate.sentenceText.length > 0) {
+          sanitizedTemplate.sentenceText = sanitizedTemplate.sentenceText.map(page => ({
+            ...page,
+            image: sanitizeImageUrl(page.image)
+          }));
+        }
+        
+        // Fix standalone imageUrl property if present
+        if (sanitizedTemplate.imageUrl) {
+          sanitizedTemplate.imageUrl = sanitizeImageUrl(sanitizedTemplate.imageUrl);
+        }
+        
+        return sanitizedTemplate;
+      });
+      
+      setSentenceTemplates(sanitizedMockTemplates);
     }
   };
  
@@ -1762,6 +1832,13 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       console.warn("[SAVE] No MongoDB prescriptive analysis available");
     }
     
+    // Ensure prescriptiveAnalysisId is a valid MongoDB ObjectId (24 hex chars) or null
+    if (prescriptiveAnalysisId && 
+        (!/^[0-9a-fA-F]{24}$/.test(prescriptiveAnalysisId) || prescriptiveAnalysisId.includes('dummy_'))) {
+      console.warn("[SAVE] Invalid prescriptiveAnalysisId format, setting to null:", prescriptiveAnalysisId);
+      prescriptiveAnalysisId = null;
+    }
+    
     // Generate a UUID-like string that doesn't rely on timestamps
     const generateUniqueId = () => {
       return 'q_' + Math.random().toString(36).substring(2, 15) + 
@@ -2363,7 +2440,23 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    * Sentence Template Management
    */
   const handleSelectSentenceTemplate = (template) => {
-    setSelectedSentenceTemplate(template);
+    // Create a sanitized copy of the template with fixed image URLs
+    const sanitizedTemplate = { ...template };
+    
+    // Fix image URLs in sentence templates
+    if (sanitizedTemplate.sentenceText && sanitizedTemplate.sentenceText.length > 0) {
+      sanitizedTemplate.sentenceText = sanitizedTemplate.sentenceText.map(page => ({
+        ...page,
+        image: sanitizeImageUrl(page.image)
+      }));
+    }
+    
+    // Fix standalone imageUrl property if present
+    if (sanitizedTemplate.imageUrl) {
+      sanitizedTemplate.imageUrl = sanitizeImageUrl(sanitizedTemplate.imageUrl);
+    }
+    
+    setSelectedSentenceTemplate(sanitizedTemplate);
   };
  
   // ===== VALIDATION FUNCTIONS =====
@@ -3438,7 +3531,15 @@ const renderSentencePreviewStep = () => {
                <div className="literexia-page-number">{index + 1}</div>
                <div className="literexia-page-content">
                  <div className="literexia-page-image">
-                   <img src={page.image} alt={`Page ${index + 1}`} />
+                   <img 
+                     src={sanitizeImageUrl(page.image)} 
+                     alt={`Page ${index + 1}`}
+                     onError={(e) => {
+                       console.error('Image failed to load:', page.image);
+                       e.target.src = 'https://via.placeholder.com/400x300?text=Image+Not+Available';
+                       e.target.alt = 'Image not available';
+                     }} 
+                   />
                  </div>
                  <div className="literexia-page-text">
                    <p>{page.text}</p>
