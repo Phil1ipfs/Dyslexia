@@ -396,6 +396,9 @@ const StudentProgressView = () => {
    */
   const handleSaveActivity = async (updatedActivity) => {
     try {
+      // Close the modal immediately
+      setEditingActivity(null);
+      
       setLoading(true);
       
       // In a real implementation, this would be an API call
@@ -418,7 +421,6 @@ const StudentProgressView = () => {
         setPushToMobileSuccess(false);
       }, 3000);
 
-      setEditingActivity(null);
       // Ensure we stay on the prescriptive analysis tab
       setActiveTab('prescriptive');
       setLoading(false);

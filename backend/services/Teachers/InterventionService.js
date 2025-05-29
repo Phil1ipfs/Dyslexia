@@ -133,15 +133,43 @@ class InterventionService {
     try {
       console.log('Creating intervention with data:', JSON.stringify(interventionData, null, 2));
       
-      // Check if student exists
-      const student = await User.findById(interventionData.studentId);
+      // Ensure we have a valid studentId
+      if (!interventionData.studentId) {
+        throw new Error('Student ID is required');
+      }
+      
+      // Validate and convert the studentId to an ObjectId
+      let studentObjectId;
+      
+      if (mongoose.Types.ObjectId.isValid(interventionData.studentId)) {
+        // If it's already a valid ObjectId, use it directly
+        studentObjectId = new mongoose.Types.ObjectId(interventionData.studentId);
+        console.log(`Using valid ObjectId: ${studentObjectId}`);
+      } else {
+        // Try to find user by idNumber if not a valid ObjectId
+        console.log(`StudentId is not a valid ObjectId, looking up by idNumber: ${interventionData.studentId}`);
+        const user = await User.findOne({ idNumber: interventionData.studentId });
+        
+        if (!user) {
+          throw new Error(`Student not found with ID or idNumber: ${interventionData.studentId}`);
+        }
+        
+        studentObjectId = user._id;
+        console.log(`Found student by idNumber, using ObjectId: ${studentObjectId}`);
+      }
+      
+      // Replace the original studentId with the validated ObjectId
+      interventionData.studentId = studentObjectId;
+      
+      // Check if student exists with the ObjectId to be certain
+      const student = await User.findById(studentObjectId);
       if (!student) {
-        throw new Error('Student not found');
+        throw new Error(`Student not found with ObjectId: ${studentObjectId}`);
       }
       
       // Check if there's an existing intervention for this student and category
       const existingIntervention = await InterventionPlan.findOne({
-        studentId: interventionData.studentId,
+        studentId: studentObjectId,
         category: interventionData.category,
       });
       
@@ -150,14 +178,48 @@ class InterventionService {
         existingIntervention.status = 'archived';
         await existingIntervention.save();
         
-        console.log(`Archived existing intervention ${existingIntervention._id} for student ${interventionData.studentId} and category ${interventionData.category}`);
+        console.log(`Archived existing intervention ${existingIntervention._id} for student ${studentObjectId} and category ${interventionData.category}`);
+      }
+      
+      // Validate questions array
+      if (!interventionData.questions) {
+        console.warn('No questions provided in intervention data, initializing empty array');
+        interventionData.questions = [];
+      }
+      
+      if (!Array.isArray(interventionData.questions)) {
+        console.error('Questions data is not an array:', interventionData.questions);
+        throw new Error('Questions must be an array');
       }
       
       // Add default descriptions for choices if not provided
-      if (interventionData.questions && Array.isArray(interventionData.questions)) {
-        interventionData.questions = interventionData.questions.map(question => {
+      if (interventionData.questions && interventionData.questions.length > 0) {
+        interventionData.questions = interventionData.questions.map((question, qIndex) => {
+          // Validate each question has the required fields
+          if (!question.questionId || !question.questionText || !question.questionType) {
+            console.warn(`Question ${qIndex} is missing required fields:`, question);
+            throw new Error(`Question ${qIndex} is missing required fields (questionId, questionText, or questionType)`);
+          }
+          
+          // Validate the choices array
+          if (!question.choices) {
+            console.warn(`Question ${qIndex} has no choices, initializing empty array`);
+            question.choices = [];
+          }
+          
+          if (!Array.isArray(question.choices)) {
+            console.error(`Question ${qIndex} choices is not an array:`, question.choices);
+            throw new Error(`Choices for question ${qIndex} must be an array`);
+          }
+          
           if (question.choices && Array.isArray(question.choices)) {
-            question.choices = question.choices.map(choice => {
+            question.choices = question.choices.map((choice, cIndex) => {
+              // Ensure choice has required fields
+              if (choice.optionText === undefined || choice.isCorrect === undefined) {
+                console.warn(`Choice ${cIndex} for question ${qIndex} is missing required fields:`, choice);
+                throw new Error(`Choice ${cIndex} for question ${qIndex} is missing required fields (optionText or isCorrect)`);
+              }
+              
               // Description field is optional - provide defaults if missing
               if (!choice.description || choice.description.trim() === '') {
                 // Add default descriptions based on whether the choice is correct
@@ -206,28 +268,67 @@ class InterventionService {
       }
       
       // Create progress record
-      const interventionProgress = new InterventionProgress({
-        studentId: interventionData.studentId,
-        interventionPlanId: null,  // Will be updated after intervention is created
-        status: 'not_started',
-        completedActivities: 0,
-        totalActivities: interventionData.questions?.length || 0,
-        correctAnswers: 0,
-        incorrectAnswers: 0,
-        percentComplete: 0,
-        percentCorrect: 0,
-        passedThreshold: false
-      });
+      let interventionProgress = null;
+      try {
+        interventionProgress = new InterventionProgress({
+          studentId: interventionData.studentId,
+          interventionPlanId: null,  // Will be updated after intervention is created
+          status: 'not_started',
+          completedActivities: 0,
+          totalActivities: interventionData.questions?.length || 0,
+          correctAnswers: 0,
+          incorrectAnswers: 0,
+          percentComplete: 0,
+          percentCorrect: 0,
+          passedThreshold: false
+        });
+        console.log('Created InterventionProgress object:', interventionProgress);
+      } catch (progressError) {
+        console.error('Error creating progress record object:', progressError);
+        // Continue with intervention creation even if progress record creation fails
+      }
       
       // Create the intervention
+      console.log('Attempting to create intervention with model:', InterventionPlan.modelName);
       const intervention = new InterventionPlan(interventionData);
       
-      // Save both records
-      await intervention.save();
+      // Save intervention first
+      try {
+        console.log('Saving intervention document...');
+        await intervention.save();
+        console.log('Intervention saved successfully with ID:', intervention._id);
+      } catch (saveError) {
+        console.error('Error saving intervention:', saveError);
+        
+        // Provide more detailed error information for debugging
+        if (saveError.name === 'ValidationError') {
+          Object.keys(saveError.errors).forEach(field => {
+            console.error(`Validation error for field '${field}':`, saveError.errors[field].message);
+          });
+        } else if (saveError.name === 'CastError') {
+          console.error('Cast error details:', {
+            path: saveError.path,
+            value: saveError.value,
+            kind: saveError.kind
+          });
+        }
+        
+        throw saveError; // Re-throw the error after logging details
+      }
       
-      // Update the progress record with the intervention ID
-      interventionProgress.interventionPlanId = intervention._id;
-      await interventionProgress.save();
+      // Only save progress record if intervention was saved successfully and progress record was created
+      if (interventionProgress) {
+        try {
+          // Update the progress record with the intervention ID
+          interventionProgress.interventionPlanId = intervention._id;
+          await interventionProgress.save();
+          console.log('Progress record saved successfully with ID:', interventionProgress._id);
+        } catch (progressSaveError) {
+          console.error('Error saving progress record:', progressSaveError);
+          // Don't fail the entire operation if only the progress record fails
+          // Just log the error and continue
+        }
+      }
       
       return intervention;
     } catch (error) {

@@ -354,6 +354,23 @@ router.post('/:interventionId/push', auth, authorize('teacher', 'admin'),
   }
 );
 
+// Activate an intervention by setting its status to 'active'
+router.put('/:interventionId/activate', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.activateIntervention(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in PUT /:interventionId/activate route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing activation request',
+        error: error.message
+      });
+    }
+  }
+);
+
 // Update all existing interventions (admin only)
 router.post('/update-existing', auth, authorize('admin'), 
   async (req, res) => {
