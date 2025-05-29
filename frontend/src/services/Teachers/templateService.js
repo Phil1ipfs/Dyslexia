@@ -365,7 +365,7 @@ export const uploadImageToS3 = async (file) => {
     // Generate a unique identifier for the file
     const timestamp = new Date().getTime();
     const fileName = file.name.replace(/\s+/g, '-').toLowerCase();
-    const mockS3Url = `https://literexia-bucket.s3.amazonaws.com/main-assessment/${timestamp}-${fileName}`;
+    const mockS3Url = `https://literexia-bucket.s3.amazonaws.com/main-assessment/sentences/${timestamp}-${fileName}`;
     
     // Create form data
     const formData = new FormData();
@@ -418,7 +418,7 @@ export const uploadImageToS3 = async (file) => {
     // Generate a mock URL as a last resort
     const timestamp = new Date().getTime();
     const fileName = file.name.replace(/\s+/g, '-').toLowerCase();
-    const fallbackUrl = `https://literexia-bucket.s3.amazonaws.com/main-assessment/${timestamp}-${fileName}`;
+    const fallbackUrl = `https://literexia-bucket.s3.amazonaws.com/main-assessment/sentences/${timestamp}-${fileName}`;
     
     console.debug('Returning fallback mock URL:', fallbackUrl);
     return fallbackUrl;
