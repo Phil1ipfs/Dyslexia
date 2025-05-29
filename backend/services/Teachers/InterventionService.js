@@ -133,147 +133,30 @@ class InterventionService {
     try {
       console.log('Creating intervention with data:', JSON.stringify(interventionData, null, 2));
       
-      // Ensure we have a valid studentId
-      if (!interventionData.studentId) {
-        throw new Error('Student ID is required');
+      // Validate student ID
+      if (!interventionData.studentId || !mongoose.Types.ObjectId.isValid(interventionData.studentId)) {
+        throw new Error('Invalid student ID');
       }
       
-      // Validate and convert the studentId to an ObjectId
-      let studentObjectId;
-      
-      if (mongoose.Types.ObjectId.isValid(interventionData.studentId)) {
-        // If it's already a valid ObjectId, use it directly
-        studentObjectId = new mongoose.Types.ObjectId(interventionData.studentId);
-        console.log(`Using valid ObjectId: ${studentObjectId}`);
-      } else {
-        // Try to find user by idNumber if not a valid ObjectId
-        console.log(`StudentId is not a valid ObjectId, looking up by idNumber: ${interventionData.studentId}`);
-        const user = await User.findOne({ idNumber: interventionData.studentId });
-        
-        if (!user) {
-          throw new Error(`Student not found with ID or idNumber: ${interventionData.studentId}`);
-        }
-        
-        studentObjectId = user._id;
-        console.log(`Found student by idNumber, using ObjectId: ${studentObjectId}`);
-      }
-      
-      // Replace the original studentId with the validated ObjectId
-      interventionData.studentId = studentObjectId;
-      
-      // Check if student exists with the ObjectId to be certain
-      const student = await User.findById(studentObjectId);
+      // Check if student exists
+      const student = await User.findById(interventionData.studentId);
       if (!student) {
-        throw new Error(`Student not found with ObjectId: ${studentObjectId}`);
+        throw new Error('Student not found');
       }
       
-      // Check if there's an existing intervention for this student and category
-      const existingIntervention = await InterventionPlan.findOne({
-        studentId: studentObjectId,
-        category: interventionData.category,
-      });
-      
-      if (existingIntervention) {
-        // If there's an existing intervention, archive it first
-        existingIntervention.status = 'archived';
-        await existingIntervention.save();
-        
-        console.log(`Archived existing intervention ${existingIntervention._id} for student ${studentObjectId} and category ${interventionData.category}`);
+      // Ensure prescriptiveAnalysisId is a valid ObjectId or null
+      if (interventionData.prescriptiveAnalysisId) {
+        if (!mongoose.Types.ObjectId.isValid(interventionData.prescriptiveAnalysisId)) {
+          console.warn('Invalid prescriptiveAnalysisId format, setting to null:', interventionData.prescriptiveAnalysisId);
+          interventionData.prescriptiveAnalysisId = null;
+        }
       }
       
-      // Validate questions array
-      if (!interventionData.questions) {
-        console.warn('No questions provided in intervention data, initializing empty array');
-        interventionData.questions = [];
-      }
-      
-      if (!Array.isArray(interventionData.questions)) {
-        console.error('Questions data is not an array:', interventionData.questions);
-        throw new Error('Questions must be an array');
-      }
-      
-      // Add default descriptions for choices if not provided
-      if (interventionData.questions && interventionData.questions.length > 0) {
-        interventionData.questions = interventionData.questions.map((question, qIndex) => {
-          // Validate each question has the required fields
-          if (!question.questionId || !question.questionText || !question.questionType) {
-            console.warn(`Question ${qIndex} is missing required fields:`, question);
-            throw new Error(`Question ${qIndex} is missing required fields (questionId, questionText, or questionType)`);
-          }
-          
-          // Validate the choices array
-          if (!question.choices) {
-            console.warn(`Question ${qIndex} has no choices, initializing empty array`);
-            question.choices = [];
-          }
-          
-          if (!Array.isArray(question.choices)) {
-            console.error(`Question ${qIndex} choices is not an array:`, question.choices);
-            throw new Error(`Choices for question ${qIndex} must be an array`);
-          }
-          
-          if (question.choices && Array.isArray(question.choices)) {
-            question.choices = question.choices.map((choice, cIndex) => {
-              // Ensure choice has required fields
-              if (choice.optionText === undefined || choice.isCorrect === undefined) {
-                console.warn(`Choice ${cIndex} for question ${qIndex} is missing required fields:`, choice);
-                throw new Error(`Choice ${cIndex} for question ${qIndex} is missing required fields (optionText or isCorrect)`);
-              }
-              
-              // Description field is optional - provide defaults if missing
-              if (!choice.description || choice.description.trim() === '') {
-                // Add default descriptions based on whether the choice is correct
-                if (choice.isCorrect) {
-                  choice.description = `Correct! "${choice.optionText}" is the right answer.`;
-                  console.log(`Added default correct description for choice: ${choice.optionText}`);
-                } else {
-                  choice.description = `Incorrect. Try again and listen carefully to the sound.`;
-                  
-                  // Add more specific feedback based on question type
-                  if (question.questionType === 'patinig') {
-                    choice.description = `Incorrect. This is not the right vowel sound. Listen carefully and try again.`;
-                  } else if (question.questionType === 'katinig') {
-                    choice.description = `Incorrect. This is not the right consonant sound. Listen carefully and try again.`;
-                  } else if (question.questionType === 'malapantig') {
-                    choice.description = `Incorrect. This is not the right syllable. Listen to the whole word and try again.`;
-                  } else if (question.questionType === 'word') {
-                    choice.description = `Incorrect. This is not the right word. Look at the letters carefully and try again.`;
-                  } else if (question.questionType === 'sentence') {
-                    choice.description = `Incorrect. This is not the right answer. Read the passage again carefully.`;
-                  }
-                  console.log(`Added default incorrect description for choice: ${choice.optionText}`);
-                }
-              } else {
-                console.log(`Using teacher-provided description for choice: ${choice.optionText}: "${choice.description}"`);
-              }
-              
-              return choice;
-            });
-          }
-          return question;
-        });
-      }
-      
-      // Print the final intervention data with descriptions
-      console.log('Final intervention data with descriptions:');
-      if (interventionData.questions) {
-        interventionData.questions.forEach((question, qIndex) => {
-          console.log(`Question ${qIndex + 1}: ${question.questionText}`);
-          if (question.choices) {
-            question.choices.forEach((choice, cIndex) => {
-              console.log(`  Choice ${cIndex + 1}: ${choice.optionText} - Description: ${choice.description || 'N/A'}`);
-            });
-          }
-        });
-      }
-      
-      // Create progress record
+      // Create intervention progress record first
       let interventionProgress = null;
       try {
         interventionProgress = new InterventionProgress({
           studentId: interventionData.studentId,
-          interventionPlanId: null,  // Will be updated after intervention is created
-          status: 'not_started',
           completedActivities: 0,
           totalActivities: interventionData.questions?.length || 0,
           correctAnswers: 0,

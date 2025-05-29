@@ -21,6 +21,34 @@ const READING_LEVELS = [
   "At Grade Level"
 ];
 
+/**
+ * Sanitizes the image URL by fixing any corrupted S3 URLs
+ * @param {string} url - The potentially corrupted image URL
+ * @returns {string} The sanitized image URL
+ */
+const sanitizeImageUrl = (url) => {
+  if (!url) return '';
+  
+  // Check if the URL contains JavaScript code (a sign of corruption)
+  if (url.includes('async () =>') || url.includes('function(') || url.includes('=>')) {
+    // Extract the filename from the corrupted URL if possible
+    const filenameMatch = url.match(/main-assessment\/sentences\/([^/]+)/);
+    const filename = filenameMatch ? filenameMatch[1] : '';
+    
+    if (filename) {
+      // Reconstruct a valid S3 URL with the extracted filename
+      return `https://literexia-bucket.s3.amazonaws.com/main-assessment/sentences/${filename}`;
+    } else {
+      // If we can't extract a filename, return empty string or a placeholder
+      console.error('Could not parse corrupted image URL:', url);
+      return '';
+    }
+  }
+  
+  // If URL looks normal, return it unchanged
+  return url;
+};
+
 const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
   const [form, setForm] = useState({
     title: "",
@@ -65,13 +93,14 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
         updatedForm.sentenceText = [{
           pageNumber: 1,
           text: template.content,
-          image: template.imageUrl,
+          image: sanitizeImageUrl(template.imageUrl),
           imageFile: null
         }];
       } else if (template.sentenceText && template.sentenceText.length > 0) {
         // If coming from API format
         updatedForm.sentenceText = template.sentenceText.map(page => ({
           ...page,
+          image: sanitizeImageUrl(page.image),
           imageFile: null
         }));
       } else {
@@ -110,7 +139,7 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
       } else if (template.sentenceQuestions && template.sentenceQuestions.length > 0) {
         // If coming from API format
         updatedForm.sentenceQuestions = template.sentenceQuestions.map((question, index) => {
-          // Find the correct option index
+          // Find correct option index
           const optionAnswers = question.sentenceOptionAnswers || [];
           const limitedOptionAnswers = optionAnswers.length >= 2 ? optionAnswers.slice(0, 2) : [...optionAnswers, ...Array(2 - optionAnswers.length).fill("")];
           
@@ -143,11 +172,11 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
       
       setForm(updatedForm);
       
-      // Set page images for preview
+      // Set page images for preview with sanitized URLs
       if (template.sentenceText?.length > 0) {
-        setPageImages(template.sentenceText.map(page => page.image || null));
+        setPageImages(template.sentenceText.map(page => sanitizeImageUrl(page.image) || null));
       } else if (template.imageUrl) {
-        setPageImages([template.imageUrl]);
+        setPageImages([sanitizeImageUrl(template.imageUrl)]);
       }
     }
   }, [template]);
@@ -222,6 +251,9 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
       try {
         imageUrl = await uploadImageToS3(file);
         console.debug('Upload completed successfully, URL:', imageUrl);
+        
+        // Sanitize the URL to ensure it's valid
+        imageUrl = sanitizeImageUrl(imageUrl);
       } catch (uploadError) {
         console.debug('S3 upload failed, using Object URL as fallback');
         // Generate a temporary local URL that allows the form to proceed
@@ -242,6 +274,11 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
         ...form,
         sentenceText: updatedPages
       });
+      
+      // Update the pageImages state to show the preview
+      const newPageImages = [...pageImages];
+      newPageImages[pageIndex] = imageUrl;
+      setPageImages(newPageImages);
       
     } catch (error) {
       console.error("Error handling image:", error);
@@ -462,10 +499,13 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
       };
     });
     
-    // Clean up any object URLs to prevent memory leaks
+    // Clean up any object URLs to prevent memory leaks and sanitize all image URLs
     const sentenceText = form.sentenceText.map(page => {
+      // First sanitize the image URL to fix any corruption
+      let imageUrl = sanitizeImageUrl(page.image);
+      
       // Check if the image is an Object URL (blob:)
-      if (page.image && page.image.startsWith('blob:')) {
+      if (imageUrl && imageUrl.startsWith('blob:')) {
         console.debug('Converting Object URL to mock S3 URL for:', page.imageFile?.name);
         
         // Replace with a mock S3 URL format
@@ -484,6 +524,7 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
       // For real S3 URLs or other URLs, just pass them through
       return {
         ...page,
+        image: imageUrl, // Use the sanitized URL
         // Remove the file reference as it's not needed for API submission
         imageFile: undefined
       };
@@ -495,7 +536,7 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
       category: form.category,
       readingLevel: form.readingLevel,
       content: form.sentenceText[0]?.text || "",
-      imageUrl: form.sentenceText[0]?.image || "",
+      imageUrl: sentenceText[0]?.image || "", // Use the sanitized image URL
       comprehensionQuestions,
       // Include the original format data for the API
       sentenceText,
@@ -592,88 +633,90 @@ const SentenceTemplateForm = ({ template, onSave, onCancel }) => {
           
           {form.sentenceText.map((page, index) => (
             <div 
-              key={index}
-              className={`page-content ${currentPage === index ? 'active' : 'hidden'}`}
+              key={index} 
+              className={`page-content ${currentPage === index ? 'visible' : 'hidden'}`}
             >
               <div className="page-header">
                 <h5>Page {page.pageNumber}</h5>
-                <button 
-                  type="button" 
-                  className="remove-page-btn"
-                  onClick={() => removePage(index)}
-                  disabled={form.sentenceText.length <= 1}
-                  title={form.sentenceText.length <= 1 ? "Cannot remove the only page" : "Remove this page"}
-                >
-                  <FontAwesomeIcon icon={faTrash} />
-                </button>
+                {form.sentenceText.length > 1 && (
+                  <button 
+                    type="button" 
+                    className="remove-page-btn"
+                    onClick={() => removePage(index)}
+                  >
+                    <FontAwesomeIcon icon={faTrash} /> Remove
+                  </button>
+                )}
               </div>
               
               <div className={`form-group ${errors[`page_${index}_text`] ? 'has-error' : ''}`}>
-                <label htmlFor={`page-text-${index}`}>
+                <label htmlFor={`page_${index}_text`}>
                   Page Text:
                   <div className="tooltip">
                     <FontAwesomeIcon icon={faInfoCircle} className="tooltip-icon" />
                     <span className="tooltip-text">
-                      Enter the text content for this page. Keep it short and simple for dyslexic students.
+                      Enter the text that will appear on this page of the story.
                     </span>
                   </div>
                 </label>
                 <textarea
-                  id={`page-text-${index}`}
+                  id={`page_${index}_text`}
                   value={page.text}
                   onChange={(e) => handlePageChange(e, index, 'text')}
-                  placeholder="Enter the text for this page of the story..."
-                  rows={4}
+                  placeholder="Enter the text for this page..."
                   required
-                ></textarea>
-                {errors[`page_${index}_text`] && (
-                  <div className="error-message">{errors[`page_${index}_text`]}</div>
-                )}
+                />
+                {errors[`page_${index}_text`] && <div className="error-message">{errors[`page_${index}_text`]}</div>}
               </div>
               
               <div className={`form-group ${errors[`page_${index}_image`] ? 'has-error' : ''}`}>
-                <label htmlFor={`page-image-${index}`}>
+                <label htmlFor={`page_${index}_image`}>
                   Page Image:
                   <div className="tooltip">
                     <FontAwesomeIcon icon={faInfoCircle} className="tooltip-icon" />
                     <span className="tooltip-text">
-                      Upload an image that illustrates this page of the story. Images help dyslexic students understand the content.
+                      Upload an image that illustrates this page of the story.
                     </span>
                   </div>
                 </label>
-                
-                <div className="file-input-container">
-                  <label className="file-input-label">
-                    {uploadProgress[index] ? (
-                      <>
-                        <FontAwesomeIcon icon={faSpinner} spin />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <FontAwesomeIcon icon={faUpload} />
-                        {pageImages[index] ? "Change Image" : "Upload Image"}
-                      </>
-                    )}
+                <div className="file-upload-container">
+                  <div className="file-upload-button">
+                    <label htmlFor={`page_${index}_image`} className="file-upload-labell">
+                      <FontAwesomeIcon icon={faUpload} /> {page.image ? 'Change Image' : 'Upload Image'}
+                    </label>
                     <input
                       type="file"
-                      id={`page-image-file-${index}`}
+                      id={`page_${index}_image`}
                       onChange={(e) => handlePageImageUpload(e, index)}
                       accept="image/*"
-                      className="image-input-hidden"
-                      disabled={uploadProgress[index]}
+                      className="file-input"
                     />
-                  </label>
-                </div>
-                
-                {pageImages[index] && (
-                  <div className="image-preview">
-                    <img src={pageImages[index]} alt={`Preview for page ${page.pageNumber}`} />
                   </div>
-                )}
+                  {isUploading && uploadProgress[index] && (
+                    <div className="upload-progress">
+                      <FontAwesomeIcon icon={faSpinner} spin /> Uploading...
+                    </div>
+                  )}
+                  {page.image && (
+                    <div className="file-name">
+                      {page.imageFile?.name || page.image.substring(page.image.lastIndexOf('/') + 1)}
+                    </div>
+                  )}
+                </div>
+                {errors[`page_${index}_image`] && <div className="error-message">{errors[`page_${index}_image`]}</div>}
                 
-                {errors[`page_${index}_image`] && (
-                  <div className="error-message">{errors[`page_${index}_image`]}</div>
+                {/* Image Preview Section */}
+                {(pageImages[index] || page.image) && (
+                  <div className="image-preview-container">
+                    <h6>Image Preview:</h6>
+                    <div className="image-preview">
+                      <img 
+                        src={pageImages[index] || page.image} 
+                        alt={`Preview for page ${page.pageNumber}`} 
+                        className="preview-image"
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

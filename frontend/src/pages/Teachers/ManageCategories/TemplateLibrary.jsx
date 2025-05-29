@@ -29,6 +29,32 @@ import {
   deleteTemplate
 } from '../../../services/Teachers/templateService';
 
+/**
+ * Sanitizes corrupted S3 image URLs
+ * @param {string} url - The potentially corrupted image URL
+ * @returns {string} - The fixed URL or an empty string
+ */
+const sanitizeImageUrl = (url) => {
+  if (!url) return '';
+  
+  // Check if the URL contains JavaScript code (a sign of corruption)
+  if (url.includes('async () =>') || url.includes('function(') || url.includes('=>')) {
+    // Extract the filename from the corrupted URL if possible
+    const filenameMatch = url.match(/main-assessment\/[^/]*\/([^/]+)/);
+    const filename = filenameMatch ? filenameMatch[1] : '';
+    
+    if (filename) {
+      // Reconstruct a valid S3 URL with the extracted filename
+      return `https://literexia-bucket.s3.amazonaws.com/main-assessment/sentences/${filename}`;
+    } else {
+      console.error('Could not parse corrupted image URL:', url);
+      return '';
+    }
+  }
+  
+  return url;
+};
+
 // Tooltip component for help text
 const Tooltip = ({ text }) => (
   <div className="tl-tooltip">
@@ -249,7 +275,28 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
   };
 
   const handlePreviewTemplate = (template) => {
-    setPreviewTemplate(template);
+    // Create a sanitized copy of the template
+    const sanitizedTemplate = { ...template };
+    
+    // Fix image URLs in sentence templates
+    if (sanitizedTemplate.sentenceText && sanitizedTemplate.sentenceText.length > 0) {
+      sanitizedTemplate.sentenceText = sanitizedTemplate.sentenceText.map(page => ({
+        ...page,
+        image: sanitizeImageUrl(page.image)
+      }));
+    }
+    
+    // Fix standalone imageUrl property
+    if (sanitizedTemplate.imageUrl) {
+      sanitizedTemplate.imageUrl = sanitizeImageUrl(sanitizedTemplate.imageUrl);
+    }
+    
+    // Fix choice image if present
+    if (sanitizedTemplate.choiceImage) {
+      sanitizedTemplate.choiceImage = sanitizeImageUrl(sanitizedTemplate.choiceImage);
+    }
+    
+    setPreviewTemplate(sanitizedTemplate);
     setIsPreviewDialogOpen(true);
   };
 
@@ -1272,7 +1319,7 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
                             </div>
                             <div className="tl-preview-item-content">
                               <div className="tl-preview-choice-image">
-                                <img src={previewTemplate.choiceImage} alt="Choice" />
+                                <img src={sanitizeImageUrl(previewTemplate.choiceImage)} alt="Choice" />
                               </div>
                             </div>
                           </div>
@@ -1299,14 +1346,56 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
                       <div className="tl-preview-value tl-preview-title">{previewTemplate.title}</div>
                     </div>
                     
-                    <div className="tl-preview-sentence-text">
-                      <div className="tl-preview-label">Content</div>
-                      <div className="tl-preview-value content">{previewTemplate.content}</div>
-                    </div>
+                    {/* Display content for older format templates */}
+                    {previewTemplate.content && (
+                      <div className="tl-preview-sentence-text">
+                        <div className="tl-preview-label">Content</div>
+                        <div className="tl-preview-value content">{previewTemplate.content}</div>
+                      </div>
+                    )}
                     
+                    {/* Display imageUrl for older format templates */}
                     {previewTemplate.imageUrl && (
                       <div className="tl-preview-sentence-image">
-                        <img src={previewTemplate.imageUrl} alt={previewTemplate.title} />
+                        <img 
+                          src={sanitizeImageUrl(previewTemplate.imageUrl)} 
+                          alt={previewTemplate.title}
+                          onError={(e) => {
+                            console.error('Image failed to load:', previewTemplate.imageUrl);
+                            e.target.src = 'https://via.placeholder.com/400x300?text=Image+Not+Available';
+                            e.target.alt = 'Image not available';
+                          }}
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Display sentenceText array for newer format templates */}
+                    {previewTemplate.sentenceText && previewTemplate.sentenceText.length > 0 && (
+                      <div className="tl-preview-pages">
+                        <div className="tl-preview-label">Pages</div>
+                        <div className="tl-preview-pages-list">
+                          {previewTemplate.sentenceText.map((page, index) => (
+                            <div key={index} className="tl-preview-page">
+                              <div className="tl-preview-page-number">Page {page.pageNumber}</div>
+                              <div className="tl-preview-page-content">
+                                {page.image && (
+                                  <div className="tl-preview-page-image">
+                                    <img 
+                                      src={sanitizeImageUrl(page.image)} 
+                                      alt={`Page ${page.pageNumber}`}
+                                      onError={(e) => {
+                                        console.error('Image failed to load:', page.image);
+                                        e.target.src = 'https://via.placeholder.com/400x300?text=Image+Not+Available';
+                                        e.target.alt = 'Image not available';
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                                <div className="tl-preview-page-text">{page.text}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                     
@@ -1345,6 +1434,41 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
                       </div>
                     )}
                     
+                    {/* API format questions (sentenceQuestions) */}
+                    {previewTemplate.sentenceQuestions && previewTemplate.sentenceQuestions.length > 0 && (
+                      <div className="tl-preview-comprehension">
+                        <div className="tl-preview-comprehension-header">
+                          <FontAwesomeIcon icon={faQuestion} />
+                          <h4>Comprehension Questions</h4>
+                        </div>
+                        <div className="tl-preview-questions-list">
+                          {previewTemplate.sentenceQuestions.map((question, index) => (
+                            <div key={index} className="tl-preview-question-item">
+                              <div className="tl-preview-question-number">{question.questionNumber}</div>
+                              <div className="tl-preview-question-content">
+                                <div className="tl-preview-question-text">{question.questionText}</div>
+                                {question.sentenceOptionAnswers && question.sentenceOptionAnswers.length > 0 && (
+                                  <div className="tl-preview-options">
+                                    {question.sentenceOptionAnswers.map((option, optIndex) => (
+                                      <div key={optIndex} className={`tl-preview-option ${option === question.sentenceCorrectAnswer ? 'tl-correct-option' : ''}`}>
+                                        <div className="tl-option-marker">{String.fromCharCode(65 + optIndex)}</div>
+                                        <div className="tl-option-text">{option}</div>
+                                        {option === question.sentenceCorrectAnswer && (
+                                          <div className="tl-correct-marker">
+                                            <FontAwesomeIcon icon={faCheck} />
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="tl-preview-details">
                       <div className="tl-preview-item">
                         <div className="tl-preview-item-header">
@@ -1363,32 +1487,6 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
                         </div>
                         <div className="tl-preview-item-content">
                           {previewTemplate.readingLevel}
-                        </div>
-                      </div>
-                      
-                      {previewTemplate.wordCount && (
-                        <div className="tl-preview-item">
-                          <div className="tl-preview-item-header">
-                            <FontAwesomeIcon icon={faFileAlt} />
-                            <span>Word Count</span>
-                          </div>
-                          <div className="tl-preview-item-content">
-                            {previewTemplate.wordCount} words
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className="tl-preview-item">
-                        <div className="tl-preview-item-header">
-                          <FontAwesomeIcon icon={faImage} />
-                          <span>Has Image</span>
-                        </div>
-                        <div className="tl-preview-item-content">
-                          {previewTemplate.imageUrl ? (
-                            <span className="tl-badge yes">Yes</span>
-                          ) : (
-                            <span className="tl-badge no">No</span>
-                          )}
                         </div>
                       </div>
                     </div>
