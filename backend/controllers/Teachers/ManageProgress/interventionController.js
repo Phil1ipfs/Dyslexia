@@ -698,6 +698,390 @@ class InterventionController {
       });
     }
   }
+
+  /**
+   * Update a template question
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async updateTemplateQuestion(req, res) {
+    try {
+      const templateId = req.params.templateId;
+      const templateData = req.body;
+      
+      // Validate the template ID
+      if (!templateId || !mongoose.Types.ObjectId.isValid(templateId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid template ID'
+        });
+      }
+      
+      // Validate required fields
+      if (!templateData.category || !templateData.questionType || !templateData.templateText) {
+        return res.status(400).json({
+          success: false,
+          message: 'Category, question type, and template text are required'
+        });
+      }
+      
+      // Add updated timestamp
+      templateData.updatedAt = new Date();
+      
+      // Update the template in the database
+      const TemplateQuestion = require('../../../models/Teachers/ManageProgress/templatesQuestionsModel');
+      
+      const updatedTemplate = await TemplateQuestion.findByIdAndUpdate(
+        templateId,
+        templateData,
+        { new: true, runValidators: true }
+      );
+      
+      if (!updatedTemplate) {
+        return res.status(404).json({
+          success: false,
+          message: 'Template question not found'
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Template question updated successfully',
+        data: updatedTemplate
+      });
+    } catch (error) {
+      console.error('Error updating template question:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error updating template question',
+        error: error.message
+      });
+    }
+  }
+  
+  /**
+   * Update a template choice
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async updateTemplateChoice(req, res) {
+    try {
+      const templateId = req.params.templateId;
+      const choiceData = req.body;
+      
+      // Validate the template ID
+      if (!templateId || !mongoose.Types.ObjectId.isValid(templateId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid template ID'
+        });
+      }
+      
+      // Validate required fields
+      if (!choiceData.choiceType) {
+        return res.status(400).json({
+          success: false,
+          message: 'Choice type is required'
+        });
+      }
+      
+      // Validate choiceImage if present
+      if (choiceData.choiceImage) {
+        const isUrl = /^https?:\/\//.test(choiceData.choiceImage);
+        if (!isUrl) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Invalid image URL format' 
+          });
+        }
+      }
+      
+      // Add updated timestamp
+      choiceData.updatedAt = new Date();
+      
+      // Update the template in the database
+      const TemplateChoice = require('../../../models/Teachers/ManageProgress/templatesChoicesModel');
+      
+      const updatedChoice = await TemplateChoice.findByIdAndUpdate(
+        templateId,
+        choiceData,
+        { new: true, runValidators: true }
+      );
+      
+      if (!updatedChoice) {
+        return res.status(404).json({
+          success: false,
+          message: 'Template choice not found'
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Template choice updated successfully',
+        data: updatedChoice
+      });
+    } catch (error) {
+      console.error('Error updating template choice:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error updating template choice',
+        error: error.message
+      });
+    }
+  }
+  
+  /**
+   * Update a sentence template
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async updateSentenceTemplate(req, res) {
+    try {
+      const templateId = req.params.templateId;
+      const templateData = req.body;
+      
+      // Validate the template ID
+      if (!templateId || !mongoose.Types.ObjectId.isValid(templateId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid template ID'
+        });
+      }
+      
+      // Validate required fields
+      if (!templateData.title || !templateData.readingLevel) {
+        return res.status(400).json({
+          success: false,
+          message: 'Title and reading level are required'
+        });
+      }
+      
+      // Add updated timestamp
+      templateData.updatedAt = new Date();
+      
+      // Update the template in the database
+      const SentenceTemplate = require('../../../models/Teachers/ManageProgress/sentenceTemplateModel');
+      
+      const updatedTemplate = await SentenceTemplate.findByIdAndUpdate(
+        templateId,
+        templateData,
+        { new: true, runValidators: true }
+      );
+      
+      if (!updatedTemplate) {
+        return res.status(404).json({
+          success: false,
+          message: 'Sentence template not found'
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Sentence template updated successfully',
+        data: updatedTemplate
+      });
+    } catch (error) {
+      console.error('Error updating sentence template:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error updating sentence template',
+        error: error.message
+      });
+    }
+  }
+  
+  /**
+   * Delete a template question
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async deleteTemplateQuestion(req, res) {
+    try {
+      const templateId = req.params.templateId;
+      
+      // Validate the template ID
+      if (!templateId || !mongoose.Types.ObjectId.isValid(templateId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid template ID'
+        });
+      }
+      
+      // Delete the template from the database
+      const TemplateQuestion = require('../../../models/Teachers/ManageProgress/templatesQuestionsModel');
+      
+      const deletedTemplate = await TemplateQuestion.findByIdAndDelete(templateId);
+      
+      if (!deletedTemplate) {
+        return res.status(404).json({
+          success: false,
+          message: 'Template question not found'
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Template question deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting template question:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error deleting template question',
+        error: error.message
+      });
+    }
+  }
+  
+  /**
+   * Delete a template choice
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async deleteTemplateChoice(req, res) {
+    try {
+      const templateId = req.params.templateId;
+      
+      // Validate the template ID
+      if (!templateId || !mongoose.Types.ObjectId.isValid(templateId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid template ID'
+        });
+      }
+      
+      // Delete the template from the database
+      const TemplateChoice = require('../../../models/Teachers/ManageProgress/templatesChoicesModel');
+      
+      const deletedChoice = await TemplateChoice.findByIdAndDelete(templateId);
+      
+      if (!deletedChoice) {
+        return res.status(404).json({
+          success: false,
+          message: 'Template choice not found'
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Template choice deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting template choice:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error deleting template choice',
+        error: error.message
+      });
+    }
+  }
+  
+  /**
+   * Delete a sentence template
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async deleteSentenceTemplate(req, res) {
+    try {
+      const templateId = req.params.templateId;
+      
+      // Validate the template ID
+      if (!templateId || !mongoose.Types.ObjectId.isValid(templateId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid template ID'
+        });
+      }
+      
+      // Delete the template from the database
+      const SentenceTemplate = require('../../../models/Teachers/ManageProgress/sentenceTemplateModel');
+      
+      const deletedTemplate = await SentenceTemplate.findByIdAndDelete(templateId);
+      
+      if (!deletedTemplate) {
+        return res.status(404).json({
+          success: false,
+          message: 'Sentence template not found'
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Sentence template deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting sentence template:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error deleting sentence template',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Create a new sentence template
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async createSentenceTemplate(req, res) {
+    try {
+      const templateData = req.body;
+      
+      // Validate required fields
+      if (!templateData.title || !templateData.readingLevel) {
+        return res.status(400).json({
+          success: false,
+          message: 'Title and reading level are required'
+        });
+      }
+      
+      // Validate sentenceText and sentenceQuestions
+      if (!templateData.sentenceText || !Array.isArray(templateData.sentenceText) || 
+          templateData.sentenceText.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Sentence text is required and must be an array'
+        });
+      }
+      
+      if (!templateData.sentenceQuestions || !Array.isArray(templateData.sentenceQuestions) || 
+          templateData.sentenceQuestions.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Sentence questions are required and must be an array'
+        });
+      }
+      
+      // Add user ID from auth middleware
+      if (req.user) {
+        templateData.createdBy = req.user.id;
+      }
+      
+      // Add timestamps
+      templateData.createdAt = new Date();
+      templateData.updatedAt = new Date();
+      
+      // Create the template in the database
+      const SentenceTemplate = require('../../../models/Teachers/ManageProgress/sentenceTemplateModel');
+      
+      const newTemplate = new SentenceTemplate(templateData);
+      await newTemplate.save();
+      
+      return res.status(201).json({
+        success: true,
+        message: 'Sentence template created successfully',
+        data: newTemplate
+      });
+    } catch (error) {
+      console.error('Error creating sentence template:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error creating sentence template',
+        error: error.message
+      });
+    }
+  }
 }
 
 // Export the class itself, not an instance

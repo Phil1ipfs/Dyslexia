@@ -1828,3 +1828,37 @@
   color: #0ca678;
   margin-left: 8px;
 }
+
+/* Choice Templates Tab Specific Fix */
+/* Target the Choice Templates tab content */
+.tl-nested-tab:nth-child(2).active ~ .tl-template-content .tl-header-row,
+.tl-nested-tab:nth-child(2).active ~ .tl-template-content .tl-row {
+  display: grid;
+  grid-template-columns: 35% 35% 15% 15%;
+  width: 100%;
+}
+
+/* Ensure cells take up their grid area */
+.tl-nested-tab:nth-child(2).active ~ .tl-template-content .tl-header-cell,
+.tl-nested-tab:nth-child(2).active ~ .tl-template-content .tl-cell {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Center status column */
+.tl-nested-tab:nth-child(2).active ~ .tl-template-content .tl-header-cell:nth-child(3),
+.tl-nested-tab:nth-child(2).active ~ .tl-template-content .tl-cell:nth-child(3) {
+  justify-content: center;
+}
+
+/* Right-align actions column */
+.tl-nested-tab:nth-child(2).active ~ .tl-template-content .tl-header-cell:nth-child(4),
+.tl-nested-tab:nth-child(2).active ~ .tl-template-content .tl-cell:nth-child(4) {
+  justify-content: flex-end;
+}
+
+/* Additional specificity for the Choice tab */
+.tl-nested-tab:nth-child(2).active ~ .tl-template-content .tl-choice-preview {
+  width: auto;
+  flex: 1;
+}
