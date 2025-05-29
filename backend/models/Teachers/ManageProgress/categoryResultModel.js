@@ -75,6 +75,9 @@ const categoryResultSchema = new mongoose.Schema({
 });
 
 
+
+
+
 const PrescriptiveAnalysisService = require('../../../services/Teachers/PrescriptiveAnalysisService');
 
 // After a new category result is saved, generate prescriptive analyses

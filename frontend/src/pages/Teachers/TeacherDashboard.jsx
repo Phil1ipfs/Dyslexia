@@ -517,7 +517,6 @@ const TeacherDashboard = () => {
                     letterSpacing: '0.05em'
                   }}>Student</th>
                   <th style={{
-                    textAlign: 'left',
                     fontSize: '0.9rem',
                     fontWeight: '500',
                     color: 'white',
@@ -563,7 +562,6 @@ const TeacherDashboard = () => {
                     width: '30%'
                   }}>Categories Needing Improvement</th>
                   <th style={{
-                    textAlign: 'left',
                     fontSize: '0.9rem',
                     fontWeight: '500',
                     color: 'white',
