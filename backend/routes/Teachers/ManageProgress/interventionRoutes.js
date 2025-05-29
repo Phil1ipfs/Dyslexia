@@ -200,6 +200,23 @@ router.post('/templates/choices', auth, authorize('teacher', 'admin'),
   }
 );
 
+// Fetch all templates from the database
+router.get('/templates/all', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.getAllTemplates(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in GET /templates/all route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
 // Check if an intervention exists for a student and category
 router.get('/check', auth, authorize('teacher', 'admin'), 
   async (req, res) => {

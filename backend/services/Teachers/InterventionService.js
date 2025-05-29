@@ -549,7 +549,7 @@ class InterventionService {
     try {
       const normCategory = this.normalizeCategoryName(category);
       
-      console.log(`Querying templates_questions with category: ${normCategory}`);
+      console.log(`[DEBUG] Fetching template questions for category: ${normCategory}`);
       
       // Use direct collection access to match how main_assessment is queried
       const templates = await mongoose.connection.db
@@ -560,11 +560,12 @@ class InterventionService {
         })
         .toArray();
       
-      console.log(`Found ${templates.length} template questions`);
+      console.log(`[DEBUG] Found ${templates.length} template questions`);
+      console.log('[DEBUG] Template questions data sample:', templates.slice(0, 2));
       
       return templates;
     } catch (error) {
-      console.error('Error fetching template questions:', error);
+      console.error('[ERROR] Error fetching template questions:', error);
       throw error;
     }
   }
@@ -580,11 +581,28 @@ class InterventionService {
       
       if (choiceTypes && choiceTypes.length > 0) {
         query.choiceType = { $in: choiceTypes };
+        console.log(`[DEBUG] Fetching template choices for types: ${choiceTypes.join(', ')}`);
+      } else {
+        console.log('[DEBUG] Fetching all active template choices');
       }
       
-      return await TemplateChoice.find(query);
+      const choices = await TemplateChoice.find(query);
+      
+      console.log(`[DEBUG] Found ${choices.length} template choices`);
+      if (choices.length > 0) {
+        console.log('[DEBUG] Template choices data sample:', 
+          choices.slice(0, 2).map(c => ({ 
+            id: c._id, 
+            type: c.choiceType, 
+            value: c.choiceValue, 
+            soundText: c.soundText 
+          }))
+        );
+      }
+      
+      return choices;
     } catch (error) {
-      console.error('Error fetching template choices:', error);
+      console.error('[ERROR] Error fetching template choices:', error);
       throw error;
     }
   }
@@ -598,13 +616,29 @@ class InterventionService {
     try {
       const normReadingLevel = this.normalizeReadingLevel(readingLevel);
       
+      console.log(`[DEBUG] Fetching sentence templates for reading level: ${normReadingLevel}`);
+      
       // Use the correct model - make sure SentenceTemplate is imported
-      return await SentenceTemplate.find({
+      const templates = await SentenceTemplate.find({
         readingLevel: normReadingLevel,
         isActive: true
       });
+      
+      console.log(`[DEBUG] Found ${templates.length} sentence templates`);
+      if (templates.length > 0) {
+        console.log('[DEBUG] Sentence templates data sample:', 
+          templates.slice(0, 1).map(t => ({ 
+            id: t._id, 
+            title: t.title,
+            pages: t.sentenceText.length,
+            questions: t.sentenceQuestions.length
+          }))
+        );
+      }
+      
+      return templates;
     } catch (error) {
-      console.error('Error fetching sentence templates:', error);
+      console.error('[ERROR] Error fetching sentence templates:', error);
       throw error;
     }
   }
@@ -616,14 +650,13 @@ class InterventionService {
    */
   async createTemplateQuestion(templateData) {
     try {
-      console.log('Creating template question with data:', templateData);
+      console.log('[DEBUG] Creating template question with data:', templateData);
       
       // Ensure the category is properly normalized
       templateData.category = this.normalizeCategoryName(templateData.category);
       
       // Set default values for required fields if not provided
       if (!templateData.isActive) templateData.isActive = true;
-      if (!templateData.isApproved) templateData.isApproved = true;
       if (!templateData.createdAt) templateData.createdAt = new Date();
       if (!templateData.updatedAt) templateData.updatedAt = new Date();
       
@@ -636,11 +669,11 @@ class InterventionService {
         throw new Error('Failed to insert template question');
       }
       
-      console.log(`Successfully created template question with ID: ${result.insertedId}`);
+      console.log(`[DEBUG] Successfully created template question with ID: ${result.insertedId}`);
       
       return { ...templateData, _id: result.insertedId };
     } catch (error) {
-      console.error('Error creating template question:', error);
+      console.error('[ERROR] Error creating template question:', error);
       throw error;
     }
   }
@@ -652,6 +685,8 @@ class InterventionService {
    */
   async createTemplateChoice(choiceData) {
     try {
+      console.log('[DEBUG] Creating template choice with data:', choiceData);
+      
       // Clean up empty strings to be null
       if (choiceData.soundText === '') {
         choiceData.soundText = null;
@@ -667,9 +702,18 @@ class InterventionService {
       
       const newChoice = new TemplateChoice(choiceData);
       await newChoice.save();
+      
+      console.log(`[DEBUG] Successfully created template choice with ID: ${newChoice._id}`);
+      console.log('[DEBUG] New choice data:', {
+        id: newChoice._id,
+        type: newChoice.choiceType,
+        value: newChoice.choiceValue,
+        soundText: newChoice.soundText
+      });
+      
       return newChoice;
     } catch (error) {
-      console.error('Error creating template choice:', error);
+      console.error('[ERROR] Error creating template choice:', error);
       throw error;
     }
   }
