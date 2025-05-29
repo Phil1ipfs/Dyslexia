@@ -5,9 +5,17 @@ const path = require('path');
 const mongoose = require('mongoose');
 const { PutObjectCommand } = require('@aws-sdk/client-s3');
 const s3Client = require('../../config/s3');
-const StudentSchema = require('../../models/Student').schema;
 
 const router = express.Router();
+
+// Define a simple Student schema if the model file is missing
+const StudentSchema = new mongoose.Schema({
+  firstName: String,
+  lastName: String,
+  email: String,
+  profileImageUrl: String,
+  idNumber: String
+}, { collection: 'users' });
 
 // use memory storage for multer
 const storage = multer.memoryStorage();
@@ -21,11 +29,14 @@ const Student = mongoose
     .model('Student', StudentSchema, 'users');
 
 router.post('/upload', (req, res) => {
+    console.log('Upload endpoint hit');
     upload(req, res, async (err) => {
         if (err) {
+            console.error('Upload error:', err);
             return res.status(400).json({ message: 'Upload error', error: err.message });
         }
         if (!req.file) {
+            console.error('No file uploaded');
             return res.status(400).json({ message: 'No file uploaded' });
         }
         const { studentId } = req.body;
@@ -33,7 +44,7 @@ router.post('/upload', (req, res) => {
         const filename = `${Date.now()}-${req.file.originalname}`;
 
         const s3Params = {
-            Bucket: process.env.AWS_BUCKET_NAME,
+            Bucket: process.env.AWS_BUCKET_NAME || 'literexia-bucket',
             Key: `student-profiles/${filename}`,
             Body: req.file.buffer,
             ContentType: req.file.mimetype,
@@ -41,26 +52,34 @@ router.post('/upload', (req, res) => {
         };
 
         try {
+            console.log('Attempting S3 upload to:', s3Params.Key);
             await s3Client.send(new PutObjectCommand(s3Params));
 
             // build the correct URL from your bucket + region
-            // build the correct URL from your bucket + region
-            const region = s3Client.config.region;
-            const bucket = process.env.AWS_BUCKET_NAME;
+            const region = s3Client?.config?.region || 'us-east-1';
+            const bucket = process.env.AWS_BUCKET_NAME || 'literexia-bucket';
             const url = `https://${bucket}.s3.${region}.amazonaws.com/student-profiles/${filename}`;
+            console.log('S3 upload successful, URL:', url);
 
             // save it on the **same** DB/collection your GET uses
-            const student = await Student.findById(studentId);
-            if (!student) {
-                return res.status(404).json({ message: 'Student not found' });
+            if (studentId && studentId !== 'template') {
+                try {
+                    const student = await Student.findById(studentId);
+                    if (!student) {
+                        console.warn('Student not found:', studentId);
+                    } else {
+                        student.profileImageUrl = url;
+                        await student.save();
+                        console.log('Updated student profile image');
+                    }
+                } catch (studentErr) {
+                    console.error('Error updating student:', studentErr);
+                }
             }
-
-            student.profileImageUrl = url;
-            await student.save();
 
             return res.json({ message: 'Upload successful', imageUrl: url });
         } catch (uploadErr) {
-            console.error(uploadErr);
+            console.error('S3 upload failed:', uploadErr);
             return res.status(500).json({ message: 'S3 upload failed', error: uploadErr.message });
         }
     });
@@ -68,6 +87,7 @@ router.post('/upload', (req, res) => {
 
 // New route for uploading template images
 router.post('/template-image', (req, res) => {
+    console.log('Template image upload endpoint hit');
     imageUpload(req, res, async (err) => {
         if (err) {
             console.error('Template image upload error:', err);
@@ -79,6 +99,7 @@ router.post('/template-image', (req, res) => {
         }
         
         if (!req.file) {
+            console.error('No image file uploaded');
             return res.status(400).json({ 
                 success: false,
                 message: 'No image file uploaded' 
@@ -90,9 +111,10 @@ router.post('/template-image', (req, res) => {
         const originalName = req.file.originalname.replace(/\s+/g, '-').toLowerCase();
         const filename = `${timestamp}-${originalName}`;
         
+        // Use the designated folder for sentence templates
         const s3Params = {
             Bucket: process.env.AWS_BUCKET_NAME || 'literexia-bucket',
-            Key: `template-images/${filename}`,
+            Key: `main-assessment/sentences/${filename}`, // Use the designated folder path
             Body: req.file.buffer,
             ContentType: req.file.mimetype,
             ACL: 'public-read'
@@ -108,7 +130,7 @@ router.post('/template-image', (req, res) => {
                 // Build the correct URL
                 const region = s3Client?.config?.region || 'us-east-1';
                 const bucket = process.env.AWS_BUCKET_NAME || 'literexia-bucket';
-                const imageUrl = `https://${bucket}.s3.${region}.amazonaws.com/template-images/${filename}`;
+                const imageUrl = `https://${bucket}.s3.${region}.amazonaws.com/main-assessment/sentences/${filename}`;
                 
                 console.log('S3 upload successful, URL:', imageUrl);
                 
@@ -122,7 +144,7 @@ router.post('/template-image', (req, res) => {
                 
                 // If S3 upload fails, fallback to a mock URL for development
                 if (process.env.NODE_ENV !== 'production') {
-                    const mockImageUrl = `https://literexia-bucket.s3.amazonaws.com/main-assessment/${timestamp}-${originalName}`;
+                    const mockImageUrl = `https://literexia-bucket.s3.amazonaws.com/main-assessment/sentences/${timestamp}-${originalName}`;
                     
                     console.log('Using mock S3 URL for development:', mockImageUrl);
                     
