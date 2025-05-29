@@ -649,6 +649,55 @@ class InterventionController {
       });
     }
   }
+
+  /**
+   * Fetch all templates from the database
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async getAllTemplates(req, res) {
+    try {
+      console.log('[DEBUG] Starting to fetch all templates from database');
+      
+      // Import models
+      const TemplateQuestion = require('../../../models/Teachers/ManageProgress/templatesQuestionsModel');
+      const TemplateChoice = require('../../../models/Teachers/ManageProgress/templatesChoicesModel');
+      const SentenceTemplate = require('../../../models/Teachers/ManageProgress/sentenceTemplateModel');
+      
+      // Fetch all templates from database
+      const questionTemplates = await TemplateQuestion.find({}).lean();
+      const choiceTemplates = await TemplateChoice.find({}).lean();
+      const sentenceTemplates = await SentenceTemplate.find({}).lean();
+      
+      console.log(`[DEBUG] Found ${questionTemplates.length} question templates`);
+      console.log(`[DEBUG] Found ${choiceTemplates.length} choice templates`);
+      console.log(`[DEBUG] Found ${sentenceTemplates.length} sentence templates`);
+      
+      const counts = {
+        questionTemplates: questionTemplates.length,
+        choiceTemplates: choiceTemplates.length,
+        sentenceTemplates: sentenceTemplates.length
+      };
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Templates fetched successfully from database',
+        counts,
+        data: {
+          questionTemplates,
+          choiceTemplates,
+          sentenceTemplates
+        }
+      });
+    } catch (error) {
+      console.error('[ERROR] Error fetching templates from database:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error fetching templates from database',
+        error: error.message
+      });
+    }
+  }
 }
 
 // Export the class itself, not an instance

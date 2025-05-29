@@ -49,10 +49,6 @@ const sentenceTemplateSchema = new mongoose.Schema({
       required: true
     }]
   }],
-  isApproved: {
-    type: Boolean,
-    default: true
-  },
   isActive: {
     type: Boolean,
     default: true
