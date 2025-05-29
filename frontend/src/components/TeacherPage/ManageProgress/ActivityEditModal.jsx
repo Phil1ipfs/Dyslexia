@@ -113,6 +113,12 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   );
   const [readingLevel] = useState(student?.readingLevel || 'Low Emerging'); // Fixed to student's level
   
+  // Saving and loading states
+  const [submitting, setSubmitting] = useState(false);
+  const [saveCompleted, setSaveCompleted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  
   // Checking for existing interventions
   const [existingIntervention, setExistingIntervention] = useState(null);
   const [checkingExisting, setCheckingExisting] = useState(false);
@@ -274,13 +280,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   
   // UI States
   const [errors, setErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [creatingTemplate, setCreatingTemplate] = useState(false);
-  
-  // File upload states
   const [fileUploads, setFileUploads] = useState({});
-  const [uploading, setUploading] = useState(false);
   const fileInputRefs = useRef({});
   
   // Add a useEffect to clean up object URLs when component unmounts
@@ -295,6 +296,17 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       });
     };
   }, [fileUploads]);
+  
+  // Effect to handle modal cleanup on unmount
+  useEffect(() => {
+    // This cleanup function will run when the component unmounts
+    return () => {
+      console.log("ActivityEditModal unmounting, performing cleanup");
+      // Reset any critical state variables to ensure proper behavior on remount
+      setSubmitting(false);
+      setErrors({});
+    };
+  }, []); // Empty dependency array means this runs only on mount/unmount
   
   // Helper function to toggle choice form for a specific pair
   const toggleChoiceForm = (pairId, open) =>
@@ -1590,7 +1602,13 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       return;
     }
     
-    await saveActivity();
+    try {
+      // Wait for the save operation to complete
+      await saveActivity();
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      // Error already handled in saveActivity
+    }
   };
 
   /**
@@ -1629,213 +1647,48 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         return;
       }
       
-      // Check for any blob URLs that haven't been uploaded yet
-      const blobUrlsExist = questionChoicePairs.some(pair => 
-        pair.questionImage && pair.questionImage.startsWith('blob:')
-      );
-      
-      if (blobUrlsExist) {
-        console.warn("[SAVE] Found blob URLs that need to be uploaded first. This shouldn't happen with immediate uploads.");
-        
-        // Get all pairs with blob URLs for debugging
-        const blobPairs = questionChoicePairs.filter(pair => 
-          pair.questionImage && pair.questionImage.startsWith('blob:')
-        );
-        
-        blobPairs.forEach(pair => {
-          console.warn(`[SAVE] Pair ${pair.id} has blob URL: ${pair.questionImage}`);
-          
-          // Check if we have an upload status for this pair
-          const uploadStatus = fileUploads[pair.id];
-          if (uploadStatus) {
-            console.warn(`[SAVE] Upload status for pair ${pair.id}:`, uploadStatus);
-            
-            // If we have a successful S3 upload, use that URL instead of the blob URL
-            if (uploadStatus.status === 'success' && uploadStatus.s3Url) {
-              console.log(`[SAVE] ✅ Using previously uploaded S3 URL for pair ${pair.id}: ${uploadStatus.s3Url}`);
-              
-              // Update the pair with the S3 URL
-              updateQuestionChoicePair(pair.id, 'questionImage', uploadStatus.s3Url);
-            }
-          }
-        });
-      }
-      
-      // Upload any pending images to S3 (this should be rare now with immediate uploads)
-      if (Object.keys(pendingUploads).length > 0) {
-        setUploading(true);
-        console.log(`[SAVE] Found ${Object.keys(pendingUploads).length} pending image uploads`);
-        
-        // Create a map to track blob URLs to S3 URLs for replacing later
-        const blobToS3UrlMap = {};
-        
-        // Update question-choice pairs with uploaded images
-        let updatedPairs = [...questionChoicePairs];
-        const localUrlsToRevoke = [];
-        
-        try {
-          // First pass - try to upload all images
-          for (const [pairId, file] of Object.entries(pendingUploads)) {
-            try {
-              console.log(`[SAVE] Processing upload for question pair ID: ${pairId}`);
-              
-              // Get the blob URL for this pair
-              const pairIndex = updatedPairs.findIndex(p => p.id.toString() === pairId.toString());
-              const blobUrl = pairIndex !== -1 ? updatedPairs[pairIndex].questionImage : null;
-              
-              // Store the local URL for later revocation
-              if (fileUploads[pairId]?.localUrl) {
-                console.log(`[SAVE] Marking local URL for revocation: ${fileUploads[pairId].localUrl}`);
-                localUrlsToRevoke.push(fileUploads[pairId].localUrl);
-              }
-              
-              // Update file upload status to uploading
-              setFileUploads(prev => ({
-                ...prev,
-                [pairId]: { 
-                  ...prev[pairId],
-                  status: 'uploading' 
-                }
-              }));
-              
-              console.log(`[SAVE] Starting S3 upload for file: ${file.name} (${file.type})`);
-              
-              // Upload to S3 in the mobile folder
-              const imageUrl = await uploadImageToS3(file, 'mobile');
-              
-              if (imageUrl) {
-                console.log(`[SAVE] Upload successful! Image URL: ${imageUrl}`);
-                
-                // Store the mapping from blob URL to S3 URL
-                if (blobUrl) {
-                  blobToS3UrlMap[blobUrl] = imageUrl;
-                  console.log(`[SAVE] Mapping blob URL to S3 URL: ${blobUrl.substring(0, 50)}... -> ${imageUrl.substring(0, 50)}...`);
-                }
-                
-                // Find and update the pair with the new image URL
-                if (pairIndex !== -1) {
-                  console.log(`[SAVE] Updating question pair ${pairId} with new image URL`);
-                  updatedPairs[pairIndex] = {
-                    ...updatedPairs[pairIndex],
-                    questionImage: imageUrl
-                  };
-                } else {
-                  console.warn(`[SAVE] Could not find question pair with ID ${pairId} to update image`);
-                }
-                
-                // Update file upload status
-                setFileUploads(prev => ({
-                  ...prev,
-                  [pairId]: { status: 'success', file: file.name, s3Url: imageUrl }
-                }));
-                
-                console.log(`[SAVE] Successfully processed image for pair ${pairId}`);
-              } else {
-                throw new Error("Failed to get valid image URL from S3 upload");
-              }
-            } catch (error) {
-              console.error(`[SAVE] Error uploading image for pair ${pairId}:`, error);
-              setFileUploads(prev => ({
-                ...prev,
-                [pairId]: { status: 'error', file: file.name }
-              }));
-              
-              // Don't throw here, continue with other uploads
-            }
-          }
-          
-          // Second pass - ensure all blob URLs are replaced throughout the pairs
-          console.log(`[SAVE] Second pass - replacing any remaining blob URLs with S3 URLs`);
-          
-          // Check if we have any blob URLs that need replacing
-          if (Object.keys(blobToS3UrlMap).length > 0) {
-            updatedPairs = updatedPairs.map(pair => {
-              // If this pair has a blob URL that we've uploaded, replace it
-              if (pair.questionImage && blobToS3UrlMap[pair.questionImage]) {
-                const s3Url = blobToS3UrlMap[pair.questionImage];
-                console.log(`[SAVE] Replacing blob URL with S3 URL in pair ${pair.id}:`);
-                console.log(`  Before: ${pair.questionImage.substring(0, 50)}...`);
-                console.log(`  After: ${s3Url.substring(0, 50)}...`);
-                
-                return {
-                  ...pair,
-                  questionImage: s3Url
-                };
-              }
-              return pair;
-            });
-          }
-          
-          // Update state with uploaded images
-          console.log(`[SAVE] Updating question pairs with uploaded images`);
-          setQuestionChoicePairs(updatedPairs);
-          
-          // Log a summary of all uploads
-          console.log(`[SAVE] Image upload summary:`);
-          updatedPairs.forEach(pair => {
-            if (pair.questionImage) {
-              console.log(`[SAVE] Pair ${pair.id}: Image URL = ${pair.questionImage}`);
-            }
-          });
-          
-          // Verify no blob URLs remain
-          const remainingBlobUrls = updatedPairs.filter(
-            pair => pair.questionImage && pair.questionImage.startsWith('blob:')
-          );
-          
-          if (remainingBlobUrls.length > 0) {
-            console.error(`[SAVE] WARNING: ${remainingBlobUrls.length} blob URLs still remain after processing`);
-            remainingBlobUrls.forEach(pair => {
-              console.error(`[SAVE] Pair ${pair.id} still has blob URL: ${pair.questionImage}`);
-            });
-          } else {
-            console.log(`[SAVE] ✅ All blob URLs successfully replaced with S3 URLs`);
-          }
-        } catch (error) {
-          console.error('[SAVE] Error during batch upload:', error);
-          setErrors(prev => ({
-            ...prev,
-            upload: 'Failed to upload one or more images'
-          }));
-        } finally {
-          // Clear pending uploads
-          console.log(`[SAVE] Clearing pending uploads and revoking ${localUrlsToRevoke.length} object URLs`);
-          setPendingUploads({});
-          setUploading(false);
-          
-          // Revoke object URLs to prevent memory leaks
-          localUrlsToRevoke.forEach(url => {
-            URL.revokeObjectURL(url);
-          });
-        }
-      }
-      
       // Prepare data for saving
       const interventionData = await prepareInterventionData();
       
       // Save intervention using the API
       let savedIntervention;
-      if (activity?._id) {
-        savedIntervention = await updateIntervention(activity._id, interventionData);
-      } else {
-        savedIntervention = await createIntervention(interventionData);
+      
+      try {
+        if (activity?._id) {
+          savedIntervention = await updateIntervention(activity._id, interventionData);
+        } else {
+          savedIntervention = await createIntervention(interventionData);
+        }
+        
+        // Call the onSave callback with the saved intervention - with null check
+        console.log("Intervention saved successfully, calling onSave callback");
+        if (typeof onSave === 'function') {
+          onSave(savedIntervention);
+        }
+        
+        // Reset state
+        setSubmitting(false);
+        setCurrentStep(1);
+        
+        // Close the modal after successful save - with null check
+        console.log("Closing modal after successful save");
+        if (typeof onClose === 'function') {
+          // Using setTimeout to ensure the state updates have completed
+          setTimeout(() => {
+            onClose();
+          }, 0);
+        }
+      } catch (error) {
+        console.error("Error saving intervention:", error);
+        setErrors({ 
+          general: `Failed to save intervention: ${error.message || 'Unknown error'}. Please try again.` 
+        });
+        setSubmitting(false);
       }
-      
-      // Call the onSave callback with the saved intervention
-      console.log("Intervention saved successfully, calling onSave callback");
-      onSave(savedIntervention);
-      
-      // Reset to first step for next time the modal is opened
-      setCurrentStep(1);
-      
-      // Close the modal after successful save
-      console.log("Closing modal after successful save");
-      onClose();
-      
     } catch (error) {
-      console.error("Error saving intervention:", error);
+      console.error("Error in saveActivity preparation:", error);
       setErrors({ 
-        general: `Failed to save intervention: ${error.message || 'Unknown error'}. Please try again.` 
+        general: `Failed to prepare activity data: ${error.message || 'Unknown error'}. Please try again.` 
       });
       setSubmitting(false);
     }

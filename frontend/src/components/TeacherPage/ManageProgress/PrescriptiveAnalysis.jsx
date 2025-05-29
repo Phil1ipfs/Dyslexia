@@ -524,6 +524,16 @@ const PrescriptiveAnalysis = ({
     }
   };
 
+  /**
+   * Handle modal closing with proper cleanup
+   */
+  const handleModalClose = () => {
+    console.log("Closing activity edit modal with cleanup");
+    // Force cleanup and close
+    setEditingActivity(null);
+    setShowActivityModal(false);
+  };
+
   // ===== RENDER HELPERS =====
 
   /**
@@ -1000,11 +1010,12 @@ const PrescriptiveAnalysis = ({
       {/* Activity Edit Modal */}
       {showActivityModal && (
         <ActivityEditModal
+          key={`activity-modal-${Date.now()}`}
           activity={editingActivity}
           student={liveStudent}
           category={selectedCategory}
           analysis={selectedAnalysis}
-          onClose={() => setShowActivityModal(false)}
+          onClose={handleModalClose}
           onSave={handleSaveActivity}
         />
       )}
