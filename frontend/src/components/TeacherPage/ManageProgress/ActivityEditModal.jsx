@@ -152,6 +152,54 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   // Prescriptive analysis from MongoDB
   const [mongoDbAnalysis, setMongoDbAnalysis] = useState(null);
   
+  // Step management for wizard-style interface
+  const [currentStep, setCurrentStep] = useState(1);
+  
+  // Content type is determined by category
+  const [contentType, setContentType] = useState('');
+  
+  // API Data States
+  const [mainAssessmentQuestions, setMainAssessmentQuestions] = useState([]);
+  const [questionTemplates, setQuestionTemplates] = useState([]);
+  const [choiceTemplates, setChoiceTemplates] = useState([]);
+  const [sentenceTemplates, setSentenceTemplates] = useState([]);
+  
+  // Question Management
+  const [questionChoicePairs, setQuestionChoicePairs] = useState([]);
+  
+  // For Reading Comprehension
+  const [selectedSentenceTemplate, setSelectedSentenceTemplate] = useState(null);
+  
+  // Image Upload State
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [currentUploadTarget, setCurrentUploadTarget] = useState(null);
+  const fileInputRef = useRef(null);
+  
+  // Pending uploads - files that need to be uploaded when saving
+  const [pendingUploads, setPendingUploads] = useState({});
+  
+  // Inline Creation States
+  const [showNewTemplateForm, setShowNewTemplateForm] = useState(false);
+  const [showNewChoiceFormByPair, setShowNewChoiceFormByPair] = useState({});
+  const [newTemplateData, setNewTemplateData] = useState({
+    templateText: '',
+    questionType: '',
+    applicableChoiceTypes: []
+  });
+  const [newChoiceData, setNewChoiceData] = useState({
+    choiceType: '',
+    choiceValue: '',
+    soundText: '',
+    choiceImage: null,
+    description: ''
+  });
+  
+  // UI States
+  const [errors, setErrors] = useState({});
+  const [creatingTemplate, setCreatingTemplate] = useState(false);
+  const [fileUploads, setFileUploads] = useState({});
+  const fileInputRefs = useRef({});
+  
   /**
    * Find MongoDB prescriptive analysis for student and category
    * This function will load the MongoDB prescriptive analysis from the provided analysis data
@@ -262,54 +310,6 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     }
   }, [analysis]);
   
-  // Step management for wizard-style interface
-  const [currentStep, setCurrentStep] = useState(1);
-  
-  // Content type is determined by category
-  const [contentType, setContentType] = useState('');
-  
-  // API Data States
-  const [mainAssessmentQuestions, setMainAssessmentQuestions] = useState([]);
-  const [questionTemplates, setQuestionTemplates] = useState([]);
-  const [choiceTemplates, setChoiceTemplates] = useState([]);
-  const [sentenceTemplates, setSentenceTemplates] = useState([]);
-  
-  // Question Management
-  const [questionChoicePairs, setQuestionChoicePairs] = useState([]);
-  
-  // For Reading Comprehension
-  const [selectedSentenceTemplate, setSelectedSentenceTemplate] = useState(null);
-  
-  // Image Upload State
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [currentUploadTarget, setCurrentUploadTarget] = useState(null);
-  const fileInputRef = useRef(null);
-  
-  // Pending uploads - files that need to be uploaded when saving
-  const [pendingUploads, setPendingUploads] = useState({});
-  
-  // Inline Creation States
-  const [showNewTemplateForm, setShowNewTemplateForm] = useState(false);
-  const [showNewChoiceFormByPair, setShowNewChoiceFormByPair] = useState({});
-  const [newTemplateData, setNewTemplateData] = useState({
-    templateText: '',
-    questionType: '',
-    applicableChoiceTypes: []
-  });
-  const [newChoiceData, setNewChoiceData] = useState({
-    choiceType: '',
-    choiceValue: '',
-    soundText: '',
-    choiceImage: null,
-    description: ''
-  });
-  
-  // UI States
-  const [errors, setErrors] = useState({});
-  const [creatingTemplate, setCreatingTemplate] = useState(false);
-  const [fileUploads, setFileUploads] = useState({});
-  const fileInputRefs = useRef({});
-  
   // Add a useEffect to clean up object URLs when component unmounts
   useEffect(() => {
     // Cleanup function to revoke object URLs when component unmounts
@@ -334,10 +334,93 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     };
   }, []); // Empty dependency array means this runs only on mount/unmount
   
+  // Effect to apply descriptions from activity choices to templates
+  // Fix the infinite loop by using a ref to track if we've already processed the activity
+  const processedActivityRef = useRef(false);
+  
+  useEffect(() => {
+    // Only run this when we have both activity data and choice templates loaded
+    // And only if we haven't processed this activity before
+    if (activity?.questions && choiceTemplates.length > 0 && !processedActivityRef.current) {
+      console.log("Applying descriptions from activity choices to choice templates");
+      processedActivityRef.current = true; // Mark as processed to prevent infinite loop
+      
+      // Create a map of choice IDs to descriptions from the activity
+      const choiceDescriptions = {};
+      
+      activity.questions.forEach(question => {
+        if (question.choices && Array.isArray(question.choices)) {
+          // Match choices with their IDs using different possible formats
+          
+          // Format 1: Direct mapping by index
+          if (question.choiceIds && Array.isArray(question.choiceIds)) {
+            question.choices.forEach((choice, index) => {
+              const choiceId = question.choiceIds[index];
+              if (choiceId && choice.description) {
+                choiceDescriptions[choiceId] = choice.description;
+                console.log(`Found description for choice ${choiceId} by index: "${choice.description}"`);
+              }
+            });
+          }
+          
+          // Format 2: Choices might have their own IDs
+          question.choices.forEach(choice => {
+            // Check if the choice has its own ID reference
+            if (choice._id && typeof choice._id === 'string') {
+              choiceDescriptions[choice._id] = choice.description;
+              console.log(`Found description for choice ${choice._id} from choice._id: "${choice.description}"`);
+            } else if (choice._id && choice._id.$oid) {
+              // Handle MongoDB format with $oid
+              choiceDescriptions[choice._id.$oid] = choice.description;
+              console.log(`Found description for choice ${choice._id.$oid} from choice._id.$oid: "${choice.description}"`);
+            }
+            
+            // Try to match by optionText if there's no direct ID mapping
+            if (choice.optionText) {
+              const matchingTemplates = choiceTemplates.filter(template => 
+                (template.choiceValue && template.choiceValue === choice.optionText) || 
+                (template.soundText && template.soundText === choice.optionText)
+              );
+              
+              matchingTemplates.forEach(template => {
+                choiceDescriptions[template._id] = choice.description;
+                console.log(`Found description for choice ${template._id} by matching text: "${choice.description}"`);
+              });
+            }
+          });
+        }
+      });
+      
+      // Apply the descriptions to the choice templates
+      if (Object.keys(choiceDescriptions).length > 0) {
+        console.log(`Found ${Object.keys(choiceDescriptions).length} descriptions to apply`);
+        setChoiceTemplates(prev => 
+          prev.map(template => {
+            const description = choiceDescriptions[template._id];
+            if (description) {
+              console.log(`Updating description for choice ${template._id}: "${description}"`);
+              return { ...template, description };
+            }
+            return template;
+          })
+        );
+      } else {
+        console.log("No descriptions found to apply to choice templates");
+      }
+    }
+  }, [activity, choiceTemplates.length]); // Only depend on the length, not the entire array
+  
+  // Initialize from existing activity when component mounts and data is available
+  useEffect(() => {
+    if (activity && choiceTemplates.length > 0) {
+      initializeFromExistingActivity();
+    }
+  }, [activity, choiceTemplates.length]);
+  
   // Helper function to toggle choice form for a specific pair
   const toggleChoiceForm = (pairId, open) =>
     setShowNewChoiceFormByPair(prev => ({ ...prev, [pairId]: open }));
-
+    
   // ===== HELPER FUNCTIONS =====
 
   /**
@@ -451,13 +534,78 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   }, [category, readingLevel, contentType]);
   
   /**
-   * Initialize from existing activity data if editing
+   * Initialize question-choice pairs from existing activity
    */
-  useEffect(() => {
-    if (activity && activity.questions && activity.questions.length > 0) {
-      initializeFromExistingActivity();
+  const processedActivityChoicesRef = useRef(false);
+  
+  const initializeFromExistingActivity = () => {
+    if (!activity) return;
+    
+    // Set basic information
+    setTitle(activity.name || '');
+    setDescription(activity.description || '');
+    
+    // Handle different types of activities
+    if (activity.sentenceTemplate) {
+      // Reading Comprehension activity
+        setSelectedSentenceTemplate(activity.sentenceTemplate);
+    } else if (activity.questions && activity.questions.length > 0) {
+      // Regular question-choice activity
+      const pairs = activity.questions.map(question => {
+        // Create a question-choice pair from the question
+        return {
+          id: Date.now() + Math.random(),
+          sourceType: question.source || 'custom',
+          sourceId: question.sourceQuestionId || null,
+          questionType: question.questionType || '',
+          questionText: question.questionText || '',
+          questionImage: question.questionImage || null,
+          questionValue: question.questionValue || '',
+          choiceIds: question.choiceIds || [],
+          correctChoiceId: question.correctChoiceId || null
+        };
+      });
+      
+      setQuestionChoicePairs(pairs);
+      
+      // Update the choice templates with descriptions from the activity's choices
+      // This ensures the feedback text is preserved when editing
+      // Only do this once to prevent infinite loops
+      if (activity.questions && choiceTemplates.length > 0 && !processedActivityChoicesRef.current) {
+        processedActivityChoicesRef.current = true; // Mark as processed to prevent infinite loop
+        
+        // Create a map of choice IDs to descriptions
+        const choiceDescriptions = {};
+        
+        activity.questions.forEach(question => {
+          if (question.choices && Array.isArray(question.choices)) {
+            question.choices.forEach((choice, index) => {
+              // Find the corresponding choice template
+              const choiceId = question.choiceIds?.[index];
+              if (choiceId && choice.description) {
+                choiceDescriptions[choiceId] = choice.description;
+                console.log(`Found description for choice ${choiceId}: "${choice.description}"`);
+              }
+            });
+          }
+        });
+        
+        // Apply all descriptions at once in a single state update
+        if (Object.keys(choiceDescriptions).length > 0) {
+          setChoiceTemplates(prev => 
+            prev.map(template => {
+              const description = choiceDescriptions[template._id];
+              if (description) {
+                console.log(`Updating description for choice ${template._id}: "${description}"`);
+                return { ...template, description };
+              }
+              return template;
+            })
+          );
+        }
+      }
     }
-  }, [activity, choiceTemplates]);
+  };
  
   /**
    * Initialize template form data when opening the form
@@ -1329,38 +1477,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   /**
    * Initialize question-choice pairs from existing activity
    */
-  const initializeFromExistingActivity = () => {
-    if (!activity) return;
-    
-    // Set basic information
-    setTitle(activity.name || '');
-    setDescription(activity.description || '');
-    
-    // Handle different types of activities
-    if (activity.sentenceTemplate) {
-      // Reading Comprehension activity
-        setSelectedSentenceTemplate(activity.sentenceTemplate);
-    } else if (activity.questions && activity.questions.length > 0) {
-      // Regular question-choice activity
-      const pairs = activity.questions.map(question => {
-        // Create a question-choice pair from the question
-        return {
-          id: Date.now() + Math.random(),
-          sourceType: question.source || 'custom',
-          sourceId: question.sourceQuestionId || null,
-          questionType: question.questionType || '',
-          questionText: question.questionText || '',
-          questionImage: question.questionImage || null,
-          questionValue: question.questionValue || '',
-          choiceIds: question.choiceIds || [],
-          correctChoiceId: question.correctChoiceId || null
-        };
-      });
-      
-      setQuestionChoicePairs(pairs);
-    }
-  };
- 
+  // This function has been moved to line ~534 with the infinite loop fix
+  
   // ===== HELPER FUNCTIONS =====
 
   /**
@@ -3124,8 +3242,8 @@ const renderQuestionChoicesStep = () => {
                   type="text"
                   value={pair.questionText || ''}
                   onChange={(e) => updateQuestionChoicePair(pair.id, 'questionText', e.target.value)}
-                  readOnly={pair.sourceType === 'main_assessment' || pair.sourceType === 'template_question'}
-                  className={pair.sourceType === 'main_assessment' || pair.sourceType === 'template_question' ? 'literexia-readonly-input' : ''}
+                  readOnly={pair.sourceType === 'template_question'}
+                  className={pair.sourceType === 'template_question' ? 'literexia-readonly-input' : ''}
                 />
               </div>
             </div>
@@ -3136,18 +3254,33 @@ const renderQuestionChoicesStep = () => {
                 Note: You can set either Question Value OR Question Image, not both.
               </div>
               {(pair.sourceType === 'main_assessment') ? (
-                // For assessment questions, show a read-only input
-                <input
-                  type="text"
+                // For assessment questions, show an editable dropdown
+                <select
                   value={pair.questionValue || ''}
-                  readOnly
-                  className="literexia-readonly-input"
-                />
+                  onChange={(e) => updateQuestionChoicePair(pair.id, 'questionValue', e.target.value)}
+                  className="literexia-dropdown"
+                >
+                  <option value="">-- Select Value --</option>
+                  {safe(choiceTemplates)
+                    .filter(c => {
+                      if (!c) return false;
+                      // Filter by applicable choice types for current question
+                      return getApplicableChoiceTypes(pair.questionType).includes(c.choiceType);
+                    })
+                    .map(c => (
+                      <option 
+                        key={c._id} 
+                        value={c.choiceValue || c.soundText || ''}
+                      >
+                        {c.choiceValue || c.soundText || '(No text)'} ({formatChoiceType(c.choiceType)})
+                      </option>
+                    ))}
+                </select>
               ) : pair.sourceType === 'template_question' ? (
                 // Dropdown for template questions
                 <select
                   value={pair.questionValue || ''}
-                  onChange={(e) => handleQuestionValueChange(pair.id, e.target.value)}
+                  onChange={(e) => updateQuestionChoicePair(pair.id, 'questionValue', e.target.value)}
                   className="literexia-dropdown"
                 >
                   <option value="">-- Select Value --</option>
@@ -3175,7 +3308,7 @@ const renderQuestionChoicesStep = () => {
                 <input
                   list={`values-${pair.id}`}
                   value={pair.questionValue || ''}
-                  onChange={(e) => handleQuestionValueChange(pair.id, e.target.value)}
+                  onChange={(e) => updateQuestionChoicePair(pair.id, 'questionValue', e.target.value)}
                 />
               )}
               <datalist id={`values-${pair.id}`}>
@@ -3213,39 +3346,30 @@ const renderQuestionChoicesStep = () => {
                   style={{ display: 'none' }}
                 />
                 <div className="literexia-file-upload-controls">
-                  {pair.sourceType === 'main_assessment' ? (
-                    // For assessment questions, just show the image without edit buttons
-                    pair.questionImage && (
+                  {/* Allow editing images for all question types including assessment questions */}
+                  <>
+                    <button 
+                      type="button" 
+                      className="literexia-file-select-btn"
+                      onClick={() => fileInputRefs.current[pair.id].click()}
+                      disabled={fileUploads[pair.id]?.status === 'uploading'}
+                    >
+                      {fileUploads[pair.id]?.status === 'uploading' ? <FaSpinner className="fa-spin" /> : <FaPlus />} 
+                      {pair.questionImage ? 'Change Image' : 'Upload Image'}
+                    </button>
+                    {pair.questionImage && (
                       <div className="literexia-image-preview">
                         <img src={pair.questionImage} alt="Question" />
+                        <button 
+                          type="button" 
+                          className="literexia-remove-image-btn"
+                          onClick={() => updateQuestionChoicePair(pair.id, 'questionImage', null)}
+                        >
+                          <FaTimes />
+                        </button>
                       </div>
-                    )
-                  ) : (
-                    // For template and custom questions, show the full edit controls
-                    <>
-                      <button 
-                        type="button" 
-                        className="literexia-file-select-btn"
-                        onClick={() => fileInputRefs.current[pair.id].click()}
-                        disabled={fileUploads[pair.id]?.status === 'uploading'}
-                      >
-                        {fileUploads[pair.id]?.status === 'uploading' ? <FaSpinner className="fa-spin" /> : <FaPlus />} 
-                        {pair.questionImage ? 'Change Image' : 'Upload Image'}
-                      </button>
-                      {pair.questionImage && (
-                        <div className="literexia-image-preview">
-                          <img src={pair.questionImage} alt="Question" />
-                          <button 
-                            type="button" 
-                            className="literexia-remove-image-btn"
-                            onClick={() => updateQuestionChoicePair(pair.id, 'questionImage', null)}
-                          >
-                            <FaTimes />
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
+                    )}
+                  </>
                   {fileUploads[pair.id]?.status === 'uploading' && <span className="literexia-uploading">Uploading...</span>}
                   {fileUploads[pair.id]?.status === 'pending' && (
                     <span className="literexia-pending">
