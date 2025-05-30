@@ -28,6 +28,80 @@ const Student = mongoose
     .useDb('test')                   // <— switch this to whatever DB you're using
     .model('Student', StudentSchema, 'users');
 
+// Add a S3 upload endpoint that doesn't require authentication
+router.post('/s3', (req, res) => {
+  upload(req, res, async (err) => {
+    if (err) {
+      console.error('[S3 UPLOAD] Error:', err);
+      return res.status(400).json({
+        success: false,
+        message: 'Upload error',
+        error: err.message
+      });
+    }
+    
+    if (!req.file) {
+      console.error('[S3 UPLOAD] No file uploaded');
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded'
+      });
+    }
+    
+    try {
+      const uploadPath = req.body.path || 'main-assessment';
+      const fileName = `${Date.now()}-${req.file.originalname.replace(/\s+/g, '-')}`;
+      
+      console.log(`[S3 UPLOAD] Uploading file to ${uploadPath}/${fileName}`);
+      
+      // Configure S3 upload
+      const s3Params = {
+        Bucket: process.env.AWS_BUCKET_NAME || 'literexia-bucket',
+        Key: `${uploadPath}/${fileName}`,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype,
+        ACL: 'public-read'
+      };
+      
+      try {
+        // Try to upload to S3
+        await s3Client.send(new PutObjectCommand(s3Params));
+        
+        console.log('[S3 UPLOAD] Upload successful');
+        
+        return res.status(200).json({
+          success: true,
+          message: 'File uploaded successfully',
+          filename: fileName
+        });
+      } catch (s3Error) {
+        console.error('[S3 UPLOAD] S3 error:', s3Error);
+        
+        // In development, mock a successful response
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[S3 UPLOAD] Using mock response for development');
+          
+          return res.status(200).json({
+            success: true,
+            message: 'Development mode: Mocked successful upload',
+            filename: fileName,
+            mock: true
+          });
+        }
+        
+        throw s3Error;
+      }
+    } catch (error) {
+      console.error('[S3 UPLOAD] Failed:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'S3 upload failed',
+        error: error.message
+      });
+    }
+  });
+});
+
 router.post('/upload', (req, res) => {
     console.log('Upload endpoint hit');
     upload(req, res, async (err) => {

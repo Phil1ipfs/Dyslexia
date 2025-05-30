@@ -2,7 +2,6 @@
 const mongoose = require('mongoose');
 const InterventionPlan = require('../../models/Teachers/ManageProgress/interventionPlanModel');
 const InterventionProgress = require('../../models/Teachers/ManageProgress/interventionProgressModel');
-const InterventionResponse = require('../../models/Teachers/ManageProgress/interventionResponseModel');
 const TemplateQuestion = require('../../models/Teachers/ManageProgress/templatesQuestionsModel');
 const TemplateChoice = require('../../models/Teachers/ManageProgress/templatesChoicesModel');
 const SentenceTemplate = require('../../models/Teachers/ManageProgress/sentenceTemplateModel');
@@ -338,9 +337,6 @@ class InterventionService {
       
       // Delete associated progress
       await InterventionProgress.deleteMany({ interventionPlanId: interventionId });
-      
-      // Delete associated responses
-      await InterventionResponse.deleteMany({ interventionPlanId: interventionId });
       
       return intervention;
     } catch (error) {

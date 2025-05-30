@@ -446,6 +446,15 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load dashboard routes:', error.message);
     }
 
+    // Load main assessment routes
+    try {
+      const mainAssessmentRoutes = require('./routes/Teachers/mainAssessmentRoutes');
+      app.use('/api/main-assessment', mainAssessmentRoutes);
+      console.log('✅ Loaded main assessment routes at /api/main-assessment/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load main assessment routes:', error.message);
+    }
+
     // Add a test route for the students endpoint
     app.get('/api/admin/manage/students/test', (req, res) => {
       res.json({ message: 'Students endpoint is accessible' });
