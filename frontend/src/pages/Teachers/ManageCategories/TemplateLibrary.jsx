@@ -4,6 +4,7 @@ import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import QuestionTemplateForm from "./QuestionTemplateForm";
 import ChoiceTemplateForm from "./ChoiceTemplateForm";
 import SentenceTemplateForm from "./SentenceTemplateForm";
+import UnifiedTemplatePreview from "./UnifiedTemplatePreview";
 import "../../../css/Teachers/ManageCategories/TemplateLibrary.css";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -90,6 +91,9 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
   const [templateToDelete, setTemplateToDelete] = useState(null);
   const [previewTemplate, setPreviewTemplate] = useState(null);
   const [tempFormData, setTempFormData] = useState(null);
+  const [isPreviewAllDialogOpen, setIsPreviewAllDialogOpen] = useState(false);
+  const [previewAllTemplates, setPreviewAllTemplates] = useState([]);
+  const [previewAllCurrentIndex, setPreviewAllCurrentIndex] = useState(0);
 
   // Get detailed template stats for the overview section
   const getDetailedTemplateStats = () => {
@@ -270,34 +274,39 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
   };
 
   const handleEditTemplate = (template) => {
+    // Close preview dialog if open
+    if (isPreviewAllDialogOpen) {
+      setIsPreviewAllDialogOpen(false);
+    }
+    
     setCurrentTemplate(template);
     setIsFormDialogOpen(true);
   };
 
   const handlePreviewTemplate = (template) => {
-    // Create a sanitized copy of the template
-    const sanitizedTemplate = { ...template };
+    // Set the previewTemplate state
+    setPreviewTemplate(template);
     
-    // Fix image URLs in sentence templates
-    if (sanitizedTemplate.sentenceText && sanitizedTemplate.sentenceText.length > 0) {
-      sanitizedTemplate.sentenceText = sanitizedTemplate.sentenceText.map(page => ({
-        ...page,
-        image: sanitizeImageUrl(page.image)
-      }));
+    // Use the UnifiedTemplatePreview component
+    setPreviewAllTemplates([template]);
+    setIsPreviewAllDialogOpen(true);
+  };
+
+  const handlePreviewAllTemplates = () => {
+    setPreviewAllTemplates(getCurrentTemplates());
+    setIsPreviewAllDialogOpen(true);
+  };
+
+  const handleNextPreviewAll = () => {
+    if (previewAllCurrentIndex < previewAllTemplates.length - 1) {
+      setPreviewAllCurrentIndex(previewAllCurrentIndex + 1);
     }
-    
-    // Fix standalone imageUrl property
-    if (sanitizedTemplate.imageUrl) {
-      sanitizedTemplate.imageUrl = sanitizeImageUrl(sanitizedTemplate.imageUrl);
+  };
+
+  const handlePrevPreviewAll = () => {
+    if (previewAllCurrentIndex > 0) {
+      setPreviewAllCurrentIndex(previewAllCurrentIndex - 1);
     }
-    
-    // Fix choice image if present
-    if (sanitizedTemplate.choiceImage) {
-      sanitizedTemplate.choiceImage = sanitizeImageUrl(sanitizedTemplate.choiceImage);
-    }
-    
-    setPreviewTemplate(sanitizedTemplate);
-    setIsPreviewDialogOpen(true);
   };
 
   const handleDeleteConfirm = (template) => {
@@ -713,7 +722,7 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
                 type="text" 
                 placeholder={`Search ${getTemplateType()} templates...`}
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
               {searchTerm && (
                 <button 
@@ -725,82 +734,69 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
               )}
             </div>
             
-            <div className="tl-filter-row">
-              {/* Category filter for question and sentence templates */}
-              {(nestedTabIndex === 0 || nestedTabIndex === 2) && (
-                <div className="tl-filter-group">
-                  <label>
-                    <FontAwesomeIcon icon={faLayerGroup} className="tl-filter-icon" />
-                    Category:
-                  </label>
-                  <select 
-                    value={filterCategory}
-                    onChange={e => setFilterCategory(e.target.value)}
-                  >
-                    <option value="all">All Categories</option>
-                    {getCategories().filter(cat => cat !== 'all').map(category => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              
-              {/* Reading level filter for sentence templates */}
-              {nestedTabIndex === 2 && (
-                <div className="tl-filter-group">
-                  <label>
-                    <FontAwesomeIcon icon={faGraduationCap} className="tl-filter-icon" />
-                    Reading Level:
-                  </label>
-                  <select 
-                    value={filterReadingLevel}
-                    onChange={e => setFilterReadingLevel(e.target.value)}
-                  >
-                    <option value="all">All Levels</option>
-                    {getReadingLevels().filter(level => level !== 'all').map(level => (
-                      <option key={level} value={level}>{level}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              
-              {/* Choice type filter for choice templates */}
-              {nestedTabIndex === 1 && (
-                <div className="tl-filter-group">
-                  <label>
-                    <FontAwesomeIcon icon={faClipboardList} className="tl-filter-icon" />
-                    Choice Type:
-                  </label>
-                  <select 
-                    value={filterChoiceType}
-                    onChange={e => setFilterChoiceType(e.target.value)}
-                  >
-                    <option value="all">All Choice Types</option>
-                    <option value="patinig">Vowels (Patinig)</option>
-                    <option value="katinig">Consonants (Katinig)</option>
-                    <option value="Letter">Letters</option>
-                    <option value="Sound">Sounds</option>
-                    <option value="malapatinigText">Syllable Blocks</option>
-                    <option value="wordText">Complete Words</option>
-                  </select>
-                </div>
-              )}
-              
-              {/* Status filter for all template types */}
-              <div className="tl-filter-group">
-                <label>
-                  <FontAwesomeIcon icon={faCheckCircle} className="tl-filter-icon" />
-                  Status:
-                </label>
+            <div className="tl-filter-options">
+              <div className="tl-filter">
+                <label>Status</label>
                 <select 
                   value={filterStatus}
-                  onChange={e => setFilterStatus(e.target.value)}
+                  onChange={(e) => setFilterStatus(e.target.value)}
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                 </select>
               </div>
+              
+              {/* Category filter for question and sentence templates */}
+              {(nestedTabIndex === 0 || nestedTabIndex === 2) && (
+                <div className="tl-filter">
+                  <label>Category</label>
+                  <select 
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                  >
+                    {getCategories().map((category, index) => (
+                      <option key={index} value={category}>{category === "all" ? "All Categories" : category}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              {/* Choice type filter (only for choice templates) */}
+              {nestedTabIndex === 1 && (
+                <div className="tl-filter">
+                  <label>Choice Type</label>
+                  <select 
+                    value={filterChoiceType}
+                    onChange={(e) => setFilterChoiceType(e.target.value)}
+                  >
+                    <option value="all">All Types</option>
+                    <option value="text">Text</option>
+                    <option value="image">Image</option>
+                    <option value="textWithImage">Text with Image</option>
+                  </select>
+                </div>
+              )}
+              
+              {/* Reading level filter (only for sentence templates) */}
+              {nestedTabIndex === 2 && (
+                <div className="tl-filter">
+                  <label>Reading Level</label>
+                  <select 
+                    value={filterReadingLevel}
+                    onChange={(e) => setFilterReadingLevel(e.target.value)}
+                  >
+                    {getReadingLevels().map((level, index) => (
+                      <option key={index} value={level}>{level === "all" ? "All Levels" : level}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              <button className="tl-preview-all-btn" onClick={handlePreviewAllTemplates}>
+                <FontAwesomeIcon icon={faEye} />
+                Preview All {getTemplateType().charAt(0).toUpperCase() + getTemplateType().slice(1)} Templates
+              </button>
             </div>
           </div>
         </div>
@@ -1175,347 +1171,14 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
         </div>
       )}
 
-      {/* Preview Dialog */}
-      {isPreviewDialogOpen && previewTemplate && (
-        <div className="tl-dialog-overlay">
-          <div className="tl-dialog tl-preview-dialog">
-            <div className="tl-dialog-header">
-              <h3>
-                <FontAwesomeIcon icon={faEye} className="tl-modal-header-icon" />
-                Template Preview
-              </h3>
-              <button 
-                className="tl-dialog-close"
-                onClick={() => setIsPreviewDialogOpen(false)}
-              >
-                <FontAwesomeIcon icon={faTimes} />
-              </button>
-            </div>
-            
-            <div className="tl-dialog-body">
-              {/* Preview content based on template type */}
-              {nestedTabIndex === 0 && (
-                <div className="tl-question-preview">
-                  <div className="tl-preview-card">
-                    <div className="tl-preview-header">
-                      <h4>Question Template</h4>
-                      <span className={`tl-preview-status ${previewTemplate.isActive ? 'tl-active' : 'tl-inactive'}`}>
-                        <FontAwesomeIcon icon={previewTemplate.isActive ? faCheckCircle : faBan} /> 
-                        {previewTemplate.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                    
-                    <div className="tl-preview-question-text">
-                      <div className="tl-preview-label">Question Text</div>
-                      <div className="tl-preview-value">{previewTemplate.templateText}</div>
-                    </div>
-                    
-                    <div className="tl-preview-details">
-                      <div className="tl-preview-item">
-                        <div className="tl-preview-item-header">
-                          <FontAwesomeIcon icon={faLayerGroup} />
-                          <span>Category</span>
-                        </div>
-                        <div className="tl-preview-item-content">
-                          {previewTemplate.category}
-                        </div>
-                      </div>
-                      
-                      <div className="tl-preview-item">
-                        <div className="tl-preview-item-header">
-                          <FontAwesomeIcon icon={faQuestion} />
-                          <span>Question Type</span>
-                        </div>
-                        <div className="tl-preview-item-content">
-                          {getQuestionTypeDisplay(previewTemplate.questionType)}
-                        </div>
-                      </div>
-                      
-                      <div className="tl-preview-item">
-                        <div className="tl-preview-item-header">
-                          <FontAwesomeIcon icon={faListAlt} />
-                          <span>Applicable Choice Types</span>
-                        </div>
-                        <div className="tl-preview-item-content tl-badge-list">
-                          {previewTemplate.applicableChoiceTypes && previewTemplate.applicableChoiceTypes.map(type => (
-                            <span key={type} className="tl-badge">
-                              <FontAwesomeIcon icon={getChoiceTypeIcon(type)} />
-                              {getChoiceTypeDisplayName(type)}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div className="tl-preview-item">
-                        <div className="tl-preview-item-header">
-                          <FontAwesomeIcon icon={faCheck} />
-                          <span>Correct Answer Type</span>
-                        </div>
-                        <div className="tl-preview-item-content tl-correct-badge">
-                          <FontAwesomeIcon icon={getChoiceTypeIcon(previewTemplate.correctChoiceType)} />
-                          {getChoiceTypeDisplayName(previewTemplate.correctChoiceType)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {nestedTabIndex === 1 && (
-                <div className="tl-choice-preview-dialog">
-                  <div className="tl-preview-card">
-                    <div className="tl-preview-header">
-                      <h4>Choice Template</h4>
-                      <span className={`tl-preview-status ${previewTemplate.isActive ? 'tl-active' : 'tl-inactive'}`}>
-                        <FontAwesomeIcon icon={previewTemplate.isActive ? faCheckCircle : faBan} /> 
-                        {previewTemplate.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                    
-                    <div className="tl-preview-choice-content">
-                      <div className="tl-preview-choice-data">
-                        <div className="tl-preview-item">
-                          <div className="tl-preview-item-header">
-                            <FontAwesomeIcon icon={faClipboardList} />
-                            <span>Choice Type</span>
-                          </div>
-                          <div className="tl-preview-item-content">
-                            <span className="tl-badge choice-type">
-                              <FontAwesomeIcon icon={getChoiceTypeIcon(previewTemplate.choiceType)} />
-                              {getChoiceTypeDisplayName(previewTemplate.choiceType)}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        {previewTemplate.choiceValue && (
-                          <div className="tl-preview-item">
-                            <div className="tl-preview-item-header">
-                              <FontAwesomeIcon icon={faFont} />
-                              <span>Text Value</span>
-                            </div>
-                            <div className="tl-preview-item-content choice-value">
-                              {previewTemplate.choiceValue}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {previewTemplate.soundText && (
-                          <div className="tl-preview-item">
-                            <div className="tl-preview-item-header">
-                              <FontAwesomeIcon icon={faVolumeUp} />
-                              <span>Sound Representation</span>
-                            </div>
-                            <div className="tl-preview-item-content phonetic">
-                              {previewTemplate.soundText}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {previewTemplate.choiceImage && (
-                          <div className="tl-preview-item">
-                            <div className="tl-preview-item-header">
-                              <FontAwesomeIcon icon={faImage} />
-                              <span>Image</span>
-                            </div>
-                            <div className="tl-preview-item-content">
-                              <div className="tl-preview-choice-image">
-                                <img src={sanitizeImageUrl(previewTemplate.choiceImage)} alt="Choice" />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {nestedTabIndex === 2 && (
-                <div className="tl-sentence-preview">
-                  <div className="tl-preview-card">
-                    <div className="tl-preview-header">
-                      <h4>Sentence Template</h4>
-                      <span className={`tl-preview-status ${previewTemplate.isActive ? 'tl-active' : 'tl-inactive'}`}>
-                        <FontAwesomeIcon icon={previewTemplate.isActive ? faCheckCircle : faBan} /> 
-                        {previewTemplate.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                    
-                    <div className="tl-preview-sentence-header">
-                      <div className="tl-preview-label">Title</div>
-                      <div className="tl-preview-value tl-preview-title">{previewTemplate.title}</div>
-                    </div>
-                    
-                    {/* Display content for older format templates */}
-                    {previewTemplate.content && (
-                      <div className="tl-preview-sentence-text">
-                        <div className="tl-preview-label">Content</div>
-                        <div className="tl-preview-value content">{previewTemplate.content}</div>
-                      </div>
-                    )}
-                    
-                    {/* Display imageUrl for older format templates */}
-                    {previewTemplate.imageUrl && (
-                      <div className="tl-preview-sentence-image">
-                        <img 
-                          src={sanitizeImageUrl(previewTemplate.imageUrl)} 
-                          alt={previewTemplate.title}
-                          onError={(e) => {
-                            console.error('Image failed to load:', previewTemplate.imageUrl);
-                            e.target.src = 'https://via.placeholder.com/400x300?text=Image+Not+Available';
-                            e.target.alt = 'Image not available';
-                          }}
-                        />
-                      </div>
-                    )}
-                    
-                    {/* Display sentenceText array for newer format templates */}
-                    {previewTemplate.sentenceText && previewTemplate.sentenceText.length > 0 && (
-                      <div className="tl-preview-pages">
-                        <div className="tl-preview-label">Pages</div>
-                        <div className="tl-preview-pages-list">
-                          {previewTemplate.sentenceText.map((page, index) => (
-                            <div key={index} className="tl-preview-page">
-                              <div className="tl-preview-page-number">Page {page.pageNumber}</div>
-                              <div className="tl-preview-page-content">
-                                {page.image && (
-                                  <div className="tl-preview-page-image">
-                                    <img 
-                                      src={sanitizeImageUrl(page.image)} 
-                                      alt={`Page ${page.pageNumber}`}
-                                      onError={(e) => {
-                                        console.error('Image failed to load:', page.image);
-                                        e.target.src = 'https://via.placeholder.com/400x300?text=Image+Not+Available';
-                                        e.target.alt = 'Image not available';
-                                      }}
-                                    />
-                                  </div>
-                                )}
-                                <div className="tl-preview-page-text">{page.text}</div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Comprehension Questions Section */}
-                    {previewTemplate.comprehensionQuestions && previewTemplate.comprehensionQuestions.length > 0 && (
-                      <div className="tl-preview-comprehension">
-                        <div className="tl-preview-comprehension-header">
-                          <FontAwesomeIcon icon={faQuestion} />
-                          <h4>Comprehension Questions</h4>
-                        </div>
-                        <div className="tl-preview-questions-list">
-                          {previewTemplate.comprehensionQuestions.map((question, index) => (
-                            <div key={index} className="tl-preview-question-item">
-                              <div className="tl-preview-question-number">{index + 1}</div>
-                              <div className="tl-preview-question-content">
-                                <div className="tl-preview-question-text">{question.questionText}</div>
-                                {question.options && question.options.length > 0 && (
-                                  <div className="tl-preview-options">
-                                    {question.options.map((option, optIndex) => (
-                                      <div key={optIndex} className={`tl-preview-option ${question.correctAnswer === optIndex ? 'tl-correct-option' : ''}`}>
-                                        <div className="tl-option-marker">{String.fromCharCode(65 + optIndex)}</div>
-                                        <div className="tl-option-text">{option}</div>
-                                        {question.correctAnswer === optIndex && (
-                                          <div className="tl-correct-marker">
-                                            <FontAwesomeIcon icon={faCheck} />
-                                          </div>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* API format questions (sentenceQuestions) */}
-                    {previewTemplate.sentenceQuestions && previewTemplate.sentenceQuestions.length > 0 && (
-                      <div className="tl-preview-comprehension">
-                        <div className="tl-preview-comprehension-header">
-                          <FontAwesomeIcon icon={faQuestion} />
-                          <h4>Comprehension Questions</h4>
-                        </div>
-                        <div className="tl-preview-questions-list">
-                          {previewTemplate.sentenceQuestions.map((question, index) => (
-                            <div key={index} className="tl-preview-question-item">
-                              <div className="tl-preview-question-number">{question.questionNumber}</div>
-                              <div className="tl-preview-question-content">
-                                <div className="tl-preview-question-text">{question.questionText}</div>
-                                {question.sentenceOptionAnswers && question.sentenceOptionAnswers.length > 0 && (
-                                  <div className="tl-preview-options">
-                                    {question.sentenceOptionAnswers.map((option, optIndex) => (
-                                      <div key={optIndex} className={`tl-preview-option ${option === question.sentenceCorrectAnswer ? 'tl-correct-option' : ''}`}>
-                                        <div className="tl-option-marker">{String.fromCharCode(65 + optIndex)}</div>
-                                        <div className="tl-option-text">{option}</div>
-                                        {option === question.sentenceCorrectAnswer && (
-                                          <div className="tl-correct-marker">
-                                            <FontAwesomeIcon icon={faCheck} />
-                                          </div>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="tl-preview-details">
-                      <div className="tl-preview-item">
-                        <div className="tl-preview-item-header">
-                          <FontAwesomeIcon icon={faLayerGroup} />
-                          <span>Category</span>
-                        </div>
-                        <div className="tl-preview-item-content">
-                          {previewTemplate.category}
-                        </div>
-                      </div>
-                      
-                      <div className="tl-preview-item">
-                        <div className="tl-preview-item-header">
-                          <FontAwesomeIcon icon={faGraduationCap} />
-                          <span>Reading Level</span>
-                        </div>
-                        <div className="tl-preview-item-content">
-                          {previewTemplate.readingLevel}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className="tl-dialog-footer">
-              <button
-                className="tl-dialog-btn tl-edit-btn"
-                onClick={() => {
-                  setIsPreviewDialogOpen(false);
-                  handleEditTemplate(previewTemplate);
-                }}
-                disabled={!canEditTemplate(previewTemplate)}
-              >
-                <FontAwesomeIcon icon={faEdit} /> Edit Template
-              </button>
-              <button 
-                className="tl-dialog-btn tl-close-btn"
-                onClick={() => setIsPreviewDialogOpen(false)}
-              >
-                <FontAwesomeIcon icon={faTimes} /> Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Unified Template Preview Dialog */}
+      <UnifiedTemplatePreview 
+        isOpen={isPreviewAllDialogOpen}
+        onClose={() => setIsPreviewAllDialogOpen(false)}
+        templates={previewAllTemplates}
+        templateType={getTemplateType()}
+        onEditTemplate={handleEditTemplate}
+      />
 
       {/* Delete Confirmation Dialog */}
       {isDeleteDialogOpen && templateToDelete && (

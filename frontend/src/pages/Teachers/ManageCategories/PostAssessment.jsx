@@ -1,4 +1,5 @@
 // src/pages/Teachers/ManageCategories/PostAssessment.jsx
+// This file has been renamed functionally to MainAssessment but kept the same filename for compatibility
 import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -11,7 +12,6 @@ import {
   faSearch,
   faCheckCircle,
   faLock,
-  faQuestion,
   faUpload,
   faBook,
   faFont,
@@ -32,9 +32,18 @@ import {
   faCogs,
   faBullseye,
   faUsers,
-  faGraduationCap
+  faGraduationCap,
+  faQuestion,
+  faCloudUploadAlt
 } from "@fortawesome/free-solid-svg-icons";
 import "../../../css/Teachers/ManageCategories/PostAssessment.css";
+import MainAssessmentService from '../../../services/Teachers/MainAssessmentService';
+import { toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// Add import for file helpers
+import { dataURLtoFile, validateFileForUpload } from '../../../utils/fileHelpers';
 
 // Tooltip component for help text
 const Tooltip = ({ text }) => (
@@ -44,7 +53,34 @@ const Tooltip = ({ text }) => (
   </div>
 );
 
-const PostAssessment = ({ templates }) => {
+// Helper function to handle API errors and display user-friendly messages
+const handleApiError = (error, defaultMessage = "An error occurred. Please try again.") => {
+  if (error.response) {
+    // Server responded with an error status code
+    const status = error.response.status;
+    const errorMessage = error.response.data?.message || defaultMessage;
+    
+    if (status === 401) {
+      return "You are not authorized. Please log in again.";
+    } else if (status === 403) {
+      return "You don't have permission to perform this action.";
+    } else if (status === 404) {
+      return "The requested resource was not found. This might be because the Main Assessment feature is new.";
+    } else if (status === 422) {
+      return errorMessage; // Validation error with specific message
+    } else {
+      return `Error: ${errorMessage}`;
+    }
+  } else if (error.request) {
+    // Request was made but no response received (network issue)
+    return "Unable to connect to the server. Please check your internet connection.";
+  } else {
+    // Something else happened while setting up the request
+    return defaultMessage;
+  }
+};
+
+const MainAssessment = ({ templates }) => {
   const [assessments, setAssessments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -57,7 +93,9 @@ const PostAssessment = ({ templates }) => {
   const [formData, setFormData] = useState({
     readingLevel: "",
     category: "",
-    questions: []
+    questions: [],
+    isActive: true,
+    status: "active"
   });
   const [submitConfirmDialog, setSubmitConfirmDialog] = useState(false);
   const [submitSuccessDialog, setSubmitSuccessDialog] = useState(false);
@@ -70,17 +108,18 @@ const PostAssessment = ({ templates }) => {
     questionImage: null,
     questionValue: "",
     choiceOptions: [
-      { optionText: "", isCorrect: true },
-      { optionText: "", isCorrect: false }
+      { optionId: "1", optionText: "", isCorrect: true, description: "" },
+      { optionId: "2", optionText: "", isCorrect: false, description: "" }
     ],
-    passages: [],
-    sentenceQuestions: []
+    order: 1
   });
   const [previewPage, setPreviewPage] = useState(0);
   const [duplicateRestrictionDialog, setDuplicateRestrictionDialog] = useState(false);
   const [restrictionReason, setRestrictionReason] = useState("");
+  const [apiMessage, setApiMessage] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
-  // Enhanced restriction checking
+  // Check if an assessment already exists for a reading level and category
   const checkExistingAssessment = (readingLevel, category, excludeId = null) => {
     return assessments.find(assessment => 
       assessment.readingLevel === readingLevel && 
@@ -89,16 +128,14 @@ const PostAssessment = ({ templates }) => {
     );
   };
 
+  // Check if a new assessment can be created for a reading level and category
   const canCreateAssessment = (readingLevel, category) => {
     const existing = checkExistingAssessment(readingLevel, category);
     
-    // Can't create if there's already a pending or approved assessment
-    if (existing && (existing.status === "pending" || existing.status === "approved")) {
+    if (existing) {
       return {
         canCreate: false,
-        reason: existing.status === "pending" 
-          ? "A pending assessment already exists for this combination"
-          : "An active assessment already exists for this combination"
+        reason: "An assessment already exists for this reading level and category combination"
       };
     }
     
@@ -106,111 +143,28 @@ const PostAssessment = ({ templates }) => {
   };
 
   useEffect(() => {
-    // Fetch assessments data
+    // Fetch assessments data from the backend
     const fetchAssessments = async () => {
       try {
         setLoading(true);
 
-        // In production, this would be an API call to fetch from test.main_assessment
-        const mockAssessments = [
-          {
-            _id: "68298fb179a34741f9cd1a01",
-            readingLevel: "Low Emerging",
-            category: "Alphabet Knowledge",
-            questions: [
-              {
-                questionType: "patinig",
-                questionText: "Anong katumbas na maliit na letra?",
-                questionImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/A_big.png",
-                questionValue: "A",
-                choiceOptions: [
-                  { optionText: "a", isCorrect: true },
-                  { optionText: "e", isCorrect: false }
-                ],
-                order: 1
-              },
-              {
-                questionType: "patinig",
-                questionText: "Anong katumbas na maliit na letra?",
-                questionImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/E_big.png",
-                questionValue: "E",
-                choiceOptions: [
-                  { optionText: "e", isCorrect: true },
-                  { optionText: "a", isCorrect: false }
-                ],
-                order: 2
-              }
-            ],
-            isActive: true,
-            createdAt: "2025-05-01T08:00:00.000Z",
-            status: "approved"
-          },
-          {
-            _id: "68298fb179a34741f9cd1a02",
-            readingLevel: "Low Emerging",
-            category: "Phonological Awareness",
-            questions: [
-              {
-                questionType: "malapantig",
-                questionText: "Kapag pinagsama ang mga pantig, ano ang mabubuo?",
-                questionImage: null,
-                questionValue: "BO + LA",
-                choiceOptions: [
-                  { optionText: "BOLA", isCorrect: true },
-                  { optionText: "LABO", isCorrect: false }
-                ],
-                order: 1
-              }
-            ],
-            isActive: true,
-            createdAt: "2025-05-01T08:45:00.000Z",
-            status: "pending"
-          },
-          {
-            _id: "68298fb179a34741f9cd1a05",
-            readingLevel: "Low Emerging",
-            category: "Reading Comprehension",
-            questions: [
-              {
-                questionType: "sentence",
-                questionText: "Basahin ang kwento at sagutin ang mga tanong.",
-                questionImage: null,
-                questionValue: null,
-                choiceOptions: [],
-                passages: [
-                  {
-                    pageNumber: 1,
-                    pageText: "Si Maria ay pumunta sa parke. Nakita niya ang maraming bulaklak na magaganda. Siya ay natuwa at nag-uwi ng ilang bulaklak para sa kanyang ina.",
-                    pageImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/passages/park_flowers.png"
-                  },
-                  {
-                    pageNumber: 2,
-                    pageText: "Nang makita ng ina ni Maria ang mga bulaklak, siya ay ngumiti at nagyakap sa kanyang anak. Gumawa sila ng maliit na hardin sa harap ng kanilang bahay.",
-                    pageImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/passages/mother_garden.png"
-                  }
-                ],
-                sentenceQuestions: [
-                  {
-                    questionText: "Sino ang pangunahing tauhan sa kwento?",
-                    questionImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/questions/character_question.png",
-                    correctAnswer: "Si Maria",
-                    incorrectAnswer: "Ang ina"
-                  }
-                ],
-                order: 1
-              }
-            ],
-            isActive: false,
-            createdAt: "2025-05-01T10:00:00.000Z",
-            status: "rejected",
-            rejectionReason: "The reading passage is too simple for the target reading level. Please add more complex vocabulary and sentence structures appropriate for Low Emerging level students."
+        const response = await MainAssessmentService.getAllAssessments();
+        
+        if (response && response.success) {
+          setAssessments(response.data || []);
+          
+          // If there's a message from the API, store it
+          if (response.message) {
+            setApiMessage(response.message);
           }
-        ];
-
-        setAssessments(mockAssessments);
+        } else {
+          setAssessments([]);
+        }
+        
         setLoading(false);
       } catch (err) {
-        setError("Failed to load assessments. Please try again later.");
+        console.error('Error fetching assessments:', err);
+        setError(handleApiError(err, "Failed to load assessments. Please try again later."));
         setLoading(false);
       }
     };
@@ -239,30 +193,43 @@ const PostAssessment = ({ templates }) => {
   const categories = ["all", "Alphabet Knowledge", "Phonological Awareness",
     "Decoding", "Word Recognition", "Reading Comprehension"];
 
+  // Get assessment statistics
+  const getAssessmentStats = () => {
+    const totalAssessments = assessments.length;
+    const activeAssessments = assessments.filter(a => a.isActive).length;
+    const inactiveAssessments = assessments.filter(a => !a.isActive).length;
+
+    return {
+      total: totalAssessments,
+      active: activeAssessments,
+      inactive: inactiveAssessments
+    };
+  };
+
+  const stats = getAssessmentStats();
+
   const handleCreateAssessment = () => {
     setModalType("create");
     setSelectedAssessment(null);
     setFormData({
       readingLevel: "",
       category: "",
-      questions: []
+      questions: [],
+      isActive: true,
+      status: "active"
     });
     setShowModal(true);
   };
 
   const handleEditAssessment = (assessment) => {
-    // Only allow editing for rejected assessments
-    if (assessment.status !== "rejected") {
-      alert("Only rejected assessments can be edited. Approved or pending assessments cannot be modified.");
-      return;
-    }
-
     setModalType("edit");
     setSelectedAssessment(assessment);
     setFormData({
       readingLevel: assessment.readingLevel,
       category: assessment.category,
-      questions: [...assessment.questions]
+      questions: [...assessment.questions],
+      isActive: assessment.isActive,
+      status: assessment.status
     });
     setShowModal(true);
   };
@@ -275,31 +242,33 @@ const PostAssessment = ({ templates }) => {
   };
 
   const handleDeleteConfirm = (assessment) => {
-    // Only allow deletion for rejected assessments
-    if (assessment.status !== "rejected") {
-      alert("Only rejected assessments can be deleted. Approved or pending assessments cannot be removed.");
-      return;
-    }
-
     setModalType("delete");
     setSelectedAssessment(assessment);
     setShowModal(true);
   };
 
-  const handleDeleteAssessment = () => {
+  const handleDeleteAssessment = async () => {
     if (!selectedAssessment) return;
 
-    // In a real app, you'd make an API call to delete the assessment
+    try {
+      const response = await MainAssessmentService.deleteAssessment(selectedAssessment._id);
+      
+      if (response && response.success) {
+        // Remove from local state
     setAssessments(prev => prev.filter(a => a._id !== selectedAssessment._id));
     setShowModal(false);
     setSelectedAssessment(null);
 
-    // Show custom deletion success notification with different message
-    // We'll use the same component but with different content
+        // Show success notification
     setDeleteSuccessDialog(true);
     setTimeout(() => {
       setDeleteSuccessDialog(false);
     }, 3000);
+      }
+    } catch (error) {
+      console.error('Error deleting assessment:', error);
+      alert(handleApiError(error, "Failed to delete assessment. Please try again."));
+    }
   };
 
   const handleFormChange = (e) => {
@@ -314,7 +283,6 @@ const PostAssessment = ({ templates }) => {
     setShowQuestionForm(true);
     setCurrentQuestion(null);
 
-    // Reset form data based on selected category
     const initialQuestionType =
       formData.category === "Alphabet Knowledge" ? "patinig" :
         formData.category === "Phonological Awareness" ? "malapantig" :
@@ -328,8 +296,8 @@ const PostAssessment = ({ templates }) => {
       questionImage: null,
       questionValue: "",
       choiceOptions: [
-        { optionText: "", isCorrect: true },
-        { optionText: "", isCorrect: false }
+        { optionId: "1", optionText: "", isCorrect: true, description: "" },
+        { optionId: "2", optionText: "", isCorrect: false, description: "" }
       ],
       passages: initialQuestionType === "sentence" ? [
         { pageNumber: 1, pageText: "", pageImage: null }
@@ -384,7 +352,7 @@ const PostAssessment = ({ templates }) => {
       ...prev,
       choiceOptions: [
         ...prev.choiceOptions,
-        { optionText: "", isCorrect: false }
+        { optionId: (prev.choiceOptions.length + 1).toString(), optionText: "", isCorrect: false, description: "" }
       ]
     }));
   };
@@ -396,56 +364,141 @@ const PostAssessment = ({ templates }) => {
     }));
   };
 
-  const handleQuestionFormSubmit = () => {
-    // Validate question form
+  const handleQuestionFormSubmit = async () => {
     if (!questionFormData.questionText) {
-      alert("Please enter a question text.");
+      toast.error("Please enter a question text.");
       return;
     }
 
     if (questionFormData.questionType !== "sentence" && questionFormData.choiceOptions.length < 2) {
-      alert("Please add at least two choices for the question.");
+      toast.error("Please add at least two choices for the question.");
       return;
     }
 
-    // Check if at least one choice is marked as correct
     if (
       questionFormData.questionType !== "sentence" &&
       !questionFormData.choiceOptions.some(c => c.isCorrect)
     ) {
-      alert("Please mark at least one choice as correct.");
+      toast.error("Please mark at least one choice as correct.");
       return;
     }
-
-    // Update the questions array
-    if (currentQuestion !== null) {
-      // Edit existing question
-      setFormData(prev => {
-        const updatedQuestions = [...prev.questions];
-        updatedQuestions[currentQuestion] = questionFormData;
-        return {
+    
+    try {
+      let finalQuestionData = { ...questionFormData };
+      
+      // If there's an image file pending upload, upload it to S3 first
+      if (questionFormData.imageFile) {
+        const result = await MainAssessmentService.uploadImageToS3(questionFormData.imageFile, 'main-assessment');
+        
+        if (result.success) {
+          finalQuestionData.questionImage = result.url;
+        } else {
+          toast.error(result.error || "Failed to upload image");
+        }
+        
+        // Remove temporary fields used for handling the upload
+        delete finalQuestionData.imageFile;
+        delete finalQuestionData.imageName;
+      }
+      
+      // If we have passage pages with images, handle those uploads as well
+      if (finalQuestionData.questionType === "sentence" && finalQuestionData.passages) {
+        const updatedPassages = [];
+        
+        for (const passage of finalQuestionData.passages) {
+          // If this passage has a new image that needs uploading (it's a data URL)
+          if (passage.pageImage && typeof passage.pageImage === 'string' && passage.pageImage.startsWith('data:')) {
+            // We need to convert the data URL back to a file for upload
+            const imageFile = dataURLtoFile(passage.pageImage, `page_${passage.pageNumber}.jpg`);
+            
+            const result = await MainAssessmentService.uploadImageToS3(imageFile, 'main-assessment');
+            
+            if (result.success) {
+              updatedPassages.push({
+                ...passage,
+                pageImage: result.url
+              });
+            } else {
+              toast.error(`Failed to upload image for page ${passage.pageNumber}`);
+              updatedPassages.push(passage);
+            }
+          } else {
+            updatedPassages.push(passage);
+          }
+        }
+        
+        finalQuestionData.passages = updatedPassages;
+      }
+      
+      // Update the form data with the final question data
+      if (currentQuestion !== null) {
+        setFormData(prev => {
+          const updatedQuestions = [...prev.questions];
+          updatedQuestions[currentQuestion] = finalQuestionData;
+          return {
+            ...prev,
+            questions: updatedQuestions
+          };
+        });
+        
+        // Reset for a new question and keep the form open
+        setCurrentQuestion(null);
+        setQuestionFormData({
+          questionType: finalQuestionData.questionType,
+          questionText: "",
+          questionImage: null,
+          questionValue: "",
+          choiceOptions: [
+            { optionId: "1", optionText: "", isCorrect: true, description: "" },
+            { optionId: "2", optionText: "", isCorrect: false, description: "" }
+          ],
+          passages: finalQuestionData.questionType === "sentence" ? [
+            { pageNumber: 1, pageText: "", pageImage: null }
+          ] : [],
+          sentenceQuestions: finalQuestionData.questionType === "sentence" ? [
+            { questionText: "", correctAnswer: "", incorrectAnswer: "" }
+          ] : [],
+          order: formData.questions.length + 1
+        });
+        
+        toast.success("Question updated! You can add another or click Back to return to the assessment.");
+      } else {
+        setFormData(prev => ({
           ...prev,
-          questions: updatedQuestions
-        };
-      });
-    } else {
-      // Add new question
-      setFormData(prev => ({
-        ...prev,
-        questions: [...prev.questions, questionFormData]
-      }));
+          questions: [...prev.questions, finalQuestionData]
+        }));
+        
+        // Reset for a new question and keep the form open
+        setQuestionFormData({
+          questionType: finalQuestionData.questionType,
+          questionText: "",
+          questionImage: null,
+          questionValue: "",
+          choiceOptions: [
+            { optionId: "1", optionText: "", isCorrect: true, description: "" },
+            { optionId: "2", optionText: "", isCorrect: false, description: "" }
+          ],
+          passages: finalQuestionData.questionType === "sentence" ? [
+            { pageNumber: 1, pageText: "", pageImage: null }
+          ] : [],
+          sentenceQuestions: finalQuestionData.questionType === "sentence" ? [
+            { questionText: "", correctAnswer: "", incorrectAnswer: "" }
+          ] : [],
+          order: formData.questions.length + 1
+        });
+        
+        toast.success("Question added! You can add another or click Back to return to the assessment.");
+      }
+    } catch (error) {
+      console.error("Error saving question:", error);
+      toast.error("Failed to save question with image upload. Please try again.");
     }
-
-    // Close the question form
-    setShowQuestionForm(false);
   };
 
   const handleFileUpload = (e, field) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // For a real app, you'd upload the file to your server/S3
-    // Here we'll just create a fake URL for demonstration
     const fakeImageUrl = URL.createObjectURL(file);
 
     if (field === 'questionImage') {
@@ -480,43 +533,74 @@ const PostAssessment = ({ templates }) => {
     if (modalType === 'create') {
       const validation = canCreateAssessment(formData.readingLevel, formData.category);
       if (!validation.canCreate) {
-        setDuplicateRestrictionDialog(true);
         setRestrictionReason(validation.reason);
+        setDuplicateRestrictionDialog(true);
         return;
       }
     }
     
-    // Open confirmation dialog for admin approval
+    // Open confirmation dialog
     setSubmitConfirmDialog(true);
   };
 
-  const handleConfirmSubmit = () => {
-    // In a real app, you'd make an API call to save the assessment
-    const newAssessment = {
-      _id: selectedAssessment ? selectedAssessment._id : Date.now().toString(),
+  const handleConfirmSubmit = async () => {
+    try {
+      setSubmitConfirmDialog(false);
+      
+      // Ensure each question has proper format
+      const formattedQuestions = formData.questions.map((question, index) => ({
+        ...question,
+        order: index + 1,
+        // Ensure choiceOptions have optionId, description if missing
+        choiceOptions: question.choiceOptions.map((option, optIndex) => ({
+          ...option,
+          optionId: option.optionId || (optIndex + 1).toString(),
+          description: option.description || (option.isCorrect ? 
+            "Ito ang tamang sagot." : 
+            "Hindi ito ang tamang sagot.")
+        }))
+      }));
+      
+      // Create payload
+      const assessmentData = {
       readingLevel: formData.readingLevel,
       category: formData.category,
-      questions: formData.questions,
-      isActive: false, // New assessments start as inactive
-      status: "pending", // New or edited assessments need approval
-      createdAt: new Date().toISOString()
-    };
-
-    if (selectedAssessment) {
+        questions: formattedQuestions,
+        isActive: formData.isActive,
+        status: formData.status
+      };
+      
+      let response;
+      
+      if (modalType === 'edit' && selectedAssessment) {
       // Update existing assessment
-      setAssessments(prev => prev.map(a => a._id === selectedAssessment._id ? newAssessment : a));
+        response = await MainAssessmentService.updateAssessment(selectedAssessment._id, assessmentData);
+        
+        if (response && response.success) {
+          // Update local state
+          setAssessments(prev => 
+            prev.map(a => a._id === selectedAssessment._id ? response.data : a)
+          );
+        }
     } else {
-      // Add new assessment
-      setAssessments(prev => [...prev, newAssessment]);
-    }
-
-    setSubmitConfirmDialog(false);
+        // Create new assessment
+        response = await MainAssessmentService.createAssessment(assessmentData);
+        
+        if (response && response.success) {
+          // Add to local state
+          setAssessments(prev => [...prev, response.data]);
+        }
+      }
+      
+      // Reset form and close modal
     setShowModal(false);
     setSelectedAssessment(null);
     setFormData({
       readingLevel: "",
       category: "",
-      questions: []
+        questions: [],
+        isActive: true,
+        status: "active"
     });
 
     // Show success notification
@@ -524,9 +608,13 @@ const PostAssessment = ({ templates }) => {
     setTimeout(() => {
       setSubmitSuccessDialog(false);
     }, 3000);
+      
+    } catch (error) {
+      console.error('Error saving assessment:', error);
+      alert(handleApiError(error, "Failed to save assessment. Please check your inputs and try again."));
+    }
   };
 
-  // Function to handle navigation in preview mode
   const handlePreviewPageChange = (direction) => {
     if (direction === 'next' && selectedAssessment?.questions?.[0]?.passages?.length > previewPage + 1) {
       setPreviewPage(prev => prev + 1);
@@ -535,7 +623,6 @@ const PostAssessment = ({ templates }) => {
     }
   };
 
-  // Helper to render the question type name in a friendly format
   const getQuestionTypeDisplay = (type) => {
     switch (type) {
       case "patinig": return "Vowel (Patinig)";
@@ -547,22 +634,60 @@ const PostAssessment = ({ templates }) => {
     }
   };
 
-  // Get assessment statistics
-  const getAssessmentStats = () => {
-    const totalAssessments = assessments.length;
-    const activeAssessments = assessments.filter(a => a.status === "approved").length;
-    const pendingAssessments = assessments.filter(a => a.status === "pending").length;
-    const rejectedAssessments = assessments.filter(a => a.status === "rejected").length;
-
-    return {
-      total: totalAssessments,
-      active: activeAssessments,
-      pending: pendingAssessments,
-      rejected: rejectedAssessments
-    };
+  // Handle status toggle
+  const handleToggleStatus = async (assessment) => {
+    try {
+      const newStatus = assessment.status === 'active' ? 'inactive' : 'active';
+      const newIsActive = newStatus === 'active';
+      
+      const response = await MainAssessmentService.toggleAssessmentStatus(assessment._id, newStatus);
+      
+      if (response && response.success) {
+        // Update local state
+        setAssessments(prev => 
+          prev.map(a => a._id === assessment._id ? 
+            { ...a, status: newStatus, isActive: newIsActive } : a
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error toggling assessment status:', error);
+      alert(handleApiError(error, "Failed to update status. Please try again."));
+    }
   };
 
-  const stats = getAssessmentStats();
+  const handleImageUpload = async (e, field) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate the file
+    const validation = validateFileForUpload(file);
+    if (!validation.success) {
+      toast.error(validation.error);
+      return;
+    }
+
+    setUploadingImage(true);
+    
+    try {
+      // Create a preview using FileReader
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setQuestionFormData(prev => ({
+          ...prev,
+          [field]: reader.result, // Set data URL for preview
+          imageFile: file, // Store the file for later upload
+          imageName: file.name // Store the name for display
+        }));
+        setUploadingImage(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error processing image:", error);
+      setUploadingImage(false);
+      toast.error("Error processing image. Please try again.");
+    }
+  };
 
   if (loading) {
     return (
@@ -597,16 +722,12 @@ const PostAssessment = ({ templates }) => {
           Main Assessment Management
         </h2>
         <p>Create and manage targeted assessments for specific reading levels and categories based on student performance and learning progress.</p>
-        <button
-          className="pa-add-button"
-          onClick={handleCreateAssessment}
-        >
-          <FontAwesomeIcon icon={faPlus} /> Create New Assessment
-        </button>
       </div>
 
-      {/* Assessment Overview Stats */}
       <div className="pa-assessment-overview">
+        <div className="pa-overview-header">
+          <h3><FontAwesomeIcon icon={faLayerGroup} /> Assessment Overview</h3>
+        </div>
         <div className="pa-overview-stats">
           <div className="pa-stat-card">
             <div className="pa-stat-icon">
@@ -628,31 +749,145 @@ const PostAssessment = ({ templates }) => {
             </div>
           </div>
 
-          <div className="pa-stat-card pending">
-            <div className="pa-stat-icon">
-              <FontAwesomeIcon icon={faLock} />
-            </div>
-            <div className="pa-stat-content">
-              <div className="pa-stat-number">{stats.pending}</div>
-              <div className="pa-stat-label">Pending Approval</div>
-            </div>
-          </div>
-
-          <div className="pa-stat-card rejected">
+          <div className="pa-stat-card inactive">
             <div className="pa-stat-icon">
               <FontAwesomeIcon icon={faExclamationTriangle} />
             </div>
             <div className="pa-stat-content">
-              <div className="pa-stat-number">{stats.rejected}</div>
-              <div className="pa-stat-label">Rejected</div>
+              <div className="pa-stat-number">{stats.inactive}</div>
+              <div className="pa-stat-label">Inactive</div>
+            </div>
+            </div>
+          </div>
+
+        <div className="pa-reading-level-overview">
+          <div className="pa-reading-level-header">
+            <h4><FontAwesomeIcon icon={faBook} /> Assessments by Reading Level</h4>
+            <p>Manage assessments for different reading levels and track their availability</p>
+          </div>
+          <div className="pa-reading-level-grid">
+            {/* Dynamic generation of reading level cards */}
+            {['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'].map(level => {
+              // Get all assessments for this reading level
+              const levelAssessments = assessments.filter(a => a.readingLevel === level);
+              
+              // Get all unique categories for this reading level
+              const levelCategories = [...new Set(levelAssessments.map(a => a.category))].sort();
+              
+              return (
+                <div className="pa-reading-level-card" key={level}>
+                  <div className={`pa-reading-level-header-bar pa-level-${level.toLowerCase().replace(' ', '-')}`}>
+                    <div className="pa-reading-level-name">
+                      <FontAwesomeIcon icon={faBook} /> {level}
+                    </div>
+                    <div className="pa-reading-level-count">
+                      {levelAssessments.length}
+                    </div>
+                  </div>
+                  <div className="pa-reading-level-body">
+                    <div className="pa-category-list">
+                      {levelCategories.length > 0 ? (
+                        levelCategories.map(category => {
+                          // Get all questions for this category in this reading level
+                          const categoryQuestions = levelAssessments
+                            .filter(a => a.category === category)
+                            .reduce((total, a) => total + (a.questions ? a.questions.length : 0), 0);
+                          
+                          // Choose the appropriate icon based on category
+                          const categoryIcon = 
+                            category === "Reading Comprehension" ? faBook : 
+                            category === "Alphabet Knowledge" ? faFont : 
+                            category === "Phonological Awareness" ? faPuzzlePiece : 
+                            category === "Decoding" ? faFileAlt : 
+                            faImages; // Word Recognition
+                          
+                          return (
+                            <div className="pa-category-item" key={category}>
+                              <div className="pa-category-name">
+                                <FontAwesomeIcon icon={categoryIcon} /> {category}
+                              </div>
+                              <div className="pa-category-count">
+                                {categoryQuestions}
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="pa-category-item">
+                          <div className="pa-category-name">
+                            <FontAwesomeIcon icon={faInfoCircle} /> No categories yet
+                          </div>
+                          <div className="pa-category-count">
+                            0
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="pa-process-flow">
+        <h3>Main Assessment Process Flow</h3>
+        <div className="pa-flow-steps">
+          <div className="pa-flow-step">
+            <div className="pa-step-number">1</div>
+            <div className="pa-step-content">
+              <h4>Assessment Creation</h4>
+              <p>Teachers create targeted assessments based on student reading levels and specific learning objectives.</p>
+            </div>
+          </div>
+          <div className="pa-flow-connector">
+            <FontAwesomeIcon icon={faArrowRight} />
+          </div>
+          <div className="pa-flow-step">
+            <div className="pa-step-number">2</div>
+            <div className="pa-step-content">
+              <h4>Assessment Activation</h4>
+              <p>Teachers activate assessments to make them available to students in the mobile application.</p>
+            </div>
+          </div>
+          <div className="pa-flow-connector">
+            <FontAwesomeIcon icon={faArrowRight} />
+          </div>
+          <div className="pa-flow-step">
+            <div className="pa-step-number">3</div>
+            <div className="pa-step-content">
+              <h4>Student Assignment</h4>
+              <p>Activated assessments are assigned to students based on their reading level and identified needs.</p>
+            </div>
+          </div>
+          <div className="pa-flow-connector">
+            <FontAwesomeIcon icon={faArrowRight} />
+          </div>
+          <div className="pa-flow-step">
+            <div className="pa-step-number">4</div>
+            <div className="pa-step-content">
+              <h4>Progress Tracking</h4>
+              <p>Monitor student performance and advancement through the assessment system in real-time.</p>
+            </div>
+          </div>
+          <div className="pa-flow-connector">
+            <FontAwesomeIcon icon={faArrowRight} />
+          </div>
+          <div className="pa-flow-step">
+            <div className="pa-step-number">5</div>
+            <div className="pa-step-content">
+              <h4>Level Advancement</h4>
+              <p>Students advance to higher reading levels based on successful completion of assessments.</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* System Information */}
+    
+
       <div className="pa-system-info">
-        <h3>About Post-Assessment Process</h3>
+        <h3>About Main Assessment Process</h3>
         <div className="pa-info-grid">
           <div className="pa-info-card">
             <div className="pa-info-icon">
@@ -708,58 +943,13 @@ const PostAssessment = ({ templates }) => {
         </div>
       </div>
 
-      {/* Process Flow */}
-      <div className="pa-process-flow">
-        <h3>Post-Assessment Process Flow</h3>
-        <div className="pa-flow-steps">
-          <div className="pa-flow-step">
-            <div className="pa-step-number">1</div>
-            <div className="pa-step-content">
-              <h4>Assessment Creation</h4>
-              <p>Teachers create targeted assessments based on pre-assessment results and specific learning objectives.</p>
-            </div>
-          </div>
-          <div className="pa-flow-connector">
-            <FontAwesomeIcon icon={faArrowRight} />
-          </div>
-          <div className="pa-flow-step">
-            <div className="pa-step-number">2</div>
-            <div className="pa-step-content">
-              <h4>Admin Review</h4>
-              <p>Assessments undergo administrative review to ensure quality and alignment with educational standards.</p>
-            </div>
-          </div>
-          <div className="pa-flow-connector">
-            <FontAwesomeIcon icon={faArrowRight} />
-          </div>
-          <div className="pa-flow-step">
-            <div className="pa-step-number">3</div>
-            <div className="pa-step-content">
-              <h4>Student Assignment</h4>
-              <p>Approved assessments are assigned to students based on their reading level and identified needs.</p>
-            </div>
-          </div>
-          <div className="pa-flow-connector">
-            <FontAwesomeIcon icon={faArrowRight} />
-          </div>
-          <div className="pa-flow-step">
-            <div className="pa-step-number">4</div>
-            <div className="pa-step-content">
-              <h4>Progress Tracking</h4>
-              <p>Monitor student performance and advancement through the assessment system in real-time.</p>
-            </div>
-          </div>
-          <div className="pa-flow-connector">
-            <FontAwesomeIcon icon={faArrowRight} />
-          </div>
-          <div className="pa-flow-step">
-            <div className="pa-step-number">5</div>
-            <div className="pa-step-content">
-              <h4>Level Advancement</h4>
-              <p>Students advance to higher reading levels based on successful completion of assessments.</p>
-            </div>
-          </div>
-        </div>
+      <div className="pa-create-assessment-section">
+        <button
+          className="pa-create-assessment-btn"
+          onClick={handleCreateAssessment}
+        >
+          <FontAwesomeIcon icon={faPlus} /> Create New Assessment
+        </button>
       </div>
 
       <div className="pa-filters">
@@ -802,29 +992,105 @@ const PostAssessment = ({ templates }) => {
         </div>
       </div>
 
+      {apiMessage && (
+        <div className="pa-api-message">
+          <FontAwesomeIcon icon={faInfoCircle} className="pa-api-message-icon" />
+          <p>{apiMessage}</p>
+          <button 
+            className="pa-dismiss-message" 
+            onClick={() => setApiMessage(null)}
+            title="Dismiss message"
+          >
+            <FontAwesomeIcon icon={faTimes} />
+          </button>
+        </div>
+      )}
+
       <div className="pa-assessment-list">
         {filteredAssessments.length === 0 ? (
           <div className="pa-no-assessments">
             <div className="pa-empty-icon">
               <FontAwesomeIcon icon={faFileAlt} />
             </div>
-            <h3>No assessments found</h3>
-            <p>Create your first assessment to get started with targeted learning interventions.</p>
+            {searchTerm || filterReadingLevel !== "all" || filterCategory !== "all" ? (
+              <>
+                <h3>No matching assessments found</h3>
+                <p>Try adjusting your search or filter criteria to find assessments.</p>
+                <button
+                  className="pa-reset-filters"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setFilterReadingLevel("all");
+                    setFilterCategory("all");
+                  }}
+                >
+                  <FontAwesomeIcon icon={faFilter} /> Reset Filters
+                </button>
+              </>
+            ) : (
+              <>
+                <h3>Welcome to Main Assessment Management</h3>
+                <p>This is where you'll create targeted assessments for different reading levels and categories. Get started by creating your first assessment.</p>
+                <div className="pa-getting-started-tips">
+                  <h4><FontAwesomeIcon icon={faInfoCircle} /> Getting Started</h4>
+                  <ol>
+                    <li>Click "Create New Assessment" to build your first assessment</li>
+                    <li>Select a reading level and category for your assessment</li>
+                    <li>Add questions with appropriate content for that level</li>
+                    <li>Activate your assessment to make it available to students</li>
+                  </ol>
+                </div>
             <button
               className="pa-create-first"
               onClick={handleCreateAssessment}
             >
-              <FontAwesomeIcon icon={faPlus} /> Create Assessment
+                  <FontAwesomeIcon icon={faPlus} /> Create Your First Assessment
             </button>
+              </>
+            )}
           </div>
         ) : (
           <div className="pa-table">
             <div className="pa-header-row">
-              <div className="pa-header-cell">Reading Level</div>
-              <div className="pa-header-cell">Category</div>
-              <div className="pa-header-cell">Questions</div>
-              <div className="pa-header-cell">Status</div>
-              <div className="pa-header-cell">Actions</div>
+              <div className="pa-header-cell">
+                <FontAwesomeIcon icon={faBook} className="pa-header-icon" /> 
+                Reading Level
+                <span className="pa-table-tooltip">
+                  <FontAwesomeIcon icon={faInfoCircle} style={{marginLeft: '5px', fontSize: '12px', color: '#4e5c93'}} />
+                  <span className="pa-tooltip-text">Organized by CRLA reading level from Low Emerging to At Grade Level</span>
+                </span>
+              </div>
+              <div className="pa-header-cell">
+                <FontAwesomeIcon icon={faLayerGroup} className="pa-header-icon" /> 
+                Category
+                <span className="pa-table-tooltip">
+                  <FontAwesomeIcon icon={faInfoCircle} style={{marginLeft: '5px', fontSize: '12px', color: '#4e5c93'}} />
+                  <span className="pa-tooltip-text">Learning category like Phonological Awareness or Word Recognition</span>
+                </span>
+              </div>
+              <div className="pa-header-cell">
+                <FontAwesomeIcon icon={faClipboardList} className="pa-header-icon" /> 
+                Questions
+                <span className="pa-table-tooltip">
+                  <FontAwesomeIcon icon={faInfoCircle} style={{marginLeft: '5px', fontSize: '12px', color: '#4e5c93'}} />
+                  <span className="pa-tooltip-text">Number of questions in this assessment</span>
+                </span>
+              </div>
+              <div className="pa-header-cell">
+                <FontAwesomeIcon icon={faCheckCircle} className="pa-header-icon" /> 
+                Status
+                <span className="pa-table-tooltip">
+                  <FontAwesomeIcon icon={faInfoCircle} style={{marginLeft: '5px', fontSize: '12px', color: '#4e5c93'}} />
+                  <span className="pa-tooltip-text">Active assessments are available to students</span>
+                </span>
+              </div>
+              <div className="pa-header-cell">
+                Actions
+                <span className="pa-table-tooltip">
+                  <FontAwesomeIcon icon={faInfoCircle} style={{marginLeft: '5px', fontSize: '12px', color: '#4e5c93'}} />
+                  <span className="pa-tooltip-text">Edit, preview, toggle status, or delete assessments</span>
+                </span>
+              </div>
             </div>
 
             {filteredAssessments.map(assessment => (
@@ -834,60 +1100,58 @@ const PostAssessment = ({ templates }) => {
                   {assessment.readingLevel}
                 </div>
                 <div className="pa-cell">
-                  <FontAwesomeIcon icon={faPuzzlePiece} className="pa-cell-icon" />
+                  <FontAwesomeIcon icon={
+                    assessment.category === "Reading Comprehension" ? faBook : 
+                    assessment.category === "Alphabet Knowledge" ? faFont : 
+                    assessment.category === "Phonological Awareness" ? faPuzzlePiece : 
+                    assessment.category === "Decoding" ? faFileAlt : 
+                    faImages
+                  } className="pa-cell-icon" /> 
                   {assessment.category}
                 </div>
                 <div className="pa-cell">{assessment.questions.length}</div>
                 <div className="pa-cell">
-                  {assessment.status === "approved" ? (
+                  {assessment.isActive ? (
                     <span className="pa-status pa-active">
                       <FontAwesomeIcon icon={faCheckCircle} /> Active
                     </span>
-                  ) : assessment.status === "pending" ? (
-                    <span className="pa-status pa-pending">
-                      <FontAwesomeIcon icon={faLock} /> Pending Approval
-                    </span>
                   ) : (
                                           <span className="pa-status pa-inactive">
-                        <FontAwesomeIcon icon={faExclamationTriangle} /> Rejected
-                        {assessment.rejectionReason && (
-                          <span className="post-assess-status-tooltip">
-                            <FontAwesomeIcon icon={faInfoCircle} className="post-assess-info-icon" />
-                            <span className="post-assess-tooltip-content">{assessment.rejectionReason}</span>
-                          </span>
-                        )}
+                      <FontAwesomeIcon icon={faExclamationTriangle} /> Inactive
                       </span>
                   )}
                 </div>
                 <div className="pa-cell pa-actions">
-                  {/* Only show edit and delete buttons for rejected assessments */}
-                  {assessment.status === "rejected" && (
-                    <>
                       <button
                         className="pa-edit-btn"
                         onClick={() => handleEditAssessment(assessment)}
-                        title="Edit Assessment"
+                    title="Edit assessment"
                       >
                         <FontAwesomeIcon icon={faEdit} />
                       </button>
+                  
                       <button
-                        className="pa-delete-btn"
-                        onClick={() => handleDeleteConfirm(assessment)}
-                        title="Delete Assessment"
-                      >
-                        <FontAwesomeIcon icon={faTrash} />
-                      </button>
-                    </>
-
-                  )}
-
-                  {/* Preview is always available */}
-                  <button
                     className="pa-preview-btn"
                     onClick={() => handlePreviewAssessment(assessment)}
-                    title="Preview Assessment"
+                    title="Preview assessment"
                   >
                     <FontAwesomeIcon icon={faEye} />
+                      </button>
+                  
+                  <button
+                    className={`pa-status-toggle-btn ${assessment.isActive ? 'active' : 'inactive'}`}
+                    onClick={() => handleToggleStatus(assessment)}
+                    title={assessment.isActive ? "Deactivate assessment" : "Activate assessment"}
+                  >
+                    <FontAwesomeIcon icon={assessment.isActive ? faLock : faCheckCircle} />
+                  </button>
+                  
+                  <button
+                    className="pa-delete-btn"
+                    onClick={() => handleDeleteConfirm(assessment)}
+                    title="Delete assessment"
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
                   </button>
                 </div>
               </div>
@@ -896,11 +1160,9 @@ const PostAssessment = ({ templates }) => {
         )}
       </div>
 
-      {/* Assessment Modal */}
       {showModal && (
         <div className="pa-modal-overlay">
           <div className={`pa-modal ${modalType === 'preview' || showQuestionForm ? 'pa-modal-enhanced' : ''} ${modalType === 'delete' ? 'pa-modal-narrow' : ''}`}>
-            {/* Modal Header */}
             <div className="pa-modal-header">
               <h3>
                 {modalType === 'create' ?
@@ -921,7 +1183,6 @@ const PostAssessment = ({ templates }) => {
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="pa-modal-body">
                               {modalType === 'delete' ? (
                 <div className="pa-delete-confirm">
@@ -930,55 +1191,16 @@ const PostAssessment = ({ templates }) => {
                   </div>
                   <div className="pa-delete-message">
                     <h4>Delete Assessment</h4>
-                    {selectedAssessment?.status === 'rejected' ? (
-                      <>
-                        <p>Are you sure you want to permanently delete this rejected assessment?</p>
+                    <p>Are you sure you want to permanently delete this assessment?</p>
                         <p className="pa-delete-warning">
-                          This assessment was rejected and will be permanently deleted.
-                          This action cannot be undone.
-                        </p>
-                        {selectedAssessment?.rejectionReason && (
-                          <div className="post-assess-rejection-reason">
-                            <h5><FontAwesomeIcon icon={faInfoCircle} /> Rejection Reason:</h5>
-                            <p>"{selectedAssessment.rejectionReason}"</p>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <p>This assessment cannot be deleted because it has been submitted for approval.</p>
-                        <p className="pa-delete-info">
-                          Only rejected assessments can be deleted. Contact an administrator if you need to remove this assessment.
-                        </p>
-                      </>
-                    )}
-                  </div>
-                  <div className="pa-assessment-details">
-                    <div className="pa-detail-row">
-                      <span className="pa-detail-label">Reading Level:</span>
-                      <span className="pa-detail-value">{selectedAssessment?.readingLevel}</span>
-                    </div>
-                    <div className="pa-detail-row">
-                      <span className="pa-detail-label">Category:</span>
-                      <span className="pa-detail-value">{selectedAssessment?.category}</span>
-                    </div>
-                    <div className="pa-detail-row">
-                      <span className="pa-detail-label">Status:</span>
-                      <span className={`pa-detail-value status-${selectedAssessment?.status}`}>
-                        {selectedAssessment?.status?.charAt(0).toUpperCase() + selectedAssessment?.status?.slice(1)}
-                      </span>
-                    </div>
-                    <div className="pa-detail-row">
-                      <span className="pa-detail-label">Questions:</span>
-                      <span className="pa-detail-value">{selectedAssessment?.questions.length}</span>
-                    </div>
+                      This action cannot be undone. All questions and content will be permanently removed.
+                    </p>
                   </div>
                 </div>
               ) : modalType === 'preview' ? (
                 <div className="pa-assessment-preview">
                   <div className="pa-preview-header">
                     <div className="pa-preview-info">
-                      <div className="pa-preview-panel">
                         <div className="pa-preview-section">
                           <span className="pa-preview-label">Reading Level:</span>
                           <span className="pa-preview-value">{selectedAssessment.readingLevel}</span>
@@ -997,35 +1219,31 @@ const PostAssessment = ({ templates }) => {
                         <div className="pa-preview-section">
                           <span className="pa-preview-label">Status:</span>
                           <span className="pa-preview-value">
-                            {selectedAssessment.status === "approved" ? (
+                          {selectedAssessment.isActive ? (
                               <span className="pa-status-tag active">
                                 <FontAwesomeIcon icon={faCheckCircle} /> Active
                               </span>
-                            ) : selectedAssessment.status === "pending" ? (
-                              <span className="pa-status-tag pending">
-                                <FontAwesomeIcon icon={faLock} /> Pending Approval
-                              </span>
                             ) : (
-                              <span className="pa-status-tag rejected">
-                                <FontAwesomeIcon icon={faExclamationTriangle} /> Rejected
+                            <span className="pa-status-tag inactive">
+                              <FontAwesomeIcon icon={faExclamationTriangle} /> Inactive
                               </span>
                             )}
                           </span>
-                        </div>
                       </div>
                     </div>
                   </div>
 
                   <div className="pa-preview-content">
                     <h4>
-                      <FontAwesomeIcon icon={faFileAlt} className="pa-preview-icon" /> Assessment Questions
+                      <FontAwesomeIcon icon={faClipboardList} className="pa-preview-icon" /> 
+                      Assessment Questions
                     </h4>
 
                     {selectedAssessment.questions.map((question, index) => (
                       <div key={index} className="pa-preview-question-card">
                         <div className="pa-question-header">
                                                 <div className="pa-question-metadata">
-                          <span className="pa-question-number">Question {index + 1}</span>
+                            <span className="pa-question-numberr">Question {index + 1}</span>
                           <span className="pa-question-type">
                             <FontAwesomeIcon
                               icon={
@@ -1110,24 +1328,30 @@ const PostAssessment = ({ templates }) => {
 
                               <div className="pa-comprehension-questions">
                                 <h5><FontAwesomeIcon icon={faQuestion} /> Comprehension Questions</h5>
-                                {question.sentenceQuestions && question.sentenceQuestions.map((sq, sqIndex) => (
-                                  <div key={sqIndex} className="pa-comprehension-question">
-                                    <div className="pa-comprehension-q-header">
-                                      <span className="pa-comprehension-q-number">Q{sqIndex + 1}:</span>
-                                      <span className="pa-comprehension-q-text">{sq.questionText}</span>
-                                    </div>
+                                {question.sentenceQuestions && question.sentenceQuestions.length > 0 ? (
+                                  question.sentenceQuestions.map((sq, sqIndex) => (
+                                    <div key={sqIndex} className="pa-comprehension-question">
+                                      <div className="pa-comprehension-q-header">
+                                        <span className="pa-comprehension-q-number">Q{sqIndex + 1}:</span>
+                                        <span className="pa-comprehension-q-text">{sq.questionText}</span>
+                                      </div>
 
-                                    <div className="pa-comprehension-options">
-                                      <div className="pa-option pa-option-correct">
-                                        <FontAwesomeIcon icon={faCheckCircle} className="pa-option-icon" />
-                                        {sq.correctAnswer}
-                                      </div>
-                                      <div className="pa-option">
-                                        {sq.incorrectAnswer}
+                                      <div className="pa-comprehension-options">
+                                        <div className="pa-option pa-option-correct">
+                                          <FontAwesomeIcon icon={faCheckCircle} className="pa-option-icon" />
+                                          {sq.correctAnswer}
+                                        </div>
+                                        <div className="pa-option">
+                                          {sq.incorrectAnswer}
+                                        </div>
                                       </div>
                                     </div>
+                                  ))
+                                ) : (
+                                  <div className="pa-no-questions">
+                                    <p>No comprehension questions added yet.</p>
                                   </div>
-                                ))}
+                                )}
                               </div>
                             </div>
                           ) : (
@@ -1140,30 +1364,27 @@ const PostAssessment = ({ templates }) => {
                                     key={optIndex}
                                     className={`pa-option ${option.isCorrect ? 'pa-option-correct' : ''}`}
                                   >
+                                    <div className="pa-option-header">
                                     {option.isCorrect && (
                                       <FontAwesomeIcon icon={faCheckCircle} className="pa-option-icon" />
                                     )}
                                     {option.optionText}
                                   </div>
-                                ))}
-                              </div>
+                                    
+                                    {option.description && (
+                                      <div className="pa-option-description">
+                                        {option.description}
                             </div>
                           )}
-                        </div>
                       </div>
                     ))}
                   </div>
-
-                                  {selectedAssessment.status === "rejected" && selectedAssessment.rejectionReason && (
-                  <div className="post-assess-rejection-panel">
-                    <div className="post-assess-rejection-header">
-                      <FontAwesomeIcon icon={faInfoCircle} /> Rejection Reason
                     </div>
-                    <div className="post-assess-rejection-content">
-                      {selectedAssessment.rejectionReason}
+                          )}
                     </div>
                   </div>
-                )}
+                    ))}
+                  </div>
                 </div>
               ) : showQuestionForm ? (
                 <div className="pa-question-form">
@@ -1262,34 +1483,46 @@ const PostAssessment = ({ templates }) => {
                             </label>
                             <div className="pa-file-upload">
                               <label className="pa-file-upload-btn">
-                                <FontAwesomeIcon icon={faUpload} /> Choose Image
+                                <FontAwesomeIcon icon={faCloudUploadAlt} />
+                                {uploadingImage ? "Uploading..." : "Upload Image"}
                                 <input
                                   type="file"
                                   accept="image/*"
-                                  onChange={(e) => handleFileUpload(e, 'questionImage')}
+                                  onChange={(e) => handleImageUpload(e, "questionImage")}
                                   className="pa-file-input"
+                                  disabled={uploadingImage}
                                 />
                               </label>
-                              <span className="pa-file-name">
-                                {questionFormData.questionImage
-                                  ? questionFormData.questionImage.split('/').pop()
-                                  : "No file chosen"}
-                              </span>
 
                               {questionFormData.questionImage && (
                                 <div className="pa-image-preview">
                                   <img
-                                    src={questionFormData.questionImage}
-                                    alt="Question preview"
+                                    src={
+                                      typeof questionFormData.questionImage === 'string' && 
+                                      questionFormData.questionImage.startsWith('data:') 
+                                        ? questionFormData.questionImage // Show data URL for preview
+                                        : questionFormData.questionImage // Show existing URL
+                                    } 
+                                    alt="Question" 
                                     className="pa-preview-image"
                                   />
+                                  
+                                  <div className="pa-file-name">
+                                    {questionFormData.imageName || "Image Preview"}
+                                  </div>
+                                  
                                   <button
                                     type="button"
+                                    onClick={() => {
+                                      setQuestionFormData({
+                                        ...questionFormData,
+                                        questionImage: null,
+                                        imageFile: null,
+                                        imageName: ""
+                                      });
+                                    }}
                                     className="pa-remove-image"
-                                    onClick={() => setQuestionFormData(prev => ({
-                                      ...prev,
-                                      questionImage: null
-                                    }))}
+                                    title="Remove Image"
                                   >
                                     <FontAwesomeIcon icon={faTimes} />
                                   </button>
@@ -1306,7 +1539,7 @@ const PostAssessment = ({ templates }) => {
 
                             <div className="pa-choices-container">
                               {questionFormData.choiceOptions.map((choice, index) => (
-                                <div key={index} className="pa-choice-item">
+                                <div className="pa-choice-item" key={index}>
                                   <div className="pa-choice-input-group">
                                     <input
                                       type="text"
@@ -1324,10 +1557,17 @@ const PostAssessment = ({ templates }) => {
                                           name="correctOption"
                                           checked={choice.isCorrect}
                                           onChange={() => {
-                                            // Set this option as correct and all others as incorrect
-                                            questionFormData.choiceOptions.forEach((_, i) => {
-                                              handleChoiceChange(i, "isCorrect", i === index);
-                                            });
+                                            // Update all choices to be incorrect first
+                                            const updatedChoices = questionFormData.choiceOptions.map(c => ({
+                                              ...c,
+                                              isCorrect: false
+                                            }));
+                                            // Then set the selected one to correct
+                                            updatedChoices[index].isCorrect = true;
+                                            setQuestionFormData(prev => ({
+                                              ...prev,
+                                              choiceOptions: updatedChoices
+                                            }));
                                           }}
                                         />
                                         <FontAwesomeIcon icon={choice.isCorrect ? faCheckCircle : faQuestion} />
@@ -1346,27 +1586,32 @@ const PostAssessment = ({ templates }) => {
                                       )}
                                     </div>
                                   </div>
+
+                                  <div className="pa-choice-description">
+                                    <label>
+                                      Description:
+                                      <Tooltip text="Provide feedback to be shown when this option is selected. For correct answers, explain why it's right. For incorrect answers, give guidance." />
+                                    </label>
+                                    <textarea
+                                      value={choice.description || ''}
+                                      onChange={(e) => handleChoiceChange(index, "description", e.target.value)}
+                                      placeholder={choice.isCorrect ? 
+                                        "Explain why this is the correct answer (e.g., 'Tama! Ang letra B ay may tunog na /buh/.')" : 
+                                        "Explain why this is incorrect (e.g., 'Mali. Ang tunog na /kuh/ ay para sa letra K.')"}
+                                    ></textarea>
+                                  </div>
                                 </div>
                               ))}
 
-                              <button
-                                type="button"
-                                className="pa-add-choice-btn"
-                                onClick={handleAddChoice}
-                              >
-                                <FontAwesomeIcon icon={faPlus} /> Add Answer Choice
-                              </button>
-
                               <div className="pa-help-text">
                                 <FontAwesomeIcon icon={faInfoCircle} />
-                                Note: The system will automatically limit to 2 options for mobile display.
+                                Note: This assessment type is limited to exactly 2 answer choices for optimal mobile experience.
                               </div>
                             </div>
                           </div>
                         </>
                       )}
                       {questionFormData.questionType === "sentence" && (
-                        // Reading Passage questions form
                         <div className="pa-passage-form pa-full-width">
                           <div className="pa-form-section">
                             <h5><FontAwesomeIcon icon={faBook} /> Reading Passage Pages</h5>
@@ -1619,7 +1864,6 @@ const PostAssessment = ({ templates }) => {
                   </div>
                 </div>
               ) : (
-                // Assessment Form
                 <div className="pa-assessment-form">
                   <div className="pa-assessment-form-header">
                     <h4>
@@ -1689,10 +1933,9 @@ const PostAssessment = ({ templates }) => {
                       <h5>
                         <FontAwesomeIcon icon={faFileAlt} />
                         Assessment Questions
-
                       </h5>
                       <div className="pa-questions-stats">
-                        <span className="pa-questions-count">
+                        <span className="pa-questions-counttt">
                           {formData.questions.length} questions added
                         </span>
                         <button
@@ -1725,7 +1968,7 @@ const PostAssessment = ({ templates }) => {
                             <div key={index} className="pa-question-item">
                               <div className="pa-question-item-header">
                                 <div className="pa-question-info">
-                                  <span className="pa-question-number">Q{index + 1}</span>
+                                  <span className="pa-question-numberr">Q{index + 1}</span>
                                   <div className="pa-question-details">
                                     <span className="pa-question-category">
                                       {getQuestionTypeDisplay(question.questionType)}
@@ -1784,18 +2027,11 @@ const PostAssessment = ({ templates }) => {
                     </div>
                   </div>
 
-                  <div className="pa-form-note">
-                    <FontAwesomeIcon icon={faInfoCircle} />
-                    <p>
-                      Your assessment will be submitted for admin approval before it becomes available for student assignment.
-                      Ensure all questions are complete and properly configured.
-                    </p>
-                  </div>
+                  {/* Admin approval message removed */}
                 </div>
               )}
             </div>
 
-            {/* Modal Footer */}
             <div className="pa-modal-footer">
               {modalType === 'delete' ? (
                 <>
@@ -1820,7 +2056,7 @@ const PostAssessment = ({ templates }) => {
                   <FontAwesomeIcon icon={faTimes} /> Close Preview
                 </button>
               ) : showQuestionForm ? (
-                null  // Buttons are inside the question form
+                null
               ) : (
                 <>
                   <button
@@ -1844,7 +2080,6 @@ const PostAssessment = ({ templates }) => {
         </div>
       )}
 
-      {/* Submit Confirmation Dialog */}
       {submitConfirmDialog && (
         <div className="pa-modal-overlay">
           <div className="pa-modal pa-confirm-dialog">
@@ -1905,20 +2140,24 @@ const PostAssessment = ({ templates }) => {
         </div>
       )}
 
-      {/* Success Notification */}
       {submitSuccessDialog && (
         <div className="pa-success-notification">
           <div className="pa-success-icon">
             <FontAwesomeIcon icon={faCheckCircle} />
           </div>
           <div className="pa-success-message">
-            <p>Assessment submitted successfully!</p>
-            <p className="pa-success-detail">Your assessment has been sent for admin approval.</p>
+            <p>
+              {modalType === 'create' 
+                ? 'Assessment created successfully!' 
+                : 'Assessment updated successfully!'}
+            </p>
+            <div className="pa-success-detail">
+              <span>{formData.readingLevel}</span> | <span>{formData.category}</span>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Delete Success Notification */}
       {deleteSuccessDialog && (
         <div className="pa-success-notification">
           <div className="pa-success-icon">
@@ -1926,12 +2165,10 @@ const PostAssessment = ({ templates }) => {
           </div>
           <div className="pa-success-message">
             <p>Assessment deleted successfully!</p>
-            <p className="pa-success-detail">The assessment has been permanently removed.</p>
           </div>
         </div>
       )}
 
-      {/* Duplicate Restriction Dialog */}
       {duplicateRestrictionDialog && (
         <div className="pa-modal-overlay">
           <div className="pa-modal pa-restriction-dialog">
@@ -1962,18 +2199,11 @@ const PostAssessment = ({ templates }) => {
                 
                 {(() => {
                   const existing = checkExistingAssessment(formData.readingLevel, formData.category);
-                  if (existing?.status === 'pending') {
+                  if (existing) {
                     return (
-                      <div className="pa-restriction-details pending">
-                        <FontAwesomeIcon icon={faLock} />
-                        <span>A pending assessment is awaiting admin approval</span>
-                      </div>
-                    );
-                  } else if (existing?.status === 'approved') {
-                    return (
-                      <div className="pa-restriction-details approved">
-                        <FontAwesomeIcon icon={faCheckCircle} />
-                        <span>An active assessment is already deployed</span>
+                      <div className="pa-restriction-details">
+                        <FontAwesomeIcon icon={faExclamationTriangle} />
+                        <span>An assessment already exists for this reading level and category combination</span>
                       </div>
                     );
                   }
@@ -1982,9 +2212,9 @@ const PostAssessment = ({ templates }) => {
                 <div className="pa-restriction-options">
                   <p>You can:</p>
                   <ul className="pa-restriction-list">
-                    <li>Wait for the pending assessment to be approved or rejected</li>
+                    <li>Wait for the existing assessment to be approved or rejected</li>
                     <li>Choose a different reading level or category combination</li>
-                    <li>Edit the existing rejected assessment if available</li>
+                    <li>Edit the existing assessment if available</li>
                     <li>Contact an administrator to modify active assessments</li>
                   </ul>
                 </div>
@@ -2002,8 +2232,11 @@ const PostAssessment = ({ templates }) => {
           </div>
         </div>
       )}
+      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover />
     </div>
   );
 };
 
-export default PostAssessment;
+// To maintain compatibility, we export as both MainAssessment and the original PostAssessment name
+export { MainAssessment as PostAssessment };
+export default MainAssessment;
