@@ -86,8 +86,12 @@ const questionSchema = new mongoose.Schema({
   questionValue: {
     type: String,
     required: function() {
-      // questionValue is required for all types except sentence
-      return this.questionType !== 'sentence';
+      // questionValue is NOT required - make it optional for all types
+      return false;
+    },
+    default: function() {
+      // Set default based on question type
+      return this.questionType === 'sentence' ? null : "";
     }
   },
   choiceOptions: {
