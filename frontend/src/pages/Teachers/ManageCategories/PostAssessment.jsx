@@ -631,25 +631,46 @@ const MainAssessment = ({ templates }) => {
         const updatedPassages = [];
         
         for (const passage of finalQuestionData.passages) {
-          // If this passage has a new image that needs uploading (it's a data URL)
-          if (passage.pageImage && typeof passage.pageImage === 'string' && passage.pageImage.startsWith('data:')) {
-            // We need to convert the data URL back to a file for upload
-            const imageFile = dataURLtoFile(passage.pageImage, `page_${passage.pageNumber}.jpg`);
-            
-            const result = await MainAssessmentService.uploadImageToS3(imageFile, s3Path);
-            
-            if (result.success) {
-              updatedPassages.push({
-                ...passage,
-                pageImage: result.url
-              });
-            } else {
-              toast.error(`Failed to upload image for page ${passage.pageNumber}`);
-              updatedPassages.push(passage);
+          let updatedPassage = { ...passage };
+          
+          // Check if this passage has a blob URL that needs uploading
+          if (passage.pageImage && typeof passage.pageImage === 'string' && passage.pageImage.startsWith('blob:')) {
+            try {
+              // Convert blob URL back to File object
+              const response = await fetch(passage.pageImage);
+              const blob = await response.blob();
+              const fileName = `page_${passage.pageNumber}_${Date.now()}.jpg`;
+              const imageFile = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+              
+              // Upload to S3
+              const uploadResult = await MainAssessmentService.uploadImageToS3(imageFile, s3Path);
+              
+              if (uploadResult.success) {
+                updatedPassage.pageImage = uploadResult.url;
+                console.log(`Successfully uploaded page ${passage.pageNumber} image:`, uploadResult.url);
+              } else {
+                console.error(`Failed to upload image for page ${passage.pageNumber}:`, uploadResult.error);
+                toast.error(`Failed to upload image for page ${passage.pageNumber}`);
+                // Keep the original blob URL as fallback (though this isn't ideal)
+                updatedPassage.pageImage = passage.pageImage;
+              }
+            } catch (error) {
+              console.error(`Error processing image for page ${passage.pageNumber}:`, error);
+              toast.error(`Error processing image for page ${passage.pageNumber}`);
+              // Keep the original blob URL as fallback
+              updatedPassage.pageImage = passage.pageImage;
             }
-          } else {
-            updatedPassages.push(passage);
           }
+          // If it's already a proper URL (starts with https://), keep it as is
+          else if (passage.pageImage && typeof passage.pageImage === 'string' && passage.pageImage.startsWith('https://')) {
+            updatedPassage.pageImage = passage.pageImage;
+          }
+          // If it's null or empty, keep it as is
+          else {
+            updatedPassage.pageImage = passage.pageImage;
+          }
+          
+          updatedPassages.push(updatedPassage);
         }
         
         finalQuestionData.passages = updatedPassages;
@@ -770,15 +791,22 @@ const MainAssessment = ({ templates }) => {
   const handleFileUpload = (e, field) => {
     const file = e.target.files[0];
     if (!file) return;
-
+  
+    // Validate the file
+    const validation = validateFileForUpload(file);
+    if (!validation.success) {
+      toast.error(validation.error);
+      return;
+    }
+  
     // Create a temporary URL for preview
-    const fakeImageUrl = URL.createObjectURL(file);
-
+    const previewUrl = URL.createObjectURL(file);
+  
     // Store the file for later upload when the question is submitted
     if (field === 'questionImage') {
       setQuestionFormData(prev => ({
         ...prev,
-        questionImage: fakeImageUrl,
+        questionImage: previewUrl,
         imageFile: file, // Store the file for later S3 upload with proper category folder
         imageName: file.name
       }));
@@ -788,7 +816,9 @@ const MainAssessment = ({ templates }) => {
         const updatedPassages = [...prev.passages];
         updatedPassages[pageIndex] = {
           ...updatedPassages[pageIndex],
-          pageImage: fakeImageUrl
+          pageImage: previewUrl, // Store blob URL for preview
+          _imageFile: file, // Store the actual file for later upload
+          _imageName: file.name
         };
         return {
           ...prev,
@@ -797,7 +827,6 @@ const MainAssessment = ({ templates }) => {
       });
     }
   };
-
   const handleSaveAssessment = () => {
     // Validate form data
     if (!formData.readingLevel || !formData.category || formData.questions.length === 0) {
