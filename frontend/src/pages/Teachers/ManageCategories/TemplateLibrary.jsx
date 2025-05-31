@@ -537,6 +537,16 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
     }
   };
 
+  // Function to get display name for choice types
+  const getChoiceTypeDisplay = (choiceType) => {
+    if (!choiceType) return "Unknown";
+    
+    // Format camelCase to Title Case with spaces
+    return choiceType
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, str => str.toUpperCase());
+  };
+
   return (
     <div className="template-library">
       <div className="tl-header">
@@ -914,11 +924,15 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
                   <div key={template._id} className="tl-row">
                     <div className="tl-cell tl-question-text">{template.templateText}</div>
                     <div className="tl-cell tl-category">
-                      <FontAwesomeIcon icon={getCategoryIcon(template.category)} />
-                      {template.category}
+                      <span className={`tl-category-badge ${template.category.toLowerCase().replace(/\s+/g, '-')}`}>
+                        <FontAwesomeIcon icon={getCategoryIcon(template.category)} />
+                        {template.category}
+                      </span>
                     </div>
                     <div className="tl-cell tl-type">
-                      {getQuestionTypeDisplay(template.questionType)}
+                      <span className={`tl-type-badge ${template.questionType}`}>
+                        {getQuestionTypeDisplay(template.questionType)}
+                      </span>
                     </div>
                     <div className="tl-cell tl-status-cell">
                       <span className={`tl-status ${template.isActive ? 'tl-active' : 'tl-inactive'}`}>
@@ -954,18 +968,26 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
                 nestedTabIndex === 1 ? (
                   <div key={template._id} className="tl-row">
                     <div className="tl-cell tl-choice-preview">
-                      {template.choiceType?.includes('Sound') ? (
+                      {template.choiceType === "soundText" || template.soundText ? (
                         <div className="tl-phonetic">
                           <FontAwesomeIcon icon={faVolumeUp} />
-                          <span>{template.soundText}</span>
+                          {template.soundText || template.choiceValue}
                         </div>
                       ) : (
-                        <span>{template.choiceValue}</span>
+                        <>
+                          {template.choiceValue}
+                          {template.choiceImage && (
+                            <span className="tl-choice-has-image">
+                              <FontAwesomeIcon icon={faImage} />
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
                     <div className="tl-cell tl-type">
-                      <FontAwesomeIcon icon={getChoiceTypeIcon(template.choiceType)} />
-                      {getChoiceTypeDisplayName(template.choiceType)}
+                      <span className={`tl-type-badge ${template.choiceType.toLowerCase().replace(/([A-Z])/g, '-$1').toLowerCase()}`}>
+                        {getChoiceTypeDisplay(template.choiceType)}
+                      </span>
                     </div>
                     <div className="tl-cell tl-status-cell">
                       <span className={`tl-status ${template.isActive ? 'tl-active' : 'tl-inactive'}`}>
@@ -996,18 +1018,21 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
                       </button>
                     </div>
                   </div>
-                ) : 
-                /* Sentence Template Row */
-                (
+                ) : (
+                  /* Sentence Template Row */
                   <div key={template._id} className="tl-row">
                     <div className="tl-cell tl-sentence-title">{template.title}</div>
                     <div className="tl-cell tl-category">
-                      <FontAwesomeIcon icon={getCategoryIcon(template.category)} />
-                      {template.category}
+                      <span className={`tl-category-badge ${template.category.toLowerCase().replace(/\s+/g, '-')}`}>
+                        <FontAwesomeIcon icon={getCategoryIcon(template.category)} />
+                        {template.category}
+                      </span>
                     </div>
                     <div className="tl-cell tl-reading-level">
-                      <FontAwesomeIcon icon={faGraduationCap} />
-                      {template.readingLevel || "Not specified"}
+                      <span className={`tl-type-badge`}>
+                        <FontAwesomeIcon icon={faGraduationCap} />
+                        {template.readingLevel}
+                      </span>
                     </div>
                     <div className="tl-cell tl-status-cell">
                       <span className={`tl-status ${template.isActive ? 'tl-active' : 'tl-inactive'}`}>

@@ -731,6 +731,7 @@
 .tl-header-cell,
 .tl-cell {
   padding: 14px 16px;
+  font-size: 17px;  
   display: flex;
   align-items: center;
   gap: 8px;
@@ -764,16 +765,75 @@
   text-overflow: ellipsis;
 }
 
-.tl-type {
-  width: 18%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Category badge styling */
+.tl-category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 17px;
+  background-color: #edf2ff;
+  color: #4e5c93;
 }
 
-.tl-status-cell {
-  width: 15%;
-  justify-content: center;
+/* Category color variations - simplified to match post assessment styling */
+.tl-category-badge.alphabet-knowledge,
+.tl-category-badge.phonological-awareness,
+.tl-category-badge.decoding,
+.tl-category-badge.word-recognition,
+.tl-category-badge.reading-comprehension {
+  background-color: #edf2ff;
+  color: #4e5c93;
+}
+
+/* Type badge styling */
+.tl-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 17px;
+  background-color: #e7f5ff;
+  color: #1c7ed6;
+}
+
+/* Type color variations - simplified to match post assessment styling */
+.tl-type-badge.patinig,
+.tl-type-badge.katinig,
+.tl-type-badge.malapantig,
+.tl-type-badge.word,
+.tl-type-badge.sentence {
+  background-color: #e7f5ff;
+  color: #1c7ed6;
+}
+
+/* Status badge styling - updated */
+.tl-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 13px;
+  gap: 6px;
+}
+
+.tl-status-icon {
+  font-size: 12px;
+}
+
+.tl-active {
+  background-color: #e3fcef;
+  color: #0ca678;
+}
+
+.tl-inactive {
+  background-color: #f1f3f5;
+  color: #868e96;
 }
 
 .tl-actions {
@@ -830,16 +890,6 @@
 
 .tl-status-icon {
   font-size: 12px;
-}
-
-.tl-active {
-  background-color: #e3fcef;
-  color: #0ca678;
-}
-
-.tl-inactive {
-  background-color: #f1f3f5;
-  color: #868e96;
 }
 
 .tl-action-btn {
