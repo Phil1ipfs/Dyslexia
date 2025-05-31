@@ -144,22 +144,38 @@ exports.getFilteredAssessments = async (req, res) => {
  */
 exports.createAssessment = async (req, res) => {
   try {
+    console.log('[CREATE ASSESSMENT] Request received:', JSON.stringify(req.body, null, 2));
+    console.log('[CREATE ASSESSMENT] User:', req.user);
+    
     const assessmentData = req.body;
     
     // Validate using Mongoose model
-    const mainAssessment = new MainAssessment(assessmentData);
-    await mainAssessment.validate();
+    try {
+      console.log('[CREATE ASSESSMENT] Validating assessment data with Mongoose');
+      const mainAssessment = new MainAssessment(assessmentData);
+      await mainAssessment.validate();
+    } catch (validationError) {
+      console.error('[CREATE ASSESSMENT] Validation error:', validationError);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        error: validationError.message
+      });
+    }
     
     // Get main_assessment collection
+    console.log('[CREATE ASSESSMENT] Getting collection');
     const mainAssessmentCollection = getMainAssessmentCollection();
     
     // Check if assessment for this reading level and category already exists
+    console.log('[CREATE ASSESSMENT] Checking for existing assessment');
     const existing = await mainAssessmentCollection.findOne({
       readingLevel: assessmentData.readingLevel,
       category: assessmentData.category
     });
     
     if (existing) {
+      console.log('[CREATE ASSESSMENT] Found existing assessment:', existing._id);
       return res.status(400).json({
         success: false,
         message: 'An assessment for this reading level and category already exists'
@@ -167,6 +183,7 @@ exports.createAssessment = async (req, res) => {
     }
     
     // Ensure each question has a proper questionId based on category
+    console.log('[CREATE ASSESSMENT] Processing questions');
     const categoryPrefix = getCategoryPrefix(assessmentData.category);
     assessmentData.questions.forEach((question, index) => {
       // Format: AK_001, PA_002, etc.
@@ -182,8 +199,10 @@ exports.createAssessment = async (req, res) => {
     assessmentData.updatedAt = new Date();
     
     // Insert into collection
+    console.log('[CREATE ASSESSMENT] Inserting into database');
     const result = await mainAssessmentCollection.insertOne(assessmentData);
     
+    console.log('[CREATE ASSESSMENT] Success. Inserted ID:', result.insertedId);
     return res.status(201).json({
       success: true,
       message: 'Assessment created successfully',
@@ -193,11 +212,13 @@ exports.createAssessment = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error creating assessment:', error);
+    console.error('[CREATE ASSESSMENT] Error:', error);
+    console.error('[CREATE ASSESSMENT] Stack trace:', error.stack);
     return res.status(500).json({
       success: false,
       message: 'Error creating assessment',
-      error: error.message
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };
