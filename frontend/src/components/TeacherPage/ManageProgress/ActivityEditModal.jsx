@@ -1542,7 +1542,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     const typeMap = {
       // Valid question types per category
       'alphabet_knowledge': ['patinig', 'katinig'],
-      'phonological_awareness': ['malapantig', 'patinig', 'katinig'],
+      'phonological_awareness': ['patinig', 'katinig'],
       'word_recognition': ['word'],
       'decoding': ['word'],
       'reading_comprehension': ['sentence']

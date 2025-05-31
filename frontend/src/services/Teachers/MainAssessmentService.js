@@ -98,7 +98,8 @@ class MainAssessmentService {
         }
       }
       
-      const response = await axios.get('/api/main-assessment', this.getAuthHeaders());
+      // Request with a high limit to ensure we get all assessments
+      const response = await axios.get('/api/main-assessment?limit=100', this.getAuthHeaders());
       
       // If the backend returns a 404 or empty data, handle it gracefully
       if (!response.data || !response.data.data) {

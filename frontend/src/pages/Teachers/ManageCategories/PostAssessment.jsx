@@ -137,7 +137,7 @@ const MainAssessment = ({ templates }) => {
   // Check if an assessment already exists for a reading level and category
   const checkExistingAssessment = (readingLevel, category, excludeId = null) => {
     return assessments.find(assessment => 
-      assessment.readingLevel === readingLevel && 
+      (assessment.readingLevel || '').trim() === readingLevel.trim() && 
       assessment.category === category &&
       assessment._id !== excludeId
     );
@@ -166,14 +166,19 @@ const MainAssessment = ({ templates }) => {
 
         const response = await MainAssessmentService.getAllAssessments();
         
+        console.log("API Response:", response); // Debug log
+        
         if (response && response.success) {
-          setAssessments(response.data || []);
+          const assessmentData = response.data || [];
+          console.log("Setting assessments:", assessmentData.length, "items"); // Debug log
+          setAssessments(assessmentData);
           
           // If there's a message from the API, store it
           if (response.message) {
             setApiMessage(response.message);
           }
         } else {
+          console.log("No data or unsuccessful response");
           setAssessments([]);
         }
         
@@ -188,10 +193,59 @@ const MainAssessment = ({ templates }) => {
     fetchAssessments();
   }, []);
 
+  // Add debug logging to see what assessments are loaded
+  useEffect(() => {
+    if (assessments.length > 0) {
+      console.log("Total assessments loaded:", assessments.length);
+      console.log("Assessments by reading level:");
+      
+      const byLevel = assessments.reduce((acc, assessment) => {
+        const level = assessment.readingLevel;
+        if (!acc[level]) acc[level] = [];
+        acc[level].push({
+          id: assessment._id,
+          category: assessment.category,
+          questions: assessment.questions.length
+        });
+        return acc;
+      }, {});
+      
+      console.table(byLevel);
+      
+      // Check specifically for Low Emerging
+      const lowEmerging = assessments.filter(a => a.readingLevel === "Low Emerging");
+      console.log("Low Emerging assessments:", lowEmerging.length);
+      console.log("Low Emerging details:", lowEmerging.map(a => ({ 
+        id: a._id, 
+        category: a.category, 
+        questions: a.questions.length 
+      })));
+
+      // Check for exact reading level strings
+      const uniqueLevels = [...new Set(assessments.map(a => `"${a.readingLevel}"`))];
+      console.log("Unique reading levels (with quotes to see spaces):", uniqueLevels);
+      
+      // Add more detailed debugging for reading levels
+      console.log("All assessments with reading levels and categories:");
+      assessments.forEach((a, index) => {
+        console.log(`Assessment ${index + 1}: ID=${a._id}, Level="${a.readingLevel}", Category="${a.category}", charCodes=${[...a.readingLevel].map(c => c.charCodeAt(0))}`);
+      });
+      
+      // Check if any don't match expected values
+      const expectedLevels = ["Low Emerging", "High Emerging", "Developing", "Transitioning", "At Grade Level"];
+      const unexpectedLevels = assessments.filter(a => !expectedLevels.includes(a.readingLevel));
+      
+      if (unexpectedLevels.length > 0) {
+        console.warn("Assessments with unexpected reading levels:", unexpectedLevels);
+      }
+    }
+  }, [assessments]);
+
   // Filter assessments
   const filteredAssessments = assessments.filter(assessment => {
     // Reading level filter
-    const levelMatch = filterReadingLevel === "all" ? true : assessment.readingLevel === filterReadingLevel;
+    const levelMatch = filterReadingLevel === "all" ? true : 
+      (assessment.readingLevel || '').trim() === filterReadingLevel.trim();
 
     // Category filter
     const categoryMatch = filterCategory === "all" ? true : assessment.category === filterCategory;
@@ -199,7 +253,7 @@ const MainAssessment = ({ templates }) => {
     // Search term
     const searchMatch =
       assessment.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      assessment.readingLevel.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (assessment.readingLevel || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (assessment.questions.some(q => q.questionText?.toLowerCase().includes(searchTerm.toLowerCase())));
 
     return levelMatch && categoryMatch && searchMatch;
@@ -391,7 +445,7 @@ const MainAssessment = ({ templates }) => {
 
     const initialQuestionType =
       formData.category === "Alphabet Knowledge" ? "patinig" :
-        formData.category === "Phonological Awareness" ? "malapantig" :
+        formData.category === "Phonological Awareness" ? "patinig" :
           formData.category === "Word Recognition" ? "word" :
             formData.category === "Decoding" ? "word" :
               "sentence";
@@ -1203,8 +1257,17 @@ const MainAssessment = ({ templates }) => {
           <div className="pa-reading-level-grid">
             {/* Dynamic generation of reading level cards */}
             {['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'].map(level => {
-              // Get all assessments for this reading level
-              const levelAssessments = assessments.filter(a => a.readingLevel === level);
+              // Get all assessments for this reading level - use normalized comparison to handle whitespace/case issues
+              const levelAssessments = assessments.filter(a => {
+                // Normalize both strings for comparison (trim whitespace and ensure case match)
+                const normalizedLevel = level.trim();
+                const normalizedAssessmentLevel = (a.readingLevel || '').trim();
+                return normalizedAssessmentLevel === normalizedLevel;
+              });
+              
+              // Debug log to see what's happening
+              console.log(`Level: ${level}, Assessments found:`, levelAssessments.length);
+              console.log(`Assessments for ${level}:`, levelAssessments.map(a => ({ id: a._id, level: a.readingLevel, category: a.category })));
               
               // Get all unique categories for this reading level
               const levelCategories = [...new Set(levelAssessments.map(a => a.category))].sort();
@@ -1215,7 +1278,7 @@ const MainAssessment = ({ templates }) => {
                     <div className="pa-reading-level-name">
                       <FontAwesomeIcon icon={faBook} /> {level}
                     </div>
-                    <div className="pa-reading-level-count">
+                    <div className="pa-reading-level-count" title={`${levelAssessments.length} assessment(s) for ${level} reading level`}>
                       {levelAssessments.length}
                     </div>
                   </div>
@@ -1223,10 +1286,11 @@ const MainAssessment = ({ templates }) => {
                     <div className="pa-category-list">
                       {levelCategories.length > 0 ? (
                         levelCategories.map(category => {
-                          // Get all questions for this category in this reading level
-                          const categoryQuestions = levelAssessments
-                            .filter(a => a.category === category)
-                            .reduce((total, a) => total + (a.questions ? a.questions.length : 0), 0);
+                          // Get all assessments for this category in this reading level
+                          const categoryAssessments = levelAssessments.filter(a => a.category === category);
+                          
+                          // Debug log for this category
+                          console.log(`Level: ${level}, Category: ${category}, Assessments:`, categoryAssessments.length);
                           
                           // Choose the appropriate icon based on category
                           const categoryIcon = 
@@ -1241,8 +1305,8 @@ const MainAssessment = ({ templates }) => {
                               <div className="pa-category-name">
                                 <FontAwesomeIcon icon={categoryIcon} /> {category}
                               </div>
-                              <div className="pa-category-count">
-                                {categoryQuestions}
+                              <div className="pa-category-count" title={`${categoryAssessments.length} assessment(s) with ${categoryAssessments.reduce((total, a) => total + (a.questions ? a.questions.length : 0), 0)} total questions`}>
+                                {categoryAssessments.length}
                               </div>
                             </div>
                           );
@@ -1842,8 +1906,8 @@ const MainAssessment = ({ templates }) => {
                           )}
                           {formData.category === "Phonological Awareness" && (
                             <>
-                              <option value="katinig">Consonant (Katinig)</option>
                               <option value="patinig">Vowel (Patinig)</option>
+                              <option value="katinig">Consonant (Katinig)</option>
                             </>
                           )}
                           {(formData.category === "Word Recognition" || formData.category === "Decoding") && (
