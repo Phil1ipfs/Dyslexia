@@ -7,6 +7,7 @@ import axios from 'axios';
 class MainAssessmentService {
   constructor() {
     this.apiInitialized = false;
+    this.apiUrl = '/api/main-assessment'; // Set the correct API URL
     this.checkApiAvailability();
   }
 
@@ -181,13 +182,43 @@ class MainAssessmentService {
    */
   createAssessment = async (assessmentData) => {
     try {
-      const response = await axios.post('/api/main-assessment', assessmentData, this.getAuthHeaders());
-      return {
-        success: response.data.success,
-        data: response.data.data
-      };
+      console.log('Creating assessment:', assessmentData);
+      
+      // For debugging, log the request details
+      console.log('API URL:', '/api/main-assessment');
+      console.log('Request headers:', this.getAuthHeaders());
+      
+      const response = await axios.post(
+        '/api/main-assessment',
+        assessmentData,
+        this.getAuthHeaders()
+      );
+      
+      console.log('Assessment creation response:', response.data);
+      return response.data;
     } catch (error) {
       console.error('Error creating assessment:', error);
+      
+      // Log more detailed error information
+      if (error.response) {
+        console.error('Error response status:', error.response.status);
+        console.error('Error response data:', error.response.data);
+        
+        // If there's a specific error message from the server, log it
+        if (error.response.data && error.response.data.message) {
+          console.error('Server error message:', error.response.data.message);
+        }
+        
+        // If there's a validation error, log the details
+        if (error.response.data && error.response.data.error) {
+          console.error('Validation error details:', error.response.data.error);
+        }
+      } else if (error.request) {
+        console.error('No response received from server. Request details:', error.request);
+      } else {
+        console.error('Error setting up the request:', error.message);
+      }
+      
       throw error;
     }
   };

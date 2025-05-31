@@ -1386,35 +1386,39 @@
   padding-bottom: 12px;
 }
 
+
+
 .pa-questions-stats {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.pa-questions-counttt {
-  background-color: #f0f2f8;
-  color: #4e5c93;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
-  display: inline-flex;
+.pa-questions-count {
+  background-color: #f0f0f0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #666;
+  display: flex;
   align-items: center;
+  margin-right: 12px;
 }
 
-.pa-question-numberr {
-  background-color: #4e5c93;
-  color: white;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+.pa-question-numbeer,
+.pa-question-number {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  width: 36px;
+  height: 36px;
+  background-color: #4e5c93;
+  color: white;
+  border-radius: 50%;
   font-weight: 600;
+  font-size: 14px;
   flex-shrink: 0;
+  margin-right: 12px;
 }
 
 .pa-add-question-btn {
@@ -2832,4 +2836,256 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Remove table tooltip styles */
+.pa-table-tooltip,
+.pa-table-tooltip .pa-tooltip-text,
+.pa-table-tooltip .pa-tooltip-text::after,
+.pa-table-tooltip:hover .pa-tooltip-text {
+  display: none;
+}
+
+/* Remove action button tooltip styles */
+.pa-action-tooltip,
+.pa-edit-tooltip,
+.pa-preview-tooltip,
+.pa-toggle-tooltip,
+.pa-delete-tooltip,
+.pa-edit-tooltip::after,
+.pa-preview-tooltip::after,
+.pa-toggle-tooltip::after,
+.pa-delete-tooltip::after,
+.pa-edit-btn:hover .pa-edit-tooltip,
+.pa-preview-btn:hover .pa-preview-tooltip,
+.pa-status-toggle-btn:hover .pa-toggle-tooltip,
+.pa-delete-btn:hover .pa-delete-tooltip {
+  display: none;
+}
+
+/* Restriction Dialog Styles */
+.pa-restriction-dialog {
+  max-width: 600px;
+}
+
+.pa-restriction-icon {
+  font-size: 3rem;
+  color: #f39c12;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.pa-restriction-message {
+  margin-bottom: 1.5rem;
+}
+
+.pa-restriction-details {
+  background-color: #fff8e1;
+  border-left: 4px solid #f39c12;
+  padding: 15px;
+  margin: 15px 0;
+  border-radius: 4px;
+}
+
+.pa-restriction-details svg {
+  color: #f39c12;
+  margin-right: 8px;
+}
+
+.pa-existing-assessment-details {
+  margin-top: 15px;
+  background-color: #f7f7f7;
+  border-radius: 6px;
+  padding: 15px;
+}
+
+.pa-existing-assessment-details h5 {
+  margin: 0 0 10px 0;
+  font-size: 15px;
+  color: #333;
+}
+
+.pa-existing-detail {
+  display: flex;
+  margin-bottom: 6px;
+  font-size: 14px;
+  align-items: center;
+}
+
+.pa-existing-label {
+  font-weight: 600;
+  width: 80px;
+  color: #555;
+}
+
+.pa-existing-value {
+  display: flex;
+  align-items: center;
+}
+
+.pa-existing-value svg {
+  margin-right: 5px;
+}
+
+.pa-existing-value.active {
+  color: #2ecc71;
+}
+
+.pa-existing-value.inactive {
+  color: #e74c3c;
+}
+
+.pa-existing-id {
+  font-family: monospace;
+  background: #eee;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.pa-restriction-options {
+  margin-top: 20px;
+}
+
+.pa-restriction-list {
+  padding-left: 20px;
+}
+
+.pa-restriction-list li {
+  margin-bottom: 8px;
+  color: #555;
+}
+
+.pa-modal-edit-existing-btn {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.pa-modal-edit-existing-btn svg {
+  margin-right: 8px;
+}
+
+.pa-modal-edit-existing-btn:hover {
+  background-color: #2980b9;
+}
+
+.pa-select-error {
+  border-color: #e74c3c !important;
+  background-color: #fff5f5 !important;
+}
+
+.pa-combination-error {
+  color: #e74c3c;
+  font-size: 13px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffecec;
+  padding: 10px 12px;
+  border-radius: 4px;
+  border-left: 3px solid #e74c3c;
+}
+
+.pa-combination-error svg {
+  margin-right: 8px;
+  font-size: 14px;
+  align-self: flex-start;
+}
+
+/* Add styling for the edit existing assessment link in the combination error message */
+.pa-edit-existing-link {
+  display: block;
+  margin-top: 8px;
+  background-color: #4e5c93;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  width: 100%;
+}
+
+.pa-edit-existing-link:hover {
+  background-color: #3d497a;
+  transform: translateY(-1px);
+}
+
+/* Required field indicator */
+.pa-required-field {
+  color: #e74c3c;
+  margin-left: 3px;
+  font-weight: bold;
+}
+
+/* Required field note */
+.pa-field-required-note {
+  color: #e74c3c;
+  font-size: 12px;
+  display: block;
+  margin-top: 5px;
+  font-style: italic;
+}
+
+/* Answer sections for sentence questions */
+.pa-answer-section {
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-left: 4px solid #ddd;
+}
+
+.pa-answer-section h5 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.pa-answer-section h5 svg {
+  margin-right: 8px;
+}
+
+/* Correct answer section */
+.pa-answer-section:nth-of-type(1) {
+  border-left-color: #28a745;
+  background-color: #f0fff4;
+}
+
+.pa-answer-section:nth-of-type(1) h5 {
+  color: #28a745;
+}
+
+/* Incorrect answer section */
+.pa-answer-section:nth-of-type(2) {
+  border-left-color: #dc3545;
+  background-color: #fff5f5;
+}
+
+.pa-answer-section:nth-of-type(2) h5 {
+  color: #dc3545;
+}
+
+/* Style for input fields within answer sections */
+.pa-correct-input {
+  border-color: #28a745;
+  background-color: rgba(40, 167, 69, 0.05);
+}
+
+.pa-incorrect-input {
+  border-color: #dc3545;
+  background-color: rgba(220, 53, 69, 0.05);
 }

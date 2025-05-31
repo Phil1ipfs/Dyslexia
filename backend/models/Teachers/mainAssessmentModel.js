@@ -20,6 +20,50 @@ const choiceOptionSchema = new mongoose.Schema({
   }
 });
 
+// Define Passage Page Schema
+const passagePageSchema = new mongoose.Schema({
+  pageNumber: {
+    type: Number,
+    required: true
+  },
+  pageText: {
+    type: String,
+    required: true
+  },
+  pageImage: {
+    type: String,
+    default: null
+  }
+});
+
+// Define Sentence Question Schema
+const sentenceQuestionSchema = new mongoose.Schema({
+  questionText: {
+    type: String,
+    required: true
+  },
+  correctAnswer: {
+    type: String,
+    required: true
+  },
+  incorrectAnswer: {
+    type: String,
+    required: true
+  },
+  correctDescription: {
+    type: String,
+    default: ""
+  },
+  incorrectDescription: {
+    type: String,
+    default: ""
+  },
+  questionImage: {
+    type: String,
+    default: null
+  }
+});
+
 // Define Question Schema
 const questionSchema = new mongoose.Schema({
   questionId: {
@@ -41,17 +85,60 @@ const questionSchema = new mongoose.Schema({
   },
   questionValue: {
     type: String,
-    required: true
+    required: function() {
+      // questionValue is required for all types except sentence
+      return this.questionType !== 'sentence';
+    }
   },
   choiceOptions: {
     type: [choiceOptionSchema],
-    required: true,
+    required: function() {
+      // choiceOptions are required for all types except sentence
+      return this.questionType !== 'sentence';
+    },
     validate: {
       validator: function(options) {
+        // Skip validation for sentence type
+        if (this.questionType === 'sentence') return true;
+        
         // At least one option must be correct
         return options.some(option => option.isCorrect === true);
       },
       message: 'At least one option must be marked as correct'
+    }
+  },
+  // Passage pages for sentence type questions
+  passages: {
+    type: [passagePageSchema],
+    required: function() {
+      return this.questionType === 'sentence';
+    },
+    validate: {
+      validator: function(passages) {
+        // Skip validation for non-sentence types
+        if (this.questionType !== 'sentence') return true;
+        
+        // Must have at least one passage
+        return passages && passages.length > 0;
+      },
+      message: 'Sentence questions must have at least one passage'
+    }
+  },
+  // Comprehension questions for sentence type
+  sentenceQuestions: {
+    type: [sentenceQuestionSchema],
+    required: function() {
+      return this.questionType === 'sentence';
+    },
+    validate: {
+      validator: function(questions) {
+        // Skip validation for non-sentence types
+        if (this.questionType !== 'sentence') return true;
+        
+        // Must have at least one comprehension question
+        return questions && questions.length > 0;
+      },
+      message: 'Sentence questions must have at least one comprehension question'
     }
   },
   order: {

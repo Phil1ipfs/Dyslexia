@@ -28,80 +28,54 @@ router.get('/ping', (req, res) => {
 });
 
 // File upload route for S3 - no auth temporarily
-router.post('/upload-image', (req, res) => {
-  upload(req, res, async (err) => {
-    if (err) {
-      console.error("Upload error:", err);
-      return res.status(400).json({
-        success: false,
-        message: "File upload failed",
-        error: err.message
-      });
-    }
-
+router.post('/upload-image', upload, async (req, res) => {
+  try {
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "No file provided"
-      });
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
 
+    // Get file details
+    const file = req.file;
+    const path = req.body.path || 'main-assessment';
+    const fileName = `${path}/${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
+
+    // Set up S3 parameters
+    const params = {
+      Bucket: process.env.AWS_S3_BUCKET || 'literexia-bucket',
+      Key: fileName,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+      ACL: 'public-read'
+    };
+
+    // Upload to S3
     try {
-      // Generate a unique filename
-      const timestamp = Date.now();
-      const originalName = req.file.originalname.replace(/\s+/g, '-').toLowerCase();
-      const filename = `${timestamp}-${originalName}`;
+      await s3Client.send(new PutObjectCommand(params));
       
-      // Get path from the request or use default
-      const uploadPath = req.body.path || 'main-assessment';
-      
-      // Configure S3 upload parameters
-      const s3Params = {
-        Bucket: process.env.AWS_BUCKET_NAME || 'literexia-bucket',
-        Key: `${uploadPath}/${filename}`,
-        Body: req.file.buffer,
-        ContentType: req.file.mimetype,
-        ACL: 'public-read'
-      };
-      
-      // Upload to S3
-      await s3Client.send(new PutObjectCommand(s3Params));
-      
-      // Return success response with file URL
-      const region = process.env.AWS_REGION || 'ap-southeast-2';
-      const bucket = process.env.AWS_BUCKET_NAME || 'literexia-bucket';
-      const fileUrl = `https://${bucket}.s3.${region}.amazonaws.com/${uploadPath}/${filename}`;
+      // Construct the URL of the uploaded file
+      const fileUrl = `https://${params.Bucket}.s3.${process.env.AWS_REGION || 'ap-southeast-1'}.amazonaws.com/${fileName}`;
       
       return res.status(200).json({
         success: true,
-        message: "File uploaded successfully",
-        filename: filename,
+        message: 'File uploaded successfully',
         url: fileUrl
       });
-    } catch (error) {
-      console.error("Error uploading to S3:", error);
-      
-      // For development, return a mock URL to allow testing
-      if (process.env.NODE_ENV !== 'production') {
-        const mockUrl = `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/${req.body.path || 'main-assessment'}/${Date.now()}-${req.file.originalname}`;
-        console.log("Using mock URL for development:", mockUrl);
-        
-        return res.status(200).json({
-          success: true,
-          message: "Development mode: Using mock S3 URL",
-          filename: `${Date.now()}-${req.file.originalname}`,
-          url: mockUrl,
-          isMock: true
-        });
-      }
-      
+    } catch (s3Error) {
+      console.error('S3 upload error:', s3Error);
       return res.status(500).json({
         success: false,
-        message: "Failed to upload file to S3",
-        error: error.message
+        message: 'Error uploading to S3',
+        error: s3Error.message
       });
     }
-  });
+  } catch (error) {
+    console.error('Server error during upload:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error during upload',
+      error: error.message
+    });
+  }
 });
 
 // GET all assessments with pagination and filtering
@@ -131,8 +105,29 @@ router.get(
 // POST create new assessment
 router.post(
   '/', 
-  authenticateToken, 
-  authorize('teacher', 'guro'), 
+  (req, res, next) => {
+    // Optional authentication middleware for development environments
+    if (process.env.NODE_ENV === 'development' || process.env.BYPASS_AUTH === 'true') {
+      console.log('[MAIN ASSESSMENT] Bypassing authentication for development');
+      // Assign a default teacher role for development
+      req.user = { 
+        id: 'dev-user-id',
+        roles: ['teacher']
+      };
+      return next();
+    }
+    // Otherwise use standard auth
+    authenticateToken(req, res, next);
+  },
+  (req, res, next) => {
+    // Optional role authorization middleware for development
+    if (process.env.NODE_ENV === 'development' || process.env.BYPASS_AUTH === 'true') {
+      console.log('[MAIN ASSESSMENT] Bypassing role authorization for development');
+      return next();
+    }
+    // Otherwise use standard role authorization
+    authorize('teacher', 'guro')(req, res, next);
+  },
   mainAssessmentController.createAssessment
 );
 

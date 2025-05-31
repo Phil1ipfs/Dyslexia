@@ -652,7 +652,9 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
       <div className="tl-create-new-section">
         <button className="tl-add-button" onClick={handleAddTemplate}>
           <FontAwesomeIcon icon={faPlus} />
-          Create New Template
+          {nestedTabIndex === 0 ? "Create New Question Template" :
+           nestedTabIndex === 1 ? "Create New Choice Template" :
+           "Create New Sentence Template"}
         </button>
       </div>
 
