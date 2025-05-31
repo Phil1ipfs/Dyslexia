@@ -61,6 +61,14 @@ const sentenceQuestionSchema = new mongoose.Schema({
   questionImage: {
     type: String,
     default: null
+  },
+  questionId: {
+    type: String,
+    required: true
+  },
+  order: {
+    type: Number,
+    required: true
   }
 });
 

@@ -409,8 +409,8 @@ const MainAssessment = ({ templates }) => {
       questionText: "",
       questionImage: null,
       questionValue: "",
-      // Only add questionId for non-sentence types
-      ...(initialQuestionType !== "sentence" ? { questionId: tempQuestionId } : {}),
+      // Add questionId for all question types
+      questionId: tempQuestionId,
       // Store parent ID temporarily for generating child IDs
       _parentId: parentId,
       choiceOptions: [
@@ -427,7 +427,8 @@ const MainAssessment = ({ templates }) => {
           incorrectAnswer: "", 
           correctDescription: "", 
           incorrectDescription: "",
-          questionId: `${parentId}_SQ01` // Use parent ID to generate child ID
+          questionId: `${parentId}_SQ01`, // Use parent ID to generate child ID
+          order: 1  // Start with order 1
         }
       ] : [],
       order: 0 // Will be set when added to questions array
@@ -514,7 +515,8 @@ const MainAssessment = ({ templates }) => {
           incorrectAnswer: "", 
           correctDescription: "",
           incorrectDescription: "",
-          questionId: subQuestionId
+          questionId: subQuestionId,
+          order: prev.sentenceQuestions.length + 1  // Add order based on current length + 1
         }
       ]
     }));
@@ -593,6 +595,14 @@ const MainAssessment = ({ templates }) => {
       if (finalQuestionData.questionType !== "sentence" && !finalQuestionData.questionValue) {
         // This should never happen due to validation, but just in case:
         finalQuestionData.questionValue = null;
+      }
+      
+      // Ensure sentenceQuestions have order field
+      if (finalQuestionData.questionType === "sentence" && finalQuestionData.sentenceQuestions) {
+        finalQuestionData.sentenceQuestions = finalQuestionData.sentenceQuestions.map((sq, sqIndex) => ({
+          ...sq,
+          order: sqIndex + 1 // Add order field starting from 1
+        }));
       }
       
       // Get category-specific folder name for S3 upload
@@ -710,8 +720,8 @@ const MainAssessment = ({ templates }) => {
           questionImage: null,
           // Ensure it has a default value
           questionValue: finalQuestionData.questionType === "sentence" ? "" : null,
-          // Only include questionId for non-sentence types
-          ...(finalQuestionData.questionType !== "sentence" ? { questionId: nextTempQuestionId } : {}),
+          // Include questionId for all question types
+          questionId: nextTempQuestionId,
           // Store parent ID temporarily for generating child IDs
           _parentId: nextParentId,
           choiceOptions: [
@@ -728,7 +738,8 @@ const MainAssessment = ({ templates }) => {
               incorrectAnswer: "", 
               correctDescription: "", 
               incorrectDescription: "",
-              questionId: nextParentId ? `${nextParentId}_SQ01` : null
+              questionId: nextParentId ? `${nextParentId}_SQ01` : null,
+              order: 1  // Start with order 1
             }
           ] : [],
           order: formData.questions.length + 2 // +2 because we just added one
@@ -756,8 +767,8 @@ const MainAssessment = ({ templates }) => {
           questionImage: null,
           // Ensure it has a default value
           questionValue: finalQuestionData.questionType === "sentence" ? "" : null,
-          // Only include questionId for non-sentence types
-          ...(finalQuestionData.questionType !== "sentence" ? { questionId: nextTempQuestionId } : {}),
+          // Include questionId for all question types
+          questionId: nextTempQuestionId,
           // Store parent ID temporarily for generating child IDs
           _parentId: nextParentId,
           choiceOptions: [
@@ -774,7 +785,8 @@ const MainAssessment = ({ templates }) => {
               incorrectAnswer: "", 
               correctDescription: "", 
               incorrectDescription: "",
-              questionId: nextParentId ? `${nextParentId}_SQ01` : null
+              questionId: nextParentId ? `${nextParentId}_SQ01` : null,
+              order: 1  // Start with order 1
             }
           ] : [],
           order: formData.questions.length + 2 // +2 because we just added one
@@ -865,13 +877,8 @@ const MainAssessment = ({ templates }) => {
           const categoryPrefix = getCategoryPrefix(selectedAssessment.category);
           const questionNumber = String(index + 1).padStart(3, '0');
           
-          // Only set questionId for non-sentence question types
-          if (question.questionType !== 'sentence') {
-            questionId = `${categoryPrefix}_${questionNumber}`;
-          } else {
-            // For sentence type, don't set a questionId at parent level
-            questionId = null;
-          }
+          // Set questionId for all question types
+          questionId = `${categoryPrefix}_${questionNumber}`;
         }
         
         // Handle sentence type questions that might be missing required arrays
@@ -903,15 +910,16 @@ const MainAssessment = ({ templates }) => {
               correctDescription: sq.correctDescription || "",
               incorrectDescription: sq.incorrectDescription || "",
               questionImage: sq.questionImage || null,
-              questionId: subQuestionId
+              questionId: subQuestionId,
+              order: sqIndex + 1  // Add order field starting from 1
             };
           });
         }
         
         return {
           ...question,
-          // Only include questionId for non-sentence types
-          ...(question.questionType !== 'sentence' ? { questionId } : {}),
+          // Include questionId for all question types
+          questionId,
           // Set questionValue directly 
           questionValue: isSentenceType ? null : questionValue,
           order: index + 1,
@@ -936,14 +944,7 @@ const MainAssessment = ({ templates }) => {
       });
       
       // Final processing - explicitly remove questionId from sentence questions
-      const finalQuestions = formattedQuestions.map(question => {
-        if (question.questionType === 'sentence') {
-          // Create a new object without the questionId property
-          const { questionId, ...questionWithoutId } = question;
-          return questionWithoutId;
-        }
-        return question;
-      });
+      const finalQuestions = formattedQuestions;
       
       let response;
       
