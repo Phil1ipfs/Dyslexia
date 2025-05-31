@@ -2395,9 +2395,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     updateQuestionChoicePair(pairId, 'questionValue', newText);
     
     // If a value is being set, clear the image
-    if (newText && newText.trim() !== '') {
-      updateQuestionChoicePair(pairId, 'questionImage', null);
-    }
+    // if (newText && newText.trim() !== '') {
+    //   updateQuestionChoicePair(pairId, 'questionImage', null);
+    // }
     
     // Only attempt to auto-select choices for custom questions
     if (questionChoicePairs.find(p => p.id === pairId)?.sourceType === 'custom') {
@@ -2609,14 +2609,14 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           newErrors.pairs = "All questions must have exactly 2 choices with one marked as correct";
         }
         
-        // Add validation to check for both value and image set
-        const invalidValueImagePairs = questionChoicePairs.filter(pair => 
-          pair.questionValue && pair.questionValue.trim() !== '' && pair.questionImage
-        );
+        // Remove validation that prevents both value and image
+        // const invalidValueImagePairs = questionChoicePairs.filter(pair => 
+        //   pair.questionValue && pair.questionValue.trim() !== '' && pair.questionImage
+        // );
         
-        if (invalidValueImagePairs.length > 0) {
-          newErrors.pairs = "Questions can have either a Question Value OR a Question Image, not both";
-        }
+        // if (invalidValueImagePairs.length > 0) {
+        //   newErrors.pairs = "Questions can have either a Question Value OR a Question Image, not both";
+        // }
       }
     }
     
@@ -2654,14 +2654,14 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         allErrors.pairs = "All questions must have exactly 2 choices with one marked as correct";
       }
       
-      // Add validation to check for both value and image set
-      const invalidValueImagePairs = questionChoicePairs.filter(pair => 
-        pair.questionValue && pair.questionValue.trim() !== '' && pair.questionImage
-      );
+      // Remove validation that prevents both value and image
+      // const invalidValueImagePairs = questionChoicePairs.filter(pair => 
+      //   pair.questionValue && pair.questionValue.trim() !== '' && pair.questionImage
+      // );
       
-      if (invalidValueImagePairs.length > 0) {
-        allErrors.pairs = "Questions can have either a Question Value OR a Question Image, not both";
-      }
+      // if (invalidValueImagePairs.length > 0) {
+      //   allErrors.pairs = "Questions can have either a Question Value OR a Question Image, not both";
+      // }
       
       // Description field is optional - no need to show warnings for missing descriptions
   // We'll use default descriptions in the backend if needed
@@ -3251,7 +3251,7 @@ const renderQuestionChoicesStep = () => {
             <div className="literexia-form-group">
               <label>Question Value</label>
               <div className="literexia-help-text">
-                Note: You can set either Question Value OR Question Image, not both.
+                You can set both Question Value and Question Image if needed.
               </div>
               {(pair.sourceType === 'main_assessment') ? (
                 // For assessment questions, show an editable dropdown
@@ -3334,7 +3334,7 @@ const renderQuestionChoicesStep = () => {
             <div className="literexia-form-group">
               <label>Question Image</label>
               <div className="literexia-help-text">
-                Note: You can set either Question Image OR Question Value, not both.
+                You can set both Question Image and Question Value if needed.
               </div>
               <div className="literexia-file-upload">
                 <input

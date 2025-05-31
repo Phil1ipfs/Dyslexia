@@ -731,12 +731,23 @@
 
 .pa-header-cell,
 .pa-cell {
-  padding: 16px;
+  padding: 16px 18px;
   display: flex;
   align-items: center;
-  font-size: 14px;
+  font-size: 18px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.pa-header-cell {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.pa-cell-icon {
+  color: #4e5c93;
+  margin-right: 8px;
+  font-size: 16px;
 }
 
 /* Fixed cell width classes to ensure alignment */
@@ -778,7 +789,7 @@
 .pa-cell-icon {
   color: #4e5c93;
   margin-right: 8px;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 /* Status badges */
@@ -788,7 +799,7 @@
   gap: 6px;
   padding: 6px 12px;
   border-radius: 20px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -811,9 +822,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
 }
 
