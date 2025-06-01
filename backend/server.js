@@ -455,6 +455,15 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load main assessment routes:', error.message);
     }
 
+    // Load pre-assessment routes
+    try {
+      const preAssessmentRoutes = require('./routes/Teachers/preAssessmentRoutes');
+      app.use('/api/pre-assessment', preAssessmentRoutes);
+      console.log('✅ Loaded pre-assessment routes at /api/pre-assessment/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load pre-assessment routes:', error.message);
+    }
+
     // Add a test route for the students endpoint
     app.get('/api/admin/manage/students/test', (req, res) => {
       res.json({ message: 'Students endpoint is accessible' });

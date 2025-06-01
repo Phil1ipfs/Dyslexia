@@ -334,3 +334,17 @@ export const getCacheBustedImageUrl = (url) => {
     return `${url}${joinChar}t=${Date.now()}`;
   }
 };
+
+// Create a service object with all exported functions
+const teacherService = {
+  initializeTeacherProfile,
+  fetchTeacherProfile,
+  updateTeacherProfile,
+  uploadProfileImage,
+  deleteProfileImage,
+  updateTeacherPassword,
+  getCurrentProfileImage,
+  getCacheBustedImageUrl
+};
+
+export default teacherService;
