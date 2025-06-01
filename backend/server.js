@@ -1013,6 +1013,15 @@ connectDB().then(async (connected) => {
       }
     });
 
+    // Load IEP routes
+    try {
+      const iepRoutes = require('./routes/Teachers/ManageProgress/iepRoutes');
+      app.use('/api/iep', iepRoutes);
+      console.log('✅ Loaded IEP routes at /api/iep/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load IEP routes:', error.message);
+    }
+
     // 404 handler
     app.use((req, res) => {
       console.log(`[404] Route not found: ${req.method} ${req.url}`);
