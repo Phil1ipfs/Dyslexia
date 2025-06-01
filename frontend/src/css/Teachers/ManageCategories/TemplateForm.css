@@ -240,48 +240,98 @@
     box-shadow: none;
   }
   
-  .image-preview {
+  .image-preview-container {
     margin-top: 16px;
-    max-width: 200px;
-    border: 1px solid #eaeaea;
+    background-color: #f8f9fa;
     border-radius: 8px;
-    padding: 16px;
-    background-color: white;
+    padding: 12px;
+    border: 1px solid #eaeaea;
   }
   
-  .image-preview img {
+  .image-preview-container h6 {
+    font-size: 14px;
+    margin: 0 0 10px 0;
+    color: #4e5c93;
+    font-weight: 500;
+  }
+  
+  .image-preview {
+    display: flex;
+    justify-content: center;
+    background-color: white;
+    border-radius: 6px;
+    padding: 10px;
+    border: 1px solid #eaeaea;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .preview-image {
     max-width: 100%;
-    height: auto;
-    display: block;
+    max-height: 200px;
+    object-fit: contain;
     border-radius: 4px;
   }
   
-  .file-input-container {
-    margin-top: 10px;
+  .file-upload-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
   }
   
-  .file-input-label {
-    display: inline-block;
+  .file-upload-button {
+    position: relative;
+  }
+  
+  .file-upload-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #4e5c93;
+    color: white;
     padding: 10px 16px;
-    background-color: #f8f9fa;
-    color: #4a5568;
-    border: 1px solid #eaeaea;
     border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s;
     font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
   }
   
-  .file-input-label:hover {
-    background-color: #edf2f7;
+  .file-upload-label:hover {
+    background-color: #3d497a;
+    transform: translateY(-1px);
   }
   
-  .file-input-label svg {
-    margin-right: 8px;
+  .file-input {
+    position: absolute;
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    z-index: -1;
   }
   
-  .image-input-hidden {
-    display: none;
+  .upload-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #4e5c93;
+    font-size: 14px;
+    animation: pulse 1.5s infinite;
+  }
+  
+  .file-name {
+    font-size: 13px;
+    color: #7f8c8d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
   }
   
   /* Sentence template form specific styles */
@@ -436,29 +486,84 @@
   .option-input {
     display: flex;
     gap: 12px;
-    align-items: center;
+    align-items: flex-start;
     background-color: white;
-    padding: 8px 16px;
+    padding: 12px 16px;
     border-radius: 6px;
     border: 1px solid #eaeaea;
+    transition: all 0.2s;
   }
   
-  .option-input input {
+  .option-input:hover {
+    border-color: #4e5c93;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+  
+  .option-radio {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 12px;
+  }
+  
+  .option-radio input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #4e5c93;
+    cursor: pointer;
+  }
+  
+  .option-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     flex: 1;
-    border: none;
-    padding: 8px 0;
   }
   
-  .option-input input:focus {
-    outline: none;
-    box-shadow: none;
+  .option-content input {
+    border: 1px solid #eaeaea;
+    border-radius: 4px;
+    padding: 10px;
+    width: 100%;
+  }
+  
+  .option-description {
+    font-size: 13px;
+    color: #5d6778;
+    border-color: #e9ecef !important;
+    background-color: #f8f9fa !important;
+    font-style: italic;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #e9ecef !important;
+    margin-top: 4px;
+  }
+  
+  .option-description::placeholder {
+    color: #adb5bd;
+    font-style: italic;
+  }
+  
+  .option-input:has(.correct-badge) .option-description {
+    background-color: #e3fcef !important;
+    border-color: #96f2d7 !important;
+    color: #0ca678;
+  }
+  
+  .option-description:focus {
+    background-color: #fff !important;
+    border-color: #4e5c93 !important;
+    color: #2c3e50;
+    box-shadow: 0 0 0 2px rgba(78, 92, 147, 0.1);
   }
   
   .correct-badge {
     background-color: #e3fcef;
     color: #0ca678;
     font-size: 12px;
-    padding: 4px 10px !important;
-    border-radius: 20px !important;;
+    padding: 4px 10px;
+    border-radius: 20px;
     font-weight: 500;
+    white-space: nowrap;
+    align-self: center;
   }

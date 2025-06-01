@@ -1,6 +1,6 @@
 // controllers/Teachers/dashboardController.js
 const mongoose = require('mongoose');
-const User = mongoose.model('User') || require('../../models/userModel');
+const User = require('../../models/userModel');
 
 // Get CategoryResult model
 let CategoryResult;

@@ -466,8 +466,8 @@ exports.getPrescriptiveRecommendations = async function(req, res) {
       });
     }
 
-    // Check if student exists
-    const student = await this.getUserById(id);
+    // Check if student exists - using the exports.getUserById helper method
+    const student = await exports.getUserById(id);
     if (!student) {
       return res.status(404).json({ 
         success: false, 
@@ -475,11 +475,15 @@ exports.getPrescriptiveRecommendations = async function(req, res) {
       });
     }
 
-    // Get the latest category results
-    const CategoryResult = mongoose.model('CategoryResult');
-    const categoryResults = await CategoryResult.findOne({
+    // Get the latest category results directly from the collection
+    const testDb = mongoose.connection.useDb('test');
+    const categoryResultsCollection = testDb.collection('category_results');
+    
+    const categoryResults = await categoryResultsCollection.findOne({
       studentId: new mongoose.Types.ObjectId(id)
-    }).sort({ assessmentDate: -1 });
+    }, {
+      sort: { assessmentDate: -1, createdAt: -1 }
+    });
 
     // 🔒 Short-circuit: no assessment → no prescriptive data
     if (
@@ -509,7 +513,7 @@ exports.getPrescriptiveRecommendations = async function(req, res) {
       data: {
         student: {
           id: student._id,
-          name: `${student.firstName} ${student.lastName}`,
+          name: student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim(),
           readingLevel: student.readingLevel || 'Not Assessed'
         },
         categoryResults,
@@ -589,9 +593,20 @@ exports.linkParentToStudent = async (req, res) => {
 // Get available grade levels
 exports.getGradeLevels = async (req, res) => {
   try {
-    // This could be from a database query if you have a grades collection
-    // For now, return a static list
-    const gradeLevels = ['Grade 1', 'Grade 2', 'Grade 3'];
+    // Get users collection
+    const usersCollection = getUsersDb().collection('users');
+    
+    // Extract unique grade levels from users collection
+    const gradeLevelsAgg = await usersCollection.aggregate([
+      { $match: { gradeLevel: { $exists: true, $ne: null } } },
+      { $group: { _id: "$gradeLevel" } },
+      { $sort: { _id: 1 } }
+    ]).toArray();
+    
+    // Transform to array of grade level strings
+    const gradeLevels = gradeLevelsAgg.map(item => item._id);
+    
+    console.log('Returning grade levels:', gradeLevels);
     res.json(gradeLevels);
   } catch (error) {
     console.error('Error fetching grade levels:', error);
@@ -602,17 +617,20 @@ exports.getGradeLevels = async (req, res) => {
 // Get available sections/classes
 exports.getSections = async (req, res) => {
   try {
-    // For now, return a static list
-    const sections = [
-      'Sampaguita',
-      'Rosal',
-      'Rosa',
-      'Lily',
-      'Orchid',
-      'Unity',
-      'Peace',
-      'Dignity'
-    ];
+    // Get users collection
+    const usersCollection = getUsersDb().collection('users');
+    
+    // Extract unique sections from users collection
+    const sectionsAgg = await usersCollection.aggregate([
+      { $match: { section: { $exists: true, $ne: null } } },
+      { $group: { _id: "$section" } },
+      { $sort: { _id: 1 } }
+    ]).toArray();
+    
+    // Transform to array of section strings
+    const sections = sectionsAgg.map(item => item._id);
+    
+    console.log('Returning sections:', sections);
     res.json(sections);
   } catch (error) {
     console.error('Error fetching sections:', error);
@@ -623,16 +641,18 @@ exports.getSections = async (req, res) => {
 // Get reading levels
 exports.getReadingLevels = async (req, res) => {
   try {
-    // Return the standardized list of reading levels
-    // This ensures consistency across the application
-    const readingLevels = [
-      'Low Emerging',
-      'High Emerging',
-      'Developing',
-      'Transitioning',
-      'At Grade Level',
-      'Not Assessed'
-    ];
+    // Get users collection
+    const usersCollection = getUsersDb().collection('users');
+    
+    // Extract unique reading levels from users collection
+    const readingLevelsAgg = await usersCollection.aggregate([
+      { $match: { readingLevel: { $exists: true, $ne: null } } },
+      { $group: { _id: "$readingLevel" } },
+      { $sort: { _id: 1 } }
+    ]).toArray();
+    
+    // Transform to array of reading level strings
+    const readingLevels = readingLevelsAgg.map(item => item._id);
     
     console.log('Returning reading levels:', readingLevels);
     res.json(readingLevels);
@@ -651,6 +671,9 @@ exports.getReadingLevels = async (req, res) => {
 exports.getCategoryResults = async (req, res) => {
   try {
     const id = req.params.id;
+    const assessmentType = req.query.type; // Get the assessment type from query params
+    
+    console.log(`Fetching category results for student ID: ${id}, type: ${assessmentType || 'any'}`);
     
     // Get the test database
     const testDb = mongoose.connection.useDb('test');
@@ -669,8 +692,8 @@ exports.getCategoryResults = async (req, res) => {
     const usersCollection = testDb.collection('users');
     const student = await usersCollection.findOne({
       $or: [
-        { _id: new mongoose.Types.ObjectId(id) },
-        { idNumber: parseInt(id) || id }
+        { _id: mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null },
+        { idNumber: id }
       ]
     });
     
@@ -682,9 +705,32 @@ exports.getCategoryResults = async (req, res) => {
     const studentObjId = student._id;
     console.log('Looking for category results for student ID:', studentObjId);
     
+    // Build the query
+    const query = {
+      $or: [
+        { studentId: id.toString() },
+        { studentId: student.idNumber ? student.idNumber.toString() : null },
+        { studentObjectId: studentObjId }
+      ]
+    };
+    
+    // Add assessment type filter if provided
+    if (assessmentType) {
+      if (assessmentType === 'post-assessment') {
+        // For post-assessment, we want records that are not pre-assessment
+        query.isPreAssessment = { $ne: true };
+      } else if (assessmentType === 'pre-assessment') {
+        query.isPreAssessment = true;
+      } else {
+        query.assessmentType = assessmentType;
+      }
+    }
+    
+    console.log('Query for category results:', JSON.stringify(query));
+    
     // Find the most recent category results for this student
     const categoryResults = await categoryResultsCollection
-      .find({ studentId: studentObjId })
+      .find(query)
       .sort({ assessmentDate: -1, createdAt: -1 })
       .limit(1)
       .toArray();
@@ -703,11 +749,140 @@ exports.getCategoryResults = async (req, res) => {
     
     // Return the most recent assessment result
     const latestResult = categoryResults[0];
+    console.log(`Found category result with ID: ${latestResult._id} for student ${id}`);
     
     return res.json(latestResult);
   } catch (error) {
     console.error(`Error fetching category results for student ID ${req.params.id}:`, error);
     res.status(500).json({ message: 'Error fetching category results', error: error.message });
+  }
+};
+
+// Get reading level progress for a student
+exports.getReadingLevelProgress = async (req, res) => {
+  try {
+    const id = req.params.id;
+    
+    // Get the test database
+    const testDb = mongoose.connection.useDb('test');
+    const usersCollection = testDb.collection('users');
+    const categoryResultsCollection = testDb.collection('category_results');
+    const mainAssessmentCollection = testDb.collection('main_assessment');
+    
+    // Find the student 
+    const student = await usersCollection.findOne({
+      $or: [
+        { _id: mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null },
+        { idNumber: id }
+      ]
+    });
+    
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+    
+    // Get the student's reading level
+    const readingLevel = student.readingLevel || 'Not Assessed';
+    
+    // Find the latest category results for this student
+    const categoryResults = await categoryResultsCollection
+      .find({ 
+        $or: [
+          { studentId: id.toString() },
+          { studentId: student.idNumber ? student.idNumber.toString() : null },
+          { studentObjectId: student._id }
+        ]
+      })
+      .sort({ assessmentDate: -1, createdAt: -1 })
+      .limit(1)
+      .toArray();
+    
+    // Get all assessment data for the student's reading level
+    const assessmentData = await mainAssessmentCollection
+      .find({ readingLevel: readingLevel })
+      .toArray();
+      
+    // Group assessment data by category
+    const assessmentsByCategory = {};
+    assessmentData.forEach(assessment => {
+      if (!assessmentsByCategory[assessment.category]) {
+        assessmentsByCategory[assessment.category] = assessment;
+      }
+    });
+    
+    // If no category results found, create empty progress data
+    if (categoryResults.length === 0) {
+      const progressData = {
+        studentId: id,
+        readingLevel: readingLevel,
+        lastAssessmentDate: student.lastAssessmentDate || null,
+        categories: Object.keys(assessmentsByCategory).map(category => ({
+          category: category,
+          totalQuestions: assessmentsByCategory[category].questions.length,
+          correctAnswers: 0,
+          score: 0,
+          isPassed: false,
+          passingThreshold: 75,
+          questions: assessmentsByCategory[category].questions.map(q => ({
+            questionType: q.questionType,
+            questionText: q.questionText,
+            questionValue: q.questionValue,
+            order: q.order,
+            isCorrect: false
+          }))
+        }))
+      };
+      
+      return res.json(progressData);
+    }
+    
+    // Get the latest category result
+    const latestResult = categoryResults[0];
+    
+    // Create the progress data structure with detailed information
+    const progressData = {
+      studentId: id,
+      readingLevel: readingLevel,
+      lastAssessmentDate: latestResult.assessmentDate || latestResult.createdAt,
+      overallScore: latestResult.overallScore,
+      allCategoriesPassed: latestResult.allCategoriesPassed,
+      categories: []
+    };
+    
+    // Map categories from results to assessment questions
+    if (latestResult.categories && latestResult.categories.length > 0) {
+      progressData.categories = latestResult.categories.map(category => {
+        const assessmentCategory = assessmentsByCategory[category.categoryName];
+        
+        // Create category data with detailed questions
+        return {
+          category: category.categoryName,
+          totalQuestions: category.totalQuestions,
+          correctAnswers: category.correctAnswers,
+          score: category.score,
+          isPassed: category.isPassed,
+          passingThreshold: category.passingThreshold || 75,
+          questions: assessmentCategory ? assessmentCategory.questions.map(q => ({
+            questionType: q.questionType,
+            questionText: q.questionText,
+            questionValue: q.questionValue,
+            order: q.order,
+            // We don't have specific correct/incorrect info per question
+            // This would need to be stored in actual assessment responses
+            isCorrect: null,
+            choiceOptions: q.choiceOptions
+          })) : []
+        };
+      });
+    }
+    
+    return res.json(progressData);
+  } catch (error) {
+    console.error(`Error fetching reading level progress for student ID ${req.params.id}:`, error);
+    res.status(500).json({ 
+      message: 'Error fetching reading level progress', 
+      error: error.message 
+    });
   }
 };
 

@@ -11,14 +11,30 @@ const AuthService = {
    * Login user with email and password
    * @param {string} email - User email
    * @param {string} password - User password
+   * @param {string} expectedRole - Expected user role (optional)
    * @returns {Promise} Promise with login result
    */
-  login: async (email, password) => {
+  login: async (email, password, expectedRole) => {
     try {
-      const response = await axios.post(`${API_URL}/api/auth/login`, { email, password });
+      // Get expected role from parameter or localStorage
+      const role = expectedRole || localStorage.getItem('userType') || 'teacher';
+      
+      console.log('AuthService login - sending request with:', { 
+        email, 
+        expectedRole: role 
+      });
+      
+      const response = await axios.post(`${API_URL}/api/auth/login`, { 
+        email, 
+        password,
+        expectedRole: role
+      });
       
       if (response.data.token) {
         localStorage.setItem('user', JSON.stringify(response.data));
+        // Also store the token directly for compatibility
+        localStorage.setItem('authToken', response.data.token);
+        localStorage.setItem('token', response.data.token);
       }
       
       return response.data;
@@ -33,6 +49,10 @@ const AuthService = {
    */
   logout: () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('token');
+    localStorage.removeItem('userType');
+    localStorage.removeItem('userId');
   },
 
   /**

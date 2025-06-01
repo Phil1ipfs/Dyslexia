@@ -185,18 +185,6 @@ const PreAssessmentResults = ({ assessmentData }) => {
               </div>
             </div>
           </div>
-
-          <div className="pre-assessment-results__overview-item">
-            <div className="pre-assessment-results__overview-item-icon">
-              <FaUser />
-            </div>
-            <div className="pre-assessment-results__overview-item-content">
-              <div className="pre-assessment-results__overview-item-label">Score</div>
-              <div className="pre-assessment-results__overview-item-value">
-                {assessmentData.part1Score}/20
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 

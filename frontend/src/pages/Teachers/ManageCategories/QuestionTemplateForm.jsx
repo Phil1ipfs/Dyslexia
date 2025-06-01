@@ -20,7 +20,7 @@ const CATEGORIES = [
 // UPDATED: Question types available for each category
 const QUESTION_TYPES = {
   "Alphabet Knowledge": ["patinig", "katinig"],
-  "Phonological Awareness": ["malapantig", "patinig", "katinig"], // All three question types
+  "Phonological Awareness": ["patinig", "katinig"], // Only vowel and consonant types
   "Decoding": ["word"],
   "Word Recognition": ["word"],
   "Reading Comprehension": ["sentence"]

@@ -3,9 +3,7 @@ import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { 
   faInfoCircle, 
-  faImage, 
   faVolumeUp,
-  faUpload,
   faFont,
   faLanguage
 } from "@fortawesome/free-solid-svg-icons";
@@ -17,7 +15,6 @@ const CHOICE_TYPES = [
     value: "patinigBigLetter", 
     label: "Vowel (Patinig) - UPPERCASE", 
     description: "Capital vowel letters (A, E, I, O, U)",
-    needsImage: true, 
     needsSound: false, 
     example: "A, E, I, O, U",
     icon: faFont
@@ -26,7 +23,6 @@ const CHOICE_TYPES = [
     value: "patinigSmallLetter", 
     label: "Vowel (Patinig) - lowercase", 
     description: "Small vowel letters (a, e, i, o, u)",
-    needsImage: true, 
     needsSound: false, 
     example: "a, e, i, o, u",
     icon: faFont
@@ -35,7 +31,6 @@ const CHOICE_TYPES = [
     value: "patinigSound", 
     label: "Vowel (Patinig) - Sound", 
     description: "Vowel sounds represented with text",
-    needsImage: true, 
     needsSound: true, 
     example: "/ah/, /eh/, /ee/",
     icon: faVolumeUp
@@ -44,7 +39,6 @@ const CHOICE_TYPES = [
     value: "katinigBigLetter", 
     label: "Consonant (Katinig) - UPPERCASE", 
     description: "Capital consonant letters (B, K, D, etc.)",
-    needsImage: true, 
     needsSound: false, 
     example: "B, K, D, L, M",
     icon: faFont
@@ -53,7 +47,6 @@ const CHOICE_TYPES = [
     value: "katinigSmallLetter", 
     label: "Consonant (Katinig) - lowercase", 
     description: "Small consonant letters (b, k, d, etc.)",
-    needsImage: true, 
     needsSound: false, 
     example: "b, k, d, l, m",
     icon: faFont
@@ -62,7 +55,6 @@ const CHOICE_TYPES = [
     value: "katinigSound", 
     label: "Consonant (Katinig) - Sound", 
     description: "Consonant sounds represented with text",
-    needsImage: true, 
     needsSound: true, 
     example: "/buh/, /kuh/, /duh/",
     icon: faVolumeUp
@@ -71,7 +63,6 @@ const CHOICE_TYPES = [
     value: "malapatinigText", 
     label: "Syllable (Malapantig)", 
     description: "Syllable blocks for blending activities",
-    needsImage: false, 
     needsSound: false, 
     example: "BA, BE, BI, BO, BU",
     icon: faLanguage
@@ -80,7 +71,6 @@ const CHOICE_TYPES = [
     value: "wordText", 
     label: "Complete Word", 
     description: "Complete words with corresponding images",
-    needsImage: true, 
     needsSound: false, 
     example: "aso, bola, bahay",
     icon: faLanguage
@@ -89,7 +79,6 @@ const CHOICE_TYPES = [
     value: "wordSound", 
     label: "Word Sound", 
     description: "Word sounds with corresponding images",
-    needsImage: true, 
     needsSound: true, 
     example: "/a-so/, /bo-la/",
     icon: faVolumeUp
@@ -100,12 +89,9 @@ const ChoiceTemplateForm = ({ template, onSave, onCancel }) => {
   const [form, setForm] = useState({
     choiceType: "",
     choiceValue: "",
-    choiceImage: "",
-    choiceImageFile: null, // For file upload
     soundText: "",
   });
   
-  const [previewImage, setPreviewImage] = useState(null);
   const [errors, setErrors] = useState({});
   const [selectedChoiceTypeInfo, setSelectedChoiceTypeInfo] = useState(null);
   
@@ -115,14 +101,8 @@ const ChoiceTemplateForm = ({ template, onSave, onCancel }) => {
       setForm({
         choiceType: template.choiceType || "",
         choiceValue: template.choiceValue || "",
-        choiceImage: template.choiceImage || "",
-        choiceImageFile: null,
         soundText: template.soundText || ""
       });
-      
-      if (template.choiceImage) {
-        setPreviewImage(template.choiceImage);
-      }
       
       // Set the selected choice type info
       const typeInfo = CHOICE_TYPES.find(type => type.value === template.choiceType);
@@ -169,29 +149,6 @@ const ChoiceTemplateForm = ({ template, onSave, onCancel }) => {
     }
   };
   
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    // Clear image error if present
-    setErrors({
-      ...errors,
-      choiceImage: undefined
-    });
-    
-    // Preview the image locally
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPreviewImage(reader.result);
-      setForm({
-        ...form,
-        choiceImageFile: file,
-        choiceImage: reader.result // In a real app, you'd upload to a server
-      });
-    };
-    reader.readAsDataURL(file);
-  };
-  
   const handleSubmit = (e) => {
     e.preventDefault();
     
@@ -208,10 +165,6 @@ const ChoiceTemplateForm = ({ template, onSave, onCancel }) => {
       if (selectedChoiceTypeInfo.needsSound && !form.soundText) {
         newErrors.soundText = "Sound text is required for this type";
       }
-      
-      if (selectedChoiceTypeInfo.needsImage && !previewImage) {
-        newErrors.choiceImage = "Image is required for this type";
-      }
     }
     
     if (Object.keys(newErrors).length > 0) {
@@ -223,7 +176,6 @@ const ChoiceTemplateForm = ({ template, onSave, onCancel }) => {
     const formData = {
       choiceType: form.choiceType,
       choiceValue: form.choiceValue || null, // Allow null for sound-only choices
-      choiceImage: form.choiceImage || null,
       soundText: form.soundText || null
     };
     
@@ -264,7 +216,6 @@ const ChoiceTemplateForm = ({ template, onSave, onCancel }) => {
               <FontAwesomeIcon icon={selectedChoiceTypeInfo.icon} />
               <span>
                 {selectedChoiceTypeInfo.description}. Examples: {selectedChoiceTypeInfo.example}
-                {selectedChoiceTypeInfo.needsImage && " (requires an image)"}
                 {selectedChoiceTypeInfo.needsSound && " (requires sound text)"}
               </span>
             </div>
@@ -296,44 +247,6 @@ const ChoiceTemplateForm = ({ template, onSave, onCancel }) => {
               required={selectedChoiceTypeInfo && !selectedChoiceTypeInfo.needsSound}
             />
             {errors.choiceValue && <div className="error-message">{errors.choiceValue}</div>}
-          </div>
-        )}
-        
-        {/* Only show image field when needed */}
-        {selectedChoiceTypeInfo && selectedChoiceTypeInfo.needsImage && (
-          <div className={`form-group ${errors.choiceImage ? 'has-error' : ''}`}>
-            <label htmlFor="choiceImage">
-              Choice Image:
-              <div className="tooltip">
-                <FontAwesomeIcon icon={faInfoCircle} className="tooltip-icon" />
-                <span className="tooltip-text">
-                  Upload an image that represents this choice. For letters, use a clear image of the letter. For words, use a picture of what the word represents.
-                </span>
-              </div>
-            </label>
-            
-            <div className="file-input-container">
-              <label className="file-input-label">
-                <FontAwesomeIcon icon={faUpload} />
-                {previewImage ? "Change Image" : "Upload Image"}
-                <input
-                  type="file"
-                  id="choiceImageFile"
-                  name="choiceImageFile"
-                  onChange={handleImageUpload}
-                  accept="image/*"
-                  className="image-input-hidden"
-                />
-              </label>
-            </div>
-            
-            {previewImage && (
-              <div className="image-preview">
-                <img src={previewImage} alt="Preview" />
-              </div>
-            )}
-            
-            {errors.choiceImage && <div className="error-message">{errors.choiceImage}</div>}
           </div>
         )}
         
@@ -384,8 +297,7 @@ const ChoiceTemplateForm = ({ template, onSave, onCancel }) => {
             disabled={
               !form.choiceType || 
               (selectedChoiceTypeInfo && !selectedChoiceTypeInfo.needsSound && !form.choiceValue) ||
-              (selectedChoiceTypeInfo && selectedChoiceTypeInfo.needsSound && !form.soundText) ||
-              (selectedChoiceTypeInfo && selectedChoiceTypeInfo.needsImage && !previewImage)
+              (selectedChoiceTypeInfo && selectedChoiceTypeInfo.needsSound && !form.soundText)
             }
           >
             {template ? "Update Choice" : "Create Choice"}
