@@ -8,6 +8,7 @@ import CategoryResultsService from './CategoryResultsService';
 import StudentApiService from './StudentApiService';
 import DashboardApiService from './DashboardApiService';
 import ChatbotService from './chatbotService';
+import PreAssessmentService from './PreAssessmentService';
 
 export {
   MainAssessmentService,
@@ -18,7 +19,8 @@ export {
   CategoryResultsService,
   StudentApiService,
   DashboardApiService,
-  ChatbotService
+  ChatbotService,
+  PreAssessmentService
 };
 
 // Default export for backward compatibility
@@ -31,5 +33,6 @@ export default {
   CategoryResultsService,
   StudentApiService,
   DashboardApiService,
-  ChatbotService
+  ChatbotService,
+  PreAssessmentService
 }; 

@@ -1,8 +1,382 @@
 const mongoose = require('mongoose');
+const AWS = require('aws-sdk');
+const { PreAssessment, QuestionType } = require('../../models/Teachers/preAssessmentModel');
+
+// Configure AWS S3
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION
+});
 
 // Get the correct databases
 const getTestDb = () => mongoose.connection.useDb('test'); // for users
 const getPreAssessmentDb = () => mongoose.connection.useDb('Pre_Assessment'); // for assessment data
+
+// Get all pre-assessments
+exports.getAllPreAssessments = async (req, res) => {
+  try {
+    const preAssessmentCollection = getPreAssessmentDb().collection('pre-assessment');
+    const preAssessments = await preAssessmentCollection.find({}).toArray();
+    
+    // Format the response to include only necessary fields
+    const formattedAssessments = preAssessments.map(assessment => ({
+      _id: assessment._id,
+      assessmentId: assessment.assessmentId,
+      title: assessment.title,
+      description: assessment.description,
+      language: assessment.language,
+      status: assessment.status,
+      totalQuestions: assessment.totalQuestions,
+      type: assessment.type
+    }));
+    
+    res.json(formattedAssessments);
+  } catch (error) {
+    console.error('Error fetching pre-assessments:', error);
+    res.status(500).json({ message: 'Error fetching pre-assessments', error: error.message });
+  }
+};
+
+// Get a single pre-assessment by ID
+exports.getPreAssessmentById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const preAssessmentCollection = getPreAssessmentDb().collection('pre-assessment');
+    
+    let preAssessment;
+    try {
+      // Try as MongoDB ObjectId
+      preAssessment = await preAssessmentCollection.findOne({ _id: new mongoose.Types.ObjectId(id) });
+    } catch (err) {
+      // Try as assessmentId string
+      preAssessment = await preAssessmentCollection.findOne({ assessmentId: id });
+    }
+    
+    if (!preAssessment) {
+      return res.status(404).json({ message: 'Pre-assessment not found' });
+    }
+    
+    res.json(preAssessment);
+  } catch (error) {
+    console.error('Error fetching pre-assessment:', error);
+    res.status(500).json({ message: 'Error fetching pre-assessment', error: error.message });
+  }
+};
+
+// Create a new pre-assessment
+exports.createPreAssessment = async (req, res) => {
+  try {
+    const preAssessmentData = req.body;
+    
+    // Validate required fields
+    if (!preAssessmentData.assessmentId || !preAssessmentData.title || !preAssessmentData.language) {
+      return res.status(400).json({ message: 'Missing required fields: assessmentId, title, language' });
+    }
+    
+    // Set default values if not provided
+    preAssessmentData.status = preAssessmentData.status || 'draft';
+    preAssessmentData.type = preAssessmentData.type || 'pre_assessment';
+    preAssessmentData.totalQuestions = preAssessmentData.totalQuestions || 25;
+    
+    // Ensure categoryCounts exists with default values if not provided
+    if (!preAssessmentData.categoryCounts) {
+      preAssessmentData.categoryCounts = {
+        alphabet_knowledge: 5,
+        phonological_awareness: 5,
+        decoding: 5,
+        word_recognition: 5,
+        reading_comprehension: 5
+      };
+    }
+    
+    // Check if assessment with same ID already exists
+    const preAssessmentCollection = getPreAssessmentDb().collection('pre-assessment');
+    const existingAssessment = await preAssessmentCollection.findOne({ assessmentId: preAssessmentData.assessmentId });
+    
+    if (existingAssessment) {
+      return res.status(409).json({ message: `Assessment with ID ${preAssessmentData.assessmentId} already exists` });
+    }
+    
+    // Insert the new pre-assessment
+    const result = await preAssessmentCollection.insertOne(preAssessmentData);
+    
+    res.status(201).json({
+      message: 'Pre-assessment created successfully',
+      assessmentId: preAssessmentData.assessmentId,
+      _id: result.insertedId
+    });
+  } catch (error) {
+    console.error('Error creating pre-assessment:', error);
+    res.status(500).json({ message: 'Error creating pre-assessment', error: error.message });
+  }
+};
+
+// Update an existing pre-assessment
+exports.updatePreAssessment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    // Remove _id from update data if present
+    if (updateData._id) {
+      delete updateData._id;
+    }
+    
+    const preAssessmentCollection = getPreAssessmentDb().collection('pre-assessment');
+    
+    let filter;
+    try {
+      // Try as MongoDB ObjectId
+      filter = { _id: new mongoose.Types.ObjectId(id) };
+    } catch (err) {
+      // Try as assessmentId string
+      filter = { assessmentId: id };
+    }
+    
+    // Check if assessment exists
+    const existingAssessment = await preAssessmentCollection.findOne(filter);
+    if (!existingAssessment) {
+      return res.status(404).json({ message: 'Pre-assessment not found' });
+    }
+    
+    // Update the assessment
+    const result = await preAssessmentCollection.updateOne(filter, { $set: updateData });
+    
+    if (result.modifiedCount === 0) {
+      return res.status(400).json({ message: 'No changes made to the pre-assessment' });
+    }
+    
+    res.json({
+      message: 'Pre-assessment updated successfully',
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Error updating pre-assessment:', error);
+    res.status(500).json({ message: 'Error updating pre-assessment', error: error.message });
+  }
+};
+
+// Delete a pre-assessment
+exports.deletePreAssessment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const preAssessmentCollection = getPreAssessmentDb().collection('pre-assessment');
+    
+    let filter;
+    try {
+      // Try as MongoDB ObjectId
+      filter = { _id: new mongoose.Types.ObjectId(id) };
+    } catch (err) {
+      // Try as assessmentId string
+      filter = { assessmentId: id };
+    }
+    
+    // Check if assessment exists
+    const existingAssessment = await preAssessmentCollection.findOne(filter);
+    if (!existingAssessment) {
+      return res.status(404).json({ message: 'Pre-assessment not found' });
+    }
+    
+    // Delete the assessment
+    const result = await preAssessmentCollection.deleteOne(filter);
+    
+    res.json({
+      message: 'Pre-assessment deleted successfully',
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Error deleting pre-assessment:', error);
+    res.status(500).json({ message: 'Error deleting pre-assessment', error: error.message });
+  }
+};
+
+// Upload media files (images, audio) to S3
+exports.uploadMedia = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+    
+    const file = req.file;
+    const fileType = file.mimetype.split('/')[0]; // 'image' or 'audio'
+    const fileExt = file.originalname.split('.').pop();
+    
+    // Generate a unique file name
+    const fileName = `${fileType}/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+    
+    // Upload to S3
+    const params = {
+      Bucket: process.env.AWS_S3_BUCKET,
+      Key: fileName,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+      ACL: 'public-read'
+    };
+    
+    const uploadResult = await s3.upload(params).promise();
+    
+    res.json({
+      message: 'File uploaded successfully',
+      fileUrl: uploadResult.Location,
+      fileKey: uploadResult.Key
+    });
+  } catch (error) {
+    console.error('Error uploading file to S3:', error);
+    res.status(500).json({ message: 'Error uploading file', error: error.message });
+  }
+};
+
+// Delete media file from S3
+exports.deleteMedia = async (req, res) => {
+  try {
+    const { fileKey } = req.params;
+    
+    if (!fileKey) {
+      return res.status(400).json({ message: 'File key is required' });
+    }
+    
+    // Delete from S3
+    const params = {
+      Bucket: process.env.AWS_S3_BUCKET,
+      Key: fileKey
+    };
+    
+    await s3.deleteObject(params).promise();
+    
+    res.json({
+      message: 'File deleted successfully',
+      fileKey
+    });
+  } catch (error) {
+    console.error('Error deleting file from S3:', error);
+    res.status(500).json({ message: 'Error deleting file', error: error.message });
+  }
+};
+
+// Get all question types
+exports.getAllQuestionTypes = async (req, res) => {
+  try {
+    const questionTypesCollection = getPreAssessmentDb().collection('question_types');
+    const questionTypes = await questionTypesCollection.find({}).toArray();
+    
+    res.json(questionTypes);
+  } catch (error) {
+    console.error('Error fetching question types:', error);
+    res.status(500).json({ message: 'Error fetching question types', error: error.message });
+  }
+};
+
+// Create a new question type
+exports.createQuestionType = async (req, res) => {
+  try {
+    const questionTypeData = req.body;
+    
+    // Validate required fields
+    if (!questionTypeData.typeId || !questionTypeData.typeName) {
+      return res.status(400).json({ message: 'Missing required fields: typeId, typeName' });
+    }
+    
+    // Check if question type with same ID already exists
+    const questionTypesCollection = getPreAssessmentDb().collection('question_types');
+    const existingType = await questionTypesCollection.findOne({ typeId: questionTypeData.typeId });
+    
+    if (existingType) {
+      return res.status(409).json({ message: `Question type with ID ${questionTypeData.typeId} already exists` });
+    }
+    
+    // Insert the new question type
+    const result = await questionTypesCollection.insertOne(questionTypeData);
+    
+    res.status(201).json({
+      message: 'Question type created successfully',
+      typeId: questionTypeData.typeId,
+      _id: result.insertedId
+    });
+  } catch (error) {
+    console.error('Error creating question type:', error);
+    res.status(500).json({ message: 'Error creating question type', error: error.message });
+  }
+};
+
+// Update an existing question type
+exports.updateQuestionType = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    // Remove _id from update data if present
+    if (updateData._id) {
+      delete updateData._id;
+    }
+    
+    const questionTypesCollection = getPreAssessmentDb().collection('question_types');
+    
+    let filter;
+    try {
+      // Try as MongoDB ObjectId
+      filter = { _id: new mongoose.Types.ObjectId(id) };
+    } catch (err) {
+      // Try as typeId string
+      filter = { typeId: id };
+    }
+    
+    // Check if question type exists
+    const existingType = await questionTypesCollection.findOne(filter);
+    if (!existingType) {
+      return res.status(404).json({ message: 'Question type not found' });
+    }
+    
+    // Update the question type
+    const result = await questionTypesCollection.updateOne(filter, { $set: updateData });
+    
+    if (result.modifiedCount === 0) {
+      return res.status(400).json({ message: 'No changes made to the question type' });
+    }
+    
+    res.json({
+      message: 'Question type updated successfully',
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Error updating question type:', error);
+    res.status(500).json({ message: 'Error updating question type', error: error.message });
+  }
+};
+
+// Delete a question type
+exports.deleteQuestionType = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const questionTypesCollection = getPreAssessmentDb().collection('question_types');
+    
+    let filter;
+    try {
+      // Try as MongoDB ObjectId
+      filter = { _id: new mongoose.Types.ObjectId(id) };
+    } catch (err) {
+      // Try as typeId string
+      filter = { typeId: id };
+    }
+    
+    // Check if question type exists
+    const existingType = await questionTypesCollection.findOne(filter);
+    if (!existingType) {
+      return res.status(404).json({ message: 'Question type not found' });
+    }
+    
+    // Delete the question type
+    const result = await questionTypesCollection.deleteOne(filter);
+    
+    res.json({
+      message: 'Question type deleted successfully',
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Error deleting question type:', error);
+    res.status(500).json({ message: 'Error deleting question type', error: error.message });
+  }
+};
 
 exports.getPreAssessmentResults = async (req, res) => {
   try {
@@ -252,38 +626,37 @@ function processRegularCategory(categoryKey, categoryQuestions, studentAnswers, 
       questionText: question.questionText,
       questionImage: question.questionImage,
       questionValue: question.questionValue,
-      displayedText: question.displayedText,
-      hasAudio: question.hasAudio,
-      audioUrl: question.audioUrl,
       studentAnswer: studentAnswerOptionId,
-      studentAnswerText: studentSelectedOption ? studentSelectedOption.optionText : 'No answer',
-      correctAnswer: correctOption ? correctOption.optionId : null,
-      correctAnswerText: correctOption ? correctOption.optionText : 'Unknown',
+      correctAnswer: correctOption ? correctOption.optionText : null,
+      studentSelectedAnswer: studentSelectedOption ? studentSelectedOption.optionText : null,
       isCorrect: isCorrect,
       difficultyLevel: question.difficultyLevel,
-      options: question.options || []
+      questionType: question.questionType,
+      hasAudio: question.hasAudio || false,
+      audioUrl: question.audioUrl
     };
   });
-
+  
   return {
     category: categoryKey,
     categoryName: getCategoryDisplayName(categoryKey),
     score: categoryData.score || 0,
     correct: categoryData.correct || 0,
     total: categoryData.total || 5,
-    questions: questions
+    questions
   };
 }
 
 function getCategoryDisplayName(categoryKey) {
-  const categoryMapping = {
+  const categoryMap = {
     'alphabet_knowledge': 'Alphabet Knowledge',
-    'phonological_awareness': 'Phonological Awareness', 
+    'phonological_awareness': 'Phonological Awareness',
     'decoding': 'Decoding',
     'word_recognition': 'Word Recognition',
     'reading_comprehension': 'Reading Comprehension'
   };
-  return categoryMapping[categoryKey] || categoryKey;
+  
+  return categoryMap[categoryKey] || categoryKey;
 }
 
 exports.getStudentPreAssessmentStatus = async (req, res) => {

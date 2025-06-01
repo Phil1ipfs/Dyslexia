@@ -26,6 +26,7 @@ import {
   faExclamationCircle
 } from "@fortawesome/free-solid-svg-icons";
 import "../../../css/Teachers/ManageCategories/PreAssessment.css";
+import { PreAssessmentService } from "../../../services/Teachers";
 
 // Tooltip component for help text
 const Tooltip = ({ text }) => (
@@ -95,166 +96,40 @@ const PreAssessment = () => {
     const fetchPreAssessment = async () => {
       try {
         setLoading(true);
+        console.log('Fetching pre-assessments from API...');
         
-        // In a real application, this would be an API call
-        // Mock data representing the current pre-assessment curriculum
-        const mockPreAssessment = {
-          "_id": "68237e15439570aaa573f645",
-          "assessmentId": "FL-G1-001",
-          "title": "Filipino Reading Pre-Assessment - Grade 1",
-          "description": "Comprehensive assessment of Filipino reading skills based on DEPED CRLA standards",
-          "instructions": "This assessment evaluates reading skills in Filipino. Please answer all questions carefully.",
-          "totalQuestions": 25,
-          "categoryCounts": {
-            "alphabet_knowledge": 5,
-            "phonological_awareness": 5,
-            "decoding": 5,
-            "word_recognition": 5,
-            "reading_comprehension": 5
-          },
-          "language": "FL",
-          "type": "pre_assessment",
-          "status": "rejected", // Can be: pending, approved, rejected
-          "isActive": true,
-          "createdAt": "2025-05-01T09:00:00.000Z",
-          "updatedAt": "2025-05-01T09:00:00.000Z",
-          "rejectionReason": "The assessment questions are not properly balanced across difficulty levels. Please ensure there are questions from all five difficulty levels and revise the phonological awareness section.",
-          "questions": [
-            {
-              "questionId": "AK_001",
-              "questionTypeId": "alphabet_knowledge",
-              "questionType": "patinig",
-              "questionText": "Anong ang katumbas na maliit na letra?",
-              "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/A_big.png",
-              "difficultyLevel": "low_emerging",
-              "options": [
-                {
-                  "optionId": "1",
-                  "optionText": "a",
-                  "isCorrect": true
-                },
-                {
-                  "optionId": "2",
-                  "optionText": "e",
-                  "isCorrect": false
-                }
-              ]
-            },
-            {
-              "questionId": "PA_001",
-              "questionTypeId": "phonological_awareness",
-              "questionType": "tunog_letra",
-              "questionText": "Anong Letra ang narinig?",
-              "hasAudio": true,
-              "audioUrl": "assets/audio/o_sound.mp3",
-              "difficultyLevel": "low_emerging",
-              "options": [
-                {
-                  "optionId": "1",
-                  "optionText": "O",
-                  "isCorrect": true
-                },
-                {
-                  "optionId": "2",
-                  "optionText": "U",
-                  "isCorrect": false
-                }
-              ]
-            },
-            {
-              "questionId": "DC_001",
-              "questionTypeId": "decoding",
-              "questionType": "word",
-              "questionText": "Ano ang nasa larawan?",
-              "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/words/dog.png",
-              "difficultyLevel": "low_emerging",
-              "options": [
-                {
-                  "optionId": "1",
-                  "optionText": "ASO",
-                  "isCorrect": true
-                },
-                {
-                  "optionId": "2",
-                  "optionText": "OSO",
-                  "isCorrect": false
-                }
-              ]
-            }
-          ],
-          "difficultyLevels": {
-            "low_emerging": {
-              "description": "Basic recognition tasks",
-              "targetReadingLevel": "Low Emerging",
-              "weight": 1
-            },
-            "high_emerging": {
-              "description": "Simple identification and matching",
-              "targetReadingLevel": "High Emerging", 
-              "weight": 2
-            },
-            "developing": {
-              "description": "Word formation and basic comprehension",
-              "targetReadingLevel": "Developing",
-              "weight": 3
-            },
-            "transitioning": {
-              "description": "Sentence-level tasks and short texts",
-              "targetReadingLevel": "Transitioning",
-              "weight": 4
-            },
-            "at_grade_level": {
-              "description": "Paragraph-level comprehension",
-              "targetReadingLevel": "At Grade Level",
-              "weight": 5
-            }
-          },
-          "scoringRules": {
-            "Low Emerging": {
-              "part1ScoreRange": [0, 16],
-              "readingPercentageRange": [0, 16],
-              "correctAnswersRange": [0, 0]
-            },
-            "High Emerging": {
-              "part1ScoreRange": [17, 30],
-              "readingPercentageRange": [1, 25],
-              "correctAnswersRange": [0, 0]
-            },
-            "Developing": {
-              "part1ScoreRange": [17, 30],
-              "readingPercentageRange": [26, 50],
-              "correctAnswersRange": [1, 1]
-            },
-            "Transitioning": {
-              "part1ScoreRange": [17, 30],
-              "readingPercentageRange": [51, 75],
-              "correctAnswersRange": [2, 3]
-            },
-            "At Grade Level": {
-              "part1ScoreRange": [17, 30],
-              "readingPercentageRange": [76, 100],
-              "correctAnswersRange": [4, 5]
-            }
+        // Use PreAssessmentService to fetch data from the API
+        const response = await PreAssessmentService.getAllPreAssessments();
+        console.log('API Response:', response);
+        
+        if (response.success) {
+          // If there are pre-assessments, use the first one
+          if (response.data && response.data.length > 0) {
+            const fetchedPreAssessment = response.data[0];
+            setPreAssessment(fetchedPreAssessment);
+            
+            // Initialize form data if editing
+            setFormData({
+              title: fetchedPreAssessment.title,
+              description: fetchedPreAssessment.description,
+              instructions: fetchedPreAssessment.instructions,
+              totalQuestions: fetchedPreAssessment.totalQuestions,
+              categoryCounts: fetchedPreAssessment.categoryCounts,
+              language: fetchedPreAssessment.language,
+              questions: fetchedPreAssessment.questions || []
+            });
+          } else {
+            console.log('No pre-assessments found');
+            setPreAssessment(null);
           }
-        };
-        
-        setPreAssessment(mockPreAssessment);
-        
-        // Initialize form data if editing
-        if (mockPreAssessment) {
-          setFormData({
-            title: mockPreAssessment.title,
-            description: mockPreAssessment.description,
-            instructions: mockPreAssessment.instructions,
-            totalQuestions: mockPreAssessment.totalQuestions,
-            categoryCounts: mockPreAssessment.categoryCounts,
-            language: mockPreAssessment.language,
-            questions: mockPreAssessment.questions || []
-          });
+        } else {
+          console.error('Error fetching pre-assessments:', response.message);
+          setError(response.message || "Failed to load pre-assessment data. Please try again.");
         }
         
         setLoading(false);
       } catch (err) {
+        console.error('Exception in fetchPreAssessment:', err);
         setError("Failed to load pre-assessment data. Please try again.");
         setLoading(false);
       }
@@ -365,41 +240,90 @@ const PreAssessment = () => {
   };
 
   // Handle confirmed submission
-  const handleConfirmSubmit = () => {
-    // In a real app, this would be an API call
-    const newPreAssessment = {
-      ...formData,
-      _id: preAssessment ? preAssessment._id : Date.now().toString(),
-      assessmentId: preAssessment ? preAssessment.assessmentId : `FL-G1-${Date.now()}`,
-      type: "pre_assessment",
-      status: "pending",
-      isActive: false,
-      createdAt: preAssessment ? preAssessment.createdAt : new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    setPreAssessment(newPreAssessment);
-    setShowSubmitConfirmModal(false);
-    setShowCreateModal(false);
-    setShowEditModal(false);
-    setShowSuccessModal(true);
-
-    // Auto-close success modal after 3 seconds
-    setTimeout(() => {
-      setShowSuccessModal(false);
-    }, 3000);
+  const handleConfirmSubmit = async () => {
+    try {
+      setLoading(true);
+      
+      const assessmentData = {
+        ...formData,
+        type: "pre_assessment",
+        status: "pending",
+        isActive: false,
+        // If we're editing an existing assessment, keep its ID
+        ...(preAssessment && { _id: preAssessment._id }),
+        ...(preAssessment && { assessmentId: preAssessment.assessmentId })
+      };
+      
+      console.log('Submitting pre-assessment data:', assessmentData);
+      
+      // Use PreAssessmentService to create or update the assessment
+      let response;
+      if (preAssessment && preAssessment._id) {
+        response = await PreAssessmentService.updatePreAssessment(preAssessment._id, assessmentData);
+      } else {
+        response = await PreAssessmentService.createPreAssessment(assessmentData);
+      }
+      
+      console.log('API Response:', response);
+      
+      if (response.success) {
+        setPreAssessment(response.data);
+        setShowSubmitConfirmModal(false);
+        setShowCreateModal(false);
+        setShowEditModal(false);
+        setShowSuccessModal(true);
+        
+        // Auto-close success modal after 3 seconds
+        setTimeout(() => {
+          setShowSuccessModal(false);
+        }, 3000);
+      } else {
+        setError(response.message || "Failed to save pre-assessment. Please try again.");
+        setShowSubmitConfirmModal(false);
+      }
+    } catch (err) {
+      console.error('Exception in handleConfirmSubmit:', err);
+      setError("Failed to save pre-assessment. Please try again.");
+      setShowSubmitConfirmModal(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle deletion
-  const handleDelete = () => {
-    // In a real app, this would be an API call
-    setPreAssessment(null);
-    setShowDeleteModal(false);
-    setShowSuccessModal(true);
-    
-    setTimeout(() => {
-      setShowSuccessModal(false);
-    }, 3000);
+  const handleDelete = async () => {
+    try {
+      if (!preAssessment || !preAssessment._id) {
+        setError("Cannot delete: No pre-assessment selected");
+        return;
+      }
+      
+      setLoading(true);
+      console.log('Deleting pre-assessment:', preAssessment._id);
+      
+      // Use PreAssessmentService to delete the assessment
+      const response = await PreAssessmentService.deletePreAssessment(preAssessment._id);
+      console.log('API Response:', response);
+      
+      if (response.success) {
+        setPreAssessment(null);
+        setShowDeleteModal(false);
+        setShowSuccessModal(true);
+        
+        setTimeout(() => {
+          setShowSuccessModal(false);
+        }, 3000);
+      } else {
+        setError(response.message || "Failed to delete pre-assessment. Please try again.");
+        setShowDeleteModal(false);
+      }
+    } catch (err) {
+      console.error('Exception in handleDelete:', err);
+      setError("Failed to delete pre-assessment. Please try again.");
+      setShowDeleteModal(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Check if actions are allowed based on status
@@ -472,16 +396,58 @@ const PreAssessment = () => {
   };
 
   // Restore missing handleDeleteQuestion function
-  const handleDeleteQuestion = (index) => {
+  const handleDeleteQuestion = async (index) => {
     if (window.confirm('Are you sure you want to delete this question?')) {
-      setFormData(prev => {
-        const newQuestions = prev.questions.filter((_, i) => i !== index);
-        return {
-          ...prev,
-          questions: newQuestions,
-          totalQuestions: newQuestions.length // Update total questions count
-        };
-      });
+      try {
+        setLoading(true);
+        
+        // Get the question ID from the questions array
+        const questionId = formData.questions[index].questionId;
+        
+        if (preAssessment && preAssessment._id && questionId) {
+          console.log(`Deleting question ${questionId} from assessment ${preAssessment._id}`);
+          
+          // Use PreAssessmentService to delete the question
+          const response = await PreAssessmentService.deleteQuestionFromPreAssessment(
+            preAssessment._id,
+            questionId
+          );
+          
+          console.log('API Response:', response);
+          
+          if (response.success) {
+            // Update the local state with the updated assessment from the API
+            setPreAssessment(response.data);
+            
+            // Also update the form data
+            setFormData(prev => {
+              const updatedQuestions = response.data.questions || [];
+              return {
+                ...prev,
+                questions: updatedQuestions,
+                totalQuestions: updatedQuestions.length
+              };
+            });
+          } else {
+            setError(response.message || "Failed to delete question. Please try again.");
+          }
+        } else {
+          // No assessment ID yet, just update the local state
+          setFormData(prev => {
+            const newQuestions = prev.questions.filter((_, i) => i !== index);
+            return {
+              ...prev,
+              questions: newQuestions,
+              totalQuestions: newQuestions.length
+            };
+          });
+        }
+      } catch (err) {
+        console.error('Exception in handleDeleteQuestion:', err);
+        setError("Failed to delete question. Please try again.");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -541,7 +507,7 @@ const PreAssessment = () => {
     }));
   };
 
-  const handleSaveQuestion = () => {
+  const handleSaveQuestion = async () => {
     // Validate question data
     const errors = {};
     
@@ -576,31 +542,81 @@ const PreAssessment = () => {
       return;
     }
     
-    const questionData = {
-      ...currentQuestionData,
-      questionId: currentQuestionData.questionId || generateQuestionId(currentQuestionData.questionTypeId),
-      questionNumber: editingQuestionIndex >= 0 ? editingQuestionIndex + 1 : formData.questions.length + 1,
-      order: editingQuestionIndex >= 0 ? editingQuestionIndex + 1 : formData.questions.length + 1
-    };
-    
-    setFormData(prev => {
-      const newQuestions = [...prev.questions];
-      if (editingQuestionIndex >= 0) {
-        newQuestions[editingQuestionIndex] = questionData;
+    try {
+      setLoading(true);
+      
+      const questionData = {
+        ...currentQuestionData,
+        questionId: currentQuestionData.questionId || generateQuestionId(currentQuestionData.questionTypeId),
+        questionNumber: editingQuestionIndex >= 0 ? editingQuestionIndex + 1 : formData.questions.length + 1,
+        order: editingQuestionIndex >= 0 ? editingQuestionIndex + 1 : formData.questions.length + 1
+      };
+      
+      console.log('Saving question data:', questionData);
+      
+      // Only proceed with API call if we have an assessment ID
+      if (preAssessment && preAssessment._id) {
+        let response;
+        
+        if (editingQuestionIndex >= 0) {
+          // Update existing question
+          response = await PreAssessmentService.updateQuestionInPreAssessment(
+            preAssessment._id,
+            questionData.questionId,
+            questionData
+          );
+        } else {
+          // Add new question
+          response = await PreAssessmentService.addQuestionToPreAssessment(
+            preAssessment._id,
+            questionData
+          );
+        }
+        
+        console.log('API Response:', response);
+        
+        if (response.success) {
+          // Update the local state with the updated assessment from the API
+          setPreAssessment(response.data);
+          
+          // Also update the form data
+          setFormData(prev => {
+            const updatedQuestions = response.data.questions || [];
+            return {
+              ...prev,
+              questions: updatedQuestions,
+              totalQuestions: updatedQuestions.length
+            };
+          });
+        } else {
+          setError(response.message || "Failed to save question. Please try again.");
+        }
       } else {
-        newQuestions.push(questionData);
+        // No assessment ID yet, just update the local state
+        setFormData(prev => {
+          const newQuestions = [...prev.questions];
+          if (editingQuestionIndex >= 0) {
+            newQuestions[editingQuestionIndex] = questionData;
+          } else {
+            newQuestions.push(questionData);
+          }
+          
+          return {
+            ...prev,
+            questions: newQuestions,
+            totalQuestions: newQuestions.length
+          };
+        });
       }
       
-      // Update the total questions count based on the actual number of questions
-      return {
-        ...prev,
-        questions: newQuestions,
-        totalQuestions: newQuestions.length
-      };
-    });
-    
-    setShowQuestionEditor(false);
-    setEditingQuestionIndex(-1);
+      setShowQuestionEditor(false);
+      setEditingQuestionIndex(-1);
+    } catch (err) {
+      console.error('Exception in handleSaveQuestion:', err);
+      setError("Failed to save question. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {

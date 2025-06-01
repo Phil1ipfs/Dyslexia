@@ -507,3 +507,18 @@ export const deleteTemplate = async (templateType, templateId) => {
     return handleApiError(error);
   }
 }; 
+
+// Create a service object with all exported functions
+const templateService = {
+  getAllTemplates,
+  createQuestionTemplate,
+  createChoiceTemplate,
+  createSentenceTemplate,
+  updateQuestionTemplate,
+  updateChoiceTemplate,
+  updateSentenceTemplate,
+  uploadImageToS3,
+  deleteTemplate
+};
+
+export default templateService;
