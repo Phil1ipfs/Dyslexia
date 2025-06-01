@@ -24,7 +24,7 @@ router.put('/student/:studentId/objective/:objectiveId/remarks', IEPController.u
 // Bulk update multiple objectives for a student
 router.put('/student/:studentId/bulk-update', IEPController.bulkUpdateObjectives);
 
-// New route for updating objective support level
-router.patch('/objective/:objectiveId/support-level', IEPController.updateObjectiveSupportLevel);
+// New route for updating objective support level - changed to PUT to match frontend
+router.put('/objective/:objectiveId/support-level', IEPController.updateObjectiveSupportLevel);
 
 module.exports = router; 

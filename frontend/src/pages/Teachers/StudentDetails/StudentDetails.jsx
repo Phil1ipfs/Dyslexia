@@ -149,44 +149,6 @@ const StudentDetails = () => {
           }
         }
 
-        // Fetch IEP report data first
-        try {
-          const iepData = await IEPService.getIEPReport(studentId);
-          console.log("IEP report data loaded:", iepData);
-          
-          if (iepData && iepData.data) {
-            setIepReport(iepData.data);
-            
-            // Log IEP data structure
-            console.log("IEP Data Structure:", {
-              hasObjectives: !!iepData.data.objectives,
-              objectivesLength: iepData.data.objectives?.length || 0,
-              firstObjective: iepData.data.objectives?.[0] || 'No objectives'
-            });
-
-            // Format IEP objectives into activities
-            if (iepData.data.objectives && iepData.data.objectives.length > 0) {
-              const formattedIepActivities = iepData.data.objectives.map(objective => {
-                return {
-                  id: objective._id || objective.id || `iep-${Math.random().toString(36).substr(2, 9)}`,
-                  name: objective.lesson || objective.title || 'Learning Activity',
-                  description: objective.categoryName || objective.category || 'Reading Skills',
-                  completed: objective.completed || false,
-                  minimalSupport: objective.supportLevel === 'minimal',
-                  moderateSupport: objective.supportLevel === 'moderate',
-                  extensiveSupport: objective.supportLevel === 'extensive',
-                  remarks: objective.remarks || `Student is working on ${objective.categoryName || 'reading'} skills.`
-                };
-              });
-              
-              console.log("Formatted IEP activities:", formattedIepActivities);
-              setActivities(formattedIepActivities);
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching IEP report:", error);
-        }
-
         // Fetch other data (assessment, progress, etc.)
         const [assessmentData, progressData, lessonsData, recs, readingProgressData] = await Promise.all([
           StudentDetailsService.getAssessmentResults(studentId),
@@ -263,8 +225,54 @@ const StudentDetails = () => {
           }));
         }
 
-        // If we didn't get any IEP data or activities, create default ones
-        if (!activities || activities.length === 0) {
+        // Fetch IEP report data - moved to the end
+        let iepActivitiesCreated = false;
+
+        try {
+          const iepData = await IEPService.getIEPReport(studentId);
+          console.log("IEP report data loaded:", iepData);
+          
+          if (iepData && iepData.success && iepData.data && iepData.data.objectives && iepData.data.objectives.length > 0) {
+            setIepReport(iepData.data);
+
+            console.log("IEP Data Structure:", {
+              hasObjectives: !!iepData.data.objectives,
+              objectivesLength: iepData.data.objectives?.length || 0,
+              firstObjective: iepData.data.objectives?.[0] || 'No objectives'
+            });
+
+            const formattedIepActivities = iepData.data.objectives.map(objective => {
+              return {
+                id: objective._id || objective.id || `iep-${Math.random().toString(36).substr(2, 9)}`,
+                name: objective.lesson || objective.title || 'Learning Activity',
+                description: objective.categoryName || objective.category || 'Reading Skills',
+                completed: objective.completed || false,
+                status: objective.status || 'in_progress',
+                score: objective.score || 0,
+                passingThreshold: objective.passingThreshold || 75,
+                minimalSupport: objective.supportLevel === 'minimal',
+                moderateSupport: objective.supportLevel === 'moderate',
+                extensiveSupport: objective.supportLevel === 'extensive',
+                remarks: objective.remarks || `Student is working on ${objective.categoryName || 'reading'} skills.`,
+                hasIntervention: objective.hasIntervention || false,
+                interventionName: objective.interventionName || '',
+                interventionStatus: objective.interventionStatus || null,
+                interventionId: objective.interventionId || null,
+                lastUpdated: objective.lastUpdated || null
+              };
+            });
+            
+            console.log("✅ Using IEP activities:", formattedIepActivities);
+            setActivities(formattedIepActivities);
+            iepActivitiesCreated = true;
+          }
+        } catch (error) {
+          console.error("Error fetching IEP report:", error);
+        }
+
+        // Only create default activities if IEP activities weren't created
+        if (!iepActivitiesCreated) {
+          console.log("📝 Creating default activities since IEP activities not available");
           createDefaultActivities(readingProgressData);
         }
 
@@ -275,7 +283,7 @@ const StudentDetails = () => {
       }
     };
 
-    // Helper function to create default activities from reading level progress
+    // Helper function to create default activities from reading level progress - moved outside useEffect
     const createDefaultActivities = (readingLevelData) => {
       try {
         let defaultActivities = [];
@@ -290,11 +298,19 @@ const StudentDetails = () => {
               id: `default-${index}`,
               name: `${category.category || 'Reading'} Practice`,
               description: category.category || 'Reading Skills',
-              completed: true,
+              completed: false,
+              status: score >= 75 ? 'completed' : 'in_progress',
+              score: score,
+              passingThreshold: 75,
               minimalSupport: supportLevel === 'minimal',
               moderateSupport: supportLevel === 'moderate',
               extensiveSupport: supportLevel === 'extensive',
-              remarks: `Student ${score >= 70 ? 'excels at' : score >= 40 ? 'is progressing with' : 'needs additional support with'} ${(category.category || 'reading skills').toLowerCase()}.`
+              remarks: `Student ${score >= 70 ? 'excels at' : score >= 40 ? 'is progressing with' : 'needs additional support with'} ${(category.category || 'reading skills').toLowerCase()}.`,
+              hasIntervention: false,
+              interventionName: '',
+              interventionStatus: null,
+              interventionId: null,
+              lastUpdated: new Date().toISOString()
             };
           });
         } 
@@ -307,10 +323,18 @@ const StudentDetails = () => {
               name: act.title || 'Learning Activity',
               description: act.category || 'Reading Skills',
               completed: true,
+              status: 'completed',
+              score: score,
+              passingThreshold: 75,
               minimalSupport: score >= 70,
               moderateSupport: score >= 40 && score < 70,
               extensiveSupport: score < 40,
-              remarks: `Student ${score >= 70 ? 'excels at' : score >= 40 ? 'is progressing with' : 'needs additional support with'} ${(act.category || 'reading skills').toLowerCase()}.`
+              remarks: `Student ${score >= 70 ? 'excels at' : score >= 40 ? 'is progressing with' : 'needs additional support with'} ${(act.category || 'reading skills').toLowerCase()}.`,
+              hasIntervention: false,
+              interventionName: '',
+              interventionStatus: null,
+              interventionId: null,
+              lastUpdated: act.date || new Date().toISOString()
             };
           });
         }
@@ -322,30 +346,54 @@ const StudentDetails = () => {
               name: 'Phonemic Awareness Practice',
               description: 'Phonological Awareness',
               completed: true,
+              status: 'completed',
+              score: 85,
+              passingThreshold: 75,
               minimalSupport: true,
               moderateSupport: false,
               extensiveSupport: false,
-              remarks: 'Student is practicing recognizing sounds in words.'
+              remarks: 'Student is practicing recognizing sounds in words.',
+              hasIntervention: false,
+              interventionName: '',
+              interventionStatus: null,
+              interventionId: null,
+              lastUpdated: new Date().toISOString()
             },
             {
               id: 'default-decoding',
               name: 'Decoding Practice',
               description: 'Decoding',
-              completed: true,
+              completed: false,
+              status: 'in_progress',
+              score: 65,
+              passingThreshold: 75,
               minimalSupport: false,
               moderateSupport: true,
               extensiveSupport: false,
-              remarks: 'Student is working on sounding out words.'
+              remarks: 'Student is working on sounding out words.',
+              hasIntervention: false,
+              interventionName: '',
+              interventionStatus: null,
+              interventionId: null,
+              lastUpdated: new Date().toISOString()
             },
             {
               id: 'default-comprehension',
               name: 'Reading Comprehension',
               description: 'Reading Comprehension',
-              completed: true,
+              completed: false,
+              status: 'in_progress',
+              score: 35,
+              passingThreshold: 75,
               minimalSupport: false,
               moderateSupport: false,
               extensiveSupport: true,
-              remarks: 'Student is practicing understanding text meaning.'
+              remarks: 'Student is practicing understanding text meaning.',
+              hasIntervention: true,
+              interventionName: 'Targeted reading comprehension intervention',
+              interventionStatus: 'active',
+              interventionId: null,
+              lastUpdated: new Date().toISOString()
             }
           ];
         }
@@ -776,74 +824,141 @@ const StudentDetails = () => {
     // Check if we have IEP data
     const hasIepData = iepReport && iepReport.objectives && iepReport.objectives.length > 0;
     
+    // Determine if we're in view-only mode (for progress report/overview)
+    const isViewOnly = true; // Set to true since this is just an overview
+    
     return (
-      <table className="sdx-table">
-        <thead>
-          <tr className="sdx-table-header">
-            <th className="sdx-header-cell">Lesson</th>
-            <th className="sdx-header-cell">Completed</th>
-            <th className="sdx-header-cell" colSpan="3">Support Level</th>
-            <th className="sdx-header-cell">Remarks</th>
-          </tr>
-          <tr className="sdx-table-subheader">
-            <th className="sdx-subheader-cell sdx-placeholder"></th>
-            <th className="sdx-subheader-cell sdx-placeholder"></th>
-            <th className="sdx-subheader-cell sdx-support-level">Minimal</th>
-            <th className="sdx-subheader-cell sdx-support-level">Moderate</th>
-            <th className="sdx-subheader-cell sdx-support-level">Extensive</th>
-            <th className="sdx-subheader-cell sdx-placeholder"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {activities && activities.length > 0 ? (
-            activities.map((activity, index) => (
-              <tr key={index} className="sdx-table-row">
-                <td className="sdx-cell sdx-activity-name">{activity.name}</td>
-                <td className="sdx-cell sdx-activity-completed">
-                  {activity.completed && <FaCheckCircle />}
-                </td>
-                <td className="sdx-cell sdx-activity-support">
-                  <div 
-                    className={`sdx-checkbox ${activity.minimalSupport ? 'checked' : ''}`}
-                    onClick={() => hasIepData && updateSupportLevel(activity.id, 'minimal')}
-                    title={hasIepData ? "Click to toggle minimal support level" : "IEP data not available"}
-                    style={{ cursor: hasIepData ? 'pointer' : 'not-allowed' }}
-                  >
-                    {activity.minimalSupport && <FaCheck className="sdx-checkmark" />}
-                  </div>
-                </td>
-                <td className="sdx-cell sdx-activity-support">
-                  <div 
-                    className={`sdx-checkbox ${activity.moderateSupport ? 'checked' : ''}`}
-                    onClick={() => hasIepData && updateSupportLevel(activity.id, 'moderate')}
-                    title={hasIepData ? "Click to toggle moderate support level" : "IEP data not available"}
-                    style={{ cursor: hasIepData ? 'pointer' : 'not-allowed' }}
-                  >
-                    {activity.moderateSupport && <FaCheck className="sdx-checkmark" />}
-                  </div>
-                </td>
-                <td className="sdx-cell sdx-activity-support">
-                  <div 
-                    className={`sdx-checkbox ${activity.extensiveSupport ? 'checked' : ''}`}
-                    onClick={() => hasIepData && updateSupportLevel(activity.id, 'extensive')}
-                    title={hasIepData ? "Click to toggle extensive support level" : "IEP data not available"}
-                    style={{ cursor: hasIepData ? 'pointer' : 'not-allowed' }}
-                  >
-                    {activity.extensiveSupport && <FaCheck className="sdx-checkmark" />}
-                  </div>
-                </td>
-                <td className="sdx-cell sdx-activity-remarks">{activity.remarks || 'No remarks available'}</td>
-              </tr>
-            ))
-          ) : (
-            <tr className="sdx-table-row">
-              <td colSpan="6" className="sdx-cell sdx-no-activities">
-                No learning activities recorded yet.
-              </td>
+      <div className="sdx-activities-container">
+        <table className="sdx-table">
+          <thead>
+            <tr className="sdx-table-header">
+              <th className="sdx-header-cell">Lesson</th>
+              <th className="sdx-header-cell">Status</th>
+              <th className="sdx-header-cell">Score</th>
+              <th className="sdx-header-cell" colSpan="3">Support Level</th>
+              <th className="sdx-header-cell">Remarks</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+            <tr className="sdx-table-subheader">
+              <th className="sdx-subheader-cell sdx-placeholder"></th>
+              <th className="sdx-subheader-cell sdx-placeholder"></th>
+              <th className="sdx-subheader-cell sdx-placeholder"></th>
+              <th className="sdx-subheader-cell sdx-support-level">Minimal</th>
+              <th className="sdx-subheader-cell sdx-support-level">Moderate</th>
+              <th className="sdx-subheader-cell sdx-support-level">Extensive</th>
+              <th className="sdx-subheader-cell sdx-placeholder"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {activities && activities.length > 0 ? (
+              activities.map((activity, index) => (
+                <tr key={index} className="sdx-table-row">
+                  <td className="sdx-cell sdx-activity-name">
+                    <div className="sdx-activity-name-container">
+                      <span className="sdx-activity-title">{activity.name}</span>
+                      <span className="sdx-activity-category">{activity.description}</span>
+                    </div>
+                  </td>
+                  <td className="sdx-cell sdx-activity-status">
+                    <span className={`sdx-status-badge status-${activity.status || 'in_progress'}`}>
+                      {activity.completed ? 'Completed' : activity.status === 'not_started' ? 'Not Started' : 'In Progress'}
+                    </span>
+                  </td>
+                  <td className="sdx-cell sdx-activity-score">
+                    <div className="sdx-score-container">
+                      <span className={`sdx-score ${activity.score >= (activity.passingThreshold || 75) ? 'passing' : 'failing'}`}>
+                        {activity.score || 0}%
+                      </span>
+                      {activity.passingThreshold && (
+                        <span className="sdx-passing-threshold">
+                          (Pass: {activity.passingThreshold}%)
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="sdx-cell sdx-activity-support">
+                    <div 
+                      className={`sdx-checkbox ${activity.minimalSupport ? 'checked' : ''}`}
+                      title={isViewOnly ? "Support level indicator (read-only)" : "Click to toggle minimal support level"}
+                      style={{ cursor: isViewOnly ? 'default' : 'pointer' }}
+                    >
+                      {activity.minimalSupport && <FaCheck className="sdx-checkmark" />}
+                    </div>
+                  </td>
+                  <td className="sdx-cell sdx-activity-support">
+                    <div 
+                      className={`sdx-checkbox ${activity.moderateSupport ? 'checked' : ''}`}
+                      title={isViewOnly ? "Support level indicator (read-only)" : "Click to toggle moderate support level"}
+                      style={{ cursor: isViewOnly ? 'default' : 'pointer' }}
+                    >
+                      {activity.moderateSupport && <FaCheck className="sdx-checkmark" />}
+                    </div>
+                  </td>
+                  <td className="sdx-cell sdx-activity-support">
+                    <div 
+                      className={`sdx-checkbox ${activity.extensiveSupport ? 'checked' : ''}`}
+                      title={isViewOnly ? "Support level indicator (read-only)" : "Click to toggle extensive support level"}
+                      style={{ cursor: isViewOnly ? 'default' : 'pointer' }}
+                    >
+                      {activity.extensiveSupport && <FaCheck className="sdx-checkmark" />}
+                    </div>
+                  </td>
+                  <td className="sdx-cell sdx-activity-remarks">
+                    {activity.remarks || 'No remarks available'}
+                    {activity.hasIntervention && (
+                      <div className="sdx-intervention-info">
+                        <span className="sdx-intervention-badge">
+                          <FaSync className="sdx-intervention-icon" /> Intervention Active
+                        </span>
+                        <div className="sdx-intervention-name">
+                          {activity.interventionName || 'Targeted intervention in progress'}
+                        </div>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr className="sdx-table-row">
+                <td colSpan="7" className="sdx-cell sdx-no-activities">
+                  No learning activities recorded yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+        
+        {hasIepData && iepReport && (
+          <div className="sdx-iep-summary">
+            <div className="sdx-iep-header">
+              <h4 className="sdx-iep-title">IEP Summary</h4>
+              <div className="sdx-iep-meta">
+                <span className="sdx-iep-academic-year">Academic Year: {iepReport.academicYear || '2025'}</span>
+                <span className="sdx-iep-last-updated">
+                  Last Updated: {new Date(iepReport.updatedAt).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+            <div className="sdx-iep-details">
+              <div className="sdx-iep-detail">
+                <span className="sdx-iep-label">Overall Score:</span>
+                <span className="sdx-iep-value">{iepReport.overallScore || 0}%</span>
+              </div>
+              <div className="sdx-iep-detail">
+                <span className="sdx-iep-label">Reading Level:</span>
+                <span className="sdx-iep-value">{iepReport.readingLevel || 'Not Assessed'}</span>
+              </div>
+              <div className="sdx-iep-detail">
+                <span className="sdx-iep-label">Active Interventions:</span>
+                <span className="sdx-iep-value">
+                  {iepReport.objectives ? 
+                    iepReport.objectives.filter(obj => obj.hasIntervention).length : 0} 
+                  of {iepReport.objectives ? iepReport.objectives.length : 0}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -1104,11 +1219,11 @@ const StudentDetails = () => {
 
       {/* Reading Level Progress Section */}
       {(assessment || readingLevelProgress) && (
-        <div className="sdx-assessment-card">
+        <div className="sdx-assessment-wrapper">
           <h3 className="sdx-section-title">
             <FaBookReader /> Reading Level Progress
           </h3>
-          <div className="sdx-assessment-content">
+          <div className="sdx-assessment-inner">
             <div className="sdx-level-info" style={{ margin: '1rem 0 1.5rem 0' }}>
               <div className={`sdx-level-badge ${getReadingLevelClass(student.readingLevel || 'Not Assessed')}`}>
                 {student.readingLevel || 'Not Assessed'}
@@ -1122,27 +1237,27 @@ const StudentDetails = () => {
             </div>
             
             {/* Reading Level Categories in Compact Format */}
-            <div className="sdx-compact-progress">
+            <div className="sdx-level-progress-grid">
               {formatAssessmentItems().map((skill, index) => (
-                <div key={index} className="sdx-compact-category">
-                  <div className="sdx-compact-category-header">
-                    <span className="sdx-compact-category-name">{skill.name}</span>
-                    <span className="sdx-compact-category-score">{skill.score}%</span>
+                <div key={index} className="sdx-level-category">
+                  <div className="sdx-level-category-header">
+                    <span className="sdx-level-category-name">{skill.name}</span>
+                    <span className="sdx-level-category-score">{skill.score}%</span>
                   </div>
                   
-                  <div className="sdx-compact-progress-bar">
+                  <div className="sdx-level-progress-bar-container">
                     <div 
-                      className="sdx-compact-progress-fill"
+                      className="sdx-level-progress-fill"
                       style={{ width: `${skill.score}%` }}
                     ></div>
                   </div>
                   
-                  <div className="sdx-compact-category-results">
-                    <div className="sdx-compact-category-answers">
+                  <div className="sdx-level-category-results">
+                    <div className="sdx-level-category-answers">
                       <span>✓ {skill.correctAnswers} correct</span>
                       <span>✗ {skill.incorrectAnswers} incorrect</span>
                     </div>
-                    <span className="sdx-compact-status">
+                    <span className="sdx-level-status">
                       {skill.isPassed ? 'Passed' : 'Not Passed'}
                     </span>
                   </div>
@@ -1150,8 +1265,8 @@ const StudentDetails = () => {
               ))}
             </div>
             
-            <div className="sdx-report-overall-summary">
-              <p className="sdx-report-overall-description">
+            <div className="sdx-level-overall-summary">
+              <p className="sdx-level-overall-description">
                 {student.name} is currently at the <strong>{student.readingLevel || 'Not Assessed'}</strong> reading level. 
                 {student.readingLevel && student.readingLevel !== 'Not Assessed' ? 
                   ` This means ${getReadingLevelDescription(student.readingLevel).toLowerCase()}.` : 
@@ -1326,27 +1441,27 @@ const StudentDetails = () => {
                 <div className="sdx-report-section-title">Reading Level Progress</div>
                 
                 {/* Reading Level Categories */}
-                <div className="sdx-compact-progress">
+                <div className="sdx-report-level-progress">
                   {formatAssessmentItems().map((skill, index) => (
-                    <div key={index} className="sdx-compact-category">
-                      <div className="sdx-compact-category-header">
-                        <span className="sdx-compact-category-name">{skill.name}</span>
-                        <span className="sdx-compact-category-score">{skill.score}%</span>
+                    <div key={index} className="sdx-report-level-category">
+                      <div className="sdx-report-level-header">
+                        <span className="sdx-report-level-name">{skill.name}</span>
+                        <span className="sdx-report-level-score">{skill.score}%</span>
                       </div>
                       
-                      <div className="sdx-compact-progress-bar">
+                      <div className="sdx-report-level-bar">
                         <div 
-                          className="sdx-compact-progress-fill"
+                          className="sdx-report-level-fill"
                           style={{ width: `${skill.score}%` }}
                         ></div>
                       </div>
                       
-                      <div className="sdx-compact-category-results">
-                        <div className="sdx-compact-category-answers">
+                      <div className="sdx-report-level-results">
+                        <div className="sdx-report-level-answers">
                           <span>✓ {skill.correctAnswers} correct</span>
                           <span>✗ {skill.incorrectAnswers} incorrect</span>
                         </div>
-                        <span className="sdx-compact-status">
+                        <span className="sdx-report-level-status">
                           {skill.isPassed ? 'Passed' : 'Not Passed'}
                         </span>
                       </div>
@@ -1354,8 +1469,8 @@ const StudentDetails = () => {
                   ))}
                 </div>
                 
-                <div className="sdx-report-overall-summary">
-                  <p className="sdx-report-overall-description">
+                <div className="sdx-level-overall-summary">
+                  <p className="sdx-level-overall-description">
                     {student.name} is currently at the <strong>{student.readingLevel || 'Not Assessed'}</strong> reading level. 
                     {student.readingLevel && student.readingLevel !== 'Not Assessed' ? 
                       ` This means ${getReadingLevelDescription(student.readingLevel).toLowerCase()}.` : 
@@ -1370,11 +1485,13 @@ const StudentDetails = () => {
                     <thead>
                       <tr>
                         <th className="sdx-report-th">Lesson</th>
-                        <th className="sdx-report-th">Completed</th>
+                        <th className="sdx-report-th">Status</th>
+                        <th className="sdx-report-th">Score</th>
                         <th className="sdx-report-th" colSpan="3">Support Level</th>
                         <th className="sdx-report-th">Remarks</th>
                       </tr>
                       <tr>
+                        <th className="sdx-report-th-empty"></th>
                         <th className="sdx-report-th-empty"></th>
                         <th className="sdx-report-th-empty"></th>
                         <th className="sdx-report-th-level">Minimal</th>
@@ -1387,9 +1504,23 @@ const StudentDetails = () => {
                       {activities && activities.length > 0 ? (
                         activities.map((activity, index) => (
                           <tr key={index} className="sdx-report-tr">
-                            <td className="sdx-report-td sdx-report-td-aralin">{activity.name}</td>
-                            <td className="sdx-report-td sdx-report-td-nakumpleto">
-                              {activity.completed ? "✓" : ""}
+                            <td className="sdx-report-td sdx-report-td-aralin">
+                              <div>
+                                <div>{activity.name}</div>
+                                <div style={{ fontSize: '0.8rem', color: '#666' }}>{activity.description}</div>
+                              </div>
+                            </td>
+                            <td className="sdx-report-td sdx-report-td-status">
+                              <span className={`sdx-status-badge status-${activity.status || 'in_progress'}`}>
+                                {activity.completed ? 'Completed' : activity.status === 'not_started' ? 'Not Started' : 'In Progress'}
+                              </span>
+                            </td>
+                            <td className="sdx-report-td sdx-report-td-score">
+                              <div className="sdx-score-container">
+                                <span className={`sdx-score ${activity.score >= (activity.passingThreshold || 75) ? 'passing' : 'failing'}`}>
+                                  {activity.score || 0}%
+                                </span>
+                              </div>
                             </td>
                             <td className="sdx-report-td sdx-report-td-support">
                               {activity.minimalSupport ? "✓" : ""}
@@ -1400,12 +1531,21 @@ const StudentDetails = () => {
                             <td className="sdx-report-td sdx-report-td-support">
                               {activity.extensiveSupport ? "✓" : ""}
                             </td>
-                            <td className="sdx-report-td sdx-report-td-puna">{activity.remarks || 'No remarks available'}</td>
+                            <td className="sdx-report-td sdx-report-td-puna">
+                              <div>
+                                {activity.remarks || 'No remarks available'}
+                                {activity.hasIntervention && (
+                                  <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', fontStyle: 'italic', color: '#ff6b00' }}>
+                                    Intervention active: {activity.interventionName || 'Targeted intervention'}
+                                  </div>
+                                )}
+                              </div>
+                            </td>
                           </tr>
                         ))
                       ) : (
                         <tr className="sdx-report-tr">
-                          <td colSpan="6" className="sdx-report-td-empty">
+                          <td colSpan="7" className="sdx-report-td-empty">
                             No learning activities recorded yet.
                           </td>
                         </tr>
@@ -1414,13 +1554,15 @@ const StudentDetails = () => {
                   </table>
                 </div>
 
-                {/* Recommendations */}
-                <div className="sdx-report-section-title">Prescriptive Recommendations</div>
-                <ul className="sdx-report-rec-list">
-                  {progressReport.recommendations.map((rec, index) => (
-                    <li key={index} className="sdx-report-rec-item">{rec}</li>
-                  ))}
-                </ul>
+                  {/* Recommendations */}
+                  <div className="sdx-report-section-title">Prescriptive Recommendations</div>
+                <div className="sdx-report-recommendations">
+                  <ul className="sdx-report-rec-list">
+                    {progressReport.recommendations.map((rec, index) => (
+                      <li key={index} className="sdx-report-rec-item">{rec}</li>
+                    ))}
+                  </ul>
+                </div>
 
                 {/* Signatures */}
                 <div className="sdx-report-signatures">

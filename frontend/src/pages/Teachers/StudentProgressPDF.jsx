@@ -329,8 +329,9 @@ const StudentProgressPDF = () => {
           {renderActivitiesTable()}
         </div>
 
-        {/* Recommendations */}
-        <div className="sdx-report-section-title">Prescriptive Recommendations</div>
+
+             {/* Recommendations */}
+             <div className="sdx-report-section-title">Prescriptive Recommendations</div>
         <ul className="sdx-report-rec-list">
           {progressReport?.recommendations?.length > 0 ? 
             progressReport.recommendations.map((rec, i) => (
