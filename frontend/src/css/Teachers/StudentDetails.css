@@ -2068,3 +2068,428 @@
     max-width: 95vw;
   }
 }
+
+/* IEP Table Enhancements */
+.sdx-activities-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.sdx-activity-name-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.sdx-activity-title {
+  font-weight: 600;
+  color: #333;
+}
+
+.sdx-activity-category {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.sdx-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.status-completed {
+  background-color: #e6f7f0;
+  color: #0a8754;
+}
+
+.status-in_progress {
+  background-color: #e6f0fd;
+  color: #3a70db;
+}
+
+.status-not_started {
+  background-color: #f7f7f7;
+  color: #777;
+}
+
+.sdx-score-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sdx-score {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.sdx-score.passing {
+  color: #0a8754;
+}
+
+.sdx-score.failing {
+  color: #e74c3c;
+}
+
+.sdx-passing-threshold {
+  font-size: 0.7rem;
+  color: #777;
+  margin-top: 0.25rem;
+}
+
+.sdx-intervention-info {
+  margin-top: 0.5rem;
+  border-top: 1px dashed #ddd;
+  padding-top: 0.5rem;
+}
+
+.sdx-intervention-badge {
+  display: inline-flex;
+  align-items: center;
+  background-color: #fff0e5;
+  color: #ff6b00;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.sdx-intervention-icon {
+  margin-right: 0.25rem;
+  font-size: 0.7rem;
+}
+
+.sdx-intervention-name {
+  font-size: 0.8rem;
+  color: #555;
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
+/* IEP Summary Section */
+.sdx-iep-summary {
+  background-color: #f9f9fb;
+  border: 1px solid #e6e9ef;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.sdx-iep-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e6e9ef;
+}
+
+.sdx-iep-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #3a70db;
+  margin: 0;
+}
+
+.sdx-iep-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.sdx-iep-details {
+  display: flex;
+  gap: 2rem;
+}
+
+.sdx-iep-detail {
+  display: flex;
+  flex-direction: column;
+}
+
+.sdx-iep-label {
+  font-size: 0.8rem;
+  color: #777;
+  margin-bottom: 0.25rem;
+}
+
+.sdx-iep-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Unique Reading Level Progress Styles */
+.sdx-assessment-wrapper {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fbff 100%);
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 0;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  border-top: 5px solid #3B4F81;
+  transition: all 0.3s ease;
+}
+
+.sdx-assessment-wrapper:hover {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  transform: translateY(-3px);
+}
+
+.sdx-assessment-inner {
+  padding: 1.5rem;
+}
+
+.sdx-level-progress-grid {
+  margin: 1.5rem 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.sdx-level-category {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+  border: 1px solid #e6e9ef;
+  transition: all 0.2s ease;
+}
+
+.sdx-level-category:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.sdx-level-category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.sdx-level-category-name {
+  font-weight: 600;
+  color: #3B4F81;
+  font-size: 1.05rem;
+}
+
+.sdx-level-category-score {
+  font-weight: 600;
+  background-color: #3B4F81;
+  color: white;
+  border-radius: 20px;
+  padding: 0.25rem 0.75rem;
+  box-shadow: 0 2px 4px rgba(59, 79, 129, 0.2);
+}
+
+.sdx-level-progress-bar-container {
+  height: 8px;
+  background-color: #e6f0fd;
+  border-radius: 4px;
+  margin: 0.5rem 0 0.75rem 0;
+  overflow: hidden;
+}
+
+.sdx-level-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3a70db, #5e91f6);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.sdx-level-category-results {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.sdx-level-category-answers {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.sdx-level-category-answers span:first-child {
+  color: #3a70db;
+  font-weight: 500;
+}
+
+.sdx-level-category-answers span:last-child {
+  color: #5e91f6;
+  font-weight: 500;
+}
+
+.sdx-level-status {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  background-color: rgba(58, 112, 219, 0.1);
+  color: #3a70db;
+  border: 1px solid rgba(58, 112, 219, 0.2);
+}
+
+.sdx-level-overall-summary {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background-color: rgba(59, 79, 129, 0.05);
+  border-radius: 12px;
+  border-left: 4px solid #3B4F81;
+}
+
+.sdx-level-overall-description {
+  color: #333;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* PDF Progress Report - Reading Level Progress Section */
+.sdx-report-level-progress {
+  margin: 1.5rem 0;
+}
+
+.sdx-report-level-categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.sdx-report-level-category {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+  border: 1px solid #e6e9ef;
+}
+
+.sdx-report-level-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.sdx-report-level-name {
+  font-weight: 600;
+  color: #3B4F81;
+  font-size: 1.05rem;
+}
+
+.sdx-report-level-score {
+  font-weight: 600;
+  background-color: #3B4F81;
+  color: white;
+  border-radius: 20px;
+  padding: 0.25rem 0.75rem;
+}
+
+.sdx-report-level-bar {
+  height: 8px;
+  background-color: #e6f0fd;
+  border-radius: 4px;
+  margin: 0.5rem 0 0.75rem 0;
+  overflow: hidden;
+}
+
+.sdx-report-level-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3a70db, #5e91f6);
+  border-radius: 4px;
+}
+
+.sdx-report-level-results {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.sdx-report-level-answers {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.sdx-report-level-status {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  background-color: rgba(58, 112, 219, 0.1);
+  color: #3a70db;
+  border: 1px solid rgba(58, 112, 219, 0.2);
+}
+
+/* PDF IEP Summary Section */
+.sdx-report-iep-summary {
+  margin: 2rem 0;
+  background-color: #f9f9fb;
+  border: 1px solid #e6e9ef;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.sdx-report-iep-details {
+  padding: 1.5rem;
+}
+
+.sdx-report-iep-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.sdx-report-iep-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e6e9ef;
+}
+
+.sdx-report-iep-meta-label {
+  font-size: 0.8rem;
+  color: #777;
+  font-weight: 500;
+}
+
+.sdx-report-iep-meta-value {
+  font-size: 1.1rem;
+  color: #3B4F81;
+  font-weight: 600;
+}
+
+/* Additional Report Table Styles */
+.sdx-report-td-status {
+  text-align: center;
+}
+
+.sdx-report-td-score {
+  text-align: center;
+}
+
+/* Make sure recommendations are still displayed */
+.sdx-report-recommendations {
+  margin: 2rem 0;
+}
+
+.sdx-report-rec-list {
+  padding-left: 2rem;
+  margin: 1rem 0;
+  list-style-type: disc;
+}
+
+.sdx-report-rec-item {
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+  color: #333;
+}

@@ -41,7 +41,7 @@ class IEPService {
       
       // Try the new endpoint first (direct objective update)
       try {
-        const response = await api.patch(`/api/iep/objective/${objectiveId}/support-level`, {
+        const response = await api.put(`/api/iep/objective/${objectiveId}/support-level`, {
           supportLevel,
           studentId
         });
