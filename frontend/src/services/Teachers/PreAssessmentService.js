@@ -1,5 +1,6 @@
 import axios from 'axios';
 import API_URL from '../../config/apiConfig';
+import imageCompression from 'browser-image-compression';
 
 /**
  * PreAssessmentService - Service for managing pre-assessments in the teacher dashboard
@@ -8,6 +9,7 @@ import API_URL from '../../config/apiConfig';
 class PreAssessmentService {
   constructor() {
     this.apiUrl = `${API_URL}/pre-assessment`;
+    console.log('PreAssessmentService: API URL is', this.apiUrl);
   }
 
   /**
@@ -448,15 +450,55 @@ class PreAssessmentService {
   };
 
   /**
-   * Upload media file (image or audio)
-   * @param {File} file - The file to upload
+   * Upload media file (image or audio) with compression for images
+   * @param {FormData|File} fileOrFormData - The file or FormData to upload
    * @returns {Promise} Promise with the uploaded file URL
    */
-  uploadMedia = async (file) => {
+  uploadMedia = async (fileOrFormData) => {
     try {
-      // Create FormData object to send file
-      const formData = new FormData();
-      formData.append('file', file);
+      let formData;
+      let file;
+      
+      // Check if we received FormData or a File
+      if (fileOrFormData instanceof FormData) {
+        formData = fileOrFormData;
+        file = formData.get('file');
+      } else {
+        file = fileOrFormData;
+        formData = new FormData();
+      }
+      
+      // If it's an image, compress it before uploading
+      if (file && file.type && file.type.startsWith('image/')) {
+        console.log('Compressing image before upload, original size:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
+        
+        const options = {
+          maxSizeMB: 1,          // Max size in MB
+          maxWidthOrHeight: 1920, // Max width/height
+          useWebWorker: true,    // Use web worker for better performance
+          fileType: file.type    // Preserve file type
+        };
+        
+        try {
+          const compressedFile = await imageCompression(file, options);
+          console.log('Image compressed successfully. New size:', (compressedFile.size / 1024 / 1024).toFixed(2) + 'MB');
+          
+          // Create new FormData with compressed file
+          formData = new FormData();
+          formData.append('file', compressedFile, file.name);
+        } catch (compressionError) {
+          console.error('Error compressing image:', compressionError);
+          // Continue with original file if compression fails
+          if (!(fileOrFormData instanceof FormData)) {
+            formData = new FormData();
+            formData.append('file', file);
+          }
+        }
+      } else if (!(fileOrFormData instanceof FormData)) {
+        // If not an image and not FormData, create FormData
+        formData = new FormData();
+        formData.append('file', file);
+      }
       
       // Set headers for file upload (don't include Content-Type, browser will set it)
       const token = localStorage.getItem('token') || localStorage.getItem('authToken');
@@ -599,10 +641,33 @@ class PreAssessmentService {
       
       const assessment = assessmentResponse.data;
       
-      // Find and update the specific question
-      const updatedQuestions = assessment.questions.map(question => 
-        question.questionId === questionId ? { ...question, ...questionData } : question
-      );
+      // Find the existing question to update
+      const existingQuestionIndex = assessment.questions.findIndex(q => q.questionId === questionId);
+      
+      if (existingQuestionIndex === -1) {
+        console.error(`Question ${questionId} not found in assessment ${assessmentId}`);
+        return {
+          success: false,
+          data: null,
+          message: `Question not found in assessment.`
+        };
+      }
+      
+      // Log the existing question and the update data for debugging
+      console.log('Existing question:', assessment.questions[existingQuestionIndex]);
+      console.log('Update data:', questionData);
+      
+      // Create updated questions array with the modified question
+      const updatedQuestions = [...assessment.questions];
+      updatedQuestions[existingQuestionIndex] = {
+        ...assessment.questions[existingQuestionIndex], // Preserve existing fields
+        ...questionData, // Apply updates
+        // Ensure critical fields are preserved
+        questionType: questionData.questionType || assessment.questions[existingQuestionIndex].questionType
+      };
+      
+      // Log the final question after update
+      console.log('Updated question:', updatedQuestions[existingQuestionIndex]);
       
       // Update the assessment with the modified questions array
       return await this.updatePreAssessment(assessmentId, {
