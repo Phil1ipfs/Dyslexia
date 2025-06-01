@@ -179,10 +179,37 @@ const authorize = (...allowedRoles) => {
   };
 };
 
+// IEP-specific authorization - Teachers can modify IEP reports
+const authorizeIEPAccess = () => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    const userRoles = Array.isArray(req.user.roles) ? req.user.roles : [req.user.roles];
+    const allowedRoles = ['teacher', 'guro', 'admin'];
+    
+    const hasPermission = userRoles.some(role => 
+      allowedRoles.includes(role?.toLowerCase())
+    );
+
+    if (!hasPermission) {
+      return res.status(403).json({ 
+        message: 'Not authorized to access IEP reports',
+        userRoles,
+        requiredRoles: allowedRoles
+      });
+    }
+
+    next();
+  };
+};
+
 // Export both authenticateToken and auth (as the same function) for backward compatibility
 module.exports = { 
   authenticateToken, 
   auth: authenticateToken, 
   authorize, 
-  resolveRoleFromId 
+  resolveRoleFromId,
+  authorizeIEPAccess
 };
