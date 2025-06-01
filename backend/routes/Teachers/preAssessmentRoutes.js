@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const { checkAuth } = require('../../middleware/authMiddleware');
-const { checkRole } = require('../../middleware/roleMiddleware');
+const { authenticateToken, authorize } = require('../../middleware/auth');
 const preAssessmentController = require('../../controllers/Teachers/preAssessmentController');
 
 // Configure multer for memory storage (for S3 uploads)
@@ -15,23 +14,24 @@ const upload = multer({
 });
 
 // Pre-assessment routes
-router.get('/assessments', checkAuth, checkRole(['teacher', 'guro']), preAssessmentController.getAllPreAssessments);
-router.get('/assessments/:id', checkAuth, checkRole(['teacher', 'guro']), preAssessmentController.getPreAssessmentById);
-router.post('/assessments', checkAuth, checkRole(['teacher', 'guro']), preAssessmentController.createPreAssessment);
-router.put('/assessments/:id', checkAuth, checkRole(['teacher', 'guro']), preAssessmentController.updatePreAssessment);
-router.delete('/assessments/:id', checkAuth, checkRole(['teacher', 'guro']), preAssessmentController.deletePreAssessment);
+router.get('/assessments', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.getAllPreAssessments);
+router.get('/assessments/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.getPreAssessmentById);
+router.post('/assessments', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.createPreAssessment);
+router.put('/assessments/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.updatePreAssessment);
+router.delete('/assessments/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.deletePreAssessment);
+router.put('/assessments/:id/toggle-active', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.toggleActiveStatus);
 
 // Question type routes
-router.get('/question-types', checkAuth, checkRole(['teacher', 'guro']), preAssessmentController.getAllQuestionTypes);
-router.post('/question-types', checkAuth, checkRole(['teacher', 'guro']), preAssessmentController.createQuestionType);
-router.put('/question-types/:id', checkAuth, checkRole(['teacher', 'guro']), preAssessmentController.updateQuestionType);
-router.delete('/question-types/:id', checkAuth, checkRole(['teacher', 'guro']), preAssessmentController.deleteQuestionType);
+router.get('/question-types', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.getAllQuestionTypes);
+router.post('/question-types', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.createQuestionType);
+router.put('/question-types/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.updateQuestionType);
+router.delete('/question-types/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.deleteQuestionType);
 
 // Media upload routes
-router.post('/upload-media', checkAuth, checkRole(['teacher', 'guro']), upload.single('file'), preAssessmentController.uploadMedia);
-router.delete('/delete-media/:fileKey', checkAuth, checkRole(['teacher', 'guro']), preAssessmentController.deleteMedia);
+router.post('/upload-media', authenticateToken, authorize('teacher', 'guro'), upload.single('file'), preAssessmentController.uploadMedia);
+router.delete('/delete-media/:fileKey', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.deleteMedia);
 
 // Student results routes
-router.get('/student-results/:id', checkAuth, checkRole(['teacher', 'guro']), preAssessmentController.getPreAssessmentResults);
+router.get('/student-results/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.getPreAssessmentResults);
 
 module.exports = router;

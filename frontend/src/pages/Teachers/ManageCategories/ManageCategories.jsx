@@ -70,7 +70,7 @@ const ManageCategories = () => {
   return (
     <div className="manage-categories-container">
       <div className="mc-header">
-        <h1>Manage Activities</h1>
+        <h1>Assessment Management</h1>
         <p>Create, edit, and manage templates for activities and assessments.</p>
       </div>
 

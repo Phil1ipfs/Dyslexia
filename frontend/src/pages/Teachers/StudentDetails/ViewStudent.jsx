@@ -418,7 +418,7 @@ const ViewStudent = () => {
       {/* Header */}
       <div className="vs-header">
         <div className="vs-title-section">
-          <h1 className="vs-title">Student List</h1>
+          <h1 className="vs-title">Student Details and Progress Report</h1>
           <p className="vs-subtitle">View and manage student details</p>
         </div>
 

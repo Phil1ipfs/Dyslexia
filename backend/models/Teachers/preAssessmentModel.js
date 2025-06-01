@@ -11,13 +11,15 @@ const optionSchema = new mongoose.Schema({
 const passageSchema = new mongoose.Schema({
   pageNumber: { type: Number, required: true },
   pageText: { type: String, required: true },
-  pageImage: { type: String }
+  pageImage: { type: String },
+  pageImageS3Path: { type: String }
 }, { _id: false });
 
 // Define the sentence question schema for reading comprehension
 const sentenceQuestionSchema = new mongoose.Schema({
   questionText: { type: String, required: true },
   questionImage: { type: String },
+  questionImageS3Path: { type: String },
   correctAnswer: { type: String, required: true },
   incorrectAnswer: { type: String, required: true }
 }, { _id: false });
@@ -31,14 +33,17 @@ const questionSchema = new mongoose.Schema({
   questionText: { type: String, required: true },
   displayedText: { type: String },
   questionImage: { type: String },
+  questionImageS3Path: { type: String },
   questionValue: { type: String },
   hasAudio: { type: Boolean, default: false },
   audioUrl: { type: String },
+  audioS3Path: { type: String },
   difficultyLevel: { type: String, required: true },
   options: [optionSchema],
   passages: [passageSchema],
   sentenceQuestions: [sentenceQuestionSchema],
-  order: { type: Number, required: true }
+  order: { type: Number, required: true },
+  lastUpdated: { type: Date, default: Date.now }
 }, { _id: false });
 
 // Define the difficulty level schema
@@ -73,6 +78,8 @@ const preAssessmentSchema = new mongoose.Schema({
   language: { type: String, required: true },
   type: { type: String, required: true },
   status: { type: String, required: true },
+  isActive: { type: Boolean, default: true },
+  lastUpdated: { type: Date, default: Date.now },
   questions: [questionSchema],
   difficultyLevels: {
     low_emerging: difficultyLevelSchema,
