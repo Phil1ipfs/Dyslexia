@@ -39,9 +39,29 @@ const AssessmentSummaryCard = ({ assessmentData }) => {
     }
   };
   
-  // Calculate score from the reading percentage
+  // Calculate score from available data sources
+  // First check if this is category_results data
   let readingPercentage;
-  if (assessmentData.scores && assessmentData.scores.overall !== undefined) {
+  let assessmentType = 'post-Assessment';
+  
+  if (assessmentData.categories && assessmentData.categories.length > 0) {
+    // This is category_results format
+    assessmentType = assessmentData.assessmentType === 'main-assessment' && assessmentData.isPreAssessment !== true 
+      ? 'Post-Assessment' 
+      : 'Post-Assessment';
+    
+    // Calculate overall percentage from categories if available
+    if (assessmentData.overallScore !== undefined) {
+      readingPercentage = assessmentData.overallScore;
+    } else if (assessmentData.readingPercentage !== undefined) {
+      readingPercentage = assessmentData.readingPercentage;
+    } else {
+      // Calculate average from categories
+      const totalScore = assessmentData.categories.reduce((sum, cat) => sum + (cat.score || 0), 0);
+      readingPercentage = Math.round(totalScore / assessmentData.categories.length);
+    }
+  } else if (assessmentData.scores && assessmentData.scores.overall !== undefined) {
+    // This is pre-assessment data format
     readingPercentage = parseFloat(assessmentData.scores.overall);
   } else if (assessmentData.readingPercentage !== undefined) {
     readingPercentage = assessmentData.readingPercentage;
@@ -100,7 +120,7 @@ const AssessmentSummaryCard = ({ assessmentData }) => {
       <div className="literexia-assessment-header">
         <h3 className="literexia-assessment-title">
           <FaChartLine className="literexia-header-icon" />
-          Reading Assessment (CRLA)
+          (CRLA Based) {assessmentType && `- ${assessmentType}`}
         </h3>
         <div className={`literexia-score-badge ${scoreClass}`}>
           {score}%

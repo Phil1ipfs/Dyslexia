@@ -55,97 +55,40 @@ const ChangePasswordModal = ({ onClose }) => {
   
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     // Validate the input
     if (!validatePassword()) {
       return;
     }
-    
     setIsLoading(true);
-    
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-      
       if (!token) {
         throw new Error('Authentication token not found');
       }
-      
-      // Check if the API endpoint actually exists in your project
-      // Based on our analysis, looking at your routes, we may need to use
-      // a different endpoint than what was originally planned
-      
-      // Try to use the controller method if it's connected to a route
-      try {
-        const response = await axios.put(
-          `${BASE_URL}/api/parents/profile/password`,
-          {
-            currentPassword: passwordData.currentPassword,
-            newPassword: passwordData.newPassword
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+      const response = await axios.put(
+        `${BASE_URL}/api/parents/profile/password`,
+        {
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
-        );
-        
-        // Show success message
-        setSuccessMessage('Password changed successfully');
-        
-        // Clear form data
-        setPasswordData({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: ''
-        });
-        
-        // Close modal after 2 seconds
-        setTimeout(() => {
-          onClose();
-        }, 2000);
-      } catch (apiError) {
-        // If the first endpoint fails, try the hashPasswordRoute
-        if (apiError.response && apiError.response.status === 404) {
-          console.log("Original endpoint not found, trying alternative endpoint");
-          
-          // Use the hashPasswordRoutes if available
-          const altResponse = await axios.post(
-            `${BASE_URL}/api/auth/password/change`,
-            {
-              currentPassword: passwordData.currentPassword,
-              newPassword: passwordData.newPassword
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            }
-          );
-          
-          // Show success message
-          setSuccessMessage('Password changed successfully');
-          
-          // Clear form data
-          setPasswordData({
-            currentPassword: '',
-            newPassword: '',
-            confirmPassword: ''
-          });
-          
-          // Close modal after 2 seconds
-          setTimeout(() => {
-            onClose();
-          }, 2000);
-        } else {
-          throw apiError; // Re-throw the error if it's not a 404
         }
-      }
+      );
+      setSuccessMessage('Password changed successfully');
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setTimeout(() => {
+        onClose();
+      }, 2000);
     } catch (error) {
       console.error('Error changing password:', error);
-      
-      // Handle specific error cases
       if (error.response) {
         if (error.response.status === 400 && error.response.data.error === 'INCORRECT_PASSWORD') {
           setErrorMessage('Current password is incorrect');

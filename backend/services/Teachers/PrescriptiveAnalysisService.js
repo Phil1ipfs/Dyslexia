@@ -109,19 +109,9 @@ class PrescriptiveAnalysisService {
         return await this.updateAnalysis(existingAnalysis._id, analysisData);
       }
 
-      // Get the latest category result ID for this student
-      let categoryResultId = null;
-      try {
-        categoryResultId = await this.getLatestCategoryResultId(analysisData.studentId);
-      } catch (err) {
-        console.error('Error getting category result ID:', err);
-        // Continue with null categoryResultId
-      }
-      
       // Create new analysis
       return await PrescriptiveAnalysis.create({
         studentId: new mongoose.Types.ObjectId(analysisData.studentId),
-        categoryResultId: categoryResultId, // Add the category result ID
         categoryId: analysisData.categoryId,
         readingLevel: analysisData.readingLevel,
         strengths: analysisData.strengths || [],
@@ -151,15 +141,6 @@ class PrescriptiveAnalysisService {
       // Convert studentId to ObjectId if provided
       if (updates.studentId) {
         updates.studentId = new mongoose.Types.ObjectId(updates.studentId);
-        
-        // Get the latest category result ID for this student if studentId changed
-        try {
-          const categoryResultId = await this.getLatestCategoryResultId(updates.studentId);
-          updates.categoryResultId = categoryResultId;
-        } catch (err) {
-          console.error('Error getting category result ID:', err);
-          // Continue without updating categoryResultId
-        }
       }
 
       // Convert createdBy to ObjectId if provided
@@ -356,7 +337,6 @@ class PrescriptiveAnalysisService {
           analysis = await PrescriptiveAnalysis.create({
             studentId: studentObjectId,
             categoryId: categoryName,
-            categoryResultId: categoryResult._id, // Add the category result ID
             readingLevel,
             strengths: generatedAnalysis.strengths,
             weaknesses: generatedAnalysis.weaknesses,
@@ -768,19 +748,9 @@ class PrescriptiveAnalysisService {
           analyses.push(existingAnalysis);
         } else {
           // Create new analysis
-          // Get the latest category result ID for this student
-          let categoryResultId = null;
-          try {
-            categoryResultId = await this.getLatestCategoryResultId(studentId);
-          } catch (err) {
-            console.error('Error getting category result ID:', err);
-            // Continue with null categoryResultId
-          }
-
           const newAnalysis = await PrescriptiveAnalysis.create({
             studentId: new mongoose.Types.ObjectId(studentId),
             categoryId: category,
-            categoryResultId: categoryResultId,
             readingLevel,
             strengths: [],
             weaknesses: [],
@@ -983,12 +953,6 @@ class PrescriptiveAnalysisService {
         analysis.strengths = generatedContent.strengths;
         analysis.weaknesses = generatedContent.weaknesses;
         analysis.recommendations = generatedContent.recommendations;
-        
-        // Add categoryResultId if it's missing
-        if (!analysis.categoryResultId && categoryResult) {
-          analysis.categoryResultId = categoryResult._id;
-        }
-        
         analysis.updatedAt = new Date();
         
         // Save the updated analysis
@@ -1077,20 +1041,9 @@ class PrescriptiveAnalysisService {
         } else {
           // Create new empty analysis for this category
           console.log(`Creating new analysis for ${categoryName}`);
-          
-          // Get the latest category result ID for this student
-          let categoryResultId = null;
-          try {
-            categoryResultId = await this.getLatestCategoryResultId(studentObjectId);
-          } catch (err) {
-            console.error('Error getting category result ID:', err);
-            // Continue with null categoryResultId
-          }
-          
           const newAnalysis = await PrescriptiveAnalysis.create({
             studentId: studentObjectId,
             categoryId: categoryName,
-            categoryResultId: categoryResultId,
             readingLevel,
             strengths: [],
             weaknesses: [],
@@ -1109,140 +1062,71 @@ class PrescriptiveAnalysisService {
   }
 
   /**
-   * Get the latest category result ID for a student by their user _id
-   * @param {string|mongoose.Types.ObjectId} studentObjectId - _id from the users collection
-   * @returns {Promise<mongoose.Types.ObjectId|null>} ObjectId of the matching category_results doc or null
+   * Update categoryResultId for a specific prescriptive analysis
+   * This method is used to fix missing categoryResultId fields
+   * @param {string} analysisId - Analysis ID
+   * @returns {Promise<Object>} Updated analysis
    */
-  async getLatestCategoryResultId(studentObjectId) {
+  async updateCategoryResultId(analysisId) {
     try {
-      console.log(`=== getLatestCategoryResultId called with: ${studentObjectId} ===`);
+      // Get the analysis
+      const analysis = await PrescriptiveAnalysis.findById(analysisId);
       
-      // Validate input
-      if (!studentObjectId) {
-        console.log('❌ No studentObjectId provided');
-        return null;
+      if (!analysis) {
+        throw new Error(`Analysis not found with ID: ${analysisId}`);
       }
       
-      // Ensure studentObjectId is a valid ObjectId
-      if (!mongoose.Types.ObjectId.isValid(studentObjectId)) {
-        console.log(`❌ Invalid ObjectId format: ${studentObjectId}`);
-        return null;
+      // Skip if already has categoryResultId
+      if (analysis.categoryResultId) {
+        console.log(`Analysis ${analysisId} already has categoryResultId: ${analysis.categoryResultId}`);
+        return analysis;
       }
       
-      // Convert to ObjectId if it's a string
-      const studentId = typeof studentObjectId === 'string' 
-        ? new mongoose.Types.ObjectId(studentObjectId) 
-        : studentObjectId;
+      // Get the user to find their idNumber
+      const usersCollection = mongoose.connection.db.collection('users');
+      const user = await usersCollection.findOne({ 
+        _id: mongoose.Types.ObjectId.isValid(analysis.studentId) 
+          ? new mongoose.Types.ObjectId(analysis.studentId) 
+          : analysis.studentId 
+      });
       
-      console.log(`Looking up user with _id: ${studentId}`);
+      if (!user || !user.idNumber) {
+        console.log(`Could not find user with idNumber for analysis ${analysisId}`);
+        return analysis;
+      }
       
-      // 1. Get the user document to find their idNumber
-      const user = await mongoose.connection.db.collection('users').findOne(
-        { _id: studentId }
+      // Look for category results with this idNumber
+      const categoryResults = await mongoose.model('CategoryResult').find({ 
+        studentId: user.idNumber 
+      });
+      
+      if (categoryResults.length === 0) {
+        console.log(`No category results found for student ${user.idNumber}`);
+        return analysis;
+      }
+      
+      // Find a result that contains the matching category
+      const matchingResult = categoryResults.find(result => 
+        result.categories && 
+        result.categories.some(cat => 
+          cat.categoryName && 
+          cat.categoryName.toLowerCase() === analysis.categoryId.toLowerCase()
+        )
       );
       
-      if (!user) {
-        console.log(`❌ No user found with _id: ${studentId}`);
-        return null;
+      if (!matchingResult) {
+        console.log(`No matching category result found for ${analysis.categoryId}`);
+        return analysis;
       }
       
-      console.log(`✅ Found user: ${user.firstName} ${user.lastName}`);
+      // Update the analysis
+      analysis.categoryResultId = matchingResult._id;
+      await analysis.save();
       
-      // 2. Check if the user has an idNumber field and it's a valid value
-      if (!user.idNumber) {
-        console.log(`❌ User ${user._id} has no idNumber`);
-        return null;
-      }
-      
-      console.log(`User idNumber: ${user.idNumber} (type: ${typeof user.idNumber})`);
-      
-      // 3. Use the idNumber (which is already a number type) to query category_results
-      const categoryResults = await mongoose.connection.db.collection('category_results')
-        .find({ studentId: user.idNumber })
-        .sort({ assessmentDate: -1 })
-        .limit(1)
-        .toArray();
-      
-      console.log(`Query result count: ${categoryResults?.length || 0}`);
-      
-      // 4. Return the category result ID if found, otherwise null
-      if (categoryResults && categoryResults.length > 0) {
-        console.log(`✅ Found category result with _id: ${categoryResults[0]._id}`);
-        return categoryResults[0]._id;
-      } else {
-        // If no results found, explicitly return null
-        console.log(`❌ No category results found for student with idNumber: ${user.idNumber}`);
-        return null;
-      }
+      console.log(`Updated analysis ${analysisId} with categoryResultId ${matchingResult._id}`);
+      return analysis;
     } catch (error) {
-      console.error('Error in getLatestCategoryResultId:', error);
-      return null;  // Return null instead of throwing to prevent initialization failures
-    }
-  }
-
-  /**
-   * Update categoryResultId for all existing analyses
-   * This is a maintenance method to fix analyses with missing categoryResultId
-   * @returns {Promise<Object>} Result with counts of updated and failed analyses
-   */
-  async updateAllCategoryResultIds() {
-    try {
-      console.log('Starting categoryResultId update for all analyses...');
-      
-      // Get all analyses
-      const analyses = await PrescriptiveAnalysis.find({});
-      console.log(`Found ${analyses.length} total analyses`);
-      
-      const results = {
-        total: analyses.length,
-        updated: 0,
-        failed: 0,
-        skipped: 0,
-        notFound: 0
-      };
-      
-      // Process each analysis
-      for (const analysis of analyses) {
-        try {
-          // Skip if already has categoryResultId
-          if (analysis.categoryResultId) {
-            results.skipped++;
-            continue;
-          }
-          
-          // Get categoryResultId for this student
-          const categoryResultId = await this.getLatestCategoryResultId(analysis.studentId);
-          
-          // If category result exists, update the analysis, otherwise set to null
-          if (categoryResultId) {
-            // Update the analysis with the found ID
-            analysis.categoryResultId = categoryResultId;
-            await analysis.save();
-            results.updated++;
-            console.log(`✅ Updated analysis ${analysis._id} with categoryResultId ${categoryResultId}`);
-          } else {
-            // Explicitly set to null when no category result found
-            analysis.categoryResultId = null;
-            await analysis.save();
-            results.notFound++;
-            console.log(`⚠️ Set null categoryResultId for analysis ${analysis._id} (no category result found)`);
-          }
-        } catch (error) {
-          results.failed++;
-          console.error(`Error updating analysis ${analysis._id}:`, error);
-        }
-      }
-      
-      console.log('CategoryResultId update complete:');
-      console.log(`- Total analyses: ${results.total}`);
-      console.log(`- Updated with ID: ${results.updated}`);
-      console.log(`- Updated with null: ${results.notFound}`);
-      console.log(`- Skipped (already had ID): ${results.skipped}`);
-      console.log(`- Failed: ${results.failed}`);
-      
-      return results;
-    } catch (error) {
-      console.error('Error updating categoryResultIds:', error);
+      console.error(`Error updating categoryResultId for analysis ${analysisId}:`, error);
       throw error;
     }
   }

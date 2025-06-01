@@ -41,8 +41,4 @@ router.get('/interventions/:interventionId', authorize('teacher', 'admin', 'pare
 // PUT /api/progress/interventions/:interventionId/progress
 router.put('/interventions/:interventionId/progress', authorize('teacher', 'admin'), progressController.updateInterventionProgress);
 
-// Record a student's response to an intervention question
-// POST /api/progress/interventions/response
-router.post('/interventions/response', authorize('teacher', 'admin'), progressController.recordInterventionResponse);
-
 module.exports = router;

@@ -467,7 +467,7 @@
 }
 
 /* Students Table */
-.teacher-students-table-container {
+.teacher-students-table-containerr {
   width: 100%;
   max-height: 400px;
   overflow: auto;
@@ -477,14 +477,14 @@
   border: 1px solid var(--teacherDash-border-light);
 }
 
-.teacher-students-table {
+.teacher-students-tableee {
   width: 100%;
   border-collapse: collapse;
   border-spacing: 0;
   table-layout: fixed;
 }
 
-.teacher-students-table th {
+.teacher-students-tableee th {
   text-align: left;
   font-size: 0.85rem;
   font-weight: 600;
@@ -499,7 +499,7 @@
   letter-spacing: 0.05em;
 }
 
-.teacher-students-table td {
+.teacher-students-tableee td {
   padding: var(--teacherDash-space-md) var(--teacherDash-space-lg);
   border-bottom: 1px solid var(--teacherDash-border-light);
   font-size: 0.95rem;
@@ -507,51 +507,51 @@
   color: var(--teacherDash-text-light);
 }
 
-.teacher-students-table tr:last-child td {
+.teacher-students-tableee tr:last-child td {
   border-bottom: none;
 }
 
-.teacher-student-row {
+.teacher-student-roww  {
   transition: background-color 0.2s;
   color: wheat;
 }
 
-.teacher-student-row:hover {
+.teacher-student-roww:hover {
   background-color: var(--teacherDash-bg-hover);
 }
 
 /* Column widths for student table */
-.teacher-students-table th:nth-child(1),
-.teacher-students-table td:nth-child(1) {
+.teacher-students-tableee th:nth-child(1),
+.teacher-students-tableee td:nth-child(1) {
   width: 25%; /* Student name */
 }
 
-.teacher-students-table th:nth-child(2),
-.teacher-students-table td:nth-child(2) {
+.teacher-students-tableee th:nth-child(2),
+.teacher-students-tableee td:nth-child(2) {
   width: 15%; /* Reading level */
   text-align: center;
 }
 
-.teacher-students-table th:nth-child(3),
-.teacher-students-table td:nth-child(3) {
+.teacher-students-tableee th:nth-child(3),
+.teacher-students-tableee td:nth-child(3) {
   width: 15%; /* Section */
 }
 
-.teacher-students-table th:nth-child(4),
-.teacher-students-table td:nth-child(4) {
+.teacher-students-tableee th:nth-child(4),
+.teacher-students-tableee td:nth-child(4) {
   width: 30%; /* Categories */
 }
 
-.teacher-students-table th:nth-child(5),
-.teacher-students-table td:nth-child(5) {
+.teacher-students-tableee th:nth-child(5),
+.teacher-students-tableee td:nth-child(5) {
   width: 10%; 
   text-align: center;
 }
 
 
 
-.teacher-students-table th:last-child,
-.teacher-students-table td:last-child {
+.teacher-students-tableee th:last-child,
+.teacher-students-tableee td:last-child {
   width: 10% ;
   text-align: left;
   padding: 0.1rem;
@@ -615,7 +615,7 @@
 
 
 
-.teacher-view-button {
+.teacher-view-buttonn {
   background-color: rgba(255, 255, 255, 0.15);
   border: 1px solid var(--teacherDash-border-light);
   border-radius: var(--teacherDash-radius-sm);
@@ -625,7 +625,7 @@
   cursor: pointer;
   transition: all 0.2s;
   min-width: 70px;
-  width: 100%; /* Make the button fill the column */
+  width: 100%; 
   max-width: 100px;
   margin: 0 auto;
   display: block;
@@ -633,7 +633,7 @@
   
 }
 
-.teacher-view-button:hover {
+.teacher-view-buttonn:hover {
   background-color: rgba(255, 255, 255, 0.25);
   transform: translateY(-2px);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);

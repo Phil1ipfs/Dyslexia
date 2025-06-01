@@ -2236,11 +2236,11 @@
   gap: 12px;
 }
 
-.pre-file-upload-btn {
+.pre-file-upload-btnn {
   display: inline-flex !important;
   align-items: center !important;
   gap: 8px !important;
-  background-color: #4e5c93 !important;
+  background-color: #e8e8e8 !important;
   color: white !important;
   padding: 10px 16px !important;
   border-radius: 6px !important;
@@ -2264,40 +2264,48 @@
 
 .pre-image-preview {
   position: relative;
-  width: fit-content;
-  max-width: 200px;
+  margin-top: 10px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 300px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.pre-image-preview:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .pre-preview-image {
   width: 100%;
-  max-width: 200px;
   height: auto;
-  border-radius: 6px;
-  border: 1px solid #e0e0e0;
-  background-color: white;
+  max-height: 200px;
   object-fit: contain;
+  display: block;
 }
 
 .pre-remove-image {
   position: absolute;
-  top: -8px;
-  right: -8px;
+  top: 5px;
+  right: 5px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
   width: 24px;
   height: 24px;
-  background-color: #e74c3c;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  transition: all 0.2s;
+  cursor: pointer;
+  color: #e53e3e;
+  border: none;
+  transition: all 0.2s ease;
 }
 
 .pre-remove-image:hover {
-  background-color: #c0392b;
+  background-color: rgba(255, 255, 255, 1);
+  color: #c53030;
   transform: scale(1.1);
 }
 
@@ -2840,4 +2848,88 @@
   color: #c0392b;
   font-size: 14px;
   line-height: 1.5;
+}
+
+/* Add styling for the language display */
+.pre-language-display {
+  background-color: #f8f9fa;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 15px;
+  color: #4a5568;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  height: 42px;
+}
+
+/* Improve image preview styling */
+.pre-image-preview {
+  position: relative;
+  margin-top: 10px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 300px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.pre-image-preview:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.pre-preview-image {
+  width: 100%;
+  height: auto;
+  max-height: 200px;
+  object-fit: contain;
+  display: block;
+}
+
+.pre-remove-image {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #e53e3e;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.pre-remove-image:hover {
+  background-color: rgba(255, 255, 255, 1);
+  color: #c53030;
+  transform: scale(1.1);
+}
+
+/* Improve styling for question preview in the edit modal */
+.pre-question-image {
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 15px;
+  max-width: 300px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.pre-question-image img {
+  width: 100%;
+  height: auto;
+  max-height: 200px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Add styling for the question subtype in preview */
+.pre-question-subtype {
+  font-size: 14px;
+  opacity: 0.8;
 }

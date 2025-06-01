@@ -10,10 +10,6 @@ const templateChoiceSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  choiceImage: {
-    type: String,
-    default: null
-  },
   soundText: {
     type: String,
     default: null

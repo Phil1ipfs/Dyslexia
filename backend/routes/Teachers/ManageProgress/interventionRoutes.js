@@ -132,6 +132,40 @@ router.get('/templates/questions', auth, authorize('teacher', 'admin'),
   }
 );
 
+// Update a template question
+router.put('/templates/questions/:templateId', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.updateTemplateQuestion(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in PUT /templates/questions/:templateId route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Delete a template question
+router.delete('/templates/questions/:templateId', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.deleteTemplateQuestion(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in DELETE /templates/questions/:templateId route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
 // Get template choices
 router.get('/templates/choices', auth, authorize('teacher', 'admin'), 
   async (req, res) => {
@@ -149,6 +183,40 @@ router.get('/templates/choices', auth, authorize('teacher', 'admin'),
   }
 );
 
+// Update a template choice
+router.put('/templates/choices/:templateId', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.updateTemplateChoice(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in PUT /templates/choices/:templateId route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Delete a template choice
+router.delete('/templates/choices/:templateId', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.deleteTemplateChoice(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in DELETE /templates/choices/:templateId route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
 // Get sentence templates
 router.get('/templates/sentences', auth, authorize('teacher', 'admin'), 
   async (req, res) => {
@@ -157,6 +225,57 @@ router.get('/templates/sentences', auth, authorize('teacher', 'admin'),
       // Controller handles the response
     } catch (error) {
       console.error('Error in GET /templates/sentences route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Create a sentence template
+router.post('/templates/sentences', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.createSentenceTemplate(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in POST /templates/sentences route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Update a sentence template
+router.put('/templates/sentences/:templateId', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.updateSentenceTemplate(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in PUT /templates/sentences/:templateId route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Delete a sentence template
+router.delete('/templates/sentences/:templateId', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.deleteSentenceTemplate(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in DELETE /templates/sentences/:templateId route:', error);
       return res.status(500).json({
         success: false,
         message: 'Server error processing request',
@@ -191,6 +310,23 @@ router.post('/templates/choices', auth, authorize('teacher', 'admin'),
       // Controller handles the response
     } catch (error) {
       console.error('Error in POST /templates/choices route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Fetch all templates from the database
+router.get('/templates/all', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.getAllTemplates(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in GET /templates/all route:', error);
       return res.status(500).json({
         success: false,
         message: 'Server error processing request',
@@ -348,6 +484,40 @@ router.post('/:interventionId/push', auth, authorize('teacher', 'admin'),
       return res.status(500).json({
         success: false,
         message: 'Server error processing request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Activate an intervention by setting its status to 'active'
+router.put('/:interventionId/activate', auth, authorize('teacher', 'admin'), 
+  async (req, res) => {
+    try {
+      await interventionController.activateIntervention(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in PUT /:interventionId/activate route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing activation request',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Update all existing interventions (admin only)
+router.post('/update-existing', auth, authorize('admin'), 
+  async (req, res) => {
+    try {
+      const result = await interventionController.updateExistingInterventions(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in POST /update-existing route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing update request',
         error: error.message
       });
     }
