@@ -170,6 +170,12 @@ class InterventionService {
         throw new Error('Student not found');
       }
       
+      // Add student number from the user record
+      if (student.idNumber) {
+        interventionData.studentNumber = student.idNumber;
+        console.log(`Added student number ${student.idNumber} to intervention data`);
+      }
+      
       // Ensure prescriptiveAnalysisId is a valid ObjectId or null
       if (interventionData.prescriptiveAnalysisId) {
         if (!mongoose.Types.ObjectId.isValid(interventionData.prescriptiveAnalysisId)) {
@@ -295,6 +301,12 @@ class InterventionService {
         const student = await User.findById(updateData.studentId);
         if (!student) {
           throw new Error('Student not found');
+        }
+        
+        // Update studentNumber if student ID is changing
+        if (student.idNumber) {
+          updateData.studentNumber = student.idNumber;
+          console.log(`Updated studentNumber to ${student.idNumber} based on new studentId`);
         }
       }
       
@@ -776,6 +788,23 @@ class InterventionService {
       
       if (!intervention) {
         throw new Error('Intervention not found');
+      }
+      
+      // Get student number from intervention or from user
+      if (intervention.studentNumber) {
+        response.studentNumber = intervention.studentNumber;
+      } else {
+        // Try to find the student to get their ID number
+        const student = await User.findById(responseData.studentId);
+        if (student && student.idNumber) {
+          response.studentNumber = student.idNumber;
+          
+          // Also update the intervention with the student number
+          await InterventionPlan.findByIdAndUpdate(
+            intervention._id,
+            { $set: { studentNumber: student.idNumber } }
+          );
+        }
       }
       
       // Find the question and choice to get the description

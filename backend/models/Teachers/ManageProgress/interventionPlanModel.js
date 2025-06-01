@@ -7,6 +7,11 @@ const interventionPlanSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  studentNumber: {
+    type: String,
+    trim: true,
+    default: null
+  },
   prescriptiveAnalysisId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'PrescriptiveAnalysis',

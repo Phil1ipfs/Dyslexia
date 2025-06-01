@@ -13,6 +13,7 @@ import AssessmentSummaryCard from '../../../components/TeacherPage/ManageProgres
 import PreAssessmentResults from '../../../components/TeacherPage/ManageProgress/PreAssessmentResults';
 import ProgressReport from '../../../components/TeacherPage/ManageProgress/ProgressReport';
 import PrescriptiveAnalysis from '../../../components/TeacherPage/ManageProgress/PrescriptiveAnalysis';
+import IEPReport from '../../../components/TeacherPage/ManageProgress/IEPReport';
 import ActivityEditModal from '../../../components/TeacherPage/ManageProgress/ActivityEditModal';
 import LoadingSpinner from '../../../components/TeacherPage/ManageProgress/common/LoadingSpinner';
 import ErrorMessage from '../../../components/TeacherPage/ManageProgress/common/ErrorMessage';
@@ -672,113 +673,13 @@ const StudentProgressView = () => {
               <h2>Individualized Education Progress</h2>
             </div>
             <div className="literexia-panel-content">
-              <div className="literexia-iep-info">
-                <p>
-                  This section shows the student's progress in meeting individualized learning objectives.
-                  You can track their progress, adjust assistance levels, and add notes about their development.
-                </p>
-              </div>
-              
-              {learningObjectives.length > 0 ? (
-                <div className="literexia-iep-table-container">
-                  <table className="literexia-iep-table">
-                    <thead>
-                      <tr>
-                        <th>Objective</th>
-                        <th>Category</th>
-                        <th>Status</th>
-                        <th colSpan="3">Assistance Level</th>
-                        <th>Remarks</th>
-                      </tr>
-                      <tr className="literexia-assistance-level-header">
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th>Minimal</th>
-                        <th>Moderate</th>
-                        <th>Substantial</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {learningObjectives.map((objective) => (
-                        <tr key={objective.id}>
-                          <td>{objective.title}</td>
-                          <td>
-                            {objective.category
-                              .replace(/_/g, ' ')
-                              .replace(/\b\w/g, l => l.toUpperCase())}
-                          </td>
-                          <td className="literexia-status-cell">
-                            {objective.completed ? (
-                              <span className="literexia-status-completed"><FaCheckCircle /> Mastered</span>
-                            ) : (
-                              <span className="literexia-status-in-progress">In Progress</span>
-                            )}
-                          </td>
-                          <td className="literexia-assistance-cell">
-                            <div
-                              className={`literexia-assistance-checkbox ${objective.assistance === 'minimal' ? 'selected' : ''}`}
-                              onClick={() => handleAssistanceChange(objective.id, 'minimal')}
-                            >
-                              {objective.assistance === 'minimal' && <FaCheckCircle />}
-                            </div>
-                          </td>
-                          <td className="literexia-assistance-cell">
-                            <div
-                              className={`literexia-assistance-checkbox ${objective.assistance === 'moderate' ? 'selected' : ''}`}
-                              onClick={() => handleAssistanceChange(objective.id, 'moderate')}
-                            >
-                              {objective.assistance === 'moderate' && <FaCheckCircle />}
-                            </div>
-                          </td>
-                          <td className="literexia-assistance-cell">
-                            <div
-                              className={`literexia-assistance-checkbox ${objective.assistance === 'substantial' ? 'selected' : ''}`}
-                              onClick={() => handleAssistanceChange(objective.id, 'substantial')}
-                            >
-                              {objective.assistance === 'substantial' && <FaCheckCircle />}
-                            </div>
-                          </td>
-                          <td className="literexia-remarks-cell">
-                            {objective.isEditingRemarks ? (
-                              <div className="literexia-remarks-edit">
-                                <textarea
-                                  value={objective.remarks}
-                                  onChange={(e) => handleRemarksChange(objective.id, e.target.value)}
-                                  placeholder="Add notes..."
-                                  className="literexia-remarks-textarea"
-                                />
-                                <button
-                                  className="literexia-save-remarks-btn"
-                                  onClick={() => toggleRemarksEditing(objective.id)}
-                                >
-                                  <FaSave />
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="literexia-remarks-view">
-                                <p>{objective.remarks || 'No notes yet.'}</p>
-                                <button
-                                  className="literexia-edit-remarks-btn"
-                                  onClick={() => toggleRemarksEditing(objective.id)}
-                                >
-                                  <FaEdit />
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="literexia-empty-state">
-                  <FaExclamationTriangle />
-                  <p>No learning objectives have been defined for this student yet.</p>
-                </div>
-              )}
+              <IEPReport
+                student={student}
+                learningObjectives={learningObjectives}
+                onAssistanceChange={handleAssistanceChange}
+                onRemarksChange={handleRemarksChange}
+                onToggleRemarksEditing={toggleRemarksEditing}
+              />
             </div>
           </div>
         )}
