@@ -211,6 +211,15 @@ const connectDB = async () => {
       console.warn('⚠️ Could not initialize progress collections:', error.message);
     }
 
+    // Run automatic migration of category results
+    try {
+      const CategoryResultsService = require('./services/Teachers/CategoryResultsService');
+      await CategoryResultsService.migrateStudentIds();
+      console.log('✅ Completed automatic migration of category results');
+    } catch (error) {
+      console.warn('⚠️ Could not run category results migration:', error.message);
+    }
+
     console.log('\n✅ Database setup complete');
     return true;
   } catch (error) {

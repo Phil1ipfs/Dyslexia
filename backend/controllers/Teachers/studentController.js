@@ -671,6 +671,9 @@ exports.getReadingLevels = async (req, res) => {
 exports.getCategoryResults = async (req, res) => {
   try {
     const id = req.params.id;
+    const assessmentType = req.query.type; // Get the assessment type from query params
+    
+    console.log(`Fetching category results for student ID: ${id}, type: ${assessmentType || 'any'}`);
     
     // Get the test database
     const testDb = mongoose.connection.useDb('test');
@@ -689,8 +692,8 @@ exports.getCategoryResults = async (req, res) => {
     const usersCollection = testDb.collection('users');
     const student = await usersCollection.findOne({
       $or: [
-        { _id: new mongoose.Types.ObjectId(id) },
-        { idNumber: parseInt(id) || id }
+        { _id: mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null },
+        { idNumber: id }
       ]
     });
     
@@ -702,9 +705,32 @@ exports.getCategoryResults = async (req, res) => {
     const studentObjId = student._id;
     console.log('Looking for category results for student ID:', studentObjId);
     
+    // Build the query
+    const query = {
+      $or: [
+        { studentId: id.toString() },
+        { studentId: student.idNumber ? student.idNumber.toString() : null },
+        { studentObjectId: studentObjId }
+      ]
+    };
+    
+    // Add assessment type filter if provided
+    if (assessmentType) {
+      if (assessmentType === 'post-assessment') {
+        // For post-assessment, we want records that are not pre-assessment
+        query.isPreAssessment = { $ne: true };
+      } else if (assessmentType === 'pre-assessment') {
+        query.isPreAssessment = true;
+      } else {
+        query.assessmentType = assessmentType;
+      }
+    }
+    
+    console.log('Query for category results:', JSON.stringify(query));
+    
     // Find the most recent category results for this student
     const categoryResults = await categoryResultsCollection
-      .find({ studentId: studentObjId })
+      .find(query)
       .sort({ assessmentDate: -1, createdAt: -1 })
       .limit(1)
       .toArray();
@@ -723,6 +749,7 @@ exports.getCategoryResults = async (req, res) => {
     
     // Return the most recent assessment result
     const latestResult = categoryResults[0];
+    console.log(`Found category result with ID: ${latestResult._id} for student ${id}`);
     
     return res.json(latestResult);
   } catch (error) {
@@ -746,7 +773,7 @@ exports.getReadingLevelProgress = async (req, res) => {
     const student = await usersCollection.findOne({
       $or: [
         { _id: mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null },
-        { idNumber: parseInt(id) || id }
+        { idNumber: id }
       ]
     });
     
@@ -761,8 +788,9 @@ exports.getReadingLevelProgress = async (req, res) => {
     const categoryResults = await categoryResultsCollection
       .find({ 
         $or: [
-          { studentId: student._id },
-          { studentId: student.idNumber }
+          { studentId: id.toString() },
+          { studentId: student.idNumber ? student.idNumber.toString() : null },
+          { studentObjectId: student._id }
         ]
       })
       .sort({ assessmentDate: -1, createdAt: -1 })

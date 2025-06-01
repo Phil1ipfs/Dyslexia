@@ -754,6 +754,7 @@ const StudentApiService = {
   getCategoryResults: async (id) => {
     try {
       console.log(`Fetching category results for student ID: ${id}`);
+      
       // Use the api instance with the correct endpoint path (no leading slash)
       const { data } = await api.get(`${id}/category-results`);
       
@@ -770,7 +771,17 @@ const StudentApiService = {
           isPassed: category.isPassed || (category.score >= 75),
           passingThreshold: category.passingThreshold || 75
         }));
+        
+        // Log detailed information about the data
         console.log("Valid category data found with", data.categories.length, "categories");
+        console.log("Categories:", data.categories.map(c => 
+          `${c.categoryName}: ${c.correctAnswers}/${c.totalQuestions} (${c.score}%)`
+        ));
+        console.log("Assessment type:", data.assessmentType);
+        console.log("Assessment date:", data.assessmentDate);
+        console.log("Reading level:", data.readingLevel);
+        console.log("Is pre-assessment:", data.isPreAssessment);
+        
         return data;
       } else {
         // No meaningful data
@@ -781,6 +792,43 @@ const StudentApiService = {
       console.error(`Error fetching category results for student ${id}:`, error);
       
       // Return null in case of error
+      return null;
+    }
+  },
+
+  // Get post-assessment category results specifically
+  getPostAssessmentResults: async (id) => {
+    try {
+      console.log(`Fetching post-assessment results for student ID: ${id}`);
+      
+      // Use the api instance with the correct endpoint path and type parameter
+      // The api instance already has baseURL set to ${API_BASE}/api/student
+      const { data } = await api.get(`${id}/category-results`, {
+        params: { type: 'post-assessment' }
+      });
+      
+      console.log("Post-assessment results raw data:", data);
+      
+      // Check if we have meaningful data
+      if (data && data.categories && data.categories.length > 0) {
+        // Make sure all category objects have required properties
+        data.categories = data.categories.map(category => ({
+          categoryName: category.categoryName || 'Unknown Category',
+          totalQuestions: category.totalQuestions || 0,
+          correctAnswers: category.correctAnswers || 0,
+          score: category.score || 0,
+          isPassed: category.isPassed || (category.score >= 75),
+          passingThreshold: category.passingThreshold || 75
+        }));
+        
+        console.log("Valid post-assessment data found with", data.categories.length, "categories");
+        return data;
+      } else {
+        console.log("No valid post-assessment data found in API response");
+        return null;
+      }
+    } catch (error) {
+      console.error(`Error fetching post-assessment results for student ${id}:`, error);
       return null;
     }
   },
