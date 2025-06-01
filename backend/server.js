@@ -48,6 +48,8 @@ app.use(cors({
     const allowedOrigins = [
       'http://localhost:5173',
       'http://localhost:5174',
+      'http://192.168.56.1:5173',
+      'http://192.168.1.4:5173',
       process.env.FRONTEND_URL
     ].filter(Boolean);
     
@@ -68,6 +70,8 @@ app.options('*', cors({
     const allowedOrigins = [
       'http://localhost:5173',
       'http://localhost:5174',
+      'http://192.168.56.1:5173',
+      'http://192.168.1.4:5173',
       process.env.FRONTEND_URL
     ].filter(Boolean);
     
@@ -82,8 +86,9 @@ app.options('*', cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-requested-with', 'X-Requested-With']
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Increase body parser limits for larger file uploads
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(requestLogger);
 
 // Test route to verify server is running
