@@ -4,7 +4,6 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const { auth, authorize } = require('../../middleware/auth');
 const studentController = require('../../controllers/Teachers/studentController');
-// const readingLevelProgressionController = require('../../controllers/Teachers/ManageProgress/readingLevelProgressionController');
 
 // Create the pre-assessment controller
 const preAssessmentController = require('../../controllers/Teachers/preAssessmentController');

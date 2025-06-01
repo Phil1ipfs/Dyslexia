@@ -342,7 +342,7 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
                 status = "Needs Attention";
                 statusClass = "needs-attention";
               } else {
-                status = "In Progress";
+                status = "Needs Attention";
                 statusClass = "in-progress";
               }
               

@@ -8,6 +8,7 @@ const SentenceTemplate = require('../../models/Teachers/ManageProgress/sentenceT
 const PrescriptiveAnalysis = require('../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
 const User = require('../../models/userModel');
 const s3Client = require('../../config/s3');
+const CategoryResultsService = require('./CategoryResultsService');
 
 class InterventionService {
   /**
@@ -17,41 +18,60 @@ class InterventionService {
    */
   async getStudentInterventions(studentId) {
     try {
-      // Convert string ID to ObjectId if needed
-      let studentObjectId;
+      console.log(`Fetching interventions for student: ${studentId}`);
+      
+      let query = {};
+      
+      // Handle different types of student IDs
       if (mongoose.Types.ObjectId.isValid(studentId)) {
-        studentObjectId = new mongoose.Types.ObjectId(studentId);
+        // If it's a valid ObjectId, use it directly
+        query = { studentId: new mongoose.Types.ObjectId(studentId) };
       } else {
-        // Try to find user by idNumber
+        // Try to find the user by idNumber
         const user = await User.findOne({ idNumber: studentId });
-        if (!user) {
-          throw new Error('Student not found');
+        
+        if (user) {
+          // If user found, use their ObjectId
+          query = { studentId: user._id };
+        } else {
+          // If no user found, try using the original studentId
+          query = { studentId };
         }
-        studentObjectId = user._id;
       }
       
-      const interventions = await InterventionPlan.find({ studentId: studentObjectId })
-        .sort({ createdAt: -1 });
+      console.log('Query for interventions:', JSON.stringify(query));
       
-      // Fetch progress for each intervention
-      const interventionsWithProgress = await Promise.all(
-        interventions.map(async (intervention) => {
-          const progress = await InterventionProgress.findOne({ 
-            interventionPlanId: intervention._id,
-            studentId: studentObjectId
-          });
+      // Find all interventions for this student
+      const interventions = await InterventionPlan.find(query)
+        .sort({ createdAt: -1 })
+        .lean();
+      
+      console.log(`Found ${interventions.length} interventions for student ${studentId}`);
+      
+      // Get progress for each intervention
+      const interventionsWithProgress = await Promise.all(interventions.map(async (intervention) => {
+        try {
+          const progress = await InterventionProgress.findOne({
+            interventionPlanId: intervention._id
+          }).lean();
           
           return {
-            ...intervention.toObject(),
-            progress: progress ? progress.toObject() : null
+            ...intervention,
+            progress: progress || null
           };
-        })
-      );
+        } catch (error) {
+          console.error(`Error fetching progress for intervention ${intervention._id}:`, error);
+          return {
+            ...intervention,
+            progress: null
+          };
+        }
+      }));
       
       return interventionsWithProgress;
     } catch (error) {
-      console.error('Error fetching student interventions:', error);
-      throw error;
+      console.error(`Error fetching interventions for student ${studentId}:`, error);
+      return [];
     }
   }
   
@@ -97,19 +117,26 @@ class InterventionService {
     try {
       // Convert string ID to ObjectId if needed
       let studentObjectId;
+      let query = {};
+      
       if (mongoose.Types.ObjectId.isValid(studentId)) {
         studentObjectId = new mongoose.Types.ObjectId(studentId);
+        query = { studentId: studentObjectId };
       } else {
         // Try to find user by idNumber
         const user = await User.findOne({ idNumber: studentId });
-        if (!user) {
-          throw new Error('Student not found');
+        if (user) {
+          studentObjectId = user._id;
+          query = { studentId: studentObjectId };
+        } else {
+          // If no user found, use the original studentId
+          query = { studentId };
         }
-        studentObjectId = user._id;
       }
       
+      // Find intervention by studentId and category
       const existingIntervention = await InterventionPlan.findOne({
-        studentId: studentObjectId,
+        ...query,
         category: category
       });
       
@@ -148,6 +175,29 @@ class InterventionService {
         if (!mongoose.Types.ObjectId.isValid(interventionData.prescriptiveAnalysisId)) {
           console.warn('Invalid prescriptiveAnalysisId format, setting to null:', interventionData.prescriptiveAnalysisId);
           interventionData.prescriptiveAnalysisId = null;
+        }
+      }
+      
+      // If categoryResultId is not provided, try to find the most recent category result
+      if (!interventionData.categoryResultId) {
+        try {
+          console.log('Finding most recent category result for student:', interventionData.studentId);
+          
+          // Use the CategoryResultsService to find the most recent category result
+          const categoryResult = await CategoryResultsService.getCategoryResultByCategory(
+            interventionData.studentId,
+            interventionData.category
+          );
+          
+          if (categoryResult) {
+            console.log(`Found category result ${categoryResult._id} for student ${interventionData.studentId} and category ${interventionData.category}`);
+            interventionData.categoryResultId = categoryResult._id;
+          } else {
+            console.log(`No category result found for student ${interventionData.studentId} and category ${interventionData.category}`);
+          }
+        } catch (error) {
+          console.error('Error finding category result:', error);
+          // Continue with intervention creation even if category result lookup fails
         }
       }
       

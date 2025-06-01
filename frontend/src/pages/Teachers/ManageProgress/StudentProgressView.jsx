@@ -20,6 +20,7 @@ import ErrorMessage from '../../../components/TeacherPage/ManageProgress/common/
 // Import services
 import StudentApiService from '../../../services/Teachers/StudentApiService';
 import CategoryResultsService from '../../../services/Teachers/CategoryResultsService';
+import api from '../../../services/Teachers/api';
 
 import '../../../css/Teachers/studentProgressView.css';
 
@@ -87,12 +88,34 @@ const StudentProgressView = () => {
         const fetchProgressData = async () => {
           console.log("Fetching progress data...");
           
-          // First try getting category results
+          // First try getting post-assessment results specifically
+          try {
+            console.log("Trying to get post-assessment results first...");
+            const postAssessmentResults = await StudentApiService.getPostAssessmentResults(id);
+            
+            if (postAssessmentResults && 
+                postAssessmentResults.categories && 
+                postAssessmentResults.categories.length > 0) {
+              console.log("Found post-assessment data, using it for progress report");
+              setCategoryResults(postAssessmentResults);
+              return postAssessmentResults;
+            }
+          } catch (err) {
+            console.log("No specific post-assessment data available, trying general category results");
+          }
+          
+          // If no post-assessment results, try getting any category results
           const categoryResults = await StudentApiService.getCategoryResults(id);
           
           if (categoryResults && categoryResults.categories && categoryResults.categories.length > 0) {
             // We have valid category results data
-            console.log("Using category results data for progress report");
+            console.log("Using general category results data for progress report");
+            
+            // Check if this is a pre-assessment result
+            if (categoryResults.isPreAssessment === true) {
+              console.log("Note: Using pre-assessment data for progress report (no post-assessment available)");
+            }
+            
             setCategoryResults(categoryResults);
             return categoryResults;
           }
@@ -527,9 +550,9 @@ const StudentProgressView = () => {
       {/* Top cards - Student info and assessment summary */}
       <div className="literexia-top-cards">
         {student && <StudentProfileCard student={student} />}
-        {assessmentData && (
+        {(categoryResults || assessmentData) && (
           <AssessmentSummaryCard
-            assessmentData={assessmentData}
+            assessmentData={categoryResults || assessmentData}
           />
         )}
       </div>
