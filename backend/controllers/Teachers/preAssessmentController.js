@@ -202,12 +202,12 @@ exports.uploadMedia = async (req, res) => {
     const fileType = file.mimetype.split('/')[0]; // 'image' or 'audio'
     const fileExt = file.originalname.split('.').pop();
     
-    // Generate a unique file name
-    const fileName = `${fileType}/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+    // Generate a unique file name with pre-assessment path
+    const fileName = `pre-assessment/${fileType}/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
     
     // Upload to S3
     const params = {
-      Bucket: process.env.AWS_S3_BUCKET,
+      Bucket: process.env.AWS_S3_BUCKET || 'literexia-bucket',
       Key: fileName,
       Body: file.buffer,
       ContentType: file.mimetype,
@@ -219,7 +219,8 @@ exports.uploadMedia = async (req, res) => {
     res.json({
       message: 'File uploaded successfully',
       fileUrl: uploadResult.Location,
-      fileKey: uploadResult.Key
+      fileKey: uploadResult.Key,
+      s3Path: fileName
     });
   } catch (error) {
     console.error('Error uploading file to S3:', error);
@@ -719,5 +720,57 @@ exports.getStudentPreAssessmentStatus = async (req, res) => {
       message: 'Error checking pre-assessment status', 
       error: error.message 
     });
+  }
+};
+
+// Toggle assessment active status
+exports.toggleActiveStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+    
+    if (isActive === undefined) {
+      return res.status(400).json({ message: 'isActive field is required' });
+    }
+    
+    const preAssessmentCollection = getPreAssessmentDb().collection('pre-assessment');
+    
+    let filter;
+    try {
+      // Try as MongoDB ObjectId
+      filter = { _id: new mongoose.Types.ObjectId(id) };
+    } catch (err) {
+      // Try as assessmentId string
+      filter = { assessmentId: id };
+    }
+    
+    // Check if assessment exists
+    const existingAssessment = await preAssessmentCollection.findOne(filter);
+    if (!existingAssessment) {
+      return res.status(404).json({ message: 'Pre-assessment not found' });
+    }
+    
+    // Update the active status and lastUpdated timestamp
+    const result = await preAssessmentCollection.updateOne(filter, { 
+      $set: { 
+        isActive: Boolean(isActive),
+        lastUpdated: new Date()
+      } 
+    });
+    
+    if (result.modifiedCount === 0) {
+      return res.status(400).json({ message: 'No changes made to the pre-assessment' });
+    }
+    
+    // Get the updated assessment
+    const updatedAssessment = await preAssessmentCollection.findOne(filter);
+    
+    res.json({
+      message: `Pre-assessment ${isActive ? 'activated' : 'deactivated'} successfully`,
+      assessment: updatedAssessment
+    });
+  } catch (error) {
+    console.error('Error toggling pre-assessment active status:', error);
+    res.status(500).json({ message: 'Error updating pre-assessment status', error: error.message });
   }
 };

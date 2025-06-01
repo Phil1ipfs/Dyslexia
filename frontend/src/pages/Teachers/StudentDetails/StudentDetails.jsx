@@ -607,7 +607,7 @@ const StudentDetails = () => {
         <button className="sdx-back-btn" onClick={goBack}>
           <FaArrowLeft /> Back
         </button>
-        <h1 className="sdx-title">Student and Parent Information</h1>
+        <h1 className="sdx-title"></h1>
         <div className="sdx-actions">
           <button
             className="sdx-view-report-btn"

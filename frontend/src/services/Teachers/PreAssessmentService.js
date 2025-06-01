@@ -102,7 +102,35 @@ class PreAssessmentService {
    */
   createPreAssessment = async (assessmentData) => {
     try {
-      console.log('Creating pre-assessment:', assessmentData);
+      console.log('Creating pre-assessment with data:', JSON.stringify(assessmentData, null, 2));
+      
+      // Validate required fields before sending to API
+      if (!assessmentData.assessmentId) {
+        console.error('Missing required field: assessmentId');
+        return {
+          success: false,
+          data: null,
+          message: 'Missing required field: assessmentId'
+        };
+      }
+      
+      if (!assessmentData.title) {
+        console.error('Missing required field: title');
+        return {
+          success: false,
+          data: null,
+          message: 'Missing required field: title'
+        };
+      }
+      
+      if (!assessmentData.language) {
+        console.error('Missing required field: language');
+        return {
+          success: false,
+          data: null,
+          message: 'Missing required field: language'
+        };
+      }
       
       const response = await axios.post(
         `${this.apiUrl}/assessments`,
@@ -119,6 +147,17 @@ class PreAssessmentService {
       // Log authentication errors but don't expose them to components
       if (error.response && (error.response.status === 401 || error.response.status === 403)) {
         console.warn('Authentication required for pre-assessment API.');
+      }
+      
+      // Log detailed information about 400 Bad Request errors
+      if (error.response && error.response.status === 400) {
+        console.error('Bad Request Error (400):', error.response.data);
+        console.error('Request payload that caused the error:', JSON.stringify(assessmentData, null, 2));
+        return {
+          success: false,
+          data: null,
+          message: `Failed to create pre-assessment: ${error.response.data.message || 'Bad Request'}`
+        };
       }
       
       console.error('Error creating pre-assessment:', error);
@@ -192,12 +231,53 @@ class PreAssessmentService {
   };
 
   /**
+   * Toggle the active status of a pre-assessment
+   * @param {string} id - The ID of the assessment to toggle
+   * @param {boolean} isActive - The new active status
+   * @returns {Promise} Promise with the updated assessment
+   */
+  toggleActiveStatus = async (id, isActive) => {
+    try {
+      console.log(`Toggling pre-assessment ${id} active status to: ${isActive}`);
+      
+      const response = await axios.put(
+        `${this.apiUrl}/assessments/${id}/toggle-active`,
+        { isActive },
+        this.getAuthHeaders()
+      );
+      
+      return {
+        success: true,
+        data: response.data.assessment || response.data
+      };
+    } catch (error) {
+      // Log authentication errors but don't expose them to components
+      if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+        console.warn('Authentication required for pre-assessment API.');
+      }
+      
+      console.error(`Error toggling pre-assessment ${id} active status:`, error);
+      return {
+        success: false,
+        data: null,
+        message: `Failed to update pre-assessment status. Please try again later.`
+      };
+    }
+  };
+
+  /**
    * Get all question types
    * @returns {Promise} Promise with the question types
    */
   getAllQuestionTypes = async () => {
     try {
+      console.log('PreAssessmentService: Fetching question types');
+      
+      // Make the API request
       const response = await axios.get(`${this.apiUrl}/question-types`, this.getAuthHeaders());
+      
+      console.log(`PreAssessmentService: Received ${response.data ? response.data.length : 0} question types`);
+      
       return {
         success: true,
         data: response.data || []
@@ -209,10 +289,83 @@ class PreAssessmentService {
       }
       
       console.error('Error fetching question types:', error);
+      
+      // Provide static fallback question types if the API request fails
+      const fallbackQuestionTypes = [
+        {
+          typeId: "alphabet_knowledge",
+          typeName: "Alphabet Knowledge",
+          description: "Tests knowledge of letters, their sounds, and characteristics",
+          questionTypes: ['patinig', 'katinig', 'patinig_katinig', 'unang_letra'],
+          difficultyWeights: {
+            low_emerging: 0.9,
+            high_emerging: 0.1,
+            developing: 0,
+            transitioning: 0,
+            at_grade_level: 0
+          }
+        },
+        {
+          typeId: "phonological_awareness",
+          typeName: "Phonological Awareness",
+          description: "Tests ability to identify and manipulate sounds in spoken language",
+          questionTypes: ['tunog_letra', 'tunog_salita', 'unang_tunog', 'pantig', 'hulling_tunog'],
+          difficultyWeights: {
+            low_emerging: 0.7,
+            high_emerging: 0.3,
+            developing: 0,
+            transitioning: 0,
+            at_grade_level: 0
+          }
+        },
+        {
+          typeId: "decoding",
+          typeName: "Decoding",
+          description: "Tests ability to apply knowledge of letter-sound relationships",
+          questionTypes: ['word', 'buoin_salita'],
+          difficultyWeights: {
+            low_emerging: 0.2,
+            high_emerging: 0.5,
+            developing: 0.3,
+            transitioning: 0,
+            at_grade_level: 0
+          }
+        },
+        {
+          typeId: "word_recognition",
+          typeName: "Word Recognition",
+          description: "Tests ability to identify and read words accurately",
+          questionTypes: ['malapantig', 'tunog_salita'],
+          difficultyWeights: {
+            low_emerging: 0.1,
+            high_emerging: 0.2,
+            developing: 0.4,
+            transitioning: 0.3,
+            at_grade_level: 0
+          }
+        },
+        {
+          typeId: "reading_comprehension",
+          typeName: "Reading Comprehension",
+          description: "Tests ability to understand and interpret text",
+          questionTypes: ['sentence'],
+          difficultyWeights: {
+            low_emerging: 0,
+            high_emerging: 0,
+            developing: 0,
+            transitioning: 0.5,
+            at_grade_level: 0.5
+          }
+        }
+      ];
+      
+      console.log('Using fallback question types due to API error');
+      
       return {
-        success: false,
-        data: [],
-        message: `Failed to fetch question types. Please try again later.`
+        success: true,
+        data: fallbackQuestionTypes,
+        message: "Using fallback question types due to API error",
+        usingFallback: true
       };
     }
   };
@@ -297,31 +450,40 @@ class PreAssessmentService {
   /**
    * Upload media file (image or audio)
    * @param {File} file - The file to upload
-   * @returns {Promise} Promise with the uploaded media URL
+   * @returns {Promise} Promise with the uploaded file URL
    */
   uploadMedia = async (file) => {
     try {
+      // Create FormData object to send file
       const formData = new FormData();
       formData.append('file', file);
-
-      // Get auth headers but remove Content-Type so browser can set it with boundary
-      const authHeaders = this.getAuthHeaders();
-      const headers = { ...authHeaders.headers };
-      delete headers['Content-Type'];
-
-      const response = await axios.post(`${this.apiUrl}/upload-media`, formData, {
-        headers
-      });
+      
+      // Set headers for file upload (don't include Content-Type, browser will set it)
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const headers = {
+        'Authorization': token ? `Bearer ${token}` : ''
+      };
+      
+      // Upload file
+      const response = await axios.post(
+        `${this.apiUrl}/upload-media`,
+        formData,
+        { headers }
+      );
+      
+      console.log('File upload response:', response.data);
+      
       return {
         success: true,
-        data: response.data
+        fileUrl: response.data.fileUrl,
+        fileKey: response.data.fileKey,
+        s3Path: response.data.s3Path || `pre-assessment/${file.type.split('/')[0]}/${response.data.fileKey}`
       };
     } catch (error) {
-      console.error('Error uploading media file:', error);
+      console.error('Error uploading file:', error);
       return {
         success: false,
-        data: null,
-        message: `Failed to upload media file. Please try again later.`
+        message: `Failed to upload file. Please try again later.`
       };
     }
   };
