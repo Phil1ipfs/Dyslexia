@@ -25,10 +25,6 @@ const templateQuestionSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  isApproved: {
-    type: Boolean,
-    default: true
-  },
   isActive: {
     type: Boolean,
     default: true

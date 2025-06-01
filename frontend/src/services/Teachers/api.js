@@ -98,7 +98,11 @@ export default {
     delete: (interventionId) => 
       api.delete(`/api/interventions/${interventionId}`),
       
-    // Push to mobile
+    // Push to mobile and activate intervention
+    activate: (interventionId) => 
+      api.put(`/api/interventions/${interventionId}/activate`, { status: 'active' }),
+      
+    // Legacy push to mobile (will be deprecated)
     pushToMobile: (interventionId) => 
       api.post(`/api/interventions/${interventionId}/push`),
       
@@ -135,6 +139,10 @@ export default {
       
     // Record intervention response
     recordResponse: (responseData) => 
-      api.post('/api/interventions/responses', responseData)
+      api.post('/api/interventions/responses', responseData),
+      
+    // Get prescriptive analysis for student and category
+    getPrescriptiveAnalysis: (studentId, category) => 
+      api.get(`/api/prescriptive-analysis?studentId=${studentId}&category=${encodeURIComponent(category)}`)
   }
 };

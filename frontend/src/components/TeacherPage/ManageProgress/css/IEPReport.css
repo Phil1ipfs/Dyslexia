@@ -1,0 +1,238 @@
+/* IEP Report Component Styles */
+
+.literexia-iep-container {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.literexia-iep-info {
+  background-color: #f8f9fa;
+  border-left: 4px solid #6c8ef4;
+  padding: 16px;
+  margin-bottom: 24px;
+  border-radius: 4px;
+}
+
+.literexia-iep-info p {
+  color: #495057;
+  font-size: 0.95rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.literexia-iep-table-container {
+  overflow-x: auto;
+  margin-top: 16px;
+}
+
+.literexia-iep-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.literexia-iep-table th,
+.literexia-iep-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e9ecef;
+  text-align: left;
+}
+
+.literexia-iep-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.literexia-support-level-header th {
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: #6c757d;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  border-top: none;
+}
+
+.literexia-lesson-cell {
+  font-weight: 500;
+  color: #212529;
+  max-width: 200px;
+}
+
+.literexia-status-cell {
+  width: 120px;
+}
+
+.literexia-status-completed {
+  display: flex;
+  align-items: center;
+  color: #28a745;
+  font-weight: 500;
+}
+
+.literexia-status-completed svg {
+  margin-right: 6px;
+}
+
+.literexia-status-in-progress {
+  color: #ffc107;
+  font-weight: 500;
+}
+
+.literexia-support-cell {
+  width: 100px;
+  text-align: center;
+}
+
+.literexia-support-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.literexia-support-checkbox.selected {
+  background-color: #6c8ef4;
+  border-color: #6c8ef4;
+  color: white;
+}
+
+.literexia-support-checkbox:hover {
+  border-color: #6c8ef4;
+}
+
+.literexia-remarks-cell {
+  min-width: 250px;
+  max-width: 350px;
+}
+
+.literexia-remarks-display {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.literexia-remarks-display p {
+  margin: 0;
+  flex-grow: 1;
+  padding-right: 12px;
+  color: #495057;
+  line-height: 1.5;
+}
+
+.literexia-edit-button {
+  background: none;
+  border: none;
+  color: #6c8ef4;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.literexia-edit-button:hover {
+  background-color: #f0f4ff;
+}
+
+.literexia-remarks-editor {
+  width: 100%;
+}
+
+.literexia-remarks-editor textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+
+.literexia-remarks-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.literexia-save-button,
+.literexia-cancel-button {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.literexia-save-button {
+  background-color: #6c8ef4;
+  color: white;
+}
+
+.literexia-save-button:hover {
+  background-color: #5a7ce0;
+}
+
+.literexia-cancel-button {
+  background-color: #f8f9fa;
+  color: #495057;
+}
+
+.literexia-cancel-button:hover {
+  background-color: #e9ecef;
+}
+
+.literexia-save-button svg,
+.literexia-cancel-button svg {
+  margin-right: 6px;
+  font-size: 0.85rem;
+}
+
+/* Empty state styling */
+.literexia-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  color: #6c757d;
+}
+
+.literexia-empty-state svg {
+  font-size: 2.5rem;
+  color: #ffc107;
+  margin-bottom: 16px;
+}
+
+.literexia-empty-state p {
+  max-width: 400px;
+  margin: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .literexia-iep-table th,
+  .literexia-iep-table td {
+    padding: 10px 12px;
+  }
+  
+  .literexia-remarks-cell {
+    min-width: 200px;
+  }
+} 

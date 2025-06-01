@@ -1,0 +1,37 @@
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const { authenticateToken, authorize } = require('../../middleware/auth');
+const preAssessmentController = require('../../controllers/Teachers/preAssessmentController');
+
+// Configure multer for memory storage (for S3 uploads)
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  }
+});
+
+// Pre-assessment routes
+router.get('/assessments', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.getAllPreAssessments);
+router.get('/assessments/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.getPreAssessmentById);
+router.post('/assessments', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.createPreAssessment);
+router.put('/assessments/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.updatePreAssessment);
+router.delete('/assessments/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.deletePreAssessment);
+router.put('/assessments/:id/toggle-active', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.toggleActiveStatus);
+
+// Question type routes
+router.get('/question-types', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.getAllQuestionTypes);
+router.post('/question-types', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.createQuestionType);
+router.put('/question-types/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.updateQuestionType);
+router.delete('/question-types/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.deleteQuestionType);
+
+// Media upload routes
+router.post('/upload-media', authenticateToken, authorize('teacher', 'guro'), upload.single('file'), preAssessmentController.uploadMedia);
+router.delete('/delete-media/:fileKey', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.deleteMedia);
+
+// Student results routes
+router.get('/student-results/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.getPreAssessmentResults);
+
+module.exports = router;

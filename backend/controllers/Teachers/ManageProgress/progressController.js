@@ -6,7 +6,6 @@ const CategoryResult = require('../../../models/Teachers/ManageProgress/category
 const PrescriptiveAnalysis = require('../../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
 const InterventionPlan = require('../../../models/Teachers/ManageProgress/interventionPlanModel');
 const InterventionProgress = require('../../../models/Teachers/ManageProgress/interventionProgressModel');
-const InterventionResponse = require('../../../models/Teachers/ManageProgress/interventionResponseModel');
 const StudentResponse = require('../../../models/Teachers/ManageProgress/studentResponseModel');
 
 /**
@@ -592,17 +591,11 @@ class ProgressController {
                 interventionPlanId: interventionId
             });
 
-            // Get student responses
-            const responses = await InterventionResponse.find({
-                interventionPlanId: interventionId
-            }).sort({ createdAt: 1 });
-
             return res.status(200).json({
                 success: true,
                 data: {
                     intervention,
-                    progress,
-                    responses
+                    progress
                 }
             });
         } catch (error) {
@@ -704,106 +697,6 @@ class ProgressController {
             return res.status(500).json({
                 success: false,
                 message: 'Failed to update intervention progress',
-                error: error.message
-            });
-        }
-    }
-
-    /**
-     * Record a student's response to an intervention question
-     */
-    async recordInterventionResponse(req, res) {
-        try {
-            const { studentId, interventionPlanId, questionId, selectedChoice, isCorrect, responseTime } = req.body;
-
-            // Validate ObjectId fields
-            if (!mongoose.Types.ObjectId.isValid(studentId) ||
-                !mongoose.Types.ObjectId.isValid(interventionPlanId) ||
-                !mongoose.Types.ObjectId.isValid(questionId)) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid ID format in request'
-                });
-            }
-
-            // Record response
-            const response = await InterventionResponse.create({
-                studentId: new mongoose.Types.ObjectId(studentId),
-                interventionPlanId: new mongoose.Types.ObjectId(interventionPlanId),
-                questionId: new mongoose.Types.ObjectId(questionId),
-                selectedChoice,
-                isCorrect,
-                responseTime,
-                createdAt: Date.now()
-            });
-
-            // Update progress
-            const interventionProgress = await InterventionProgress.findOne({
-                interventionPlanId: new mongoose.Types.ObjectId(interventionPlanId)
-            });
-
-            if (interventionProgress) {
-                // Calculate new values
-                const completedActivities = interventionProgress.completedActivities + 1;
-
-                const correctAnswers = isCorrect
-                    ? interventionProgress.correctAnswers + 1
-                    : interventionProgress.correctAnswers;
-                const incorrectAnswers = !isCorrect
-                    ? interventionProgress.incorrectAnswers + 1
-                    : interventionProgress.incorrectAnswers;
-
-                // Get the intervention to check total activities
-                const intervention = await InterventionPlan.findById(interventionPlanId);
-                const totalActivities = intervention ? intervention.questions.length : 0;
-
-                // Calculate percentages
-                const percentComplete = totalActivities > 0
-                    ? (completedActivities / totalActivities) * 100
-                    : 0;
-                const totalAnswers = correctAnswers + incorrectAnswers;
-                const percentCorrect = totalAnswers > 0
-                    ? (correctAnswers / totalAnswers) * 100
-                    : 0;
-                const passedThreshold = percentCorrect >= (intervention.passThreshold || 75);
-
-                // Update progress
-                await InterventionProgress.findOneAndUpdate(
-                    { interventionPlanId: new mongoose.Types.ObjectId(interventionPlanId) },
-                    {
-                        completedActivities,
-                        totalActivities,
-                        percentComplete,
-                        correctAnswers,
-                        incorrectAnswers,
-                        percentCorrect,
-                        passedThreshold,
-                        lastActivity: Date.now(),
-                        updatedAt: Date.now()
-                    }
-                );
-
-                // If intervention is complete, update its status
-                if (percentComplete === 100) {
-                    await InterventionPlan.findByIdAndUpdate(
-                        interventionPlanId,
-                        {
-                            status: 'completed',
-                            updatedAt: Date.now()
-                        }
-                    );
-                }
-            }
-
-            return res.status(201).json({
-                success: true,
-                data: response
-            });
-        } catch (error) {
-            console.error('Error recording intervention response:', error);
-            return res.status(500).json({
-                success: false,
-                message: 'Failed to record intervention response',
                 error: error.message
             });
         }

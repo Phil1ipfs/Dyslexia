@@ -8,7 +8,7 @@ const assignmentController = require('../../controllers/Teachers/ManageProgress/
 const responseController = require('../../controllers/Teachers/ManageProgress/assessmentResponseController');
 const mainController = require('../../controllers/Teachers/ManageProgress/mainAssessmentController');
 const categoryController = require('../../controllers/Teachers/ManageProgress/categoryProgressController');
-const readingLevelController = require('../../controllers/Teachers/ManageProgress/readingLevelProgressionController');
+// const readingLevelController = require('../../controllers/Teachers/ManageProgress/readingLevelProgressionController');
 
 // Assessment assignment routes
 router.post('/assign-categories', auth, authorize('teacher', 'guro'), assignmentController.assignCategories);
@@ -34,7 +34,7 @@ router.delete('/main-assessment/:id', auth, authorize('teacher', 'guro'), mainCo
 router.get('/category-progress/:id', auth, categoryController.getCategoryProgress);
 
 // Reading level routes
-router.get('/reading-level/:id', auth, authorize('teacher', 'guro'), readingLevelController.getProgression);
-router.put('/reading-level/:id', auth, authorize('teacher', 'guro'), readingLevelController.updateReadingLevel);
+// router.get('/reading-level/:id', auth, authorize('teacher', 'guro'), readingLevelController.getProgression);
+// router.put('/reading-level/:id', auth, authorize('teacher', 'guro'), readingLevelController.updateReadingLevel);
 
 module.exports = router;

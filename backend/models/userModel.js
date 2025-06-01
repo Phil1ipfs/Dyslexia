@@ -132,4 +132,6 @@ userSchema.statics.findOrCreateStudent = async function(studentData) {
   }
 };
 
-module.exports = userSchema;
+// Create and export the User model using the schema
+const User = mongoose.models.User || mongoose.model('User', userSchema);
+module.exports = User;

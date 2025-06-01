@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/login.css';
+import AuthService from '../services/authService';
 
 import logo from '../assets/images/Teachers/LITEREXIA.png';
 import wave from '../assets/images/Teachers/wave.png';
@@ -64,62 +65,32 @@ const Login = ({ onLogin }) => {
         return;
       }
 
-      const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
       console.log('Login attempt:', {
         email: formData.email,
-        expectedRole: expectedRoleType,
-        url: `${BASE}/api/auth/login`
-      });
-
-      // Add the expected role to the login request
-      const loginData = {
-        email: formData.email,
-        password: formData.password,
         expectedRole: expectedRoleType
-      };
-
-      console.log('Sending login request with data:', {
-        email: loginData.email,
-        expectedRole: loginData.expectedRole
       });
 
-      const res = await fetch(`${BASE}/api/auth/login`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(loginData)
-      });
+      // Pass the expectedRoleType to the login method
+      const response = await AuthService.login(
+        formData.email, 
+        formData.password,
+        expectedRoleType
+      );
+      
+      console.log('Login successful, user data:', response.user);
 
-      // Parse response first to get detailed error if available
-      const data = await res.json();
-      console.log('Login response:', {
-        status: res.status,
-        data: data
-      });
-
-      // If response is not OK, handle the error
-      if (!res.ok) {
-        throw new Error(data.message || `Login failed (${res.status})`);
-      }
-
-      // Check if response has expected data
-      if (!data.token || !data.user) {
-        throw new Error('Invalid response from server');
-      }
-
-      console.log('Login successful, user data:', data.user);
-
-      // Store auth data in localStorage
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('userData', JSON.stringify(data.user));
-      localStorage.setItem('userId', data.user.id);
+      // Store expected role type
       localStorage.setItem('userType', expectedRoleType);
+      
+      // Store user ID if available
+      if (response.user && response.user.id) {
+        localStorage.setItem('userId', response.user.id);
+      }
 
       // Call the onLogin function to update App state
-      onLogin();
+      if (onLogin) {
+        onLogin();
+      }
 
       // Route based on user type
       if (expectedRoleType === 'parent') {
@@ -133,7 +104,21 @@ const Login = ({ onLogin }) => {
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message || 'Login failed. Please check your credentials.');
+      
+      // Provide a more user-friendly error message for common errors
+      if (err.response) {
+        if (err.response.status === 403) {
+          setError('Access denied. You do not have the selected role.');
+        } else if (err.response.status === 401) {
+          setError('Invalid email or password.');
+        } else if (err.response.data && err.response.data.message) {
+          setError(err.response.data.message);
+        } else {
+          setError('Login failed. Please try again later.');
+        }
+      } else {
+        setError(err.message || 'Login failed. Please check your credentials.');
+      }
     } finally {
       setIsLoading(false);
     }
