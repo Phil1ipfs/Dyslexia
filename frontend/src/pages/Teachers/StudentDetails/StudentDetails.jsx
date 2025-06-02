@@ -33,6 +33,7 @@ import '../../../css/Teachers/StudentDetails.css';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { toast } from '../../../utils/toastHelper';
+import SuccessDialog from '../../../components/Teachers/SuccessDialog';
 
 // Import cradle logo - using Vite's import mechanism
 const cradleLogo = new URL('../../../assets/images/Teachers/cradleLogo.jpg', import.meta.url).href;
@@ -66,6 +67,10 @@ const StudentDetails = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const questionsPerPage = 9;
   const [iepReport, setIepReport] = useState(null);
+  const [successDialogData, setSuccessDialogData] = useState({
+    message: '',
+    submessage: ''
+  });
 
   // Default progress report
   const defaultProgress = {
@@ -868,6 +873,10 @@ const StudentDetails = () => {
         if (result && result.success) {
           console.log('Report sent successfully:', result);
           toast.success('Report sent successfully!');
+          setSuccessDialogData({
+            message: `Progress report has been successfully sent to ${getParentName()}!`,
+            submessage: 'A copy has been saved to the student\'s records.'
+          });
           setShowSuccessDialog(true);
         } else {
           throw new Error(result?.message || 'Failed to send report');
@@ -904,6 +913,10 @@ const StudentDetails = () => {
               if (simpleResult && simpleResult.success) {
                 console.log('Simple report sent successfully:', simpleResult);
                 toast.success('Message sent successfully (without PDF attachment)');
+                setSuccessDialogData({
+                  message: `Progress report has been successfully sent to ${getParentName()}!`,
+                  submessage: 'A copy has been saved to the student\'s records.'
+                });
                 setShowSuccessDialog(true);
               } else {
                 throw new Error(simpleResult?.message || 'Failed to send simple report');
@@ -1216,7 +1229,9 @@ const StudentDetails = () => {
                   </td>
                   <td className="sdx-cell sdx-activity-remarks">
                     <div className="sdx-remarks-content">
-                    {activity.remarks || 'No remarks available'}
+                    {activity.remarks ? activity.remarks : (
+                      <span className="sdx-no-remarks">No remarks added</span>
+                    )}
                     {activity.hasIntervention && (
                       <div className="sdx-intervention-info">
                         <span className="sdx-intervention-badge">
@@ -1849,7 +1864,9 @@ const StudentDetails = () => {
                             </td>
                             <td className="sdx-report-td sdx-report-td-puna">
                               <div>
-                                {activity.remarks || 'No remarks available'}
+                                {activity.remarks ? activity.remarks : (
+                                  <span className="sdx-no-remarks">No remarks added</span>
+                                )}
                                 {activity.hasIntervention && (
                                   <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', fontStyle: 'italic', color: '#ff6b00' }}>
                                     Intervention active: {activity.interventionName || 'Targeted intervention'}
@@ -1898,31 +1915,13 @@ const StudentDetails = () => {
       )}
 
       {/* Success Dialog */}
-      {showSuccessDialog && (
-        <div className="sdx-dialog-overlay">
-          <div className="sdx-dialog">
-            <div className="sdx-dialog-header">
-              <h3 className="sdx-dialog-title">
-                <FaCheckCircle className="sdx-dialog-icon" /> Success
-              </h3>
-            </div>
-            <div className="sdx-dialog-content">
-              <div className="sdx-dialog-message">
-                <p>Progress report has been successfully sent to {getParentName()}!</p>
-                <p>A copy has been saved to the student's records.</p>
-              </div>
-              <div className="sdx-dialog-actions">
-                <button
-                  className="sdx-dialog-btn sdx-dialog-btn-primary"
-                  onClick={closeSuccessDialog}
-                >
-                  OK
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <SuccessDialog
+        isOpen={showSuccessDialog}
+        onClose={() => setShowSuccessDialog(false)}
+        title="Success"
+        message={successDialogData.message}
+        submessage={successDialogData.submessage}
+      />
     </div>
   );
 };
