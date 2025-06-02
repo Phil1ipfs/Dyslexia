@@ -31,6 +31,14 @@ router.delete('/question-types/:id', authenticateToken, authorize('teacher', 'gu
 router.post('/upload-media', authenticateToken, authorize('teacher', 'guro'), upload.single('file'), preAssessmentController.uploadMedia);
 router.delete('/delete-media/:fileKey', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.deleteMedia);
 
+// Convert base64 images to S3 paths
+router.post('/assessments/:id/convert-images', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.convertImagesToS3);
+
+// Test route without authentication (for development only)
+if (process.env.NODE_ENV === 'development') {
+  router.post('/test/convert-images/:id', preAssessmentController.convertImagesToS3);
+}
+
 // Student results routes
 router.get('/student-results/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.getPreAssessmentResults);
 
