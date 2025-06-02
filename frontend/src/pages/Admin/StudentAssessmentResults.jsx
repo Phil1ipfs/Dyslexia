@@ -7,6 +7,7 @@ import {
   ChevronDown, ChevronUp, Download, Printer, Share2, Edit
 } from 'lucide-react';
 import '../../css/Admin/AssessmentResults/StudentAssessmentResults.css';
+import axios from 'axios';
 
 const StudentAssessmentResults = () => {
   const { id } = useParams();
@@ -15,121 +16,51 @@ const StudentAssessmentResults = () => {
   const [expandedCategories, setExpandedCategories] = useState([]);
 
   useEffect(() => {
-    // Simulated API call - would be replaced with actual backend call
     const fetchStudentData = async () => {
       try {
         setLoading(true);
         
-        // In production, this would be replaced with an actual API call
-        // e.g., const response = await axios.get(`/api/admin/assessment-results/${id}`);
+        // Fetch student data by idNumber
+        const studentResponse = await axios.get(`http://localhost:5001/api/admin/manage/students/idNumber/${id}`);
         
-        // Simulated student data
-        const mockStudent = {
-          _id: id,
-          idNumber: 202522222,
-          firstName: "Kit Nicholas",
-          middleName: "Rish",
-          lastName: "Mark",
-          section: "Hope",
-          gradeLevel: "Grade 2",
-          age: 8,
-          teacherName: "Ms. Jane Smith",
-          readingLevel: "Low Emerging",
-          readingPercentage: 8,
-          preAssessmentCompleted: true,
-          completedAt: "2025-05-23T17:53:54.969307",
-          totalQuestions: 25,
-          correctAnswers: 2,
-          categoryScores: {
-            "alphabet_knowledge": { 
-              total: 5, 
-              correct: 1, 
-              score: 20,
-              description: "Ability to recognize and name letters of the alphabet",
-              questions: [
-                { id: 1, question: "Identify the letter 'A'", result: "correct" },
-                { id: 2, question: "Match lowercase 'b' with uppercase 'B'", result: "incorrect" },
-                { id: 3, question: "Identify the letter 'M'", result: "incorrect" },
-                { id: 4, question: "Identify the letter 'Z'", result: "incorrect" },
-                { id: 5, question: "Match lowercase 'r' with uppercase 'R'", result: "incorrect" }
-              ]
-            },
-            "phonological_awareness": { 
-              total: 5, 
-              correct: 0, 
-              score: 0,
-              description: "Ability to recognize and work with sounds in spoken language",
-              questions: [
-                { id: 1, question: "Identify the first sound in 'cat'", result: "incorrect" },
-                { id: 2, question: "Identify rhyming words", result: "incorrect" },
-                { id: 3, question: "Count syllables in 'butterfly'", result: "incorrect" },
-                { id: 4, question: "Blend sounds /m/ /a/ /p/", result: "incorrect" },
-                { id: 5, question: "Segment the word 'dog' into sounds", result: "incorrect" }
-              ]
-            },
-            "decoding": { 
-              total: 5, 
-              correct: 0, 
-              score: 0,
-              description: "Ability to apply knowledge of letter-sound relationships to correctly pronounce written words",
-              questions: [
-                { id: 1, question: "Read the word 'cat'", result: "incorrect" },
-                { id: 2, question: "Sound out 'dog'", result: "incorrect" },
-                { id: 3, question: "Read the word 'run'", result: "incorrect" },
-                { id: 4, question: "Sound out 'big'", result: "incorrect" },
-                { id: 5, question: "Read the word 'sun'", result: "incorrect" }
-              ]
-            },
-            "word_recognition": { 
-              total: 5, 
-              correct: 1, 
-              score: 20,
-              description: "Ability to identify words quickly and accurately",
-              questions: [
-                { id: 1, question: "Recognize the sight word 'the'", result: "correct" },
-                { id: 2, question: "Recognize the sight word 'and'", result: "incorrect" },
-                { id: 3, question: "Recognize the sight word 'of'", result: "incorrect" },
-                { id: 4, question: "Recognize the sight word 'to'", result: "incorrect" },
-                { id: 5, question: "Recognize the sight word 'in'", result: "incorrect" }
-              ]
-            },
-            "reading_comprehension": { 
-              total: 5, 
-              correct: 0, 
-              score: 0,
-              description: "Ability to process text, understand its meaning, and integrate with what the reader already knows",
-              questions: [
-                { id: 1, question: "Answer a question about the main character", result: "incorrect" },
-                { id: 2, question: "Identify the setting of the story", result: "incorrect" },
-                { id: 3, question: "Recall a detail from the text", result: "incorrect" },
-                { id: 4, question: "Understand the sequence of events", result: "incorrect" },
-                { id: 5, question: "Make a prediction based on the story", result: "incorrect" }
-              ]
-            }
-          },
-          difficulties: [
-            "Letter recognition, particularly lowercase letters",
-            "Sound-symbol correspondence",
-            "Phonemic awareness",
-            "Sight word recognition",
-            "Basic text comprehension"
-          ],
-          strengths: [
-            "Can identify some uppercase letters",
-            "Shows interest in books and stories",
-            "Can recognize a few sight words"
-          ],
-          recommendations: [
-            "Daily alphabet activities focusing on letter recognition",
-            "Phonological awareness exercises, particularly sound isolation",
-            "Guided reading practice with simple decodable texts",
-            "Sight word practice using flashcards and games",
-            "Interactive storytelling to build comprehension skills"
-          ],
-          allCategoriesPassed: false
+        if (!studentResponse.data.success) {
+          throw new Error('Failed to fetch student data');
+        }
+
+        const studentData = studentResponse.data.data;
+
+        // Fetch assessment results by idNumber
+        const assessmentResponse = await axios.get(`http://localhost:5001/api/admin/assessment-results/${id}`);
+        
+        if (!assessmentResponse.data.success) {
+          throw new Error('Failed to fetch assessment results');
+        }
+
+        const assessmentData = assessmentResponse.data.data;
+
+        // Only use categories if assessmentType is main-assessment
+        let mainAssessmentCategories = [];
+        if (assessmentData.assessmentType === 'main-assessment') {
+          mainAssessmentCategories = assessmentData.categories || [];
+        }
+
+        // Combine student and assessment data
+        const combinedData = {
+          ...studentData,
+          ...assessmentData,
+          categoryScores: mainAssessmentCategories,
+          readingLevel: assessmentData.readingLevel || 'Not Assessed',
+          readingPercentage: assessmentData.overallScore || 0,
+          totalQuestions: assessmentData.totalQuestions || 0,
+          correctAnswers: assessmentData.correctAnswers || 0,
+          difficulties: assessmentData.difficulties || [],
+          strengths: assessmentData.strengths || [],
+          recommendations: assessmentData.recommendations || [],
+          allCategoriesPassed: assessmentData.allCategoriesPassed || false,
+          completedAt: assessmentData.updatedAt || null
         };
         
-        setStudent(mockStudent);
+        setStudent(combinedData);
       } catch (error) {
         console.error("Error fetching student assessment results:", error);
       } finally {
@@ -357,71 +288,67 @@ const StudentAssessmentResults = () => {
         </h2>
         
         <div className="student-assessment__categories-grid">
-          {Object.entries(student.categoryScores).map(([category, data]) => (
-            <div key={category} className="student-assessment__category-card">
-              <div className="student-assessment__category-header">
-                <h3>{formatCategoryName(category)}</h3>
-                <button 
-                  className="student-assessment__toggle-btn"
-                  onClick={() => toggleCategory(category)}
-                >
-                  {expandedCategories.includes(category) ? 
-                    <ChevronUp size={18} /> : 
-                    <ChevronDown size={18} />
-                  }
-                </button>
-              </div>
-              
-              <div className="student-assessment__category-score">
-                <div className={`student-assessment__score-circle student-assessment__score--${data.score >= 75 ? 'passed' : data.score >= 50 ? 'partial' : 'failed'}`}>
-                  {data.score}%
-                </div>
-                
-                <div className="student-assessment__score-details">
-                  <p className="student-assessment__correct-count">
-                    {data.correct} out of {data.total} correct
-                  </p>
-                  <span className={`student-assessment__status-badge ${data.score >= 75 ? 'passed' : 'failed'}`}>
-                    {data.score >= 75 ? <CheckCircle size={14} /> : <XCircle size={14} />}
-                    {data.score >= 75 ? 'Passed' : 'Needs Improvement'}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="student-assessment__progress-bar">
-                <div 
-                  className="student-assessment__progress-fill" 
-                  style={{ width: `${data.score}%` }}
-                ></div>
-              </div>
-              
-              {expandedCategories.includes(category) && (
-                <div className="student-assessment__category-details">
-                  <p>{data.description}</p>
-                  
-                  <div className="student-assessment__questions-overview">
-                    <h4>Question Results</h4>
-                    <div className="student-assessment__questions-grid">
-                      {data.questions.map((question, index) => (
-                        <div 
-                          key={question.id} 
-                          className={`student-assessment__question-result ${question.result}`}
-                          title={question.question}
-                        >
-                          {index + 1}
-                          {question.result === 'correct' ? 
-                            <CheckCircle size={12} /> : 
-                            <XCircle size={12} />
-                          }
-                        </div>
-                      ))}
+          {Array.isArray(student.categoryScores)
+            ? student.categoryScores.map((cat, idx) => (
+                <div key={cat.categoryName || idx} className="student-assessment__category-card">
+                  <div className="student-assessment__category-header">
+                    <h3>{cat.categoryName || `Category ${idx + 1}`}</h3>
+                    <button 
+                      className="student-assessment__toggle-btn"
+                      onClick={() => toggleCategory(cat.categoryName)}
+                    >
+                      {expandedCategories.includes(cat.categoryName) ? 
+                        <ChevronUp size={18} /> : 
+                        <ChevronDown size={18} />
+                      }
+                    </button>
+                  </div>
+                  <div className="student-assessment__category-score">
+                    <div className={`student-assessment__score-circle student-assessment__score--${cat.score >= 75 ? 'passed' : cat.score >= 50 ? 'partial' : 'failed'}`}>
+                      {cat.score}%
+                    </div>
+                    <div className="student-assessment__score-details">
+                      <p className="student-assessment__correct-count">
+                        {cat.correctAnswers} out of {cat.totalQuestions} correct
+                      </p>
+                      <span className={`student-assessment__status-badge ${cat.score >= 75 ? 'passed' : 'failed'}`}>
+                        {cat.score >= 75 ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                        {cat.score >= 75 ? 'Passed' : 'Needs Improvement'}
+                      </span>
                     </div>
                   </div>
-                  
+                  <div className="student-assessment__progress-bar">
+                    <div 
+                      className="student-assessment__progress-fill" 
+                      style={{ width: `${cat.score}%` }}
+                    ></div>
+                  </div>
+                  {expandedCategories.includes(cat.categoryName) && (
+                    <div className="student-assessment__category-details">
+                      <p>{cat.description}</p>
+                      <div className="student-assessment__questions-overview">
+                        <h4>Question Results</h4>
+                        <div className="student-assessment__questions-grid">
+                          {cat.questions && cat.questions.map((question, index) => (
+                            <div 
+                              key={question.id || index} 
+                              className={`student-assessment__question-result ${question.result}`}
+                              title={question.question}
+                            >
+                              {index + 1}
+                              {question.result === 'correct' ? 
+                                <CheckCircle size={12} /> : 
+                                <XCircle size={12} />
+                              }
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+              ))
+            : null}
         </div>
       </div>
     </div>
