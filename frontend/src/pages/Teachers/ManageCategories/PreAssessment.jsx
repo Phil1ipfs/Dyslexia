@@ -29,6 +29,7 @@ import {
 import "../../../css/Teachers/ManageCategories/PreAssessment.css";
 import "../../../css/Teachers/ManageCategories/PreAssessmentUpdates.css";
 import { PreAssessmentService } from "../../../services/Teachers";
+import UnifiedTemplatePreview from "./UnifiedTemplatePreview";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -89,6 +90,10 @@ const PreAssessment = () => {
     questions: []
   });
   const [questionTypes, setQuestionTypes] = useState([]);
+  // Preview All state variables
+  const [isPreviewAllDialogOpen, setIsPreviewAllDialogOpen] = useState(false);
+  const [previewAllTemplates, setPreviewAllTemplates] = useState([]);
+  const [previewAllCurrentIndex, setPreviewAllCurrentIndex] = useState(0);
 
   useEffect(() => {
     // Fetch pre-assessment data
@@ -243,6 +248,21 @@ const PreAssessment = () => {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else if (direction === "prev" && currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
+    }
+  };
+
+  // Handle Preview All Questions
+  const handlePreviewAllQuestions = () => {
+    if (preAssessment && preAssessment.questions && preAssessment.questions.length > 0) {
+      setPreviewAllTemplates([{
+        ...preAssessment,
+        // Include any properties needed for the preview
+        templateType: 'preassessment'
+      }]);
+      setPreviewAllCurrentIndex(0);
+      setIsPreviewAllDialogOpen(true);
+    } else {
+      toast.warning("No questions available to preview.");
     }
   };
 
@@ -1302,6 +1322,14 @@ const PreAssessment = () => {
             >
               <FontAwesomeIcon icon={faEye} />
               <span>Preview Assessment</span>
+            </button>
+            
+            <button 
+              className="pre-action-button"
+              onClick={handlePreviewAllQuestions}
+            >
+              <FontAwesomeIcon icon={faEye} />
+              <span>Preview All Questions</span>
             </button>
             
             <button 
@@ -2584,7 +2612,19 @@ const PreAssessment = () => {
         </div>
       )}
 
-      <ToastContainer 
+      {/* Preview All dialog */}
+      <UnifiedTemplatePreview 
+        isOpen={isPreviewAllDialogOpen}
+        onClose={() => setIsPreviewAllDialogOpen(false)}
+        templates={previewAllTemplates}
+        templateType="preassessment"
+        onEditTemplate={() => {
+          setIsPreviewAllDialogOpen(false);
+          handleEditPreAssessment();
+        }}
+      />
+
+      <ToastContainer
         position="top-center"
         autoClose={3000}
         hideProgressBar={false}
