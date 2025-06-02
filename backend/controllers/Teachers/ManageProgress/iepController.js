@@ -630,11 +630,46 @@ class IEPController {
       const parentDb = mongoose.connection.useDb('parent');
       const childPdfCollection = parentDb.collection('child_pdf');
       
+      // Get teacher profile ID from users collection
+      let teacherId = null;
+      if (req.user && req.user.id) {
+        try {
+          const teacherDb = mongoose.connection.useDb('teachers');
+          const teacherProfileCollection = teacherDb.collection('profile');
+          
+          // Find teacher profile using userId from users_web
+          const teacherProfile = await teacherProfileCollection.findOne({
+            userId: new mongoose.Types.ObjectId(req.user.id)
+          });
+          
+          if (teacherProfile) {
+            teacherId = teacherProfile._id;
+            console.log(`Found teacher profile with ID: ${teacherId}`);
+          } else {
+            // Try to find by the known ID
+            const knownId = '6818bae0e9bed4ff08ab7e8c';
+            if (mongoose.Types.ObjectId.isValid(knownId)) {
+              const objId = new mongoose.Types.ObjectId(knownId);
+              const knownProfile = await teacherProfileCollection.findOne({ _id: objId });
+              
+              if (knownProfile) {
+                teacherId = knownProfile._id;
+                console.log(`Using known teacher profile with ID: ${teacherId}`);
+              } else {
+                console.warn(`No teacher profile found for user ID: ${req.user.id}`);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching teacher profile:', error);
+        }
+      }
+      
       // Create PDF record
       const pdfRecord = {
         studentId: new mongoose.Types.ObjectId(studentId),
         parentId: new mongoose.Types.ObjectId(parentId),
-        teacherId: req.user && req.user.id ? new mongoose.Types.ObjectId(req.user.id) : null,
+        teacherId: teacherId ? new mongoose.Types.ObjectId(teacherId) : null,
         subject: subject,
         content: content,
         pdfS3Path: pdfS3Path, // Store S3 path instead of raw PDF data

@@ -63,6 +63,7 @@ class UploadController {
         Body: buffer,
         ContentType: contentType || 'application/pdf',
         ContentDisposition: 'inline',
+        ACL: 'public-read',
         Metadata: {
           ...metadata,
           studentId: studentId || 'unknown',
@@ -290,14 +291,11 @@ class UploadController {
         // Check if the object exists
         await s3.headObject(params).promise();
         
-        // Generate a pre-signed URL for temporary access
-        const signedUrl = s3.getSignedUrl('getObject', {
-          ...params,
-          Expires: 60 * 5 // URL expires in 5 minutes
-        });
+        // Generate a public URL instead of a signed URL
+        const publicUrl = `https://${params.Bucket}.s3.${process.env.AWS_REGION || 'ap-southeast-2'}.amazonaws.com/${params.Key}`;
         
-        // Redirect to the pre-signed URL
-        res.redirect(signedUrl);
+        // Redirect to the public URL
+        res.redirect(publicUrl);
       } catch (s3Error) {
         console.error('[UploadController] S3 download error:', s3Error);
         

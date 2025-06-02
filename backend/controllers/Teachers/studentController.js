@@ -422,31 +422,9 @@ exports.getRecommendedLessons = async (req, res) => {
   try {
     const id = req.params.id;
 
-    // This would typically come from a recommendations collection
-    // For now, generate sample data
-    const recommendations = [
-      {
-        id: '1',
-        title: 'Alphabet Recognition Practice',
-        type: 'Interactive',
-        description: 'Practice recognizing uppercase and lowercase letters.',
-        difficulty: 'Basic'
-      },
-      {
-        id: '2',
-        title: 'Phonemic Awareness Activities',
-        type: 'Audio',
-        description: 'Listening exercises to identify beginning sounds in words.',
-        difficulty: 'Intermediate'
-      },
-      {
-        id: '3',
-        title: 'Word Building With Syllables',
-        type: 'Game',
-        description: 'Build words by combining syllables correctly.',
-        difficulty: 'Advanced'
-      }
-    ];
+    // Return empty array instead of generating mock data
+    // This prevents unnecessary population of the lessons collection in test database
+    const recommendations = [];
 
     res.json(recommendations);
   } catch (error) {

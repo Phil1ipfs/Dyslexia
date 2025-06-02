@@ -151,11 +151,19 @@ iepReportSchema.methods.generateObjectivesFromCategoryResults = function(categor
     const displayName = category.categoryName
       .replace(/_/g, ' ')
       .replace(/\b\w/g, l => l.toUpperCase());
+    
+    // Determine status based on score and isPassed
+    let status = 'in_progress';
+    if (category.isPassed) {
+      status = 'mastered';
+    } else if (category.score === 0) {
+      status = 'not_started';
+    }
       
     return {
       categoryName: displayName,
       lesson: `Mastering ${displayName}`,
-      status: category.isPassed ? 'mastered' : 'in_progress',
+      status: status,
       completed: category.isPassed,
       supportLevel: null, // Start with no support level selected
       score: category.score || 0,

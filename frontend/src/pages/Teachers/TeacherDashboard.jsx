@@ -327,12 +327,6 @@ const TeacherDashboard = () => {
               Monitor student reading levels, performance, and assign interventions effectively.
             </p>
           </div>
-          <div className="teacher-notification-bell">
-            <span className="teacher-notification-icon">🔔</span>
-            {notificationCount > 0 && (
-              <span className="teacher-notification-badge">{notificationCount}</span>
-            )}
-          </div>
         </div>
 
         {/* Stats Cards Grid - Key metrics at the top */}
@@ -348,24 +342,20 @@ const TeacherDashboard = () => {
           <div className="teacher-stat-card teacher-stat-card--scoring">
             <img src={scoringIcon} alt="Score" className="teacher-stat-card__icon" />
             <div className="teacher-stat-card__info">
-              <h3 className="teacher-stat-card__heading">Average Score</h3>
-              <p className="teacher-stat-card__value">{metrics.averageScore}%</p>
-            </div>
-          </div>
-
-          <div className="teacher-stat-card teacher-stat-card--activities">
-            <img src={activitiesIcon} alt="Activities" className="teacher-stat-card__icon" />
-            <div className="teacher-stat-card__info">
-              <h3 className="teacher-stat-card__heading">Completion Rate</h3>
-              <p className="teacher-stat-card__value">{metrics.completionRate}%</p>
+              <h3 className="teacher-stat-card__heading">Students At Risk</h3>
+              <p className="teacher-stat-card__value">
+                {studentsNeedingAttention.filter(student => student.readingLevel !== 'Not Assessed').length} students
+              </p>
             </div>
           </div>
 
           <div className="teacher-stat-card teacher-stat-card--pending">
             <img src={pendingIcon} alt="Pending" className="teacher-stat-card__icon" />
             <div className="teacher-stat-card__info">
-              <h3 className="teacher-stat-card__heading">Pending Actions</h3>
-              <p className="teacher-stat-card__value">{metrics.pendingEdits}</p>
+              <h3 className="teacher-stat-card__heading">Active Interventions</h3>
+              <p className="teacher-stat-card__value">
+                {interventionProgress.length} {interventionProgress.length === 1 ? 'intervention' : 'interventions'}
+              </p>
             </div>
           </div>
         </div>
@@ -763,16 +753,28 @@ const TeacherDashboard = () => {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value, name) => [`${value} students`, name]}
-                        contentStyle={{
-                          background: '#3B4F81',
-                          border: '2px solid #F3C922',
-                          borderRadius: '8px',
-                          color: 'white',
-                          padding: '8px 12px',
-                          boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
+                        content={({ active, payload, label }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="teacher-pie-chart-custom-tooltip">
+                                <div className="teacher-pie-tooltip-header">{data.name}</div>
+                                <div className="teacher-pie-tooltip-content">
+                                  <div className="teacher-pie-tooltip-item">
+                                    <span 
+                                      className="teacher-pie-tooltip-color" 
+                                      style={{ backgroundColor: data.color }}
+                                    ></span>
+                                    <span className="teacher-pie-tooltip-label">
+                                      {data.value} students
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
                         }}
-                        itemStyle={{ color: 'white' }}
                         cursor={{ fill: 'transparent' }}
                       />
                     </PieChart>
@@ -906,15 +908,31 @@ const TeacherDashboard = () => {
                         }}
                       />
                       <Tooltip
-                        contentStyle={{
-                          background: '#3B4F81',
-                          border: '1px solid rgba(255,255,255,0.2)',
-                          borderRadius: '8px',
-                          color: 'white',
-                          padding: '10px'
+                        content={({ active, payload, label }) => {
+                          if (active && payload && payload.length) {
+                            const value = payload[0].value;
+                            return (
+                              <div className="teacher-progress-chart-custom-tooltip">
+                                <div className="teacher-progress-tooltip-header">
+                                  {timeFrame === 'weekly' ? `Week ${label}` : label}
+                                </div>
+                                <div className="teacher-progress-tooltip-content">
+                                  <div className="teacher-progress-tooltip-item">
+                                    <span 
+                                      className="teacher-progress-tooltip-color" 
+                                      style={{ backgroundColor: getReadingLevelColor(selectedReadingLevel) }}
+                                    ></span>
+                                    <span className="teacher-progress-tooltip-label">
+                                      Progress: {value}%
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
                         }}
-                        formatter={(value) => [`${value}%`, 'Progress']}
-                        labelFormatter={(label) => timeFrame === 'weekly' ? `Week ${label}` : label}
+                        cursor={{ strokeDasharray: '3 3', stroke: 'rgba(255,255,255,0.5)' }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -991,13 +1009,28 @@ const TeacherDashboard = () => {
                     ticks={[0, 25, 50, 75, 100]}
                   />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'rgba(43, 58, 103, 0.9)',
-                      border: '1px solid #F3C922',
-                      borderRadius: '8px',
-                      color: 'white'
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="teacher-intervention-custom-tooltip">
+                            <div className="teacher-intervention-tooltip-header">{label}</div>
+                            {payload.map((entry, index) => (
+                              <div key={index} className="teacher-intervention-tooltip-item">
+                                <span 
+                                  className="teacher-intervention-tooltip-color" 
+                                  style={{ backgroundColor: entry.color }}
+                                ></span>
+                                <span className="teacher-intervention-tooltip-label">
+                                  {entry.dataKey === 'completed' ? 'Completion' : 'Correct Answers'}: {entry.value}%
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return null;
                     }}
-                    formatter={(value) => [`${value}%`, '']}
+                    cursor={false}
                   />
                   <ReferenceLine y={75} stroke="#F3C922" strokeWidth={1} />
                   <Bar dataKey="completed" name="Completion %" fill="#4BC0C0" radius={[4, 4, 0, 0]} maxBarSize={30} />
@@ -1021,108 +1054,24 @@ const TeacherDashboard = () => {
               borderRadius: '8px',
               backgroundColor: 'rgba(30, 42, 74, 0.3)'
             }}>
-              <table style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                fontSize: '0.95rem',
-                backgroundColor: 'transparent',
-                color: 'white'
-              }}>
+              <table className="teacher-intervention-table">
                 <thead>
                   <tr>
-                    <th style={{
-                      textAlign: 'left',
-                      padding: '12px 16px',
-                      fontWeight: '500',
-                      color: 'white',
-                      backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                      fontSize: '0.9rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>STUDENT</th>
-                    <th style={{
-                      textAlign: 'left',
-                      padding: '12px 16px',
-                      fontWeight: '500',
-                      color: 'white',
-                      backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                      fontSize: '0.9rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>INTERVENTION PLAN</th>
-                    <th style={{
-                      textAlign: 'left',
-                      padding: '12px 16px',
-                      fontWeight: '500',
-                      color: 'white',
-                      backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                      fontSize: '0.9rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>READING LEVEL</th>
-                    <th style={{
-                      textAlign: 'left',
-                      padding: '12px 16px',
-                      fontWeight: '500',
-                      color: 'white',
-                      backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                      fontSize: '0.9rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>COMPLETION</th>
-                    <th style={{
-                      textAlign: 'left',
-                      padding: '12px 16px',
-                      fontWeight: '500',
-                      color: 'white',
-                      backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                      fontSize: '0.9rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>CORRECT %</th>
-                    <th style={{
-                      textAlign: 'left',
-                      padding: '12px 16px',
-                      fontWeight: '500',
-                      color: 'white',
-                      backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                      fontSize: '0.9rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>ACTIONS</th>
+                    <th>STUDENT</th>
+                    <th>INTERVENTION PLAN</th>
+                    <th>READING LEVEL</th>
+                    <th>COMPLETION</th>
+                    <th>CORRECT %</th>
+                    <th>ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredInterventionProgress && filteredInterventionProgress.length > 0 ? (
                     filteredInterventionProgress.map((progress) => (
-                      <tr key={progress._id.$oid || progress._id} 
-                          style={{ backgroundColor: 'transparent' }}
-                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.03)'}
-                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                        <td style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                          color: 'white',
-                          backgroundColor: 'transparent'
-                        }}>{progress.studentName}</td>
-                        <td style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                          color: 'white',
-                          backgroundColor: 'transparent'
-                        }}>Intervention Plan</td>
-                        <td style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                          color: 'white',
-                          backgroundColor: 'transparent'
-                        }}>
+                      <tr key={progress._id.$oid || progress._id}>
+                        <td>{progress.studentName}</td>
+                        <td>Intervention Plan</td>
+                        <td>
                           <span style={{
                             display: 'inline-block',
                             padding: '0.4rem 0.8rem',
@@ -1134,12 +1083,7 @@ const TeacherDashboard = () => {
                             {progress.readingLevel || 'Not Assessed'}
                           </span>
                         </td>
-                        <td style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                          color: 'white',
-                          backgroundColor: 'transparent'
-                        }}>
+                        <td>
                           <div style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -1169,18 +1113,8 @@ const TeacherDashboard = () => {
                             }}>{progress.percentComplete || 0}%</span>
                           </div>
                         </td>
-                        <td style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                          color: 'white',
-                          backgroundColor: 'transparent'
-                        }}>{progress.percentCorrect || 0}%</td>
-                        <td style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                          color: 'white',
-                          backgroundColor: 'transparent'
-                        }}>
+                        <td>{progress.percentCorrect || 0}%</td>
+                        <td>
                           {progress.passedThreshold ? (
                             <button style={{
                               backgroundColor: '#4BC0C0',
@@ -1230,14 +1164,7 @@ const TeacherDashboard = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" style={{
-                        textAlign: 'center',
-                        padding: '3rem',
-                        color: 'white',
-                        fontStyle: 'italic',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                        backgroundColor: 'transparent'
-                      }}>
+                      <td colSpan="6" className="teacher-no-data-cell">
                         No intervention progress data available.
                       </td>
                     </tr>
@@ -1633,7 +1560,7 @@ const TeacherDashboard = () => {
                                   }}
                                   onClick={() => {
                                     closeReadingLevelModal();
-                                    openStudentDetail(student);
+                                    navigate('/teacher/student-details', { state: { readingLevel: selectedReadingLevel } });
                                   }}
                                 >
                                   View
@@ -1698,7 +1625,7 @@ const TeacherDashboard = () => {
                 }}
                 onClick={() => {
                   closeReadingLevelModal();
-                  navigate('/teacher/manage-progress', { state: { readingLevel: selectedReadingLevel } });
+                  navigate('/teacher/student-details', { state: { readingLevel: selectedReadingLevel } });
                 }}
               >
                 See All Students
@@ -1851,12 +1778,12 @@ const TeacherDashboard = () => {
                 className="teacher-secondary-button"
                 onClick={() => {
                   closeStudentDetail();
-                  navigate('/teacher/manage-activities', {
+                  navigate('/teacher/manage-progress', {
                     state: { studentId: selectedStudent.id }
                   });
                 }}
               >
-                Manage Activities
+                Manage Progress
               </button>
               <button className="teacher-secondary-button" onClick={closeStudentDetail}>Close</button>
             </div>

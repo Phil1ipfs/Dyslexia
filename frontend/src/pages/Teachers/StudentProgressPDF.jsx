@@ -294,16 +294,21 @@ const StudentProgressPDF = () => {
     const activities = readingLevelProgress.categories.map((category, index) => {
       const score = category.score || 0;
       const supportLevel = score >= 70 ? 'minimal' : score >= 40 ? 'moderate' : 'extensive';
+      // Determine status based on score
+      const status = score === 0 ? 'Not Started' : score >= 75 ? 'Mastered' : 'In Progress';
       
       return {
         id: `category-${index}`,
         name: `${category.category || 'Reading'} Practice`,
         description: category.category || 'Reading Skills',
         score: score,
+        status: status,
         minimalSupport: supportLevel === 'minimal',
         moderateSupport: supportLevel === 'moderate',
         extensiveSupport: supportLevel === 'extensive',
-        remarks: `Student ${score >= 70 ? 'excels at' : score >= 40 ? 'is progressing with' : 'needs additional support with'} ${(category.category || 'reading skills').toLowerCase()}.`
+        remarks: category.remarks || '', // Don't generate default remarks
+        hasIntervention: category.hasIntervention || false,
+        interventionName: category.interventionName || ''
       };
     });
     
@@ -313,11 +318,13 @@ const StudentProgressPDF = () => {
           <thead>
             <tr>
               <th className="sdx-report-th">Lesson</th>
+              <th className="sdx-report-th">Status</th>
               <th className="sdx-report-th">Score</th>
               <th className="sdx-report-th" colSpan="3">Support Level</th>
               <th className="sdx-report-th">Remarks</th>
             </tr>
             <tr>
+              <th className="sdx-report-th-empty"></th>
               <th className="sdx-report-th-empty"></th>
               <th className="sdx-report-th-empty"></th>
               <th className="sdx-report-th-level">Minimal</th>
@@ -335,6 +342,9 @@ const StudentProgressPDF = () => {
                     <div className="sdx-report-lesson-category">{activity.description}</div>
                   </div>
                 </td>
+                <td className="sdx-report-td sdx-report-td-status">
+                  {activity.status}
+                </td>
                 <td className="sdx-report-td sdx-report-td-score">
                   <span className={`sdx-report-score ${activity.score >= 75 ? 'passing' : 'failing'}`}>
                     {activity.score}%
@@ -350,7 +360,16 @@ const StudentProgressPDF = () => {
                   {activity.extensiveSupport ? "✓" : ""}
                 </td>
                 <td className="sdx-report-td sdx-report-td-remarks">
-                  {activity.remarks}
+                  {activity.remarks ? (
+                    <div>{activity.remarks}</div>
+                  ) : (
+                    <span className="sdx-no-remarks"></span>
+                  )}
+                  {activity.hasIntervention && (
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', fontStyle: 'italic', color: '#ff6b00' }}>
+                      Intervention active: {activity.interventionName || 'Targeted intervention'}
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
