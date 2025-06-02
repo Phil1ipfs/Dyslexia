@@ -292,8 +292,14 @@ const StudentDetails = () => {
 
         // Only create default activities if IEP activities weren't created
         if (!iepActivitiesCreated) {
-          console.log("📝 Creating default activities since IEP activities not available");
-          createDefaultActivities(readingProgressData);
+          // Check if student is assessed before creating default activities
+          if (!student.readingLevel || student.readingLevel === 'Not Assessed') {
+            console.log("Student has not been assessed yet. Setting empty activities.");
+            setActivities([]);
+          } else {
+            console.log("📝 Creating default activities since IEP activities not available");
+            createDefaultActivities(readingProgressData);
+          }
         }
 
       } catch (error) {
@@ -358,64 +364,10 @@ const StudentDetails = () => {
             };
           });
         }
-        // Last resort: create some generic activities
+        // If no real data, use empty activities instead of creating generic ones
         else {
-          defaultActivities = [
-            {
-              id: 'default-phonemic',
-              name: 'Phonemic Awareness Practice',
-              description: 'Phonological Awareness',
-              completed: true,
-              status: 'completed',
-              score: 85,
-              passingThreshold: 75,
-              minimalSupport: true,
-              moderateSupport: false,
-              extensiveSupport: false,
-              remarks: 'Student is practicing recognizing sounds in words.',
-              hasIntervention: false,
-              interventionName: '',
-              interventionStatus: null,
-              interventionId: null,
-              lastUpdated: new Date().toISOString()
-            },
-            {
-              id: 'default-decoding',
-              name: 'Decoding Practice',
-              description: 'Decoding',
-              completed: false,
-              status: 'in_progress',
-              score: 65,
-              passingThreshold: 75,
-              minimalSupport: false,
-              moderateSupport: true,
-              extensiveSupport: false,
-              remarks: 'Student is working on sounding out words.',
-              hasIntervention: false,
-              interventionName: '',
-              interventionStatus: null,
-              interventionId: null,
-              lastUpdated: new Date().toISOString()
-            },
-            {
-              id: 'default-comprehension',
-              name: 'Reading Comprehension',
-              description: 'Reading Comprehension',
-              completed: false,
-              status: 'in_progress',
-              score: 35,
-              passingThreshold: 75,
-              minimalSupport: false,
-              moderateSupport: false,
-              extensiveSupport: true,
-              remarks: 'Student is practicing understanding text meaning.',
-              hasIntervention: true,
-              interventionName: 'Targeted reading comprehension intervention',
-              interventionStatus: 'active',
-              interventionId: null,
-              lastUpdated: new Date().toISOString()
-            }
-          ];
+          console.log("No assessment or progress data available. Using empty activities.");
+          defaultActivities = [];
         }
         
         console.log("Created default activities:", defaultActivities);
@@ -1155,6 +1107,41 @@ const StudentDetails = () => {
 
   // Render learning activities section
   const renderActivitiesTable = () => {
+    // Check if student has been assessed
+    if (!student.readingLevel || student.readingLevel === 'Not Assessed') {
+      return (
+        <div className="sdx-activities-container">
+          <table className="sdx-table">
+            <thead>
+              <tr className="sdx-table-header">
+                <th className="sdx-header-cell sdx-lesson-col">Lesson</th>
+                <th className="sdx-header-cell sdx-status-col">Status</th>
+                <th className="sdx-header-cell sdx-score-col">Score</th>
+                <th className="sdx-header-cell sdx-support-col" colSpan="3">Support Level</th>
+                <th className="sdx-header-cell sdx-remarks-col">Remarks</th>
+              </tr>
+              <tr className="sdx-table-subheader">
+                <th className="sdx-subheader-cell sdx-placeholder"></th>
+                <th className="sdx-subheader-cell sdx-placeholder"></th>
+                <th className="sdx-subheader-cell sdx-placeholder"></th>
+                <th className="sdx-subheader-cell sdx-support-level">Minimal</th>
+                <th className="sdx-subheader-cell sdx-support-level">Moderate</th>
+                <th className="sdx-subheader-cell sdx-support-level">Extensive</th>
+                <th className="sdx-subheader-cell sdx-placeholder"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="sdx-table-row">
+                <td colSpan="7" className="sdx-cell sdx-no-activities">
+                  No learning activities available. Student has not been assessed yet.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+    
     // Check if we have IEP data
     const hasIepData = iepReport && iepReport.objectives && iepReport.objectives.length > 0;
     

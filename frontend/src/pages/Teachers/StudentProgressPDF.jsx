@@ -214,7 +214,16 @@ const StudentProgressPDF = () => {
     if (!readingLevelProgress || !readingLevelProgress.categories || readingLevelProgress.categories.length === 0) {
       return (
         <div className="sdx-report-no-data">
-          <p>No reading level assessment data available</p>
+          <p>Student has not been assessed yet</p>
+        </div>
+      );
+    }
+    
+    // For students marked as "Not Assessed" explicitly
+    if (student.readingLevel === 'Not Assessed') {
+      return (
+        <div className="sdx-report-no-data">
+          <p>Student has not been assessed yet</p>
         </div>
       );
     }
@@ -283,10 +292,39 @@ const StudentProgressPDF = () => {
   };
 
   const renderActivitiesTable = () => {
-    if (!readingLevelProgress || !readingLevelProgress.categories || readingLevelProgress.categories.length === 0) {
+    // Check if we have reading level progress data or if the student is marked as "Not Assessed"
+    if (!readingLevelProgress || !readingLevelProgress.categories || readingLevelProgress.categories.length === 0 || 
+        student.readingLevel === 'Not Assessed') {
+      // Create an empty table structure for unassessed students
       return (
-        <div className="sdx-report-no-activities">
-          <p>No learning activities recorded yet</p>
+        <div className="sdx-report-activities">
+          <table className="sdx-report-table">
+            <thead>
+              <tr>
+                <th className="sdx-report-th">Lesson</th>
+                <th className="sdx-report-th">Status</th>
+                <th className="sdx-report-th">Score</th>
+                <th className="sdx-report-th" colSpan="3">Support Level</th>
+                <th className="sdx-report-th">Remarks</th>
+              </tr>
+              <tr>
+                <th className="sdx-report-th-empty"></th>
+                <th className="sdx-report-th-empty"></th>
+                <th className="sdx-report-th-empty"></th>
+                <th className="sdx-report-th-level">Minimal</th>
+                <th className="sdx-report-th-level">Moderate</th>
+                <th className="sdx-report-th-level">Extensive</th>
+                <th className="sdx-report-th-empty"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="sdx-report-tr">
+                <td colSpan="7" className="sdx-report-td-empty">
+                  No activities available. Student has not been assessed yet.
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       );
     }
@@ -481,11 +519,17 @@ const StudentProgressPDF = () => {
         {/* Recommendations */}
         <div className="sdx-report-section-title">Prescriptive Recommendations</div>
         <div className="sdx-report-recommendations">
-          <ul className="sdx-report-rec-list">
-            {progressReport.recommendations.map((rec, index) => (
-              <li key={index} className="sdx-report-rec-item">{rec}</li>
-            ))}
-          </ul>
+          {student.readingLevel === 'Not Assessed' ? (
+            <div className="sdx-report-no-data">
+              <p>No recommendations available. Student needs to be assessed first.</p>
+            </div>
+          ) : (
+            <ul className="sdx-report-rec-list">
+              {progressReport.recommendations.map((rec, index) => (
+                <li key={index} className="sdx-report-rec-item">{rec}</li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {/* Signatures */}
