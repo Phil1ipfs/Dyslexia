@@ -7,7 +7,16 @@ export default defineConfig(({ command, mode }) => {
   const isProd = mode === 'production';
   
   const config = {
-    plugins: [react()],
+    plugins: [
+      react({
+        include: "**/*.{jsx,js,ts,tsx}",
+        babel: {
+          plugins: [],
+          babelrc: false,
+          configFile: false,
+        }
+      })
+    ],
     resolve: {
       extensions: ['.mjs', '.js', '.jsx', '.json', '.ts', '.tsx'],
       alias: {
@@ -15,7 +24,6 @@ export default defineConfig(({ command, mode }) => {
       }
     },
     esbuild: {
-      loader: 'jsx',
       include: /src\/.*\.[jt]sx?$/,  // include .js, .jsx, .ts, .tsx
       exclude: []
     },
