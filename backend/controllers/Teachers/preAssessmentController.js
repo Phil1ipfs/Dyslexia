@@ -823,3 +823,96 @@ exports.toggleActiveStatus = async (req, res) => {
     res.status(500).json({ message: 'Error updating pre-assessment status', error: error.message });
   }
 };
+
+// Convert base64 images to S3 paths for a pre-assessment
+exports.convertImagesToS3 = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const preAssessmentCollection = getPreAssessmentDb().collection('pre-assessment');
+    
+    let filter;
+    try {
+      // Try as MongoDB ObjectId
+      filter = { _id: new mongoose.Types.ObjectId(id) };
+    } catch (err) {
+      // Try as assessmentId string
+      filter = { assessmentId: id };
+    }
+    
+    // Check if assessment exists
+    const preAssessment = await preAssessmentCollection.findOne(filter);
+    if (!preAssessment) {
+      return res.status(404).json({ message: 'Pre-assessment not found' });
+    }
+    
+    // Process each question
+    let updatedQuestions = [];
+    let imagesProcessed = 0;
+    
+    for (const question of preAssessment.questions) {
+      const updatedQuestion = { ...question };
+      
+      // Process question image if it exists and is base64
+      if (question.questionImage && question.questionImage.startsWith('data:image')) {
+        try {
+          // Extract image data and MIME type
+          const matches = question.questionImage.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+          if (!matches || matches.length !== 3) {
+            throw new Error('Invalid base64 image format');
+          }
+          
+          const mimeType = matches[1];
+          const base64Data = matches[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Generate filename
+          const fileExt = mimeType.split('/')[1] || 'png';
+          const fileName = `${question.questionId}_${Date.now()}.${fileExt}`;
+          const key = `pre-assessment/images/${fileName}`;
+          
+          // S3 upload parameters
+          const params = {
+            Bucket: process.env.AWS_S3_BUCKET || 'literexia-bucket',
+            Key: key,
+            Body: buffer,
+            ContentType: mimeType,
+            ACL: 'public-read'
+          };
+          
+          // Upload to S3
+          await s3.upload(params).promise();
+          
+          // Generate S3 URL
+          const s3Url = `https://${params.Bucket}.s3.${process.env.AWS_REGION || 'ap-southeast-1'}.amazonaws.com/${key}`;
+          
+          // Update question with S3 path
+          updatedQuestion.questionImageS3Path = s3Url;
+          updatedQuestion.questionImage = ''; // Clear base64 data
+          
+          imagesProcessed++;
+        } catch (error) {
+          console.error(`Error processing image for question ${question.questionId}:`, error);
+        }
+      }
+      
+      updatedQuestions.push(updatedQuestion);
+    }
+    
+    // Update the pre-assessment document
+    const updateResult = await preAssessmentCollection.updateOne(
+      filter,
+      { $set: { questions: updatedQuestions } }
+    );
+    
+    res.json({
+      message: 'Pre-assessment images converted to S3 successfully',
+      imagesProcessed,
+      modifiedCount: updateResult.modifiedCount
+    });
+    
+  } catch (error) {
+    console.error('Error converting images to S3:', error);
+    res.status(500).json({ message: 'Error converting images to S3', error: error.message });
+  }
+};
