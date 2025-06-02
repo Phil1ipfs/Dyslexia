@@ -127,8 +127,8 @@ const Login = ({ onLogin }) => {
   // Get label for the current account type
   const getAccountTypeLabel = () => {
     switch (expectedRoleType) {
-      case 'parent': return 'Magulang';
-      case 'teacher': return 'Guro';
+      case 'parent': return 'Parent';
+      case 'teacher': return 'Teacher';
       case 'admin': return 'Admin';
       default: return 'User';
     }
@@ -143,9 +143,9 @@ const Login = ({ onLogin }) => {
       {error && <ErrorDialog message={error} onClose={() => setError('')} />}
 
       <div className="login-card">
-        <h1 className="welcome-text">Maligayang Pagbalik!</h1>
+        <h1 className="welcome-text">Welcome Back!</h1>
         <p className="instruction-text">
-          Punan ang email at password para sa {getAccountTypeLabel()} account
+          Enter your email and password for {getAccountTypeLabel()} account
         </p>
 
         <form onSubmit={handleSubmit}>

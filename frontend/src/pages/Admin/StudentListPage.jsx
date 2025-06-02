@@ -284,10 +284,10 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
                   className={`studentlist-input ${errors.section ? 'error' : ''}`}
                 >
                   <option value="">Select Section</option>
-                  <option value="Section 1">Section 1</option>
-                  <option value="Section 2">Section 2</option>
-                  <option value="Section 3">Section 3</option>
-                  <option value="Section 4">Section 4</option>
+                  <option value="Honesty">Honesty</option>
+                  <option value="Integrity">Integrity</option>
+                  <option value="Patience">Patience</option>
+                  <option value="Hope">Hope</option>
                 </select>
                 {errors.section && <div className="studentlist-error-message">{errors.section}</div>}
               </div>
@@ -664,7 +664,7 @@ const StudentListPage = () => {
         </div>
         <div className="stat-card">
           <h3>Active Students</h3>
-          <p className="stat-number">{students.filter(s => s.status === 'active').length}</p>
+          <p className="stat-number">{students.filter(s => s.preAssessmentCompleted === true).length}</p>
         </div>
         <div className="stat-card">
           <h3>Average Performance</h3>
@@ -831,41 +831,6 @@ const StudentListPage = () => {
           </button>
         </div>
       )}
-
-      <div className="student-insights">
-        <h2>Quick Insights</h2>
-        <div className="insights-cards">
-          <div className="insight-card">
-            <div className="insight-icon">
-              <BookOpen size={24} />
-            </div>
-            <div className="insight-content">
-              <h3>Reading Progress</h3>
-              <p>Average books read: {Math.round(students.reduce((acc, student) => acc + student.booksRead, 0) / students.length)}</p>
-            </div>
-          </div>
-          
-          <div className="insight-card">
-            <div className="insight-icon">
-              <Book size={24} />
-            </div>
-            <div className="insight-content">
-              <h3>Activity Completion</h3>
-              <p>Average completed: {Math.round(students.reduce((acc, student) => acc + student.assignmentsCompleted, 0) / students.length)}</p>
-            </div>
-          </div>
-          
-          <div className="insight-card">
-            <div className="insight-icon">
-              <Clock size={24} />
-            </div>
-            <div className="insight-content">
-              <h3>Activity Status</h3>
-              <p>{students.filter(s => s.status === 'active').length} active in the last 7 days</p>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Student Profile Modal */}
       {showProfileModal && selectedStudent && (

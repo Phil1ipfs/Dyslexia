@@ -1009,41 +1009,6 @@ return (
       </div>
     )}
 
-    <div className="admin-teacher-insights">
-      <h2>Quick Insights</h2>
-      <div className="admin-teacher-insights-cards">
-        <div className="admin-teacher-insight-card">
-          <div className="admin-teacher-insight-icon">
-            <BookOpen size={24} />
-          </div>
-          <div className="admin-teacher-insight-content">
-            <h3>Teaching Activity</h3>
-            <p>Average classes taught: {Math.round(teachers.reduce((acc, teacher) => acc + (teacher.classesTaught || 0), 0) / (teachers.length || 1))}</p>
-          </div>
-        </div>
-        
-        <div className="admin-teacher-insight-card">
-          <div className="admin-teacher-insight-icon">
-            <Book size={24} />
-          </div>
-          <div className="admin-teacher-insight-content">
-            <h3>Curriculum Coverage</h3>
-            <p>Average completion: {Math.round(teachers.reduce((acc, teacher) => acc + (teacher.curriculumProgress || 0), 0) / (teachers.length || 1))}%</p>
-          </div>
-        </div>
-        
-        <div className="admin-teacher-insight-card">
-          <div className="admin-teacher-insight-icon">
-            <Clock size={24} />
-          </div>
-          <div className="admin-teacher-insight-content">
-            <h3>Activity Status</h3>
-            <p>{teachers.filter(t => t.status === 'active').length} active in the last 7 days</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
     {/* Add Teacher Modal */}
     {showAddTeacherModal && (
       <AddEditTeacherModal

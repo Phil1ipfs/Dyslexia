@@ -4,6 +4,7 @@ import {
   Search, Filter, ChevronDown, PieChart, BarChart2, 
   Book, Award, Layers, CheckCircle, AlertTriangle, Info
 } from 'lucide-react';
+import axios from 'axios'; // Import axios
 import '../../css/Admin/AssessmentResults/AssessmentResultsOverview.css';
 
 const AssessmentResultsOverview = () => {
@@ -19,128 +20,56 @@ const AssessmentResultsOverview = () => {
 
   // Fetch students data
   useEffect(() => {
-    // Simulated API call - would be replaced with actual backend call
-    const fetchStudents = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        
-        // In production, this would be replaced with an actual API call
-        // e.g., const response = await axios.get('/api/admin/assessment-results');
-        
-        // Simulated student data based on the JSON files provided
-        const mockStudents = [
-          {
-            _id: "682d5f47def17e7b6758b3ca",
-            idNumber: 202511111,
-            firstName: "Rainn",
-            middleName: "Pascual",
-            lastName: "Aganan",
-            section: "Hope",
-            readingLevel: "At Grade Level",
-            readingPercentage: 100,
-            preAssessmentCompleted: true,
-            completedAt: "2025-05-21T08:09:31.705745",
-            categoryScores: {
-              "alphabet_knowledge": { total: 5, correct: 5, score: 100 },
-              "phonological_awareness": { total: 5, correct: 5, score: 100 },
-              "decoding": { total: 5, correct: 5, score: 100 },
-              "word_recognition": { total: 5, correct: 5, score: 100 },
-              "reading_comprehension": { total: 5, correct: 5, score: 100 }
-            },
-            allCategoriesPassed: true
-          },
-          {
-            _id: "683040fd8e4b26952e3ccb42",
-            idNumber: 202522222,
-            firstName: "Kit Nicholas",
-            middleName: "Rish",
-            lastName: "Mark",
-            section: "Hope",
-            readingLevel: "Low Emerging",
-            readingPercentage: 8,
-            preAssessmentCompleted: true,
-            completedAt: "2025-05-23T17:53:54.969307",
-            categoryScores: {
-              "alphabet_knowledge": { total: 5, correct: 1, score: 20 },
-              "phonological_awareness": { total: 5, correct: 0, score: 0 },
-              "decoding": { total: 5, correct: 0, score: 0 },
-              "word_recognition": { total: 5, correct: 1, score: 20 },
-              "reading_comprehension": { total: 5, correct: 0, score: 0 }
-            },
-            allCategoriesPassed: false
-          },
-          {
-            _id: "6830fc50c4d7024b845aa62a",
-            idNumber: 202544444,
-            firstName: "Kit Nicholas",
-            middleName: "Percival",
-            lastName: "Carammmm",
-            section: "Hope",
-            readingLevel: "Developing",
-            readingPercentage: 60,
-            preAssessmentCompleted: true,
-            completedAt: "2025-05-23T22:53:04.702204",
-            categoryScores: {
-              "alphabet_knowledge": { total: 5, correct: 5, score: 100 },
-              "phonological_awareness": { total: 5, correct: 5, score: 100 },
-              "decoding": { total: 5, correct: 5, score: 100 },
-              "word_recognition": { total: 5, correct: 0, score: 0 },
-              "reading_comprehension": { total: 5, correct: 0, score: 0 }
-            },
-            allCategoriesPassed: false
-          },
-          {
-            _id: "6835e75f0c543099e95226ec",
-            idNumber: 202599999,
-            firstName: "Pia",
-            middleName: "Zop",
-            lastName: "Rey",
-            section: "Section 2",
-            readingLevel: "Transitioning",
-            readingPercentage: 80,
-            preAssessmentCompleted: true,
-            completedAt: "2025-05-28T00:25:03.247718",
-            categoryScores: {
-              "alphabet_knowledge": { total: 5, correct: 5, score: 100 },
-              "phonological_awareness": { total: 5, correct: 5, score: 100 },
-              "decoding": { total: 5, correct: 5, score: 100 },
-              "word_recognition": { total: 5, correct: 5, score: 100 },
-              "reading_comprehension": { total: 5, correct: 0, score: 0 }
-            },
-            allCategoriesPassed: true
-          },
-          {
-            _id: "68360a08c3a79bb6c886a3ea",
-            idNumber: 202588888,
-            firstName: "Neo",
-            middleName: "",
-            lastName: "David",
-            section: "Section 1",
-            readingLevel: "At Grade Level",
-            readingPercentage: 88,
-            preAssessmentCompleted: true,
-            completedAt: "2025-05-28T02:52:56.535298",
-            categoryScores: {
-              "alphabet_knowledge": { total: 5, correct: 5, score: 100 },
-              "phonological_awareness": { total: 5, correct: 5, score: 100 },
-              "decoding": { total: 5, correct: 5, score: 100 },
-              "word_recognition": { total: 5, correct: 5, score: 100 },
-              "reading_comprehension": { total: 5, correct: 0, score: 0 }
-            },
-            allCategoriesPassed: true
-          }
-        ];
-        
-        setStudents(mockStudents);
-        setFilteredStudents(mockStudents);
+        const [studentsRes, resultsRes] = await Promise.all([
+          axios.get('http://localhost:5001/api/admin/manage/students'),
+          axios.get('http://localhost:5001/api/admin/category-results')
+        ]);
+
+        if (studentsRes.data.success && resultsRes.data.success) {
+          const fetchedStudents = studentsRes.data.data;
+          const categoryResults = resultsRes.data.data;
+
+          // Map students with their category_results
+          const combinedStudents = fetchedStudents.map(student => {
+            const result = categoryResults.find(r => String(r.studentId) === String(student.idNumber) && r.assessmentType === 'main-assessment');
+            if (result) {
+              console.log(`Match found for studentId: ${student.idNumber}`, result);
+            } else {
+              console.log(`No match for studentId: ${student.idNumber}`);
+            }
+            return {
+              ...student,
+              assessmentDate: result ? result.updatedAt : null,
+              overallScore: result ? result.overallScore : null,
+              categoryScores: result ? result.categories : {},
+              readingLevel: result ? result.readingLevel : 'Not Assessed',
+              totalQuestions: result ? result.totalQuestions : 0,
+              correctAnswers: result ? result.correctAnswers : 0,
+              difficulties: result ? result.difficulties : [],
+              strengths: result ? result.strengths : [],
+              recommendations: result ? result.recommendations : [],
+              allCategoriesPassed: result ? result.allCategoriesPassed : false
+            };
+          });
+
+          setStudents(combinedStudents);
+          setFilteredStudents(combinedStudents);
+        } else {
+          setStudents([]);
+          setFilteredStudents([]);
+        }
       } catch (error) {
-        console.error("Error fetching assessment results:", error);
+        console.error('Error fetching data:', error);
+        setStudents([]);
+        setFilteredStudents([]);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchStudents();
+    fetchData();
   }, []);
 
   // Filter students based on search term and filters
@@ -196,11 +125,11 @@ const AssessmentResultsOverview = () => {
       };
       filtered.sort((a, b) => (levelOrder[b.readingLevel] || 0) - (levelOrder[a.readingLevel] || 0));
     } else if (sortBy === 'score-asc') {
-      filtered.sort((a, b) => (a.readingPercentage || 0) - (b.readingPercentage || 0));
+      filtered.sort((a, b) => (a.overallScore || 0) - (b.overallScore || 0));
     } else if (sortBy === 'score-desc') {
-      filtered.sort((a, b) => (b.readingPercentage || 0) - (a.readingPercentage || 0));
+      filtered.sort((a, b) => (b.overallScore || 0) - (a.overallScore || 0));
     } else if (sortBy === 'recent') {
-      filtered.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+      filtered.sort((a, b) => new Date(b.assessmentDate) - new Date(a.assessmentDate));
     }
     
     setFilteredStudents(filtered);
@@ -210,12 +139,12 @@ const AssessmentResultsOverview = () => {
   const getTotalStudents = () => filteredStudents.length;
   
   const getPassingStudents = () => {
-    return filteredStudents.filter(student => student.allCategoriesPassed).length;
+    return filteredStudents.filter(student => student.overallScore >= 75).length;
   };
   
   const getAverageScore = () => {
     if (!filteredStudents.length) return 0;
-    const totalScore = filteredStudents.reduce((sum, student) => sum + (student.readingPercentage || 0), 0);
+    const totalScore = filteredStudents.reduce((sum, student) => sum + (student.overallScore || 0), 0);
     return Math.round(totalScore / filteredStudents.length);
   };
   
@@ -552,29 +481,43 @@ const AssessmentResultsOverview = () => {
                   <td>{student.section}</td>
                   <td>
                     <span className={`assessment-results__reading-level ${getReadingLevelClass(student.readingLevel)}`}>
-                      {student.readingLevel}
+                      {student.readingLevel || 'N/A'}
                     </span>
                   </td>
                   <td>
-                    <div className={`assessment-results__score ${student.readingPercentage >= 75 ? 'assessment-results__score--passed' : 'assessment-results__score--failed'}`}>
-                      {student.readingPercentage}%
+                    <div className={`assessment-results__score ${student.overallScore >= 75 ? 'assessment-results__score--passed' : 'assessment-results__score--failed'}`}>
+                      {student.overallScore != null ? student.overallScore + '%' : 'N/A'}
                     </div>
                   </td>
                   <td className="assessment-results__category-scores">
-                    {Object.entries(student.categoryScores || {}).map(([category, data]) => (
-                      <div key={category} className="assessment-results__category-score-item">
-                        <span className="assessment-results__category-score-label">
-                          {formatCategoryName(category)}:
-                        </span>
-                        <span className={`assessment-results__category-score-value ${getScoreStatusClass(data.score)}`}>
-                          {data.score}%
-                        </span>
-                      </div>
-                    ))}
+                    {(() => {
+                      const categoryOrder = [
+                        'Alphabet Knowledge',
+                        'Phonological Awareness',
+                        'Decoding',
+                        'Word Recognition',
+                        'Reading Comprehension'
+                      ];
+                      const catMap = {};
+                      (Array.isArray(student.categoryScores) ? student.categoryScores : []).forEach(cat => {
+                        catMap[cat.categoryName] = cat;
+                      });
+                      return categoryOrder.map(catName => {
+                        const cat = catMap[catName];
+                        return (
+                          <div key={catName} className="assessment-results__category-score-item">
+                            <span className="assessment-results__category-score-label">{catName}:</span>
+                            <span className={`assessment-results__category-score-value ${cat && cat.isPassed ? 'assessment-results__score--passed' : 'assessment-results__score--failed'}`}>
+                              {cat ? cat.score + '%' : '0%'}
+                            </span>
+                          </div>
+                        );
+                      });
+                    })()}
                   </td>
-                  <td>{formatDate(student.completedAt)}</td>
+                  <td>{formatDate(student.assessmentDate)}</td>
                   <td>
-                    <a href={`/admin/assessment-results/${student._id}`} className="assessment-results__view-details-btn">
+                    <a href={`/admin/assessment-results/${student.idNumber}`} className="assessment-results__view-details-btn">
                       View Details
                     </a>
                   </td>

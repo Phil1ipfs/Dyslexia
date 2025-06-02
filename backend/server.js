@@ -356,6 +356,11 @@ connectDB().then(async (connected) => {
     app.use('/api/parents', parentRoutes);
     console.log('✅ Parent routes registered at /api/parents/*');
 
+    // Register childPdfRoutes
+    const childPdfRoutes = require('./routes/Parents/childPdfRoutes');
+    app.use('/api/parent', childPdfRoutes);
+    console.log('✅ Child PDF routes registered at /api/parent/child_pdf');
+
     // Register admin profile routes
     const adminProfileRoutes = require('./routes/Admin/adminProfile');
     const adminDashboardRoutes = require('./routes/Admin/adminDashboard');
@@ -1002,6 +1007,14 @@ connectDB().then(async (connected) => {
         });
       }
     });
+
+    // Register new Admin/categoryResults route
+    const categoryResultsRoutes = require('./routes/Admin/categoryResults');
+    app.use('/api/admin', categoryResultsRoutes);
+
+    // Register new Admin/assessmentResults route
+    const assessmentResultsRoutes = require('./routes/Admin/assessmentResults');
+    app.use('/api/admin', assessmentResultsRoutes);
 
     // 404 handler
     app.use((req, res) => {

@@ -125,15 +125,15 @@ const NavigationBar = ({ onLogout }) => {
         { id: 'post-assessment', label: 'Post Assessment', path: '/admin/assessment-results-overview', icon: BarChart2 }
       ]
     },
-    {
-      id: 'analytics',
-      label: 'Activity Management',
-      icon: BarChart2,
-      path: '/admin/analytics',
-      subItems: [
-        { id: 'submission-overview', label: 'Activity Approval', path: '/admin/submissions-overview', icon: FileCheck }
-      ]
-    }
+    // {
+    //   id: 'analytics',
+    //   label: 'Activity Management',
+    //   icon: BarChart2,
+    //   path: '/admin/analytics',
+    //   subItems: [
+    //     { id: 'submission-overview', label: 'Activity Approval', path: '/admin/submissions-overview', icon: FileCheck }
+    //   ]
+    // }
   ];
 
   const toggleSection = (sectionId) => {
