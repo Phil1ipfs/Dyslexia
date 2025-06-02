@@ -592,6 +592,160 @@ class IEPController {
       });
     }
   }
+
+  // Send progress report to parent and save PDF
+  static async sendReportToParent(req, res) {
+    try {
+      const { studentId } = req.params;
+      const { parentId, subject, content, pdfS3Path, includeProgressReport } = req.body;
+      
+      console.log(`Sending progress report to parent for student: ${studentId}`);
+      console.log(`PDF S3 path: ${pdfS3Path || 'None'}`);
+      
+      // Validate studentId
+      if (!mongoose.Types.ObjectId.isValid(studentId)) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Invalid student ID format' 
+        });
+      }
+      
+      // Validate parentId
+      if (!parentId || !mongoose.Types.ObjectId.isValid(parentId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Valid parent ID is required'
+        });
+      }
+      
+      // Validate basic required fields
+      if (!subject || !content) {
+        return res.status(400).json({
+          success: false,
+          error: 'Subject and content are required'
+        });
+      }
+      
+      // Get access to the 'parent' database
+      const parentDb = mongoose.connection.useDb('parent');
+      const childPdfCollection = parentDb.collection('child_pdf');
+      
+      // Create PDF record
+      const pdfRecord = {
+        studentId: new mongoose.Types.ObjectId(studentId),
+        parentId: new mongoose.Types.ObjectId(parentId),
+        teacherId: req.user && req.user.id ? new mongoose.Types.ObjectId(req.user.id) : null,
+        subject: subject,
+        content: content,
+        pdfS3Path: pdfS3Path, // Store S3 path instead of raw PDF data
+        includeProgressReport: !!includeProgressReport,
+        sentAt: new Date(),
+        status: 'sent'
+      };
+      
+      // Insert record into the child_pdf collection
+      try {
+        const result = await childPdfCollection.insertOne(pdfRecord);
+        
+        if (!result.acknowledged) {
+          throw new Error('Failed to save progress report record');
+        }
+        
+        // Get student and parent info for logging
+        const testDb = mongoose.connection.useDb('test');
+        const usersCollection = testDb.collection('users');
+        
+        const student = await usersCollection.findOne({ 
+          _id: new mongoose.Types.ObjectId(studentId)
+        });
+        
+        const parent = await usersCollection.findOne({
+          _id: new mongoose.Types.ObjectId(parentId) 
+        });
+        
+        console.log(`✅ Sent progress report for ${student?.firstName || 'student'} ${student?.lastName || ''} to parent ${parent?.firstName || 'parent'} ${parent?.lastName || ''}`);
+        
+        res.json({
+          success: true,
+          data: {
+            id: result.insertedId,
+            studentId,
+            parentId,
+            sentAt: pdfRecord.sentAt,
+            pdfS3Path: pdfRecord.pdfS3Path
+          },
+          message: 'Progress report sent successfully'
+        });
+      } catch (dbError) {
+        console.error('Database error when saving progress report:', dbError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to save progress report to database',
+          message: dbError.message
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error sending progress report:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to send progress report',
+        message: error.message
+      });
+    }
+  }
+
+  // Get previous PDF reports for a student
+  static async getPreviousPdfReports(req, res) {
+    try {
+      const { studentId } = req.params;
+      
+      console.log(`Getting previous PDF reports for student: ${studentId}`);
+      
+      // Validate studentId
+      if (!mongoose.Types.ObjectId.isValid(studentId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid student ID format'
+        });
+      }
+      
+      // Get the parent database
+      const parentDb = mongoose.connection.useDb('parent');
+      const childPdfCollection = parentDb.collection('child_pdf');
+      
+      // Find all reports for this student
+      const reports = await childPdfCollection.find({
+        studentId: new mongoose.Types.ObjectId(studentId)
+      })
+      .sort({ sentAt: -1 }) // Most recent first
+      .project({
+        _id: 1,
+        subject: 1,
+        content: 1,
+        pdfS3Path: 1,
+        sentAt: 1,
+        parentId: 1
+      }) // Don't include the full PDF data
+      .toArray();
+      
+      console.log(`Found ${reports.length} reports for student ${studentId}`);
+      
+      res.json({
+        success: true,
+        data: reports,
+        count: reports.length
+      });
+      
+    } catch (error) {
+      console.error('Error getting previous PDF reports:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve previous reports',
+        message: error.message
+      });
+    }
+  }
 }
 
 module.exports = IEPController; 

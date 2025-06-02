@@ -12,8 +12,9 @@ const authenticateToken = (req, res, next) => {
   }
 
   try {
-    // Use consistent secret key across the application
-    const secretKey = process.env.JWT_SECRET_KEY || process.env.JWT_SECRET || 'your-secret-key';
+    // Use the original secret key
+    const secretKey = process.env.JWT_SECRET || 'your-secret-key';
+    
     const decoded = jwt.verify(token, secretKey);
     
     // Log the raw decoded token
@@ -28,11 +29,15 @@ const authenticateToken = (req, res, next) => {
     };
 
     // Validate that we have the minimum required user information
-    if (!req.user.email) {
-      throw new Error('Token missing required user email');
+    if (!req.user.id) {
+      console.warn('Token missing required user ID');
+      // Still allow the request if email is present
+      if (!req.user.email) {
+        throw new Error('Token missing required user email and ID');
+      }
     }
 
-    console.log('Standardized user object:', req.user);
+    console.log('Authentication successful for user:', req.user.email || req.user.id);
     next();
   } catch (error) {
     console.error('Token verification failed:', error.message);

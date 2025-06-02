@@ -1,37 +1,87 @@
 // src/pages/Teachers/StudentProgressPDF.jsx
-import React, { useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import jsPDF from 'jspdf';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { FaArrowLeft, FaFilePdf, FaBookReader } from 'react-icons/fa';
+import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import cradleLogo from '../../assets/images/Teachers/cradleLogo.jpg';
+import StudentDetailsService from '../../services/Teachers/StudentDetailsService';
 import '../../css/Teachers/StudentDetails.css';
 
+// Import cradle logo
+const cradleLogo = new URL('../../assets/images/Teachers/cradleLogo.jpg', import.meta.url).href;
+
 const StudentProgressPDF = () => {
-  const location = useLocation();
   const navigate = useNavigate();
+  const { id } = useParams();
+  const [student, setStudent] = useState(null);
+  const [readingLevelProgress, setReadingLevelProgress] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [parentProfile, setParentProfile] = useState(null);
   const reportRef = useRef(null);
 
-  const { student, progressReport, activities, readingLevelProgress, iepReport } = location.state || {};
+  // Default progress report
+  const [progressReport, setProgressReport] = useState({
+    schoolYear: '2024-2025',
+    reportDate: new Date().toISOString().split('T')[0],
+    recommendations: [
+      "Student continues to develop reading skills. May need additional practice and support to improve reading comprehension.",
+      "Encourage practice with phonemic awareness activities at home to strengthen reading foundation.",
+      "Regular practice with guided reading will help improve fluency and comprehension."
+    ]
+  });
 
   useEffect(() => {
-    if (!student) {
-      alert('Missing student data.');
-      navigate('/teacher/view-student');
-    } else {
-      console.log("Data received in PDF:", { 
-        student, 
-        progressReportData: progressReport, 
-        activitiesCount: activities?.length || 0,
-        readingLevelData: readingLevelProgress,
-        iepReportData: iepReport
-      });
-    }
-  }, [student, navigate]);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const studentData = await StudentDetailsService.getStudentDetails(id);
+        
+        // Normalize reading level
+        if (studentData) {
+          studentData.readingLevel = StudentDetailsService.convertLegacyReadingLevel(studentData.readingLevel);
+        }
+        
+        setStudent(studentData);
+        
+        // Fetch parent profile if parentId exists
+        if (studentData && studentData.parentId) {
+          try {
+            const parentData = await StudentDetailsService.getParentProfileWithFallback(
+              studentData.parentId, 
+              studentData
+            );
+            setParentProfile(parentData);
+          } catch (e) {
+            console.warn('Could not load parent profile:', e);
+          }
+        }
+        
+        // Fetch reading level progress
+        const readingProgressData = await StudentDetailsService.getReadingLevelProgress(id);
+        setReadingLevelProgress(readingProgressData);
+        
+        // Get prescriptive recommendations
+        const recommendations = await StudentDetailsService.getPrescriptiveRecommendations(id);
+        if (recommendations && recommendations.length > 0) {
+          setProgressReport(prev => ({
+            ...prev,
+            recommendations: recommendations.map(r => r.rationale || r.recommendation || r.text || '')
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [id]);
 
   const getReadingLevelClass = (level) => {
     const classMap = {
       'Low Emerging': 'reading-level-early',
-      'High Emerging': 'reading-level-early', 
+      'High Emerging': 'reading-level-early',
       'Developing': 'reading-level-developing',
       'Transitioning': 'reading-level-developing',
       'At Grade Level': 'reading-level-fluent',
@@ -53,252 +103,343 @@ const StudentProgressPDF = () => {
   };
 
   const exportToPDF = async () => {
-    const element = reportRef.current;
-    if (!element) return;
-  
     try {
-      const canvas = await html2canvas(element, {
-        scale: 2,         // good looking text
-        useCORS: true,
-        scrollY: -window.scrollY   // grab full page even if modal is scrolled
-      });
-  
-      const imgData   = canvas.toDataURL('image/png');
-      const pdf       = new jsPDF('p', 'mm', 'a4');
-      const pdfW      = pdf.internal.pageSize.getWidth();
-      const pdfH      = pdf.internal.pageSize.getHeight();
-  
-      // image dimensions *inside* the PDF
-      const imgW      = pdfW;
-      const imgH      = (canvas.height * imgW) / canvas.width;
-  
-      let yOffset     = 0;        // current y‑offset (negative after 1st page)
-      let remainingH  = imgH;     // how much of the image is still not on a page yet
-  
-      // first page
-      pdf.addImage(imgData, 'PNG', 0, yOffset, imgW, imgH);
-      remainingH -= pdfH;
-      yOffset    -= pdfH;         // shift upwards for next slice
-  
-      // add extra pages while there's still image left
-      while (remainingH > 0) {
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, yOffset, imgW, imgH);
-        remainingH -= pdfH;
-        yOffset    -= pdfH;
+      if (!reportRef.current) {
+        console.error('Report element not found');
+        return;
       }
-  
-      pdf.save(
-        `${(student?.name || 'student')
-          .replace(/[^a-z0-9]/gi, '_')}_progress_report.pdf`
-      );
-    } catch (err) {
-      console.error('PDF Export Error:', err);
-      alert('Failed to export PDF – please try again.');
+      
+      // Setup for PDF generation with proper scaling
+      const element = reportRef.current;
+      const options = {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        scrollY: -window.scrollY,
+        logging: false,
+        quality: 1.0,
+        height: element.scrollHeight
+      };
+      
+      // Generate canvas from HTML
+      const canvas = await html2canvas(element, options);
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Calculate dimensions for A4 page
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      // Calculate the total number of pages needed
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, 1);
+      const imgHeightScaled = imgHeight * ratio;
+      const totalPages = Math.ceil(imgHeightScaled / pdfHeight);
+      
+      let heightLeft = imgHeightScaled;
+      let position = 0;
+      let page = 1;
+      
+      // Add image across multiple pages if needed
+      while (heightLeft > 0) {
+        pdf.addPage();
+        position = -pdfHeight * (page - 1);
+        
+        pdf.addImage(
+          imgData, 
+          'PNG', 
+          0, 
+          position, 
+          pdfWidth, 
+          imgHeightScaled
+        );
+        
+        heightLeft -= pdfHeight;
+        page++;
+      }
+      
+      // Remove the first blank page that was automatically added
+      pdf.deletePage(1);
+      
+      // Save the PDF
+      pdf.save(`${student.name.replace(/[^a-z0-9]/gi, '_')}_progress_report.pdf`);
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
     }
   };
 
-  // Format scores for display
   const formatScoreClass = (score) => {
-    if (score >= 80) return 'score-excellent';
+    if (score >= 75) return 'score-excellent';
     if (score >= 60) return 'score-good';
     if (score >= 40) return 'score-average';
     return 'score-needs-improvement';
   };
 
-  // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return dateString;
+    }
   };
 
-  // Get parent name
   const getParentName = () => {
-    if (student.parent && typeof student.parent === 'string') {
-      return student.parent;
+    if (parentProfile) {
+      if (parentProfile.name) return parentProfile.name;
+      if (parentProfile.firstName || parentProfile.lastName) {
+        return `${parentProfile.firstName || ''} ${parentProfile.middleName ? parentProfile.middleName + ' ' : ''}${parentProfile.lastName || ''}`.trim();
+      }
     }
     
-    if (student.parent && student.parent.name) {
-      return student.parent.name;
+    if (student) {
+      if (typeof student.parent === 'string' && student.parent) return student.parent;
+      if (student.parent && student.parent.name) return student.parent.name;
+      if (student.parentName) return student.parentName;
     }
     
-    if (student.parentName) {
-      return student.parentName;
-    }
-    
-    return 'Parent';
+    return 'Parent/Guardian';
   };
-  
-  // Format reading level categories for display
+
   const renderReadingLevelCategories = () => {
+    // Check if we have reading level progress data
     if (!readingLevelProgress || !readingLevelProgress.categories || readingLevelProgress.categories.length === 0) {
       return (
-        <div className="sdx-report-td-empty">
-          No reading assessment data available.
+        <div className="sdx-report-no-data">
+          <p>No reading level assessment data available</p>
         </div>
       );
     }
     
     return (
-      <div className="sdx-compact-progress">
-        {readingLevelProgress.categories.map((category, index) => {
-          const score = category.score || 0;
-          const correctAnswers = category.correctAnswers || 0;
-          const totalQuestions = category.totalQuestions || 0;
-          const incorrectAnswers = totalQuestions - correctAnswers;
-          const isPassed = category.isPassed || false;
-          
-          return (
-            <div key={index} className="sdx-compact-category">
-              <div className="sdx-compact-category-header">
-                <span className="sdx-compact-category-name">
-                  {category.category || category.categoryName}
-                </span>
-                <span className="sdx-compact-category-score">
-                  {score}%
-                </span>
-              </div>
-              
-              <div className="sdx-compact-progress-bar">
-                <div 
-                  className="sdx-compact-progress-fill"
-                  style={{ width: `${score}%` }}
-                ></div>
-              </div>
-              
-              <div className="sdx-compact-category-results">
-                <div className="sdx-compact-category-answers">
-                  <span>✓ {correctAnswers} correct</span>
-                  <span>✗ {incorrectAnswers} incorrect</span>
+      <div className="sdx-report-reading-progress">
+        {/* Reading Level Badge and Description */}
+        <div className="sdx-report-reading-level">
+          <div className={`sdx-report-level-badge ${getReadingLevelClass(student.readingLevel || 'Not Assessed')}`}>
+            {student.readingLevel || 'Not Assessed'}
+          </div>
+          <p className="sdx-report-level-description">
+            {getReadingLevelDescription(student.readingLevel || 'Not Assessed')}
+          </p>
+        </div>
+        
+        {/* Categories Grid */}
+        <div className="sdx-report-categories-grid">
+          {readingLevelProgress.categories.map((category, index) => {
+            const score = category.score || 0;
+            const correctAnswers = category.correctAnswers || 0;
+            const totalQuestions = category.totalQuestions || 0;
+            const incorrectAnswers = totalQuestions - correctAnswers;
+            
+            return (
+              <div key={index} className="sdx-report-category-card">
+                <div className="sdx-report-category-header">
+                  <span className="sdx-report-category-name">{category.category}</span>
+                  <span className={`sdx-report-category-score ${score >= 75 ? 'passing' : 'failing'}`}>
+                    {score}%
+                  </span>
                 </div>
-                <span className="sdx-compact-status">
-                  {isPassed ? 'Passed' : 'Not Passed'}
-                </span>
+                
+                <div className="sdx-report-category-progress">
+                  <div 
+                    className={`sdx-report-category-bar ${score >= 75 ? 'passing' : 'failing'}`}
+                    style={{ width: `${score}%` }}
+                  ></div>
+                </div>
+                
+                <div className="sdx-report-category-details">
+                  <div className="sdx-report-category-answers">
+                    <span className="sdx-report-correct">✓ {correctAnswers} correct</span>
+                    <span className="sdx-report-incorrect">✗ {incorrectAnswers} incorrect</span>
+                  </div>
+                  <div className={`sdx-report-status ${category.isPassed ? 'passed' : 'failed'}`}>
+                    {category.isPassed ? 'Passed' : 'Not Passed'}
+                  </div>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+        
+        {/* Summary */}
+        <div className="sdx-report-summary">
+          <p className="sdx-report-summary-text">
+            {student.name} is currently at the <strong>{student.readingLevel || 'Not Assessed'}</strong> reading level. 
+            {student.readingLevel && student.readingLevel !== 'Not Assessed' ? 
+              ` This means ${getReadingLevelDescription(student.readingLevel).toLowerCase()}.` : 
+              ' An assessment is needed to determine the appropriate reading level.'}
+          </p>
+        </div>
       </div>
     );
   };
 
-  // Render learning activities or IEP objectives
   const renderActivitiesTable = () => {
-    // Check if we have activities or IEP data
-    const hasActivities = activities && activities.length > 0;
-    const hasIepObjectives = iepReport && iepReport.objectives && iepReport.objectives.length > 0;
-    
-    if (!hasActivities && !hasIepObjectives) {
+    if (!readingLevelProgress || !readingLevelProgress.categories || readingLevelProgress.categories.length === 0) {
       return (
-        <div className="sdx-report-td-empty">
-          No learning activities recorded yet.
+        <div className="sdx-report-no-activities">
+          <p>No learning activities recorded yet</p>
         </div>
       );
     }
     
-    // Decide which data to use (prefer activities, fallback to IEP)
-    const itemsToRender = hasActivities ? activities : iepReport.objectives;
+    const activities = readingLevelProgress.categories.map((category, index) => {
+      const score = category.score || 0;
+      const supportLevel = score >= 70 ? 'minimal' : score >= 40 ? 'moderate' : 'extensive';
+      
+      return {
+        id: `category-${index}`,
+        name: `${category.category || 'Reading'} Practice`,
+        description: category.category || 'Reading Skills',
+        score: score,
+        minimalSupport: supportLevel === 'minimal',
+        moderateSupport: supportLevel === 'moderate',
+        extensiveSupport: supportLevel === 'extensive',
+        remarks: `Student ${score >= 70 ? 'excels at' : score >= 40 ? 'is progressing with' : 'needs additional support with'} ${(category.category || 'reading skills').toLowerCase()}.`
+      };
+    });
     
     return (
-      <table className="sdx-report-table">
-        <thead>
-          <tr>
-            <th className="sdx-report-th">Lesson</th>
-            <th className="sdx-report-th">Completed</th>
-            <th className="sdx-report-th" colSpan="3">Support Level</th>
-            <th className="sdx-report-th">Remarks</th>
-          </tr>
-          <tr>
-            <th className="sdx-report-th-empty"></th>
-            <th className="sdx-report-th-empty"></th>
-            <th className="sdx-report-th-level">Minimal</th>
-            <th className="sdx-report-th-level">Moderate</th>
-            <th className="sdx-report-th-level">Extensive</th>
-            <th className="sdx-report-th-empty"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {itemsToRender.map((item, index) => {
-            // Handle both activity and IEP objective formats
-            const isIepItem = !hasActivities;
-            
-            // Format the data based on the type
-            const name = isIepItem ? item.lesson : item.name;
-            const completed = isIepItem ? item.completed : item.completed;
-            const minimal = isIepItem ? item.supportLevel === 'minimal' : item.minimalSupport;
-            const moderate = isIepItem ? item.supportLevel === 'moderate' : item.moderateSupport;
-            const extensive = isIepItem ? item.supportLevel === 'extensive' : item.extensiveSupport;
-            const remarks = isIepItem 
-              ? (item.remarks || `Student is working on ${item.categoryName} skills.`) 
-              : (item.remarks || 'No remarks available');
-            
-            return (
+      <div className="sdx-report-activities">
+        <table className="sdx-report-table">
+          <thead>
+            <tr>
+              <th className="sdx-report-th">Lesson</th>
+              <th className="sdx-report-th">Score</th>
+              <th className="sdx-report-th" colSpan="3">Support Level</th>
+              <th className="sdx-report-th">Remarks</th>
+            </tr>
+            <tr>
+              <th className="sdx-report-th-empty"></th>
+              <th className="sdx-report-th-empty"></th>
+              <th className="sdx-report-th-level">Minimal</th>
+              <th className="sdx-report-th-level">Moderate</th>
+              <th className="sdx-report-th-level">Extensive</th>
+              <th className="sdx-report-th-empty"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {activities.map((activity, index) => (
               <tr key={index} className="sdx-report-tr">
-                <td className="sdx-report-td sdx-report-td-aralin">{name}</td>
-                <td className="sdx-report-td sdx-report-td-nakumpleto">
-                  {completed ? "✓" : ""}
+                <td className="sdx-report-td sdx-report-td-lesson">
+                  <div>
+                    <div className="sdx-report-lesson-name">{activity.name}</div>
+                    <div className="sdx-report-lesson-category">{activity.description}</div>
+                  </div>
+                </td>
+                <td className="sdx-report-td sdx-report-td-score">
+                  <span className={`sdx-report-score ${activity.score >= 75 ? 'passing' : 'failing'}`}>
+                    {activity.score}%
+                  </span>
                 </td>
                 <td className="sdx-report-td sdx-report-td-support">
-                  {minimal ? "✓" : ""}
+                  {activity.minimalSupport ? "✓" : ""}
                 </td>
                 <td className="sdx-report-td sdx-report-td-support">
-                  {moderate ? "✓" : ""}
+                  {activity.moderateSupport ? "✓" : ""}
                 </td>
                 <td className="sdx-report-td sdx-report-td-support">
-                  {extensive ? "✓" : ""}
+                  {activity.extensiveSupport ? "✓" : ""}
                 </td>
-                <td className="sdx-report-td sdx-report-td-puna">{remarks}</td>
+                <td className="sdx-report-td sdx-report-td-remarks">
+                  {activity.remarks}
+                </td>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
   };
 
+  const goBack = () => navigate(-1);
+
+  if (loading) {
+    return (
+      <div className="sdx-pdf-page">
+        <div className="vs-loading">
+          <div className="vs-loading-spinner"></div>
+          <p>Loading progress report...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!student) {
+    return (
+      <div className="sdx-pdf-page">
+        <div className="vs-no-results">
+          <p>Student not found.</p>
+          <button className="sdx-back-btn" onClick={goBack}>
+            <FaArrowLeft /> Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="sdx-container">
-      <button className="sdx-export-btn" onClick={exportToPDF} style={{ marginBottom: '1rem' }}>
-        Download PDF
-      </button>
+    <div className="sdx-pdf-page">
+      <div className="sdx-pdf-controls">
+        <button className="sdx-back-btn" onClick={goBack}>
+          <FaArrowLeft /> Back to Student Details
+        </button>
+        <button className="sdx-export-pdf-btn" onClick={exportToPDF}>
+          <FaFilePdf /> Export PDF
+        </button>
+      </div>
 
       <div className="sdx-report-printable" ref={reportRef}>
-        {/* HEADER */}
+        {/* Report Header */}
         <div className="sdx-report-header">
           <img src={cradleLogo} alt="Cradle of Learners Logo" className="sdx-report-logo" />
           <div className="sdx-report-school-info">
             <h1 className="sdx-report-school-name">CRADLE OF LEARNERS</h1>
             <p className="sdx-report-school-tagline">(Inclusive School for Individualized Education), Inc.</p>
             <p className="sdx-report-school-address">3rd Floor TUCP Bldg. Elliptical Road Corner Maharlika St. Quezon City</p>
-            <p className="sdx-report-school-contact">☎ 8294-7772 | ✉ cradle.of.learners@gmail.com</p>
+            <p className="sdx-report-school-contact">☎ 8294‑7772 | ✉ cradle.of.learners@gmail.com</p>
           </div>
         </div>
 
-        {/* TITLE */}
+        {/* Report Title */}
         <div className="sdx-report-title-section">
           <h2 className="sdx-report-main-title">PROGRESS REPORT</h2>
-          <p className="sdx-report-school-year">S.Y. {progressReport?.schoolYear || '2024-2025'}</p>
+          <p className="sdx-report-school-year">S.Y. {progressReport.schoolYear}</p>
         </div>
 
-        {/* STUDENT INFO */}
+        {/* Student Information */}
         <div className="sdx-report-student-info">
           <div className="sdx-report-info-row">
-            <div className="sdx-report-info-item"><strong>Name:</strong> {student.name}</div>
-            <div className="sdx-report-info-item"><strong>Age:</strong> {student.age}</div>
+            <div className="sdx-report-info-item">
+              <strong>Name:</strong> {student.name}
+            </div>
+            <div className="sdx-report-info-item">
+              <strong>Age:</strong> {student.age}
+            </div>
           </div>
           <div className="sdx-report-info-row">
-            <div className="sdx-report-info-item"><strong>Grade:</strong> {student.gradeLevel || 'Grade 1'}</div>
-            <div className="sdx-report-info-item"><strong>Gender:</strong> {student.gender || 'Not specified'}</div>
+            <div className="sdx-report-info-item">
+              <strong>Grade:</strong> {student.gradeLevel || 'Grade 1'}
+            </div>
+            <div className="sdx-report-info-item">
+              <strong>Gender:</strong> {student.gender || 'Not specified'}
+            </div>
           </div>
           <div className="sdx-report-info-row">
             <div className="sdx-report-info-item">
               <strong>Parent:</strong> {getParentName()}
             </div>
-            <div className="sdx-report-info-item"><strong>Date:</strong> {formatDate(progressReport?.reportDate || new Date())}</div>
+            <div className="sdx-report-info-item">
+              <strong>Date:</strong> {formatDate(progressReport.reportDate)}
+            </div>
           </div>
           <div className="sdx-report-info-row">
             <div className="sdx-report-info-item">
@@ -313,33 +454,20 @@ const StudentProgressPDF = () => {
         {/* Reading Level Progress */}
         <div className="sdx-report-section-title">Reading Level Progress</div>
         {renderReadingLevelCategories()}
-        
-        <div className="sdx-report-overall-summary">
-          <p className="sdx-report-overall-description">
-            {student.name} is currently at the <strong>{student.readingLevel || 'Not Assessed'}</strong> reading level. 
-            {student.readingLevel && student.readingLevel !== 'Not Assessed' ? 
-              ` This means ${getReadingLevelDescription(student.readingLevel).toLowerCase()}.` : 
-              ' An assessment is needed to determine the appropriate reading level.'}
-          </p>
+
+        {/* Learning Activities */}
+        <div className="sdx-report-section-title">Learning Activities</div>
+        {renderActivitiesTable()}
+
+        {/* Recommendations */}
+        <div className="sdx-report-section-title">Prescriptive Recommendations</div>
+        <div className="sdx-report-recommendations">
+          <ul className="sdx-report-rec-list">
+            {progressReport.recommendations.map((rec, index) => (
+              <li key={index} className="sdx-report-rec-item">{rec}</li>
+            ))}
+          </ul>
         </div>
-
-        {/* Progress Table - With Support Levels */}
-        <div className="sdx-report-section-title">Learning Progress</div>
-        <div className="sdx-report-progress-table">
-          {renderActivitiesTable()}
-        </div>
-
-
-             {/* Recommendations */}
-             <div className="sdx-report-section-title">Prescriptive Recommendations</div>
-        <ul className="sdx-report-rec-list">
-          {progressReport?.recommendations?.length > 0 ? 
-            progressReport.recommendations.map((rec, i) => (
-              <li key={i} className="sdx-report-rec-item">{rec}</li>
-            )) : 
-            <li className="sdx-report-rec-item">No recommendations available yet.</li>
-          }
-        </ul>
 
         {/* Signatures */}
         <div className="sdx-report-signatures">

@@ -328,11 +328,173 @@ class IEPService {
   // Add the refreshInterventionData method to the IEPService class
   static async refreshInterventionData(studentId) {
     try {
+      console.log(`[IEPService] Refreshing intervention data for student: ${studentId}`);
+      
       const response = await api.put(`/api/iep/student/${studentId}/refresh-interventions`);
+      
+      console.log('[IEPService] Intervention data refreshed successfully:', response.data);
+      return response.data;
+      
+    } catch (error) {
+      console.error('[IEPService] Error refreshing intervention data:', error);
+      throw new Error(error.response?.data?.message || 'Failed to refresh intervention data');
+    }
+  }
+
+  // Send progress report to parent and save PDF
+  static async sendReportToParent(studentId, parentId, reportData) {
+    try {
+      console.log(`[IEPService] Sending progress report to parent:`, {
+        studentId,
+        parentId,
+        subject: reportData?.subject,
+        hasPdfData: !!reportData?.pdfData,
+        pdfDataSize: reportData?.pdfData ? reportData.pdfData.length : 0
+      });
+      
+      // Upload PDF to S3 if PDF data exists
+      let pdfS3Path = null;
+      if (reportData?.pdfData && reportData.includeProgressReport) {
+        try {
+          pdfS3Path = await IEPService.uploadPdfToS3(
+            studentId, 
+            parentId, 
+            reportData.pdfData,
+            reportData.subject
+          );
+          console.log('[IEPService] PDF uploaded to S3:', pdfS3Path);
+        } catch (s3Error) {
+          console.error('[IEPService] Error uploading PDF to S3:', s3Error);
+          // Continue without PDF if upload fails
+        }
+      }
+      
+      // Check if API endpoint is available
+      try {
+        const checkResponse = await api.get(`/api/iep/student/${studentId}`);
+        console.log('[IEPService] API connection test successful:', checkResponse.status);
+      } catch (checkError) {
+        console.error('[IEPService] API connection test failed:', checkError);
+        // Continue with the main request anyway
+      }
+      
+      // Create a safe version of the data without potentially large PDF content for logging
+      const safeLogData = {
+        parentId,
+        subject: reportData?.subject,
+        content: reportData?.content?.substring(0, 100) + '...',
+        includeProgressReport: reportData?.includeProgressReport,
+        reportDate: reportData?.reportDate,
+        hasPdfData: !!reportData?.pdfData,
+        pdfS3Path
+      };
+      
+      console.log('[IEPService] Sending with data:', safeLogData);
+      
+      // Create the request data - now using S3 path instead of embedding the PDF
+      const requestData = {
+        parentId,
+        subject: reportData.subject,
+        content: reportData.content,
+        includeProgressReport: reportData.includeProgressReport && !!pdfS3Path,
+        reportDate: reportData.reportDate,
+        // Include S3 path instead of the full PDF data
+        pdfS3Path: pdfS3Path
+      };
+      
+      // Send the report with timeout extended
+      const response = await api.post(
+        `/api/iep/student/${studentId}/send-report`, 
+        requestData,
+        {
+          timeout: 30000 // 30 second timeout
+        }
+      );
+      
+      console.log('[IEPService] Progress report sent successfully:', response.data);
+      return response.data;
+      
+    } catch (error) {
+      console.error('[IEPService] Error sending progress report:', error);
+      
+      // Enhanced error handling
+      let errorMessage = 'Failed to send progress report';
+      
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('[IEPService] Error response data:', error.response.data);
+        console.error('[IEPService] Error response status:', error.response.status);
+        
+        if (error.response.status === 413) {
+          errorMessage = 'The PDF file is too large to send. Try without including the progress report.';
+        } else if (error.response.status === 500) {
+          errorMessage = 'Server error: ' + (error.response.data?.message || 'Internal server error');
+        } else {
+          errorMessage = `${error.response.status} error: ${error.response.data?.error || error.response.data?.message || errorMessage}`;
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('[IEPService] No response received from server');
+        errorMessage = 'No response from server. Please check your internet connection.';
+      }
+      
+      throw new Error(errorMessage);
+    }
+  }
+
+  // New method to upload PDF to S3 bucket
+  static async uploadPdfToS3(studentId, parentId, pdfBase64, subject) {
+    try {
+      console.log(`[IEPService] Uploading PDF to S3 for student ${studentId}`);
+      
+      // Format date for filename
+      const dateString = new Date().toISOString().replace(/[:.]/g, '-');
+      
+      // Create a descriptive filename for the S3 object
+      const subjectSlug = subject ? subject.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : 'report';
+      const filename = `${subjectSlug}-${dateString}.pdf`;
+      
+      // Call the API endpoint that handles S3 uploads
+      const response = await api.post('/api/uploads/pdf', {
+        filename,
+        contentType: 'application/pdf',
+        data: pdfBase64,
+        studentId, // Pass studentId for folder organization
+        parentId,  // Pass parentId for folder organization
+        metadata: {
+          studentId,
+          parentId,
+          subject,
+          createdAt: dateString
+        }
+      });
+      
+      if (!response.data?.success || !response.data?.fileUrl) {
+        throw new Error('Upload failed: ' + (response.data?.message || 'Unknown error'));
+      }
+      
+      console.log('[IEPService] PDF uploaded successfully:', response.data.fileUrl);
+      return response.data.fileUrl; // Return the S3 URL
+      
+    } catch (error) {
+      console.error('[IEPService] Error uploading PDF to S3:', error);
+      throw new Error('Failed to upload PDF: ' + (error.message || 'Unknown error'));
+    }
+  }
+
+  // Get previous PDF reports for a student
+  static async getPreviousPdfReports(studentId) {
+    try {
+      console.log(`[IEPService] Getting previous PDF reports for student: ${studentId}`);
+      
+      const response = await api.get(`/api/iep/student/${studentId}/reports`);
+      
+      console.log('[IEPService] Found previous reports:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error refreshing intervention data:', error);
-      throw error;
+      console.error('[IEPService] Error getting previous PDF reports:', error);
+      throw new Error(error.response?.data?.message || 'Failed to get previous PDF reports');
     }
   }
 }

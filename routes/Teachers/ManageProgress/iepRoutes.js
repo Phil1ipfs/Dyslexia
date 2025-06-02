@@ -6,6 +6,12 @@ const { authenticateToken } = require('../../../middleware/auth');
 // Apply authentication to all routes
 router.use(authenticateToken);
 
+// Debug middleware to log requests
+router.use((req, res, next) => {
+  console.log(`[iepRoutes] ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 // Add route for refreshing intervention data
 router.put('/student/:studentId/refresh-interventions', IEPController.refreshInterventionData);
 
@@ -28,7 +34,11 @@ router.put('/student/:studentId/bulk-update', IEPController.bulkUpdateObjectives
 router.put('/objective/:objectiveId/support-level', IEPController.updateObjectiveSupportLevel);
 
 // Send progress report to parent
-router.post('/student/:studentId/send-report', IEPController.sendReportToParent);
+router.post('/student/:studentId/send-report', (req, res, next) => {
+  console.log(`[iepRoutes] Processing send-report request for student ${req.params.studentId}`);
+  console.log(`[iepRoutes] Request body keys: ${Object.keys(req.body).join(', ')}`);
+  next();
+}, IEPController.sendReportToParent);
 
 // Get previous PDF reports for a student
 router.get('/student/:studentId/reports', IEPController.getPreviousPdfReports);
