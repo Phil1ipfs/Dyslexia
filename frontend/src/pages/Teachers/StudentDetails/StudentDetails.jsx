@@ -43,6 +43,7 @@ const StudentDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const studentId = id || (location.state?.student?.id);
+  const filterReadingLevel = location.state?.filterReadingLevel;
   const progressReportRef = useRef(null);
 
   // Add navigation function
@@ -71,6 +72,14 @@ const StudentDetails = () => {
     message: '',
     submessage: ''
   });
+
+  // If only a reading level filter is provided, redirect to the students page with that filter
+  useEffect(() => {
+    if (filterReadingLevel && !studentId) {
+      // Redirect to students page with reading level filter
+      navigate('/teacher/students', { state: { filterReadingLevel } });
+    }
+  }, [filterReadingLevel, studentId, navigate]);
 
   // Default progress report
   const defaultProgress = {

@@ -5,7 +5,7 @@ import {
   faChevronLeft, faChevronRight, faFilter,
   faQuestion, faListAlt, faBook, faCheckCircle,
   faBan, faLayerGroup, faFileAlt, faVolumeUp,
-  faImage, faParagraph
+  faImage, faParagraph, faClipboardList, faClipboardCheck
 } from '@fortawesome/free-solid-svg-icons';
 import "../../../css/Teachers/ManageCategories/TemplateLibrary.css";
 
@@ -134,6 +134,10 @@ const UnifiedTemplatePreview = ({
         return faListAlt;
       case 'sentence':
         return faBook;
+      case 'assessment':
+        return faClipboardList;
+      case 'preassessment':
+        return faClipboardCheck;
       default:
         return faQuestion;
     }
@@ -141,6 +145,12 @@ const UnifiedTemplatePreview = ({
   
   // Format template type for display
   const getTemplateTypeDisplay = () => {
+    if (templateType === 'assessment') {
+      return 'Assessment';
+    }
+    if (templateType === 'preassessment') {
+      return 'Pre-Assessment';
+    }
     return templateType.charAt(0).toUpperCase() + templateType.slice(1);
   };
   
@@ -208,6 +218,10 @@ const UnifiedTemplatePreview = ({
         return renderChoiceTemplate(template);
       case 'sentence':
         return renderSentenceTemplate(template);
+      case 'assessment':
+        return renderAssessmentTemplate(template);
+      case 'preassessment':
+        return renderPreAssessmentTemplate(template);
       default:
         return <div>Unknown template type</div>;
     }
@@ -408,6 +422,144 @@ const UnifiedTemplatePreview = ({
     );
   };
   
+  // Render assessment template content
+  const renderAssessmentTemplate = (template) => {
+    return (
+      <>
+        <div className="tl-template-main-content">
+          <div className="tl-template-property">
+            <div className="tl-template-property-label">
+              <FontAwesomeIcon icon={faBook} />
+              Reading Level
+            </div>
+            <div className="tl-template-property-value highlighted">
+              {template.readingLevel}
+            </div>
+          </div>
+          
+          <div className="tl-template-property">
+            <div className="tl-template-property-label">
+              <FontAwesomeIcon icon={faLayerGroup} />
+              Category
+            </div>
+            <div className="tl-template-property-value">
+              {template.category}
+            </div>
+          </div>
+          
+          {template.questions && template.questions.length > 0 && (
+            <div className="tl-template-property">
+              <div className="tl-template-property-label">
+                <FontAwesomeIcon icon={faQuestion} />
+                Questions ({template.questions.length})
+              </div>
+              <div className="tl-template-property-value">
+                {template.questions.slice(0, 3).map((question, index) => (
+                  <div key={index} style={{ marginBottom: '10px' }}>
+                    <strong>Question {index + 1}:</strong> {question.questionText}
+                  </div>
+                ))}
+                {template.questions.length > 3 && (
+                  <div className="tl-more-questions">
+                    + {template.questions.length - 3} more questions
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="tl-template-meta">
+          <div className="tl-template-meta-item">
+            <div className="tl-template-meta-label">Total Questions</div>
+            <div className="tl-template-meta-value">{template.questions ? template.questions.length : 0}</div>
+          </div>
+          <div className="tl-template-meta-item">
+            <div className="tl-template-meta-label">Last Updated</div>
+            <div className="tl-template-meta-value">
+              {template.updatedAt ? new Date(template.updatedAt).toLocaleDateString() : 'N/A'}
+            </div>
+          </div>
+          <div className="tl-template-meta-item">
+            <div className="tl-template-meta-label">Status</div>
+            <div className="tl-template-meta-value">
+              {template.isActive ? 'Active' : 'Inactive'}
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  };
+  
+  // Render pre-assessment template content
+  const renderPreAssessmentTemplate = (template) => {
+    return (
+      <>
+        <div className="tl-template-main-content">
+          <div className="tl-template-property">
+            <div className="tl-template-property-label">
+              <FontAwesomeIcon icon={faClipboardCheck} />
+              Title
+            </div>
+            <div className="tl-template-property-value highlighted">
+              {template.title}
+            </div>
+          </div>
+          
+          <div className="tl-template-property">
+            <div className="tl-template-property-label">
+              <FontAwesomeIcon icon={faFileAlt} />
+              Description
+            </div>
+            <div className="tl-template-property-value">
+              {template.description}
+            </div>
+          </div>
+          
+          {template.questions && template.questions.length > 0 && (
+            <div className="tl-template-property">
+              <div className="tl-template-property-label">
+                <FontAwesomeIcon icon={faQuestion} />
+                Questions ({template.questions.length})
+              </div>
+              <div className="tl-template-property-value">
+                {template.questions.slice(0, 3).map((question, index) => (
+                  <div key={index} style={{ marginBottom: '10px' }}>
+                    <strong>Question {index + 1}:</strong> {question.questionText}
+                  </div>
+                ))}
+                {template.questions.length > 3 && (
+                  <div className="tl-more-questions">
+                    + {template.questions.length - 3} more questions
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="tl-template-meta">
+          <div className="tl-template-meta-item">
+            <div className="tl-template-meta-label">Language</div>
+            <div className="tl-template-meta-value">{template.language === "FL" ? "Filipino" : "English"}</div>
+          </div>
+          <div className="tl-template-meta-item">
+            <div className="tl-template-meta-label">Last Updated</div>
+            <div className="tl-template-meta-value">
+              {template.lastUpdated ? new Date(template.lastUpdated).toLocaleDateString() : 'N/A'}
+            </div>
+          </div>
+          <div className="tl-template-meta-item">
+            <div className="tl-template-meta-label">Status</div>
+            <div className="tl-template-meta-value">
+              {template.isActive ? 'Active' : 'Inactive'}
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  };
+  
   if (!isOpen) return null;
   
   return (
@@ -529,77 +681,53 @@ const UnifiedTemplatePreview = ({
                       <FontAwesomeIcon icon={getTemplateTypeIcon()} />
                       {templateType === 'question' ? 'Question Template' : 
                        templateType === 'choice' ? 'Choice Template' : 
-                       'Sentence Template'}
+                       templateType === 'sentence' ? 'Sentence Template' : 
+                       templateType === 'assessment' ? 'Assessment Template' :
+                       'Pre-Assessment Template'}
                     </div>
-                    <div className={`tl-template-card-badge ${template.isActive ? 'active' : 'inactive'}`}>
-                      <FontAwesomeIcon icon={template.isActive ? faCheckCircle : faBan} />
-                      {template.isActive ? ' Active' : ' Inactive'}
-                    </div>
-                  </div>
-                  
-                  <div className="tl-template-card-content">
-                    {renderTemplateContent(template)}
-                    
-                    <div className="tl-template-actions">
+                    <div className="tl-template-card-actions">
                       <button 
-                        className="tl-template-action-btn tl-template-edit-btn"
+                        className="tl-template-card-action"
                         onClick={() => onEditTemplate(template)}
                       >
                         <FontAwesomeIcon icon={faEdit} />
-                        Edit Template
                       </button>
                     </div>
+                  </div>
+                  <div className="tl-template-card-content">
+                    {renderTemplateContent(template)}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="tl-no-templates-found">
-              <div className="tl-no-templates-icon">
-                <FontAwesomeIcon icon={faFilter} />
-              </div>
-              <h4>No templates found</h4>
-              <p>
-                No {getTemplateTypeDisplay().toLowerCase()} templates match your current filters. 
-                Try adjusting your search criteria or clear filters to see all templates.
-              </p>
+            <div className="tl-no-templates">
+              No templates found.
             </div>
           )}
         </div>
         
-        {/* Pagination Footer */}
-        {filteredTemplates.length > 0 && (
-          <div className="tl-template-pagination">
-            <div className="tl-pagination-info">
-              Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredTemplates.length)} of {filteredTemplates.length} templates
-            </div>
-            
-            <div className="tl-pagination-controls">
-              <button 
-                className="tl-pagination-btn"
-                onClick={handlePrevPage}
-                disabled={currentPage === 1}
-              >
-                <FontAwesomeIcon icon={faChevronLeft} />
-              </button>
-              
-              <div className="tl-pagination-current">
-                {currentPage} / {totalPages}
-              </div>
-              
-              <button 
-                className="tl-pagination-btn"
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-              >
-                <FontAwesomeIcon icon={faChevronRight} />
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Pagination */}
+        <div className="tl-pagination">
+          <button 
+            className="tl-pagination-button"
+            onClick={handlePrevPage}
+            disabled={currentPage === 1}
+          >
+            <FontAwesomeIcon icon={faChevronLeft} />
+          </button>
+          <span>{currentPage} of {totalPages}</span>
+          <button 
+            className="tl-pagination-button"
+            onClick={handleNextPage}
+            disabled={currentPage === totalPages}
+          >
+            <FontAwesomeIcon icon={faChevronRight} />
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
-export default UnifiedTemplatePreview; 
+export default UnifiedTemplatePreview;

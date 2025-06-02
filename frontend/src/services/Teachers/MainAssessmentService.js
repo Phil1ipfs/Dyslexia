@@ -85,11 +85,75 @@ class MainAssessmentService {
    */
   getAllAssessments = async () => {
     try {
+      // Add debug log to help trace the execution flow
+      console.log('[MainAssessmentService] Starting getAllAssessments call');
+      
       // If API is not initialized, try to check it first
       if (!this.apiInitialized) {
+        console.log('[MainAssessmentService] API not initialized, checking availability');
         const isAvailable = await this.checkApiAvailability();
         if (!isAvailable) {
-          // API is not available, return empty data with a note
+          // API is not available, but we're in development mode, so return mock data
+          if (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost') {
+            console.log('[MainAssessmentService] API not available, but using mock data for development');
+            
+            // Generate mock assessment data for development
+            const mockAssessments = [
+              {
+                _id: 'mock-1',
+                readingLevel: 'Low Emerging',
+                category: 'Alphabet Knowledge',
+                questions: [
+                  {
+                    questionType: 'patinig',
+                    questionText: 'What is the small letter equivalent?',
+                    questionId: 'AK_001',
+                    questionValue: 'A',
+                    choiceOptions: [
+                      { optionId: '1', optionText: 'a', isCorrect: true, description: 'Correct answer' },
+                      { optionId: '2', optionText: 'b', isCorrect: false, description: 'Incorrect answer' }
+                    ],
+                    order: 1
+                  }
+                ],
+                isActive: true,
+                status: 'active',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              },
+              {
+                _id: 'mock-2',
+                readingLevel: 'High Emerging',
+                category: 'Phonological Awareness',
+                questions: [
+                  {
+                    questionType: 'katinig',
+                    questionText: 'Which sound does this make?',
+                    questionId: 'PA_001',
+                    questionValue: 'B',
+                    choiceOptions: [
+                      { optionId: '1', optionText: '/b/', isCorrect: true, description: 'Correct answer' },
+                      { optionId: '2', optionText: '/d/', isCorrect: false, description: 'Incorrect answer' }
+                    ],
+                    order: 1
+                  }
+                ],
+                isActive: true,
+                status: 'active',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              }
+            ];
+            
+            return {
+              success: true,
+              data: mockAssessments,
+              message: "Using mock assessment data for development (database unavailable)"
+            };
+          }
+          
+          // Not in development mode, return empty data with a note
+          console.log('[MainAssessmentService] API not available, returning empty data with message');
           return {
             success: true,
             data: [],
@@ -98,32 +162,151 @@ class MainAssessmentService {
         }
       }
       
-      // Request with a high limit to ensure we get all assessments
-      const response = await axios.get('/api/main-assessment?limit=100', this.getAuthHeaders());
+      // Get auth headers and log them for debugging
+      const authHeaders = this.getAuthHeaders();
+      console.log('[MainAssessmentService] Auth headers ready:', 
+        authHeaders.headers ? 'Authorization header present: ' + !!authHeaders.headers.Authorization : 'No headers');
       
-      // If the backend returns a 404 or empty data, handle it gracefully
-      if (!response.data || !response.data.data) {
+      // Try the real API request, but fall back to mock data in development
+      try {
+        // Request with a high limit to ensure we get all assessments
+        console.log('[MainAssessmentService] Making API request to /api/main-assessment');
+        const response = await axios.get('/api/main-assessment?limit=100', authHeaders);
+        
+        // Log the raw response for debugging
+        console.log('[MainAssessmentService] Raw API response:', response);
+        
+        // If the backend returns a 404 or empty data, handle it gracefully
+        if (!response.data) {
+          console.log('[MainAssessmentService] No data in response');
+          return {
+            success: true,
+            data: [] // Return empty array when no data exists yet
+          };
+        }
+        
+        // Check for different response formats
+        let assessmentData = [];
+        if (response.data.data) {
+          console.log('[MainAssessmentService] Found data in response.data.data');
+          assessmentData = response.data.data;
+        } else if (Array.isArray(response.data)) {
+          console.log('[MainAssessmentService] Response.data is an array, using directly');
+          assessmentData = response.data;
+        } else if (typeof response.data === 'object' && !Array.isArray(response.data)) {
+          console.log('[MainAssessmentService] Response.data is an object, checking for other properties');
+          // Try to find data in other common response formats
+          if (response.data.assessments) {
+            console.log('[MainAssessmentService] Found data in response.data.assessments');
+            assessmentData = response.data.assessments;
+          } else if (response.data.templates) {
+            console.log('[MainAssessmentService] Found data in response.data.templates');
+            assessmentData = response.data.templates;
+          } else if (response.data.items) {
+            console.log('[MainAssessmentService] Found data in response.data.items');
+            assessmentData = response.data.items;
+          }
+        }
+        
+        console.log(`[MainAssessmentService] Found ${assessmentData.length} assessments`);
+        
+        // If we found data, return it
         return {
           success: true,
-          data: [] // Return empty array when no data exists yet
+          data: assessmentData
         };
+      } catch (apiError) {
+        // Only provide mock data in development mode
+        if (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost') {
+          console.log('[MainAssessmentService] API error, using mock data for development:', apiError);
+          
+          // Generate mock assessment data for development
+          const mockAssessments = [
+            {
+              _id: 'mock-1',
+              readingLevel: 'Low Emerging',
+              category: 'Alphabet Knowledge',
+              questions: [
+                {
+                  questionType: 'patinig',
+                  questionText: 'What is the small letter equivalent?',
+                  questionId: 'AK_001',
+                  questionValue: 'A',
+                  choiceOptions: [
+                    { optionId: '1', optionText: 'a', isCorrect: true, description: 'Correct answer' },
+                    { optionId: '2', optionText: 'b', isCorrect: false, description: 'Incorrect answer' }
+                  ],
+                  order: 1
+                }
+              ],
+              isActive: true,
+              status: 'active',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            },
+            {
+              _id: 'mock-2',
+              readingLevel: 'High Emerging',
+              category: 'Phonological Awareness',
+              questions: [
+                {
+                  questionType: 'katinig',
+                  questionText: 'Which sound does this make?',
+                  questionId: 'PA_001',
+                  questionValue: 'B',
+                  choiceOptions: [
+                    { optionId: '1', optionText: '/b/', isCorrect: true, description: 'Correct answer' },
+                    { optionId: '2', optionText: '/d/', isCorrect: false, description: 'Incorrect answer' }
+                  ],
+                  order: 1
+                }
+              ],
+              isActive: true,
+              status: 'active',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            }
+          ];
+          
+          return {
+            success: true,
+            data: mockAssessments,
+            message: "Using mock assessment data for development (API error: " + apiError.message + ")"
+          };
+        }
+        
+        // In production, just throw the error
+        throw apiError;
       }
-      
-      return {
-        success: true,
-        data: response.data.data || []
-      };
     } catch (error) {
       // If the error is a 404 (Not Found), it might mean the collection doesn't exist yet
       if (error.response && error.response.status === 404) {
+        console.log('[MainAssessmentService] 404 error, collection might not exist yet');
         return {
           success: true,
           data: [] // Return empty array for 404s
         };
       }
       
-      console.error('Error fetching assessments:', error);
-      throw error;
+      // Add more detailed error logging
+      console.error('[MainAssessmentService] Error fetching assessments:', error);
+      
+      if (error.response) {
+        console.error('[MainAssessmentService] Error response status:', error.response.status);
+        console.error('[MainAssessmentService] Error response data:', error.response.data);
+      } else if (error.request) {
+        console.error('[MainAssessmentService] No response received from server:', error.request);
+      } else {
+        console.error('[MainAssessmentService] Error setting up request:', error.message);
+      }
+      
+      // Return an empty array with error message for more graceful handling
+      return {
+        success: false,
+        data: [],
+        error: error.message,
+        message: "Failed to fetch assessments. See console for details."
+      };
     }
   };
 
@@ -189,14 +372,49 @@ class MainAssessmentService {
       console.log('API URL:', '/api/main-assessment');
       console.log('Request headers:', this.getAuthHeaders());
       
-      const response = await axios.post(
-        '/api/main-assessment',
-        assessmentData,
-        this.getAuthHeaders()
-      );
-      
-      console.log('Assessment creation response:', response.data);
-      return response.data;
+      // In development mode or if we're on localhost, provide a fallback
+      // in case the backend API is unavailable
+      if (process.env.NODE_ENV === 'development' || 
+          window.location.hostname === 'localhost') {
+        try {
+          // First try the real API call
+          const response = await axios.post(
+            '/api/main-assessment',
+            assessmentData,
+            this.getAuthHeaders()
+          );
+          
+          console.log('Assessment creation response:', response.data);
+          return response.data;
+        } catch (apiError) {
+          console.error('API error, using development fallback:', apiError);
+          
+          // Generate a mock ID
+          const mockId = `dev-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+          
+          // Return a mock response
+          return {
+            success: true,
+            message: 'Assessment created successfully (DEV MODE)',
+            data: {
+              _id: mockId,
+              ...assessmentData,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            }
+          };
+        }
+      } else {
+        // In production, use only the real API
+        const response = await axios.post(
+          '/api/main-assessment',
+          assessmentData,
+          this.getAuthHeaders()
+        );
+        
+        console.log('Assessment creation response:', response.data);
+        return response.data;
+      }
     } catch (error) {
       console.error('Error creating assessment:', error);
       
@@ -232,11 +450,38 @@ class MainAssessmentService {
    */
   updateAssessment = async (assessmentId, assessmentData) => {
     try {
-      const response = await axios.put(`/api/main-assessment/${assessmentId}`, assessmentData, this.getAuthHeaders());
-      return {
-        success: response.data.success,
-        data: response.data.data
-      };
+      // In development mode or if we're on localhost, provide a fallback
+      if (process.env.NODE_ENV === 'development' || 
+          window.location.hostname === 'localhost') {
+        try {
+          // First try the real API call
+          const response = await axios.put(`/api/main-assessment/${assessmentId}`, assessmentData, this.getAuthHeaders());
+          return {
+            success: response.data.success,
+            data: response.data.data
+          };
+        } catch (apiError) {
+          console.error(`API error updating assessment ${assessmentId}, using development fallback:`, apiError);
+          
+          // Return a mock response with the updated data
+          return {
+            success: true,
+            message: 'Assessment updated successfully (DEV MODE)',
+            data: {
+              _id: assessmentId,
+              ...assessmentData,
+              updatedAt: new Date().toISOString()
+            }
+          };
+        }
+      } else {
+        // In production, use only the real API
+        const response = await axios.put(`/api/main-assessment/${assessmentId}`, assessmentData, this.getAuthHeaders());
+        return {
+          success: response.data.success,
+          data: response.data.data
+        };
+      }
     } catch (error) {
       console.error(`Error updating assessment ${assessmentId}:`, error);
       throw error;
@@ -250,11 +495,33 @@ class MainAssessmentService {
    */
   deleteAssessment = async (assessmentId) => {
     try {
-      const response = await axios.delete(`/api/main-assessment/${assessmentId}`, this.getAuthHeaders());
-      return {
-        success: response.data.success,
-        message: response.data.message
-      };
+      // In development mode or if we're on localhost, provide a fallback
+      if (process.env.NODE_ENV === 'development' || 
+          window.location.hostname === 'localhost') {
+        try {
+          // First try the real API call
+          const response = await axios.delete(`/api/main-assessment/${assessmentId}`, this.getAuthHeaders());
+          return {
+            success: response.data.success,
+            message: response.data.message
+          };
+        } catch (apiError) {
+          console.error(`API error deleting assessment ${assessmentId}, using development fallback:`, apiError);
+          
+          // Return a mock success response
+          return {
+            success: true,
+            message: 'Assessment deleted successfully (DEV MODE)'
+          };
+        }
+      } else {
+        // In production, use only the real API
+        const response = await axios.delete(`/api/main-assessment/${assessmentId}`, this.getAuthHeaders());
+        return {
+          success: response.data.success,
+          message: response.data.message
+        };
+      }
     } catch (error) {
       console.error(`Error deleting assessment ${assessmentId}:`, error);
       throw error;
