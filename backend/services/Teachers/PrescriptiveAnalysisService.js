@@ -1130,6 +1130,47 @@ class PrescriptiveAnalysisService {
       throw error;
     }
   }
+
+  /**
+   * Update categoryResultIds for all prescriptive analyses
+   * This method finds all analyses without categoryResultId and updates them
+   * @returns {Promise<Object>} Count of updated and failed analyses
+   */
+  async updateAllCategoryResultIds() {
+    try {
+      console.log('Starting update of all missing categoryResultIds...');
+      
+      // Find all analyses without categoryResultId
+      const analyses = await PrescriptiveAnalysis.find({
+        $or: [
+          { categoryResultId: { $exists: false } },
+          { categoryResultId: null }
+        ]
+      });
+      
+      console.log(`Found ${analyses.length} analyses without categoryResultId`);
+      
+      let updatedCount = 0;
+      let failedCount = 0;
+      
+      // Update each analysis
+      for (const analysis of analyses) {
+        try {
+          await this.updateCategoryResultId(analysis._id);
+          updatedCount++;
+        } catch (error) {
+          console.error(`Failed to update categoryResultId for analysis ${analysis._id}:`, error);
+          failedCount++;
+        }
+      }
+      
+      console.log(`Update complete. Updated ${updatedCount} analyses, failed ${failedCount} analyses.`);
+      return { updated: updatedCount, failed: failedCount };
+    } catch (error) {
+      console.error('Error updating all categoryResultIds:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new PrescriptiveAnalysisService(); 

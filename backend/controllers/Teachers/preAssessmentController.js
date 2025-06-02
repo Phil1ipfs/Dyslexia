@@ -17,19 +17,40 @@ const getPreAssessmentDb = () => mongoose.connection.useDb('Pre_Assessment'); //
 exports.getAllPreAssessments = async (req, res) => {
   try {
     const preAssessmentCollection = getPreAssessmentDb().collection('pre-assessment');
+    
     const preAssessments = await preAssessmentCollection.find({}).toArray();
     
-    // Format the response to include only necessary fields
-    const formattedAssessments = preAssessments.map(assessment => ({
-      _id: assessment._id,
-      assessmentId: assessment.assessmentId,
-      title: assessment.title,
-      description: assessment.description,
-      language: assessment.language,
-      status: assessment.status,
-      totalQuestions: assessment.totalQuestions,
-      type: assessment.type
-    }));
+    // Format the response to include only necessary fields and add category counts
+    const formattedAssessments = preAssessments.map(assessment => {
+      const categoryCounts = {
+        alphabet_knowledge: 0,
+        phonological_awareness: 0,
+        decoding: 0,
+        word_recognition: 0,
+        reading_comprehension: 0
+      };
+      
+      // Count questions by category
+      if (assessment.questions && assessment.questions.length > 0) {
+        assessment.questions.forEach(question => {
+          if (question.questionTypeId && categoryCounts.hasOwnProperty(question.questionTypeId)) {
+            categoryCounts[question.questionTypeId]++;
+          }
+        });
+      }
+      
+      return {
+        _id: assessment._id,
+        assessmentId: assessment.assessmentId,
+        title: assessment.title,
+        description: assessment.description,
+        language: assessment.language,
+        status: assessment.status,
+        totalQuestions: assessment.totalQuestions,
+        type: assessment.type,
+        categoryCounts: categoryCounts
+      };
+    });
     
     res.json(formattedAssessments);
   } catch (error) {
@@ -41,23 +62,50 @@ exports.getAllPreAssessments = async (req, res) => {
 // Get a single pre-assessment by ID
 exports.getPreAssessmentById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const preAssessmentId = req.params.id;
+    
     const preAssessmentCollection = getPreAssessmentDb().collection('pre-assessment');
     
     let preAssessment;
     try {
       // Try as MongoDB ObjectId
-      preAssessment = await preAssessmentCollection.findOne({ _id: new mongoose.Types.ObjectId(id) });
+      preAssessment = await preAssessmentCollection.findOne({ 
+        _id: new mongoose.Types.ObjectId(preAssessmentId) 
+      });
     } catch (err) {
       // Try as assessmentId string
-      preAssessment = await preAssessmentCollection.findOne({ assessmentId: id });
+      preAssessment = await preAssessmentCollection.findOne({ 
+        assessmentId: preAssessmentId 
+      });
     }
     
     if (!preAssessment) {
       return res.status(404).json({ message: 'Pre-assessment not found' });
     }
     
+    // Calculate category counts
+    const categoryCounts = {
+      alphabet_knowledge: 0,
+      phonological_awareness: 0,
+      decoding: 0,
+      word_recognition: 0,
+      reading_comprehension: 0
+    };
+    
+    // Count questions by category
+    if (preAssessment.questions && preAssessment.questions.length > 0) {
+      preAssessment.questions.forEach(question => {
+        if (question.questionTypeId && categoryCounts.hasOwnProperty(question.questionTypeId)) {
+          categoryCounts[question.questionTypeId]++;
+        }
+      });
+    }
+    
+    // Add category counts to the response
+    preAssessment.categoryCounts = categoryCounts;
+    
     res.json(preAssessment);
+    
   } catch (error) {
     console.error('Error fetching pre-assessment:', error);
     res.status(500).json({ message: 'Error fetching pre-assessment', error: error.message });
@@ -548,9 +596,10 @@ async function processAssessmentResults(userResponses, preAssessment, student) {
         const comprehensionQuestions = q.sentenceQuestions || [];
         const mainComprehensionQ = comprehensionQuestions[0] || {};
         
-        // Determine if student was correct
-        // Based on your data structure, check if student answered correctly
-        const isCorrect = studentAnswer === "1";
+        // Determine if student was correct based on the correctAnswerChoice field
+        // If correctAnswerChoice is "2", then "2" is the correct answer, otherwise "1" is correct
+        const correctAnswer = mainComprehensionQ.correctAnswerChoice === "2" ? "2" : "1";
+        const isCorrect = studentAnswer === correctAnswer;
         
         return {
           questionId: q.questionId,
@@ -563,12 +612,12 @@ async function processAssessmentResults(userResponses, preAssessment, student) {
           
           // Actual question information
           actualQuestion: mainComprehensionQ.questionText, // The real question like "Ano ang kinain ni Maria?"
-          questionImage: mainComprehensionQ.questionImage,
           
           // Answer information
           studentAnswer: studentAnswer,
-          correctAnswer: mainComprehensionQ.correctAnswer, // "Mansanas"
-          incorrectAnswer: mainComprehensionQ.incorrectAnswer, // "Mangga"
+          correctAnswer: mainComprehensionQ.correctAnswerChoice === "2" ? mainComprehensionQ.incorrectAnswer : mainComprehensionQ.correctAnswer,
+          incorrectAnswer: mainComprehensionQ.correctAnswerChoice === "2" ? mainComprehensionQ.correctAnswer : mainComprehensionQ.incorrectAnswer,
+          correctAnswerChoice: mainComprehensionQ.correctAnswerChoice || "1",
           isCorrect: isCorrect,
           
           // Additional metadata

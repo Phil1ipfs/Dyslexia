@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useChatbot } from '../../../contexts/ChatbotContexts.js';
+import { useChatbot } from '../../../contexts/ChatbotContexts.jsx';
 import { fetchTeacherProfile } from '../../../services/Teachers/teacherService';
 import '../../../css/Teachers/TeacherChatbot.css'; 
 

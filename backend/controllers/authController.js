@@ -120,7 +120,7 @@ exports.login = async (req, res) => {
     console.log('User roles:', userRoles);
 
     /* ── 6. Sign JWT with appropriate options ───────────── */
-    const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
+    const secretKey = process.env.JWT_SECRET || 'your-secret-key';
     
     const token = jwt.sign(
       {
