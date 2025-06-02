@@ -10,6 +10,15 @@ const s3Client = require('./config/s3');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// Check for AWS environment variables
+if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_REGION) {
+  console.log('AWS credentials detected in environment variables');
+  console.log(`AWS Region: ${process.env.AWS_REGION}`);
+  console.log(`AWS Bucket: ${process.env.AWS_BUCKET_NAME || 'literexia-bucket'}`);
+} else {
+  console.warn('⚠️ AWS credentials not found in environment variables - S3 uploads will use database fallback');
+}
+
 // Define userSchema at the module level so it's available throughout the file
 const userSchema = new mongoose.Schema({
   email: {
@@ -48,6 +57,8 @@ app.use(cors({
     const allowedOrigins = [
       'http://localhost:5173',
       'http://localhost:5174',
+      'http://192.168.56.1:5173',
+      'http://192.168.1.4:5173',
       process.env.FRONTEND_URL
     ].filter(Boolean);
     
@@ -68,6 +79,8 @@ app.options('*', cors({
     const allowedOrigins = [
       'http://localhost:5173',
       'http://localhost:5174',
+      'http://192.168.56.1:5173',
+      'http://192.168.1.4:5173',
       process.env.FRONTEND_URL
     ].filter(Boolean);
     
@@ -82,8 +95,9 @@ app.options('*', cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-requested-with', 'X-Requested-With']
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Increase body parser limits for larger file uploads
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(requestLogger);
 
 // Test route to verify server is running
@@ -252,7 +266,7 @@ const authenticateToken = (req, res, next) => {
   }
 
   try {
-    const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
+    const secretKey = process.env.JWT_SECRET || 'your-secret-key';
     const decoded = jwt.verify(token, secretKey);
     req.user = decoded;
     console.log('Authenticated user:', req.user.email, 'User roles:', req.user.roles);
@@ -391,6 +405,11 @@ connectDB().then(async (connected) => {
         try {
           await PrescriptiveAnalysisService.initializeForAllStudents();
           console.log('✅ Initialized prescriptive analyses for all students');
+          
+          // Also update all categoryResultIds to ensure proper linking
+          console.log('Updating categoryResultIds for all analyses...');
+          await PrescriptiveAnalysisService.updateAllCategoryResultIds();
+          console.log('✅ Updated all categoryResultIds');
         } catch (initError) {
           console.warn('⚠️ Could not initialize prescriptive analyses:', initError.message);
         }
@@ -603,7 +622,7 @@ connectDB().then(async (connected) => {
         }
 
         /* ── 5. sign JWT ───────────────────────────────────── */
-        const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
+        const secretKey = process.env.JWT_SECRET || 'your-secret-key';
         
         const token = jwt.sign(
           {
@@ -1015,6 +1034,23 @@ connectDB().then(async (connected) => {
     // Register new Admin/assessmentResults route
     const assessmentResultsRoutes = require('./routes/Admin/assessmentResults');
     app.use('/api/admin', assessmentResultsRoutes);
+    // Load IEP routes
+    try {
+      const iepRoutes = require('./routes/Teachers/ManageProgress/iepRoutes');
+      app.use('/api/iep', iepRoutes);
+      console.log('✅ Loaded IEP routes at /api/iep/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load IEP routes:', error.message);
+    }
+
+    // Load upload routes
+    try {
+      const uploadRoutes = require('./routes/uploadRoutes');
+      app.use('/api/uploads', uploadRoutes);
+      console.log('✅ Loaded upload routes at /api/uploads/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load upload routes:', error.message);
+    }
 
     // 404 handler
     app.use((req, res) => {

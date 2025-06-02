@@ -14,28 +14,28 @@ const AssessmentSummaryCard = ({ assessmentData }) => {
   
   // Get reading level class based on the level
   const getReadingLevelClass = (level) => {
-    if (!level || level === 'Not Assessed') return 'reading-level-not-assessed';
+    if (!level || level === 'Not Assessed') return 'unique-reading-level-not-assessed';
     
     switch(level.toLowerCase()) {
       case 'early':
       case 'low emerging':
       case 'high emerging':
-        return 'reading-level-early';
+        return 'unique-reading-level-early';
       
       case 'developing':
       case 'emergent':
-        return 'reading-level-developing';
+        return 'unique-reading-level-developing';
       
       case 'transitioning':
       case 'at grade level':
       case 'fluent':
-        return 'reading-level-fluent';
+        return 'unique-reading-level-fluent';
       
       case 'advanced':
-        return 'reading-level-advanced';
+        return 'unique-reading-level-advanced';
       
       default:
-        return 'reading-level-not-assessed';
+        return 'unique-reading-level-not-assessed';
     }
   };
   
@@ -76,12 +76,12 @@ const AssessmentSummaryCard = ({ assessmentData }) => {
   
   // Get score class based on score
   const getScoreClass = (score) => {
-    if (!isAssessed) return 'score-not-assessed';
+    if (!isAssessed) return 'unique-score-not-assessed';
     
-    if (score >= 85) return 'score-excellent';
-    if (score >= 70) return 'score-good';
-    if (score >= 50) return 'score-average';
-    return 'score-needs-improvement';
+    if (score >= 85) return 'unique-score-excellent';
+    if (score >= 70) return 'unique-score-good';
+    if (score >= 50) return 'unique-score-average';
+    return 'unique-score-needs-improvement';
   };
   
   // Format date nicely
@@ -116,41 +116,41 @@ const AssessmentSummaryCard = ({ assessmentData }) => {
   const scoreClass = getScoreClass(score);
   
   return (
-    <div className={`literexia-assessment-card ${currentLevelClass}`}>
-      <div className="literexia-assessment-header">
-        <h3 className="literexia-assessment-title">
-          <FaChartLine className="literexia-header-icon" />
+    <div className={`unique-literexia-assessment-card ${currentLevelClass}`}>
+      <div className="unique-literexia-assessment-header">
+        <h3 className="unique-literexia-assessment-title">
+          <FaChartLine className="unique-literexia-header-icon" />
           (CRLA Based) {assessmentType && `- ${assessmentType}`}
         </h3>
-        <div className={`literexia-score-badge ${scoreClass}`}>
+        <div className={`unique-literexia-score-badge ${scoreClass}`}>
           {score}%
         </div>
       </div>
       
-      <div className="literexia-assessment-content">
-        <div className="literexia-assessment-item">
-          <div className={`literexia-item-icon ${currentLevelClass}`}>
+      <div className="unique-literexia-assessment-content">
+        <div className="unique-literexia-assessment-item">
+          <div className={`unique-literexia-item-icon ${currentLevelClass}`}>
             <FaStar />
           </div>
-          <div className="literexia-item-content">
-            <div className="literexia-item-label">
+          <div className="unique-literexia-item-content">
+            <div className="unique-literexia-item-label">
               Current Reading Level
             </div>
-            <div className={`literexia-item-value ${currentLevelClass}`}>
+            <div className={`unique-literexia-item-value ${currentLevelClass}`}>
               {assessmentData.readingLevel || "Not Assessed"}
             </div>
           </div>
         </div>
         
-        <div className="literexia-assessment-item">
-          <div className="literexia-item-icon calendar-icon">
+        <div className="unique-literexia-assessment-item">
+          <div className="unique-literexia-item-icon unique-calendar-icon">
             <FaCalendarAlt />
           </div>
-          <div className="literexia-item-content">
-            <div className="literexia-item-label">
+          <div className="unique-literexia-item-content">
+            <div className="unique-literexia-item-label">
               Assessment Date
             </div>
-            <div className="literexia-item-value date-value">
+            <div className="unique-literexia-item-value unique-date-value">
               {formatDate(assessmentDate)}
             </div>
           </div>
