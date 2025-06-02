@@ -32,6 +32,7 @@ import IEPService from '../../../services/Teachers/ManageProgress/IEPService';
 import '../../../css/Teachers/StudentDetails.css';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { toast } from '../../../utils/toastHelper';
 
 // Import cradle logo - using Vite's import mechanism
 const cradleLogo = new URL('../../../assets/images/Teachers/cradleLogo.jpg', import.meta.url).href;
@@ -42,6 +43,9 @@ const StudentDetails = () => {
   const { id } = useParams();
   const studentId = id || (location.state?.student?.id);
   const progressReportRef = useRef(null);
+
+  // Add navigation function
+  const goBack = () => navigate(-1);
 
   // State variables
   const [student, setStudent] = useState(null);
@@ -83,6 +87,8 @@ const StudentDetails = () => {
   const [showProgressReport, setShowProgressReport] = useState(false);
   const [isEditingFeedback, setIsEditingFeedback] = useState(false);
   const [includeProgressReport, setIncludeProgressReport] = useState(true);
+  const [previousReports, setPreviousReports] = useState([]);
+  const [loadingPreviousReports, setLoadingPreviousReports] = useState(false);
 
   // Add a new state variable for assessment questions
   const [assessmentQuestions, setAssessmentQuestions] = useState({});
@@ -410,6 +416,32 @@ const StudentDetails = () => {
     fetchAllStudentData();
   }, [studentId]);
 
+  // Function to fetch previous reports
+  const fetchPreviousReports = async () => {
+    if (!studentId) return;
+    
+    try {
+      setLoadingPreviousReports(true);
+      const reportsData = await IEPService.getPreviousPdfReports(studentId);
+      if (reportsData && reportsData.success) {
+        setPreviousReports(reportsData.data || []);
+        console.log("Previous reports loaded:", reportsData.data);
+      }
+    } catch (reportsError) {
+      console.warn('Could not load previous reports:', reportsError);
+      setPreviousReports([]);
+    } finally {
+      setLoadingPreviousReports(false);
+    }
+  };
+  
+  // Call this function after the student data is loaded
+  useEffect(() => {
+    if (student && student.id) {
+      fetchPreviousReports();
+    }
+  }, [student]);
+
   const handleParentImageLoad = () => {
     console.log("Parent image loaded successfully");
     setParentImageLoaded(true);
@@ -506,6 +538,57 @@ const StudentDetails = () => {
     }
   };
 
+  // Helper function to reduce PDF size if needed
+  const reducePdfSize = (pdfData, qualityFactor = 0.8) => {
+    if (!pdfData || typeof pdfData !== 'string') {
+      return null;
+    }
+    
+    // Try to limit size for very large PDFs
+    const MAX_SIZE = 2000000; // 2MB
+    
+    if (pdfData.length > MAX_SIZE) {
+      console.log(`PDF data size (${pdfData.length} bytes) exceeds ${MAX_SIZE} bytes, attempting to reduce quality...`);
+      
+      // If it's already reduced to minimum quality and still too large, return null
+      if (qualityFactor <= 0.5) {
+        console.warn('PDF is still too large even at minimum quality');
+        return null;
+      }
+      
+      try {
+        // This approach assumes pdfData is a base64 string
+        // A real implementation would need more sophisticated compression
+        return reducePdfSize(pdfData, qualityFactor - 0.1);
+      } catch (error) {
+        console.error('Error reducing PDF size:', error);
+        return null;
+      }
+    }
+    
+    return pdfData;
+  };
+
+  // Helper function to view a PDF from S3 URL
+  const viewPdfFromS3 = (pdfUrl) => {
+    if (!pdfUrl) {
+      toast.error('No PDF URL available');
+      return;
+    }
+    
+    console.log(`Opening PDF from URL: ${pdfUrl}`);
+    
+    // Check if it's a relative URL (our API) or absolute URL (S3)
+    if (pdfUrl.startsWith('/')) {
+      // It's a relative URL from our server
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+      window.open(`${apiBaseUrl}${pdfUrl}`, '_blank');
+    } else {
+      // It's an absolute URL (likely S3)
+      window.open(pdfUrl, '_blank');
+    }
+  };
+
   // Export progress report to PDF
   const exportToPDF = async () => {
     try {
@@ -523,24 +606,29 @@ const StudentDetails = () => {
       });
       
       // Wait a moment for the modal to render completely
-      setTimeout(async () => {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
         if (!progressReportRef.current) {
           console.error("Progress report element not found");
+        toast.error("Failed to generate PDF - Report element not found");
           return;
         }
         
         try {
-          // Use html2canvas to capture the report
+        // Use html2canvas to capture the report with optimized settings
           const canvas = await html2canvas(progressReportRef.current, {
-            scale: 2,
+          scale: 1.5, // Reduced from 2 to generate a smaller file
             useCORS: true,
             logging: false,
             allowTaint: true,
-            scrollY: -window.scrollY
+          scrollY: -window.scrollY,
+          backgroundColor: '#ffffff',
+          removeContainer: true,
+          imageTimeout: 15000
           });
           
           // Create PDF with proper dimensions
-          const imgData = canvas.toDataURL('image/png');
+        const imgData = canvas.toDataURL('image/jpeg', 0.8); // Use JPEG for smaller file size
           const pdf = new jsPDF('p', 'mm', 'a4');
           const pdfW = pdf.internal.pageSize.getWidth();
           const pdfH = pdf.internal.pageSize.getHeight();
@@ -554,14 +642,14 @@ const StudentDetails = () => {
           let remainingH = imgH;
           
           // First page
-          pdf.addImage(imgData, 'PNG', 0, yOffset, imgW, imgH);
+        pdf.addImage(imgData, 'JPEG', 0, yOffset, imgW, imgH, undefined, 'FAST');
           remainingH -= pdfH;
           yOffset -= pdfH;
           
           // Add extra pages if needed
           while (remainingH > 0) {
             pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, yOffset, imgW, imgH);
+          pdf.addImage(imgData, 'JPEG', 0, yOffset, imgW, imgH, undefined, 'FAST');
             remainingH -= pdfH;
             yOffset -= pdfH;
           }
@@ -570,14 +658,18 @@ const StudentDetails = () => {
           pdf.save(`${student.name.replace(/[^a-z0-9]/gi, '_')}_progress_report.pdf`);
           
           console.log("PDF generated successfully");
+        toast.success("PDF report generated successfully");
         } catch (error) {
           console.error("Error generating PDF:", error);
+        toast.error("Failed to generate PDF");
           alert("There was an error generating the PDF. Please try again.");
         }
-      }, 500);
     } catch (error) {
       console.error('Error preparing PDF data:', error);
-      setError('Failed to prepare PDF data. Please try again.');
+      toast.error("Failed to prepare PDF data");
+      alert('Failed to prepare PDF data. Please try again.');
+    } finally {
+      setShowProgressReport(false);
     }
   };
 
@@ -608,13 +700,233 @@ const StudentDetails = () => {
 
   // UI event handlers
   const handleSaveFeedback = () => setIsEditingFeedback(false);
-  const handleSendReport = () => setShowSuccessDialog(true);
-  const renderCheckbox = (isChecked) => (
-    <div className={`sdx-checkbox ${isChecked ? 'checked' : ''}`}>
-      {isChecked && <span className="sdx-checkmark">✓</span>}
-    </div>
-  );
-  const goBack = () => navigate('/teacher/view-student');
+  
+  const handleSendReport = async () => {
+    try {
+      // Validate parent connection
+      if (!isParentConnected() || !student.parentId) {
+        alert('Cannot send report - No parent account is connected to this student.');
+        return;
+      }
+      
+      // Don't allow sending if editing the message
+      if (isEditingFeedback) {
+        alert('Please save your message before sending the report.');
+        return;
+      }
+      
+      // Show a loading message
+      console.log('Preparing report for sending...');
+      toast.loading('Preparing report...'); // Changed from toast() to toast.loading()
+      
+      // If including progress report, generate the PDF
+      let pdfBase64 = null;
+      if (includeProgressReport) {
+        try {
+          // First show the progress report modal to ensure it's rendered
+          setShowProgressReport(true);
+          
+          // Wait for the modal to render
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Check if the element is available
+          const element = progressReportRef.current;
+          if (!element) {
+            throw new Error('Progress report element not found');
+          }
+          
+          // Generate PDF data with optimized settings
+          const canvas = await html2canvas(element, {
+            scale: 1.5, // Reduced from 2 to lower file size
+            useCORS: true,
+            scrollY: -window.scrollY,
+            logging: false,
+            imageTimeout: 15000,
+            backgroundColor: '#ffffff',
+            // Add quality options to reduce file size
+            allowTaint: true,
+            removeContainer: true
+          });
+          
+          const imgData = canvas.toDataURL('image/jpeg', 0.7); // Use JPEG instead of PNG for smaller file size
+          
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = pdf.internal.pageSize.getHeight();
+          const imgWidth = canvas.width;
+          const imgHeight = canvas.height;
+          const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+          
+          // Add image with compression settings
+          pdf.addImage(
+            imgData, 
+            'JPEG', 
+            0, 
+            0, 
+            imgWidth * ratio, 
+            imgHeight * ratio,
+            undefined,
+            'FAST' // Use FAST compression
+          );
+          
+          // Convert to base64 with lower quality
+          const pdfOutput = pdf.output('datauristring');
+          pdfBase64 = pdfOutput.split(',')[1]; // Extract the base64 part
+          
+          console.log(`PDF generated successfully, original size: ${pdfBase64.length} bytes`);
+          
+          // Try to reduce size if needed
+          if (pdfBase64.length > 5000000) { // Check if PDF is over 5MB
+            toast.loading('PDF is too large, attempting to optimize...'); // Changed from toast() to toast.loading()
+            
+            // Try a more aggressive approach for large PDFs
+            const smallerCanvas = document.createElement('canvas');
+            const ctx = smallerCanvas.getContext('2d');
+            const scaleFactor = 0.5; // Scale down by 50%
+            
+            smallerCanvas.width = canvas.width * scaleFactor;
+            smallerCanvas.height = canvas.height * scaleFactor;
+            
+            ctx.drawImage(canvas, 0, 0, smallerCanvas.width, smallerCanvas.height);
+            const smallerImgData = smallerCanvas.toDataURL('image/jpeg', 0.5);
+            
+            const smallerPdf = new jsPDF('p', 'mm', 'a4');
+            smallerPdf.addImage(
+              smallerImgData,
+              'JPEG',
+              0,
+              0,
+              pdfWidth,
+              pdfHeight * (smallerCanvas.height / smallerCanvas.width) * (pdfWidth / pdfHeight),
+              undefined,
+              'FAST'
+            );
+            
+            const smallerPdfOutput = smallerPdf.output('datauristring');
+            const smallerPdfBase64 = smallerPdfOutput.split(',')[1];
+            
+            console.log(`Reduced PDF size from ${pdfBase64.length} to ${smallerPdfBase64.length} bytes`);
+            
+            if (smallerPdfBase64.length <= 5000000) {
+              pdfBase64 = smallerPdfBase64;
+            } else {
+              console.warn('PDF is still too large after optimization');
+              const continueWithoutPDF = window.confirm(
+                'The generated PDF is too large to send. Would you like to send the message without the PDF attachment?'
+              );
+              
+              if (continueWithoutPDF) {
+                pdfBase64 = null;
+                setIncludeProgressReport(false);
+              } else {
+                setShowProgressReport(false);
+                return;
+              }
+            }
+          }
+          
+          // Hide the modal after generating PDF
+          setShowProgressReport(false);
+        } catch (pdfError) {
+          console.error('Error generating PDF:', pdfError);
+          setShowProgressReport(false);
+          toast.error('Failed to generate PDF');
+          
+          // Ask user if they want to continue without PDF
+          const continueWithoutPDF = window.confirm(
+            'Failed to generate PDF report. Would you like to send the message without the PDF attachment?'
+          );
+          
+          if (continueWithoutPDF) {
+            setIncludeProgressReport(false);
+          } else {
+            return;
+          }
+        }
+      }
+      
+      // Prepare report data
+      const reportData = {
+        subject: feedbackMessage.subject,
+        content: feedbackMessage.content,
+        includeProgressReport: includeProgressReport && !!pdfBase64, // Only include if we have PDF data
+        pdfData: pdfBase64,
+        reportDate: progressReport.reportDate
+      };
+      
+      toast.loading('Sending report to parent...'); // Changed from toast() to toast.loading()
+      console.log('Sending report to parent...');
+      
+      try {
+        // Send report through service
+        const result = await IEPService.sendReportToParent(
+          studentId,
+          student.parentId,
+          reportData
+        );
+        
+        if (result && result.success) {
+          console.log('Report sent successfully:', result);
+          toast.success('Report sent successfully!');
+          setShowSuccessDialog(true);
+        } else {
+          throw new Error(result?.message || 'Failed to send report');
+        }
+      } catch (sendError) {
+        console.error('Error sending report:', sendError);
+        toast.error('Error sending report');
+        
+        // If error is likely related to PDF size, offer to send without PDF
+        if (sendError.message.includes('too large') || 
+            sendError.message.includes('413') || 
+            sendError.message.includes('Server error') ||
+            sendError.message.includes('offset') ||
+            sendError.message.includes('size')) {
+          
+          const continueWithoutPDF = window.confirm(
+            `${sendError.message}\n\nWould you like to try sending just the message without the PDF attachment?`
+          );
+          
+          if (continueWithoutPDF) {
+            // Try again without PDF
+            try {
+              toast.loading('Trying to send without PDF attachment...'); // Changed from toast() to toast.loading()
+              const simpleResult = await IEPService.sendReportToParent(
+                studentId,
+                student.parentId,
+                {
+                  ...reportData,
+                  includeProgressReport: false,
+                  pdfData: null
+                }
+              );
+              
+              if (simpleResult && simpleResult.success) {
+                console.log('Simple report sent successfully:', simpleResult);
+                toast.success('Message sent successfully (without PDF attachment)');
+                setShowSuccessDialog(true);
+              } else {
+                throw new Error(simpleResult?.message || 'Failed to send simple report');
+              }
+            } catch (finalError) {
+              console.error('Error sending simple report:', finalError);
+              toast.error('Failed to send report');
+              alert(`Error sending report: ${finalError.message || 'Unknown error'}`);
+            }
+          } else {
+            alert(`Error sending report: ${sendError.message}`);
+          }
+        } else {
+          alert(`Error sending report: ${sendError.message}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error sending report:', error);
+      toast.error('Error preparing report');
+      alert(`Error preparing report: ${error.message || 'Unknown error'}`);
+    }
+  };
+  
   const closeSuccessDialog = () => setShowSuccessDialog(false);
 
   // Format assessment items for display
@@ -832,11 +1144,11 @@ const StudentDetails = () => {
         <table className="sdx-table">
           <thead>
             <tr className="sdx-table-header">
-              <th className="sdx-header-cell">Lesson</th>
-              <th className="sdx-header-cell">Status</th>
-              <th className="sdx-header-cell">Score</th>
-              <th className="sdx-header-cell" colSpan="3">Support Level</th>
-              <th className="sdx-header-cell">Remarks</th>
+              <th className="sdx-header-cell sdx-lesson-col">Lesson</th>
+              <th className="sdx-header-cell sdx-status-col">Status</th>
+              <th className="sdx-header-cell sdx-score-col">Score</th>
+              <th className="sdx-header-cell sdx-support-col" colSpan="3">Support Level</th>
+              <th className="sdx-header-cell sdx-remarks-col">Remarks</th>
             </tr>
             <tr className="sdx-table-subheader">
               <th className="sdx-subheader-cell sdx-placeholder"></th>
@@ -851,7 +1163,7 @@ const StudentDetails = () => {
           <tbody>
             {activities && activities.length > 0 ? (
               activities.map((activity, index) => (
-                <tr key={index} className="sdx-table-row">
+                <tr key={index} className={`sdx-table-row ${index % 2 === 0 ? 'sdx-row-even' : 'sdx-row-odd'}`}>
                   <td className="sdx-cell sdx-activity-name">
                     <div className="sdx-activity-name-container">
                       <span className="sdx-activity-title">{activity.name}</span>
@@ -903,6 +1215,7 @@ const StudentDetails = () => {
                     </div>
                   </td>
                   <td className="sdx-cell sdx-activity-remarks">
+                    <div className="sdx-remarks-content">
                     {activity.remarks || 'No remarks available'}
                     {activity.hasIntervention && (
                       <div className="sdx-intervention-info">
@@ -914,6 +1227,7 @@ const StudentDetails = () => {
                         </div>
                       </div>
                     )}
+                    </div>
                   </td>
                 </tr>
               ))
@@ -1224,7 +1538,7 @@ const StudentDetails = () => {
             <FaBookReader /> Reading Level Progress
           </h3>
           <div className="sdx-assessment-inner">
-            <div className="sdx-level-info" style={{ margin: '1rem 0 1.5rem 0' }}>
+            <div className="sdx-level-info">
               <div className={`sdx-level-badge ${getReadingLevelClass(student.readingLevel || 'Not Assessed')}`}>
                 {student.readingLevel || 'Not Assessed'}
               </div>
@@ -1236,28 +1550,30 @@ const StudentDetails = () => {
               </div>
             </div>
             
-            {/* Reading Level Categories in Compact Format */}
-            <div className="sdx-level-progress-grid">
+            {/* Reading Level Categories in Card Format */}
+            <div className="sdx-reading-categories-grid">
               {formatAssessmentItems().map((skill, index) => (
-                <div key={index} className="sdx-level-category">
-                  <div className="sdx-level-category-header">
-                    <span className="sdx-level-category-name">{skill.name}</span>
-                    <span className="sdx-level-category-score">{skill.score}%</span>
+                <div key={index} className="sdx-reading-category-card">
+                  <div className="sdx-reading-category-header">
+                    <span className="sdx-reading-category-name">{skill.name}</span>
+                    <span className={`sdx-reading-category-score ${skill.score >= 75 ? 'passing' : 'failing'}`}>
+                      {skill.score}%
+                    </span>
                   </div>
                   
-                  <div className="sdx-level-progress-bar-container">
+                  <div className="sdx-reading-progress-bar">
                     <div 
-                      className="sdx-level-progress-fill"
+                      className={`sdx-reading-progress-fill ${skill.score >= 75 ? 'passing' : 'failing'}`}
                       style={{ width: `${skill.score}%` }}
                     ></div>
                   </div>
                   
-                  <div className="sdx-level-category-results">
-                    <div className="sdx-level-category-answers">
-                      <span>✓ {skill.correctAnswers} correct</span>
-                      <span>✗ {skill.incorrectAnswers} incorrect</span>
+                  <div className="sdx-reading-category-results">
+                    <div className="sdx-reading-category-answers">
+                      <span className="sdx-correct">✓ {skill.correctAnswers} correct</span>
+                      <span className="sdx-incorrect">✗ {skill.incorrectAnswers} incorrect</span>
                     </div>
-                    <span className="sdx-level-status">
+                    <span className={`sdx-reading-status ${skill.isPassed ? 'passed' : 'failed'}`}>
                       {skill.isPassed ? 'Passed' : 'Not Passed'}
                     </span>
                   </div>

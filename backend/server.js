@@ -10,6 +10,15 @@ const s3Client = require('./config/s3');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// Check for AWS environment variables
+if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_REGION) {
+  console.log('AWS credentials detected in environment variables');
+  console.log(`AWS Region: ${process.env.AWS_REGION}`);
+  console.log(`AWS Bucket: ${process.env.AWS_BUCKET_NAME || 'literexia-bucket'}`);
+} else {
+  console.warn('⚠️ AWS credentials not found in environment variables - S3 uploads will use database fallback');
+}
+
 // Define userSchema at the module level so it's available throughout the file
 const userSchema = new mongoose.Schema({
   email: {
@@ -257,7 +266,7 @@ const authenticateToken = (req, res, next) => {
   }
 
   try {
-    const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
+    const secretKey = process.env.JWT_SECRET || 'your-secret-key';
     const decoded = jwt.verify(token, secretKey);
     req.user = decoded;
     console.log('Authenticated user:', req.user.email, 'User roles:', req.user.roles);
@@ -608,7 +617,7 @@ connectDB().then(async (connected) => {
         }
 
         /* ── 5. sign JWT ───────────────────────────────────── */
-        const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
+        const secretKey = process.env.JWT_SECRET || 'your-secret-key';
         
         const token = jwt.sign(
           {
@@ -1020,6 +1029,15 @@ connectDB().then(async (connected) => {
       console.log('✅ Loaded IEP routes at /api/iep/*');
     } catch (error) {
       console.warn('⚠️ Could not load IEP routes:', error.message);
+    }
+
+    // Load upload routes
+    try {
+      const uploadRoutes = require('./routes/uploadRoutes');
+      app.use('/api/uploads', uploadRoutes);
+      console.log('✅ Loaded upload routes at /api/uploads/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load upload routes:', error.message);
     }
 
     // 404 handler
