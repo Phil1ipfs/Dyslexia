@@ -5,6 +5,7 @@ import {
   Book, Award, Layers, CheckCircle, AlertTriangle,
   User, UserPlus
 } from 'lucide-react';
+import axios from 'axios'; // Import axios
 import '../../css/Admin/AssessmentResults/StudentAssessmentsList.css';
 
 const StudentAssessmentsList = () => {
@@ -20,132 +21,18 @@ const StudentAssessmentsList = () => {
 
   // Fetch students data
   useEffect(() => {
-    // Simulated API call - would be replaced with actual backend call
     const fetchStudents = async () => {
       try {
         setLoading(true);
+        const response = await axios.get('http://localhost:5001/api/admin/manage/students');
         
-        // In production, this would be replaced with an actual API call
-        // e.g., const response = await axios.get('/api/admin/pre-assessments');
-        
-        // Simulated student data
-        const mockStudents = [
-          {
-            _id: "682d5f47def17e7b6758b3ca",
-            idNumber: 202511111,
-            firstName: "Rainn",
-            middleName: "Pascual",
-            lastName: "Aganan",
-            gradeLevel: "Grade 1",
-            section: "Hope",
-            readingLevel: "At Grade Level",
-            readingPercentage: 100,
-            preAssessmentCompleted: true,
-            completedAt: "2025-05-21T08:09:31.705745",
-            teacherName: "Ms. Amanda Santos"
-          },
-          {
-            _id: "683040fd8e4b26952e3ccb42",
-            idNumber: 202522222,
-            firstName: "Kit Nicholas",
-            middleName: "Rish",
-            lastName: "Mark",
-            gradeLevel: "Grade 2",
-            section: "Hope",
-            readingLevel: "Low Emerging",
-            readingPercentage: 8,
-            preAssessmentCompleted: true,
-            completedAt: "2025-05-23T17:53:54.969307",
-            teacherName: "Ms. Jane Smith"
-          },
-          {
-            _id: "6830fc50c4d7024b845aa62a",
-            idNumber: 202544444,
-            firstName: "Kit Nicholas",
-            middleName: "Percival",
-            lastName: "Carammmm",
-            gradeLevel: "Grade 2",
-            section: "Hope",
-            readingLevel: "Developing",
-            readingPercentage: 60,
-            preAssessmentCompleted: true,
-            completedAt: "2025-05-23T22:53:04.702204",
-            teacherName: "Ms. Jane Smith"
-          },
-          {
-            _id: "6835e75f0c543099e95226ec",
-            idNumber: 202599999,
-            firstName: "Pia",
-            middleName: "Zop",
-            lastName: "Rey",
-            gradeLevel: "Grade 3",
-            section: "Section 2",
-            readingLevel: "Transitioning",
-            readingPercentage: 80,
-            preAssessmentCompleted: true,
-            completedAt: "2025-05-28T00:25:03.247718",
-            teacherName: "Mr. Robert Davis"
-          },
-          {
-            _id: "68360a08c3a79bb6c886a3ea",
-            idNumber: 202588888,
-            firstName: "Neo",
-            middleName: "",
-            lastName: "David",
-            gradeLevel: "Grade 1",
-            section: "Section 1",
-            readingLevel: "At Grade Level",
-            readingPercentage: 88,
-            preAssessmentCompleted: true,
-            completedAt: "2025-05-28T02:52:56.535298",
-            teacherName: "Ms. Amanda Santos"
-          },
-          {
-            _id: "68360a08c3a79bb6c886a3eb",
-            idNumber: 202566666,
-            firstName: "Emma",
-            middleName: "Grace",
-            lastName: "Johnson",
-            gradeLevel: "Grade 3",
-            section: "Section 1",
-            readingLevel: "Transitioning",
-            readingPercentage: 76,
-            preAssessmentCompleted: true,
-            completedAt: "2025-05-28T01:22:16.535298",
-            teacherName: "Mr. Robert Davis"
-          },
-          {
-            _id: "68360a08c3a79bb6c886a3ec",
-            idNumber: 202577777,
-            firstName: "Oliver",
-            middleName: "James",
-            lastName: "Smith",
-            gradeLevel: "Grade 2",
-            section: "Section 2",
-            readingLevel: "Developing",
-            readingPercentage: 54,
-            preAssessmentCompleted: true,
-            completedAt: "2025-05-27T14:42:11.535298",
-            teacherName: "Ms. Jane Smith"
-          },
-          {
-            _id: "68360a08c3a79bb6c886a3ed",
-            idNumber: 202533333,
-            firstName: "Sofia",
-            middleName: "Maria",
-            lastName: "Garcia",
-            gradeLevel: "Grade 1",
-            section: "Hope",
-            readingLevel: "High Emerging",
-            readingPercentage: 45,
-            preAssessmentCompleted: true,
-            completedAt: "2025-05-26T09:15:32.535298",
-            teacherName: "Ms. Amanda Santos"
-          }
-        ];
-        
-        setStudents(mockStudents);
-        setFilteredStudents(mockStudents);
+        if (response.data.success) {
+          setStudents(response.data.data);
+          setFilteredStudents(response.data.data);
+        } else {
+          console.error("Error fetching student assessment data:", response.data.message);
+        }
+
       } catch (error) {
         console.error("Error fetching pre-assessment data:", error);
       } finally {
@@ -408,22 +295,35 @@ const StudentAssessmentsList = () => {
                   </div>
                   
                   <div className="student-assessments__detail">
-                    <span className="student-assessments__detail-label">Teacher:</span>
-                    <span className="student-assessments__detail-value">{student.teacherName}</span>
-                  </div>
-                  
-                  <div className="student-assessments__detail">
                     <span className="student-assessments__detail-label">Assessed:</span>
-                    <span className="student-assessments__detail-value">{formatDate(student.completedAt)}</span>
+                    <span className="student-assessments__detail-value">{formatDate(student.lastAssessmentDate)}</span>
                   </div>
                 </div>
                 
                 <div className="student-assessments__score-container">
-                  <div className="student-assessments__score-circle" style={{ background: `conic-gradient(#3B4F81 ${student.readingPercentage * 3.6}deg, #edf2f7 0deg)` }}>
-                    <div className="student-assessments__score-inner">
-                      <span className="student-assessments__score-value">{student.readingPercentage}%</span>
+                  {student.readingPercentage != null ? (
+                    <div
+                      className="student-assessments__score-circle"
+                      style={{
+                        background: student.readingPercentage === 100
+                          ? 'conic-gradient(#22c55e 360deg, #edf2f7 0deg)' // green for 100%
+                          : `conic-gradient(#3B4F81 ${student.readingPercentage * 3.6}deg, #edf2f7 0deg)`
+                      }}
+                    >
+                      <div className="student-assessments__score-inner" style={{ background: '#fff', borderRadius: '50%', padding: '2px 8px' }}>
+                        <span className="student-assessments__score-value">{
+                          student.readingPercentage === 100
+                            ? '100%'
+                            : `${Number(student.readingPercentage).toFixed(2)}%`
+                        }</span>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="student-assessments__score-not-taken">
+                      <AlertTriangle size={24} />
+                      <span>Pre-Assessment Not Taken</span>
+                    </div>
+                  )}
                   <span className="student-assessments__score-label">Pre Assessment Score</span>
                 </div>
               </div>

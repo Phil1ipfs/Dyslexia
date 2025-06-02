@@ -17,19 +17,40 @@ const getPreAssessmentDb = () => mongoose.connection.useDb('Pre_Assessment'); //
 exports.getAllPreAssessments = async (req, res) => {
   try {
     const preAssessmentCollection = getPreAssessmentDb().collection('pre-assessment');
+    
     const preAssessments = await preAssessmentCollection.find({}).toArray();
     
-    // Format the response to include only necessary fields
-    const formattedAssessments = preAssessments.map(assessment => ({
-      _id: assessment._id,
-      assessmentId: assessment.assessmentId,
-      title: assessment.title,
-      description: assessment.description,
-      language: assessment.language,
-      status: assessment.status,
-      totalQuestions: assessment.totalQuestions,
-      type: assessment.type
-    }));
+    // Format the response to include only necessary fields and add category counts
+    const formattedAssessments = preAssessments.map(assessment => {
+      const categoryCounts = {
+        alphabet_knowledge: 0,
+        phonological_awareness: 0,
+        decoding: 0,
+        word_recognition: 0,
+        reading_comprehension: 0
+      };
+      
+      // Count questions by category
+      if (assessment.questions && assessment.questions.length > 0) {
+        assessment.questions.forEach(question => {
+          if (question.questionTypeId && categoryCounts.hasOwnProperty(question.questionTypeId)) {
+            categoryCounts[question.questionTypeId]++;
+          }
+        });
+      }
+      
+      return {
+        _id: assessment._id,
+        assessmentId: assessment.assessmentId,
+        title: assessment.title,
+        description: assessment.description,
+        language: assessment.language,
+        status: assessment.status,
+        totalQuestions: assessment.totalQuestions,
+        type: assessment.type,
+        categoryCounts: categoryCounts
+      };
+    });
     
     res.json(formattedAssessments);
   } catch (error) {
@@ -41,23 +62,50 @@ exports.getAllPreAssessments = async (req, res) => {
 // Get a single pre-assessment by ID
 exports.getPreAssessmentById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const preAssessmentId = req.params.id;
+    
     const preAssessmentCollection = getPreAssessmentDb().collection('pre-assessment');
     
     let preAssessment;
     try {
       // Try as MongoDB ObjectId
-      preAssessment = await preAssessmentCollection.findOne({ _id: new mongoose.Types.ObjectId(id) });
+      preAssessment = await preAssessmentCollection.findOne({ 
+        _id: new mongoose.Types.ObjectId(preAssessmentId) 
+      });
     } catch (err) {
       // Try as assessmentId string
-      preAssessment = await preAssessmentCollection.findOne({ assessmentId: id });
+      preAssessment = await preAssessmentCollection.findOne({ 
+        assessmentId: preAssessmentId 
+      });
     }
     
     if (!preAssessment) {
       return res.status(404).json({ message: 'Pre-assessment not found' });
     }
     
+    // Calculate category counts
+    const categoryCounts = {
+      alphabet_knowledge: 0,
+      phonological_awareness: 0,
+      decoding: 0,
+      word_recognition: 0,
+      reading_comprehension: 0
+    };
+    
+    // Count questions by category
+    if (preAssessment.questions && preAssessment.questions.length > 0) {
+      preAssessment.questions.forEach(question => {
+        if (question.questionTypeId && categoryCounts.hasOwnProperty(question.questionTypeId)) {
+          categoryCounts[question.questionTypeId]++;
+        }
+      });
+    }
+    
+    // Add category counts to the response
+    preAssessment.categoryCounts = categoryCounts;
+    
     res.json(preAssessment);
+    
   } catch (error) {
     console.error('Error fetching pre-assessment:', error);
     res.status(500).json({ message: 'Error fetching pre-assessment', error: error.message });
@@ -548,9 +596,10 @@ async function processAssessmentResults(userResponses, preAssessment, student) {
         const comprehensionQuestions = q.sentenceQuestions || [];
         const mainComprehensionQ = comprehensionQuestions[0] || {};
         
-        // Determine if student was correct
-        // Based on your data structure, check if student answered correctly
-        const isCorrect = studentAnswer === "1";
+        // Determine if student was correct based on the correctAnswerChoice field
+        // If correctAnswerChoice is "2", then "2" is the correct answer, otherwise "1" is correct
+        const correctAnswer = mainComprehensionQ.correctAnswerChoice === "2" ? "2" : "1";
+        const isCorrect = studentAnswer === correctAnswer;
         
         return {
           questionId: q.questionId,
@@ -563,12 +612,12 @@ async function processAssessmentResults(userResponses, preAssessment, student) {
           
           // Actual question information
           actualQuestion: mainComprehensionQ.questionText, // The real question like "Ano ang kinain ni Maria?"
-          questionImage: mainComprehensionQ.questionImage,
           
           // Answer information
           studentAnswer: studentAnswer,
-          correctAnswer: mainComprehensionQ.correctAnswer, // "Mansanas"
-          incorrectAnswer: mainComprehensionQ.incorrectAnswer, // "Mangga"
+          correctAnswer: mainComprehensionQ.correctAnswerChoice === "2" ? mainComprehensionQ.incorrectAnswer : mainComprehensionQ.correctAnswer,
+          incorrectAnswer: mainComprehensionQ.correctAnswerChoice === "2" ? mainComprehensionQ.correctAnswer : mainComprehensionQ.incorrectAnswer,
+          correctAnswerChoice: mainComprehensionQ.correctAnswerChoice || "1",
           isCorrect: isCorrect,
           
           // Additional metadata
@@ -772,5 +821,98 @@ exports.toggleActiveStatus = async (req, res) => {
   } catch (error) {
     console.error('Error toggling pre-assessment active status:', error);
     res.status(500).json({ message: 'Error updating pre-assessment status', error: error.message });
+  }
+};
+
+// Convert base64 images to S3 paths for a pre-assessment
+exports.convertImagesToS3 = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const preAssessmentCollection = getPreAssessmentDb().collection('pre-assessment');
+    
+    let filter;
+    try {
+      // Try as MongoDB ObjectId
+      filter = { _id: new mongoose.Types.ObjectId(id) };
+    } catch (err) {
+      // Try as assessmentId string
+      filter = { assessmentId: id };
+    }
+    
+    // Check if assessment exists
+    const preAssessment = await preAssessmentCollection.findOne(filter);
+    if (!preAssessment) {
+      return res.status(404).json({ message: 'Pre-assessment not found' });
+    }
+    
+    // Process each question
+    let updatedQuestions = [];
+    let imagesProcessed = 0;
+    
+    for (const question of preAssessment.questions) {
+      const updatedQuestion = { ...question };
+      
+      // Process question image if it exists and is base64
+      if (question.questionImage && question.questionImage.startsWith('data:image')) {
+        try {
+          // Extract image data and MIME type
+          const matches = question.questionImage.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+          if (!matches || matches.length !== 3) {
+            throw new Error('Invalid base64 image format');
+          }
+          
+          const mimeType = matches[1];
+          const base64Data = matches[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Generate filename
+          const fileExt = mimeType.split('/')[1] || 'png';
+          const fileName = `${question.questionId}_${Date.now()}.${fileExt}`;
+          const key = `pre-assessment/images/${fileName}`;
+          
+          // S3 upload parameters
+          const params = {
+            Bucket: process.env.AWS_S3_BUCKET || 'literexia-bucket',
+            Key: key,
+            Body: buffer,
+            ContentType: mimeType,
+            ACL: 'public-read'
+          };
+          
+          // Upload to S3
+          await s3.upload(params).promise();
+          
+          // Generate S3 URL
+          const s3Url = `https://${params.Bucket}.s3.${process.env.AWS_REGION || 'ap-southeast-1'}.amazonaws.com/${key}`;
+          
+          // Update question with S3 path
+          updatedQuestion.questionImageS3Path = s3Url;
+          updatedQuestion.questionImage = ''; // Clear base64 data
+          
+          imagesProcessed++;
+        } catch (error) {
+          console.error(`Error processing image for question ${question.questionId}:`, error);
+        }
+      }
+      
+      updatedQuestions.push(updatedQuestion);
+    }
+    
+    // Update the pre-assessment document
+    const updateResult = await preAssessmentCollection.updateOne(
+      filter,
+      { $set: { questions: updatedQuestions } }
+    );
+    
+    res.json({
+      message: 'Pre-assessment images converted to S3 successfully',
+      imagesProcessed,
+      modifiedCount: updateResult.modifiedCount
+    });
+    
+  } catch (error) {
+    console.error('Error converting images to S3:', error);
+    res.status(500).json({ message: 'Error converting images to S3', error: error.message });
   }
 };

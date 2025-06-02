@@ -351,62 +351,6 @@ const AdminDashboard = () => {
           </ResponsiveContainer>
         </div>
       </div>
-      
-      {/* Recent Activity Section */}
-      <div className="admin-dashboard__table-container">
-        <h2 className="admin-dashboard__section-title">
-          <CheckCircle size={20} />
-          Recent Activity
-        </h2>
-        <table className="admin-dashboard__table">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Type</th>
-              <th>Activity</th>
-              <th>Date</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>John Smith</td>
-              <td>Teacher</td>
-              <td>Created new assessment</td>
-              <td>{formatDate(new Date(Date.now() - 1000 * 60 * 30))}</td>
-              <td><span className="admin-dashboard__table-status active">Completed</span></td>
-            </tr>
-            <tr>
-              <td>Maria Rodriguez</td>
-              <td>Student</td>
-              <td>Submitted assessment</td>
-              <td>{formatDate(new Date(Date.now() - 1000 * 60 * 120))}</td>
-              <td><span className="admin-dashboard__table-status active">Completed</span></td>
-            </tr>
-            <tr>
-              <td>David Chen</td>
-              <td>Parent</td>
-              <td>Reviewed progress report</td>
-              <td>{formatDate(new Date(Date.now() - 1000 * 60 * 180))}</td>
-              <td><span className="admin-dashboard__table-status active">Viewed</span></td>
-            </tr>
-            <tr>
-              <td>Emma Johnson</td>
-              <td>Student</td>
-              <td>Started assessment</td>
-              <td>{formatDate(new Date(Date.now() - 1000 * 60 * 240))}</td>
-              <td><span className="admin-dashboard__table-status warning">In Progress</span></td>
-            </tr>
-            <tr>
-              <td>James Wilson</td>
-              <td>Teacher</td>
-              <td>Created new lesson</td>
-              <td>{formatDate(new Date(Date.now() - 1000 * 60 * 60 * 3))}</td>
-              <td><span className="admin-dashboard__table-status active">Published</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 };

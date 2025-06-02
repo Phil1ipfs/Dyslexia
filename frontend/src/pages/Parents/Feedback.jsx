@@ -13,70 +13,26 @@ import {
   Home
 } from 'lucide-react';
 import '../../css/Parents/Feedback.css';
-
-const sampleFeedbacks = [
-  {
-    teacher: 'Ms. Maria L. Santiago',
-    subject: 'Filipino',
-    date: '2025-04-02',
-    week: 'Week 1',
-    pdfUrl: '/Kit_Nicholas_Rish_Mark_progress_report.pdf',
-  },
-  {
-    teacher: 'Mr. John D. DeLemos',
-    subject: 'Filipino',
-    date: '2025-04-01',
-    week: 'Week 2',
-    pdfUrl: '/Kit_Nicholas_Rish_Mark_progress_report.pdf',
-  },
-  {
-    teacher: 'Ms. Maria L. Santiago',
-    subject: 'Filipino',
-    date: '2025-04-01',
-    week: 'Week 3',
-    pdfUrl: '/Kit_Nicholas_Rish_Mark_progress_report.pdf',
-  },
-  {
-    teacher: 'Mr. John D. DeLemos',
-    subject: 'Filipino',
-    date: '2025-04-01',
-    week: 'Week 4',
-    pdfUrl: '/Kit_Nicholas_Rish_Mark_progress_report.pdf',
-  },
-  {
-    teacher: 'Ms. Maria L. Santiago',
-    subject: 'Filipino',
-    date: '2025-04-01',
-    week: 'Week 5',
-    pdfUrl: '/Kit_Nicholas_Rish_Mark_progress_report.pdf',
-  },
-  {
-    teacher: 'Ms. Maria L. Santiago',
-    subject: 'Filipino',
-    date: '2025-04-01',
-    week: 'Week 6',
-    pdfUrl: '/Kit_Nicholas_Rish_Mark_progress_report.pdf',
-  },
-  {
-    teacher: 'Mr. John D. DeLemos',
-    subject: 'Filipino',
-    date: '2025-04-01',
-    week: 'Week 7',
-    pdfUrl: '/Kit_Nicholas_Rish_Mark_progress_report.pdf',
-  },
-  {
-    teacher: 'Mr. John D. DeLemos',
-    subject: 'Filipino',
-    date: '2025-04-01',
-    week: 'Week 8',
-    pdfUrl: '/Kit_Nicholas_Rish_Mark_progress_report.pdf',
-  },
-];
+import axios from 'axios';
 
 const Feedback = () => {
-  const [feedbacks] = useState(sampleFeedbacks);
+  const [feedbacks, setFeedbacks] = useState([]);
   const [selectedPdf, setSelectedPdf] = useState(null);
   const [animated, setAnimated] = useState(false);
+
+  // Fetch feedbacks from backend
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    axios.get('/api/parent/child_pdf', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then(res => {
+        setFeedbacks(res.data);
+      })
+      .catch(() => setFeedbacks([]));
+  }, []);
 
   // Animation trigger
   useEffect(() => {
@@ -166,8 +122,14 @@ const Feedback = () => {
                   </th>
                   <th>
                     <div className="parent-feedback__th-content">
-                      <Book size={16} className="parent-feedback__th-icon" />
-                      <span>Subject</span>
+                      <User size={16} className="parent-feedback__th-icon" />
+                      <span>Parent</span>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="parent-feedback__th-content">
+                      <User size={16} className="parent-feedback__th-icon" />
+                      <span>Student</span>
                     </div>
                   </th>
                   <th>
@@ -202,7 +164,8 @@ const Feedback = () => {
                         <span className="parent-feedback__teacher-name">{feedback.teacher}</span>
                       </div>
                     </td>
-                    <td>{feedback.subject}</td>
+                    <td>{feedback.parent}</td>
+                    <td>{feedback.student}</td>
                     <td>{feedback.week}</td>
                     <td>{formatDate(feedback.date)}</td>
                     <td>

@@ -51,7 +51,6 @@ const CredentialsModal = ({ credentials, onClose }) => {
         password: credentials.password,
         userType: 'parent'
       });
-      
       if (response.data.success) {
         setSendStatus({ type: 'success', message: 'Credentials sent successfully!' });
       } else {
@@ -66,29 +65,29 @@ const CredentialsModal = ({ credentials, onClose }) => {
 
   return (
     <div className="admin-parent-modal-overlay">
-      <div className="admin-parent-modal">
-        <div className="admin-parent-modal-header">
+      <div className="admin-teacher-modal">
+        <div className="admin-teacher-modal-header">
           <h2>Parent Credentials</h2>
-          <button className="admin-parent-modal-close" onClick={onClose}>×</button>
+          <button className="admin-teacher-modal-close" onClick={onClose}>×</button>
         </div>
-        <div className="admin-parent-credentials-modal-content">
+        <div className="admin-teacher-credentials-modal-content">
           <p><strong>Email:</strong> {credentials.email}</p>
           <p><strong>Password:</strong> ********</p>
           <p>You can send these credentials to the parent's email.</p>
           {sendStatus && (
-            <p className={`admin-parent-send-status ${sendStatus.type}`}>
+            <p className={`admin-teacher-send-status ${sendStatus.type}`}>
               {sendStatus.message}
             </p>
           )}
-          <div className="admin-parent-modal-actions">
+          <div className="admin-teacher-modal-actions">
             <button 
-              className="admin-parent-send-btn" 
+              className="admin-teacher-send-btn" 
               onClick={handleSendCredentials}
               disabled={isSending}
             >
               {isSending ? 'Sending...' : 'Send Login Credentials'}
             </button>
-            <button className="admin-parent-save-btn" onClick={onClose}>Close</button>
+            <button className="admin-teacher-save-btn" onClick={onClose}>Close</button>
           </div>
         </div>
       </div>
@@ -193,14 +192,16 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
     const requiredFields = ['firstName', 'lastName', 'email', 'gender', 'dateOfBirth', 'civilStatus', 'contact', 'address'];
 
     currentFields.forEach(field => {
-      if (requiredFields.includes(field) && (!formData[field] || formData[field].toString().trim() === '')) {
-        stepErrors[field] = `${getFieldLabel(field)} is required`;
-        isValid = false;
-      }
-      // Add specific validations if needed (e.g., email format)
-      if (field === 'email' && formData.email && !validateEmail(formData.email)) {
-        stepErrors[field] = `Please enter a valid email address`;
-        isValid = false;
+      if (requiredFields.includes(field)) {
+        if (!formData[field] || formData[field].toString().trim() === '') {
+          stepErrors[field] = `${getFieldLabel(field)} is required`;
+          isValid = false;
+        }
+        // Add specific validations if needed (e.g., email format)
+        if (field === 'email' && formData.email && !validateEmail(formData.email)) {
+          stepErrors[field] = `Please enter a valid email address`;
+          isValid = false;
+        }
       }
     });
 
@@ -234,13 +235,15 @@ const AddEditParentModal = ({ parent, onClose, onSave, allParents }) => {
     for (let step = 1; step <= totalSteps; step++) {
       const currentFields = steps[step - 1].fields;
       currentFields.forEach(field => {
-        if (requiredFields.includes(field) && (!formData[field] || formData[field].toString().trim() === '')) {
-          allErrors[field] = `${getFieldLabel(field)} is required`;
-          allStepsValid = false;
-        }
-        if (field === 'email' && formData.email && !validateEmail(formData.email)) {
-          allErrors[field] = `Please enter a valid email address`;
-          allStepsValid = false;
+        if (requiredFields.includes(field)) {
+          if (!formData[field] || formData[field].toString().trim() === '') {
+            allErrors[field] = `${getFieldLabel(field)} is required`;
+            allStepsValid = false;
+          }
+          if (field === 'email' && formData.email && !validateEmail(formData.email)) {
+            allErrors[field] = `Please enter a valid email address`;
+            allStepsValid = false;
+          }
         }
       });
     }
@@ -1102,41 +1105,6 @@ const ParentListPage = () => {
           </button>
         </div>
       )}
-
-      <div className="admin-parent-insights">
-        <h2>Quick Insights</h2>
-        <div className="admin-parent-insights-cards">
-          <div className="admin-parent-insight-card">
-            <div className="admin-parent-insight-icon">
-              <UserSquare2 size={24} />
-            </div>
-            <div className="admin-parent-insight-content">
-              <h3>Linked Children</h3>
-              <p>Total linked students: {parents.reduce((acc, parent) => acc + (parent.children ? parent.children.length : 0), 0)}</p>
-            </div>
-          </div>
-          
-          <div className="admin-parent-insight-card">
-            <div className="admin-parent-insight-icon">
-              <BookOpen size={24} />
-            </div>
-            <div className="admin-parent-insight-content">
-              <h3>Parent Engagement</h3>
-              <p>Parents with multiple children: {parents.filter(p => p.children && p.children.length > 1).length}</p>
-            </div>
-          </div>
-          
-          <div className="admin-parent-insight-card">
-            <div className="admin-parent-insight-icon">
-              <MessageSquare size={24} />
-            </div>
-            <div className="admin-parent-insight-content">
-              <h3>Communication</h3>
-              <p>Parents with verified email: {parents.filter(p => p.emailVerified).length}</p>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Add Parent Modal */}
       {showAddParentModal && (

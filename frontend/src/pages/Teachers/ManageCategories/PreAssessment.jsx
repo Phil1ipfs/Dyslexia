@@ -29,6 +29,7 @@ import {
 import "../../../css/Teachers/ManageCategories/PreAssessment.css";
 import "../../../css/Teachers/ManageCategories/PreAssessmentUpdates.css";
 import { PreAssessmentService } from "../../../services/Teachers";
+import UnifiedTemplatePreview from "./UnifiedTemplatePreview";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -70,7 +71,7 @@ const PreAssessment = () => {
       { pageNumber: 1, pageText: '', pageImage: null, pageImageS3Path: null }
     ],
     sentenceQuestions: [
-      { questionText: '', correctAnswer: '', incorrectAnswer: '' }
+      { questionText: '', correctAnswer: '', incorrectAnswer: '', correctAnswerChoice: "1" }
     ]
   });
   const [formData, setFormData] = useState({
@@ -89,6 +90,10 @@ const PreAssessment = () => {
     questions: []
   });
   const [questionTypes, setQuestionTypes] = useState([]);
+  // Preview All state variables
+  const [isPreviewAllDialogOpen, setIsPreviewAllDialogOpen] = useState(false);
+  const [previewAllTemplates, setPreviewAllTemplates] = useState([]);
+  const [previewAllCurrentIndex, setPreviewAllCurrentIndex] = useState(0);
 
   useEffect(() => {
     // Fetch pre-assessment data
@@ -243,6 +248,21 @@ const PreAssessment = () => {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else if (direction === "prev" && currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
+    }
+  };
+
+  // Handle Preview All Questions
+  const handlePreviewAllQuestions = () => {
+    if (preAssessment && preAssessment.questions && preAssessment.questions.length > 0) {
+      setPreviewAllTemplates([{
+        ...preAssessment,
+        // Include any properties needed for the preview
+        templateType: 'preassessment'
+      }]);
+      setPreviewAllCurrentIndex(0);
+      setIsPreviewAllDialogOpen(true);
+    } else {
+      toast.warning("No questions available to preview.");
     }
   };
 
@@ -626,7 +646,6 @@ const PreAssessment = () => {
       questionType: '',
       questionText: '',
       questionImage: null,
-      questionValue: '',
       difficultyLevel: '',
       options: [
         { optionId: '1', optionText: '', isCorrect: true },
@@ -636,9 +655,10 @@ const PreAssessment = () => {
         { pageNumber: 1, pageText: '', pageImage: null, pageImageS3Path: null }
       ],
       sentenceQuestions: [
-        { questionText: '', correctAnswer: '', incorrectAnswer: '' }
+        { questionText: '', correctAnswer: '', incorrectAnswer: '', correctAnswerChoice: "1" }
       ]
     });
+    
     setEditingQuestionIndex(-1);
     setShowQuestionEditor(true);
   };
@@ -665,28 +685,52 @@ const PreAssessment = () => {
   // Restore missing handleEditQuestion function
   const handleEditQuestion = (index) => {
     const question = formData.questions[index];
-    setCurrentQuestionData({
+    
+    // Create a base question data object
+    const baseQuestionData = {
       questionId: question.questionId || '',
       questionTypeId: question.questionTypeId || '',
-      questionType: question.questionType || '',
+      questionType: question.questionType || '', // Preserve the existing questionType
       questionText: question.questionText || '',
-      questionImage: question.questionImage || null,
-      questionValue: question.questionValue || '',
       difficultyLevel: question.difficultyLevel || '',
-      options: question.options && question.options.length >= 2 ? 
-        question.options.slice(0, 2) : // Only take the first two options
+    };
+    
+    // Add fields based on question type
+    if (question.questionTypeId === 'reading_comprehension') {
+      // For reading comprehension, don't include questionValue and questionImage
+      baseQuestionData.passages = question.passages && question.passages.length > 0 ?
+        question.passages.map(p => ({
+          pageNumber: p.pageNumber,
+          pageText: p.pageText || '',
+          pageImage: p.pageImage || null,
+          pageImageS3Path: p.pageImageS3Path || null
+        })) :
+        [{ pageNumber: 1, pageText: '', pageImage: null, pageImageS3Path: null }];
+      
+      baseQuestionData.sentenceQuestions = question.sentenceQuestions && question.sentenceQuestions.length > 0 ?
+        question.sentenceQuestions.map(sq => ({
+          questionText: sq.questionText || '',
+          correctAnswer: sq.correctAnswer || '',
+          incorrectAnswer: sq.incorrectAnswer || '',
+          correctAnswerChoice: sq.correctAnswerChoice || "1" // Default to "1" if not set
+        })) :
+        [{ questionText: '', correctAnswer: '', incorrectAnswer: '', correctAnswerChoice: "1" }];
+    } else {
+      // For other question types, include questionValue and questionImage
+      baseQuestionData.questionValue = question.questionValue || '';
+      baseQuestionData.questionImage = question.questionImage || null;
+      baseQuestionData.questionImageS3Path = question.questionImageS3Path || null;
+      
+      baseQuestionData.options = question.options && question.options.length >= 2 ? 
+        question.options.map(opt => ({...opt})) : // Deep copy to avoid reference issues
         [
           { optionId: '1', optionText: '', isCorrect: true },
           { optionId: '2', optionText: '', isCorrect: false }
-        ],
-      // Add passages and sentenceQuestions for reading comprehension
-      passages: question.passages && question.passages.length > 0 ? 
-        [...question.passages] : 
-        [{ pageNumber: 1, pageText: '', pageImage: null, pageImageS3Path: null }],
-      sentenceQuestions: question.sentenceQuestions && question.sentenceQuestions.length > 0 ? 
-        [...question.sentenceQuestions] : 
-        [{ questionText: '', correctAnswer: '', incorrectAnswer: '' }]
-    });
+        ];
+    }
+    
+    console.log('Editing question with data:', baseQuestionData);
+    setCurrentQuestionData(baseQuestionData);
     setEditingQuestionIndex(index);
     setShowQuestionEditor(true);
   };
@@ -762,12 +806,17 @@ const PreAssessment = () => {
       // Auto-generate questionId when category is selected
       const questionId = generateQuestionId(value);
       
+      // Find the corresponding question type name
+      const questionType = questionTypes.find(qt => qt.typeId === value);
+      const questionTypeName = questionType ? questionType.typeName : '';
+      
+      console.log(`Setting question type to ${questionTypeName} for type ID ${value}`);
+      
       setCurrentQuestionData(prev => ({
         ...prev,
         [name]: value,
         questionId: questionId,
-        // Reset question type when category changes
-        questionType: ''
+        questionType: questionTypeName // Set the question type name from the found question type
       }));
     } else {
       setCurrentQuestionData(prev => ({
@@ -909,297 +958,196 @@ const PreAssessment = () => {
 
   // Modified to handle S3 upload when saving
   const handleSaveQuestion = async () => {
-    // Validate question data
-    const errors = {};
-    
-    if (!currentQuestionData.questionText.trim()) {
-      errors.questionText = 'Question text is required';
-    }
-    
-    if (!currentQuestionData.questionTypeId) {
-      errors.questionTypeId = 'Category is required';
-    }
-    
-    if (!currentQuestionData.questionType) {
-      errors.questionType = 'Question type is required';
-    }
-    
-    if (!currentQuestionData.difficultyLevel) {
-      errors.difficultyLevel = 'Difficulty level is required';
-    }
-    
-    // Different validation based on question type
-    if (currentQuestionData.questionTypeId === 'reading_comprehension') {
-      // Validate passages
-      if (!currentQuestionData.passages || currentQuestionData.passages.length === 0) {
-        errors.passages = 'At least one passage page is required';
-      } else {
-        // Check if passages have text
-        const emptyPassages = currentQuestionData.passages.filter(p => !p.pageText.trim());
-        if (emptyPassages.length > 0) {
-          errors.passageText = 'All passage pages must have text content';
-        }
-      }
-      
-      // Validate sentence questions
-      if (!currentQuestionData.sentenceQuestions || currentQuestionData.sentenceQuestions.length === 0) {
-        errors.sentenceQuestions = 'At least one comprehension question is required';
-      } else {
-        // Check if all sentence questions have question text, correct and incorrect answers
-        const invalidQuestions = currentQuestionData.sentenceQuestions.filter(
-          q => !q.questionText.trim() || !q.correctAnswer.trim() || !q.incorrectAnswer.trim()
-        );
-        if (invalidQuestions.length > 0) {
-          errors.sentenceQuestionContent = 'All comprehension questions must have question text, correct and incorrect answers';
-        }
-      }
-    } else {
-      // Regular question validation
-      if (!currentQuestionData.options.some(opt => opt.isCorrect)) {
-        errors.options = 'At least one option must be marked as correct';
-      }
-      
-      if (currentQuestionData.options.some(opt => !opt.optionText.trim())) {
-        errors.optionText = 'All option texts must be filled in';
-      }
-    }
-    
-    // Display errors if any
-    if (Object.keys(errors).length > 0) {
-      const errorMessage = Object.values(errors).join('\n');
-      toast.error(errorMessage, {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "colored"
-      });
-      return;
-    }
-    
     try {
-      setLoading(true);
-      
-      // Create question data object that matches the database schema
-      const questionData = {
-        ...currentQuestionData,
-        questionId: currentQuestionData.questionId || generateQuestionId(currentQuestionData.questionTypeId),
-        questionNumber: editingQuestionIndex >= 0 ? editingQuestionIndex + 1 : formData.questions.length + 1,
-        order: editingQuestionIndex >= 0 ? editingQuestionIndex + 1 : formData.questions.length + 1,
-        lastUpdated: new Date().toISOString()
-      };
-      
-      // Upload image to S3 if there's a new image
-      if (questionData.questionImage && 
-          questionData.questionImage.startsWith('data:') && 
-          !questionData.questionImageS3Path) {
-        
-        // Convert data URL to file object
-        const imageFile = await dataURLtoFile(
-          questionData.questionImage,
-          `question_${questionData.questionId}.${questionData.questionImage.split(';')[0].split('/')[1]}`
+      // Validation checks
+      if (!currentQuestionData.questionTypeId) {
+        toast.error('Please select a question type');
+        return;
+      }
+    
+      if (!currentQuestionData.questionText.trim()) {
+        toast.error('Question text is required');
+        return;
+      }
+    
+      if (!currentQuestionData.difficultyLevel) {
+        toast.error('Please select a difficulty level');
+        return;
+      }
+    
+      // Special validation for reading comprehension
+      if (currentQuestionData.questionTypeId === 'reading_comprehension') {
+        // Check passages
+        if (!currentQuestionData.passages.length) {
+          toast.error('At least one passage is required');
+          return;
+        }
+
+        const hasEmptyPassage = currentQuestionData.passages.some(p => !p.pageText.trim());
+        if (hasEmptyPassage) {
+          toast.error('All passages must have text');
+          return;
+        }
+
+        // Check sentence questions
+        if (!currentQuestionData.sentenceQuestions.length) {
+          toast.error('At least one comprehension question is required');
+          return;
+        }
+
+        const hasEmptySentenceQuestion = currentQuestionData.sentenceQuestions.some(
+          q => !q.questionText.trim() || !q.correctAnswer.trim() || !q.incorrectAnswer.trim() || !q.correctAnswerChoice
         );
-        
-        // Upload to S3
-        const uploadResponse = await PreAssessmentService.uploadMedia(imageFile);
-        
-        if (uploadResponse.success) {
-          // Update with S3 path
-          questionData.questionImageS3Path = uploadResponse.s3Path;
-          questionData.questionImage = uploadResponse.fileUrl;
-        } else {
-          console.error('Failed to upload image to S3:', uploadResponse.message);
-          toast.warning('Image preview saved, but S3 upload will happen when you save the assessment.', {
-            position: "top-center",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            theme: "colored"
-          });
-          // Keep the data URL for now
+        if (hasEmptySentenceQuestion) {
+          toast.error('All comprehension questions must be complete');
+          return;
+        }
+      } else {
+        // Regular question validation
+        const hasEmptyOption = currentQuestionData.options.some(opt => !opt.optionText.trim());
+        if (hasEmptyOption) {
+          toast.error('All options must have text');
+          return;
         }
       }
-      
-      // Handle passage images for reading comprehension
-      if (questionData.questionTypeId === 'reading_comprehension' && questionData.passages) {
-        // Process each passage
-        for (let i = 0; i < questionData.passages.length; i++) {
-          const passage = questionData.passages[i];
-          
-          // Upload passage image to S3 if it's a data URL
-          if (passage.pageImage && 
-              passage.pageImage.startsWith('data:') && 
-              !passage.pageImageS3Path) {
+
+      // Generate a question ID if not already set
+      if (!currentQuestionData.questionId) {
+        currentQuestionData.questionId = generateQuestionId(currentQuestionData.questionTypeId);
+      }
+
+      // Make a copy of the current question data to avoid modifying the state directly
+      const questionToSave = { ...currentQuestionData };
+
+      // Ensure question type is preserved
+      if (!questionToSave.questionType || questionToSave.questionType.trim() === '') {
+        // Get question type name from the questionTypes array if not already set
+        const questionType = questionTypes.find(qt => qt.typeId === questionToSave.questionTypeId);
+        questionToSave.questionType = questionType ? questionType.typeName : '';
+      }
+
+      // For non-reading comprehension questions, handle image upload
+      if (questionToSave.questionTypeId !== 'reading_comprehension') {
+        // Upload image if present and new
+        if (questionToSave.questionImage && 
+            typeof questionToSave.questionImage === 'string' && 
+            questionToSave.questionImage.startsWith('data:')) {
+          try {
+            // Convert data URL to file
+            const file = await dataURLtoFile(
+              questionToSave.questionImage,
+              `question_${questionToSave.questionId}.png`
+            );
             
+            // Upload to server
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const response = await PreAssessmentService.uploadMedia(formData);
+            if (response.success) {
+              questionToSave.questionImage = response.fileUrl;
+              questionToSave.questionImageS3Path = response.s3Path;
+            }
+          } catch (error) {
+            console.error('Error uploading question image:', error);
+            toast.error('Failed to upload question image');
+            // Continue without the image
+            questionToSave.questionImage = null;
+          }
+        }
+      } else {
+        // For reading comprehension, explicitly set questionValue and questionImage to null
+        questionToSave.questionValue = null;
+        questionToSave.questionImage = null;
+        questionToSave.questionImageS3Path = null;
+      }
+
+      // Upload passage images if present and new
+      if (questionToSave.questionTypeId === 'reading_comprehension') {
+        for (let i = 0; i < questionToSave.passages.length; i++) {
+          const passage = questionToSave.passages[i];
+          if (passage.pageImage && 
+              typeof passage.pageImage === 'string' && 
+              passage.pageImage.startsWith('data:')) {
             try {
-              // Convert data URL to file object
-              const imageFile = await dataURLtoFile(
+              // Convert data URL to file
+              const file = await dataURLtoFile(
                 passage.pageImage,
-                `passage_${questionData.questionId}_page${passage.pageNumber}.${passage.pageImage.split(';')[0].split('/')[1]}`
+                `passage_${questionToSave.questionId}_page${passage.pageNumber}.png`
               );
               
-              // Upload to S3
-              const uploadResponse = await PreAssessmentService.uploadMedia(imageFile);
+              // Upload to server
+              const formData = new FormData();
+              formData.append('file', file);
               
-              if (uploadResponse.success) {
-                // Update with S3 path
-                questionData.passages[i].pageImageS3Path = uploadResponse.s3Path;
-                questionData.passages[i].pageImage = uploadResponse.fileUrl;
-              } else {
-                console.error('Failed to upload passage image to S3:', uploadResponse.message);
-                toast.warning(`Passage ${i+1} image preview saved, but S3 upload will happen when you save the assessment.`, {
-                  position: "top-center",
-                  autoClose: 3000,
-                  hideProgressBar: false,
-                  closeOnClick: true,
-                  pauseOnHover: true,
-                  draggable: true,
-                  theme: "colored"
-                });
-                // Keep the data URL for now
+              const response = await PreAssessmentService.uploadMedia(formData);
+              if (response.success) {
+                questionToSave.passages[i].pageImage = response.fileUrl;
+                questionToSave.passages[i].pageImageS3Path = response.s3Path;
               }
-            } catch (err) {
-              console.error('Error processing passage image:', err);
+            } catch (error) {
+              console.error('Error uploading passage image:', error);
+              toast.error(`Failed to upload image for passage ${passage.pageNumber}`);
+              // Continue without the image
+              questionToSave.passages[i].pageImage = null;
             }
           }
         }
       }
-      
-      console.log('Saving question data:', questionData);
-      
-      // Only proceed with API call if we have an assessment ID
-      if (preAssessment && preAssessment._id) {
-        let response;
-        
-        if (editingQuestionIndex >= 0) {
-          // Update existing question
-          response = await PreAssessmentService.updateQuestionInPreAssessment(
-            preAssessment._id,
-            questionData.questionId,
-            questionData
-          );
-        } else {
-          // Add new question
-          response = await PreAssessmentService.addQuestionToPreAssessment(
-            preAssessment._id,
-            questionData
-          );
-        }
-        
-        console.log('API Response:', response);
-        
-        if (response.success) {
-          // Update the local state with the updated assessment from the API
-          setPreAssessment(response.data);
-          
-          // Also update the form data
-          setFormData(prev => {
-            const updatedQuestions = response.data.questions || [];
-            return {
-              ...prev,
-              questions: updatedQuestions,
-              totalQuestions: updatedQuestions.length,
-              lastUpdated: new Date().toISOString()
-            };
-          });
-          
-          toast.success(editingQuestionIndex >= 0 ? 
-            "Question updated successfully!" : 
-            "Question added successfully!", {
-              position: "top-center",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              theme: "colored"
-            });
-          
-          // Trigger refresh
-          setDataChangeCounter(prev => prev + 1);
-        } else {
-          setError(response.message || "Failed to save question. Please try again.");
-          toast.error(response.message || "Failed to save question. Please try again.", {
-            position: "top-center",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            theme: "colored"
-          });
-        }
+
+      // Add question number if not editing
+      if (editingQuestionIndex === -1) {
+        questionToSave.questionNumber = formData.questions.length + 1;
       } else {
-        // No assessment ID yet, just update the local state
-        setFormData(prev => {
-          const newQuestions = [...prev.questions];
-          if (editingQuestionIndex >= 0) {
-            newQuestions[editingQuestionIndex] = questionData;
-          } else {
-            newQuestions.push(questionData);
-          }
-          
-          return {
-            ...prev,
-            questions: newQuestions,
-            totalQuestions: newQuestions.length,
-            lastUpdated: new Date().toISOString()
-          };
-        });
-        
-        toast.success(editingQuestionIndex >= 0 ? 
-          "Question updated in draft!" : 
-          "Question added to draft!", {
-            position: "top-center",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            theme: "colored"
-          });
+        // Keep the existing question number when editing
+        questionToSave.questionNumber = formData.questions[editingQuestionIndex].questionNumber;
+      }
+
+      // Update the questions array
+      const updatedQuestions = [...formData.questions];
+      if (editingQuestionIndex >= 0) {
+        // When editing, preserve any fields we didn't modify
+        updatedQuestions[editingQuestionIndex] = {
+          ...updatedQuestions[editingQuestionIndex],
+          ...questionToSave
+        };
+      } else {
+        updatedQuestions.push(questionToSave);
+      }
+
+      // Update category counts
+      const updatedCategoryCounts = { ...formData.categoryCounts };
+      
+      // If we're editing, first decrement the old category count
+      if (editingQuestionIndex >= 0) {
+        const oldCategory = formData.questions[editingQuestionIndex].questionTypeId;
+        if (oldCategory && updatedCategoryCounts[oldCategory] > 0) {
+          updatedCategoryCounts[oldCategory]--;
+        }
       }
       
-      // Reset the question editor state
+      // Increment the new category count
+      const newCategory = questionToSave.questionTypeId;
+      if (newCategory) {
+        updatedCategoryCounts[newCategory] = (updatedCategoryCounts[newCategory] || 0) + 1;
+      }
+
+      // Log what we're saving for debugging
+      console.log('Saving question:', questionToSave);
+
+      // Update form data with new questions and category counts
+      setFormData(prev => ({
+        ...prev,
+        questions: updatedQuestions,
+        categoryCounts: updatedCategoryCounts
+      }));
+
+      // Close the question editor
       setShowQuestionEditor(false);
-      setEditingQuestionIndex(-1);
-      setCurrentQuestionData({
-        questionId: '',
-        questionTypeId: '',
-        questionType: '',
-        questionText: '',
-        questionImage: null,
-        questionValue: '',
-        difficultyLevel: '',
-        options: [
-          { optionId: '1', optionText: '', isCorrect: true },
-          { optionId: '2', optionText: '', isCorrect: false }
-        ],
-        passages: [
-          { pageNumber: 1, pageText: '', pageImage: null, pageImageS3Path: null }
-        ],
-        sentenceQuestions: [
-          { questionText: '', correctAnswer: '', incorrectAnswer: '' }
-        ]
-      });
-    } catch (err) {
-      console.error('Exception in handleSaveQuestion:', err);
-      setError("Failed to save question. Please try again.");
-      toast.error("Failed to save question. Please try again.", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "colored"
-      });
-    } finally {
-      setLoading(false);
+      toast.success(editingQuestionIndex >= 0 ? 'Question updated successfully' : 'Question added successfully');
+    } catch (error) {
+      console.error('Error saving question:', error);
+      toast.error('Failed to save question');
     }
   };
 
@@ -1216,6 +1164,19 @@ const PreAssessment = () => {
     }
     
     return new File([u8arr], filename, { type: mime });
+  };
+
+  // Function to get color for each category
+  const getCategoryColor = (category) => {
+    const colorMap = {
+      'alphabet_knowledge': '#4299e1',
+      'phonological_awareness': '#48bb78',
+      'decoding': '#ed8936',
+      'word_recognition': '#9f7aea',
+      'reading_comprehension': '#f56565'
+    };
+    
+    return colorMap[category] || '#a0aec0';
   };
 
   if (loading) {
@@ -1365,6 +1326,14 @@ const PreAssessment = () => {
             
             <button 
               className="pre-action-button"
+              onClick={handlePreviewAllQuestions}
+            >
+              <FontAwesomeIcon icon={faEye} />
+              <span>Preview All Questions</span>
+            </button>
+            
+            <button 
+              className="pre-action-button"
               onClick={handleEditPreAssessment}
             >
               <FontAwesomeIcon icon={faEdit} />
@@ -1394,19 +1363,6 @@ const PreAssessment = () => {
               <p>
                 The pre-assessment follows a standardized format covering all five CRLA categories, 
                 with questions balanced by difficulty level for accurate initial assessment.
-              </p>
-            </div>
-          </div>
-          
-          <div className="pre-info-card">
-            <div className="pre-info-icon">
-              <FontAwesomeIcon icon={faGraduationCap} />
-            </div>
-            <div className="pre-info-content">
-              <h4>Automatic Level Assignment</h4>
-              <p>
-                Based on performance, the system automatically assigns one of five reading 
-                levels: Low Emerging, High Emerging, Developing, Transitioning, or At Grade Level.
               </p>
             </div>
           </div>
@@ -1790,7 +1746,10 @@ const PreAssessment = () => {
               <p className="pre-form-help">Questions are automatically distributed across CRLA categories as you add them:</p>
               
               <div className="pre-composition-preview">
-                <div className="pre-composition-chart">
+                
+                <div className="pre-category-counts">
+                  <h5>Category Question Counts</h5>
+                  <div className="pre-category-counts-grid">
                   {Object.entries({
                     'alphabet_knowledge': 'Alphabet Knowledge',
                     'phonological_awareness': 'Phonological Awareness',
@@ -1798,42 +1757,28 @@ const PreAssessment = () => {
                     'word_recognition': 'Word Recognition',
                     'reading_comprehension': 'Reading Comprehension'
                   }).map(([category, label]) => {
-                    // Count actual questions per category - use the correct questions array based on edit/create mode
+                      // Count actual questions per category
                     const questionsArray = showEditModal && preAssessment?.questions ? 
                       preAssessment.questions : formData.questions;
                     
                     const questionsInCategory = questionsArray ? 
                       questionsArray.filter(q => q.questionTypeId === category).length : 0;
                     
-                    // Calculate total questions
-                    const totalQuestions = questionsArray ? questionsArray.length : 0;
-                    
-                    // Calculate percentage based on total questions (avoid division by zero)
-                    // Ensure minimum width for visibility
-                    const percentage = totalQuestions > 0 ? Math.max((questionsInCategory / totalQuestions) * 100, questionsInCategory > 0 ? 5 : 0) : 0;
-                    
                     return (
-                      <div key={category} className="pre-composition-item">
-                        <div className="pre-composition-label">
-                          {label}
-                          <span className="pre-composition-label-count">{questionsInCategory}</span>
-                        </div>
-                        <div className="pre-composition-bar-container">
-                          <div 
-                            className={`pre-composition-bar ${questionsInCategory === 0 ? 'pre-composition-bar-empty' : ''}`}
-                            style={{ width: `${percentage}%` }}
-                          >
-                            {questionsInCategory > 0 && (
-                              <span className="pre-composition-count">{questionsInCategory}</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="pre-composition-percentage">
-                          {questionsInCategory} questions
-                        </div>
+                        <div key={category} className="pre-category-count-item">
+                          <span className="pre-category-count-label">{label}:</span>
+                          <span className="pre-category-count-value">{questionsInCategory}</span>
                       </div>
                     );
                   })}
+                    <div className="pre-category-count-item pre-category-count-total">
+                      <span className="pre-category-count-label">Total Questions:</span>
+                      <span className="pre-category-count-value">
+                        {(showEditModal && preAssessment?.questions ? 
+                          preAssessment.questions : formData.questions)?.length || 0}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2053,6 +1998,8 @@ const PreAssessment = () => {
                   )}
                 </div>
                 
+                {/* Only show Question Value for non-reading comprehension questions */}
+                {currentQuestionData.questionTypeId !== 'reading_comprehension' && (
                 <div className="pre-form-group">
                   <label htmlFor="questionValue">
                     Question Value:
@@ -2067,7 +2014,10 @@ const PreAssessment = () => {
                     placeholder="e.g., 'A', 'BO + LA'"
                   />
                 </div>
+                )}
                 
+                {/* Only show Question Image for non-reading comprehension questions */}
+                {currentQuestionData.questionTypeId !== 'reading_comprehension' && (
                 <div className="pre-form-group">
                   <label htmlFor="questionImage" style={{ color: '#4a5568' }}>
                     Question Image:
@@ -2106,6 +2056,7 @@ const PreAssessment = () => {
                     )}
                   </div>
                 </div>
+                )}
               </div>
               
               {/* Answer Options Section - For regular questions */}
@@ -2351,9 +2302,10 @@ const PreAssessment = () => {
                           )}
                         </div>
                         
+                        <div className="pre-answer-choices-container">
                         <div className="pre-form-group">
                           <label>
-                            Correct Answer: <span className="pre-required-field">*</span>
+                              Answer Choice 1: <span className="pre-required-field">*</span>
                           </label>
                           <input
                             type="text"
@@ -2369,17 +2321,17 @@ const PreAssessment = () => {
                                 sentenceQuestions: updatedQuestions
                               }));
                             }}
-                            placeholder="Enter the correct answer"
+                              placeholder="Enter answer choice 1"
                             className={!question.correctAnswer.trim() ? 'pre-validation-highlight' : ''}
                           />
                           {!question.correctAnswer.trim() && (
-                            <div className="pre-validation-message">Correct answer is required</div>
+                              <div className="pre-validation-message">Answer choice 1 is required</div>
                           )}
                         </div>
                         
                         <div className="pre-form-group">
                           <label>
-                            Incorrect Answer: <span className="pre-required-field">*</span>
+                              Answer Choice 2: <span className="pre-required-field">*</span>
                           </label>
                           <input
                             type="text"
@@ -2395,11 +2347,63 @@ const PreAssessment = () => {
                                 sentenceQuestions: updatedQuestions
                               }));
                             }}
-                            placeholder="Enter an incorrect answer"
+                              placeholder="Enter answer choice 2"
                             className={!question.incorrectAnswer.trim() ? 'pre-validation-highlight' : ''}
                           />
                           {!question.incorrectAnswer.trim() && (
-                            <div className="pre-validation-message">Incorrect answer is required</div>
+                              <div className="pre-validation-message">Answer choice 2 is required</div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="pre-form-group pre-correct-answer-selection">
+                          <label>
+                            Correct Answer: <span className="pre-required-field">*</span>
+                          </label>
+                          <div className="pre-radio-group">
+                            <label className="pre-radio-label">
+                              <input
+                                type="radio"
+                                name={`correctAnswerChoice-${index}`}
+                                value="1"
+                                checked={question.correctAnswerChoice === "1"}
+                                onChange={() => {
+                                  const updatedQuestions = [...currentQuestionData.sentenceQuestions];
+                                  updatedQuestions[index] = {
+                                    ...updatedQuestions[index],
+                                    correctAnswerChoice: "1"
+                                  };
+                                  setCurrentQuestionData(prev => ({
+                                    ...prev,
+                                    sentenceQuestions: updatedQuestions
+                                  }));
+                                }}
+                              />
+                              <span>Choice 1 ({question.correctAnswer || 'Not set'})</span>
+                            </label>
+                            <label className="pre-radio-label">
+                              <input
+                                type="radio"
+                                name={`correctAnswerChoice-${index}`}
+                                value="2"
+                                checked={question.correctAnswerChoice === "2"}
+                                onChange={() => {
+                                  const updatedQuestions = [...currentQuestionData.sentenceQuestions];
+                                  updatedQuestions[index] = {
+                                    ...updatedQuestions[index],
+                                    correctAnswerChoice: "2"
+                                  };
+                                  setCurrentQuestionData(prev => ({
+                                    ...prev,
+                                    sentenceQuestions: updatedQuestions
+                                  }));
+                                }}
+                              />
+                              <span>Choice 2 ({question.incorrectAnswer || 'Not set'})</span>
+                            </label>
+                          </div>
+                          {!question.correctAnswerChoice && (
+                            <div className="pre-validation-message">Please select the correct answer choice</div>
                           )}
                         </div>
                       </div>
@@ -2413,11 +2417,7 @@ const PreAssessment = () => {
                           ...prev,
                           sentenceQuestions: [
                             ...prev.sentenceQuestions,
-                            {
-                              questionText: '',
-                              correctAnswer: '',
-                              incorrectAnswer: ''
-                            }
+                            { questionText: '', correctAnswer: '', incorrectAnswer: '', correctAnswerChoice: "1" }
                           ]
                         }));
                       }}
@@ -2612,7 +2612,19 @@ const PreAssessment = () => {
         </div>
       )}
 
-      <ToastContainer 
+      {/* Preview All dialog */}
+      <UnifiedTemplatePreview 
+        isOpen={isPreviewAllDialogOpen}
+        onClose={() => setIsPreviewAllDialogOpen(false)}
+        templates={previewAllTemplates}
+        templateType="preassessment"
+        onEditTemplate={() => {
+          setIsPreviewAllDialogOpen(false);
+          handleEditPreAssessment();
+        }}
+      />
+
+      <ToastContainer
         position="top-center"
         autoClose={3000}
         hideProgressBar={false}
