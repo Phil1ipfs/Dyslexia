@@ -41,6 +41,7 @@ import MainAssessmentService from '../../../services/Teachers/MainAssessmentServ
 import { toast } from 'react-toastify';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import UnifiedTemplatePreview from "./UnifiedTemplatePreview";
 
 // Add import for file helpers
 import { dataURLtoFile, validateFileForUpload } from '../../../utils/fileHelpers';
@@ -121,6 +122,10 @@ const MainAssessment = ({ templates }) => {
   const [duplicateRestrictionDialog, setDuplicateRestrictionDialog] = useState(false);
   const [restrictionReason, setRestrictionReason] = useState("");
   const [apiMessage, setApiMessage] = useState(null);
+  // Preview All state variables
+  const [isPreviewAllDialogOpen, setIsPreviewAllDialogOpen] = useState(false);
+  const [previewAllTemplates, setPreviewAllTemplates] = useState([]);
+  const [previewAllCurrentIndex, setPreviewAllCurrentIndex] = useState(0);
 
   // Helper function to get category prefix
   const getCategoryPrefix = (category) => {
@@ -163,29 +168,68 @@ const MainAssessment = ({ templates }) => {
     const fetchAssessments = async () => {
       try {
         setLoading(true);
+        console.log("Attempting to fetch assessments...");
 
-        const response = await MainAssessmentService.getAllAssessments();
+        // Add retry mechanism
+        let attempts = 0;
+        const maxAttempts = 3;
+        let response = null;
+        let lastError = null;
+
+        while (attempts < maxAttempts) {
+          try {
+            console.log(`Fetch attempt ${attempts + 1} of ${maxAttempts}`);
+            response = await MainAssessmentService.getAllAssessments();
+            // If successful, break out of the retry loop
+            break;
+          } catch (err) {
+            lastError = err;
+            console.error(`Attempt ${attempts + 1} failed:`, err);
+            attempts++;
+            if (attempts < maxAttempts) {
+              // Wait 1 second before retrying
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+        }
+
+        if (!response && lastError) {
+          throw lastError;
+        }
         
         console.log("API Response:", response); // Debug log
         
         if (response && response.success) {
           const assessmentData = response.data || [];
           console.log("Setting assessments:", assessmentData.length, "items"); // Debug log
+          
+          if (assessmentData.length === 0) {
+            console.log("No assessments found in the response");
+            setApiMessage("No assessment templates found. This could be because templates haven't been created yet, or there might be an issue with the database connection.");
+          }
+          
           setAssessments(assessmentData);
           
           // If there's a message from the API, store it
           if (response.message) {
             setApiMessage(response.message);
           }
+        } else if (response && !response.success) {
+          console.error("API request was not successful:", response.message || "Unknown error");
+          setError(response.message || "Failed to load assessments due to an unknown error.");
+          setApiMessage(response.message || "There was an error loading assessment templates. Please try again later.");
         } else {
           console.log("No data or unsuccessful response");
           setAssessments([]);
+          setApiMessage("No assessment templates found. This could be because templates haven't been created yet.");
         }
         
         setLoading(false);
       } catch (err) {
         console.error('Error fetching assessments:', err);
-        setError(handleApiError(err, "Failed to load assessments. Please try again later."));
+        const errorMessage = handleApiError(err, "Failed to load assessments. Please try again later.");
+        setError(errorMessage);
+        setApiMessage("There was an error connecting to the assessment service. Please check your connection and try again.");
         setLoading(false);
       }
     };
@@ -325,6 +369,13 @@ const MainAssessment = ({ templates }) => {
     setSelectedAssessment(assessment);
     setPreviewPage(0); // Reset to first page
     setShowModal(true);
+  };
+
+  const handlePreviewAllAssessments = () => {
+    // Use filtered assessments for preview all
+    setPreviewAllTemplates(filteredAssessments);
+    setPreviewAllCurrentIndex(0);
+    setIsPreviewAllDialogOpen(true);
   };
 
   const handleDeleteConfirm = (assessment) => {
@@ -1203,6 +1254,35 @@ const MainAssessment = ({ templates }) => {
     );
   }
 
+  // Add styles for the troubleshooting elements
+  const styles = {
+    troubleshootingList: {
+      listStyle: 'disc',
+      margin: '0 0 20px 20px',
+      color: '#666',
+      fontSize: '0.95rem'
+    },
+    actionButtons: {
+      display: 'flex',
+      justifyContent: 'center',
+      gap: '15px',
+      marginTop: '20px'
+    },
+    retryBtn: {
+      backgroundColor: '#f0f0f0',
+      color: '#333',
+      border: 'none',
+      padding: '10px 20px',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      transition: 'all 0.2s ease'
+    }
+  };
+
   return (
     <div className="post-assessment-container">
       <div className="pa-header">
@@ -1489,6 +1569,16 @@ const MainAssessment = ({ templates }) => {
             ))}
           </select>
         </div>
+        
+        {filteredAssessments.length > 0 && (
+          <button 
+            className="pa-preview-all-btn"
+            onClick={handlePreviewAllAssessments}
+            title="Preview all assessments"
+          >
+            <FontAwesomeIcon icon={faEye} /> Preview All
+          </button>
+        )}
       </div>
 
       {apiMessage && (
@@ -1528,23 +1618,37 @@ const MainAssessment = ({ templates }) => {
               </>
             ) : (
               <>
-                <h3>Welcome to Main Assessment Management</h3>
-                <p>This is where you'll create targeted assessments for different reading levels and categories. Get started by creating your first assessment.</p>
+                <h3>No Assessment Templates Found</h3>
+                <p>This could be due to one of the following reasons:</p>
+                <ul className="pa-troubleshooting-list" style={styles.troubleshootingList}>
+                  <li>No assessment templates have been created yet</li>
+                  <li>The database connection might be unavailable</li>
+                  <li>There might be an issue with the server</li>
+                </ul>
                 <div className="pa-getting-started-tips">
-                  <h4><FontAwesomeIcon icon={faInfoCircle} /> Getting Started</h4>
+                  <h4><FontAwesomeIcon icon={faInfoCircle} /> Options</h4>
                   <ol>
                     <li>Click "Create New Assessment" to build your first assessment</li>
-                    <li>Select a reading level and category for your assessment</li>
-                    <li>Add questions with appropriate content for that level</li>
-                    <li>Activate your assessment to make it available to students</li>
+                    <li>Try refreshing the page</li>
+                    <li>Check your internet connection</li>
+                    <li>Contact the administrator if the problem persists</li>
                   </ol>
                 </div>
-            <button
-              className="pa-create-first"
-              onClick={handleCreateAssessment}
-            >
-                  <FontAwesomeIcon icon={faPlus} /> Create Your First Assessment
-            </button>
+                <div className="pa-action-buttons" style={styles.actionButtons}>
+                  <button
+                    className="pa-retry-btn"
+                    style={styles.retryBtn}
+                    onClick={() => window.location.reload()}
+                  >
+                    <FontAwesomeIcon icon={faFilter} /> Refresh Page
+                  </button>
+                  <button
+                    className="pa-create-first"
+                    onClick={handleCreateAssessment}
+                  >
+                    <FontAwesomeIcon icon={faPlus} /> Create Your First Assessment
+                  </button>
+                </div>
               </>
             )}
           </div>
@@ -2789,34 +2893,30 @@ const MainAssessment = ({ templates }) => {
             </div>
             
             <div className="pa-modal-footer">
-              <button 
+              <button
                 className="pa-modal-close-btn"
                 onClick={() => setDuplicateRestrictionDialog(false)}
               >
-                <FontAwesomeIcon icon={faArrowLeft} /> Go Back
+                <FontAwesomeIcon icon={faTimes} /> Close
               </button>
-              
-              {(() => {
-                const existing = checkExistingAssessment(formData.readingLevel, formData.category);
-                if (existing) {
-                  return (
-                    <button 
-                      className="pa-modal-edit-existing-btn"
-                      onClick={() => {
-                        setDuplicateRestrictionDialog(false);
-                        handleEditAssessment(existing);
-                      }}
-                    >
-                      <FontAwesomeIcon icon={faEdit} /> Edit Existing Assessment
-                    </button>
-                  );
-                }
-              })()}
             </div>
           </div>
         </div>
       )}
-      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover />
+      
+      {/* Unified Template Preview for Preview All functionality */}
+      <UnifiedTemplatePreview 
+        isOpen={isPreviewAllDialogOpen}
+        onClose={() => setIsPreviewAllDialogOpen(false)}
+        templates={previewAllTemplates}
+        templateType="assessment"
+        onEditTemplate={(assessment) => {
+          setIsPreviewAllDialogOpen(false);
+          handleEditAssessment(assessment);
+        }}
+      />
+      
+      <ToastContainer position="top-center" />
     </div>
   );
 };
