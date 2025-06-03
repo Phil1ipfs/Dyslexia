@@ -32,7 +32,7 @@ const token = jwt.sign(
 console.log('Testing PDF upload with valid token...');
 
 // Make the API request
-axios.post('http://localhost:5001/api/uploads/pdf', form, {
+axios.post('${import.meta.env.VITE_API_BASE_URL}/api/uploads/pdf', form, {
   headers: {
     ...form.getHeaders(),
     'Authorization': `Bearer ${token}`
