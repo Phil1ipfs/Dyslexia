@@ -700,10 +700,7 @@ const TeacherDashboard = () => {
                             e.currentTarget.style.transform = 'translateY(0)';
                             e.currentTarget.style.boxShadow = 'none';
                           }}
-                          onClick={() => {
-                            closeReadingLevelModal();
-                            navigate('/teacher/students', { state: { filterReadingLevel: selectedReadingLevel } });
-                          }}
+                          onClick={() => openStudentDetail(student)}
                         >
                           View
                         </button>
@@ -1561,10 +1558,7 @@ const TeacherDashboard = () => {
                                     e.currentTarget.style.transform = 'translateY(0)';
                                     e.currentTarget.style.boxShadow = 'none';
                                   }}
-                                  onClick={() => {
-                                    closeReadingLevelModal();
-                                    navigate('/teacher/students', { state: { filterReadingLevel: selectedReadingLevel } });
-                                  }}
+                                  onClick={() => openStudentDetail(student)}
                                 >
                                   View
                                 </button>
