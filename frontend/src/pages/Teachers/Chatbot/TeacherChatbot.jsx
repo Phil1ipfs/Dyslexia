@@ -7,7 +7,6 @@ import '../../../css/Teachers/TeacherChatbot.css';
 import botAvatar from '../../../assets/icons/Homepage/penguin.png';
 // Remove the static import
 // import userAvatar from '../../../assets/icons/Teachers/Avatar.png';
-import defaultUserAvatar from '../../../assets/icons/Teachers/avatar.png';
 
 const TeacherChatbot = () => {
   const {
@@ -21,7 +20,7 @@ const TeacherChatbot = () => {
   } = useChatbot();
   
   const [inputMessage, setInputMessage] = useState('');
-  const [userAvatar, setUserAvatar] = useState(defaultUserAvatar);
+  const [userAvatar, setUserAvatar] = useState('../../../assets/icons/Teachers/avatar.png');
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -67,7 +66,7 @@ const TeacherChatbot = () => {
 
   // Helper function to handle image errors
   const handleImageError = (e) => {
-    e.target.src = defaultUserAvatar;
+    e.target.src = '../../../assets/icons/Teachers/avatar.png';
   };
 
   return (
