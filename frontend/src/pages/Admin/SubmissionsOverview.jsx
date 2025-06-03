@@ -1,6 +1,6 @@
 // src/components/Admin/Submissions/SubmissionsOverview.jsx
 import React, { useState, useEffect } from 'react';
-import '../../css/Admin/Dashboard/SubmissionsOverview.css';
+import '../../css/Admin/Dashboard/SubmissionsOverview.css'; 
 import {
   FileCheck,
   XCircle,
@@ -13,7 +13,10 @@ import {
   ChevronUp,
   Eye,
   AlertCircle,
-  MoreHorizontal
+  MoreHorizontal,
+  FileText,
+  User,
+  BookOpen
 } from 'lucide-react';
 
 // Mock service for teacher activity proposals
@@ -123,11 +126,11 @@ const SubmissionsOverview = () => {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'pending':
-        return <span className="status-badge status-pending">Pending</span>;
+        return <span className="proposal-status-badge proposal-status-pending">Pending</span>;
       case 'approved':
-        return <span className="status-badge status-approved">Approved</span>;
+        return <span className="proposal-status-badge proposal-status-approved">Approved</span>;
       case 'rejected':
-        return <span className="status-badge status-rejected">Rejected</span>;
+        return <span className="proposal-status-badge proposal-status-rejected">Rejected</span>;
       default:
         return null;
     }
@@ -143,6 +146,12 @@ const SubmissionsOverview = () => {
   };
 
   const handleReject = async (proposalId, reason) => {
+    if (!reason.trim()) {
+      // Show error if rejection reason is empty
+      alert("Please provide a reason for rejection");
+      return;
+    }
+    
     setActionLoading(true);
     setTimeout(() => {
       setProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'rejected', rejectionReason: reason } : p));
@@ -160,9 +169,9 @@ const SubmissionsOverview = () => {
 
   if (loading) {
     return (
-      <div className="submissions-overview">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
+      <div className="proposal-container">
+        <div className="proposal-loading">
+          <div className="proposal-loading-spinner"></div>
           <p>Loading proposals...</p>
         </div>
       </div>
@@ -171,55 +180,108 @@ const SubmissionsOverview = () => {
 
   if (error) {
     return (
-      <div className="submissions-overview">
-        <div className="error-container">
-          <XCircle className="error-icon" />
+      <div className="proposal-container">
+        <div className="proposal-error">
+          <XCircle className="proposal-error-icon" />
+          <h3>Unable to Load Data</h3>
           <p>{error}</p>
-          <button onClick={fetchData} className="retry-button">Retry</button>
+          <button onClick={fetchData} className="proposal-retry-button">
+            Retry
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="submissions-overview">
-      {/* Header */}
-      <div className="submissions-header">
-        <div className="header-content">
-          <h1>Activity Proposals Review</h1>
-          <p className="header-subtitle">Approve or reject teacher-submitted activities</p>
+    <div className="proposal-container">
+      {/* Info Banner */}
+      <div className="proposal-info-banner">
+        <div className="proposal-info-icon">
+          <FileCheck size={28} />
+        </div>
+        <div className="proposal-info-content">
+          <h3>Activity Proposals Review</h3>
+          <p>
+            Review teacher-submitted activities before they become available to students. 
+            Approve suitable content or reject with feedback for improvements.
+          </p>
+        </div>
+      </div>
+
+      {/* Overview Stats */}
+      <div className="proposal-stats-grid">
+        <div className="proposal-stat-card">
+          <div className="proposal-stat-icon">
+            <FileText />
+          </div>
+          <div className="proposal-stat-content">
+            <h3>Total Proposals</h3>
+            <p className="proposal-stat-value">{proposals.length}</p>
+          </div>
+        </div>
+        
+        <div className="proposal-stat-card">
+          <div className="proposal-stat-icon">
+            <Clock />
+          </div>
+          <div className="proposal-stat-content">
+            <h3>Pending Review</h3>
+            <p className="proposal-stat-value">{proposals.filter(p => p.status === 'pending').length}</p>
+          </div>
+        </div>
+        
+        <div className="proposal-stat-card">
+          <div className="proposal-stat-icon">
+            <CheckCircle />
+          </div>
+          <div className="proposal-stat-content">
+            <h3>Approved</h3>
+            <p className="proposal-stat-value">{proposals.filter(p => p.status === 'approved').length}</p>
+          </div>
+        </div>
+        
+        <div className="proposal-stat-card">
+          <div className="proposal-stat-icon">
+            <XCircle />
+          </div>
+          <div className="proposal-stat-content">
+            <h3>Rejected</h3>
+            <p className="proposal-stat-value">{proposals.filter(p => p.status === 'rejected').length}</p>
+          </div>
         </div>
       </div>
 
       {/* Filters and Search */}
-      <div className="filters-container">
-        <div className="search-container">
-          <Search size={20} className="search-icon" />
+      <div className="proposal-controls">
+        <div className="proposal-search">
+          <Search size={20} className="proposal-search-icon" />
           <input
             type="text"
             placeholder="Search by activity title or teacher name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
+            className="proposal-search-input"
           />
         </div>
         <button
-          className="filter-toggle"
+          className="proposal-filter-toggle"
           onClick={() => setShowFilters(!showFilters)}
         >
           <Filter size={16} />
-          Filters
+          <span>Filters</span>
           {showFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
       </div>
+      
       {showFilters && (
-        <div className="filters-panel">
-          <div className="filter-group">
+        <div className="proposal-filters-panel">
+          <div className="proposal-filter-group">
             <label>Status</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="filter-select"
+              className="proposal-filter-select"
             >
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
@@ -227,12 +289,21 @@ const SubmissionsOverview = () => {
               <option value="rejected">Rejected</option>
             </select>
           </div>
+          <button 
+            className="proposal-clear-filters"
+            onClick={() => {
+              setStatusFilter('all');
+              setSearchQuery('');
+            }}
+          >
+            Clear Filters
+          </button>
         </div>
       )}
 
       {/* Proposals Table */}
-      <div className="submissions-table-container">
-        <table className="submissions-table">
+      <div className="proposal-table-container">
+        <table className="proposal-table">
           <thead>
             <tr>
               <th>Activity Title</th>
@@ -245,148 +316,208 @@ const SubmissionsOverview = () => {
             </tr>
           </thead>
           <tbody>
-            {currentProposals.map((proposal) => (
-              <tr key={proposal.id} className="submission-row">
-                <td>{proposal.activityTitle}</td>
-                <td><span className="activity-type-badge">{proposal.activityType}</span></td>
-                <td>{proposal.description.length > 40 ? proposal.description.slice(0, 40) + '...' : proposal.description}</td>
-                <td>{proposal.teacherName}</td>
-                <td>{new Date(proposal.dateSubmitted).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
-                <td>{getStatusBadge(proposal.status)}</td>
-                <td>
-                  <div className="actions-cell">
+            {currentProposals.length > 0 ? (
+              currentProposals.map((proposal) => (
+                <tr key={proposal.id} className="proposal-row">
+                  <td className="proposal-title">{proposal.activityTitle}</td>
+                  <td><span className="proposal-type-badge">{proposal.activityType}</span></td>
+                  <td className="proposal-description">{proposal.description.length > 40 ? proposal.description.slice(0, 40) + '...' : proposal.description}</td>
+                  <td className="proposal-teacher">{proposal.teacherName}</td>
+                  <td className="proposal-date">
+                    {new Date(proposal.dateSubmitted).toLocaleDateString('en-PH', { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
+                  </td>
+                  <td>{getStatusBadge(proposal.status)}</td>
+                  <td>
                     <button
-                      className="action-button view-button"
+                      className="proposal-view-button"
                       onClick={() => setSelectedProposal(proposal)}
                       title="View Details"
                     >
                       <Eye size={16} />
+                      <span>View</span>
                     </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="7" className="proposal-empty-state">
+                  <div className="proposal-empty-content">
+                    <FileText size={32} />
+                    <p>No proposals match your search criteria</p>
                   </div>
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
 
       {/* Pagination */}
-      <div className="pagination-container">
-        <div className="pagination-info">
-          Showing {startIndex + 1} to {Math.min(endIndex, filteredProposals.length)} of {filteredProposals.length} proposals
-        </div>
-        <div className="pagination-controls">
-          <button
-            className="pagination-button"
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+      {filteredProposals.length > 0 && (
+        <div className="proposal-pagination">
+          <div className="proposal-pagination-info">
+            Showing {startIndex + 1} to {Math.min(endIndex, filteredProposals.length)} of {filteredProposals.length} proposals
+          </div>
+          <div className="proposal-pagination-controls">
             <button
-              key={page}
-              className={`pagination-number ${page === currentPage ? 'active' : ''}`}
-              onClick={() => setCurrentPage(page)}
+              className="proposal-pagination-button"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
             >
-              {page}
+              Previous
             </button>
-          ))}
-          <button
-            className="pagination-button"
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </button>
+            <div className="proposal-pagination-numbers">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  className={`proposal-pagination-number ${page === currentPage ? 'active' : ''}`}
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+            <button
+              className="proposal-pagination-button"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Process Note */}
+      <div className="proposal-process-note">
+        <BookOpen className="proposal-process-note-icon" />
+        <div className="proposal-process-note-text">
+          <p>
+            <strong>Approval Process:</strong> Review each submission carefully for appropriateness, 
+            educational value, and alignment with curriculum standards. If rejecting, 
+            provide clear feedback to help teachers improve their submissions.
+          </p>
         </div>
       </div>
 
       {/* Detailed View Modal */}
       {selectedProposal && (
-        <div className="submission-detail-modal">
-          <div className="modal-overlay" onClick={() => setSelectedProposal(null)} />
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>Proposal Details</h2>
+        <div className="proposal-modal-overlay">
+          <div className="proposal-modal">
+            <div className="proposal-modal-header">
+              <h2>Activity Proposal Details</h2>
               <button
-                className="modal-close"
+                className="proposal-modal-close"
                 onClick={() => setSelectedProposal(null)}
               >
-                <XCircle size={24} />
+                <XCircle size={20} />
               </button>
             </div>
-            <div className="modal-body">
-              <div className="detail-section">
+            <div className="proposal-modal-body">
+              <div className="proposal-detail-section">
                 <h3>Activity Information</h3>
-                <div className="detail-grid">
-                  <div className="detail-item">
+                <div className="proposal-detail-grid">
+                  <div className="proposal-detail-item">
                     <label>Title</label>
                     <span>{selectedProposal.activityTitle}</span>
                   </div>
-                  <div className="detail-item">
+                  <div className="proposal-detail-item">
                     <label>Type</label>
-                    <span>{selectedProposal.activityType}</span>
+                    <span><span className="proposal-type-badge-modal">{selectedProposal.activityType}</span></span>
                   </div>
-                  <div className="detail-item">
+                  <div className="proposal-detail-item">
                     <label>Description</label>
-                    <span>{selectedProposal.description}</span>
+                    <span className="proposal-full-description">{selectedProposal.description}</span>
                   </div>
-                  <div className="detail-item">
+                  <div className="proposal-detail-item">
                     <label>Teacher</label>
-                    <span>{selectedProposal.teacherName}</span>
+                    <span className="proposal-teacher-info">
+                      <User size={16} className="proposal-teacher-icon" />
+                      {selectedProposal.teacherName}
+                    </span>
                   </div>
-                  <div className="detail-item">
+                  <div className="proposal-detail-item">
                     <label>Date Submitted</label>
-                    <span>{new Date(selectedProposal.dateSubmitted).toLocaleString()}</span>
+                    <span>{new Date(selectedProposal.dateSubmitted).toLocaleString('en-PH', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}</span>
+                  </div>
+                  <div className="proposal-detail-item">
+                    <label>Status</label>
+                    <span>{getStatusBadge(selectedProposal.status)}</span>
                   </div>
                   {selectedProposal.attachments > 0 && (
-                    <div className="detail-item">
+                    <div className="proposal-detail-item">
                       <label>Attachments</label>
-                      <span>{selectedProposal.attachments} file{selectedProposal.attachments > 1 ? 's' : ''}</span>
+                      <span className="proposal-attachments">
+                        {selectedProposal.attachments} file{selectedProposal.attachments > 1 ? 's' : ''}
+                      </span>
                     </div>
                   )}
                 </div>
               </div>
+              
               {selectedProposal.status === 'rejected' && selectedProposal.rejectionReason && (
-                <div className="detail-section flagged-section">
+                <div className="proposal-detail-section proposal-rejection-section">
                   <h3>Rejection Reason</h3>
-                  <div className="flag-details">
-                    <AlertCircle size={20} className="flag-icon" />
+                  <div className="proposal-rejection-details">
+                    <AlertCircle size={20} className="proposal-rejection-icon" />
                     <p>{selectedProposal.rejectionReason}</p>
                   </div>
                 </div>
               )}
             </div>
-            <div className="modal-footer">
-              <button className="action-button secondary" onClick={() => setSelectedProposal(null)}>
-                Close
-              </button>
-              {selectedProposal.status === 'pending' && (
-                <>
-                  <button
-                    className="action-button primary"
-                    disabled={actionLoading}
-                    onClick={() => handleApprove(selectedProposal.id)}
-                  >
-                    {actionLoading ? 'Approving...' : 'Approve'}
-                  </button>
-                  <button
-                    className="action-button danger"
-                    disabled={actionLoading}
-                    onClick={() => handleReject(selectedProposal.id, rejectComment)}
-                  >
-                    {actionLoading ? 'Rejecting...' : 'Reject'}
-                  </button>
-                  <input
-                    type="text"
-                    className="reject-comment-input"
-                    placeholder="Reason for rejection (required)"
-                    value={rejectComment}
-                    onChange={e => setRejectComment(e.target.value)}
-                    style={{ marginLeft: 8, minWidth: 200 }}
-                  />
-                </>
+            <div className="proposal-modal-footer">
+              {selectedProposal.status === 'pending' ? (
+                <div className="proposal-action-buttons">
+                  <div className="proposal-reject-container">
+                    <input
+                      type="text"
+                      className="proposal-reject-reason"
+                      placeholder="Reason for rejection (required)"
+                      value={rejectComment}
+                      onChange={e => setRejectComment(e.target.value)}
+                    />
+                    <button
+                      className="proposal-action-button proposal-reject-button"
+                      disabled={actionLoading}
+                      onClick={() => handleReject(selectedProposal.id, rejectComment)}
+                    >
+                      {actionLoading ? 'Rejecting...' : 'Reject'}
+                    </button>
+                  </div>
+                  <div className="proposal-button-group">
+                    <button 
+                      className="proposal-action-button proposal-close-button"
+                      onClick={() => setSelectedProposal(null)}
+                    >
+                      Close
+                    </button>
+                    <button
+                      className="proposal-action-button proposal-approve-button"
+                      disabled={actionLoading}
+                      onClick={() => handleApprove(selectedProposal.id)}
+                    >
+                      {actionLoading ? 'Approving...' : 'Approve'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button 
+                  className="proposal-action-button proposal-close-button proposal-single-close"
+                  onClick={() => setSelectedProposal(null)}
+                >
+                  Close
+                </button>
               )}
             </div>
           </div>

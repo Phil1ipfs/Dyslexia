@@ -1348,7 +1348,57 @@
 
 .literexia-selected-choice-value {
   font-weight: 500;
+  font-size: 0.95rem;
   color: #2d3748;
+}
+
+.literexia-selected-choice-description {
+  font-size: 0.85rem;
+  color: #777;
+  margin-top: 0.5rem;
+  line-height: 1.3;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: break-word;
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  position: relative;
+  padding-top: 0.3rem;
+}
+
+.literexia-choice-description-input {
+  flex: 1;
+  min-width: 200px;
+  font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #333;
+  transition: all 0.2s ease;
+  background-color: #f9f9f9;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.literexia-choice-description-input:focus {
+  border-color: #3B4F81;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 79, 129, 0.2);
+  background-color: #fff;
+}
+
+.literexia-choice-description-input::placeholder {
+  color: #aaa;
+  font-style: italic;
+}
+
+.literexia-description-label {
+  font-weight: 600;
+  color: #555;
+  min-width: 70px;
+  font-size: 0.8rem;
+  padding-top: 0.5rem;
 }
 
 .literexia-choice-correct-indicator {
@@ -1769,71 +1819,22 @@
 
 .literexia-choices-summary li.correct-choice {
   color: #2f855a;
-  font-weight: 500;
+  font-weight: 600;
+}
+
+.literexia-choice-description-review {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.25rem;
+  margin-left: 1rem;
+  font-style: italic;
+  line-height: 1.3;
 }
 
 .literexia-passage-preview {
   background-color: #f8fafd;
   border-radius: 8px;
   padding: 1.25rem;
-  margin-top: 1rem;
-  border: 1px solid #e0e0e0;
-}
-
-.literexia-passage-sample,
-.literexia-question-sample {
-  margin: 0 0 0.75rem 0;
-  color: #4a5568;
-  line-height: 1.5;
-}
-
-/* Mobile Push Notice */
-.literexia-push-mobile-notice {
-  display: flex;
-  align-items: flex-start;
-  gap: 1.5rem;
-  background-color: #f0f7ff;
-  border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px solid #bbdefb;
-  margin-top: 2rem;
-}
-
-.literexia-notice-icon {
-  font-size: 2.5rem;
-  color: #1565c0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 60px;
-  height: 60px;
-  background-color: rgba(21, 101, 192, 0.1);
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.literexia-notice-content h4 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.2rem;
-  color: #1565c0;
-  font-weight: 600;
-}
-
-.literexia-notice-content p {
-  margin: 0;
-  color: #4a5568;
-  line-height: 1.5;
-}
-
-/* Empty State */
-.literexia-empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 2rem;
-  text-align: center;
-  background-color: #f8fafd;
   border-radius: 12px;
   border: 1px dashed #bfcbe3;
 }

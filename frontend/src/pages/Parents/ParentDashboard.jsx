@@ -1,7 +1,28 @@
+// src/pages/Parents/ParentDashboard.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { 
+  User, 
+  Mail, 
+  Phone, 
+  Calendar, 
+  MapPin,
+  Heart,
+  Book,
+  Lock,
+  X,
+  CheckCircle,
+  UserCircle,
+  Info,
+  GraduationCap,
+  School,
+  ClipboardList,
+  BarChart2,
+  Home
+} from 'lucide-react';
 import parent1 from "../../assets/images/Parents/parent1.png";
 import student1 from "../../assets/images/Parents/student1.jpg";
+import ChangePasswordModal from "../../components/ParentPage/ChangePasswordModal";
 import "../../css/Parents/ParentDashboard.css";
 
 const ParentDashboard = () => {
@@ -19,14 +40,15 @@ const ParentDashboard = () => {
     profileImageUrl: ""
   });
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [children, setChildren] = useState([]);
+  const [animated, setAnimated] = useState(false);
   
   // Base URL from environment variable or default
-  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://literexia.onrender.com/";
 
   // Fetch parent profile data when component mounts
   useEffect(() => {
@@ -39,6 +61,15 @@ const ParentDashboard = () => {
     // Clean up interval on component unmount
     return () => clearInterval(intervalId);
   }, []);
+
+  // Trigger animations after data loads
+  useEffect(() => {
+    if (!isLoading) {
+      setTimeout(() => {
+        setAnimated(true);
+      }, 300);
+    }
+  }, [isLoading]);
   
   // Function to fetch parent profile from database
   const fetchParentData = async () => {
@@ -138,82 +169,13 @@ const ParentDashboard = () => {
     }));
   };
 
-  // Toggle between edit and view mode
-  const toggleEdit = () => {
-    if (isEditing) {
-      // If canceling edit, refresh data from database
-      fetchParentData();
-    }
-    setIsEditing(!isEditing);
-  };
-
-  // Save changes to database
-  const saveChanges = async () => {
-    const userConfirmed = window.confirm(
-      "Are you sure you want to save these changes?"
-    );
-
-    if (userConfirmed) {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        // Get auth token from localStorage
-        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-        
-        if (!token) {
-          setError("No authentication token found");
-          setIsLoading(false);
-          return;
-        }
-        
-        // Format data for API
-        const updateData = {
-          firstName: personalInfo.firstName,
-          middleName: personalInfo.middleName,
-          lastName: personalInfo.lastName,
-          contactNumber: personalInfo.contactNumber,
-          address: personalInfo.address,
-          civilStatus: personalInfo.civilStatus,
-          dateOfBirth: personalInfo.dateOfBirth,
-          gender: personalInfo.gender
-        };
-        
-        // Make API request to update profile
-        const response = await axios.put(`${BASE_URL}/api/parents/profile`, updateData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        console.log("Profile updated successfully:", response.data);
-        
-        // Refresh data from database to ensure we display the latest data
-        await fetchParentData();
-        
-        setIsEditing(false);
-        setShowSuccessMessage(true);
-
-        setTimeout(() => {
-          setShowSuccessMessage(false);
-        }, 3000);
-      } catch (error) {
-        console.error("Error updating profile:", error);
-        setError(error.response?.data?.message || "Failed to update profile");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
-
-  // After fetching parent profile, if personalInfo.children exists and is non-empty, fetch each child's student profile from the backend and display them in the Children Enrolled section.
+  // After fetching parent profile, if personalInfo.children exists and is non-empty, fetch each child's student profile
   useEffect(() => {
     if (personalInfo.children && personalInfo.children.length > 0) {
       const fetchChildren = async () => {
         try {
           const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-          const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
+          const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://literexia.onrender.com/";
           const responses = await Promise.all(
             personalInfo.children.map(childId =>
               axios.get(`${BASE_URL}/api/admin/manage/students/${childId}`, {
@@ -234,212 +196,264 @@ const ParentDashboard = () => {
     }
   }, [personalInfo.children]);
 
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return "Not available";
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return dateString;
+    }
+  };
+
   return (
-    <div className="parent-dashboard-container">
+    <div className="parent-dashboard__container">
       {/* Loading indicator */}
       {isLoading && (
-        <div className="loading-overlay">
-          <div className="spinner"></div>
+        <div className="parent-dashboard__loading-overlay">
+          <div className="parent-dashboard__spinner"></div>
         </div>
       )}
 
       {/* Error message */}
       {error && (
-        <div className="error-message">
-          <p>{error}</p>
+        <div className="parent-dashboard__error-message">
+          <X className="parent-dashboard__error-icon" size={24} />
+          <div className="parent-dashboard__error-content">
+            <h3>Error Loading Profile</h3>
+            <p>{error}</p>
+          </div>
         </div>
       )}
       
-      {/* Main content with white background and styling similar to Teacher Profile */}
-      <div className="main-content">
-        <h1 className="profile-title">Parent Profile</h1>
-        
-        {/* Profile header section with basic info */}
-        <div className="profile-header-section">
-          <div className="profile-avatar-container">
-            <img 
-              src={personalInfo.profileImageUrl || parent1} 
-              alt="Parent Avatar" 
-              className="profile-avatar" 
-            />
+      {/* Main content */}
+      <div className="parent-dashboard__main-content">
+        {/* Header section with breadcrumb */}
+        <div className="parent-dashboard__header">
+          <div className="parent-dashboard__breadcrumb">
+            <Home size={16} />
+            <span className="parent-dashboard__breadcrumb-separator">/</span>
+            <span className="parent-dashboard__breadcrumb-active">Parent Dashboard</span>
           </div>
-          
-          <div className="profile-basic-info">
-            <div className="info-item">
-              <div className="info-label">Email:</div>
-              <input 
-                type="text" 
-                className="info-input" 
-                value={personalInfo.email} 
-                onChange={(e) => handleChange({target: {name: 'email', value: e.target.value}})}
-                readOnly={!isEditing} 
-              />
+          <h1 className="parent-dashboard__title">My Profile</h1>
+          <p className="parent-dashboard__subtitle">View and manage your personal information and enrolled children</p>
+        </div>
+        
+        {/* Profile overview section */}
+        <div className={`parent-dashboard__profile-overview ${animated ? 'animate' : ''}`} style={{animationDelay: '0s'}}>
+          <div className="parent-dashboard__info-banner">
+            <Info className="parent-dashboard__info-icon" />
+            <div className="parent-dashboard__info-content">
+              <h3>Parent Dashboard</h3>
+              <p>
+                Welcome to your parent dashboard. Here you can view your profile information and check details about your enrolled children.
+                Use the Change Password button to update your login credentials.
+              </p>
             </div>
           </div>
           
-          <div className="action-buttons">
-            <button className="edit-profile-btn" onClick={toggleEdit}>
-              {isEditing ? "Cancel" : "Edit Profile"}
-            </button>
-            {isEditing && (
-              <button className="change-password-btn" onClick={saveChanges}>
-                Save Changes
+          <div className="parent-dashboard__profile-header">
+            <div className="parent-dashboard__profile-avatar">
+              {personalInfo.profileImageUrl ? (
+                <img 
+                  src={personalInfo.profileImageUrl} 
+                  alt={`${personalInfo.firstName} ${personalInfo.lastName}`} 
+                  className="parent-dashboard__avatar-img"
+                />
+              ) : (
+                <UserCircle className="parent-dashboard__avatar-placeholder" size={80} />
+              )}
+            </div>
+            <div className="parent-dashboard__profile-details">
+              <h2 className="parent-dashboard__profile-name">
+                {`${personalInfo.firstName} ${personalInfo.middleName ? personalInfo.middleName + ' ' : ''}${personalInfo.lastName}`}
+              </h2>
+              <div className="parent-dashboard__contact-items">
+                <div className="parent-dashboard__contact-item">
+                  <Mail size={18} />
+                  <span>{personalInfo.email || 'No email provided'}</span>
+                </div>
+                <div className="parent-dashboard__contact-item">
+                  <Phone size={18} />
+                  <span>{personalInfo.contactNumber || 'No contact number provided'}</span>
+                </div>
+              </div>
+            </div>
+            <div className="parent-dashboard__profile-actions">
+              <button 
+                className="parent-dashboard__change-password-btn" 
+                onClick={() => setShowChangePassword(true)}
+              >
+                <Lock size={18} />
+                <span>Change Password</span>
               </button>
-            )}
+            </div>
           </div>
         </div>
         
-        {/* Personal Information Section */}
-        <div className="information-section">
-          <h3 className="section-title">Personal Information</h3>
-          <div className="info-grid">
-            <div className="info-column">
-              <div className="form-group">
-                <label>First Name</label>
-                <input 
-                  type="text" 
-                  value={personalInfo.firstName}
-                  name="firstName"
-                  onChange={handleChange}
-                  readOnly={!isEditing}
-                  className="form-input"
-                />
+        {/* Personal Information Cards */}
+        <div className="parent-dashboard__section">
+          <h3 className="parent-dashboard__section-title">
+            <User className="parent-dashboard__section-icon" />
+            Personal Information
+          </h3>
+          
+          <div className="parent-dashboard__info-cards">
+            <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.1s'}}>
+              <div className="parent-dashboard__info-card-header">
+                <User className="parent-dashboard__info-card-icon" />
+                <div className="parent-dashboard__info-card-label">First Name</div>
               </div>
-              
-              <div className="form-group">
-                <label>Middle Name</label>
-                <input 
-                  type="text" 
-                  value={personalInfo.middleName}
-                  name="middleName"
-                  onChange={handleChange}
-                  readOnly={!isEditing}
-                  className="form-input"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label>Contact Number</label>
-                <input 
-                  type="text" 
-                  value={personalInfo.contactNumber}
-                  name="contactNumber"
-                  onChange={handleChange}
-                  readOnly={!isEditing}
-                  className="form-input"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label>Civil Status</label>
-                <input 
-                  type="text" 
-                  value={personalInfo.civilStatus}
-                  name="civilStatus"
-                  onChange={handleChange}
-                  readOnly={!isEditing}
-                  className="form-input"
-                />
-              </div>
+              <div className="parent-dashboard__info-card-value">{personalInfo.firstName || 'Not provided'}</div>
             </div>
             
-            <div className="info-column">
-              <div className="form-group">
-                <label>Last Name</label>
-                <input 
-                  type="text" 
-                  value={personalInfo.lastName}
-                  name="lastName"
-                  onChange={handleChange}
-                  readOnly={!isEditing}
-                  className="form-input"
-                />
+            <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.15s'}}>
+              <div className="parent-dashboard__info-card-header">
+                <User className="parent-dashboard__info-card-icon" />
+                <div className="parent-dashboard__info-card-label">Last Name</div>
               </div>
-              
-              <div className="form-group">
-                <label>Date of Birth</label>
-                <input 
-                  type={isEditing ? "date" : "text"}
-                  value={personalInfo.dateOfBirth}
-                  name="dateOfBirth"
-                  onChange={handleChange}
-                  readOnly={!isEditing}
-                  className="form-input"
-                />
+              <div className="parent-dashboard__info-card-value">{personalInfo.lastName || 'Not provided'}</div>
+            </div>
+            
+            <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.2s'}}>
+              <div className="parent-dashboard__info-card-header">
+                <User className="parent-dashboard__info-card-icon" />
+                <div className="parent-dashboard__info-card-label">Middle Name</div>
               </div>
-              
-              <div className="form-group">
-                <label>Gender</label>
-                {isEditing ? (
-                  <select
-                    value={personalInfo.gender}
-                    name="gender"
-                    onChange={handleChange}
-                    className="form-input"
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    value={personalInfo.gender}
-                    readOnly
-                    className="form-input"
-                  />
-                )}
+              <div className="parent-dashboard__info-card-value">{personalInfo.middleName || 'Not provided'}</div>
+            </div>
+            
+            <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.25s'}}>
+              <div className="parent-dashboard__info-card-header">
+                <Calendar className="parent-dashboard__info-card-icon" />
+                <div className="parent-dashboard__info-card-label">Date of Birth</div>
               </div>
-              
-              <div className="form-group">
-                <label>Address</label>
-                <input 
-                  type="text" 
-                  value={personalInfo.address}
-                  name="address"
-                  onChange={handleChange}
-                  readOnly={!isEditing}
-                  className="form-input"
-                />
+              <div className="parent-dashboard__info-card-value">{personalInfo.dateOfBirth ? formatDate(personalInfo.dateOfBirth) : 'Not provided'}</div>
+            </div>
+            
+            <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.3s'}}>
+              <div className="parent-dashboard__info-card-header">
+                <Heart className="parent-dashboard__info-card-icon" />
+                <div className="parent-dashboard__info-card-label">Civil Status</div>
               </div>
+              <div className="parent-dashboard__info-card-value">{personalInfo.civilStatus || 'Not provided'}</div>
+            </div>
+            
+            <div className={`parent-dashboard__info-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.35s'}}>
+              <div className="parent-dashboard__info-card-header">
+                <MapPin className="parent-dashboard__info-card-icon" />
+                <div className="parent-dashboard__info-card-label">Address</div>
+              </div>
+              <div className="parent-dashboard__info-card-value">{personalInfo.address || 'Not provided'}</div>
             </div>
           </div>
         </div>
         
-        {/* Children Information Section - Dynamically loaded from database */}
-        <div className="information-section">
-          <h3 className="section-title">Children Enrolled</h3>
-          <div className="children-info" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
-            {children.length > 0 ? (
-              children.map((child, index) => (
-                <div key={index} className="child-card" style={{ display: 'flex', alignItems: 'center', background: '#fff', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', padding: '12px 20px', minWidth: '280px', maxWidth: '350px', width: '100%', gap: '16px' }}>
-                  <img 
-                    src={child.profileImage || student1} 
-                    alt={`${child.firstName || ''} ${child.lastName || ''}`} 
-                    className="child-image"
-                    style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'cover', marginRight: '12px', border: '2px solid #e5e7eb' }}
-                  />
-                  <div className="child-details" style={{ flex: 1 }}>
-                    <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>{`${child.firstName || ''} ${child.middleName ? child.middleName + ' ' : ''}${child.lastName || ''}`}</h4>
-                    <div style={{ fontSize: '0.97rem', color: '#444', marginTop: 2 }}>Student ID: <span style={{ fontWeight: 500 }}>{child.idNumber || 'N/A'}</span></div>
-                    <div style={{ fontSize: '0.97rem', color: '#444', marginTop: 2 }}>Section: <span style={{ fontWeight: 500 }}>{child.section || 'N/A'}</span></div>
+        {/* Children Section */}
+        <div className="parent-dashboard__section">
+          <h3 className="parent-dashboard__section-title">
+            <GraduationCap className="parent-dashboard__section-icon" />
+            Children Enrolled
+          </h3>
+          
+          {children.length > 0 ? (
+            <div className="parent-dashboard__children-grid">
+              {children.map((child, index) => (
+                <div 
+                  key={child._id || index} 
+                  className={`parent-dashboard__child-card ${animated ? 'animate' : ''}`} 
+                  style={{animationDelay: `${0.4 + (index * 0.1)}s`}}
+                >
+                  <div className="parent-dashboard__child-header">
+                    <div className="parent-dashboard__child-avatar">
+                      {child.profileImage ? (
+                        <img 
+                          src={child.profileImage} 
+                          alt={`${child.firstName || ''} ${child.lastName || ''}`} 
+                          className="parent-dashboard__child-avatar-img"
+                        />
+                      ) : (
+                        <School className="parent-dashboard__child-avatar-placeholder" />
+                      )}
+                    </div>
+                    <div className="parent-dashboard__child-title">
+                      <h4 className="parent-dashboard__child-name">
+                        {`${child.firstName || ''} ${child.middleName ? child.middleName + ' ' : ''}${child.lastName || ''}`}
+                      </h4>
+                      <div className="parent-dashboard__child-id">
+                        ID: {child.idNumber || 'Not assigned'}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="parent-dashboard__child-details">
+                    <div className="parent-dashboard__child-detail">
+                      <ClipboardList size={16} />
+                      <span className="parent-dashboard__child-detail-label">Section:</span>
+                      <span className="parent-dashboard__child-detail-value">{child.section || 'Not assigned'}</span>
+                    </div>
+                    
+                    <div className="parent-dashboard__child-detail">
+                      <BarChart2 size={16} />
+                      <span className="parent-dashboard__child-detail-label">Grade Level:</span>
+                      <span className="parent-dashboard__child-detail-value">{child.gradeLevel || 'Not specified'}</span>
+                    </div>
+                    
+                    <div className="parent-dashboard__child-detail">
+                      <Calendar size={16} />
+                      <span className="parent-dashboard__child-detail-label">Enrollment Date:</span>
+                      <span className="parent-dashboard__child-detail-value">
+                        {child.enrollmentDate ? formatDate(child.enrollmentDate) : 'Not specified'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="parent-dashboard__child-footer">
+                    {/* <div className={`parent-dashboard__child-status ${child.status === 'active' ? 'active' : 'inactive'}`}>
+                      {child.status === 'active' ? 'Active Student' : (child.status || 'Status Unknown')}
+                    </div> */}
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="no-children-message">
-                <p>No children enrolled yet.</p>
-              </div>
-            )}
+              ))}
+            </div>
+          ) : (
+            <div className="parent-dashboard__empty-children">
+              <Book size={48} className="parent-dashboard__empty-icon" />
+              <h4>No Children Enrolled</h4>
+              <p>When your children are enrolled, they will appear here.</p>
+            </div>
+          )}
+        </div>
+        
+        {/* Process Note */}
+        <div className="parent-dashboard__process-note">
+          <Info className="parent-dashboard__process-note-icon" />
+          <div className="parent-dashboard__process-note-content">
+            <p>
+              <strong>Note:</strong> To update your personal information or to enroll a new child, 
+              please contact the school administration. They will assist you with the necessary procedures.
+            </p>
           </div>
         </div>
       </div>
       
       {/* Success Message */}
       {showSuccessMessage && (
-        <div className="success-message">
-          <p>Changes saved successfully!</p>
+        <div className="parent-dashboard__success-message">
+          <CheckCircle size={20} />
+          <span>Changes saved successfully!</span>
         </div>
+      )}
+      
+      {/* Change Password Modal */}
+      {showChangePassword && (
+        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
       )}
     </div>
   );

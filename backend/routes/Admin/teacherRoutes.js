@@ -165,4 +165,28 @@ router.put('/students/:id', upload.single('profileImage'), studentAdminControlle
 // Delete student (DELETE)
 router.delete('/students/:id', studentAdminController.deleteStudent);
 
+// GET /api/admin/manage/students/idNumber/:idNumber
+router.get('/students/idNumber/:idNumber', async (req, res) => {
+  try {
+    const db = mongoose.connection.useDb('test');
+    const idParam = req.params.idNumber;
+    console.log('Student info lookup for:', idParam, typeof idParam);
+    const allIds = await db.collection('users').find({}, { projection: { idNumber: 1 } }).toArray();
+    console.log('All idNumbers in users:', allIds.map(d => d.idNumber));
+    const student = await db.collection('users').findOne({
+      $or: [
+        { idNumber: idParam },
+        { idNumber: Number(idParam) }
+      ]
+    });
+    console.log('Student found:', student);
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
+    res.json({ success: true, data: student });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router; 

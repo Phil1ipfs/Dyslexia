@@ -10,6 +10,15 @@ const s3Client = require('./config/s3');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// Check for AWS environment variables
+if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_REGION) {
+  console.log('AWS credentials detected in environment variables');
+  console.log(`AWS Region: ${process.env.AWS_REGION}`);
+  console.log(`AWS Bucket: ${process.env.AWS_BUCKET_NAME || 'literexia-bucket'}`);
+} else {
+  console.warn('⚠️ AWS credentials not found in environment variables - S3 uploads will use database fallback');
+}
+
 // Define userSchema at the module level so it's available throughout the file
 const userSchema = new mongoose.Schema({
   email: {
@@ -48,6 +57,9 @@ app.use(cors({
     const allowedOrigins = [
       'http://localhost:5173',
       'http://localhost:5174',
+      'http://192.168.56.1:5173',
+      'https://literexia.onrender.com',
+      'http://192.168.1.4:5173',
       process.env.FRONTEND_URL
     ].filter(Boolean);
     
@@ -68,6 +80,8 @@ app.options('*', cors({
     const allowedOrigins = [
       'http://localhost:5173',
       'http://localhost:5174',
+      'http://192.168.56.1:5173',
+      'http://192.168.1.4:5173',
       process.env.FRONTEND_URL
     ].filter(Boolean);
     
@@ -82,8 +96,9 @@ app.options('*', cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-requested-with', 'X-Requested-With']
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Increase body parser limits for larger file uploads
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(requestLogger);
 
 // Test route to verify server is running
@@ -211,6 +226,15 @@ const connectDB = async () => {
       console.warn('⚠️ Could not initialize progress collections:', error.message);
     }
 
+    // Run automatic migration of category results
+    try {
+      const CategoryResultsService = require('./services/Teachers/CategoryResultsService');
+      await CategoryResultsService.migrateStudentIds();
+      console.log('✅ Completed automatic migration of category results');
+    } catch (error) {
+      console.warn('⚠️ Could not run category results migration:', error.message);
+    }
+
     console.log('\n✅ Database setup complete');
     return true;
   } catch (error) {
@@ -243,7 +267,7 @@ const authenticateToken = (req, res, next) => {
   }
 
   try {
-    const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
+    const secretKey = process.env.JWT_SECRET || 'your-secret-key';
     const decoded = jwt.verify(token, secretKey);
     req.user = decoded;
     console.log('Authenticated user:', req.user.email, 'User roles:', req.user.roles);
@@ -336,10 +360,21 @@ connectDB().then(async (connected) => {
     app.use('/api/admin', emailRoutes);
     console.log('✅ Email routes registered at /api/admin/send-credentials');
 
+    // Debug middleware for /api/parents
+    app.use('/api/parents', (req, res, next) => {
+      console.log('[SERVER] /api/parents route hit:', req.method, req.originalUrl);
+      next();
+    });
+
     // Register parent routes
     const parentRoutes = require('./routes/Parents/parentProfile');
     app.use('/api/parents', parentRoutes);
     console.log('✅ Parent routes registered at /api/parents/*');
+
+    // Register childPdfRoutes
+    const childPdfRoutes = require('./routes/Parents/childPdfRoutes');
+    app.use('/api/parent', childPdfRoutes);
+    console.log('✅ Child PDF routes registered at /api/parent/child_pdf');
 
     // Register admin profile routes
     const adminProfileRoutes = require('./routes/Admin/adminProfile');
@@ -363,16 +398,6 @@ connectDB().then(async (connected) => {
     } catch (error) {
       console.warn('⚠️ Could not load teacher profile routes:', error.message);
     }
-
-    // Try to load parent routes from Teachers
-    try {
-      const teacherParentRoutes = require('./routes/Teachers/parentRoutes');
-      app.use('/api/parents', teacherParentRoutes);
-      console.log('✅ Loaded teachers/parents routes with profile endpoint');
-    } catch (error) {
-      console.warn('⚠️ Could not load teachers/parent routes:', error.message);
-    }
-
 
     // Initialize prescriptive analyses for all students
     try {
@@ -411,6 +436,24 @@ connectDB().then(async (connected) => {
     } catch (error) {
       console.warn('⚠️ Could not load intervention routes:', error.message);
     }
+    
+    // Load upload file routes
+    try {
+      const uploadFileRoutes = require('./routes/Teachers/uploadFile');
+      app.use('/api/teachers', uploadFileRoutes);
+      console.log('✅ Loaded upload file routes');
+    } catch (error) {
+      console.warn('⚠️ Could not load upload file routes:', error.message);
+    }
+
+    // Load prescriptive analysis routes
+    try {
+      const prescriptiveAnalysisRoutes = require('./routes/Teachers/ManageProgress/prescriptiveAnalysisRoutes');
+      app.use('/api/prescriptive-analysis', prescriptiveAnalysisRoutes);
+      console.log('✅ Loaded prescriptive analysis routes');
+    } catch (error) {
+      console.warn('⚠️ Could not load prescriptive analysis routes:', error.message);
+    }
 
     // Load student routes
     try {
@@ -435,6 +478,24 @@ connectDB().then(async (connected) => {
       console.log('✅ Loaded dashboard routes');
     } catch (error) {
       console.warn('⚠️ Could not load dashboard routes:', error.message);
+    }
+
+    // Load main assessment routes
+    try {
+      const mainAssessmentRoutes = require('./routes/Teachers/mainAssessmentRoutes');
+      app.use('/api/main-assessment', mainAssessmentRoutes);
+      console.log('✅ Loaded main assessment routes at /api/main-assessment/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load main assessment routes:', error.message);
+    }
+
+    // Load pre-assessment routes
+    try {
+      const preAssessmentRoutes = require('./routes/Teachers/preAssessmentRoutes');
+      app.use('/api/pre-assessment', preAssessmentRoutes);
+      console.log('✅ Loaded pre-assessment routes at /api/pre-assessment/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load pre-assessment routes:', error.message);
     }
 
     // Add a test route for the students endpoint
@@ -562,7 +623,7 @@ connectDB().then(async (connected) => {
         }
 
         /* ── 5. sign JWT ───────────────────────────────────── */
-        const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
+        const secretKey = process.env.JWT_SECRET || 'your-secret-key';
         
         const token = jwt.sign(
           {
@@ -648,6 +709,9 @@ connectDB().then(async (connected) => {
       }
     });
 
+    // Add root route
+    app.get('/', (_req, res) => res.send('API is running…'));
+
     // Add S3 image proxy endpoint
     app.get('/api/proxy-image', async (req, res) => {
       try {
@@ -684,8 +748,310 @@ connectDB().then(async (connected) => {
       }
     });
 
-    // Add root route
-    app.get('/', (_req, res) => res.send('API is running…'));
+    // Direct parent lookup endpoint for teacher use
+    app.get('/api/parent-by-id/:id', async (req, res) => {
+      try {
+        const parentId = req.params.id;
+        console.log(`[SERVER] Lookup request for parent ID: ${parentId}`);
+        
+        // Validate MongoDB ObjectId format
+        if (!/^[0-9a-fA-F]{24}$/.test(parentId)) {
+          return res.status(400).json({ error: 'Invalid parent ID format' });
+        }
+        
+        // Create ObjectId for queries
+        const objectId = new mongoose.Types.ObjectId(parentId);
+        
+        // Try different databases and collections
+        const dbsToSearch = ['Literexia', 'parent', 'users_web'];
+        const collectionsToSearch = ['parent', 'parent_profile', 'profile', 'parents'];
+        
+        let parentData = null;
+        
+        // Search through databases and collections
+        for (const dbName of dbsToSearch) {
+          if (parentData) break;
+          
+          const db = mongoose.connection.useDb(dbName);
+          console.log(`[SERVER] Searching in ${dbName} database`);
+          
+          for (const collName of collectionsToSearch) {
+            try {
+              const collection = db.collection(collName);
+              console.log(`[SERVER] Trying collection ${collName}`);
+              
+              // Query with ObjectId
+              parentData = await collection.findOne({ _id: objectId });
+              
+              if (parentData) {
+                console.log(`[SERVER] Found parent in ${dbName}.${collName}`);
+                break;
+              }
+            } catch (err) {
+              console.log(`[SERVER] Error searching ${dbName}.${collName}: ${err.message}`);
+            }
+          }
+        }
+        
+        if (parentData) {
+          // Return the found parent data
+          res.json(parentData);
+        } else {
+          // If parent not found in any database, return fallback data from JSON
+          const fallbackParents = [
+            {
+              _id: "681a2933af165878136e05da",
+              firstName: "Jan Mark",
+              middleName: "Percival",
+              lastName: "Caram",
+              email: "parent@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "6827575c89b0d728f9333a20",
+              firstName: "Kit Nicholas",
+              middleName: "Tongol",
+              lastName: "Santiago",
+              email: "parent2@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "682ca15af0bfb8e632bdfd13",
+              firstName: "Rain",
+              middleName: "Percival",
+              lastName: "Aganan",
+              email: "parentrain@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "682d75b9f7897b64cec98cc7",
+              firstName: "Kit Nicholas",
+              middleName: "Rish",
+              lastName: "Aganan",
+              email: "paraaaaaaaaaent@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "6830d880779e20b64f720f44",
+              firstName: "Kit Nicholas",
+              middleName: "Pascual",
+              lastName: "Caram",
+              email: "teacher65@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "6835ef1645a2af9158a6d5b7",
+              firstName: "Pia",
+              middleName: "Zop",
+              lastName: "Rey",
+              email: "markcaram47@icloud.comm",
+              contact: "09155933015"
+            }
+          ];
+          
+          // Find matching parent in fallback data
+          const fallbackParent = fallbackParents.find(p => p._id === parentId);
+          
+          if (fallbackParent) {
+            console.log(`[SERVER] Using fallback data for parent ID ${parentId}`);
+            res.json(fallbackParent);
+          } else {
+            res.status(404).json({ error: 'Parent not found' });
+          }
+        }
+      } catch (error) {
+        console.error('[SERVER] Error in parent lookup:', error);
+        res.status(500).json({ error: 'Server error retrieving parent data' });
+      }
+    });
+
+    // Parent profiles bulk endpoint for teacher use
+    app.get('/api/parent-profiles', async (req, res) => {
+      try {
+        console.log('[SERVER] Bulk parent profiles request');
+        
+        // First try to get from database
+        const parentDb = mongoose.connection.useDb('parent');
+        let parentProfiles = [];
+        
+        try {
+          parentProfiles = await parentDb.collection('parent_profile').find({}).toArray();
+          console.log(`[SERVER] Found ${parentProfiles.length} parent profiles in database`);
+        } catch (dbError) {
+          console.log(`[SERVER] Error fetching from database: ${dbError.message}`);
+        }
+        
+        // If no profiles found in database, return fallback data
+        if (!parentProfiles || parentProfiles.length === 0) {
+          console.log('[SERVER] Using fallback parent profile data');
+          parentProfiles = [
+            {
+              _id: "681a2933af165878136e05da",
+              firstName: "Jan Mark",
+              middleName: "Percival",
+              lastName: "Caram",
+              email: "parent@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "6827575c89b0d728f9333a20",
+              firstName: "Kit Nicholas",
+              middleName: "Tongol",
+              lastName: "Santiago",
+              email: "parent2@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "682ca15af0bfb8e632bdfd13",
+              firstName: "Rain",
+              middleName: "Percival",
+              lastName: "Aganan",
+              email: "parentrain@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "682d75b9f7897b64cec98cc7",
+              firstName: "Kit Nicholas",
+              middleName: "Rish",
+              lastName: "Aganan",
+              email: "paraaaaaaaaaent@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "6830d880779e20b64f720f44",
+              firstName: "Kit Nicholas",
+              middleName: "Pascual",
+              lastName: "Caram",
+              email: "teacher65@gmail.com",
+              contact: "09155933015"
+            },
+            {
+              _id: "6835ef1645a2af9158a6d5b7",
+              firstName: "Pia",
+              middleName: "Zop",
+              lastName: "Rey",
+              email: "markcaram47@icloud.comm",
+              contact: "09155933015"
+            }
+          ];
+        }
+        
+        res.json(parentProfiles);
+      } catch (error) {
+        console.error('[SERVER] Error in bulk parent profiles:', error);
+        res.status(500).json({ error: 'Server error retrieving parent profiles' });
+      }
+    });
+
+    // Get main assessment questions by reading level
+    app.get('/api/main-assessment', async (req, res) => {
+      try {
+        const { readingLevel } = req.query;
+        
+        if (!readingLevel) {
+          return res.status(400).json({ message: 'Reading level parameter is required' });
+        }
+        
+        // Get the test database
+        const testDb = mongoose.connection.useDb('test');
+        const mainAssessmentCollection = testDb.collection('main_assessment');
+        
+        // Find all assessment items for this reading level
+        const assessmentItems = await mainAssessmentCollection
+          .find({ readingLevel })
+          .toArray();
+        
+        if (!assessmentItems || assessmentItems.length === 0) {
+          return res.status(404).json({ 
+            message: `No assessment items found for reading level: ${readingLevel}` 
+          });
+        }
+        
+        return res.json(assessmentItems);
+      } catch (error) {
+        console.error('Error fetching main assessment data:', error);
+        res.status(500).json({ 
+          message: 'Error fetching main assessment data', 
+          error: error.message 
+        });
+      }
+    });
+
+    // Also add the endpoint to the student routes for alternative access
+    app.get('/api/student/main-assessment', async (req, res) => {
+      try {
+        const { readingLevel } = req.query;
+        
+        if (!readingLevel) {
+          return res.status(400).json({ message: 'Reading level parameter is required' });
+        }
+        
+        // Get the test database
+        const testDb = mongoose.connection.useDb('test');
+        const mainAssessmentCollection = testDb.collection('main_assessment');
+        
+        // Find all assessment items for this reading level
+        const assessmentItems = await mainAssessmentCollection
+          .find({ readingLevel })
+          .toArray();
+        
+        if (!assessmentItems || assessmentItems.length === 0) {
+          // Provide fallback data if no items found
+          const fallbackItems = [
+            {
+              readingLevel,
+              category: "Phonological Awareness",
+              questions: [
+                {
+                  questionType: "malapantig",
+                  questionText: "Kapag pinagsama ang mga pantig, ano ang mabubuo?",
+                  questionValue: "BO + LA",
+                  choiceOptions: [
+                    { optionText: "BOLA", isCorrect: true },
+                    { optionText: "LABO", isCorrect: false }
+                  ],
+                  order: 1
+                }
+              ]
+            }
+          ];
+          return res.json(fallbackItems);
+        }
+        
+        return res.json(assessmentItems);
+      } catch (error) {
+        console.error('Error fetching main assessment data:', error);
+        res.status(500).json({ 
+          message: 'Error fetching main assessment data', 
+          error: error.message 
+        });
+      }
+    });
+
+    // Register new Admin/categoryResults route
+    const categoryResultsRoutes = require('./routes/Admin/categoryResults');
+    app.use('/api/admin', categoryResultsRoutes);
+
+    // Register new Admin/assessmentResults route
+    const assessmentResultsRoutes = require('./routes/Admin/assessmentResults');
+    app.use('/api/admin', assessmentResultsRoutes);
+    // Load IEP routes
+    try {
+      const iepRoutes = require('./routes/Teachers/ManageProgress/iepRoutes');
+      app.use('/api/iep', iepRoutes);
+      console.log('✅ Loaded IEP routes at /api/iep/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load IEP routes:', error.message);
+    }
+
+    // Load upload routes
+    try {
+      const uploadRoutes = require('./routes/uploadRoutes');
+      app.use('/api/uploads', uploadRoutes);
+      console.log('✅ Loaded upload routes at /api/uploads/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load upload routes:', error.message);
+    }
 
     // 404 handler
     app.use((req, res) => {
@@ -699,16 +1065,16 @@ connectDB().then(async (connected) => {
       res.status(500).json({ error: 'Server error', message: err.message });
     });
 
-    // Start the server
-    app.listen(PORT, () => {
-      console.log(`\n✅ Server is running on port ${PORT}`);
-      console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-      console.log(`API URL: http://localhost:${PORT}`);
-    });
-
   } catch (error) {
     console.error('Error registering routes:', error);
     console.error('Error details:', error.stack);
     process.exit(1);
   }
+});
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`\n✅ Server is running on port ${PORT}`);
+  console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  console.log(`API URL: http://localhost:${PORT}`);
 });

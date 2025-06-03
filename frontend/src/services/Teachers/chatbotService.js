@@ -11,7 +11,7 @@ const getBackendUrl = () => {
     // Use the current host as fallback
     return window.location.origin.replace('3000', '5001');
   }
-  return 'http://localhost:5001';
+  return 'https://literexia.onrender.com/';
 };
 
 const BACKEND_URL =
@@ -256,3 +256,13 @@ export const getCategoryContext = (category, language) => {
   
   return contexts[language][category] || "";
 };
+
+// Create a service object with all exported functions
+const chatbotService = {
+  generateResponse,
+  formatResponse,
+  getFollowUpQuestions,
+  getCategoryContext
+};
+
+export default chatbotService;

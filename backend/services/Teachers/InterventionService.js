@@ -2,13 +2,13 @@
 const mongoose = require('mongoose');
 const InterventionPlan = require('../../models/Teachers/ManageProgress/interventionPlanModel');
 const InterventionProgress = require('../../models/Teachers/ManageProgress/interventionProgressModel');
-const InterventionResponse = require('../../models/Teachers/ManageProgress/interventionResponseModel');
 const TemplateQuestion = require('../../models/Teachers/ManageProgress/templatesQuestionsModel');
 const TemplateChoice = require('../../models/Teachers/ManageProgress/templatesChoicesModel');
 const SentenceTemplate = require('../../models/Teachers/ManageProgress/sentenceTemplateModel');
 const PrescriptiveAnalysis = require('../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
 const User = require('../../models/userModel');
 const s3Client = require('../../config/s3');
+const CategoryResultsService = require('./CategoryResultsService');
 
 class InterventionService {
   /**
@@ -18,41 +18,60 @@ class InterventionService {
    */
   async getStudentInterventions(studentId) {
     try {
-      // Convert string ID to ObjectId if needed
-      let studentObjectId;
+      console.log(`Fetching interventions for student: ${studentId}`);
+      
+      let query = {};
+      
+      // Handle different types of student IDs
       if (mongoose.Types.ObjectId.isValid(studentId)) {
-        studentObjectId = new mongoose.Types.ObjectId(studentId);
+        // If it's a valid ObjectId, use it directly
+        query = { studentId: new mongoose.Types.ObjectId(studentId) };
       } else {
-        // Try to find user by idNumber
+        // Try to find the user by idNumber
         const user = await User.findOne({ idNumber: studentId });
-        if (!user) {
-          throw new Error('Student not found');
+        
+        if (user) {
+          // If user found, use their ObjectId
+          query = { studentId: user._id };
+        } else {
+          // If no user found, try using the original studentId
+          query = { studentId };
         }
-        studentObjectId = user._id;
       }
       
-      const interventions = await InterventionPlan.find({ studentId: studentObjectId })
-        .sort({ createdAt: -1 });
+      console.log('Query for interventions:', JSON.stringify(query));
       
-      // Fetch progress for each intervention
-      const interventionsWithProgress = await Promise.all(
-        interventions.map(async (intervention) => {
-          const progress = await InterventionProgress.findOne({ 
-            interventionPlanId: intervention._id,
-            studentId: studentObjectId
-          });
+      // Find all interventions for this student
+      const interventions = await InterventionPlan.find(query)
+        .sort({ createdAt: -1 })
+        .lean();
+      
+      console.log(`Found ${interventions.length} interventions for student ${studentId}`);
+      
+      // Get progress for each intervention
+      const interventionsWithProgress = await Promise.all(interventions.map(async (intervention) => {
+        try {
+          const progress = await InterventionProgress.findOne({
+            interventionPlanId: intervention._id
+          }).lean();
           
           return {
-            ...intervention.toObject(),
-            progress: progress ? progress.toObject() : null
+            ...intervention,
+            progress: progress || null
           };
-        })
-      );
+        } catch (error) {
+          console.error(`Error fetching progress for intervention ${intervention._id}:`, error);
+          return {
+            ...intervention,
+            progress: null
+          };
+        }
+      }));
       
       return interventionsWithProgress;
     } catch (error) {
-      console.error('Error fetching student interventions:', error);
-      throw error;
+      console.error(`Error fetching interventions for student ${studentId}:`, error);
+      return [];
     }
   }
   
@@ -98,19 +117,26 @@ class InterventionService {
     try {
       // Convert string ID to ObjectId if needed
       let studentObjectId;
+      let query = {};
+      
       if (mongoose.Types.ObjectId.isValid(studentId)) {
         studentObjectId = new mongoose.Types.ObjectId(studentId);
+        query = { studentId: studentObjectId };
       } else {
         // Try to find user by idNumber
         const user = await User.findOne({ idNumber: studentId });
-        if (!user) {
-          throw new Error('Student not found');
+        if (user) {
+          studentObjectId = user._id;
+          query = { studentId: studentObjectId };
+        } else {
+          // If no user found, use the original studentId
+          query = { studentId };
         }
-        studentObjectId = user._id;
       }
       
+      // Find intervention by studentId and category
       const existingIntervention = await InterventionPlan.findOne({
-        studentId: studentObjectId,
+        ...query,
         category: category
       });
       
@@ -131,33 +157,116 @@ class InterventionService {
    */
   async createIntervention(interventionData) {
     try {
-      // Convert string ID to ObjectId if needed
-      if (typeof interventionData.studentId === 'string') {
-        if (mongoose.Types.ObjectId.isValid(interventionData.studentId)) {
-          interventionData.studentId = new mongoose.Types.ObjectId(interventionData.studentId);
-        } else {
-          // Try to find user by idNumber
-          const user = await User.findOne({ idNumber: interventionData.studentId });
-          if (!user) {
-            throw new Error('Student not found');
-          }
-          interventionData.studentId = user._id;
+      console.log('Creating intervention with data:', JSON.stringify(interventionData, null, 2));
+      
+      // Validate student ID
+      if (!interventionData.studentId || !mongoose.Types.ObjectId.isValid(interventionData.studentId)) {
+        throw new Error('Invalid student ID');
+      }
+      
+      // Check if student exists
+      const student = await User.findById(interventionData.studentId);
+      if (!student) {
+        throw new Error('Student not found');
+      }
+      
+      // Add student number from the user record
+      if (student.idNumber) {
+        interventionData.studentNumber = student.idNumber;
+        console.log(`Added student number ${student.idNumber} to intervention data`);
+      }
+      
+      // Ensure prescriptiveAnalysisId is a valid ObjectId or null
+      if (interventionData.prescriptiveAnalysisId) {
+        if (!mongoose.Types.ObjectId.isValid(interventionData.prescriptiveAnalysisId)) {
+          console.warn('Invalid prescriptiveAnalysisId format, setting to null:', interventionData.prescriptiveAnalysisId);
+          interventionData.prescriptiveAnalysisId = null;
         }
       }
       
-      // Check if an intervention already exists for this student and category
-      const existingCheck = await this.checkExistingIntervention(
-        interventionData.studentId, 
-        interventionData.category
-      );
+      // If categoryResultId is not provided, try to find the most recent category result
+      if (!interventionData.categoryResultId) {
+        try {
+          console.log('Finding most recent category result for student:', interventionData.studentId);
+          
+          // Use the CategoryResultsService to find the most recent category result
+          const categoryResult = await CategoryResultsService.getCategoryResultByCategory(
+            interventionData.studentId,
+            interventionData.category
+          );
+          
+          if (categoryResult) {
+            console.log(`Found category result ${categoryResult._id} for student ${interventionData.studentId} and category ${interventionData.category}`);
+            interventionData.categoryResultId = categoryResult._id;
+          } else {
+            console.log(`No category result found for student ${interventionData.studentId} and category ${interventionData.category}`);
+          }
+        } catch (error) {
+          console.error('Error finding category result:', error);
+          // Continue with intervention creation even if category result lookup fails
+        }
+      }
       
-      if (existingCheck.exists) {
-        throw new Error('An intervention for this student and category already exists');
+      // Create intervention progress record first
+      let interventionProgress = null;
+      try {
+        interventionProgress = new InterventionProgress({
+          studentId: interventionData.studentId,
+          completedActivities: 0,
+          totalActivities: interventionData.questions?.length || 0,
+          correctAnswers: 0,
+          incorrectAnswers: 0,
+          percentComplete: 0,
+          percentCorrect: 0,
+          passedThreshold: false
+        });
+        console.log('Created InterventionProgress object:', interventionProgress);
+      } catch (progressError) {
+        console.error('Error creating progress record object:', progressError);
+        // Continue with intervention creation even if progress record creation fails
       }
       
       // Create the intervention
+      console.log('Attempting to create intervention with model:', InterventionPlan.modelName);
       const intervention = new InterventionPlan(interventionData);
-      await intervention.save();
+      
+      // Save intervention first
+      try {
+        console.log('Saving intervention document...');
+        await intervention.save();
+        console.log('Intervention saved successfully with ID:', intervention._id);
+      } catch (saveError) {
+        console.error('Error saving intervention:', saveError);
+        
+        // Provide more detailed error information for debugging
+        if (saveError.name === 'ValidationError') {
+          Object.keys(saveError.errors).forEach(field => {
+            console.error(`Validation error for field '${field}':`, saveError.errors[field].message);
+          });
+        } else if (saveError.name === 'CastError') {
+          console.error('Cast error details:', {
+            path: saveError.path,
+            value: saveError.value,
+            kind: saveError.kind
+          });
+        }
+        
+        throw saveError; // Re-throw the error after logging details
+      }
+      
+      // Only save progress record if intervention was saved successfully and progress record was created
+      if (interventionProgress) {
+        try {
+          // Update the progress record with the intervention ID
+          interventionProgress.interventionPlanId = intervention._id;
+          await interventionProgress.save();
+          console.log('Progress record saved successfully with ID:', interventionProgress._id);
+        } catch (progressSaveError) {
+          console.error('Error saving progress record:', progressSaveError);
+          // Don't fail the entire operation if only the progress record fails
+          // Just log the error and continue
+        }
+      }
       
       return intervention;
     } catch (error) {
@@ -169,7 +278,7 @@ class InterventionService {
   /**
    * Update an existing intervention
    * @param {string} interventionId - The intervention ID
-   * @param {Object} updateData - The data to update
+   * @param {Object} updateData - The update data
    * @returns {Promise<Object>} - The updated intervention
    */
   async updateIntervention(interventionId, updateData) {
@@ -178,31 +287,92 @@ class InterventionService {
         throw new Error('Invalid intervention ID format');
       }
       
-      // Find and update the intervention
-      const intervention = await InterventionPlan.findByIdAndUpdate(
-        interventionId,
-        { $set: { ...updateData, updatedAt: new Date() } },
-        { new: true, runValidators: true }
-      );
+      console.log(`Updating intervention ${interventionId} with data:`, JSON.stringify(updateData, null, 2));
       
-      if (!intervention) {
+      // Find the existing intervention
+      const existingIntervention = await InterventionPlan.findById(interventionId);
+      
+      if (!existingIntervention) {
         throw new Error('Intervention not found');
       }
       
-      // If questions were updated, update the total activities in progress
-      if (updateData.questions) {
-        await InterventionProgress.findOneAndUpdate(
-          { interventionPlanId: interventionId },
-          { 
-            $set: { 
-              totalActivities: updateData.questions.length,
-              updatedAt: new Date()
-            } 
-          }
-        );
+      // Verify the student exists
+      if (updateData.studentId) {
+        const student = await User.findById(updateData.studentId);
+        if (!student) {
+          throw new Error('Student not found');
+        }
+        
+        // Update studentNumber if student ID is changing
+        if (student.idNumber) {
+          updateData.studentNumber = student.idNumber;
+          console.log(`Updated studentNumber to ${student.idNumber} based on new studentId`);
+        }
       }
       
-      return intervention;
+      // If questions are being updated, make sure descriptions are maintained
+      if (updateData.questions && Array.isArray(updateData.questions)) {
+        updateData.questions = updateData.questions.map(question => {
+          if (question.choices && Array.isArray(question.choices)) {
+            question.choices = question.choices.map(choice => {
+              // Ensure description field exists and is properly set
+              if (!choice.description || choice.description.trim() === '') {
+                console.log(`Missing description for choice: ${choice.optionText} - adding default`);
+                
+                // Add default descriptions based on whether the choice is correct
+                if (choice.isCorrect) {
+                  choice.description = `Correct! "${choice.optionText}" is the right answer.`;
+                  console.log(`Added default correct description for choice: ${choice.optionText}`);
+                } else {
+                  choice.description = `Incorrect. Try again and listen carefully to the sound.`;
+                  
+                  // Add more specific feedback based on question type
+                  if (question.questionType === 'patinig') {
+                    choice.description = `Incorrect. This is not the right vowel sound. Listen carefully and try again.`;
+                  } else if (question.questionType === 'katinig') {
+                    choice.description = `Incorrect. This is not the right consonant sound. Listen carefully and try again.`;
+                  } else if (question.questionType === 'malapantig') {
+                    choice.description = `Incorrect. This is not the right syllable. Listen to the whole word and try again.`;
+                  } else if (question.questionType === 'word') {
+                    choice.description = `Incorrect. This is not the right word. Look at the letters carefully and try again.`;
+                  } else if (question.questionType === 'sentence') {
+                    choice.description = `Incorrect. This is not the right answer. Read the passage again carefully.`;
+                  }
+                  console.log(`Added default incorrect description for choice: ${choice.optionText}`);
+                }
+              } else {
+                console.log(`Using existing description for choice: ${choice.optionText}: "${choice.description}"`);
+              }
+              
+              return choice;
+            });
+          }
+          return question;
+        });
+        
+        // Print the final questions with descriptions
+        console.log('Final questions with descriptions:');
+        updateData.questions.forEach((question, qIndex) => {
+          console.log(`Question ${qIndex + 1}: ${question.questionText}`);
+          if (question.choices) {
+            question.choices.forEach((choice, cIndex) => {
+              console.log(`  Choice ${cIndex + 1}: ${choice.optionText} - Description: ${choice.description || 'N/A'}`);
+            });
+          }
+        });
+      }
+      
+      // Set updatedAt field
+      updateData.updatedAt = new Date();
+      
+      // Update the intervention
+      const updatedIntervention = await InterventionPlan.findByIdAndUpdate(
+        interventionId,
+        { $set: updateData },
+        { new: true }
+      );
+      
+      return updatedIntervention;
     } catch (error) {
       console.error('Error updating intervention:', error);
       throw error;
@@ -229,9 +399,6 @@ class InterventionService {
       
       // Delete associated progress
       await InterventionProgress.deleteMany({ interventionPlanId: interventionId });
-      
-      // Delete associated responses
-      await InterventionResponse.deleteMany({ interventionPlanId: interventionId });
       
       return intervention;
     } catch (error) {
@@ -323,7 +490,7 @@ class InterventionService {
     try {
       const normCategory = this.normalizeCategoryName(category);
       
-      console.log(`Querying templates_questions with category: ${normCategory}`);
+      console.log(`[DEBUG] Fetching template questions for category: ${normCategory}`);
       
       // Use direct collection access to match how main_assessment is queried
       const templates = await mongoose.connection.db
@@ -334,11 +501,12 @@ class InterventionService {
         })
         .toArray();
       
-      console.log(`Found ${templates.length} template questions`);
+      console.log(`[DEBUG] Found ${templates.length} template questions`);
+      console.log('[DEBUG] Template questions data sample:', templates.slice(0, 2));
       
       return templates;
     } catch (error) {
-      console.error('Error fetching template questions:', error);
+      console.error('[ERROR] Error fetching template questions:', error);
       throw error;
     }
   }
@@ -354,11 +522,28 @@ class InterventionService {
       
       if (choiceTypes && choiceTypes.length > 0) {
         query.choiceType = { $in: choiceTypes };
+        console.log(`[DEBUG] Fetching template choices for types: ${choiceTypes.join(', ')}`);
+      } else {
+        console.log('[DEBUG] Fetching all active template choices');
       }
       
-      return await TemplateChoice.find(query);
+      const choices = await TemplateChoice.find(query);
+      
+      console.log(`[DEBUG] Found ${choices.length} template choices`);
+      if (choices.length > 0) {
+        console.log('[DEBUG] Template choices data sample:', 
+          choices.slice(0, 2).map(c => ({ 
+            id: c._id, 
+            type: c.choiceType, 
+            value: c.choiceValue, 
+            soundText: c.soundText 
+          }))
+        );
+      }
+      
+      return choices;
     } catch (error) {
-      console.error('Error fetching template choices:', error);
+      console.error('[ERROR] Error fetching template choices:', error);
       throw error;
     }
   }
@@ -372,13 +557,29 @@ class InterventionService {
     try {
       const normReadingLevel = this.normalizeReadingLevel(readingLevel);
       
+      console.log(`[DEBUG] Fetching sentence templates for reading level: ${normReadingLevel}`);
+      
       // Use the correct model - make sure SentenceTemplate is imported
-      return await SentenceTemplate.find({
+      const templates = await SentenceTemplate.find({
         readingLevel: normReadingLevel,
         isActive: true
       });
+      
+      console.log(`[DEBUG] Found ${templates.length} sentence templates`);
+      if (templates.length > 0) {
+        console.log('[DEBUG] Sentence templates data sample:', 
+          templates.slice(0, 1).map(t => ({ 
+            id: t._id, 
+            title: t.title,
+            pages: t.sentenceText.length,
+            questions: t.sentenceQuestions.length
+          }))
+        );
+      }
+      
+      return templates;
     } catch (error) {
-      console.error('Error fetching sentence templates:', error);
+      console.error('[ERROR] Error fetching sentence templates:', error);
       throw error;
     }
   }
@@ -390,14 +591,13 @@ class InterventionService {
    */
   async createTemplateQuestion(templateData) {
     try {
-      console.log('Creating template question with data:', templateData);
+      console.log('[DEBUG] Creating template question with data:', templateData);
       
       // Ensure the category is properly normalized
       templateData.category = this.normalizeCategoryName(templateData.category);
       
       // Set default values for required fields if not provided
       if (!templateData.isActive) templateData.isActive = true;
-      if (!templateData.isApproved) templateData.isApproved = true;
       if (!templateData.createdAt) templateData.createdAt = new Date();
       if (!templateData.updatedAt) templateData.updatedAt = new Date();
       
@@ -410,11 +610,11 @@ class InterventionService {
         throw new Error('Failed to insert template question');
       }
       
-      console.log(`Successfully created template question with ID: ${result.insertedId}`);
+      console.log(`[DEBUG] Successfully created template question with ID: ${result.insertedId}`);
       
       return { ...templateData, _id: result.insertedId };
     } catch (error) {
-      console.error('Error creating template question:', error);
+      console.error('[ERROR] Error creating template question:', error);
       throw error;
     }
   }
@@ -426,6 +626,8 @@ class InterventionService {
    */
   async createTemplateChoice(choiceData) {
     try {
+      console.log('[DEBUG] Creating template choice with data:', choiceData);
+      
       // Clean up empty strings to be null
       if (choiceData.soundText === '') {
         choiceData.soundText = null;
@@ -441,9 +643,18 @@ class InterventionService {
       
       const newChoice = new TemplateChoice(choiceData);
       await newChoice.save();
+      
+      console.log(`[DEBUG] Successfully created template choice with ID: ${newChoice._id}`);
+      console.log('[DEBUG] New choice data:', {
+        id: newChoice._id,
+        type: newChoice.choiceType,
+        value: newChoice.choiceValue,
+        soundText: newChoice.soundText
+      });
+      
       return newChoice;
     } catch (error) {
-      console.error('Error creating template choice:', error);
+      console.error('[ERROR] Error creating template choice:', error);
       throw error;
     }
   }
@@ -470,12 +681,15 @@ class InterventionService {
       // Create a unique key for the file with the target folder
       const key = `${targetFolder}/${Date.now()}_${sanitizedFileName}`;
       
+      // Set S3 parameters for pre-signed URL
+      // Note: We need to include ACL in the S3 params (not as a header)
+      // This ensures the ACL is signed with the URL and the file becomes public after upload
       const s3Params = {
         Bucket: bucketName,
         Key: key,
         ContentType: fileType,
         Expires: 300, // URL expires in 5 minutes
-        ACL: 'public-read' // Make the uploaded file publicly accessible
+        ACL: 'public-read' // Include ACL in pre-signed params, not as a separate header
       };
       
       console.log('Generating presigned URL with params:', {
@@ -568,6 +782,43 @@ class InterventionService {
     try {
       // Create the response record
       const response = new InterventionResponse(responseData);
+      
+      // Get intervention to determine total questions and get feedback
+      const intervention = await InterventionPlan.findById(responseData.interventionPlanId);
+      
+      if (!intervention) {
+        throw new Error('Intervention not found');
+      }
+      
+      // Get student number from intervention or from user
+      if (intervention.studentNumber) {
+        response.studentNumber = intervention.studentNumber;
+      } else {
+        // Try to find the student to get their ID number
+        const student = await User.findById(responseData.studentId);
+        if (student && student.idNumber) {
+          response.studentNumber = student.idNumber;
+          
+          // Also update the intervention with the student number
+          await InterventionPlan.findByIdAndUpdate(
+            intervention._id,
+            { $set: { studentNumber: student.idNumber } }
+          );
+        }
+      }
+      
+      // Find the question and choice to get the description
+      if (intervention.questions && Array.isArray(intervention.questions)) {
+        const question = intervention.questions.find(q => q.questionId === responseData.questionId);
+        if (question && question.choices && Array.isArray(question.choices)) {
+          const choice = question.choices.find(c => c.optionText === responseData.selectedChoice);
+          if (choice && choice.description) {
+            // Add the description to the response
+            response.feedbackDescription = choice.description;
+          }
+        }
+      }
+      
       await response.save();
       
       // Update progress
@@ -578,13 +829,6 @@ class InterventionService {
       
       if (!progress) {
         throw new Error('Progress record not found');
-      }
-      
-      // Get intervention to determine total questions
-      const intervention = await InterventionPlan.findById(responseData.interventionPlanId);
-      
-      if (!intervention) {
-        throw new Error('Intervention not found');
       }
       
       // Update progress metrics
@@ -617,6 +861,118 @@ class InterventionService {
       return { response, progress };
     } catch (error) {
       console.error('Error recording response:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Update all existing interventions to add descriptions and link to prescriptive analyses
+   * @returns {Promise<Object>} - Result of the update operation
+   */
+  async updateExistingInterventions() {
+    try {
+      // Get all interventions
+      const interventions = await InterventionPlan.find({});
+      console.log(`Found ${interventions.length} interventions to check and update`);
+      
+      let updatedCount = 0;
+      let prescriptiveAnalysisLinkedCount = 0;
+      let choiceDescriptionsAddedCount = 0;
+      
+      // Process each intervention
+      for (const intervention of interventions) {
+        let needsUpdate = false;
+        let interventionData = intervention.toObject();
+        
+        // Check if prescriptiveAnalysisId is missing
+        if (!intervention.prescriptiveAnalysisId) {
+          const prescriptiveAnalysis = await PrescriptiveAnalysis.findOne({
+            studentId: intervention.studentId,
+            categoryId: intervention.category
+          });
+          
+          if (prescriptiveAnalysis) {
+            console.log(`Found matching prescriptive analysis for intervention ${intervention._id}: ${prescriptiveAnalysis._id}`);
+            interventionData.prescriptiveAnalysisId = prescriptiveAnalysis._id;
+            needsUpdate = true;
+            prescriptiveAnalysisLinkedCount++;
+          }
+        }
+        
+        // Check if descriptions are missing in choices
+        if (intervention.questions && Array.isArray(intervention.questions)) {
+          let questionsUpdated = false;
+          
+          interventionData.questions = intervention.questions.map(question => {
+            let questionObj = question.toObject ? question.toObject() : { ...question };
+            
+            if (questionObj.choices && Array.isArray(questionObj.choices)) {
+              let choicesUpdated = false;
+              
+              questionObj.choices = questionObj.choices.map(choice => {
+                let choiceObj = choice.toObject ? choice.toObject() : { ...choice };
+                
+                if (!choiceObj.description) {
+                  // Add default descriptions based on whether the choice is correct
+                  if (choiceObj.isCorrect) {
+                    choiceObj.description = `Correct! "${choiceObj.optionText}" is the right answer.`;
+                  } else {
+                    choiceObj.description = `Incorrect. Try again and listen carefully to the sound.`;
+                    
+                    // Add more specific feedback based on question type
+                    if (questionObj.questionType === 'patinig') {
+                      choiceObj.description = `Incorrect. This is not the right vowel sound. Listen carefully and try again.`;
+                    } else if (questionObj.questionType === 'katinig') {
+                      choiceObj.description = `Incorrect. This is not the right consonant sound. Listen carefully and try again.`;
+                    } else if (questionObj.questionType === 'malapantig') {
+                      choiceObj.description = `Incorrect. This is not the right syllable. Listen to the whole word and try again.`;
+                    } else if (questionObj.questionType === 'word') {
+                      choiceObj.description = `Incorrect. This is not the right word. Look at the letters carefully and try again.`;
+                    } else if (questionObj.questionType === 'sentence') {
+                      choiceObj.description = `Incorrect. This is not the right answer. Read the passage again carefully.`;
+                    }
+                  }
+                  
+                  choicesUpdated = true;
+                  choiceDescriptionsAddedCount++;
+                }
+                
+                return choiceObj;
+              });
+              
+              if (choicesUpdated) {
+                questionsUpdated = true;
+              }
+            }
+            
+            return questionObj;
+          });
+          
+          if (questionsUpdated) {
+            needsUpdate = true;
+          }
+        }
+        
+        // Update the intervention if needed
+        if (needsUpdate) {
+          await InterventionPlan.findByIdAndUpdate(
+            intervention._id,
+            { $set: { ...interventionData, updatedAt: new Date() } },
+            { runValidators: true }
+          );
+          
+          updatedCount++;
+        }
+      }
+      
+      return {
+        totalInterventions: interventions.length,
+        updatedInterventions: updatedCount,
+        prescriptiveAnalysisLinked: prescriptiveAnalysisLinkedCount,
+        choiceDescriptionsAdded: choiceDescriptionsAddedCount
+      };
+    } catch (error) {
+      console.error('Error updating existing interventions:', error);
       throw error;
     }
   }

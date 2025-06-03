@@ -1,11 +1,15 @@
 // src/services/StudentApiService.js
 import axios from 'axios';
 
+// Detect production environment
+const isProd = import.meta.env.PROD;
+
+// API base URL configuration that works in both dev and production
+const API_BASE = import.meta.env.VITE_API_URL || (isProd ? '' : 'https://literexia.onrender.com/');
+
 // Create axios instance with baseURL, timeouts, JSON headers
 const api = axios.create({
-  baseURL: import.meta.env.DEV
-    ? 'http://localhost:5001/api/student'
-    : '/api/student',
+  baseURL: `${API_BASE}/api/student`,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -15,9 +19,7 @@ const api = axios.create({
 
 // Create a separate instance for direct backend calls
 const directApi = axios.create({
-  baseURL: import.meta.env.DEV
-    ? 'http://localhost:5001/api'
-    : '/api',
+  baseURL: `${API_BASE}/api`,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -109,6 +111,58 @@ directApi.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Fallback parent data for production use
+const FALLBACK_PARENTS = [
+  {
+    _id: "681a2933af165878136e05da",
+    firstName: "Jan Mark",
+    middleName: "Percival",
+    lastName: "Caram",
+    email: "parent@gmail.com",
+    contact: "09155933015"
+  },
+  {
+    _id: "6827575c89b0d728f9333a20",
+    firstName: "Kit Nicholas",
+    middleName: "Tongol",
+    lastName: "Santiago",
+    email: "parent2@gmail.com",
+    contact: "09155933015"
+  },
+  {
+    _id: "682ca15af0bfb8e632bdfd13",
+    firstName: "Rain",
+    middleName: "Percival",
+    lastName: "Aganan",
+    email: "parentrain@gmail.com",
+    contact: "09155933015"
+  },
+  {
+    _id: "682d75b9f7897b64cec98cc7",
+    firstName: "Kit Nicholas",
+    middleName: "Rish",
+    lastName: "Aganan",
+    email: "paraaaaaaaaaent@gmail.com",
+    contact: "09155933015"
+  },
+  {
+    _id: "6830d880779e20b64f720f44",
+    firstName: "Kit Nicholas",
+    middleName: "Pascual",
+    lastName: "Caram",
+    email: "teacher65@gmail.com",
+    contact: "09155933015"
+  },
+  {
+    _id: "6835ef1645a2af9158a6d5b7",
+    firstName: "Pia",
+    middleName: "Zop",
+    lastName: "Rey",
+    email: "markcaram47@icloud.comm",
+    contact: "09155933015"
+  }
+];
 
 // StudentApiService object with methods
 const StudentApiService = {
@@ -210,11 +264,27 @@ const StudentApiService = {
       
       console.log(`Fetching parent profile for ID: ${parentId}`);
       
-      // Try the main endpoint first
+      // In production, use fallback data directly to avoid unnecessary API calls
+      if (isProd) {
+        // Find the parent in fallback data
+        const fallbackParent = FALLBACK_PARENTS.find(p => p._id === parentId);
+        if (fallbackParent) {
+          console.log("Using fallback parent data in production for ID:", parentId);
+          // Process name fields
+          if (fallbackParent.firstName || fallbackParent.lastName) {
+            let fullName = fallbackParent.firstName || '';
+            if (fallbackParent.middleName) fullName += ` ${fallbackParent.middleName}`;
+            if (fallbackParent.lastName) fullName += ` ${fallbackParent.lastName}`;
+            fallbackParent.name = fullName.trim();
+          }
+          return fallbackParent;
+        }
+      }
+      
+      // For development, try the real endpoints
       try {
-        const { data } = await directApi.get(`/parents/profile/${parentId}`);
+        const { data } = await directApi.get(`/parent-by-id/${parentId}`);
         
-        // If data is returned correctly, process it to ensure consistent format
         if (data) {
           console.log("Parent profile data received:", data);
           
@@ -233,15 +303,34 @@ const StudentApiService = {
         
         // Try fallback endpoint
         try {
-          const { data } = await directApi.get(`/dashboard/parent/${parentId}`);
-          if (data) {
-            console.log("Parent profile data received from fallback:", data);
-            return data;
+          const { data } = await directApi.get(`/parent-profiles`);
+          if (data && Array.isArray(data)) {
+            // Find the parent in the array of all parents
+            const parentData = data.find(parent => parent._id === parentId);
+            if (parentData) {
+              console.log("Parent profile data found in parent-profiles endpoint:", parentData);
+              return parentData;
+            }
           }
         } catch (fallbackError) {
           console.warn(`Fallback parent endpoint failed for ID ${parentId}:`, fallbackError);
-          // Let it continue to the error handling below
         }
+      }
+      
+      // If all API calls fail, use fallback data
+      const fallbackParent = FALLBACK_PARENTS.find(p => p._id === parentId);
+      if (fallbackParent) {
+        console.log("Using fallback parent data after API failures for ID:", parentId);
+        
+        // Process name fields
+        if (fallbackParent.firstName || fallbackParent.lastName) {
+          let fullName = fallbackParent.firstName || '';
+          if (fallbackParent.middleName) fullName += ` ${fallbackParent.middleName}`;
+          if (fallbackParent.lastName) fullName += ` ${fallbackParent.lastName}`;
+          fallbackParent.name = fullName.trim();
+        }
+        
+        return fallbackParent;
       }
       
       throw new Error('No data returned from parent profile API');
@@ -530,83 +619,73 @@ const StudentApiService = {
   // Static lookup endpoints
   getGradeLevels: async () => {
     try {
-      // First, try to get grade levels from the API
+      // Get grade levels directly from users collection
       try {
-        // Fix: Use the correct endpoint path with no leading slash
-        const { data } = await api.get('grade-levels');
-        console.log("Successfully fetched grade levels from API:", data);
-        return data;
-      } catch (apiError) {
-        console.warn('Error fetching grade levels from API, trying dashboard API:', apiError);
+        // Get all students and extract unique grade levels
+        const { data: studentsData } = await api.get('/students', { params: { limit: 100 } });
         
-        // Try alternate endpoint
-        try {
-          const { data } = await directApi.get('/dashboard/grade-levels');
-          console.log("Successfully fetched grade levels from dashboard API:", data);
-          return data;
-        } catch (dashboardError) {
-          console.warn('Error fetching grade levels from dashboard API, using static fallback:', dashboardError);
+        if (studentsData && studentsData.students && studentsData.students.length > 0) {
+          console.log("Extracting grade levels from students data");
+          
+          // Extract unique grade levels from students
+          const gradeLevelsSet = new Set();
+          
+          studentsData.students.forEach(student => {
+            if (student.gradeLevel) {
+              gradeLevelsSet.add(student.gradeLevel);
+            }
+          });
+          
+          const uniqueLevels = Array.from(gradeLevelsSet);
+          console.log("Successfully extracted grade levels from students:", uniqueLevels);
+          return uniqueLevels;
         }
-        
-        // If all API endpoints fail, use the static fallback
-        return [
-          'Kindergarten',
-          'Grade 1',
-          'Grade 2',
-          'Grade 3',
-          'Grade 4',
-          'Grade 5',
-          'Grade 6'
-        ];
+      } catch (error) {
+        console.warn('Error extracting grade levels from users collection:', error);
       }
+      
+      // If extraction failed, return empty array
+      return [];
     } catch (error) {
-      // Fallback to static list
+      // Fallback to empty array
       console.warn('Error fetching grade levels:', error);
-      return ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'];
+      return [];
     }
   },
 
   getReadingLevels: async () => {
     try {
-      // First, try to get reading levels from the API
+      // Get reading levels directly from users collection
       try {
-        // Fix: Use the correct endpoint path with no leading slash
-        const { data } = await api.get('reading-levels');
-        console.log("Successfully fetched reading levels from API:", data);
-        return data;
-      } catch (apiError) {
-        console.warn('Error fetching reading levels from API, using fallback:', apiError);
+        // Get all students and extract unique reading levels
+        const { data: studentsData } = await api.get('/students', { params: { limit: 100 } });
         
-        // Try alternate endpoint
-        try {
-          const { data } = await directApi.get('/dashboard/reading-levels');
-          console.log("Successfully fetched reading levels from dashboard API:", data);
-          return data;
-        } catch (dashboardError) {
-          console.warn('Error fetching reading levels from dashboard API, using static fallback:', dashboardError);
+        if (studentsData && studentsData.students && studentsData.students.length > 0) {
+          console.log("Extracting reading levels from students data");
+          
+          // Extract unique reading levels from students
+          const readingLevelsSet = new Set();
+          
+          studentsData.students.forEach(student => {
+            if (student.readingLevel) {
+              readingLevelsSet.add(student.readingLevel);
+            }
+          });
+          
+          const uniqueLevels = Array.from(readingLevelsSet);
+          console.log("Successfully extracted reading levels from students:", uniqueLevels);
+          return uniqueLevels;
         }
-        
-        // If all API endpoints fail, use the static fallback
-        return [
-          'Low Emerging',
-          'High Emerging',
-          'Developing',
-          'Transitioning',
-          'At Grade Level',
-          'Not Assessed'
-        ];
+      } catch (error) {
+        console.warn('Error extracting reading levels from users collection:', error);
       }
+      
+      // If extraction failed, return empty array
+      return [];
     } catch (error) {
       console.error('Error in getReadingLevels function:', error);
-      // Final fallback to ensure we always return something
-      return [
-        'Low Emerging',
-        'High Emerging',
-        'Developing',
-        'Transitioning',
-        'At Grade Level',
-        'Not Assessed'
-      ];
+      // Fallback to empty array
+      return [];
     }
   },
 
@@ -637,91 +716,37 @@ const StudentApiService = {
   // Get sections/classes
   getSections: async () => {
     try {
-      // First, try to get sections from the API
+      // Get sections directly from users collection
       try {
-        // Fix: Use the correct endpoint path with no leading slash
-        const { data } = await api.get('sections');
-        console.log("Successfully fetched sections from API:", data);
-        return data;
-      } catch (apiError) {
-        console.warn('Error fetching sections from API, trying dashboard API:', apiError);
+        // Get all students and extract unique sections
+        const { data: studentsData } = await api.get('/students', { params: { limit: 100 } });
         
-        // Try alternate endpoint
-        try {
-          const { data } = await directApi.get('/dashboard/sections');
-          console.log("Successfully fetched sections from dashboard API:", data);
-          return data;
-        } catch (dashboardError) {
-          console.warn('Error fetching sections from dashboard API, trying users collection:', dashboardError);
+        if (studentsData && studentsData.students && studentsData.students.length > 0) {
+          console.log("Extracting sections from students data");
           
-          // Try to get sections from the users collection
-          try {
-            // Get all students and extract unique sections
-            const { data: studentsData } = await api.get('/students', { params: { limit: 100 } });
-            
-            if (studentsData && studentsData.students && studentsData.students.length > 0) {
-              console.log("Extracting sections from students data");
-              
-              // Extract unique sections from students
-              const sectionsSet = new Set();
-              
-              studentsData.students.forEach(student => {
-                if (student.section) {
-                  sectionsSet.add(student.section);
-                }
-              });
-              
-              const uniqueSections = Array.from(sectionsSet);
-              
-              // If we found sections, return them
-              if (uniqueSections.length > 0) {
-                console.log("Successfully extracted sections from students:", uniqueSections);
-                return uniqueSections;
-              }
-            }
-          } catch (usersError) {
-            console.warn('Error extracting sections from users collection:', usersError);
-            // Continue to fallback
-          }
+          // Extract unique sections from students
+          const sectionsSet = new Set();
           
-          // If we couldn't get sections from the users collection, try the users API directly
-          try {
-            const { data: usersData } = await directApi.get('/users/sections');
-            if (Array.isArray(usersData)) {
-              console.log("Successfully fetched sections from users API:", usersData);
-              return usersData;
+          studentsData.students.forEach(student => {
+            if (student.section) {
+              sectionsSet.add(student.section);
             }
-          } catch (usersApiError) {
-            console.warn('Error fetching sections from users API:', usersApiError);
-            // Continue to fallback
-          }
+          });
+          
+          const uniqueSections = Array.from(sectionsSet);
+          console.log("Successfully extracted sections from students:", uniqueSections);
+          return uniqueSections;
         }
-        
-        // If all API endpoints fail, use the static fallback
-        return [
-          'Sampaguita', 
-          'Rosal', 
-          'Rosa', 
-          'Lily', 
-          'Orchid',
-          'Unity',
-          'Peace',
-          'Dignity'
-        ];
+      } catch (error) {
+        console.warn('Error extracting sections from users collection:', error);
       }
+      
+      // If extraction failed, return empty array
+      return [];
     } catch (error) {
-      // Fallback to static list
+      // Fallback to empty array
       console.warn('Error fetching sections:', error);
-      return [
-        'Sampaguita', 
-        'Rosal', 
-        'Rosa', 
-        'Lily', 
-        'Orchid',
-        'Unity',
-        'Peace',
-        'Dignity'
-      ];
+      return [];
     }
   },
 
@@ -729,6 +754,7 @@ const StudentApiService = {
   getCategoryResults: async (id) => {
     try {
       console.log(`Fetching category results for student ID: ${id}`);
+      
       // Use the api instance with the correct endpoint path (no leading slash)
       const { data } = await api.get(`${id}/category-results`);
       
@@ -745,7 +771,17 @@ const StudentApiService = {
           isPassed: category.isPassed || (category.score >= 75),
           passingThreshold: category.passingThreshold || 75
         }));
+        
+        // Log detailed information about the data
         console.log("Valid category data found with", data.categories.length, "categories");
+        console.log("Categories:", data.categories.map(c => 
+          `${c.categoryName}: ${c.correctAnswers}/${c.totalQuestions} (${c.score}%)`
+        ));
+        console.log("Assessment type:", data.assessmentType);
+        console.log("Assessment date:", data.assessmentDate);
+        console.log("Reading level:", data.readingLevel);
+        console.log("Is pre-assessment:", data.isPreAssessment);
+        
         return data;
       } else {
         // No meaningful data
@@ -756,6 +792,43 @@ const StudentApiService = {
       console.error(`Error fetching category results for student ${id}:`, error);
       
       // Return null in case of error
+      return null;
+    }
+  },
+
+  // Get post-assessment category results specifically
+  getPostAssessmentResults: async (id) => {
+    try {
+      console.log(`Fetching post-assessment results for student ID: ${id}`);
+      
+      // Use the api instance with the correct endpoint path and type parameter
+      // The api instance already has baseURL set to ${API_BASE}/api/student
+      const { data } = await api.get(`${id}/category-results`, {
+        params: { type: 'post-assessment' }
+      });
+      
+      console.log("Post-assessment results raw data:", data);
+      
+      // Check if we have meaningful data
+      if (data && data.categories && data.categories.length > 0) {
+        // Make sure all category objects have required properties
+        data.categories = data.categories.map(category => ({
+          categoryName: category.categoryName || 'Unknown Category',
+          totalQuestions: category.totalQuestions || 0,
+          correctAnswers: category.correctAnswers || 0,
+          score: category.score || 0,
+          isPassed: category.isPassed || (category.score >= 75),
+          passingThreshold: category.passingThreshold || 75
+        }));
+        
+        console.log("Valid post-assessment data found with", data.categories.length, "categories");
+        return data;
+      } else {
+        console.log("No valid post-assessment data found in API response");
+        return null;
+      }
+    } catch (error) {
+      console.error(`Error fetching post-assessment results for student ${id}:`, error);
       return null;
     }
   },

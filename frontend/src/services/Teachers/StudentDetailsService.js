@@ -1,11 +1,15 @@
 // src/services/Teachers/StudentDetailsService.js
 import axios from 'axios';
 
+// Detect production environment
+const isProd = import.meta.env.PROD;
+
+// API base URL configuration that works in both dev and production
+const API_BASE = import.meta.env.VITE_API_URL || (isProd ? '' : 'https://literexia.onrender.com/');
+
 // Create axios instance with baseURL, timeouts, JSON headers
 const api = axios.create({
-    baseURL: import.meta.env.DEV
-        ? 'http://localhost:5001/api/student'
-        : '/api/student',
+    baseURL: `${API_BASE}/api/student`,
     timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
@@ -15,9 +19,7 @@ const api = axios.create({
 
 // Create a separate instance for direct backend calls
 const directApi = axios.create({
-    baseURL: import.meta.env.DEV
-        ? 'http://localhost:5001/api'
-        : '/api',
+    baseURL: `${API_BASE}/api`,
     timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
@@ -159,6 +161,13 @@ const StudentDetailsService = {
         try {
             // Use the correct path
             const { data } = await api.get(`/${id}/assessment`);
+            
+            // Check if the response is HTML instead of JSON
+            if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+                console.error(`Received HTML instead of JSON for assessment results ID ${id}`);
+                throw new Error('Invalid response format (HTML received)');
+            }
+            
             console.log(`Successfully fetched assessment results for ID ${id}`);
             return data;
         } catch (error) {
@@ -168,6 +177,13 @@ const StudentDetailsService = {
             try {
                 console.log(`Trying alternate endpoint for assessment results with ID ${id}`);
                 const { data } = await directApi.get(`/student/${id}/assessment`);
+                
+                // Check if the response is HTML instead of JSON
+                if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+                    console.error(`Received HTML instead of JSON for assessment results from alternate endpoint ID ${id}`);
+                    throw new Error('Invalid response format (HTML received)');
+                }
+                
                 console.log(`Successfully fetched assessment results from alternate endpoint for ID ${id}`);
                 return data;
             } catch (alternateError) {
@@ -188,6 +204,135 @@ const StudentDetailsService = {
         }
     },
 
+    // Reading level progress data
+    getReadingLevelProgress: async (id) => {
+        try {
+            const { data } = await api.get(`/${id}/reading-level-progress`);
+            
+            // Check if the response is HTML instead of JSON
+            if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+                console.error(`Received HTML instead of JSON for reading level progress ID ${id}`);
+                throw new Error('Invalid response format (HTML received)');
+            }
+            
+            console.log(`Successfully fetched reading level progress for ID ${id}`);
+            return data;
+        } catch (error) {
+            console.error(`Error fetching reading level progress for ID ${id}:`, error);
+            
+            // Try alternate endpoint
+            try {
+                console.log(`Trying alternate endpoint for reading level progress with ID ${id}`);
+                const { data } = await directApi.get(`/student/${id}/reading-level-progress`);
+                
+                // Check if the response is HTML instead of JSON
+                if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+                    console.error(`Received HTML instead of JSON for reading level progress from alternate endpoint ID ${id}`);
+                    throw new Error('Invalid response format (HTML received)');
+                }
+                
+                console.log(`Successfully fetched reading level progress from alternate endpoint for ID ${id}`);
+                return data;
+            } catch (alternateError) {
+                console.error(`Error fetching reading level progress from alternate endpoint for ID ${id}:`, alternateError);
+                
+                // Return empty progress data as fallback
+                return {
+                    studentId: id,
+                    readingLevel: 'Not Assessed',
+                    lastAssessmentDate: null,
+                    categories: [],
+                    overallScore: 0,
+                    allCategoriesPassed: false
+                };
+            }
+        }
+    },
+
+    // Add the getMainAssessment method after the getReadingLevelProgress method
+    getMainAssessment: async (readingLevel) => {
+        try {
+            const { data } = await directApi.get('/main-assessment', {
+                params: { readingLevel }
+            });
+            console.log(`Successfully fetched main assessment data for reading level ${readingLevel}`);
+            return data;
+        } catch (error) {
+            console.error(`Error fetching main assessment data for reading level ${readingLevel}:`, error);
+            
+            // Try alternate endpoint
+            try {
+                console.log(`Trying alternate endpoint for main assessment data with reading level ${readingLevel}`);
+                const { data } = await directApi.get(`/student/main-assessment?readingLevel=${readingLevel}`);
+                console.log(`Successfully fetched main assessment data from alternate endpoint for reading level ${readingLevel}`);
+                return data;
+            } catch (alternateError) {
+                console.error(`Error fetching main assessment data from alternate endpoint for reading level ${readingLevel}:`, alternateError);
+                
+                // Return empty data as fallback
+                return [];
+            }
+        }
+    },
+
+    // Add the getCategoryResults method to fetch individual question results
+    getCategoryResults: async (studentId) => {
+        try {
+            const { data } = await api.get(`/${studentId}/category-results`);
+            
+            // Check if the response is HTML instead of JSON
+            if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+                console.error(`Received HTML instead of JSON for category results for student ID ${studentId}`);
+                throw new Error('Invalid response format (HTML received)');
+            }
+            
+            console.log(`Successfully fetched category results for student ID ${studentId}`);
+            
+            // Check if we have meaningful data
+            if (data && data.categories && data.categories.length > 0) {
+                // Valid data, return it directly
+                console.log("Valid category data found with", data.categories.length, "categories");
+                return data;
+            } else {
+                // No meaningful data, try alternate endpoint
+                throw new Error('No valid category data found in response');
+            }
+        } catch (error) {
+            console.error(`Error fetching category results for student ${studentId}:`, error);
+            
+            // Try alternate endpoint
+            try {
+                console.log(`Trying alternate endpoint for category results with student ID ${studentId}`);
+                const { data } = await directApi.get(`/student/${studentId}/category-results`);
+                
+                // Check if the response is HTML instead of JSON
+                if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+                    console.error(`Received HTML instead of JSON from alternate endpoint for category results for student ID ${studentId}`);
+                    throw new Error('Invalid response format (HTML received)');
+                }
+                
+                if (data && data.categories && data.categories.length > 0) {
+                    console.log(`Successfully fetched category results from alternate endpoint for student ID ${studentId}`);
+                    return data;
+                } else {
+                    throw new Error('No valid category data found in alternate response');
+                }
+            } catch (alternateError) {
+                console.error(`Error fetching category results from alternate endpoint for student ID ${studentId}:`, alternateError);
+                
+                // Return empty data as fallback
+                return {
+                    studentId: studentId,
+                    assessmentType: 'unknown',
+                    categories: [],
+                    overallScore: 0,
+                    readingLevel: 'Not Assessed',
+                    allCategoriesPassed: false
+                };
+            }
+        }
+    },
+
     // Parent profile
     getParentProfile: async (parentId) => {
         try {
@@ -199,27 +344,95 @@ const StudentDetailsService = {
             }
             
             console.log("Fetching parent profile for ID:", parentId);
-            // Use the correct endpoint that properly accesses the database
-            const { data } = await directApi.get(`/parents/profile/${parentId}`);
-
-            // If data is returned correctly, process it to ensure consistent format
-            if (data) {
-                console.log("Parent profile data received:", data);
-                // Process name fields if needed
-                if (!data.name && (data.firstName || data.lastName)) {
-                    let fullName = data.firstName || '';
-                    if (data.middleName) fullName += ` ${data.middleName}`;
-                    if (data.lastName) fullName += ` ${data.lastName}`;
-                    data.name = fullName.trim();
-                }
-
+            // First try the parent database
+            try {
+                const { data } = await directApi.get(`/parent-profiles/${parentId}`);
+                console.log("Parent profile data received from parent database:", data);
                 return data;
+            } catch (parentDbError) {
+                console.warn("Could not find parent in parent database:", parentDbError.message);
+                
+                // Try the Literexia database next
+                try {
+                    const { data } = await directApi.get(`/literexia/parents/${parentId}`);
+                    console.log("Parent profile data received from Literexia database:", data);
+                    return data;
+                } catch (literexiaDbError) {
+                    console.warn("Could not find parent in Literexia database:", literexiaDbError.message);
+                    
+                    // Last resort: Try a direct MongoDB query via API
+                    const { data } = await directApi.get(`/parent-by-id/${parentId}`);
+                    if (!data) {
+                        throw new Error('No parent data returned');
+                    }
+                    return data;
+                }
             }
-            console.warn("No data returned from parent profile API");
-            throw new Error('No data returned from parent profile API');
         } catch (error) {
             console.error('Error fetching parent profile:', error);
             throw error;
+        }
+    },
+
+    // Get all parents in a single call (useful for bulk operations)
+    getAllParentProfiles: async () => {
+        try {
+            const { data } = await directApi.get('/parent-profiles');
+            console.log("Retrieved all parent profiles:", data?.length || 0);
+            return data || [];
+        } catch (error) {
+            console.error('Error fetching all parent profiles:', error);
+            // Fallback to hardcoded parent data for development/testing
+            return [
+                {
+                    _id: "681a2933af165878136e05da",
+                    firstName: "Jan Mark",
+                    middleName: "Percival",
+                    lastName: "Caram",
+                    email: "parent@gmail.com",
+                    contact: "09155933015"
+                },
+                {
+                    _id: "6827575c89b0d728f9333a20",
+                    firstName: "Kit Nicholas",
+                    middleName: "Tongol",
+                    lastName: "Santiago",
+                    email: "parent2@gmail.com",
+                    contact: "09155933015"
+                },
+                {
+                    _id: "682ca15af0bfb8e632bdfd13",
+                    firstName: "Rain",
+                    middleName: "Percival",
+                    lastName: "Aganan",
+                    email: "parentrain@gmail.com",
+                    contact: "09155933015"
+                },
+                {
+                    _id: "682d75b9f7897b64cec98cc7",
+                    firstName: "Kit Nicholas",
+                    middleName: "Rish",
+                    lastName: "Aganan",
+                    email: "paraaaaaaaaaent@gmail.com",
+                    contact: "09155933015"
+                },
+                {
+                    _id: "6830d880779e20b64f720f44",
+                    firstName: "Kit Nicholas",
+                    middleName: "Pascual",
+                    lastName: "Caram",
+                    email: "teacher65@gmail.com",
+                    contact: "09155933015"
+                },
+                {
+                    _id: "6835ef1645a2af9158a6d5b7",
+                    firstName: "Pia",
+                    middleName: "Zop",
+                    lastName: "Rey",
+                    email: "markcaram47@icloud.comm",
+                    contact: "09155933015"
+                }
+            ];
         }
     },
 
@@ -241,7 +454,24 @@ const StudentDetailsService = {
           console.log("Fetching parent profile with ID:", parentId);
           
           try {
-            const { data } = await directApi.get(`/parents/profile/${parentId}`, {
+            // First try to get from the parent database cache or any cached parent profiles
+            let parentData = null;
+            
+            try {
+              // Try to get all parent profiles first (faster if cached)
+              const allParents = await StudentDetailsService.getAllParentProfiles();
+              parentData = allParents.find(p => p._id === parentId);
+              
+              if (parentData) {
+                console.log("Found parent in cached profiles:", parentData);
+                return parentData;
+              }
+            } catch (cacheError) {
+              console.warn("Could not get parent from cache:", cacheError.message);
+            }
+            
+            // If not found in cache, try a direct API call
+            const { data } = await directApi.get(`/parent-by-id/${parentId}`, {
               timeout: 8000 // Longer timeout since it checks multiple DBs
             });
             

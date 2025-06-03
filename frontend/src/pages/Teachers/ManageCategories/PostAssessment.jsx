@@ -1,4 +1,5 @@
 // src/pages/Teachers/ManageCategories/PostAssessment.jsx
+// This file has been renamed functionally to MainAssessment but kept the same filename for compatibility
 import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -11,7 +12,6 @@ import {
   faSearch,
   faCheckCircle,
   faLock,
-  faQuestion,
   faUpload,
   faBook,
   faFont,
@@ -32,9 +32,19 @@ import {
   faCogs,
   faBullseye,
   faUsers,
-  faGraduationCap
+  faGraduationCap,
+  faQuestion,
+  faCloudUploadAlt
 } from "@fortawesome/free-solid-svg-icons";
 import "../../../css/Teachers/ManageCategories/PostAssessment.css";
+import MainAssessmentService from '../../../services/Teachers/MainAssessmentService';
+import { toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import UnifiedTemplatePreview from "./UnifiedTemplatePreview";
+
+// Add import for file helpers
+import { dataURLtoFile, validateFileForUpload } from '../../../utils/fileHelpers';
 
 // Tooltip component for help text
 const Tooltip = ({ text }) => (
@@ -44,7 +54,35 @@ const Tooltip = ({ text }) => (
   </div>
 );
 
-const PostAssessment = ({ templates }) => {
+// Helper function to handle API errors and display user-friendly messages
+const handleApiError = (error, defaultMessage = "An error occurred. Please try again.") => {
+  if (error.response) {
+    // Server responded with an error status code
+    const status = error.response.status;
+    const errorMessage = error.response.data?.message || defaultMessage;
+    
+    if (status === 401) {
+      return "You are not authorized. Please log in again.";
+    } else if (status === 403) {
+      return "You don't have permission to perform this action.";
+    } else if (status === 404) {
+      return "The requested resource was not found. This might be because the Main Assessment feature is new.";
+    } else if (status === 422) {
+      return errorMessage; // Validation error with specific message
+    } else {
+      return `Error: ${errorMessage}`;
+    }
+  } else if (error.request) {
+    // Request was made but no response received (network issue)
+    return "Unable to connect to the server. Please check your internet connection.";
+  } else {
+    // Something else happened while setting up the request
+    return defaultMessage;
+  }
+};
+
+const MainAssessment = ({ templates }) => {
+  // State variables
   const [assessments, setAssessments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -52,53 +90,73 @@ const PostAssessment = ({ templates }) => {
   const [filterCategory, setFilterCategory] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState(""); // create, edit, preview, delete
+  const [modalType, setModalType] = useState("create"); // "create", "edit", "preview", "delete"
   const [selectedAssessment, setSelectedAssessment] = useState(null);
   const [formData, setFormData] = useState({
     readingLevel: "",
     category: "",
-    questions: []
+    questions: [],
+    isActive: true,
+    status: "active"
   });
-  const [submitConfirmDialog, setSubmitConfirmDialog] = useState(false);
-  const [submitSuccessDialog, setSubmitSuccessDialog] = useState(false);
-  const [deleteSuccessDialog, setDeleteSuccessDialog] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState(null);
   const [showQuestionForm, setShowQuestionForm] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
   const [questionFormData, setQuestionFormData] = useState({
     questionType: "",
     questionText: "",
     questionImage: null,
     questionValue: "",
     choiceOptions: [
-      { optionText: "", isCorrect: true },
-      { optionText: "", isCorrect: false }
+      { optionId: "1", optionText: "", isCorrect: true, description: "" },
+      { optionId: "2", optionText: "", isCorrect: false, description: "" }
     ],
     passages: [],
-    sentenceQuestions: []
+    sentenceQuestions: [],
+    order: 1
   });
   const [previewPage, setPreviewPage] = useState(0);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [submitSuccessDialog, setSubmitSuccessDialog] = useState(false);
+  const [deleteSuccessDialog, setDeleteSuccessDialog] = useState(false);
+  const [submitConfirmDialog, setSubmitConfirmDialog] = useState(false);
   const [duplicateRestrictionDialog, setDuplicateRestrictionDialog] = useState(false);
   const [restrictionReason, setRestrictionReason] = useState("");
+  const [apiMessage, setApiMessage] = useState(null);
+  // Preview All state variables
+  const [isPreviewAllDialogOpen, setIsPreviewAllDialogOpen] = useState(false);
+  const [previewAllTemplates, setPreviewAllTemplates] = useState([]);
+  const [previewAllCurrentIndex, setPreviewAllCurrentIndex] = useState(0);
 
-  // Enhanced restriction checking
+  // Helper function to get category prefix
+  const getCategoryPrefix = (category) => {
+    const prefixMap = {
+      'Alphabet Knowledge': 'AK',
+      'Phonological Awareness': 'PA',
+      'Decoding': 'DC',
+      'Word Recognition': 'WR',
+      'Reading Comprehension': 'RC'
+    };
+    return prefixMap[category] || 'Q';
+  };
+  
+  // Check if an assessment already exists for a reading level and category
   const checkExistingAssessment = (readingLevel, category, excludeId = null) => {
     return assessments.find(assessment => 
-      assessment.readingLevel === readingLevel && 
+      (assessment.readingLevel || '').trim() === readingLevel.trim() && 
       assessment.category === category &&
       assessment._id !== excludeId
     );
   };
 
+  // Check if a new assessment can be created for a reading level and category
   const canCreateAssessment = (readingLevel, category) => {
     const existing = checkExistingAssessment(readingLevel, category);
     
-    // Can't create if there's already a pending or approved assessment
-    if (existing && (existing.status === "pending" || existing.status === "approved")) {
+    if (existing) {
       return {
         canCreate: false,
-        reason: existing.status === "pending" 
-          ? "A pending assessment already exists for this combination"
-          : "An active assessment already exists for this combination"
+        reason: "An assessment already exists for this reading level and category combination",
+        existingAssessment: existing
       };
     }
     
@@ -106,111 +164,72 @@ const PostAssessment = ({ templates }) => {
   };
 
   useEffect(() => {
-    // Fetch assessments data
+    // Fetch assessments data from the backend
     const fetchAssessments = async () => {
       try {
         setLoading(true);
+        console.log("Attempting to fetch assessments...");
 
-        // In production, this would be an API call to fetch from test.main_assessment
-        const mockAssessments = [
-          {
-            _id: "68298fb179a34741f9cd1a01",
-            readingLevel: "Low Emerging",
-            category: "Alphabet Knowledge",
-            questions: [
-              {
-                questionType: "patinig",
-                questionText: "Anong katumbas na maliit na letra?",
-                questionImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/A_big.png",
-                questionValue: "A",
-                choiceOptions: [
-                  { optionText: "a", isCorrect: true },
-                  { optionText: "e", isCorrect: false }
-                ],
-                order: 1
-              },
-              {
-                questionType: "patinig",
-                questionText: "Anong katumbas na maliit na letra?",
-                questionImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/E_big.png",
-                questionValue: "E",
-                choiceOptions: [
-                  { optionText: "e", isCorrect: true },
-                  { optionText: "a", isCorrect: false }
-                ],
-                order: 2
-              }
-            ],
-            isActive: true,
-            createdAt: "2025-05-01T08:00:00.000Z",
-            status: "approved"
-          },
-          {
-            _id: "68298fb179a34741f9cd1a02",
-            readingLevel: "Low Emerging",
-            category: "Phonological Awareness",
-            questions: [
-              {
-                questionType: "malapantig",
-                questionText: "Kapag pinagsama ang mga pantig, ano ang mabubuo?",
-                questionImage: null,
-                questionValue: "BO + LA",
-                choiceOptions: [
-                  { optionText: "BOLA", isCorrect: true },
-                  { optionText: "LABO", isCorrect: false }
-                ],
-                order: 1
-              }
-            ],
-            isActive: true,
-            createdAt: "2025-05-01T08:45:00.000Z",
-            status: "pending"
-          },
-          {
-            _id: "68298fb179a34741f9cd1a05",
-            readingLevel: "Low Emerging",
-            category: "Reading Comprehension",
-            questions: [
-              {
-                questionType: "sentence",
-                questionText: "Basahin ang kwento at sagutin ang mga tanong.",
-                questionImage: null,
-                questionValue: null,
-                choiceOptions: [],
-                passages: [
-                  {
-                    pageNumber: 1,
-                    pageText: "Si Maria ay pumunta sa parke. Nakita niya ang maraming bulaklak na magaganda. Siya ay natuwa at nag-uwi ng ilang bulaklak para sa kanyang ina.",
-                    pageImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/passages/park_flowers.png"
-                  },
-                  {
-                    pageNumber: 2,
-                    pageText: "Nang makita ng ina ni Maria ang mga bulaklak, siya ay ngumiti at nagyakap sa kanyang anak. Gumawa sila ng maliit na hardin sa harap ng kanilang bahay.",
-                    pageImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/passages/mother_garden.png"
-                  }
-                ],
-                sentenceQuestions: [
-                  {
-                    questionText: "Sino ang pangunahing tauhan sa kwento?",
-                    questionImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/questions/character_question.png",
-                    correctAnswer: "Si Maria",
-                    incorrectAnswer: "Ang ina"
-                  }
-                ],
-                order: 1
-              }
-            ],
-            isActive: false,
-            createdAt: "2025-05-01T10:00:00.000Z",
-            status: "rejected",
-            rejectionReason: "The reading passage is too simple for the target reading level. Please add more complex vocabulary and sentence structures appropriate for Low Emerging level students."
+        // Add retry mechanism
+        let attempts = 0;
+        const maxAttempts = 3;
+        let response = null;
+        let lastError = null;
+
+        while (attempts < maxAttempts) {
+          try {
+            console.log(`Fetch attempt ${attempts + 1} of ${maxAttempts}`);
+            response = await MainAssessmentService.getAllAssessments();
+            // If successful, break out of the retry loop
+            break;
+          } catch (err) {
+            lastError = err;
+            console.error(`Attempt ${attempts + 1} failed:`, err);
+            attempts++;
+            if (attempts < maxAttempts) {
+              // Wait 1 second before retrying
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
           }
-        ];
+        }
 
-        setAssessments(mockAssessments);
+        if (!response && lastError) {
+          throw lastError;
+        }
+        
+        console.log("API Response:", response); // Debug log
+        
+        if (response && response.success) {
+          const assessmentData = response.data || [];
+          console.log("Setting assessments:", assessmentData.length, "items"); // Debug log
+          
+          if (assessmentData.length === 0) {
+            console.log("No assessments found in the response");
+            setApiMessage("No assessment templates found. This could be because templates haven't been created yet, or there might be an issue with the database connection.");
+          }
+          
+          setAssessments(assessmentData);
+          
+          // If there's a message from the API, store it
+          if (response.message) {
+            setApiMessage(response.message);
+          }
+        } else if (response && !response.success) {
+          console.error("API request was not successful:", response.message || "Unknown error");
+          setError(response.message || "Failed to load assessments due to an unknown error.");
+          setApiMessage(response.message || "There was an error loading assessment templates. Please try again later.");
+        } else {
+          console.log("No data or unsuccessful response");
+          setAssessments([]);
+          setApiMessage("No assessment templates found. This could be because templates haven't been created yet.");
+        }
+        
         setLoading(false);
       } catch (err) {
-        setError("Failed to load assessments. Please try again later.");
+        console.error('Error fetching assessments:', err);
+        const errorMessage = handleApiError(err, "Failed to load assessments. Please try again later.");
+        setError(errorMessage);
+        setApiMessage("There was an error connecting to the assessment service. Please check your connection and try again.");
         setLoading(false);
       }
     };
@@ -218,10 +237,59 @@ const PostAssessment = ({ templates }) => {
     fetchAssessments();
   }, []);
 
+  // Add debug logging to see what assessments are loaded
+  useEffect(() => {
+    if (assessments.length > 0) {
+      console.log("Total assessments loaded:", assessments.length);
+      console.log("Assessments by reading level:");
+      
+      const byLevel = assessments.reduce((acc, assessment) => {
+        const level = assessment.readingLevel;
+        if (!acc[level]) acc[level] = [];
+        acc[level].push({
+          id: assessment._id,
+          category: assessment.category,
+          questions: assessment.questions.length
+        });
+        return acc;
+      }, {});
+      
+      console.table(byLevel);
+      
+      // Check specifically for Low Emerging
+      const lowEmerging = assessments.filter(a => a.readingLevel === "Low Emerging");
+      console.log("Low Emerging assessments:", lowEmerging.length);
+      console.log("Low Emerging details:", lowEmerging.map(a => ({ 
+        id: a._id, 
+        category: a.category, 
+        questions: a.questions.length 
+      })));
+
+      // Check for exact reading level strings
+      const uniqueLevels = [...new Set(assessments.map(a => `"${a.readingLevel}"`))];
+      console.log("Unique reading levels (with quotes to see spaces):", uniqueLevels);
+      
+      // Add more detailed debugging for reading levels
+      console.log("All assessments with reading levels and categories:");
+      assessments.forEach((a, index) => {
+        console.log(`Assessment ${index + 1}: ID=${a._id}, Level="${a.readingLevel}", Category="${a.category}", charCodes=${[...a.readingLevel].map(c => c.charCodeAt(0))}`);
+      });
+      
+      // Check if any don't match expected values
+      const expectedLevels = ["Low Emerging", "High Emerging", "Developing", "Transitioning", "At Grade Level"];
+      const unexpectedLevels = assessments.filter(a => !expectedLevels.includes(a.readingLevel));
+      
+      if (unexpectedLevels.length > 0) {
+        console.warn("Assessments with unexpected reading levels:", unexpectedLevels);
+      }
+    }
+  }, [assessments]);
+
   // Filter assessments
   const filteredAssessments = assessments.filter(assessment => {
     // Reading level filter
-    const levelMatch = filterReadingLevel === "all" ? true : assessment.readingLevel === filterReadingLevel;
+    const levelMatch = filterReadingLevel === "all" ? true : 
+      (assessment.readingLevel || '').trim() === filterReadingLevel.trim();
 
     // Category filter
     const categoryMatch = filterCategory === "all" ? true : assessment.category === filterCategory;
@@ -229,7 +297,7 @@ const PostAssessment = ({ templates }) => {
     // Search term
     const searchMatch =
       assessment.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      assessment.readingLevel.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (assessment.readingLevel || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (assessment.questions.some(q => q.questionText?.toLowerCase().includes(searchTerm.toLowerCase())));
 
     return levelMatch && categoryMatch && searchMatch;
@@ -239,30 +307,59 @@ const PostAssessment = ({ templates }) => {
   const categories = ["all", "Alphabet Knowledge", "Phonological Awareness",
     "Decoding", "Word Recognition", "Reading Comprehension"];
 
+  // Get assessment statistics
+  const getAssessmentStats = () => {
+    const totalAssessments = assessments.length;
+    const activeAssessments = assessments.filter(a => a.isActive).length;
+    const inactiveAssessments = assessments.filter(a => !a.isActive).length;
+
+    return {
+      total: totalAssessments,
+      active: activeAssessments,
+      inactive: inactiveAssessments
+    };
+  };
+
+  const stats = getAssessmentStats();
+
   const handleCreateAssessment = () => {
     setModalType("create");
     setSelectedAssessment(null);
     setFormData({
       readingLevel: "",
       category: "",
-      questions: []
+      questions: [],
+      isActive: true,
+      status: "active"
     });
     setShowModal(true);
   };
 
   const handleEditAssessment = (assessment) => {
-    // Only allow editing for rejected assessments
-    if (assessment.status !== "rejected") {
-      alert("Only rejected assessments can be edited. Approved or pending assessments cannot be modified.");
-      return;
-    }
-
     setModalType("edit");
     setSelectedAssessment(assessment);
+    
+    // Add debug logging
+    console.log("Loading assessment for editing:", assessment);
+    
+    // Check if any questions are missing questionValue
+    const missingValues = assessment.questions.filter(q => q.questionValue === undefined || q.questionValue === null);
+    if (missingValues.length > 0) {
+      console.warn("Warning: Found questions with missing questionValue", missingValues);
+    }
+    
+    // Create a fixed copy of the questions with questionValue guaranteed
+    const fixedQuestions = assessment.questions.map(q => ({
+      ...q,
+      questionValue: q.questionValue !== undefined ? q.questionValue : (q.questionType === "sentence" ? "" : null)
+    }));
+    
     setFormData({
       readingLevel: assessment.readingLevel,
       category: assessment.category,
-      questions: [...assessment.questions]
+      questions: fixedQuestions,
+      isActive: assessment.isActive,
+      status: assessment.status
     });
     setShowModal(true);
   };
@@ -274,78 +371,187 @@ const PostAssessment = ({ templates }) => {
     setShowModal(true);
   };
 
-  const handleDeleteConfirm = (assessment) => {
-    // Only allow deletion for rejected assessments
-    if (assessment.status !== "rejected") {
-      alert("Only rejected assessments can be deleted. Approved or pending assessments cannot be removed.");
-      return;
-    }
+  const handlePreviewAllAssessments = () => {
+    // Use filtered assessments for preview all
+    setPreviewAllTemplates(filteredAssessments);
+    setPreviewAllCurrentIndex(0);
+    setIsPreviewAllDialogOpen(true);
+  };
 
+  const handleDeleteConfirm = (assessment) => {
     setModalType("delete");
     setSelectedAssessment(assessment);
     setShowModal(true);
   };
 
-  const handleDeleteAssessment = () => {
+  const handleDeleteAssessment = async () => {
     if (!selectedAssessment) return;
 
-    // In a real app, you'd make an API call to delete the assessment
+    try {
+      const response = await MainAssessmentService.deleteAssessment(selectedAssessment._id);
+      
+      if (response && response.success) {
+        // Remove from local state
     setAssessments(prev => prev.filter(a => a._id !== selectedAssessment._id));
     setShowModal(false);
     setSelectedAssessment(null);
 
-    // Show custom deletion success notification with different message
-    // We'll use the same component but with different content
+        // Show success notification
     setDeleteSuccessDialog(true);
     setTimeout(() => {
       setDeleteSuccessDialog(false);
     }, 3000);
+      }
+    } catch (error) {
+      console.error('Error deleting assessment:', error);
+      alert(handleApiError(error, "Failed to delete assessment. Please try again."));
+    }
   };
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+    
+    // When both readingLevel and category are set, check for existing assessments
+    if (modalType === 'create' && name === 'category' && formData.readingLevel) {
+      // We need to use the current value for category since it's what just changed
+      const validation = canCreateAssessment(formData.readingLevel, value);
+      if (!validation.canCreate) {
+        toast.warning(`An assessment already exists for ${formData.readingLevel} - ${value}. Only one assessment per combination is allowed.`, {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        
+        // Show a more prominent message about the existing assessment
+        const existingAssessment = validation.existingAssessment;
+        if (existingAssessment) {
+          const message = `
+            An assessment already exists for this combination with ${existingAssessment.questions.length} questions.
+            ${existingAssessment.isActive ? 'This assessment is currently active.' : 'This assessment is currently inactive.'}
+            Please edit the existing assessment instead.
+          `;
+          
+          setTimeout(() => {
+            // Add a slight delay so this appears after the first toast
+            toast.error(message, {
+              position: "top-center",
+              autoClose: 8000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+            });
+          }, 500);
+        }
+      }
+    } else if (modalType === 'create' && name === 'readingLevel' && formData.category) {
+      // We need to use the current value for reading level since it's what just changed
+      const validation = canCreateAssessment(value, formData.category);
+      if (!validation.canCreate) {
+        toast.warning(`An assessment already exists for ${value} - ${formData.category}. Only one assessment per combination is allowed.`, {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        
+        // Show a more prominent message about the existing assessment
+        const existingAssessment = validation.existingAssessment;
+        if (existingAssessment) {
+          const message = `
+            An assessment already exists for this combination with ${existingAssessment.questions.length} questions.
+            ${existingAssessment.isActive ? 'This assessment is currently active.' : 'This assessment is currently inactive.'}
+            Please edit the existing assessment instead.
+          `;
+          
+          setTimeout(() => {
+            // Add a slight delay so this appears after the first toast
+            toast.error(message, {
+              position: "top-center", 
+              autoClose: 8000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+            });
+          }, 500);
+        }
+      }
+    }
   };
 
   const handleAddQuestion = () => {
     setShowQuestionForm(true);
     setCurrentQuestion(null);
 
-    // Reset form data based on selected category
     const initialQuestionType =
       formData.category === "Alphabet Knowledge" ? "patinig" :
-        formData.category === "Phonological Awareness" ? "malapantig" :
+        formData.category === "Phonological Awareness" ? "patinig" :
           formData.category === "Word Recognition" ? "word" :
             formData.category === "Decoding" ? "word" :
               "sentence";
+
+    // Generate a temporary questionId based on category only for non-sentence types
+    const categoryPrefix = getCategoryPrefix(formData.category);
+    const questionNumber = String(formData.questions.length + 1).padStart(3, '0');
+    const tempQuestionId = `${categoryPrefix}_${questionNumber}`;
+    
+    // For sentence questions, we'll use a parent ID to generate child IDs, but not store it on the parent
+    const parentId = initialQuestionType === "sentence" ? tempQuestionId : null;
 
     setQuestionFormData({
       questionType: initialQuestionType,
       questionText: "",
       questionImage: null,
       questionValue: "",
+      // Add questionId for all question types
+      questionId: tempQuestionId,
+      // Store parent ID temporarily for generating child IDs
+      _parentId: parentId,
       choiceOptions: [
-        { optionText: "", isCorrect: true },
-        { optionText: "", isCorrect: false }
+        { optionId: "1", optionText: "", isCorrect: true, description: "" },
+        { optionId: "2", optionText: "", isCorrect: false, description: "" }
       ],
       passages: initialQuestionType === "sentence" ? [
         { pageNumber: 1, pageText: "", pageImage: null }
       ] : [],
       sentenceQuestions: initialQuestionType === "sentence" ? [
-        { questionText: "", correctAnswer: "", incorrectAnswer: "" }
+        { 
+          questionText: "", 
+          correctAnswer: "", 
+          incorrectAnswer: "", 
+          correctDescription: "", 
+          incorrectDescription: "",
+          questionId: `${parentId}_SQ01`, // Use parent ID to generate child ID
+          order: 1  // Start with order 1
+        }
       ] : [],
-      order: formData.questions.length + 1
+      order: 0 // Will be set when added to questions array
     });
   };
 
   const handleEditQuestion = (question, index) => {
     setShowQuestionForm(true);
     setCurrentQuestion(index);
+    // Make sure we preserve the questionId from the original question
     setQuestionFormData({
       ...question,
+      // Ensure questionId exists, if not generate a temporary one
+      questionId: question.questionId || (() => {
+        const categoryPrefix = getCategoryPrefix(formData.category);
+        const questionNumber = String(index + 1).padStart(3, '0');
+        return `${categoryPrefix}_${questionNumber}`;
+      })(),
       order: index + 1
     });
   };
@@ -384,7 +590,7 @@ const PostAssessment = ({ templates }) => {
       ...prev,
       choiceOptions: [
         ...prev.choiceOptions,
-        { optionText: "", isCorrect: false }
+        { optionId: (prev.choiceOptions.length + 1).toString(), optionText: "", isCorrect: false, description: "" }
       ]
     }));
   };
@@ -396,62 +602,330 @@ const PostAssessment = ({ templates }) => {
     }));
   };
 
-  const handleQuestionFormSubmit = () => {
-    // Validate question form
+  const handleAddSentenceQuestion = () => {
+    // Generate a questionId for the new sentence question using the parent ID
+    const currentQuestionCount = questionFormData.sentenceQuestions.length;
+    const subQuestionNumber = String(currentQuestionCount + 1).padStart(2, '0');
+    // Format: RC_001_SQ01 (parent ID + subQuestionNumber)
+    const parentId = questionFormData._parentId;
+    const subQuestionId = `${parentId}_SQ${subQuestionNumber}`;
+
+    setQuestionFormData(prev => ({
+      ...prev,
+      sentenceQuestions: [
+        ...prev.sentenceQuestions,
+        { 
+          questionText: "", 
+          correctAnswer: "", 
+          incorrectAnswer: "", 
+          correctDescription: "",
+          incorrectDescription: "",
+          questionId: subQuestionId,
+          order: prev.sentenceQuestions.length + 1  // Add order based on current length + 1
+        }
+      ]
+    }));
+  };
+
+  const handleQuestionFormSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate required fields
     if (!questionFormData.questionText) {
-      alert("Please enter a question text.");
+      toast.error("Please enter a question text.");
       return;
     }
 
+    // Remove validation for questionValue - it's now optional
+    // The backend will use null when it's not provided
+
+    // Validate minimum choice options
     if (questionFormData.questionType !== "sentence" && questionFormData.choiceOptions.length < 2) {
-      alert("Please add at least two choices for the question.");
+      toast.error("Please add at least two choices for the question.");
       return;
     }
 
-    // Check if at least one choice is marked as correct
+    // Validate choice options have text
+    if (questionFormData.questionType !== "sentence") {
+      const emptyOptions = questionFormData.choiceOptions.filter(c => !c.optionText);
+      if (emptyOptions.length > 0) {
+        toast.error("All answer choices must have text.");
+        return;
+      }
+    }
+
     if (
       questionFormData.questionType !== "sentence" &&
       !questionFormData.choiceOptions.some(c => c.isCorrect)
     ) {
-      alert("Please mark at least one choice as correct.");
+      toast.error("Please mark at least one choice as correct.");
       return;
     }
-
-    // Update the questions array
-    if (currentQuestion !== null) {
-      // Edit existing question
-      setFormData(prev => {
-        const updatedQuestions = [...prev.questions];
-        updatedQuestions[currentQuestion] = questionFormData;
-        return {
-          ...prev,
-          questions: updatedQuestions
-        };
-      });
-    } else {
-      // Add new question
-      setFormData(prev => ({
-        ...prev,
-        questions: [...prev.questions, questionFormData]
-      }));
+    
+    // Validate sentence questions for Reading Comprehension
+    if (questionFormData.questionType === "sentence") {
+      // Check if passages exist and have content
+      if (!questionFormData.passages || questionFormData.passages.length === 0) {
+        toast.error("Please add at least one passage page.");
+        return;
+      }
+      
+      // Check if passages have text
+      const emptyPassages = questionFormData.passages.filter(p => !p.pageText);
+      if (emptyPassages.length > 0) {
+        toast.error("All passage pages must have text content.");
+        return;
+      }
+      
+      // Check if sentence questions exist and have content
+      if (!questionFormData.sentenceQuestions || questionFormData.sentenceQuestions.length === 0) {
+        toast.error("Please add at least one comprehension question.");
+        return;
+      }
+      
+      // Check if all sentence questions have question text, correct and incorrect answers
+      const invalidQuestions = questionFormData.sentenceQuestions.filter(
+        q => !q.questionText || !q.correctAnswer || !q.incorrectAnswer
+      );
+      if (invalidQuestions.length > 0) {
+        toast.error("All comprehension questions must have question text, correct and incorrect answers.");
+        return;
+      }
     }
-
-    // Close the question form
-    setShowQuestionForm(false);
+    
+    try {
+      let finalQuestionData = { ...questionFormData };
+      
+      // Ensure questionValue is always set for non-sentence questions
+      if (finalQuestionData.questionType !== "sentence" && !finalQuestionData.questionValue) {
+        // This should never happen due to validation, but just in case:
+        finalQuestionData.questionValue = null;
+      }
+      
+      // Ensure sentenceQuestions have order field
+      if (finalQuestionData.questionType === "sentence" && finalQuestionData.sentenceQuestions) {
+        finalQuestionData.sentenceQuestions = finalQuestionData.sentenceQuestions.map((sq, sqIndex) => ({
+          ...sq,
+          order: sqIndex + 1 // Add order field starting from 1
+        }));
+      }
+      
+      // Get category-specific folder name for S3 upload
+      const getCategoryFolder = (category) => {
+        const folderMap = {
+          'Alphabet Knowledge': 'alphabet-knowledge',
+          'Phonological Awareness': 'phonological-awareness',
+          'Decoding': 'decoding',
+          'Word Recognition': 'word-recognition',
+          'Reading Comprehension': 'reading-comprehension'
+        };
+        return folderMap[category] || '';
+      };
+      
+      // Construct S3 path with category folder
+      const categoryFolder = getCategoryFolder(formData.category);
+      const s3Path = categoryFolder ? `main-assessment/${categoryFolder}` : 'main-assessment';
+      
+      // If there's an image file pending upload, upload it to S3 first
+      if (questionFormData.imageFile) {
+        const result = await MainAssessmentService.uploadImageToS3(questionFormData.imageFile, s3Path);
+        
+        if (result.success) {
+          finalQuestionData.questionImage = result.url;
+        } else {
+          toast.error(result.error || "Failed to upload image");
+        }
+        
+        // Remove temporary fields used for handling the upload
+        delete finalQuestionData.imageFile;
+        delete finalQuestionData.imageName;
+      }
+      
+      // If we have passage pages with images, handle those uploads as well
+      if (finalQuestionData.questionType === "sentence" && finalQuestionData.passages) {
+        const updatedPassages = [];
+        
+        for (const passage of finalQuestionData.passages) {
+          let updatedPassage = { ...passage };
+          
+          // Check if this passage has a blob URL that needs uploading
+          if (passage.pageImage && typeof passage.pageImage === 'string' && passage.pageImage.startsWith('blob:')) {
+            try {
+              // Convert blob URL back to File object
+              const response = await fetch(passage.pageImage);
+              const blob = await response.blob();
+              const fileName = `page_${passage.pageNumber}_${Date.now()}.jpg`;
+              const imageFile = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+              
+              // Upload to S3
+              const uploadResult = await MainAssessmentService.uploadImageToS3(imageFile, s3Path);
+              
+              if (uploadResult.success) {
+                updatedPassage.pageImage = uploadResult.url;
+                console.log(`Successfully uploaded page ${passage.pageNumber} image:`, uploadResult.url);
+              } else {
+                console.error(`Failed to upload image for page ${passage.pageNumber}:`, uploadResult.error);
+                toast.error(`Failed to upload image for page ${passage.pageNumber}`);
+                // Keep the original blob URL as fallback (though this isn't ideal)
+                updatedPassage.pageImage = passage.pageImage;
+              }
+            } catch (error) {
+              console.error(`Error processing image for page ${passage.pageNumber}:`, error);
+              toast.error(`Error processing image for page ${passage.pageNumber}`);
+              // Keep the original blob URL as fallback
+              updatedPassage.pageImage = passage.pageImage;
+            }
+          }
+          // If it's already a proper URL (starts with https://), keep it as is
+          else if (passage.pageImage && typeof passage.pageImage === 'string' && passage.pageImage.startsWith('https://')) {
+            updatedPassage.pageImage = passage.pageImage;
+          }
+          // If it's null or empty, keep it as is
+          else {
+            updatedPassage.pageImage = passage.pageImage;
+          }
+          
+          updatedPassages.push(updatedPassage);
+        }
+        
+        finalQuestionData.passages = updatedPassages;
+      }
+      
+      // Ensure questionId exists
+      if (!finalQuestionData.questionId) {
+        const categoryPrefix = getCategoryPrefix(formData.category);
+        const questionNumber = String(currentQuestion !== null ? currentQuestion + 1 : formData.questions.length + 1).padStart(3, '0');
+        finalQuestionData.questionId = `${categoryPrefix}_${questionNumber}`;
+      }
+      
+      // Update the form data with the final question data
+      if (currentQuestion !== null) {
+        setFormData(prev => {
+          const updatedQuestions = [...prev.questions];
+          // Ensure questionValue is at least null if it's empty string or undefined
+          finalQuestionData.questionValue = finalQuestionData.questionValue || null;
+          updatedQuestions[currentQuestion] = finalQuestionData;
+          return {
+            ...prev,
+            questions: updatedQuestions
+          };
+        });
+        
+        // Reset for a new question and keep the form open
+        setCurrentQuestion(null);
+        
+        // Generate temporary questionId for the next question
+        const nextQuestionNumber = String(formData.questions.length + 2).padStart(3, '0'); // +2 because we just added one
+        const nextTempQuestionId = `${getCategoryPrefix(formData.category)}_${nextQuestionNumber}`;
+        const nextParentId = finalQuestionData.questionType === "sentence" ? nextTempQuestionId : null;
+        
+        setQuestionFormData({
+          questionType: finalQuestionData.questionType,
+          questionText: "",
+          questionImage: null,
+          // Ensure it has a default value
+          questionValue: finalQuestionData.questionType === "sentence" ? "" : null,
+          // Include questionId for all question types
+          questionId: nextTempQuestionId,
+          // Store parent ID temporarily for generating child IDs
+          _parentId: nextParentId,
+          choiceOptions: [
+            { optionId: "1", optionText: "", isCorrect: true, description: "" },
+            { optionId: "2", optionText: "", isCorrect: false, description: "" }
+          ],
+          passages: finalQuestionData.questionType === "sentence" ? [
+            { pageNumber: 1, pageText: "", pageImage: null }
+          ] : [],
+          sentenceQuestions: finalQuestionData.questionType === "sentence" ? [
+            { 
+              questionText: "", 
+              correctAnswer: "", 
+              incorrectAnswer: "", 
+              correctDescription: "", 
+              incorrectDescription: "",
+              questionId: nextParentId ? `${nextParentId}_SQ01` : null,
+              order: 1  // Start with order 1
+            }
+          ] : [],
+          order: formData.questions.length + 2 // +2 because we just added one
+        });
+        
+        toast.success("Question updated! You can add another or click Back to return to the assessment.");
+      } else {
+        // Ensure questionValue is at least null if it's empty string or undefined
+        finalQuestionData.questionValue = finalQuestionData.questionValue || null;
+        
+        setFormData(prev => ({
+          ...prev,
+          questions: [...prev.questions, finalQuestionData]
+        }));
+        
+        // Reset for a new question and keep the form open
+        // Generate temporary questionId for the next question
+        const nextQuestionNumber = String(formData.questions.length + 2).padStart(3, '0'); // +2 because we just added one
+        const nextTempQuestionId = `${getCategoryPrefix(formData.category)}_${nextQuestionNumber}`;
+        const nextParentId = finalQuestionData.questionType === "sentence" ? nextTempQuestionId : null;
+        
+        setQuestionFormData({
+          questionType: finalQuestionData.questionType,
+          questionText: "",
+          questionImage: null,
+          // Ensure it has a default value
+          questionValue: finalQuestionData.questionType === "sentence" ? "" : null,
+          // Include questionId for all question types
+          questionId: nextTempQuestionId,
+          // Store parent ID temporarily for generating child IDs
+          _parentId: nextParentId,
+          choiceOptions: [
+            { optionId: "1", optionText: "", isCorrect: true, description: "" },
+            { optionId: "2", optionText: "", isCorrect: false, description: "" }
+          ],
+          passages: finalQuestionData.questionType === "sentence" ? [
+            { pageNumber: 1, pageText: "", pageImage: null }
+          ] : [],
+          sentenceQuestions: finalQuestionData.questionType === "sentence" ? [
+            { 
+              questionText: "", 
+              correctAnswer: "", 
+              incorrectAnswer: "", 
+              correctDescription: "", 
+              incorrectDescription: "",
+              questionId: nextParentId ? `${nextParentId}_SQ01` : null,
+              order: 1  // Start with order 1
+            }
+          ] : [],
+          order: formData.questions.length + 2 // +2 because we just added one
+        });
+        
+        toast.success("Question added! You can add another or click Back to return to the assessment.");
+      }
+    } catch (error) {
+      console.error("Error saving question:", error);
+      toast.error("Failed to save question with image upload. Please try again.");
+    }
   };
 
   const handleFileUpload = (e, field) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    // For a real app, you'd upload the file to your server/S3
-    // Here we'll just create a fake URL for demonstration
-    const fakeImageUrl = URL.createObjectURL(file);
-
+  
+    // Validate the file
+    const validation = validateFileForUpload(file);
+    if (!validation.success) {
+      toast.error(validation.error);
+      return;
+    }
+  
+    // Create a temporary URL for preview
+    const previewUrl = URL.createObjectURL(file);
+  
+    // Store the file for later upload when the question is submitted
     if (field === 'questionImage') {
       setQuestionFormData(prev => ({
         ...prev,
-        questionImage: fakeImageUrl
+        questionImage: previewUrl,
+        imageFile: file, // Store the file for later S3 upload with proper category folder
+        imageName: file.name
       }));
     } else if (field.includes('pageImage')) {
       const pageIndex = parseInt(field.split('-')[1]);
@@ -459,7 +933,9 @@ const PostAssessment = ({ templates }) => {
         const updatedPassages = [...prev.passages];
         updatedPassages[pageIndex] = {
           ...updatedPassages[pageIndex],
-          pageImage: fakeImageUrl
+          pageImage: previewUrl, // Store blob URL for preview
+          _imageFile: file, // Store the actual file for later upload
+          _imageName: file.name
         };
         return {
           ...prev,
@@ -468,7 +944,6 @@ const PostAssessment = ({ templates }) => {
       });
     }
   };
-
   const handleSaveAssessment = () => {
     // Validate form data
     if (!formData.readingLevel || !formData.category || formData.questions.length === 0) {
@@ -480,53 +955,194 @@ const PostAssessment = ({ templates }) => {
     if (modalType === 'create') {
       const validation = canCreateAssessment(formData.readingLevel, formData.category);
       if (!validation.canCreate) {
-        setDuplicateRestrictionDialog(true);
         setRestrictionReason(validation.reason);
+        setDuplicateRestrictionDialog(true);
         return;
       }
     }
     
-    // Open confirmation dialog for admin approval
+    // Open confirmation dialog
     setSubmitConfirmDialog(true);
   };
 
-  const handleConfirmSubmit = () => {
-    // In a real app, you'd make an API call to save the assessment
-    const newAssessment = {
-      _id: selectedAssessment ? selectedAssessment._id : Date.now().toString(),
-      readingLevel: formData.readingLevel,
-      category: formData.category,
-      questions: formData.questions,
-      isActive: false, // New assessments start as inactive
-      status: "pending", // New or edited assessments need approval
-      createdAt: new Date().toISOString()
-    };
-
-    if (selectedAssessment) {
-      // Update existing assessment
-      setAssessments(prev => prev.map(a => a._id === selectedAssessment._id ? newAssessment : a));
-    } else {
-      // Add new assessment
-      setAssessments(prev => [...prev, newAssessment]);
+  const handleConfirmSubmit = async () => {
+    try {
+      setSubmitConfirmDialog(false);
+      
+      // Construct S3 path with category folder
+      const categoryFolder = getCategoryFolder(modalType === 'edit' ? selectedAssessment.category : formData.category);
+      const s3Path = categoryFolder ? `main-assessment/${categoryFolder}` : 'main-assessment';
+      
+      // Ensure each question has proper format
+      const formattedQuestions = formData.questions.map((question, index) => {
+        // Ensure questionId exists and follows the correct format for non-sentence types
+        let questionId = question.questionId;
+        if (modalType === 'edit' && selectedAssessment) {
+          // When editing, make sure the questionId follows the correct format
+          const categoryPrefix = getCategoryPrefix(selectedAssessment.category);
+          const questionNumber = String(index + 1).padStart(3, '0');
+          
+          // Set questionId for all question types
+          questionId = `${categoryPrefix}_${questionNumber}`;
+        }
+        
+        // Handle sentence type questions that might be missing required arrays
+        const isSentenceType = question.questionType === 'sentence';
+        
+        // IMPORTANT: Ensure questionValue is always present and non-null for ALL question types
+        // For sentence type questions, use a default empty string if missing
+        const questionValue = isSentenceType 
+          ? (question.questionValue || "") 
+          : (question.questionValue || null);
+        
+        // Prepare sentenceQuestions with proper field names for backend
+        let formattedSentenceQuestions;
+        if (isSentenceType && question.sentenceQuestions) {
+          formattedSentenceQuestions = question.sentenceQuestions.map((sq, sqIndex) => {
+            // If there's no questionId, generate one
+            const subQuestionNumber = String(sqIndex + 1).padStart(2, '0');
+            // Get a base ID for generating subQuestionIds if needed
+            const categoryPrefix = getCategoryPrefix(modalType === 'edit' ? selectedAssessment.category : formData.category);
+            const questionNumber = String(index + 1).padStart(3, '0');
+            const baseId = `${categoryPrefix}_${questionNumber}`;
+            // Use existing questionId, or generate a new one based on baseId
+            const subQuestionId = sq.questionId || `${baseId}_SQ${subQuestionNumber}`;
+            
+            return {
+              questionText: sq.questionText,
+              correctAnswer: sq.correctAnswer,
+              incorrectAnswer: sq.incorrectAnswer,
+              correctDescription: sq.correctDescription || "",
+              incorrectDescription: sq.incorrectDescription || "",
+              questionImage: sq.questionImage || null,
+              questionId: subQuestionId,
+              order: sqIndex + 1  // Add order field starting from 1
+            };
+          });
+        }
+        
+        return {
+          ...question,
+          // Include questionId for all question types
+          questionId,
+          // Set questionValue directly 
+          questionValue: isSentenceType ? null : questionValue,
+          order: index + 1,
+          // Ensure passages exist for sentence type
+          passages: isSentenceType ? (question.passages || []) : undefined,
+          // Ensure sentenceQuestions exist for sentence type
+          sentenceQuestions: isSentenceType ? formattedSentenceQuestions : undefined,
+          // Ensure choiceOptions have optionId, description if missing
+          choiceOptions: isSentenceType ? undefined : 
+            (question.choiceOptions ? question.choiceOptions.map((option, optIndex) => ({
+              ...option,
+              optionId: option.optionId || (optIndex + 1).toString(),
+              description: option.description || (option.isCorrect ? 
+                "Ito ang tamang sagot." : 
+                "Hindi ito ang tamang sagot.")
+            })) : [
+              // Default choices if none exist
+              { optionId: "1", optionText: "Choice 1", isCorrect: true, description: "Ito ang tamang sagot." },
+              { optionId: "2", optionText: "Choice 2", isCorrect: false, description: "Hindi ito ang tamang sagot." }
+            ])
+        };
+      });
+      
+      // Final processing - explicitly remove questionId from sentence questions
+      const finalQuestions = formattedQuestions;
+      
+      let response;
+      
+      if (modalType === 'edit' && selectedAssessment) {
+        // Update existing assessment - don't include readingLevel and category in the update
+        // as the backend doesn't allow these to be changed
+        const updateData = {
+          questions: finalQuestions, // Use finalQuestions instead of formattedQuestions
+          isActive: formData.isActive,
+          status: formData.status
+        };
+        
+        // Update existing assessment
+        response = await MainAssessmentService.updateAssessment(selectedAssessment._id, updateData);
+      } else {
+        // Create new assessment - include all fields
+        const assessmentData = {
+          readingLevel: formData.readingLevel,
+          category: formData.category,
+          questions: finalQuestions, // Use finalQuestions instead of formattedQuestions
+          isActive: formData.isActive,
+          status: formData.status
+        };
+        
+        // For debugging - log the data being sent
+        console.log("Submitting assessment data:", JSON.stringify(assessmentData, null, 2));
+        
+        // Create new assessment
+        response = await MainAssessmentService.createAssessment(assessmentData);
+      }
+      
+      // Check if response indicates success - handle different response formats
+      const isSuccess = 
+        (response && response.success) || 
+        (response && response.data && response.data._id);
+      
+      if (isSuccess) {
+        // Get the assessment data from the response
+        const assessmentResponse = response.data || (response.success ? response : null);
+        
+        if (modalType === 'edit' && selectedAssessment) {
+          // Update local state for edit
+          setAssessments(prev => 
+            prev.map(a => a._id === selectedAssessment._id ? assessmentResponse : a)
+          );
+        } else {
+          // Add to local state for create
+          setAssessments(prev => [...prev, assessmentResponse]);
+        }
+        
+        // Reset form and close modal
+        setShowModal(false);
+        setSelectedAssessment(null);
+        setFormData({
+          readingLevel: "",
+          category: "",
+          questions: [],
+          isActive: true,
+          status: "active"
+        });
+        
+        // Show success notification
+        setSubmitSuccessDialog(true);
+        setTimeout(() => {
+          setSubmitSuccessDialog(false);
+        }, 3000);
+      } else {
+        // Handle unsuccessful response
+        toast.error("Failed to save assessment. The server did not return a valid response.");
+      }
+    } catch (error) {
+      console.error('Error saving assessment:', error);
+      
+      // Show a more detailed error message to help debugging
+      let errorMessage = "Failed to save assessment. Please check your inputs and try again.";
+      
+      if (error.response) {
+        // Server responded with an error status
+        if (error.response.data && error.response.data.message) {
+          errorMessage = `Error: ${error.response.data.message}`;
+        }
+        
+        if (error.response.data && error.response.data.error) {
+          errorMessage += `\nDetails: ${error.response.data.error}`;
+        }
+        
+        console.error('Server response error:', error.response.data);
+      }
+      
+      toast.error(errorMessage);
     }
-
-    setSubmitConfirmDialog(false);
-    setShowModal(false);
-    setSelectedAssessment(null);
-    setFormData({
-      readingLevel: "",
-      category: "",
-      questions: []
-    });
-
-    // Show success notification
-    setSubmitSuccessDialog(true);
-    setTimeout(() => {
-      setSubmitSuccessDialog(false);
-    }, 3000);
   };
 
-  // Function to handle navigation in preview mode
   const handlePreviewPageChange = (direction) => {
     if (direction === 'next' && selectedAssessment?.questions?.[0]?.passages?.length > previewPage + 1) {
       setPreviewPage(prev => prev + 1);
@@ -535,7 +1151,6 @@ const PostAssessment = ({ templates }) => {
     }
   };
 
-  // Helper to render the question type name in a friendly format
   const getQuestionTypeDisplay = (type) => {
     switch (type) {
       case "patinig": return "Vowel (Patinig)";
@@ -547,22 +1162,72 @@ const PostAssessment = ({ templates }) => {
     }
   };
 
-  // Get assessment statistics
-  const getAssessmentStats = () => {
-    const totalAssessments = assessments.length;
-    const activeAssessments = assessments.filter(a => a.status === "approved").length;
-    const pendingAssessments = assessments.filter(a => a.status === "pending").length;
-    const rejectedAssessments = assessments.filter(a => a.status === "rejected").length;
-
-    return {
-      total: totalAssessments,
-      active: activeAssessments,
-      pending: pendingAssessments,
-      rejected: rejectedAssessments
-    };
+  // Handle status toggle
+  const handleToggleStatus = async (assessment) => {
+    try {
+      const newStatus = assessment.status === 'active' ? 'inactive' : 'active';
+      const newIsActive = newStatus === 'active';
+      
+      const response = await MainAssessmentService.toggleAssessmentStatus(assessment._id, newStatus);
+      
+      if (response && response.success) {
+        // Update local state
+        setAssessments(prev => 
+          prev.map(a => a._id === assessment._id ? 
+            { ...a, status: newStatus, isActive: newIsActive } : a
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error toggling assessment status:', error);
+      alert(handleApiError(error, "Failed to update status. Please try again."));
+    }
   };
 
-  const stats = getAssessmentStats();
+  const handleImageUpload = async (e, field) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate the file
+    const validation = validateFileForUpload(file);
+    if (!validation.success) {
+      toast.error(validation.error);
+      return;
+    }
+
+    setUploadingImage(true);
+    
+    try {
+      // Create a preview using FileReader
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setQuestionFormData(prev => ({
+          ...prev,
+          [field]: reader.result, // Set data URL for preview
+          imageFile: file, // Store the file for later upload
+          imageName: file.name // Store the name for display
+        }));
+        setUploadingImage(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error processing image:", error);
+      setUploadingImage(false);
+      toast.error("Error processing image. Please try again.");
+    }
+  };
+
+  // Helper function to get category-specific folder for S3 uploads
+  const getCategoryFolder = (category) => {
+    const folderMap = {
+      'Alphabet Knowledge': 'alphabet-knowledge',
+      'Phonological Awareness': 'phonological-awareness',
+      'Decoding': 'decoding',
+      'Word Recognition': 'word-recognition',
+      'Reading Comprehension': 'reading-comprehension'
+    };
+    return folderMap[category] || '';
+  };
 
   if (loading) {
     return (
@@ -589,6 +1254,35 @@ const PostAssessment = ({ templates }) => {
     );
   }
 
+  // Add styles for the troubleshooting elements
+  const styles = {
+    troubleshootingList: {
+      listStyle: 'disc',
+      margin: '0 0 20px 20px',
+      color: '#666',
+      fontSize: '0.95rem'
+    },
+    actionButtons: {
+      display: 'flex',
+      justifyContent: 'center',
+      gap: '15px',
+      marginTop: '20px'
+    },
+    retryBtn: {
+      backgroundColor: '#f0f0f0',
+      color: '#333',
+      border: 'none',
+      padding: '10px 20px',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      transition: 'all 0.2s ease'
+    }
+  };
+
   return (
     <div className="post-assessment-container">
       <div className="pa-header">
@@ -597,16 +1291,12 @@ const PostAssessment = ({ templates }) => {
           Main Assessment Management
         </h2>
         <p>Create and manage targeted assessments for specific reading levels and categories based on student performance and learning progress.</p>
-        <button
-          className="pa-add-button"
-          onClick={handleCreateAssessment}
-        >
-          <FontAwesomeIcon icon={faPlus} /> Create New Assessment
-        </button>
       </div>
 
-      {/* Assessment Overview Stats */}
       <div className="pa-assessment-overview">
+        <div className="pa-overview-header">
+          <h3><FontAwesomeIcon icon={faLayerGroup} /> Assessment Overview</h3>
+        </div>
         <div className="pa-overview-stats">
           <div className="pa-stat-card">
             <div className="pa-stat-icon">
@@ -628,31 +1318,155 @@ const PostAssessment = ({ templates }) => {
             </div>
           </div>
 
-          <div className="pa-stat-card pending">
-            <div className="pa-stat-icon">
-              <FontAwesomeIcon icon={faLock} />
-            </div>
-            <div className="pa-stat-content">
-              <div className="pa-stat-number">{stats.pending}</div>
-              <div className="pa-stat-label">Pending Approval</div>
-            </div>
-          </div>
-
-          <div className="pa-stat-card rejected">
+          <div className="pa-stat-card inactive">
             <div className="pa-stat-icon">
               <FontAwesomeIcon icon={faExclamationTriangle} />
             </div>
             <div className="pa-stat-content">
-              <div className="pa-stat-number">{stats.rejected}</div>
-              <div className="pa-stat-label">Rejected</div>
+              <div className="pa-stat-number">{stats.inactive}</div>
+              <div className="pa-stat-label">Inactive</div>
+            </div>
+            </div>
+          </div>
+
+        <div className="pa-reading-level-overview">
+          <div className="pa-reading-level-header">
+            <h4><FontAwesomeIcon icon={faBook} /> Assessments by Reading Level</h4>
+            <p>Manage assessments for different reading levels and track their availability</p>
+          </div>
+          <div className="pa-reading-level-grid">
+            {/* Dynamic generation of reading level cards */}
+            {['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'].map(level => {
+              // Get all assessments for this reading level - use normalized comparison to handle whitespace/case issues
+              const levelAssessments = assessments.filter(a => {
+                // Normalize both strings for comparison (trim whitespace and ensure case match)
+                const normalizedLevel = level.trim();
+                const normalizedAssessmentLevel = (a.readingLevel || '').trim();
+                return normalizedAssessmentLevel === normalizedLevel;
+              });
+              
+              // Debug log to see what's happening
+              console.log(`Level: ${level}, Assessments found:`, levelAssessments.length);
+              console.log(`Assessments for ${level}:`, levelAssessments.map(a => ({ id: a._id, level: a.readingLevel, category: a.category })));
+              
+              // Get all unique categories for this reading level
+              const levelCategories = [...new Set(levelAssessments.map(a => a.category))].sort();
+              
+              return (
+                <div className="pa-reading-level-card" key={level}>
+                  <div className={`pa-reading-level-header-bar pa-level-${level.toLowerCase().replace(' ', '-')}`}>
+                    <div className="pa-reading-level-name">
+                      <FontAwesomeIcon icon={faBook} /> {level}
+                    </div>
+                    <div className="pa-reading-level-count" title={`${levelAssessments.length} assessment(s) for ${level} reading level`}>
+                      {levelAssessments.length}
+                    </div>
+                  </div>
+                  <div className="pa-reading-level-body">
+                    <div className="pa-category-list">
+                      {levelCategories.length > 0 ? (
+                        levelCategories.map(category => {
+                          // Get all assessments for this category in this reading level
+                          const categoryAssessments = levelAssessments.filter(a => a.category === category);
+                          
+                          // Debug log for this category
+                          console.log(`Level: ${level}, Category: ${category}, Assessments:`, categoryAssessments.length);
+                          
+                          // Choose the appropriate icon based on category
+                          const categoryIcon = 
+                            category === "Reading Comprehension" ? faBook : 
+                            category === "Alphabet Knowledge" ? faFont : 
+                            category === "Phonological Awareness" ? faPuzzlePiece : 
+                            category === "Decoding" ? faFileAlt : 
+                            faImages; // Word Recognition
+                          
+                          return (
+                            <div className="pa-category-item" key={category}>
+                              <div className="pa-category-name">
+                                <FontAwesomeIcon icon={categoryIcon} /> {category}
+                              </div>
+                              <div className="pa-category-count" title={`${categoryAssessments.length} assessment(s) with ${categoryAssessments.reduce((total, a) => total + (a.questions ? a.questions.length : 0), 0)} total questions`}>
+                                {categoryAssessments.length}
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="pa-category-item">
+                          <div className="pa-category-name">
+                            <FontAwesomeIcon icon={faInfoCircle} /> No categories yet
+                          </div>
+                          <div className="pa-category-count">
+                            0
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="pa-process-flow">
+        <h3>Main Assessment Process Flow</h3>
+        <div className="pa-flow-steps">
+          <div className="pa-flow-step">
+            <div className="pa-step-number">1</div>
+            <div className="pa-step-content">
+              <h4>Assessment Creation</h4>
+              <p>Teachers create targeted assessments based on student reading levels and specific learning objectives.</p>
+            </div>
+          </div>
+          <div className="pa-flow-connector">
+            <FontAwesomeIcon icon={faArrowRight} />
+          </div>
+          <div className="pa-flow-step">
+            <div className="pa-step-number">2</div>
+            <div className="pa-step-content">
+              <h4>Assessment Activation</h4>
+              <p>Teachers activate assessments to make them available to students in the mobile application.</p>
+            </div>
+          </div>
+          <div className="pa-flow-connector">
+            <FontAwesomeIcon icon={faArrowRight} />
+          </div>
+          <div className="pa-flow-step">
+            <div className="pa-step-number">3</div>
+            <div className="pa-step-content">
+              <h4>Student Assignment</h4>
+              <p>Activated assessments are assigned to students based on their reading level and identified needs.</p>
+            </div>
+          </div>
+          <div className="pa-flow-connector">
+            <FontAwesomeIcon icon={faArrowRight} />
+          </div>
+          <div className="pa-flow-step">
+            <div className="pa-step-number">4</div>
+            <div className="pa-step-content">
+              <h4>Progress Tracking</h4>
+              <p>Monitor student performance and advancement through the assessment system in real-time.</p>
+            </div>
+          </div>
+          <div className="pa-flow-connector">
+            <FontAwesomeIcon icon={faArrowRight} />
+          </div>
+          <div className="pa-flow-step">
+            <div className="pa-step-number">5</div>
+            <div className="pa-step-content">
+              <h4>Level Advancement</h4>
+              <p>Students advance to higher reading levels based on successful completion of assessments.</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* System Information */}
+    
+
       <div className="pa-system-info">
-        <h3>About Post-Assessment Process</h3>
+        <h3>About Main Assessment Process</h3>
         <div className="pa-info-grid">
           <div className="pa-info-card">
             <div className="pa-info-icon">
@@ -708,58 +1522,13 @@ const PostAssessment = ({ templates }) => {
         </div>
       </div>
 
-      {/* Process Flow */}
-      <div className="pa-process-flow">
-        <h3>Post-Assessment Process Flow</h3>
-        <div className="pa-flow-steps">
-          <div className="pa-flow-step">
-            <div className="pa-step-number">1</div>
-            <div className="pa-step-content">
-              <h4>Assessment Creation</h4>
-              <p>Teachers create targeted assessments based on pre-assessment results and specific learning objectives.</p>
-            </div>
-          </div>
-          <div className="pa-flow-connector">
-            <FontAwesomeIcon icon={faArrowRight} />
-          </div>
-          <div className="pa-flow-step">
-            <div className="pa-step-number">2</div>
-            <div className="pa-step-content">
-              <h4>Admin Review</h4>
-              <p>Assessments undergo administrative review to ensure quality and alignment with educational standards.</p>
-            </div>
-          </div>
-          <div className="pa-flow-connector">
-            <FontAwesomeIcon icon={faArrowRight} />
-          </div>
-          <div className="pa-flow-step">
-            <div className="pa-step-number">3</div>
-            <div className="pa-step-content">
-              <h4>Student Assignment</h4>
-              <p>Approved assessments are assigned to students based on their reading level and identified needs.</p>
-            </div>
-          </div>
-          <div className="pa-flow-connector">
-            <FontAwesomeIcon icon={faArrowRight} />
-          </div>
-          <div className="pa-flow-step">
-            <div className="pa-step-number">4</div>
-            <div className="pa-step-content">
-              <h4>Progress Tracking</h4>
-              <p>Monitor student performance and advancement through the assessment system in real-time.</p>
-            </div>
-          </div>
-          <div className="pa-flow-connector">
-            <FontAwesomeIcon icon={faArrowRight} />
-          </div>
-          <div className="pa-flow-step">
-            <div className="pa-step-number">5</div>
-            <div className="pa-step-content">
-              <h4>Level Advancement</h4>
-              <p>Students advance to higher reading levels based on successful completion of assessments.</p>
-            </div>
-          </div>
-        </div>
+      <div className="pa-create-assessment-section">
+        <button
+          className="pa-create-assessment-btn"
+          onClick={handleCreateAssessment}
+        >
+          <FontAwesomeIcon icon={faPlus} /> Create New Assessment
+        </button>
       </div>
 
       <div className="pa-filters">
@@ -800,7 +1569,31 @@ const PostAssessment = ({ templates }) => {
             ))}
           </select>
         </div>
+        
+        {filteredAssessments.length > 0 && (
+          <button 
+            className="pa-preview-all-btn"
+            onClick={handlePreviewAllAssessments}
+            title="Preview all assessments"
+          >
+            <FontAwesomeIcon icon={faEye} /> Preview All
+          </button>
+        )}
       </div>
+
+      {apiMessage && (
+        <div className="pa-api-message">
+          <FontAwesomeIcon icon={faInfoCircle} className="pa-api-message-icon" />
+          <p>{apiMessage}</p>
+          <button 
+            className="pa-dismiss-message" 
+            onClick={() => setApiMessage(null)}
+            title="Dismiss message"
+          >
+            <FontAwesomeIcon icon={faTimes} />
+          </button>
+        </div>
+      )}
 
       <div className="pa-assessment-list">
         {filteredAssessments.length === 0 ? (
@@ -808,23 +1601,79 @@ const PostAssessment = ({ templates }) => {
             <div className="pa-empty-icon">
               <FontAwesomeIcon icon={faFileAlt} />
             </div>
-            <h3>No assessments found</h3>
-            <p>Create your first assessment to get started with targeted learning interventions.</p>
-            <button
-              className="pa-create-first"
-              onClick={handleCreateAssessment}
-            >
-              <FontAwesomeIcon icon={faPlus} /> Create Assessment
-            </button>
+            {searchTerm || filterReadingLevel !== "all" || filterCategory !== "all" ? (
+              <>
+                <h3>No matching assessments found</h3>
+                <p>Try adjusting your search or filter criteria to find assessments.</p>
+                <button
+                  className="pa-reset-filters"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setFilterReadingLevel("all");
+                    setFilterCategory("all");
+                  }}
+                >
+                  <FontAwesomeIcon icon={faFilter} /> Reset Filters
+                </button>
+              </>
+            ) : (
+              <>
+                <h3>No Assessment Templates Found</h3>
+                <p>This could be due to one of the following reasons:</p>
+                <ul className="pa-troubleshooting-list" style={styles.troubleshootingList}>
+                  <li>No assessment templates have been created yet</li>
+                  <li>The database connection might be unavailable</li>
+                  <li>There might be an issue with the server</li>
+                </ul>
+                <div className="pa-getting-started-tips">
+                  <h4><FontAwesomeIcon icon={faInfoCircle} /> Options</h4>
+                  <ol>
+                    <li>Click "Create New Assessment" to build your first assessment</li>
+                    <li>Try refreshing the page</li>
+                    <li>Check your internet connection</li>
+                    <li>Contact the administrator if the problem persists</li>
+                  </ol>
+                </div>
+                <div className="pa-action-buttons" style={styles.actionButtons}>
+                  <button
+                    className="pa-retry-btn"
+                    style={styles.retryBtn}
+                    onClick={() => window.location.reload()}
+                  >
+                    <FontAwesomeIcon icon={faFilter} /> Refresh Page
+                  </button>
+                  <button
+                    className="pa-create-first"
+                    onClick={handleCreateAssessment}
+                  >
+                    <FontAwesomeIcon icon={faPlus} /> Create Your First Assessment
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           <div className="pa-table">
             <div className="pa-header-row">
-              <div className="pa-header-cell">Reading Level</div>
-              <div className="pa-header-cell">Category</div>
-              <div className="pa-header-cell">Questions</div>
-              <div className="pa-header-cell">Status</div>
-              <div className="pa-header-cell">Actions</div>
+              <div className="pa-header-cell">
+                <FontAwesomeIcon icon={faBook} className="pa-header-icon" /> 
+                Reading Level
+              </div>
+              <div className="pa-header-cell">
+                <FontAwesomeIcon icon={faLayerGroup} className="pa-header-icon" /> 
+                Category
+              </div>
+              <div className="pa-header-cell">
+                <FontAwesomeIcon icon={faClipboardList} className="pa-header-icon" /> 
+                Questions
+              </div>
+              <div className="pa-header-cell">
+                <FontAwesomeIcon icon={faCheckCircle} className="pa-header-icon" /> 
+                Status
+              </div>
+              <div className="pa-header-cell">
+                Actions
+              </div>
             </div>
 
             {filteredAssessments.map(assessment => (
@@ -834,61 +1683,59 @@ const PostAssessment = ({ templates }) => {
                   {assessment.readingLevel}
                 </div>
                 <div className="pa-cell">
-                  <FontAwesomeIcon icon={faPuzzlePiece} className="pa-cell-icon" />
+                  <FontAwesomeIcon icon={
+                    assessment.category === "Reading Comprehension" ? faBook : 
+                    assessment.category === "Alphabet Knowledge" ? faFont : 
+                    assessment.category === "Phonological Awareness" ? faPuzzlePiece : 
+                    assessment.category === "Decoding" ? faFileAlt : 
+                    faImages
+                  } className="pa-cell-icon" /> 
                   {assessment.category}
                 </div>
                 <div className="pa-cell">{assessment.questions.length}</div>
                 <div className="pa-cell">
-                  {assessment.status === "approved" ? (
+                  {assessment.isActive ? (
                     <span className="pa-status pa-active">
                       <FontAwesomeIcon icon={faCheckCircle} /> Active
                     </span>
-                  ) : assessment.status === "pending" ? (
-                    <span className="pa-status pa-pending">
-                      <FontAwesomeIcon icon={faLock} /> Pending Approval
-                    </span>
                   ) : (
                                           <span className="pa-status pa-inactive">
-                        <FontAwesomeIcon icon={faExclamationTriangle} /> Rejected
-                        {assessment.rejectionReason && (
-                          <span className="post-assess-status-tooltip">
-                            <FontAwesomeIcon icon={faInfoCircle} className="post-assess-info-icon" />
-                            <span className="post-assess-tooltip-content">{assessment.rejectionReason}</span>
-                          </span>
-                        )}
+                      <FontAwesomeIcon icon={faExclamationTriangle} /> Inactive
                       </span>
                   )}
                 </div>
                 <div className="pa-cell pa-actions">
-                  {/* Only show edit and delete buttons for rejected assessments */}
-                  {assessment.status === "rejected" && (
-                    <>
                       <button
                         className="pa-edit-btn"
                         onClick={() => handleEditAssessment(assessment)}
-                        title="Edit Assessment"
+                        title="Edit assessment"
                       >
                         <FontAwesomeIcon icon={faEdit} />
                       </button>
+                  
+                      <button
+                        className="pa-preview-btn"
+                        onClick={() => handlePreviewAssessment(assessment)}
+                        title="Preview assessment"
+                      >
+                        <FontAwesomeIcon icon={faEye} />
+                      </button>
+                  
+                      <button
+                        className={`pa-status-toggle-btn ${assessment.isActive ? 'active' : 'inactive'}`}
+                        onClick={() => handleToggleStatus(assessment)}
+                        title={assessment.isActive ? "Deactivate assessment" : "Activate assessment"}
+                      >
+                        <FontAwesomeIcon icon={assessment.isActive ? faLock : faCheckCircle} />
+                      </button>
+                  
                       <button
                         className="pa-delete-btn"
                         onClick={() => handleDeleteConfirm(assessment)}
-                        title="Delete Assessment"
+                        title="Delete assessment"
                       >
                         <FontAwesomeIcon icon={faTrash} />
                       </button>
-                    </>
-
-                  )}
-
-                  {/* Preview is always available */}
-                  <button
-                    className="pa-preview-btn"
-                    onClick={() => handlePreviewAssessment(assessment)}
-                    title="Preview Assessment"
-                  >
-                    <FontAwesomeIcon icon={faEye} />
-                  </button>
                 </div>
               </div>
             ))}
@@ -896,11 +1743,9 @@ const PostAssessment = ({ templates }) => {
         )}
       </div>
 
-      {/* Assessment Modal */}
       {showModal && (
         <div className="pa-modal-overlay">
           <div className={`pa-modal ${modalType === 'preview' || showQuestionForm ? 'pa-modal-enhanced' : ''} ${modalType === 'delete' ? 'pa-modal-narrow' : ''}`}>
-            {/* Modal Header */}
             <div className="pa-modal-header">
               <h3>
                 {modalType === 'create' ?
@@ -921,7 +1766,6 @@ const PostAssessment = ({ templates }) => {
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="pa-modal-body">
                               {modalType === 'delete' ? (
                 <div className="pa-delete-confirm">
@@ -930,55 +1774,16 @@ const PostAssessment = ({ templates }) => {
                   </div>
                   <div className="pa-delete-message">
                     <h4>Delete Assessment</h4>
-                    {selectedAssessment?.status === 'rejected' ? (
-                      <>
-                        <p>Are you sure you want to permanently delete this rejected assessment?</p>
+                    <p>Are you sure you want to permanently delete this assessment?</p>
                         <p className="pa-delete-warning">
-                          This assessment was rejected and will be permanently deleted.
-                          This action cannot be undone.
-                        </p>
-                        {selectedAssessment?.rejectionReason && (
-                          <div className="post-assess-rejection-reason">
-                            <h5><FontAwesomeIcon icon={faInfoCircle} /> Rejection Reason:</h5>
-                            <p>"{selectedAssessment.rejectionReason}"</p>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <p>This assessment cannot be deleted because it has been submitted for approval.</p>
-                        <p className="pa-delete-info">
-                          Only rejected assessments can be deleted. Contact an administrator if you need to remove this assessment.
-                        </p>
-                      </>
-                    )}
-                  </div>
-                  <div className="pa-assessment-details">
-                    <div className="pa-detail-row">
-                      <span className="pa-detail-label">Reading Level:</span>
-                      <span className="pa-detail-value">{selectedAssessment?.readingLevel}</span>
-                    </div>
-                    <div className="pa-detail-row">
-                      <span className="pa-detail-label">Category:</span>
-                      <span className="pa-detail-value">{selectedAssessment?.category}</span>
-                    </div>
-                    <div className="pa-detail-row">
-                      <span className="pa-detail-label">Status:</span>
-                      <span className={`pa-detail-value status-${selectedAssessment?.status}`}>
-                        {selectedAssessment?.status?.charAt(0).toUpperCase() + selectedAssessment?.status?.slice(1)}
-                      </span>
-                    </div>
-                    <div className="pa-detail-row">
-                      <span className="pa-detail-label">Questions:</span>
-                      <span className="pa-detail-value">{selectedAssessment?.questions.length}</span>
-                    </div>
+                      This action cannot be undone. All questions and content will be permanently removed.
+                    </p>
                   </div>
                 </div>
               ) : modalType === 'preview' ? (
                 <div className="pa-assessment-preview">
                   <div className="pa-preview-header">
                     <div className="pa-preview-info">
-                      <div className="pa-preview-panel">
                         <div className="pa-preview-section">
                           <span className="pa-preview-label">Reading Level:</span>
                           <span className="pa-preview-value">{selectedAssessment.readingLevel}</span>
@@ -997,35 +1802,31 @@ const PostAssessment = ({ templates }) => {
                         <div className="pa-preview-section">
                           <span className="pa-preview-label">Status:</span>
                           <span className="pa-preview-value">
-                            {selectedAssessment.status === "approved" ? (
+                          {selectedAssessment.isActive ? (
                               <span className="pa-status-tag active">
                                 <FontAwesomeIcon icon={faCheckCircle} /> Active
                               </span>
-                            ) : selectedAssessment.status === "pending" ? (
-                              <span className="pa-status-tag pending">
-                                <FontAwesomeIcon icon={faLock} /> Pending Approval
-                              </span>
                             ) : (
-                              <span className="pa-status-tag rejected">
-                                <FontAwesomeIcon icon={faExclamationTriangle} /> Rejected
+                            <span className="pa-status-tag inactive">
+                              <FontAwesomeIcon icon={faExclamationTriangle} /> Inactive
                               </span>
                             )}
                           </span>
-                        </div>
                       </div>
                     </div>
                   </div>
 
                   <div className="pa-preview-content">
                     <h4>
-                      <FontAwesomeIcon icon={faFileAlt} className="pa-preview-icon" /> Assessment Questions
+                      <FontAwesomeIcon icon={faClipboardList} className="pa-preview-icon" /> 
+                      Assessment Questions
                     </h4>
 
                     {selectedAssessment.questions.map((question, index) => (
                       <div key={index} className="pa-preview-question-card">
                         <div className="pa-question-header">
                                                 <div className="pa-question-metadata">
-                          <span className="pa-question-number">Question {index + 1}</span>
+                            <span className="pa-question-num">Question {index + 1}</span>
                           <span className="pa-question-type">
                             <FontAwesomeIcon
                               icon={
@@ -1110,24 +1911,30 @@ const PostAssessment = ({ templates }) => {
 
                               <div className="pa-comprehension-questions">
                                 <h5><FontAwesomeIcon icon={faQuestion} /> Comprehension Questions</h5>
-                                {question.sentenceQuestions && question.sentenceQuestions.map((sq, sqIndex) => (
-                                  <div key={sqIndex} className="pa-comprehension-question">
-                                    <div className="pa-comprehension-q-header">
-                                      <span className="pa-comprehension-q-number">Q{sqIndex + 1}:</span>
-                                      <span className="pa-comprehension-q-text">{sq.questionText}</span>
-                                    </div>
+                                {question.sentenceQuestions && question.sentenceQuestions.length > 0 ? (
+                                  question.sentenceQuestions.map((sq, sqIndex) => (
+                                    <div key={sqIndex} className="pa-comprehension-question">
+                                      <div className="pa-comprehension-q-header">
+                                        <span className="pa-comprehension-q-number">Q{sqIndex + 1}:</span>
+                                        <span className="pa-comprehension-q-text">{sq.questionText}</span>
+                                      </div>
 
-                                    <div className="pa-comprehension-options">
-                                      <div className="pa-option pa-option-correct">
-                                        <FontAwesomeIcon icon={faCheckCircle} className="pa-option-icon" />
-                                        {sq.correctAnswer}
-                                      </div>
-                                      <div className="pa-option">
-                                        {sq.incorrectAnswer}
+                                      <div className="pa-comprehension-options">
+                                        <div className="pa-option pa-option-correct">
+                                          <FontAwesomeIcon icon={faCheckCircle} className="pa-option-icon" />
+                                          {sq.correctAnswer}
+                                        </div>
+                                        <div className="pa-option">
+                                          {sq.incorrectAnswer}
+                                        </div>
                                       </div>
                                     </div>
+                                  ))
+                                ) : (
+                                  <div className="pa-no-questions">
+                                    <p>No comprehension questions added yet.</p>
                                   </div>
-                                ))}
+                                )}
                               </div>
                             </div>
                           ) : (
@@ -1140,30 +1947,27 @@ const PostAssessment = ({ templates }) => {
                                     key={optIndex}
                                     className={`pa-option ${option.isCorrect ? 'pa-option-correct' : ''}`}
                                   >
+                                    <div className="pa-option-header">
                                     {option.isCorrect && (
                                       <FontAwesomeIcon icon={faCheckCircle} className="pa-option-icon" />
                                     )}
                                     {option.optionText}
                                   </div>
-                                ))}
-                              </div>
+                                    
+                                    {option.description && (
+                                      <div className="pa-option-description">
+                                        {option.description}
                             </div>
                           )}
-                        </div>
                       </div>
                     ))}
                   </div>
-
-                                  {selectedAssessment.status === "rejected" && selectedAssessment.rejectionReason && (
-                  <div className="post-assess-rejection-panel">
-                    <div className="post-assess-rejection-header">
-                      <FontAwesomeIcon icon={faInfoCircle} /> Rejection Reason
                     </div>
-                    <div className="post-assess-rejection-content">
-                      {selectedAssessment.rejectionReason}
+                          )}
                     </div>
                   </div>
-                )}
+                    ))}
+                  </div>
                 </div>
               ) : showQuestionForm ? (
                 <div className="pa-question-form">
@@ -1206,9 +2010,8 @@ const PostAssessment = ({ templates }) => {
                           )}
                           {formData.category === "Phonological Awareness" && (
                             <>
-                              <option value="malapantig">Syllable (Malapantig)</option>
-                              <option value="katinig">Consonant (Katinig)</option>
                               <option value="patinig">Vowel (Patinig)</option>
+                              <option value="katinig">Consonant (Katinig)</option>
                             </>
                           )}
                           {(formData.category === "Word Recognition" || formData.category === "Decoding") && (
@@ -1242,7 +2045,7 @@ const PostAssessment = ({ templates }) => {
                           <div className="pa-form-group">
                             <label htmlFor="questionValue">
                               Question Display Text:
-                              <Tooltip text="The text shown alongside the question, like a letter or word combination that students need to analyze." />
+                              <Tooltip text="The text shown alongside the question, like a letter or word combination that students need to analyze. Optional - will be set to null if empty." />
                             </label>
                             <input
                               type="text"
@@ -1250,7 +2053,7 @@ const PostAssessment = ({ templates }) => {
                               name="questionValue"
                               value={questionFormData.questionValue || ""}
                               onChange={handleQuestionFormChange}
-                              placeholder="Enter text to display with the question (e.g., 'A' or 'BO + LA')"
+                              placeholder="Enter text to display with the question (e.g., 'A' or 'BO + LA') - optional"
                               className="pa-text-input"
                             />
                           </div>
@@ -1262,34 +2065,46 @@ const PostAssessment = ({ templates }) => {
                             </label>
                             <div className="pa-file-upload">
                               <label className="pa-file-upload-btn">
-                                <FontAwesomeIcon icon={faUpload} /> Choose Image
+                                <FontAwesomeIcon icon={faCloudUploadAlt} />
+                                {uploadingImage ? "Uploading..." : "Upload Image"}
                                 <input
                                   type="file"
                                   accept="image/*"
-                                  onChange={(e) => handleFileUpload(e, 'questionImage')}
+                                  onChange={(e) => handleImageUpload(e, "questionImage")}
                                   className="pa-file-input"
+                                  disabled={uploadingImage}
                                 />
                               </label>
-                              <span className="pa-file-name">
-                                {questionFormData.questionImage
-                                  ? questionFormData.questionImage.split('/').pop()
-                                  : "No file chosen"}
-                              </span>
 
                               {questionFormData.questionImage && (
                                 <div className="pa-image-preview">
                                   <img
-                                    src={questionFormData.questionImage}
-                                    alt="Question preview"
+                                    src={
+                                      typeof questionFormData.questionImage === 'string' && 
+                                      questionFormData.questionImage.startsWith('data:') 
+                                        ? questionFormData.questionImage // Show data URL for preview
+                                        : questionFormData.questionImage // Show existing URL
+                                    } 
+                                    alt="Question" 
                                     className="pa-preview-image"
                                   />
+                                  
+                                  <div className="pa-file-name">
+                                    {questionFormData.imageName || "Image Preview"}
+                                  </div>
+                                  
                                   <button
                                     type="button"
+                                    onClick={() => {
+                                      setQuestionFormData({
+                                        ...questionFormData,
+                                        questionImage: null,
+                                        imageFile: null,
+                                        imageName: ""
+                                      });
+                                    }}
                                     className="pa-remove-image"
-                                    onClick={() => setQuestionFormData(prev => ({
-                                      ...prev,
-                                      questionImage: null
-                                    }))}
+                                    title="Remove Image"
                                   >
                                     <FontAwesomeIcon icon={faTimes} />
                                   </button>
@@ -1306,7 +2121,7 @@ const PostAssessment = ({ templates }) => {
 
                             <div className="pa-choices-container">
                               {questionFormData.choiceOptions.map((choice, index) => (
-                                <div key={index} className="pa-choice-item">
+                                <div className="pa-choice-item" key={index}>
                                   <div className="pa-choice-input-group">
                                     <input
                                       type="text"
@@ -1324,10 +2139,17 @@ const PostAssessment = ({ templates }) => {
                                           name="correctOption"
                                           checked={choice.isCorrect}
                                           onChange={() => {
-                                            // Set this option as correct and all others as incorrect
-                                            questionFormData.choiceOptions.forEach((_, i) => {
-                                              handleChoiceChange(i, "isCorrect", i === index);
-                                            });
+                                            // Update all choices to be incorrect first
+                                            const updatedChoices = questionFormData.choiceOptions.map(c => ({
+                                              ...c,
+                                              isCorrect: false
+                                            }));
+                                            // Then set the selected one to correct
+                                            updatedChoices[index].isCorrect = true;
+                                            setQuestionFormData(prev => ({
+                                              ...prev,
+                                              choiceOptions: updatedChoices
+                                            }));
                                           }}
                                         />
                                         <FontAwesomeIcon icon={choice.isCorrect ? faCheckCircle : faQuestion} />
@@ -1346,27 +2168,32 @@ const PostAssessment = ({ templates }) => {
                                       )}
                                     </div>
                                   </div>
+
+                                  <div className="pa-choice-description">
+                                    <label>
+                                      Description:
+                                      <Tooltip text="Provide feedback to be shown when this option is selected. For correct answers, explain why it's right. For incorrect answers, give guidance." />
+                                    </label>
+                                    <textarea
+                                      value={choice.description || ''}
+                                      onChange={(e) => handleChoiceChange(index, "description", e.target.value)}
+                                      placeholder={choice.isCorrect ? 
+                                        "Explain why this is the correct answer (e.g., 'Tama! Ang letra B ay may tunog na /buh/.')" : 
+                                        "Explain why this is incorrect (e.g., 'Mali. Ang tunog na /kuh/ ay para sa letra K.')"}
+                                    ></textarea>
+                                  </div>
                                 </div>
                               ))}
 
-                              <button
-                                type="button"
-                                className="pa-add-choice-btn"
-                                onClick={handleAddChoice}
-                              >
-                                <FontAwesomeIcon icon={faPlus} /> Add Answer Choice
-                              </button>
-
                               <div className="pa-help-text">
                                 <FontAwesomeIcon icon={faInfoCircle} />
-                                Note: The system will automatically limit to 2 options for mobile display.
+                                Note: This assessment type is limited to exactly 2 answer choices for optimal mobile experience.
                               </div>
                             </div>
                           </div>
                         </>
                       )}
                       {questionFormData.questionType === "sentence" && (
-                        // Reading Passage questions form
                         <div className="pa-passage-form pa-full-width">
                           <div className="pa-form-section">
                             <h5><FontAwesomeIcon icon={faBook} /> Reading Passage Pages</h5>
@@ -1520,52 +2347,108 @@ const PostAssessment = ({ templates }) => {
                                   />
                                 </div>
 
-                                <div className="pa-form-group">
-                                  <label>
-                                    Correct Answer:
-                                    <Tooltip text="The correct answer to the comprehension question." />
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={sq.correctAnswer}
-                                    onChange={(e) => {
-                                      const updatedQuestions = [...questionFormData.sentenceQuestions];
-                                      updatedQuestions[index] = {
-                                        ...updatedQuestions[index],
-                                        correctAnswer: e.target.value
-                                      };
-                                      setQuestionFormData(prev => ({
-                                        ...prev,
-                                        sentenceQuestions: updatedQuestions
-                                      }));
-                                    }}
-                                    placeholder="Enter the correct answer"
-                                    className="pa-text-input pa-correct-input"
-                                  />
+                                <div className="pa-answer-section">
+                                  <h5><FontAwesomeIcon icon={faCheckCircle} /> Correct Answer</h5>
+                                  
+                                  <div className="pa-form-group">
+                                    <label>
+                                      Correct Answer Text:
+                                      <Tooltip text="The correct answer to the comprehension question." />
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={sq.correctAnswer}
+                                      onChange={(e) => {
+                                        const updatedQuestions = [...questionFormData.sentenceQuestions];
+                                        updatedQuestions[index] = {
+                                          ...updatedQuestions[index],
+                                          correctAnswer: e.target.value
+                                        };
+                                        setQuestionFormData(prev => ({
+                                          ...prev,
+                                          sentenceQuestions: updatedQuestions
+                                        }));
+                                      }}
+                                      placeholder="Enter the correct answer"
+                                      className="pa-text-input pa-correct-input"
+                                    />
+                                  </div>
+                                  
+                                  <div className="pa-form-group">
+                                    <label>
+                                      Correct Answer Feedback:
+                                      <Tooltip text="Provide feedback to be shown when the student selects the correct answer." />
+                                    </label>
+                                    <textarea
+                                      value={sq.correctDescription || ''}
+                                      onChange={(e) => {
+                                        const updatedQuestions = [...questionFormData.sentenceQuestions];
+                                        updatedQuestions[index] = {
+                                          ...updatedQuestions[index],
+                                          correctDescription: e.target.value
+                                        };
+                                        setQuestionFormData(prev => ({
+                                          ...prev,
+                                          sentenceQuestions: updatedQuestions
+                                        }));
+                                      }}
+                                      placeholder="Explain why this is the correct answer (e.g., 'Tama! Ito ang sagot dahil...')"
+                                      className="pa-textarea"
+                                      rows={2}
+                                    ></textarea>
+                                  </div>
                                 </div>
 
-                                <div className="pa-form-group">
-                                  <label>
-                                    Incorrect Answer:
-                                    <Tooltip text="One incorrect option for the comprehension question." />
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={sq.incorrectAnswer}
-                                    onChange={(e) => {
-                                      const updatedQuestions = [...questionFormData.sentenceQuestions];
-                                      updatedQuestions[index] = {
-                                        ...updatedQuestions[index],
-                                        incorrectAnswer: e.target.value
-                                      };
-                                      setQuestionFormData(prev => ({
-                                        ...prev,
-                                        sentenceQuestions: updatedQuestions
-                                      }));
-                                    }}
-                                    placeholder="Enter an incorrect answer"
-                                    className="pa-text-input pa-incorrect-input"
-                                  />
+                                <div className="pa-answer-section">
+                                  <h5><FontAwesomeIcon icon={faTimes} /> Incorrect Answer</h5>
+                                  
+                                  <div className="pa-form-group">
+                                    <label>
+                                      Incorrect Answer Text:
+                                      <Tooltip text="One incorrect option for the comprehension question." />
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={sq.incorrectAnswer}
+                                      onChange={(e) => {
+                                        const updatedQuestions = [...questionFormData.sentenceQuestions];
+                                        updatedQuestions[index] = {
+                                          ...updatedQuestions[index],
+                                          incorrectAnswer: e.target.value
+                                        };
+                                        setQuestionFormData(prev => ({
+                                          ...prev,
+                                          sentenceQuestions: updatedQuestions
+                                        }));
+                                      }}
+                                      placeholder="Enter an incorrect answer"
+                                      className="pa-text-input pa-incorrect-input"
+                                    />
+                                  </div>
+                                  
+                                  <div className="pa-form-group">
+                                    <label>
+                                      Incorrect Answer Feedback:
+                                      <Tooltip text="Provide feedback to be shown when the student selects the incorrect answer." />
+                                    </label>
+                                    <textarea
+                                      value={sq.incorrectDescription || ''}
+                                      onChange={(e) => {
+                                        const updatedQuestions = [...questionFormData.sentenceQuestions];
+                                        updatedQuestions[index] = {
+                                          ...updatedQuestions[index],
+                                          incorrectDescription: e.target.value
+                                        };
+                                        setQuestionFormData(prev => ({
+                                          ...prev,
+                                          sentenceQuestions: updatedQuestions
+                                        }));
+                                      }}
+                                      placeholder="Explain why this is not the correct answer (e.g., 'Hindi tama. Ang sagot ay...')"
+                                      className="pa-textarea"
+                                      rows={2}
+                                    ></textarea>
+                                  </div>
                                 </div>
                               </div>
                             ))}
@@ -1573,19 +2456,7 @@ const PostAssessment = ({ templates }) => {
                             <button
                               type="button"
                               className="pa-add-sentence-question-btn"
-                              onClick={() => {
-                                setQuestionFormData(prev => ({
-                                  ...prev,
-                                  sentenceQuestions: [
-                                    ...prev.sentenceQuestions,
-                                    {
-                                      questionText: "",
-                                      correctAnswer: "",
-                                      incorrectAnswer: ""
-                                    }
-                                  ]
-                                }));
-                              }}
+                              onClick={handleAddSentenceQuestion}
                             >
                               <FontAwesomeIcon icon={faPlus} /> Add Comprehension Question
                             </button>
@@ -1619,7 +2490,6 @@ const PostAssessment = ({ templates }) => {
                   </div>
                 </div>
               ) : (
-                // Assessment Form
                 <div className="pa-assessment-form">
                   <div className="pa-assessment-form-header">
                     <h4>
@@ -1649,7 +2519,7 @@ const PostAssessment = ({ templates }) => {
                           value={formData.readingLevel}
                           onChange={handleFormChange}
                           required
-                          className="pa-select-input"
+                          className={`pa-select-input ${modalType === 'create' && formData.readingLevel && formData.category && !canCreateAssessment(formData.readingLevel, formData.category).canCreate ? 'pa-select-error' : ''}`}
                         >
                           <option value="">Select Reading Level</option>
                           <option value="Low Emerging">Low Emerging</option>
@@ -1671,7 +2541,7 @@ const PostAssessment = ({ templates }) => {
                           value={formData.category}
                           onChange={handleFormChange}
                           required
-                          className="pa-select-input"
+                          className={`pa-select-input ${modalType === 'create' && formData.readingLevel && formData.category && !canCreateAssessment(formData.readingLevel, formData.category).canCreate ? 'pa-select-error' : ''}`}
                         >
                           <option value="">Select Category</option>
                           <option value="Alphabet Knowledge">Alphabet Knowledge</option>
@@ -1680,6 +2550,29 @@ const PostAssessment = ({ templates }) => {
                           <option value="Word Recognition">Word Recognition</option>
                           <option value="Reading Comprehension">Reading Comprehension</option>
                         </select>
+                        
+                        {modalType === 'create' && formData.readingLevel && formData.category && !canCreateAssessment(formData.readingLevel, formData.category).canCreate && (
+                          <div className="pa-combination-error">
+                            <FontAwesomeIcon icon={faExclamationTriangle} />
+                            This combination already exists. Only one assessment per reading level and category is allowed.
+                            <button 
+                              type="button"
+                              className="pa-edit-existing-link"
+                              onClick={() => {
+                                // Close current modal
+                                setShowModal(false);
+                                // Find the existing assessment
+                                const existing = checkExistingAssessment(formData.readingLevel, formData.category);
+                                if (existing) {
+                                  // Open it in edit mode
+                                  setTimeout(() => handleEditAssessment(existing), 300);
+                                }
+                              }}
+                            >
+                              <FontAwesomeIcon icon={faEdit} /> Edit Existing Assessment
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1689,7 +2582,6 @@ const PostAssessment = ({ templates }) => {
                       <h5>
                         <FontAwesomeIcon icon={faFileAlt} />
                         Assessment Questions
-
                       </h5>
                       <div className="pa-questions-stats">
                         <span className="pa-questions-count">
@@ -1699,7 +2591,7 @@ const PostAssessment = ({ templates }) => {
                           type="button"
                           className="pa-add-question-btn"
                           onClick={handleAddQuestion}
-                          disabled={!formData.category}
+                          disabled={!formData.category || (modalType === 'create' && formData.readingLevel && formData.category && !canCreateAssessment(formData.readingLevel, formData.category).canCreate)}
                         >
                           <FontAwesomeIcon icon={faPlus} /> Add Question
                         </button>
@@ -1784,18 +2676,11 @@ const PostAssessment = ({ templates }) => {
                     </div>
                   </div>
 
-                  <div className="pa-form-note">
-                    <FontAwesomeIcon icon={faInfoCircle} />
-                    <p>
-                      Your assessment will be submitted for admin approval before it becomes available for student assignment.
-                      Ensure all questions are complete and properly configured.
-                    </p>
-                  </div>
+                  {/* Admin approval message removed */}
                 </div>
               )}
             </div>
 
-            {/* Modal Footer */}
             <div className="pa-modal-footer">
               {modalType === 'delete' ? (
                 <>
@@ -1820,7 +2705,7 @@ const PostAssessment = ({ templates }) => {
                   <FontAwesomeIcon icon={faTimes} /> Close Preview
                 </button>
               ) : showQuestionForm ? (
-                null  // Buttons are inside the question form
+                null
               ) : (
                 <>
                   <button
@@ -1832,7 +2717,7 @@ const PostAssessment = ({ templates }) => {
                   <button
                     className="pa-modal-save"
                     onClick={handleSaveAssessment}
-                    disabled={!formData.readingLevel || !formData.category || formData.questions.length === 0}
+                    disabled={!formData.readingLevel || !formData.category || formData.questions.length === 0 || (modalType === 'create' && !canCreateAssessment(formData.readingLevel, formData.category).canCreate)}
                   >
                     <FontAwesomeIcon icon={modalType === 'create' ? faPlus : faEdit} />
                     {modalType === 'create' ? ' Create Assessment' : ' Save Changes'}
@@ -1844,12 +2729,13 @@ const PostAssessment = ({ templates }) => {
         </div>
       )}
 
-      {/* Submit Confirmation Dialog */}
       {submitConfirmDialog && (
         <div className="pa-modal-overlay">
           <div className="pa-modal pa-confirm-dialog">
             <div className="pa-modal-header">
-              <h3><FontAwesomeIcon icon={faLock} className="pa-modal-header-icon" /> Submit for Admin Approval</h3>
+              <h3><FontAwesomeIcon icon={modalType === 'create' ? faPlus : faEdit} className="pa-modal-header-icon" /> 
+                {modalType === 'create' ? 'Create Assessment' : 'Save Changes'}
+              </h3>
               <button
                 className="pa-modal-close"
                 onClick={() => setSubmitConfirmDialog(false)}
@@ -1860,12 +2746,12 @@ const PostAssessment = ({ templates }) => {
 
             <div className="pa-modal-body">
               <div className="pa-confirm-icon">
-                <FontAwesomeIcon icon={faLock} />
+                <FontAwesomeIcon icon={modalType === 'create' ? faPlus : faEdit} />
               </div>
               <div className="pa-confirm-message">
-                <p>Your assessment will be submitted for admin approval before it can be assigned to students.</p>
-                <p>Once submitted, it will appear with "Pending Approval" status.</p>
-                <p className="pa-confirm-question">Would you like to submit this assessment now?</p>
+                <p>You're about to {modalType === 'create' ? 'create a new' : 'update this'} assessment.</p>
+                <p>Once saved, it will be immediately available in the system.</p>
+                <p className="pa-confirm-question">Would you like to proceed?</p>
               </div>
 
               <div className="pa-submission-summary">
@@ -1898,27 +2784,32 @@ const PostAssessment = ({ templates }) => {
                 className="pa-modal-save"
                 onClick={handleConfirmSubmit}
               >
-                <FontAwesomeIcon icon={faLock} /> Submit for Approval
+                <FontAwesomeIcon icon={modalType === 'create' ? faPlus : faEdit} /> 
+                {modalType === 'create' ? 'Create Assessment' : 'Save Changes'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Success Notification */}
       {submitSuccessDialog && (
         <div className="pa-success-notification">
           <div className="pa-success-icon">
             <FontAwesomeIcon icon={faCheckCircle} />
           </div>
           <div className="pa-success-message">
-            <p>Assessment submitted successfully!</p>
-            <p className="pa-success-detail">Your assessment has been sent for admin approval.</p>
+            <p>
+              {modalType === 'create' 
+                ? 'Assessment created successfully!' 
+                : 'Assessment updated successfully!'}
+            </p>
+            <div className="pa-success-detail">
+              <span>{formData.readingLevel}</span> | <span>{formData.category}</span>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Delete Success Notification */}
       {deleteSuccessDialog && (
         <div className="pa-success-notification">
           <div className="pa-success-icon">
@@ -1926,12 +2817,10 @@ const PostAssessment = ({ templates }) => {
           </div>
           <div className="pa-success-message">
             <p>Assessment deleted successfully!</p>
-            <p className="pa-success-detail">The assessment has been permanently removed.</p>
           </div>
         </div>
       )}
 
-      {/* Duplicate Restriction Dialog */}
       {duplicateRestrictionDialog && (
         <div className="pa-modal-overlay">
           <div className="pa-modal pa-restriction-dialog">
@@ -1962,18 +2851,30 @@ const PostAssessment = ({ templates }) => {
                 
                 {(() => {
                   const existing = checkExistingAssessment(formData.readingLevel, formData.category);
-                  if (existing?.status === 'pending') {
+                  if (existing) {
                     return (
-                      <div className="pa-restriction-details pending">
-                        <FontAwesomeIcon icon={faLock} />
-                        <span>A pending assessment is awaiting admin approval</span>
-                      </div>
-                    );
-                  } else if (existing?.status === 'approved') {
-                    return (
-                      <div className="pa-restriction-details approved">
-                        <FontAwesomeIcon icon={faCheckCircle} />
-                        <span>An active assessment is already deployed</span>
+                      <div className="pa-restriction-details">
+                        <FontAwesomeIcon icon={faExclamationTriangle} />
+                        <span>An assessment already exists for this reading level and category combination</span>
+                        
+                        <div className="pa-existing-assessment-details">
+                          <h5>Existing Assessment Details:</h5>
+                          <div className="pa-existing-detail">
+                            <span className="pa-existing-label">Status:</span>
+                            <span className={`pa-existing-value ${existing.isActive ? 'active' : 'inactive'}`}>
+                              <FontAwesomeIcon icon={existing.isActive ? faCheckCircle : faExclamationTriangle} />
+                              {existing.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                          <div className="pa-existing-detail">
+                            <span className="pa-existing-label">Questions:</span>
+                            <span className="pa-existing-value">{existing.questions?.length || 0}</span>
+                          </div>
+                          <div className="pa-existing-detail">
+                            <span className="pa-existing-label">ID:</span>
+                            <span className="pa-existing-value pa-existing-id">{existing._id}</span>
+                          </div>
+                        </div>
                       </div>
                     );
                   }
@@ -1982,28 +2883,44 @@ const PostAssessment = ({ templates }) => {
                 <div className="pa-restriction-options">
                   <p>You can:</p>
                   <ul className="pa-restriction-list">
-                    <li>Wait for the pending assessment to be approved or rejected</li>
+                    <li>Edit the existing assessment instead of creating a new one</li>
                     <li>Choose a different reading level or category combination</li>
-                    <li>Edit the existing rejected assessment if available</li>
-                    <li>Contact an administrator to modify active assessments</li>
+                    <li>Deactivate or delete the existing assessment first</li>
+                    <li>Contact an administrator if you need special assistance</li>
                   </ul>
                 </div>
               </div>
             </div>
             
             <div className="pa-modal-footer">
-              <button 
+              <button
                 className="pa-modal-close-btn"
                 onClick={() => setDuplicateRestrictionDialog(false)}
               >
-                <FontAwesomeIcon icon={faArrowLeft} /> Go Back
+                <FontAwesomeIcon icon={faTimes} /> Close
               </button>
             </div>
           </div>
         </div>
       )}
+      
+      {/* Unified Template Preview for Preview All functionality */}
+      <UnifiedTemplatePreview 
+        isOpen={isPreviewAllDialogOpen}
+        onClose={() => setIsPreviewAllDialogOpen(false)}
+        templates={previewAllTemplates}
+        templateType="assessment"
+        onEditTemplate={(assessment) => {
+          setIsPreviewAllDialogOpen(false);
+          handleEditAssessment(assessment);
+        }}
+      />
+      
+      <ToastContainer position="top-center" />
     </div>
   );
 };
 
-export default PostAssessment;
+// To maintain compatibility, we export as both MainAssessment and the original PostAssessment name
+export { MainAssessment as PostAssessment };
+export default MainAssessment;

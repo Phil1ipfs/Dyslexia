@@ -323,8 +323,8 @@ exports.updatePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
   // Sanitize inputs
-  const sanitizedCurrentPassword = currentPassword.replace(/[^\w!@#$%^&*]/g, '');
-  const sanitizedNewPassword = newPassword.replace(/[^\w!@#$%^&*]/g, '');
+  const sanitizedCurrentPassword = currentPassword.replace(/[^ -]/g, '');
+  const sanitizedNewPassword = newPassword.replace(/[^ -]/g, '');
 
   // Validate password complexity
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
@@ -333,54 +333,55 @@ exports.updatePassword = async (req, res) => {
   }
 
   try {
-    // Get the ParentProfile model
+    const mongoose = require('mongoose');
+    const userIdObj = mongoose.Types.ObjectId.isValid(req.user.id) ? new mongoose.Types.ObjectId(req.user.id) : null;
+    if (!userIdObj) {
+      return res.status(400).json({ error: 'Invalid user ID.' });
+    }
+    // Find parent profile by userId only
     const ParentProfile = await getParentProfileModel();
-    
-    // Find profile by userId
-    let parent = await ParentProfile.findOne({ userId: req.user.id });
-    
-    // If not found by userId, try by email
-    if (!parent && req.user.email) {
-      parent = await ParentProfile.findOne({ email: req.user.email });
+    let parentProfile = await ParentProfile.findOne({ userId: userIdObj });
+    if (!parentProfile) {
+      // Auto-create minimal parent profile if not found
+      parentProfile = new ParentProfile({
+        userId: userIdObj,
+        email: req.user.email,
+        firstName: '',
+        lastName: '',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      await parentProfile.save();
+      console.log('Auto-created minimal parent profile:', parentProfile);
     }
-    
-    if (!parent) {
-      return res.status(404).json({ error: 'Profile not found.' });
+    console.log('Parent profile found:', parentProfile);
+    // Get userId from parent profile
+    const userId = parentProfile.userId;
+    if (!userId) {
+      return res.status(404).json({ error: 'User ID not found in parent profile.' });
     }
-
-    // Special case: Check if we have the initial unhashed "DefaultPassword123!" password
-    const isInitialPassword = parent.passwordHash === "DefaultPassword123!";
-
-    // For regular case, verify current password using bcrypt
+    // Connect to users_web.users
+    const usersWebDb = mongoose.connection.useDb('users_web');
+    const usersCollection = usersWebDb.collection('users');
+    // Find user by _id
+    const user = await usersCollection.findOne({ _id: typeof userId === 'string' ? new mongoose.Types.ObjectId(userId) : userId });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found in users_web.users.' });
+    }
+    // Validate current password
     let passwordIsValid = false;
-
-    if (isInitialPassword) {
-      // For initial password, just compare directly
-      passwordIsValid = sanitizedCurrentPassword === "DefaultPassword123!";
-    } else if (parent.passwordHash) {
-      // For properly hashed passwords, use bcrypt to compare
-      passwordIsValid = await bcrypt.compare(sanitizedCurrentPassword, parent.passwordHash);
+    if (user.passwordHash) {
+      passwordIsValid = await bcrypt.compare(sanitizedCurrentPassword, user.passwordHash);
     }
-
     if (!passwordIsValid) {
-      // Log failed password change attempt
-      console.log(`[${new Date().toISOString()}] Failed password change attempt - incorrect current password`);
       return res.status(400).json({ error: 'INCORRECT_PASSWORD' });
     }
-
-    // Hash and save new password
-    parent.passwordHash = await bcrypt.hash(sanitizedNewPassword, 10);
-    
-    // If the profile doesn't have a userId, update it
-    if (!parent.userId) {
-      parent.userId = req.user.id;
-    }
-    
-    await parent.save();
-
-    // Log successful password change
-    console.log(`[${new Date().toISOString()}] Password changed successfully for ${parent.name}`);
-
+    // Hash and update new password
+    const newPasswordHash = await bcrypt.hash(sanitizedNewPassword, 10);
+    await usersCollection.updateOne(
+      { _id: user._id },
+      { $set: { passwordHash: newPasswordHash, updatedAt: new Date() } }
+    );
     res.json({ success: true, message: 'Password updated successfully.' });
   } catch (err) {
     console.error('Error updating password:', err);

@@ -1,9 +1,15 @@
 // src/services/teacherService.js - Key fixes for image handling
 import axios from 'axios';
 
+// Detect production environment
+const isProd = import.meta.env.PROD;
+
+// API base URL configuration that works in both dev and production
+const API_BASE = import.meta.env.VITE_API_URL || (isProd ? '' : 'https://literexia.onrender.com/');
+
 // Setup axios defaults for API calls
 const api = axios.create({
-  baseURL: import.meta.env.DEV ? 'http://localhost:5001/api' : '/api',
+  baseURL: `${API_BASE}/api`,
   timeout: 30000, // 30 second timeout
   headers: {
     'Content-Type': 'application/json',
@@ -328,3 +334,17 @@ export const getCacheBustedImageUrl = (url) => {
     return `${url}${joinChar}t=${Date.now()}`;
   }
 };
+
+// Create a service object with all exported functions
+const teacherService = {
+  initializeTeacherProfile,
+  fetchTeacherProfile,
+  updateTeacherProfile,
+  uploadProfileImage,
+  deleteProfileImage,
+  updateTeacherPassword,
+  getCurrentProfileImage,
+  getCacheBustedImageUrl
+};
+
+export default teacherService;

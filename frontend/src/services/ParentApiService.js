@@ -1,11 +1,14 @@
 import axios from 'axios';
 
-// Use a fixed API URL or get it from environment variables
-const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+// Detect production environment
+const isProd = import.meta.env.PROD;
+
+// API base URL configuration that works in both dev and production
+const API_BASE = import.meta.env.VITE_BACKEND_URL || (isProd ? '' : 'https://literexia.onrender.com/');
 
 // Create axios instance with default config
 const apiClient = axios.create({
-  baseURL: API_URL,
+  baseURL: API_BASE,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'

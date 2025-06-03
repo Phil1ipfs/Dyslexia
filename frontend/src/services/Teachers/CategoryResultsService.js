@@ -1,11 +1,15 @@
 // src/services/Teachers/CategoryResultsService.js
 import axios from 'axios';
 
+// Detect production environment
+const isProd = import.meta.env.PROD;
+
+// API base URL configuration that works in both dev and production
+const API_BASE = import.meta.env.VITE_API_URL || (isProd ? '' : 'https://literexia.onrender.com/');
+
 // Create axios instance with baseURL, timeouts, JSON headers
 const api = axios.create({
-  baseURL: import.meta.env.DEV
-    ? 'http://localhost:5001/api/student'
-    : '/api/student',
+  baseURL: `${API_BASE}/api/student`,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',

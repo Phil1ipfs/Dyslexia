@@ -1,7 +1,9 @@
 // config.js
 
-// Get API base URL from environment variables or use default
-export const API_BASE_URL = 'http://localhost:5001/api';
+// API configuration for the service
+const isProd = import.meta.env?.PROD || false;
+const API_BASE = import.meta.env?.VITE_API_BASE_URL || 'https://literexia.onrender.com/';
+export const API_BASE_URL = `${API_BASE}${isProd ? '/api' : ''}`; // Append /api only in production if not already in VITE_API_BASE_URL
 
 // Content URLs
 export const CONTENT_IMAGE_BASE_URL = `${API_BASE_URL}/api/content/images`;

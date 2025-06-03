@@ -22,7 +22,7 @@ const ChooseAccountType = () => {
     const fetchRoleTypes = async () => {
       try {
         const BASE = import.meta.env.VITE_API_BASE_URL || 
-                    (import.meta.env.DEV ? 'http://localhost:5001' : '');
+                    (import.meta.env.DEV ? 'https://literexia.onrender.com/' : '');
         
         // Try to fetch role definitions from API
         const response = await fetch(`${BASE}/api/roles`, {
@@ -77,8 +77,7 @@ const ChooseAccountType = () => {
       <img src={logo} alt="Literexia Logo" className="choose-logo" />
       <button className="choose-exit" onClick={() => navigate('/')}>X</button>
       <div className="choose-content">
-        <h1>Piliin ang Account Type</h1>
-        <p>Magsimula sa pagpili ng uri ng account na nababagay sa iyo.</p>
+        <h1>Choose Your Account Type</h1>
         <div className="account-options">
           <div className="account-card" onClick={() => handleSelect('parent')}>
             <img src={parentIcon} alt="Parent" />

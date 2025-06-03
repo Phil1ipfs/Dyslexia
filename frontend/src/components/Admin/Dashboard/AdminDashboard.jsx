@@ -1,8 +1,20 @@
 // src/components/Admin/Dashboard/AdminDashboard.jsx
 import React, { useState, useEffect } from 'react';
-import { Bell, Activity, Eye, Users, GraduationCap, School, UserSquare2 } from 'lucide-react';
+import { 
+  Bell, 
+  Activity, 
+  Eye, 
+  Users, 
+  GraduationCap, 
+  School, 
+  UserSquare2,
+  AlertTriangle,
+  Info,
+  BarChart3,
+  CheckCircle
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import '../../../css/Admin/Dashboard/AdminDashboard.css';
+import './AdminDashboard.css';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 const AdminDashboard = () => {
@@ -38,7 +50,7 @@ const AdminDashboard = () => {
           }
         }
 
-        const response = await fetch('http://localhost:5001/api/admin/stats', {
+        const response = await fetch('https://literexia-backend-0sb4.onrender.com/api/admin/stats', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -76,6 +88,12 @@ const AdminDashboard = () => {
         };
 
         setDashboardData(processedData);
+        
+        // Simulate a slight delay to show loading animation
+        setTimeout(() => {
+          setLoading(false);
+        }, 800);
+        
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         setError(error.message || 'Failed to load dashboard data');
@@ -86,7 +104,6 @@ const AdminDashboard = () => {
           localStorage.removeItem('userData');
           navigate('/login');
         }
-      } finally {
         setLoading(false);
       }
     };
@@ -97,6 +114,15 @@ const AdminDashboard = () => {
   const handleViewStudents = () => navigate('/admin/student-list');
   const handleViewTeachers = () => navigate('/admin/teacher-list');
   const handleViewParents = () => navigate('/admin/parent-list');
+  
+  // Format date for display
+  const formatDate = (date = new Date()) => {
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
   const chartData = [
     { name: 'Teachers', value: dashboardData.teachers.count || 0, color: '#FFB347' },
@@ -107,7 +133,7 @@ const AdminDashboard = () => {
   if (loading) {
     return (
       <div className="admin-dashboard admin-dashboard--loading">
-        <div className="admin-dashboard__loading-spinner">Loading dashboard...</div>
+        <div className="admin-dashboard__loading-spinner">Loading dashboard data...</div>
       </div>
     );
   }
@@ -125,10 +151,20 @@ const AdminDashboard = () => {
     );
   }
 
+  // Calculate overall stats for the attention banner
+  const activeStudentsPercentage = dashboardData.students.count > 0 
+    ? Math.round((dashboardData.students.active / dashboardData.students.count) * 100) 
+    : 0;
+  
+  const showAttentionBanner = activeStudentsPercentage < 30;
+
   return (
     <div className="admin-dashboard">
       <div className="admin-dashboard__header">
-        <h1 className="admin-dashboard__title">Dashboard Overview</h1>
+        <h1 className="admin-dashboard__title">
+          <BarChart3 size={24} />
+          Dashboard Overview
+        </h1>
         <div className="admin-dashboard__actions">
           <button onClick={() => window.location.reload()} className="admin-dashboard__refresh-btn">
             <Activity size={20} />
@@ -139,36 +175,48 @@ const AdminDashboard = () => {
           </button>
         </div>
       </div>
+      
+      {/* Info Banner */}
+      <div className="admin-dashboard__info-banner">
+        <Info className="admin-dashboard__info-icon" size={28} />
+        <div className="admin-dashboard__info-content">
+          <h3>Admin Dashboard Overview</h3>
+          <p>
+            Welcome to the admin dashboard. Here you can view key metrics about users, 
+            student performance, and system activities. Last updated: {formatDate()}
+          </p>
+        </div>
+      </div>
 
       <div className="admin-dashboard__metrics-grid">
         {/* Total Users Card */}
         <div className="admin-dashboard-card">
           <div className="admin-dashboard-card__header">
-            <div className="admin-dashboard-card__icon" style={{ background: '#E3F2FD', color: '#1976D2' }}>
+            <div className="admin-dashboard-card__icon" style={{ background: 'linear-gradient(135deg, #4a5494, #3B4F81)', color: 'white' }}>
               <Users size={24} />
             </div>
           </div>
           <div className="admin-dashboard-card__content">
             <h3 className="admin-dashboard-card__title">Total Users</h3>
             <p className="admin-dashboard-card__value">{dashboardData.totalUsers}</p>
-            <p className="admin-dashboard-card__subtitle">{dashboardData.totalUsers} active today</p>
+            <p className="admin-dashboard-card__subtitle">{dashboardData.students.active} active today</p>
           </div>
         </div>
 
         {/* Students Card */}
         <div className="admin-dashboard-card">
           <div className="admin-dashboard-card__header">
-            <div className="admin-dashboard-card__icon" style={{ background: '#FFF3E0', color: '#FF6B6B' }}>
+            <div className="admin-dashboard-card__icon" style={{ background: 'linear-gradient(135deg, #4a5494, #3B4F81)', color: 'white' }}>
               <GraduationCap size={24} />
             </div>
           </div>
           <div className="admin-dashboard-card__content">
             <h3 className="admin-dashboard-card__title">Students</h3>
             <p className="admin-dashboard-card__value">{dashboardData.students.count}</p>
-            <p className="admin-dashboard-card__subtitle">{dashboardData.students.avgReadingLevel} avg reading level</p>
+            <p className="admin-dashboard-card__subtitle">{dashboardData.students.avgReadingLevel.toFixed(1)} avg reading level</p>
             <button className="admin-dashboard-card__view-btn" onClick={handleViewStudents}>
               <Eye size={16} />
-              View List
+              View Students
             </button>
           </div>
         </div>
@@ -176,7 +224,7 @@ const AdminDashboard = () => {
         {/* Teachers Card */}
         <div className="admin-dashboard-card">
           <div className="admin-dashboard-card__header">
-            <div className="admin-dashboard-card__icon" style={{ background: '#E8F5E9', color: '#FFB347' }}>
+            <div className="admin-dashboard-card__icon" style={{ background: 'linear-gradient(135deg, #4a5494, #3B4F81)', color: 'white' }}>
               <School size={24} />
             </div>
           </div>
@@ -186,7 +234,7 @@ const AdminDashboard = () => {
             <p className="admin-dashboard-card__subtitle">{dashboardData.teachers.activities} activities created</p>
             <button className="admin-dashboard-card__view-btn" onClick={handleViewTeachers}>
               <Eye size={16} />
-              View List
+              View Teachers
             </button>
           </div>
         </div>
@@ -194,7 +242,7 @@ const AdminDashboard = () => {
         {/* Parents Card */}
         <div className="admin-dashboard-card">
           <div className="admin-dashboard-card__header">
-            <div className="admin-dashboard-card__icon" style={{ background: '#F3E5F5', color: '#98D8AA' }}>
+            <div className="admin-dashboard-card__icon" style={{ background: 'linear-gradient(135deg, #4a5494, #3B4F81)', color: 'white' }}>
               <UserSquare2 size={24} />
             </div>
           </div>
@@ -204,14 +252,35 @@ const AdminDashboard = () => {
             <p className="admin-dashboard-card__subtitle">{dashboardData.parents.communications} communications</p>
             <button className="admin-dashboard-card__view-btn" onClick={handleViewParents}>
               <Eye size={16} />
-              View List
+              View Parents
             </button>
           </div>
         </div>
       </div>
+      
+      {/* Show attention banner if needed */}
+      {showAttentionBanner && (
+        <div className="admin-dashboard__attention-banner">
+          <AlertTriangle className="admin-dashboard__attention-icon" size={28} />
+          <div className="admin-dashboard__attention-content">
+            <h4>Low Student Activity</h4>
+            <p>
+              Only {activeStudentsPercentage}% of students were active today. 
+              Consider sending a notification to teachers and parents to encourage platform usage.
+            </p>
+          </div>
+          <button className="admin-dashboard__action-btn">
+            <Bell size={16} />
+            Send Notification
+          </button>
+        </div>
+      )}
 
       <div className="admin-dashboard__analytics-section">
-        <h2 className="admin-dashboard__section-title">User Analytics</h2>
+        <h2 className="admin-dashboard__section-title">
+          <Activity size={20} />
+          User Analytics
+        </h2>
         <div className="admin-dashboard__chart-container">
           <ResponsiveContainer width="100%" height={400}>
             <PieChart>
