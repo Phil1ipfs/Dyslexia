@@ -30,7 +30,7 @@ export default defineConfig(({ command, mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: 'http://localhost:5001',
+          target: 'https://literexia.onrender.com/',
           changeOrigin: true,
           secure: false,
           ws: true,

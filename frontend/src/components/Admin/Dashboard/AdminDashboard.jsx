@@ -50,7 +50,7 @@ const AdminDashboard = () => {
           }
         }
 
-        const response = await fetch('http://localhost:5001/api/admin/stats', {
+        const response = await fetch('https://literexia.onrender.com/api/admin/stats', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

@@ -547,7 +547,7 @@ const StudentDetails = () => {
     // Check if it's a relative URL (our API) or absolute URL (S3)
     if (pdfUrl.startsWith('/')) {
       // It's a relative URL from our server
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://literexia.onrender.com/';
       window.open(`${apiBaseUrl}${pdfUrl}`, '_blank');
     } else {
       // It's an absolute URL (likely S3)

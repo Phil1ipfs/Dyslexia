@@ -24,7 +24,7 @@ const StudentAssessmentsList = () => {
     const fetchStudents = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5001/api/admin/manage/students');
+        const response = await axios.get('https://literexia.onrender.com/api/admin/manage/students');
         
         if (response.data.success) {
           setStudents(response.data.data);

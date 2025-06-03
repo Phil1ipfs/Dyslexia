@@ -24,8 +24,8 @@ const AssessmentResultsOverview = () => {
       try {
         setLoading(true);
         const [studentsRes, resultsRes] = await Promise.all([
-          axios.get('http://localhost:5001/api/admin/manage/students'),
-          axios.get('http://localhost:5001/api/admin/category-results')
+          axios.get('https://literexia.onrender.com/api/admin/manage/students'),
+          axios.get('https://literexia.onrender.com/api/admin/category-results')
         ]);
 
         if (studentsRes.data.success && resultsRes.data.success) {
