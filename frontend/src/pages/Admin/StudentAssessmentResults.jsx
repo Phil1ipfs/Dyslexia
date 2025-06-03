@@ -29,8 +29,8 @@ const StudentAssessmentResults = () => {
 
         const studentData = studentResponse.data.data;
 
-        // Fetch assessment results by idNumber
-        const assessmentResponse = await axios.get(`http://localhost:5001/api/admin/assessment-results/${id}`);
+        // Fetch assessment results for the student
+        const assessmentResponse = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/assessment-results/${id}`);
         
         if (!assessmentResponse.data.success) {
           throw new Error('Failed to fetch assessment results');
