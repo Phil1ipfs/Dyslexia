@@ -245,4 +245,16 @@ exports.uploadParentProfileImage = async (req, res) => {
     console.error('Error updating parent profile image:', err);
     res.status(500).json({ success: false, message: 'Server error', error: err.message });
   }
+};
+
+// GET all parents
+exports.getParents = async (req, res) => {
+  try {
+    const profileCollection = await getParentProfileCollection();
+    const parents = await profileCollection.find({}).toArray();
+    res.json({ success: true, data: parents });
+  } catch (err) {
+    console.error('Error fetching parents:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
 }; 

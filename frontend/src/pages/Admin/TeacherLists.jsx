@@ -47,7 +47,7 @@ const CredentialsModal = ({ credentials, onClose }) => {
     try {
       setIsSending(true);
       setSendStatus(null);
-      const response = await axios.post('https://literexia.onrender.com/api/admin/send-credentials', {
+      const response = await axios.post('http://localhost:5001/api/admin/send-credentials', {
         email: credentials.email,
         password: credentials.password,
         userType: 'teacher'
@@ -583,7 +583,7 @@ useEffect(() => {
   const fetchTeachers = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('https://literexia.onrender.com/api/admin/manage/teachers');
+      const response = await axios.get('http://localhost:5001/api/admin/manage/teachers');
       if (response.data.success) {
         setTeachers(response.data.data);
         setFilteredTeachers(response.data.data);
@@ -648,7 +648,7 @@ const deleteTeacher = async () => {
   if (!selectedTeacher) return;
   try {
     setLoading(true);
-    const response = await axios.delete(`https://literexia.onrender.com/api/admin/manage/teachers/${selectedTeacher._id}`);
+    const response = await axios.delete(`http://localhost:5001/api/admin/manage/teachers/${selectedTeacher._id}`);
     if (response.data.success) {
       const updatedList = teachers.filter(t => t._id !== selectedTeacher._id);
       setTeachers(updatedList);
@@ -675,7 +675,7 @@ const handleAddTeacher = async (formData) => {
     Object.entries(formData).forEach(([key, value]) => {
       if (value !== undefined && value !== null) data.append(key, value);
     });
-    const response = await axios.post('https://literexia.onrender.com/api/admin/manage/teachers', data, {
+    const response = await axios.post('http://localhost:5001/api/admin/manage/teachers', data, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     if (response.data.success) {
@@ -709,7 +709,7 @@ const handleEditTeacherSubmit = async (formData) => {
     Object.entries(formData).forEach(([key, value]) => {
       if (value !== undefined && value !== null) data.append(key, value);
     });
-    const response = await axios.put(`https://literexia.onrender.com/api/admin/manage/teachers/${formData._id}`, data, {
+    const response = await axios.put(`http://localhost:5001/api/admin/manage/teachers/${formData._id}`, data, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     if (response.data.success) {

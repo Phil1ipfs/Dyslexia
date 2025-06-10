@@ -48,7 +48,7 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
       gradeLevel: '',
       section: '',
       address: '',
-      profileImage: null
+      profileImage: null,
     }
   );
 
@@ -68,7 +68,7 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
     },
     {
       title: 'Academic & Contact',
-      fields: ['gradeLevel', 'section', 'address', 'profileImage']
+      fields: ['gradeLevel', 'section', 'address', 'profileImage'] // Always include profileImage
     }
   ];
 
@@ -411,7 +411,7 @@ const StudentListPage = () => {
     const fetchStudents = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('https://literexia.onrender.com/api/admin/manage/students');
+        const response = await axios.get('http://localhost:5001/api/admin/manage/students');
         if (response.data.success) {
           setStudents(response.data.data);
           setFilteredStudents(response.data.data);
@@ -478,7 +478,7 @@ const StudentListPage = () => {
     if (!studentId) return;
     try {
       setLoading(true);
-              const response = await axios.delete(`https://literexia.onrender.com/api/admin/manage/students/${studentId}`);
+              const response = await axios.delete(`http://localhost:5001/api/admin/manage/students/${studentId}`);
       if (response.data.success) {
         const updatedList = students.filter(s => s._id !== studentId);
         setStudents(updatedList);
@@ -501,11 +501,40 @@ const StudentListPage = () => {
   const handleAddStudent = async (formData) => {
     try {
       setLoading(true);
+
+      // Client-side validation check before sending to backend
+      const requiredFields = ['idNumber', 'firstName', 'lastName', 'age', 'gender', 'gradeLevel', 'section', 'address'];
+      for (const field of requiredFields) {
+        if (!formData[field] || formData[field].toString().trim() === '') {
+          // This case should ideally be caught by handleFinalSubmit validation,
+          // but adding a safeguard here before the API call.
+          console.error(`Validation failed: ${field} is required.`);
+          setValidationError(`${getFieldLabel(field)} is required`);
+          setIsLoading(false);
+          return;
+        }
+      }
+
       const data = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) data.append(key, value); // Check for undefined/null
+        if (value !== undefined && value !== null && value !== '') { // Also check for empty string
+           data.append(key, value);
+        } else if (key === 'profileImage' && value === null) {
+          // Explicitly don't append profileImage if null/empty
+        } else if (requiredFields.includes(key) && value === '') {
+          // For required fields that are empty strings, the validation above should catch this.
+          // This else-if is mainly for clarity, though the above return makes it redundant for required fields.
+        }
+         else if (!requiredFields.includes(key) && value === '') {
+          // For non-required fields that are empty strings, don't append them.
+        }
+         else {
+          // For other cases (e.g., non-required fields with actual values, or required fields with values)
+           data.append(key, value);
+         }
       });
-      const response = await axios.post('https://literexia.onrender.com/api/admin/manage/students', data, {
+
+      const response = await axios.post('http://localhost:5001/api/admin/manage/students', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {
@@ -536,7 +565,7 @@ const StudentListPage = () => {
       Object.entries(formData).forEach(([key, value]) => {
          if (value !== undefined && value !== null) data.append(key, value); // Check for undefined/null
       });
-      const response = await axios.put(`https://literexia.onrender.com/api/admin/manage/students/${formData._id}`, data, {
+      const response = await axios.put(`http://localhost:5001/api/admin/manage/students/${formData._id}`, data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {
