@@ -499,7 +499,7 @@ const TeacherDashboard = () => {
                     color: 'white',
                     padding: '12px 16px',
                     borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                    backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
+                    backgroundColor: '#2a3c6d', 
                     position: 'sticky',
                     top: '0',
                     zIndex: '10',
