@@ -267,14 +267,15 @@ const TeacherDashboard = () => {
   };
 
   /**
-   * Navigate to student details page
+   * View student details within the modal dialog
    * @param {Object} student - Student to view
    */
   const viewStudentDetails = (student) => {
-    if (studentDetailOpen) {
-      closeStudentDetail();
+    // We're choosing to stay on the current page and use the modal dialog
+    // If the dialog is already open, no need to close and reopen
+    if (!studentDetailOpen) {
+      openStudentDetail(student);
     }
-    navigate(`/teacher/student-details/${student.id}`);
   };
 
   /**
@@ -700,10 +701,7 @@ const TeacherDashboard = () => {
                             e.currentTarget.style.transform = 'translateY(0)';
                             e.currentTarget.style.boxShadow = 'none';
                           }}
-                          onClick={() => {
-                            closeReadingLevelModal();
-                            navigate('/teacher/students', { state: { filterReadingLevel: selectedReadingLevel } });
-                          }}
+                          onClick={() => openStudentDetail(student)}
                         >
                           View
                         </button>
@@ -1628,7 +1626,10 @@ const TeacherDashboard = () => {
                 }}
                 onClick={() => {
                   closeReadingLevelModal();
-                  navigate('/teacher/students', { state: { filterReadingLevel: selectedReadingLevel } });
+                  // Filter the students list within the dashboard instead of navigating
+                  handleReadingLevelFilter(selectedReadingLevel);
+                  // Show a success message
+                  setSuccessMessage(`Showing ${selectedReadingLevel} students`);
                 }}
               >
                 See All Students
@@ -1773,22 +1774,28 @@ const TeacherDashboard = () => {
             <div className="teacher-modal-footer">
               <button
                 className="teacher-primary-button"
-                onClick={() => viewStudentDetails(selectedStudent)}
+                onClick={() => {
+                  // We can add more detailed view within the modal if needed
+                  // This button now simply closes the dialog
+                  closeStudentDetail();
+                }}
               >
-                View Full Profile
+                Close Details
               </button>
               <button
                 className="teacher-secondary-button"
                 onClick={() => {
+                  // Open a dialog for progress management instead of navigating
                   closeStudentDetail();
-                  navigate('/teacher/manage-progress', {
-                    state: { studentId: selectedStudent.id }
-                  });
+                  setSelectedStudent(selectedStudent);
+                  // Show a progress management view within the dashboard
+                  // This is a placeholder for future implementation
+                  setSuccessMessage("Progress management will be implemented here");
                 }}
               >
                 Manage Progress
               </button>
-              <button className="teacher-secondary-button" onClick={closeStudentDetail}>Close</button>
+              <button className="teacher-secondary-button" onClick={closeStudentDetail}>Cancel</button>
             </div>
           </div>
         </div>
