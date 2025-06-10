@@ -8,6 +8,7 @@ import {
   faImage, faParagraph, faClipboardList, faClipboardCheck
 } from '@fortawesome/free-solid-svg-icons';
 import "../../../css/Teachers/ManageCategories/TemplateLibrary.css";
+import "../../../css/Teachers/ManageCategories/TemplateModals.css";
 
 const UnifiedTemplatePreview = ({ 
   isOpen, 
@@ -231,62 +232,66 @@ const UnifiedTemplatePreview = ({
   const renderQuestionTemplate = (template) => {
     return (
       <>
-        <div className="tl-template-main-content">
-          <div className="tl-template-property">
-            <div className="tl-template-property-label">
-              <FontAwesomeIcon icon={faQuestion} />
-              Question Text
-            </div>
-            <div className="tl-template-property-value highlighted">
-              {template.templateText}
-            </div>
-          </div>
-          
-          {template.questionType === 'comprehension' && template.passage && (
-            <div className="tl-template-property">
-              <div className="tl-template-property-label">
-                <FontAwesomeIcon icon={faParagraph} />
-                Passage
-              </div>
-              <div className="tl-template-property-value">
-                {template.passage}
-              </div>
-            </div>
-          )}
-          
-          {template.questionType === 'comprehension' && template.comprehensionQuestions && template.comprehensionQuestions.length > 0 && (
-            <div className="tl-template-property">
-              <div className="tl-template-property-label">
-                <FontAwesomeIcon icon={faQuestion} />
-                Comprehension Questions
-              </div>
-              <div className="tl-template-property-value">
-                {template.comprehensionQuestions.map((question, index) => (
-                  <div key={index} style={{ marginBottom: '10px' }}>
-                    <strong>Question {index + 1}:</strong> {question.questionText}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+        <div className="question-template-text">
+          {template.templateText}
         </div>
         
-        <div className="tl-template-meta">
-          <div className="tl-template-meta-item">
-            <div className="tl-template-meta-label">Category</div>
-            <div className="tl-template-meta-value">{template.category || 'N/A'}</div>
+        <div className="question-template-details">
+          <div className="question-template-detail">
+            <div className="question-template-detail-label">Category</div>
+            <div className="question-template-detail-value">{template.category || 'N/A'}</div>
           </div>
-          <div className="tl-template-meta-item">
-            <div className="tl-template-meta-label">Question Type</div>
-            <div className="tl-template-meta-value">{getQuestionTypeDisplay(template.questionType)}</div>
+          <div className="question-template-detail">
+            <div className="question-template-detail-label">Question Type</div>
+            <div className="question-template-detail-value">{getQuestionTypeDisplay(template.questionType)}</div>
           </div>
-          <div className="tl-template-meta-item">
-            <div className="tl-template-meta-label">Status</div>
-            <div className="tl-template-meta-value">
+          <div className="question-template-detail">
+            <div className="question-template-detail-label">Status</div>
+            <div className="question-template-detail-value">
               {template.isActive ? 'Active' : 'Inactive'}
             </div>
           </div>
         </div>
+        
+        {template.questionType === 'comprehension' && template.passage && (
+          <div style={{ marginTop: '16px' }}>
+            <div className="question-template-detail-label">
+              <FontAwesomeIcon icon={faParagraph} style={{ marginRight: '8px' }} />
+              Passage
+            </div>
+            <div style={{ 
+              backgroundColor: '#f8f9fa', 
+              padding: '12px', 
+              borderRadius: '4px',
+              fontSize: '14px',
+              marginTop: '8px'
+            }}>
+              {template.passage}
+            </div>
+          </div>
+        )}
+        
+        {template.questionType === 'comprehension' && template.comprehensionQuestions && template.comprehensionQuestions.length > 0 && (
+          <div style={{ marginTop: '16px' }}>
+            <div className="question-template-detail-label">
+              <FontAwesomeIcon icon={faQuestion} style={{ marginRight: '8px' }} />
+              Comprehension Questions
+            </div>
+            <div style={{ marginTop: '8px' }}>
+              {template.comprehensionQuestions.map((question, index) => (
+                <div key={index} style={{ 
+                  padding: '8px 12px',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '4px',
+                  marginBottom: '8px',
+                  fontSize: '14px'
+                }}>
+                  <strong>Question {index + 1}:</strong> {question.questionText}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </>
     );
   };
@@ -295,51 +300,53 @@ const UnifiedTemplatePreview = ({
   const renderChoiceTemplate = (template) => {
     return (
       <>
-        <div className="tl-template-main-content">
-          {(template.choiceImage || template.soundFile) && (
-            <div className="tl-template-property">
-              <div className="tl-template-property-label">
-                <FontAwesomeIcon icon={template.choiceImage ? faImage : faVolumeUp} />
-                {template.choiceImage ? 'Choice Image' : 'Sound File'}
-              </div>
-              {template.choiceImage ? (
-                <div className="tl-template-property-value choice-image">
-                  <img src={sanitizeImageUrl(template.choiceImage)} alt="Choice" />
-                </div>
-              ) : (
-                <div className="tl-template-property-value">
-                  <audio controls>
-                    <source src={template.soundFile} type="audio/mpeg" />
-                    Your browser does not support the audio element.
-                  </audio>
-                </div>
-              )}
-            </div>
-          )}
-          
-          <div className="tl-template-property">
-            <div className="tl-template-property-label">
-              <FontAwesomeIcon icon={faListAlt} />
-              {template.choiceValue ? 'Choice Value' : 'Sound Text'}
-            </div>
-            <div className="tl-template-property-value highlighted">
-              {template.choiceValue || template.soundText || 'N/A'}
-            </div>
-          </div>
+        <div className="question-template-text">
+          {template.choiceValue || template.soundText || 'N/A'}
         </div>
         
-        <div className="tl-template-meta">
-          <div className="tl-template-meta-item">
-            <div className="tl-template-meta-label">Choice Type</div>
-            <div className="tl-template-meta-value">{template.choiceType || 'N/A'}</div>
+        {(template.choiceImage || template.soundFile) && (
+          <div style={{ margin: '16px 0' }}>
+            {template.choiceImage ? (
+              <div style={{ 
+                border: '1px solid #e9ecef', 
+                borderRadius: '4px', 
+                padding: '12px',
+                display: 'flex',
+                justifyContent: 'center'
+              }}>
+                <img 
+                  src={sanitizeImageUrl(template.choiceImage)} 
+                  alt="Choice" 
+                  style={{ maxWidth: '100%', maxHeight: '200px' }}
+                />
+              </div>
+            ) : (
+              <div style={{ marginTop: '8px' }}>
+                <audio controls style={{ width: '100%' }}>
+                  <source src={template.soundFile} type="audio/mpeg" />
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+            )}
           </div>
-          <div className="tl-template-meta-item">
-            <div className="tl-template-meta-label">Is Correct</div>
-            <div className="tl-template-meta-value">{template.isCorrect ? 'Yes' : 'No'}</div>
+        )}
+        
+        <div className="question-template-details">
+          <div className="question-template-detail">
+            <div className="question-template-detail-label">Choice Type</div>
+            <div className="question-template-detail-value">{template.choiceType || 'N/A'}</div>
           </div>
-          <div className="tl-template-meta-item">
-            <div className="tl-template-meta-label">Status</div>
-            <div className="tl-template-meta-value">
+          <div className="question-template-detail">
+            <div className="question-template-detail-label">Is Correct</div>
+            <div className="question-template-detail-value">
+              {template.isCorrect ? (
+                <span style={{ color: '#40c057' }}>Yes</span>
+              ) : 'No'}
+            </div>
+          </div>
+          <div className="question-template-detail">
+            <div className="question-template-detail-label">Status</div>
+            <div className="question-template-detail-value">
               {template.isActive ? 'Active' : 'Inactive'}
             </div>
           </div>
@@ -352,72 +359,75 @@ const UnifiedTemplatePreview = ({
   const renderSentenceTemplate = (template) => {
     return (
       <>
-        <div className="tl-template-main-content">
-          <div className="tl-template-property">
-            <div className="tl-template-property-label">
-              <FontAwesomeIcon icon={faFileAlt} />
-              Title
-            </div>
-            <div className="tl-template-property-value highlighted">
-              {template.title}
-            </div>
-          </div>
-          
-          <div className="tl-template-property">
-            <div className="tl-template-property-label">
-              <FontAwesomeIcon icon={faParagraph} />
-              Content
-            </div>
-            <div className="tl-template-property-value">
-              {template.content}
-            </div>
-          </div>
-          
-          {template.sentenceImage && (
-            <div className="tl-template-property">
-              <div className="tl-template-property-label">
-                <FontAwesomeIcon icon={faImage} />
-                Sentence Image
-              </div>
-              <div className="tl-template-property-value choice-image">
-                <img src={sanitizeImageUrl(template.sentenceImage)} alt="Sentence" />
-              </div>
-            </div>
-          )}
-          
-          {template.sentenceQuestions && template.sentenceQuestions.length > 0 && (
-            <div className="tl-template-property">
-              <div className="tl-template-property-label">
-                <FontAwesomeIcon icon={faQuestion} />
-                Questions
-              </div>
-              <div className="tl-template-property-value">
-                {template.sentenceQuestions.map((question, index) => (
-                  <div key={index} style={{ marginBottom: '10px' }}>
-                    <strong>Question {question.questionNumber || index + 1}:</strong> {question.questionText}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+        <div className="question-template-text">
+          {template.title}
         </div>
         
-        <div className="tl-template-meta">
-          <div className="tl-template-meta-item">
-            <div className="tl-template-meta-label">Category</div>
-            <div className="tl-template-meta-value">{template.category || 'N/A'}</div>
+        <div style={{ 
+          backgroundColor: '#f8f9fa', 
+          padding: '12px', 
+          borderRadius: '4px',
+          fontSize: '14px',
+          margin: '16px 0'
+        }}>
+          {template.content}
+        </div>
+        
+        {template.sentenceImage && (
+          <div style={{ 
+            margin: '16px 0',
+            border: '1px solid #e9ecef', 
+            borderRadius: '4px', 
+            padding: '12px',
+            display: 'flex',
+            justifyContent: 'center'
+          }}>
+            <img 
+              src={sanitizeImageUrl(template.sentenceImage)} 
+              alt="Sentence" 
+              style={{ maxWidth: '100%', maxHeight: '200px' }}
+            />
           </div>
-          <div className="tl-template-meta-item">
-            <div className="tl-template-meta-label">Reading Level</div>
-            <div className="tl-template-meta-value">{template.readingLevel || 'N/A'}</div>
+        )}
+        
+        <div className="question-template-details">
+          <div className="question-template-detail">
+            <div className="question-template-detail-label">Category</div>
+            <div className="question-template-detail-value">{template.category || 'N/A'}</div>
           </div>
-          <div className="tl-template-meta-item">
-            <div className="tl-template-meta-label">Status</div>
-            <div className="tl-template-meta-value">
+          <div className="question-template-detail">
+            <div className="question-template-detail-label">Reading Level</div>
+            <div className="question-template-detail-value">{template.readingLevel || 'N/A'}</div>
+          </div>
+          <div className="question-template-detail">
+            <div className="question-template-detail-label">Status</div>
+            <div className="question-template-detail-value">
               {template.isActive ? 'Active' : 'Inactive'}
             </div>
           </div>
         </div>
+        
+        {template.sentenceQuestions && template.sentenceQuestions.length > 0 && (
+          <div style={{ marginTop: '16px' }}>
+            <div className="question-template-detail-label">
+              <FontAwesomeIcon icon={faQuestion} style={{ marginRight: '8px' }} />
+              Questions
+            </div>
+            <div style={{ marginTop: '8px' }}>
+              {template.sentenceQuestions.map((question, index) => (
+                <div key={index} style={{ 
+                  padding: '8px 12px',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '4px',
+                  marginBottom: '8px',
+                  fontSize: '14px'
+                }}>
+                  <strong>Question {question.questionNumber || index + 1}:</strong> {question.questionText}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </>
     );
   };
@@ -426,67 +436,62 @@ const UnifiedTemplatePreview = ({
   const renderAssessmentTemplate = (template) => {
     return (
       <>
-        <div className="tl-template-main-content">
-          <div className="tl-template-property">
-            <div className="tl-template-property-label">
-              <FontAwesomeIcon icon={faBook} />
-              Reading Level
-            </div>
-            <div className="tl-template-property-value highlighted">
-              {template.readingLevel}
-            </div>
-          </div>
-          
-          <div className="tl-template-property">
-            <div className="tl-template-property-label">
-              <FontAwesomeIcon icon={faLayerGroup} />
-              Category
-            </div>
-            <div className="tl-template-property-value">
-              {template.category}
-            </div>
-          </div>
-          
-          {template.questions && template.questions.length > 0 && (
-            <div className="tl-template-property">
-              <div className="tl-template-property-label">
-                <FontAwesomeIcon icon={faQuestion} />
-                Questions ({template.questions.length})
-              </div>
-              <div className="tl-template-property-value">
-                {template.questions.slice(0, 3).map((question, index) => (
-                  <div key={index} style={{ marginBottom: '10px' }}>
-                    <strong>Question {index + 1}:</strong> {question.questionText}
-                  </div>
-                ))}
-                {template.questions.length > 3 && (
-                  <div className="tl-more-questions">
-                    + {template.questions.length - 3} more questions
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+        <div className="question-template-text">
+          Assessment Template - {template.readingLevel}
         </div>
         
-        <div className="tl-template-meta">
-          <div className="tl-template-meta-item">
-            <div className="tl-template-meta-label">Total Questions</div>
-            <div className="tl-template-meta-value">{template.questions ? template.questions.length : 0}</div>
+        <div className="question-template-details">
+          <div className="question-template-detail">
+            <div className="question-template-detail-label">Reading Level</div>
+            <div className="question-template-detail-value">{template.readingLevel}</div>
           </div>
-          <div className="tl-template-meta-item">
-            <div className="tl-template-meta-label">Last Updated</div>
-            <div className="tl-template-meta-value">
-              {template.updatedAt ? new Date(template.updatedAt).toLocaleDateString() : 'N/A'}
-            </div>
+          <div className="question-template-detail">
+            <div className="question-template-detail-label">Category</div>
+            <div className="question-template-detail-value">{template.category}</div>
           </div>
-          <div className="tl-template-meta-item">
-            <div className="tl-template-meta-label">Status</div>
-            <div className="tl-template-meta-value">
+          <div className="question-template-detail">
+            <div className="question-template-detail-label">Total Questions</div>
+            <div className="question-template-detail-value">{template.questions ? template.questions.length : 0}</div>
+          </div>
+          <div className="question-template-detail">
+            <div className="question-template-detail-label">Status</div>
+            <div className="question-template-detail-value">
               {template.isActive ? 'Active' : 'Inactive'}
             </div>
           </div>
         </div>
+        
+        {template.questions && template.questions.length > 0 && (
+          <div style={{ marginTop: '16px' }}>
+            <div className="question-template-detail-label">
+              <FontAwesomeIcon icon={faQuestion} style={{ marginRight: '8px' }} />
+              Questions ({template.questions.length})
+            </div>
+            <div style={{ marginTop: '8px' }}>
+              {template.questions.slice(0, 3).map((question, index) => (
+                <div key={index} style={{ 
+                  padding: '8px 12px',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '4px',
+                  marginBottom: '8px',
+                  fontSize: '14px'
+                }}>
+                  <strong>Question {index + 1}:</strong> {question.questionText}
+                </div>
+              ))}
+              {template.questions.length > 3 && (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '8px', 
+                  color: '#6c757d',
+                  fontSize: '14px'
+                }}>
+                  + {template.questions.length - 3} more questions
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </>
     );
   };
@@ -495,67 +500,60 @@ const UnifiedTemplatePreview = ({
   const renderPreAssessmentTemplate = (template) => {
     return (
       <>
-        <div className="tl-template-main-content">
-          <div className="tl-template-property">
-            <div className="tl-template-property-label">
-              <FontAwesomeIcon icon={faClipboardCheck} />
-              Title
-            </div>
-            <div className="tl-template-property-value highlighted">
-              {template.title}
-            </div>
-          </div>
-          
-          <div className="tl-template-property">
-            <div className="tl-template-property-label">
-              <FontAwesomeIcon icon={faFileAlt} />
-              Description
-            </div>
-            <div className="tl-template-property-value">
-              {template.description}
-            </div>
-          </div>
-          
-          {template.questions && template.questions.length > 0 && (
-            <div className="tl-template-property">
-              <div className="tl-template-property-label">
-                <FontAwesomeIcon icon={faQuestion} />
-                Questions ({template.questions.length})
-              </div>
-              <div className="tl-template-property-value">
-                {template.questions.slice(0, 3).map((question, index) => (
-                  <div key={index} style={{ marginBottom: '10px' }}>
-                    <strong>Question {index + 1}:</strong> {question.questionText}
-                  </div>
-                ))}
-                {template.questions.length > 3 && (
-                  <div className="tl-more-questions">
-                    + {template.questions.length - 3} more questions
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+        <div className="question-template-text">
+          Pre-Assessment Template
         </div>
         
-        <div className="tl-template-meta">
-          <div className="tl-template-meta-item">
-            <div className="tl-template-meta-label">Language</div>
-            <div className="tl-template-meta-value">{template.language === "FL" ? "Filipino" : "English"}</div>
-          </div>
-          <div className="tl-template-meta-item">
-            <div className="tl-template-meta-label">Last Updated</div>
-            <div className="tl-template-meta-value">
-              {template.lastUpdated ? new Date(template.lastUpdated).toLocaleDateString() : 'N/A'}
+        <div className="question-template-details">
+          {template.targetLevel && (
+            <div className="question-template-detail">
+              <div className="question-template-detail-label">Target Level</div>
+              <div className="question-template-detail-value">{template.targetLevel}</div>
             </div>
+          )}
+          <div className="question-template-detail">
+            <div className="question-template-detail-label">Total Questions</div>
+            <div className="question-template-detail-value">{template.questions ? template.questions.length : 0}</div>
           </div>
-          <div className="tl-template-meta-item">
-            <div className="tl-template-meta-label">Status</div>
-            <div className="tl-template-meta-value">
+          <div className="question-template-detail">
+            <div className="question-template-detail-label">Status</div>
+            <div className="question-template-detail-value">
               {template.isActive ? 'Active' : 'Inactive'}
             </div>
           </div>
         </div>
+        
+        {template.questions && template.questions.length > 0 && (
+          <div style={{ marginTop: '16px' }}>
+            <div className="question-template-detail-label">
+              <FontAwesomeIcon icon={faQuestion} style={{ marginRight: '8px' }} />
+              Questions ({template.questions.length})
+            </div>
+            <div style={{ marginTop: '8px' }}>
+              {template.questions.slice(0, 3).map((question, index) => (
+                <div key={index} style={{ 
+                  padding: '8px 12px',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '4px',
+                  marginBottom: '8px',
+                  fontSize: '14px'
+                }}>
+                  <strong>Question {index + 1}:</strong> {question.questionText}
+                </div>
+              ))}
+              {template.questions.length > 3 && (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '8px', 
+                  color: '#6c757d',
+                  fontSize: '14px'
+                }}>
+                  + {template.questions.length - 3} more questions
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </>
     );
   };
@@ -563,23 +561,21 @@ const UnifiedTemplatePreview = ({
   if (!isOpen) return null;
   
   return (
-    <div className="tl-dialog-overlay">
-      <div className="tl-dialog tl-unified-preview-dialog">
+    <div className="template-modal-overlay">
+      <div className="question-templates-modal">
         {/* Header */}
-        <div className="tl-unified-preview-header">
-          <div className="tl-unified-preview-title">
-            <FontAwesomeIcon icon={faEye} />
-            <h3>
-              {getTemplateTypeDisplay()} Templates
-              {filteredTemplates.length > 0 && 
-                <span style={{ marginLeft: '10px', fontSize: '0.9rem', opacity: 0.8 }}>
-                  ({currentPage} of {totalPages})
-                </span>
-              }
-            </h3>
-          </div>
+        <div className="question-templates-header">
+          <h3>
+            <FontAwesomeIcon icon={faEye} className="template-modal-icon" />
+            {getTemplateTypeDisplay()} Templates
+            {filteredTemplates.length > 0 && 
+              <span style={{ marginLeft: '10px', fontSize: '0.9rem', opacity: 0.8 }}>
+                ({currentPage} of {totalPages})
+              </span>
+            }
+          </h3>
           <button 
-            className="tl-dialog-close"
+            className="template-modal-close"
             onClick={onClose}
           >
             <FontAwesomeIcon icon={faTimes} />
@@ -587,138 +583,137 @@ const UnifiedTemplatePreview = ({
         </div>
         
         {/* Filter Bar */}
-        <div className="tl-unified-preview-filter-bar">
-          <div className="tl-unified-filter-group">
-            <FontAwesomeIcon icon={faFilter} style={{ color: '#6b7280' }} />
-            
-            {/* Status Filter - Available for all template types */}
-            <div className="tl-unified-filter">
-              <label>Status:</label>
-              <select 
-                value={filterStatus} 
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="all">All</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-            
-            {/* Category Filter - Available for question and sentence templates */}
-            {(templateType === 'question' || templateType === 'sentence') && (
-              <div className="tl-unified-filter">
-                <label>Category:</label>
-                <select 
-                  value={filterCategory} 
-                  onChange={(e) => setFilterCategory(e.target.value)}
-                >
-                  {getCategories().map(category => (
-                    <option key={category} value={category}>
-                      {category === 'all' ? 'All Categories' : category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            
-            {/* Reading Level Filter - Available for sentence templates */}
-            {templateType === 'sentence' && (
-              <div className="tl-unified-filter">
-                <label>Reading Level:</label>
-                <select 
-                  value={filterReadingLevel} 
-                  onChange={(e) => setFilterReadingLevel(e.target.value)}
-                >
-                  {getReadingLevels().map(level => (
-                    <option key={level} value={level}>
-                      {level === 'all' ? 'All Levels' : level}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            
-            {/* Choice Type Filter - Available for choice templates */}
-            {templateType === 'choice' && (
-              <div className="tl-unified-filter">
-                <label>Choice Type:</label>
-                <select 
-                  value={filterChoiceType} 
-                  onChange={(e) => setFilterChoiceType(e.target.value)}
-                >
-                  <option value="all">All Types</option>
-                  <option value="patinig">Patinig</option>
-                  <option value="katinig">Katinig</option>
-                  <option value="Letter">Letter</option>
-                  <option value="Sound">Sound</option>
-                  <option value="malapatinigText">Malapatinig</option>
-                  <option value="wordText">Word</option>
-                </select>
-              </div>
-            )}
+        <div className="question-templates-filters">
+          <div className="question-templates-filter-label">
+            <FontAwesomeIcon icon={faFilter} style={{ marginRight: '8px' }} />
+            Status:
           </div>
+          <select 
+            className="question-templates-filter-select"
+            value={filterStatus} 
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+          
+          {/* Category Filter - Available for question and sentence templates */}
+          {(templateType === 'question' || templateType === 'sentence') && (
+            <>
+              <div className="question-templates-filter-label">Category:</div>
+              <select 
+                className="question-templates-filter-select"
+                value={filterCategory} 
+                onChange={(e) => setFilterCategory(e.target.value)}
+              >
+                {getCategories().map(category => (
+                  <option key={category} value={category}>
+                    {category === 'all' ? 'All Categories' : category}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+          
+          {/* Reading Level Filter - Available for sentence templates */}
+          {templateType === 'sentence' && (
+            <>
+              <div className="question-templates-filter-label">Reading Level:</div>
+              <select 
+                className="question-templates-filter-select"
+                value={filterReadingLevel} 
+                onChange={(e) => setFilterReadingLevel(e.target.value)}
+              >
+                {getReadingLevels().map(level => (
+                  <option key={level} value={level}>
+                    {level === 'all' ? 'All Levels' : level}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+          
+          {/* Choice Type Filter - Available for choice templates */}
+          {templateType === 'choice' && (
+            <>
+              <div className="question-templates-filter-label">Choice Type:</div>
+              <select 
+                className="question-templates-filter-select"
+                value={filterChoiceType} 
+                onChange={(e) => setFilterChoiceType(e.target.value)}
+              >
+                <option value="all">All Types</option>
+                <option value="patinig">Patinig</option>
+                <option value="katinig">Katinig</option>
+                <option value="Letter">Letter</option>
+                <option value="Sound">Sound</option>
+                <option value="malapatinigText">Malapatinig</option>
+                <option value="wordText">Word</option>
+              </select>
+            </>
+          )}
           
           {/* Search */}
-          <div className="tl-unified-search">
+          <div className="question-templates-search">
             <input 
               type="text" 
               placeholder={`Search ${getTemplateTypeDisplay()} templates...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <FontAwesomeIcon icon={faSearch} className="tl-unified-search-icon" />
+            <FontAwesomeIcon icon={faSearch} className="question-templates-search-icon" />
           </div>
         </div>
         
         {/* Content */}
-        <div className="tl-unified-preview-content">
+        <div className="question-templates-content">
           {filteredTemplates.length > 0 ? (
-            <div className="tl-template-preview-container">
+            <>
               {currentItems.map((template, index) => (
-                <div key={index} className="tl-template-card">
-                  <div className="tl-template-card-header">
-                    <div className="tl-template-card-title">
-                      <FontAwesomeIcon icon={getTemplateTypeIcon()} />
+                <div key={index} className="question-template-item">
+                  <div className="question-template-header">
+                    <div className="question-template-title">
+                      <FontAwesomeIcon icon={getTemplateTypeIcon()} className="question-template-icon" />
                       {templateType === 'question' ? 'Question Template' : 
                        templateType === 'choice' ? 'Choice Template' : 
                        templateType === 'sentence' ? 'Sentence Template' : 
                        templateType === 'assessment' ? 'Assessment Template' :
                        'Pre-Assessment Template'}
                     </div>
-                    <div className="tl-template-card-actions">
-                      <button 
-                        className="tl-template-card-action"
-                        onClick={() => onEditTemplate(template)}
-                      >
-                        <FontAwesomeIcon icon={faEdit} />
-                      </button>
-                    </div>
+                    <button 
+                      className="question-template-edit-btn"
+                      onClick={() => onEditTemplate(template)}
+                    >
+                      <FontAwesomeIcon icon={faEdit} style={{ marginRight: '6px' }} />
+                      Edit
+                    </button>
                   </div>
-                  <div className="tl-template-card-content">
+                  <div className="question-template-body">
                     {renderTemplateContent(template)}
                   </div>
                 </div>
               ))}
-            </div>
+            </>
           ) : (
-            <div className="tl-no-templates">
+            <div style={{ padding: '24px', textAlign: 'center', color: '#6c757d' }}>
               No templates found.
             </div>
           )}
         </div>
         
         {/* Pagination */}
-        <div className="tl-pagination">
+        <div className="question-templates-pagination">
           <button 
-            className="tl-pagination-button"
+            className="question-templates-pagination-btn"
             onClick={handlePrevPage}
             disabled={currentPage === 1}
           >
             <FontAwesomeIcon icon={faChevronLeft} />
           </button>
-          <span>{currentPage} of {totalPages}</span>
+          <span className="question-templates-pagination-text">{currentPage} of {totalPages}</span>
           <button 
-            className="tl-pagination-button"
+            className="question-templates-pagination-btn"
             onClick={handleNextPage}
             disabled={currentPage === totalPages}
           >

@@ -6,6 +6,7 @@ import ChoiceTemplateForm from "./ChoiceTemplateForm";
 import SentenceTemplateForm from "./SentenceTemplateForm";
 import UnifiedTemplatePreview from "./UnifiedTemplatePreview";
 import "../../../css/Teachers/ManageCategories/TemplateLibrary.css";
+import "../../../css/Teachers/ManageCategories/TemplateModals.css";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faPlus, faEdit, faEye, faTrash, faTimes, 
@@ -1072,21 +1073,21 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
 
       {/* Form Dialog */}
       {isFormDialogOpen && (
-        <div className="tl-dialog-overlay">
-          <div className="tl-dialog tl-form-dialog">
-            <div className="tl-dialog-header">
+        <div className="template-modal-overlay">
+          <div className="template-modal">
+            <div className="template-modal-header">
               <h3>
                 {currentTemplate ? `Edit ${getTemplateType()} Template` : `Create New ${getTemplateType()} Template`}
               </h3>
               <button 
-                className="tl-dialog-close"
+                className="template-modal-close"
                 onClick={() => setIsFormDialogOpen(false)}
               >
                 <FontAwesomeIcon icon={faTimes} />
               </button>
             </div>
             
-            <div className="tl-dialog-body">
+            <div className="template-modal-body">
               {nestedTabIndex === 0 && (
                 <QuestionTemplateForm 
                   template={currentTemplate}
@@ -1115,64 +1116,69 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
 
       {/* Submit Confirmation Dialog */}
       {isSubmitConfirmDialogOpen && (
-        <div className="tl-dialog-overlay">
-          <div className="tl-dialog tl-confirm-dialog">
-            <div className="tl-dialog-header">
+        <div className="template-modal-overlay">
+          <div className="template-modal">
+            <div className="template-modal-header">
               <h3>
-                <FontAwesomeIcon icon={faCheckCircle} className="tl-modal-header-icon" />
+                <FontAwesomeIcon icon={faCheckCircle} className="template-modal-icon" />
                 Confirm Template Submission
               </h3>
               <button 
-                className="tl-dialog-close"
+                className="template-modal-close"
                 onClick={() => setIsSubmitConfirmDialogOpen(false)}
               >
                 <FontAwesomeIcon icon={faTimes} />
               </button>
             </div>
             
-            <div className="tl-dialog-body">
-              <div className="tl-confirm-icon">
-                <FontAwesomeIcon icon={faCheckCircle} />
-              </div>
-              <div className="tl-confirm-message">
-                <p>Your template will be saved to the library and will be immediately available for use in assessments.</p>
-                <p className="tl-confirm-question">Would you like to save this template now?</p>
+            <div className="template-modal-body">
+              <div className="template-modal-delete-warning">
+                <div className="template-modal-icon" style={{ color: '#40c057' }}>
+                  <FontAwesomeIcon icon={faCheckCircle} />
+                </div>
+                <div>
+                  <h4 className="template-modal-delete-message">Save Template to Library</h4>
+                  <p className="template-modal-delete-description">
+                    Your template will be saved to the library and will be immediately available for use in assessments. 
+                    Would you like to save this template now?
+                  </p>
+                </div>
               </div>
               
-              <div className="tl-submission-summary">
+              <div className="template-modal-item-info">
                 <h4>Template Summary:</h4>
-                <div className="tl-summary-details">
-                  <div className="tl-summary-item">
-                    <span className="tl-summary-label">Type:</span>
-                    <span className="tl-summary-value">{getTemplateType()} Template</span>
+                <div className="template-modal-summary-details">
+                  <div className="template-modal-summary-item">
+                    <span className="template-modal-summary-label">Type:</span>
+                    <span className="template-modal-summary-value">{getTemplateType()} Template</span>
                   </div>
                   {tempFormData && nestedTabIndex === 0 && (
                     <>
-                      <div className="tl-summary-item">
-                        <span className="tl-summary-label">Category:</span>
-                        <span className="tl-summary-value">{tempFormData.category}</span>
+                      <div className="template-modal-summary-item">
+                        <span className="template-modal-summary-label">Category:</span>
+                        <span className="template-modal-summary-value">{tempFormData.category}</span>
                       </div>
-                      <div className="tl-summary-item">
-                        <span className="tl-summary-label">Question Type:</span>
-                        <span className="tl-summary-value">{getQuestionTypeDisplay(tempFormData.questionType)}</span>
+                      <div className="template-modal-summary-item">
+                        <span className="template-modal-summary-label">Question Type:</span>
+                        <span className="template-modal-summary-value">{getQuestionTypeDisplay(tempFormData.questionType)}</span>
                       </div>
                     </>
                   )}
                   {tempFormData && nestedTabIndex === 1 && (
-                    <div className="tl-summary-item">
-                      <span className="tl-summary-label">Choice Type:</span>
-                      <span className="tl-summary-value">{getChoiceTypeDisplayName(tempFormData.choiceType)}</span>
+                    <div className="template-modal-summary-item">
+                      <span className="template-modal-summary-label">Choice Type:</span>
+                      <span className="template-modal-summary-value">{getChoiceTypeDisplayName(tempFormData.choiceType)}</span>
                     </div>
                   )}
                   {tempFormData && nestedTabIndex === 2 && (
                     <>
-                      <div className="tl-summary-item">
-                        <span className="tl-summary-label">Title:</span>
-                        <span className="tl-summary-value">{tempFormData.title}</span>
+                      <div className="template-modal-summary-item">
+                        <span className="template-modal-summary-label">Title:</span>
+                        <span className="template-modal-summary-value">{tempFormData.title}</span>
                       </div>
-                      <div className="tl-summary-item">
-                        <span className="tl-summary-label">Reading Level:</span>
-                        <span className="tl-summary-value">{tempFormData.readingLevel}</span>
+                      <div className="template-modal-summary-item">
+                        <span className="template-modal-summary-label">Reading Level:</span>
+                        <span className="template-modal-summary-value">{tempFormData.readingLevel}</span>
                       </div>
                     </>
                   )}
@@ -1180,15 +1186,15 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
               </div>
             </div>
             
-            <div className="tl-dialog-footer">
+            <div className="template-modal-footer">
               <button 
-                className="tl-dialog-btn tl-cancel-btn"
+                className="template-modal-btn template-modal-cancel-btn"
                 onClick={() => setIsSubmitConfirmDialogOpen(false)}
               >
                 <FontAwesomeIcon icon={faArrowRight} /> Go Back and Edit
               </button>
               <button 
-                className="tl-dialog-btn tl-confirm-btn"
+                className="template-modal-btn template-modal-confirm-btn"
                 onClick={handleConfirmSubmit}
               >
                 <FontAwesomeIcon icon={faCheckCircle} /> Save Template
@@ -1209,35 +1215,37 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
 
       {/* Delete Confirmation Dialog */}
       {isDeleteDialogOpen && templateToDelete && (
-        <div className="tl-dialog-overlay">
-          <div className="tl-dialog tl-delete-dialog">
-            <div className="tl-dialog-header">
+        <div className="template-modal-overlay">
+          <div className="template-modal">
+            <div className="template-modal-header">
               <h3>
-                <FontAwesomeIcon icon={faTrash} className="tl-modal-header-icon" />
+                <FontAwesomeIcon icon={faTrash} className="template-modal-icon" />
                 Delete Template
               </h3>
               <button 
-                className="tl-dialog-close"
+                className="template-modal-close"
                 onClick={() => setIsDeleteDialogOpen(false)}
               >
                 <FontAwesomeIcon icon={faTimes} />
               </button>
             </div>
             
-            <div className="tl-dialog-body">
-              <div className="tl-delete-icon">
-                <FontAwesomeIcon icon={faExclamationTriangle} />
+            <div className="template-modal-body">
+              <div className="template-modal-delete-warning">
+                <div className="template-modal-delete-icon">
+                  <FontAwesomeIcon icon={faExclamationTriangle} />
+                </div>
+                
+                <div>
+                  <h4 className="template-modal-delete-message">Are you sure you want to delete this template?</h4>
+                  <p className="template-modal-delete-description">
+                    This action will permanently remove this template from your library.
+                    Any activities using this template may be affected.
+                  </p>
+                </div>
               </div>
               
-              <div className="tl-delete-message">
-                <h4>Are you sure you want to delete this template?</h4>
-                <p>
-                  This action will permanently remove this template from your library.
-                  Any activities using this template may be affected.
-                </p>
-              </div>
-              
-              <div className="tl-template-info">
+              <div className="template-modal-item-info">
                 <p><strong>Template Type:</strong> {getTemplateType()}</p>
                 {nestedTabIndex === 0 && (
                   <p><strong>Question:</strong> {templateToDelete.templateText}</p>
@@ -1251,15 +1259,15 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
               </div>
             </div>
             
-            <div className="tl-dialog-footer">
+            <div className="template-modal-footer">
               <button
-                className="tl-dialog-btn tl-cancel-btn"
+                className="template-modal-btn template-modal-cancel-btn"
                 onClick={() => setIsDeleteDialogOpen(false)}
               >
                 <FontAwesomeIcon icon={faTimes} /> Cancel
               </button>
               <button
-                className="tl-dialog-btn tl-delete-confirm-btn"
+                className="template-modal-btn template-modal-delete-btn"
                 onClick={handleDelete}
               >
                 <FontAwesomeIcon icon={faTrash} /> Delete Template
@@ -1271,13 +1279,13 @@ const TemplateLibrary = ({ templates, setTemplates }) => {
 
       {/* Success Notification */}
       {isSubmitSuccessDialogOpen && (
-        <div className="tl-success-notification">
-          <div className="tl-success-icon">
+        <div className="template-modal-success">
+          <div className="template-modal-success-icon">
             <FontAwesomeIcon icon={faCheckCircle} />
           </div>
-          <div className="tl-success-message">
-            <p>Template saved successfully!</p>
-            <p className="tl-success-detail">Your template is now available for use in assessments.</p>
+          <div className="template-modal-success-content">
+            <p className="template-modal-success-title">Template saved successfully!</p>
+            <p className="template-modal-success-message">Your template is now available for use in assessments.</p>
           </div>
         </div>
       )}
