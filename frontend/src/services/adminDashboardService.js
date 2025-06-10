@@ -6,7 +6,7 @@
 // Configuration for the service
 const config = {
   useMockData: false, // Changed to false to use real data
-  apiBaseUrl: import.meta.env.VITE_API_URL || 'https://literexia.onrender.com/api',
+  apiBaseUrl: import.meta.env.VITE_API_URL || 'http://localhost:5001/api',
   refreshInterval: 30000,
   collections: {
     users: 'users',
@@ -21,7 +21,7 @@ const config = {
 // Import axios for API calls
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://literexia.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 const axiosInstance = axios.create({
     baseURL: `${API_URL}/dashboard`,

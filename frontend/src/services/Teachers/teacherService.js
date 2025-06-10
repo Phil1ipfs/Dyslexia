@@ -5,7 +5,7 @@ import axios from 'axios';
 const isProd = import.meta.env.PROD;
 
 // API base URL configuration that works in both dev and production
-const API_BASE = import.meta.env.VITE_API_URL || (isProd ? '' : 'https://literexia.onrender.com/');
+const API_BASE = import.meta.env.VITE_API_URL || (isProd ? '' : 'http://localhost:5001/');
 
 // Setup axios defaults for API calls
 const api = axios.create({

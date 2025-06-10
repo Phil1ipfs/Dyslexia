@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // API base URL from environment variable
-const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL || 'https://literexia.onrender.com/api';
+const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5001/api';
 
 // Add mock data for when API is unavailable
 const MOCK_DASHBOARD_DATA = {

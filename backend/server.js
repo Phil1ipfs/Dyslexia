@@ -47,7 +47,7 @@ const userSchema = new mongoose.Schema({
 
 // Request logger middleware
 const requestLogger = (req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} (original: ${req.originalUrl})`);
   next();
 };
 
@@ -58,7 +58,6 @@ app.use(cors({
       'http://localhost:5173',
       'http://localhost:5174',
       'http://192.168.56.1:5173',
-      'https://literexia.onrender.com',
       'http://192.168.1.4:5173',
       process.env.FRONTEND_URL
     ].filter(Boolean);
