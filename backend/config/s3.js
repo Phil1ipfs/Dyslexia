@@ -21,7 +21,7 @@ s3Client.getSignedUrlPromise = async (operation, params) => {
       Bucket: params.Bucket,
       Key: params.Key,
       ContentType: params.ContentType,
-      ACL: params.ACL || 'public-read', // Make the uploaded file publicly accessible
+      ACL: params.ACL || 'public-read', 
     });
     
     // Convert Expires from seconds to seconds

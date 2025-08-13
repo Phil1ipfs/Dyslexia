@@ -10,7 +10,7 @@ const prescriptiveAnalysisSchema = new mongoose.Schema({
   categoryResultId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'CategoryResult',
-    required: false  // Optional field that can be null
+    required: false  
   },
   categoryId: {
     type: String,

@@ -130,19 +130,6 @@ const connectDB = async () => {
     const teachersDb = mongoose.connection.useDb('teachers');
     const parentDb = mongoose.connection.useDb('parent');
     
-    // Connect to Pre_Assessment database
-    const preAssessmentDb = mongoose.connection.useDb('Pre_Assessment');
-    console.log('✅ Connected to Pre_Assessment database');
-
-    // List collections in Pre_Assessment database
-    try {
-      const preAssessmentCollections = await preAssessmentDb.db.listCollections().toArray();
-      console.log('Available collections in Pre_Assessment:');
-      preAssessmentCollections.forEach(c => console.log(`- ${c.name}`));
-    } catch (err) {
-      console.warn('⚠️ Could not list Pre_Assessment collections:', err.message);
-    }
-
     const collections = {
       test: [],
       teachers: [],

@@ -165,10 +165,10 @@ iepReportSchema.methods.generateObjectivesFromCategoryResults = function(categor
       lesson: `Mastering ${displayName}`,
       status: status,
       completed: category.isPassed,
-      supportLevel: null, // Start with no support level selected
+      supportLevel: null,
       score: category.score || 0,
       passingThreshold: category.passingThreshold || 75,
-      remarks: '', // Start with empty remarks
+      remarks: '', 
       hasIntervention: false,
       interventionId: null,
       interventionName: '',
