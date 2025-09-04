@@ -34,9 +34,11 @@ router.delete('/delete-media/:fileKey', authenticateToken, authorize('teacher', 
 // Convert base64 images to S3 paths
 router.post('/assessments/:id/convert-images', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.convertImagesToS3);
 
-// Test route without authentication (for development only)
+// Test routes without authentication (for development only)
 if (process.env.NODE_ENV === 'development') {
   router.post('/test/convert-images/:id', preAssessmentController.convertImagesToS3);
+  router.get('/test/assessments', preAssessmentController.getAllPreAssessments);
+  router.get('/test/assessments/:id', preAssessmentController.getPreAssessmentById);
 }
 
 // Student results routes

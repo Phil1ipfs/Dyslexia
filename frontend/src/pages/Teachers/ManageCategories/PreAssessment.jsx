@@ -41,6 +41,54 @@ const Tooltip = ({ text }) => (
   </div>
 );
 
+// Helper function to recalculate category counts from questions
+const recalculateCategoryCounts = (questions) => {
+  const counts = {
+    alphabet_knowledge: 0,
+    phonological_awareness: 0,
+    decoding: 0,
+    word_recognition: 0,
+    reading_comprehension: 0
+  };
+  
+  // Mapping from category names in database to our internal keys
+  const categoryNameMap = {
+    'Alphabet Knowledge': 'alphabet_knowledge',
+    'Phonological Awareness': 'phonological_awareness', 
+    'Decoding': 'decoding',
+    'Word Recognition': 'word_recognition',
+    'Reading Comprehension': 'reading_comprehension'
+  };
+  
+  if (questions && questions.length > 0) {
+    questions.forEach(question => {
+      // Try different ways to get the category
+      let categoryKey = question.questionTypeId; // First try questionTypeId
+      
+      if (!categoryKey && question.category) {
+        // If no questionTypeId, map the category name to our internal key
+        categoryKey = categoryNameMap[question.category];
+      }
+      
+      if (categoryKey && counts.hasOwnProperty(categoryKey)) {
+        counts[categoryKey]++;
+      }
+    });
+  }
+  
+  return counts;
+};
+
+// Helper function to shuffle array
+const shuffleArray = (array) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 const PreAssessment = () => {
   const [preAssessment, setPreAssessment] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,28 +111,56 @@ const PreAssessment = () => {
     questionImage: null,
     questionValue: '',
     difficultyLevel: '',
+    
+    // For multiple choice questions (alphabet knowledge)
     options: [
       { optionId: '1', optionText: '', isCorrect: true },
       { optionId: '2', optionText: '', isCorrect: false }
     ],
+    
+    // For reading comprehension
     passages: [
       { pageNumber: 1, pageText: '', pageImage: null, pageImageS3Path: null }
     ],
     sentenceQuestions: [
-      { questionText: '', correctAnswer: '', incorrectAnswer: '', correctAnswerChoice: "1" }
-    ]
+      { questionText: '', correctAnswer: '', incorrectAnswer: '', correctAnswerChoice: "1", acceptableAnswers: [] }
+    ],
+    
+    // For phonological awareness (malapantig questions)
+    questionSet: {
+      audioTexts: [], // Teacher can add 3-5 items as needed
+      matchingOptions: [], // Should match audioTexts length
+      correctPairs: [] // Should match audioTexts length
+    },
+    
+    // For decoding questions (decode type)
+    completeWord: '', // Complete word for both question types
+    displaySequence: [],
+    blankPosition: null,
+    dragElements: [],
+    correctSequence: [],
+    
+    // For word recognition questions (word type)  
+    displayWord: '',
+    blankOptions: [], // Teacher can add as many options as needed
+    correctAnswer: [], // Can have multiple correct answers
+    
+    // Additional fields for interactive sentence building
+    completeSentence: '',
+    blankWords: [],
+    blankedSentence: ''
   });
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     instructions: "",
-    totalQuestions: 25,
+    totalQuestions: 0,
     categoryCounts: {
-      alphabet_knowledge: 5,
-      phonological_awareness: 5,
-      decoding: 5,
-      word_recognition: 5,
-      reading_comprehension: 5
+      alphabet_knowledge: 0,
+      phonological_awareness: 0,
+      decoding: 0,
+      word_recognition: 0,
+      reading_comprehension: 0
     },
     language: "FL",
     questions: []
@@ -115,6 +191,7 @@ const PreAssessment = () => {
         // Use PreAssessmentService to fetch assessment data from the API
         const response = await PreAssessmentService.getAllPreAssessments();
         console.log('API Response for assessments:', response);
+        console.log('Number of assessments found:', response.data?.length || 0);
         
         if (response.success) {
           // If there are pre-assessments, use the first one
@@ -143,6 +220,15 @@ const PreAssessment = () => {
                 fetchedPreAssessment.questions ? fetchedPreAssessment.questions.length : 0);
               if (fetchedPreAssessment.questions && fetchedPreAssessment.questions.length > 0) {
                 console.log('First question:', fetchedPreAssessment.questions[0]);
+                
+                // Normalize question data to ensure questionTypeId exists
+                fetchedPreAssessment.questions = fetchedPreAssessment.questions.map(question => ({
+                  ...question,
+                  // Ensure questionTypeId exists, fallback to category if needed
+                  questionTypeId: question.questionTypeId || question.category,
+                  // Ensure category field exists for backward compatibility
+                  category: question.category || question.questionTypeId
+                }));
               }
               
               // Update total questions count
@@ -251,20 +337,6 @@ const PreAssessment = () => {
     }
   };
 
-  // Handle Preview All Questions
-  const handlePreviewAllQuestions = () => {
-    if (preAssessment && preAssessment.questions && preAssessment.questions.length > 0) {
-      setPreviewAllTemplates([{
-        ...preAssessment,
-        // Include any properties needed for the preview
-        templateType: 'preassessment'
-      }]);
-      setPreviewAllCurrentIndex(0);
-      setIsPreviewAllDialogOpen(true);
-    } else {
-      toast.warning("No questions available to preview.");
-    }
-  };
 
   // Modified to count questions automatically
   const handleFormChange = (e) => {
@@ -297,15 +369,15 @@ const PreAssessment = () => {
     // Keeping it for backward compatibility but making it a no-op
   };
 
-  // Define category-specific question types with improved handling
+  // Define category-specific question types based on actual database structure
   const getCategoryQuestionTypes = (categoryId) => {
     if (!categoryId) return [];
     
-    // Simplified question types as per request
+    // Question types matching the sample database record exactly
     const categoryQuestionTypes = {
       'alphabet_knowledge': ['patinig', 'katinig'],
-      'phonological_awareness': ['patinigSound', 'katinigSound'],
-      'decoding': ['word'],
+      'phonological_awareness': ['malapantig'],
+      'decoding': ['decode'],
       'word_recognition': ['word'],
       'reading_comprehension': ['sentence']
     };
@@ -686,50 +758,73 @@ const PreAssessment = () => {
   const handleEditQuestion = (index) => {
     const question = formData.questions[index];
     
-    // Create a base question data object
+    // Handle both questionTypeId and category field mapping
+    const categoryId = question.questionTypeId || (question.category ? {
+      'Alphabet Knowledge': 'alphabet_knowledge',
+      'Phonological Awareness': 'phonological_awareness',
+      'Decoding': 'decoding',
+      'Word Recognition': 'word_recognition',
+      'Reading Comprehension': 'reading_comprehension'
+    }[question.category] : '');
+    
+    // Create a comprehensive question data object with all category-specific fields
     const baseQuestionData = {
       questionId: question.questionId || '',
-      questionTypeId: question.questionTypeId || '',
-      questionType: question.questionType || '', // Preserve the existing questionType
+      questionTypeId: categoryId,
+      questionType: question.questionType || '',
       questionText: question.questionText || '',
       difficultyLevel: question.difficultyLevel || '',
-    };
-    
-    // Add fields based on question type
-    if (question.questionTypeId === 'reading_comprehension') {
-      // For reading comprehension, don't include questionValue and questionImage
-      baseQuestionData.passages = question.passages && question.passages.length > 0 ?
+      questionValue: question.questionValue || '',
+      questionImage: question.questionImage || null,
+      questionImageS3Path: question.questionImageS3Path || null,
+      
+      // Alphabet Knowledge - Multiple choice options
+      options: question.options && question.options.length > 0 ? 
+        question.options.map(opt => ({...opt})) : 
+        [
+          { optionId: '1', optionText: '', isCorrect: true },
+          { optionId: '2', optionText: '', isCorrect: false },
+          { optionId: '3', optionText: '', isCorrect: false }
+        ],
+      
+      // Reading Comprehension - Passages and sentence questions
+      passages: question.passages && question.passages.length > 0 ?
         question.passages.map(p => ({
           pageNumber: p.pageNumber,
           pageText: p.pageText || '',
           pageImage: p.pageImage || null,
           pageImageS3Path: p.pageImageS3Path || null
         })) :
-        [{ pageNumber: 1, pageText: '', pageImage: null, pageImageS3Path: null }];
+        [{ pageNumber: 1, pageText: '', pageImage: null, pageImageS3Path: null }],
       
-      baseQuestionData.sentenceQuestions = question.sentenceQuestions && question.sentenceQuestions.length > 0 ?
+      sentenceQuestions: question.sentenceQuestions && question.sentenceQuestions.length > 0 ?
         question.sentenceQuestions.map(sq => ({
           questionText: sq.questionText || '',
           correctAnswer: sq.correctAnswer || '',
-          incorrectAnswer: sq.incorrectAnswer || '',
-          correctAnswerChoice: sq.correctAnswerChoice || "1" // Default to "1" if not set
+          acceptableAnswers: sq.acceptableAnswers || []
         })) :
-        [{ questionText: '', correctAnswer: '', incorrectAnswer: '', correctAnswerChoice: "1" }];
-    } else {
-      // For other question types, include questionValue and questionImage
-      baseQuestionData.questionValue = question.questionValue || '';
-      baseQuestionData.questionImage = question.questionImage || null;
-      baseQuestionData.questionImageS3Path = question.questionImageS3Path || null;
+        [{ questionText: '', correctAnswer: '', acceptableAnswers: [] }],
       
-      baseQuestionData.options = question.options && question.options.length >= 2 ? 
-        question.options.map(opt => ({...opt})) : // Deep copy to avoid reference issues
-        [
-          { optionId: '1', optionText: '', isCorrect: true },
-          { optionId: '2', optionText: '', isCorrect: false }
-        ];
-    }
+      // Phonological Awareness - Audio matching
+      questionSet: {
+        audioTexts: question.questionSet?.audioTexts || [],
+        matchingOptions: question.questionSet?.matchingOptions || [],
+        correctPairs: question.questionSet?.correctPairs || []
+      },
+      
+      // Decoding - Letter sequences
+      displaySequence: question.displaySequence || [],
+      blankPosition: question.blankPosition || null,
+      dragElements: question.dragElements || [],
+      correctSequence: question.correctSequence || [],
+      
+      // Word Recognition - Fill in blanks
+      displayWord: question.displayWord || '',
+      blankOptions: question.blankOptions || [],
+      correctAnswer: question.correctAnswer || []
+    };
     
-    console.log('Editing question with data:', baseQuestionData);
+    console.log('Editing question with comprehensive data:', baseQuestionData);
     setCurrentQuestionData(baseQuestionData);
     setEditingQuestionIndex(index);
     setShowQuestionEditor(true);
@@ -763,9 +858,11 @@ const PreAssessment = () => {
             // Also update the form data
             setFormData(prev => {
               const updatedQuestions = response.data.questions || [];
+              const updatedCategoryCounts = recalculateCategoryCounts(updatedQuestions);
               return {
                 ...prev,
                 questions: updatedQuestions,
+                categoryCounts: updatedCategoryCounts,
                 totalQuestions: updatedQuestions.length
               };
             });
@@ -779,9 +876,11 @@ const PreAssessment = () => {
           // No assessment ID yet, just update the local state
           setFormData(prev => {
             const newQuestions = prev.questions.filter((_, i) => i !== index);
+            const updatedCategoryCounts = recalculateCategoryCounts(newQuestions);
             return {
               ...prev,
               questions: newQuestions,
+              categoryCounts: updatedCategoryCounts,
               totalQuestions: newQuestions.length
             };
           });
@@ -806,17 +905,67 @@ const PreAssessment = () => {
       // Auto-generate questionId when category is selected
       const questionId = generateQuestionId(value);
       
-      // Find the corresponding question type name
-      const questionType = questionTypes.find(qt => qt.typeId === value);
-      const questionTypeName = questionType ? questionType.typeName : '';
+      // Auto-set question type based on category (fixed for all except alphabet_knowledge)
+      let questionTypeName = '';
+      if (value === 'alphabet_knowledge') {
+        // For alphabet knowledge, keep it empty so user can select patinig/katinig
+        questionTypeName = '';
+      } else if (value === 'phonological_awareness') {
+        questionTypeName = 'malapantig';
+      } else if (value === 'decoding') {
+        questionTypeName = 'decode';
+      } else if (value === 'word_recognition') {
+        questionTypeName = 'word';
+      } else if (value === 'reading_comprehension') {
+        questionTypeName = 'sentence';
+      }
       
-      console.log(`Setting question type to ${questionTypeName} for type ID ${value}`);
+      console.log(`Setting question type to ${questionTypeName} for category ${value}`);
       
       setCurrentQuestionData(prev => ({
         ...prev,
         [name]: value,
         questionId: questionId,
-        questionType: questionTypeName // Set the question type name from the found question type
+        questionType: questionTypeName,
+        
+        // Reset category-specific fields when changing category
+        ...(value === 'alphabet_knowledge' && {
+          options: [
+            { optionId: '1', optionText: '', isCorrect: true },
+            { optionId: '2', optionText: '', isCorrect: false },
+            { optionId: '3', optionText: '', isCorrect: false }
+          ]
+        }),
+        
+        ...(value === 'phonological_awareness' && {
+          questionSet: {
+            audioTexts: [],
+            matchingOptions: [],
+            correctPairs: []
+          }
+        }),
+        
+        ...(value === 'decoding' && {
+          displaySequence: [],
+          blankPosition: null,
+          dragElements: [],
+          correctSequence: []
+        }),
+        
+        ...(value === 'word_recognition' && {
+          displayWord: '',
+          blankOptions: [],
+          correctAnswer: []
+        }),
+        
+        ...(value === 'reading_comprehension' && {
+          passages: [
+            { pageNumber: 1, pageText: '', pageImage: null, pageImageS3Path: null }
+          ],
+          sentenceQuestions: [
+            { questionText: '', correctAnswer: '', acceptableAnswers: [] }
+          ]
+        })
       }));
     } else {
       setCurrentQuestionData(prev => ({
@@ -871,6 +1020,315 @@ const PreAssessment = () => {
         ...option,
         isCorrect: i === index
       }))
+    }));
+  };
+
+  // Phonological Awareness handlers
+  const handleAudioTextChange = (index, value) => {
+    // Validation: Only allow single letters
+    const sanitizedValue = value.replace(/[^a-zA-Z]/g, '').toUpperCase();
+    
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      questionSet: {
+        ...prev.questionSet,
+        audioTexts: prev.questionSet.audioTexts.map((item, i) => i === index ? sanitizedValue : item),
+        // Auto-update matching options to match audio texts
+        matchingOptions: prev.questionSet.matchingOptions.map((item, i) => 
+          i === index ? (sanitizedValue ? sanitizedValue + sanitizedValue.toLowerCase() : '') : item
+        ),
+        // Auto-update correct pairs
+        correctPairs: prev.questionSet.correctPairs.map((pair, i) => 
+          i === index ? { 
+            audio: sanitizedValue, 
+            match: sanitizedValue ? sanitizedValue + sanitizedValue.toLowerCase() : '' 
+          } : pair
+        )
+      }
+    }));
+  };
+
+  const addAudioTextItem = () => {
+    setCurrentQuestionData(prev => {
+      // Limit to maximum 4 audio texts
+      if (prev.questionSet.audioTexts.length >= 4) {
+        toast.error('Maximum 4 audio texts allowed');
+        return prev;
+      }
+      
+      return {
+        ...prev,
+        questionSet: {
+          ...prev.questionSet,
+          audioTexts: [...prev.questionSet.audioTexts, ''],
+          matchingOptions: [...prev.questionSet.matchingOptions, ''],
+          correctPairs: [...prev.questionSet.correctPairs, { audio: '', match: '' }]
+        }
+      };
+    });
+  };
+
+  const removeAudioTextItem = (index) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      questionSet: {
+        ...prev.questionSet,
+        audioTexts: prev.questionSet.audioTexts.filter((_, i) => i !== index),
+        matchingOptions: prev.questionSet.matchingOptions.filter((_, i) => i !== index),
+        correctPairs: prev.questionSet.correctPairs.filter((_, i) => i !== index)
+      }
+    }));
+  };
+
+  const handleMatchingOptionChange = (index, value) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      questionSet: {
+        ...prev.questionSet,
+        matchingOptions: prev.questionSet.matchingOptions.map((item, i) => i === index ? value : item)
+      }
+    }));
+  };
+
+  const handleCorrectPairChange = (index, field, value) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      questionSet: {
+        ...prev.questionSet,
+        correctPairs: prev.questionSet.correctPairs.map((pair, i) => 
+          i === index ? { ...pair, [field]: value } : pair
+        )
+      }
+    }));
+  };
+
+  // Decoding handlers
+  const handleDecodingQuestionTypeChange = (questionType) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      questionText: questionType,
+      // Reset arrays when switching question type
+      displaySequence: [],
+      blankPosition: questionType === 'Buoin ang salita' ? 0 : null,
+      dragElements: [],
+      correctSequence: []
+    }));
+  };
+
+  const handleDisplaySequenceChange = (index, value) => {
+    // For "Buoin ang salita", only allow single letters, for blanks use empty string
+    const sanitizedValue = currentQuestionData.questionText === 'Buoin ang salita' 
+      ? (value === '' ? '' : value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 1))
+      : value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 1);
+      
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      displaySequence: prev.displaySequence.map((item, i) => i === index ? sanitizedValue : item)
+    }));
+  };
+
+  const addSequenceItem = () => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      displaySequence: [...prev.displaySequence, '']
+    }));
+  };
+
+  const removeSequenceItem = (index) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      displaySequence: prev.displaySequence.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleDragElementChange = (index, value) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      dragElements: prev.dragElements.map((item, i) => i === index ? value : item)
+    }));
+  };
+
+  const addDragElement = () => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      dragElements: [...prev.dragElements, '']
+    }));
+  };
+
+  const removeDragElement = (index) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      dragElements: prev.dragElements.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleCorrectSequenceChange = (index, value) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      correctSequence: prev.correctSequence.map((item, i) => i === index ? value : item)
+    }));
+  };
+
+  const addCorrectSequenceItem = () => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      correctSequence: [...prev.correctSequence, '']
+    }));
+  };
+
+  const removeCorrectSequenceItem = (index) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      correctSequence: prev.correctSequence.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Word Recognition handlers
+  const handleBlankOptionChange = (index, value) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      blankOptions: prev.blankOptions.map((item, i) => i === index ? value : item)
+    }));
+  };
+
+  const addBlankOption = () => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      blankOptions: [...prev.blankOptions, '']
+    }));
+  };
+
+  const removeBlankOption = (index) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      blankOptions: prev.blankOptions.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleCorrectAnswerChange = (index, value) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      correctAnswer: prev.correctAnswer.map((item, i) => i === index ? value : item)
+    }));
+  };
+
+  const addCorrectAnswer = () => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      correctAnswer: [...prev.correctAnswer, '']
+    }));
+  };
+
+  const removeCorrectAnswer = (index) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      correctAnswer: prev.correctAnswer.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Reading Comprehension handlers
+  const handlePassageTextChange = (index, value) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      passages: prev.passages.map((passage, i) => 
+        i === index ? { ...passage, pageText: value } : passage
+      )
+    }));
+  };
+
+  const addPassage = () => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      passages: [...prev.passages, { 
+        pageNumber: prev.passages.length + 1, 
+        pageText: '', 
+        pageImage: null, 
+        pageImageS3Path: null 
+      }]
+    }));
+  };
+
+  const removePassage = (index) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      passages: prev.passages.filter((_, i) => i !== index).map((passage, i) => ({
+        ...passage,
+        pageNumber: i + 1
+      }))
+    }));
+  };
+
+  const handleSentenceQuestionTextChange = (index, value) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      sentenceQuestions: prev.sentenceQuestions.map((question, i) => 
+        i === index ? { ...question, questionText: value } : question
+      )
+    }));
+  };
+
+  const handleSentenceQuestionAnswerChange = (index, value) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      sentenceQuestions: prev.sentenceQuestions.map((question, i) => 
+        i === index ? { ...question, correctAnswer: value } : question
+      )
+    }));
+  };
+
+  const handleAcceptableAnswerChange = (questionIndex, answerIndex, value) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      sentenceQuestions: prev.sentenceQuestions.map((question, i) => 
+        i === questionIndex ? {
+          ...question,
+          acceptableAnswers: question.acceptableAnswers.map((answer, j) => 
+            j === answerIndex ? value : answer
+          )
+        } : question
+      )
+    }));
+  };
+
+  const addAcceptableAnswer = (questionIndex) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      sentenceQuestions: prev.sentenceQuestions.map((question, i) => 
+        i === questionIndex ? {
+          ...question,
+          acceptableAnswers: [...question.acceptableAnswers, '']
+        } : question
+      )
+    }));
+  };
+
+  const removeAcceptableAnswer = (questionIndex, answerIndex) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      sentenceQuestions: prev.sentenceQuestions.map((question, i) => 
+        i === questionIndex ? {
+          ...question,
+          acceptableAnswers: question.acceptableAnswers.filter((_, j) => j !== answerIndex)
+        } : question
+      )
+    }));
+  };
+
+  const addSentenceQuestion = () => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      sentenceQuestions: [...prev.sentenceQuestions, { 
+        questionText: '', 
+        correctAnswer: '', 
+        acceptableAnswers: [] 
+      }]
+    }));
+  };
+
+  const removeSentenceQuestion = (index) => {
+    setCurrentQuestionData(prev => ({
+      ...prev,
+      sentenceQuestions: prev.sentenceQuestions.filter((_, i) => i !== index)
     }));
   };
 
@@ -975,38 +1433,120 @@ const PreAssessment = () => {
         return;
       }
     
-      // Special validation for reading comprehension
-      if (currentQuestionData.questionTypeId === 'reading_comprehension') {
-        // Check passages
+      // Category-specific validation
+      if (currentQuestionData.questionTypeId === 'alphabet_knowledge') {
+        // Alphabet Knowledge validation - requires 3 options
+        if (!currentQuestionData.options || currentQuestionData.options.length < 3) {
+          toast.error('Alphabet Knowledge questions require 3 answer options');
+          return;
+        }
+        const hasEmptyOption = currentQuestionData.options.some(opt => !opt.optionText.trim());
+        if (hasEmptyOption) {
+          toast.error('All answer options must have text');
+          return;
+        }
+        const hasCorrectAnswer = currentQuestionData.options.some(opt => opt.isCorrect);
+        if (!hasCorrectAnswer) {
+          toast.error('Please mark one option as correct');
+          return;
+        }
+      } else if (currentQuestionData.questionTypeId === 'phonological_awareness') {
+        // Phonological Awareness validation
+        if (!currentQuestionData.questionSet.audioTexts || currentQuestionData.questionSet.audioTexts.length === 0) {
+          toast.error('At least one audio text is required');
+          return;
+        }
+        const hasEmptyAudioText = currentQuestionData.questionSet.audioTexts.some(text => !text.trim());
+        if (hasEmptyAudioText) {
+          toast.error('All audio texts must be filled');
+          return;
+        }
+        if (currentQuestionData.questionSet.matchingOptions.length !== currentQuestionData.questionSet.audioTexts.length) {
+          toast.error('Number of matching options must equal number of audio texts');
+          return;
+        }
+        const hasEmptyMatchingOption = currentQuestionData.questionSet.matchingOptions.some(option => !option.trim());
+        if (hasEmptyMatchingOption) {
+          toast.error('All matching options must be filled');
+          return;
+        }
+        if (currentQuestionData.questionSet.correctPairs.length !== currentQuestionData.questionSet.audioTexts.length) {
+          toast.error('Number of correct pairs must equal number of audio texts');
+          return;
+        }
+        const hasIncompletePairs = currentQuestionData.questionSet.correctPairs.some(pair => !pair.audio || !pair.match);
+        if (hasIncompletePairs) {
+          toast.error('All correct pairs must be configured');
+          return;
+        }
+      } else if (currentQuestionData.questionTypeId === 'decoding') {
+        // Decoding validation
+        if (!currentQuestionData.displaySequence || currentQuestionData.displaySequence.length === 0) {
+          toast.error('Display sequence is required for decoding questions');
+          return;
+        }
+        if (!currentQuestionData.dragElements || currentQuestionData.dragElements.length === 0) {
+          toast.error('Drag elements are required for decoding questions');
+          return;
+        }
+        const hasEmptyDragElement = currentQuestionData.dragElements.some(element => !element.trim());
+        if (hasEmptyDragElement) {
+          toast.error('All drag elements must be filled');
+          return;
+        }
+        if (!currentQuestionData.correctSequence || currentQuestionData.correctSequence.length === 0) {
+          toast.error('Correct sequence is required for decoding questions');
+          return;
+        }
+        const hasEmptyCorrectSequence = currentQuestionData.correctSequence.some(element => !element.trim());
+        if (hasEmptyCorrectSequence) {
+          toast.error('All correct sequence elements must be filled');
+          return;
+        }
+      } else if (currentQuestionData.questionTypeId === 'word_recognition') {
+        // Word Recognition validation
+        if (!currentQuestionData.displayWord || !currentQuestionData.displayWord.trim()) {
+          toast.error('Display word/sentence is required for word recognition questions');
+          return;
+        }
+        if (!currentQuestionData.blankOptions || currentQuestionData.blankOptions.length === 0) {
+          toast.error('Answer options are required for word recognition questions');
+          return;
+        }
+        const hasEmptyBlankOption = currentQuestionData.blankOptions.some(option => !option.trim());
+        if (hasEmptyBlankOption) {
+          toast.error('All answer options must be filled');
+          return;
+        }
+        if (!currentQuestionData.correctAnswer || currentQuestionData.correctAnswer.length === 0) {
+          toast.error('At least one correct answer is required');
+          return;
+        }
+        const hasEmptyCorrectAnswer = currentQuestionData.correctAnswer.some(answer => !answer.trim());
+        if (hasEmptyCorrectAnswer) {
+          toast.error('All correct answers must be selected');
+          return;
+        }
+      } else if (currentQuestionData.questionTypeId === 'reading_comprehension') {
+        // Reading Comprehension validation
         if (!currentQuestionData.passages.length) {
           toast.error('At least one passage is required');
           return;
         }
-
         const hasEmptyPassage = currentQuestionData.passages.some(p => !p.pageText.trim());
         if (hasEmptyPassage) {
           toast.error('All passages must have text');
           return;
         }
-
-        // Check sentence questions
         if (!currentQuestionData.sentenceQuestions.length) {
           toast.error('At least one comprehension question is required');
           return;
         }
-
-        const hasEmptySentenceQuestion = currentQuestionData.sentenceQuestions.some(
-          q => !q.questionText.trim() || !q.correctAnswer.trim() || !q.incorrectAnswer.trim() || !q.correctAnswerChoice
+        const hasIncompleteSentenceQuestion = currentQuestionData.sentenceQuestions.some(
+          q => !q.questionText.trim() || !q.correctAnswer.trim()
         );
-        if (hasEmptySentenceQuestion) {
-          toast.error('All comprehension questions must be complete');
-          return;
-        }
-      } else {
-        // Regular question validation
-        const hasEmptyOption = currentQuestionData.options.some(opt => !opt.optionText.trim());
-        if (hasEmptyOption) {
-          toast.error('All options must have text');
+        if (hasIncompleteSentenceQuestion) {
+          toast.error('All comprehension questions must have text and correct answers');
           return;
         }
       }
@@ -1115,31 +1655,18 @@ const PreAssessment = () => {
         updatedQuestions.push(questionToSave);
       }
 
-      // Update category counts
-      const updatedCategoryCounts = { ...formData.categoryCounts };
-      
-      // If we're editing, first decrement the old category count
-      if (editingQuestionIndex >= 0) {
-        const oldCategory = formData.questions[editingQuestionIndex].questionTypeId;
-        if (oldCategory && updatedCategoryCounts[oldCategory] > 0) {
-          updatedCategoryCounts[oldCategory]--;
-        }
-      }
-      
-      // Increment the new category count
-      const newCategory = questionToSave.questionTypeId;
-      if (newCategory) {
-        updatedCategoryCounts[newCategory] = (updatedCategoryCounts[newCategory] || 0) + 1;
-      }
+      // Recalculate category counts from the updated questions array
+      const updatedCategoryCounts = recalculateCategoryCounts(updatedQuestions);
 
       // Log what we're saving for debugging
       console.log('Saving question:', questionToSave);
 
-      // Update form data with new questions and category counts
+      // Update form data with new questions, category counts, and total questions
       setFormData(prev => ({
         ...prev,
         questions: updatedQuestions,
-        categoryCounts: updatedCategoryCounts
+        categoryCounts: updatedCategoryCounts,
+        totalQuestions: updatedQuestions.length
       }));
 
       // Close the question editor
@@ -1280,9 +1807,23 @@ const PreAssessment = () => {
                     'word_recognition': 'Word Recognition',
                     'reading_comprehension': 'Reading Comprehension'
                   }).map(([category, label]) => {
-                    // Count actual questions per category
+                    // Count actual questions per category with better category matching
                     const questionsInCategory = preAssessment.questions ? 
-                      preAssessment.questions.filter(q => q.questionTypeId === category).length : 0;
+                      preAssessment.questions.filter(q => {
+                        // Check questionTypeId first
+                        if (q.questionTypeId === category) return true;
+                        
+                        // Check category name mapping
+                        const categoryNameMap = {
+                          'alphabet_knowledge': 'Alphabet Knowledge',
+                          'phonological_awareness': 'Phonological Awareness',
+                          'decoding': 'Decoding', 
+                          'word_recognition': 'Word Recognition',
+                          'reading_comprehension': 'Reading Comprehension'
+                        };
+                        
+                        return q.category === categoryNameMap[category];
+                      }).length : 0;
                     
                     // Calculate total questions
                     const totalQuestions = preAssessment.questions ? preAssessment.questions.length : 0;
@@ -1324,13 +1865,6 @@ const PreAssessment = () => {
               <span>Preview Assessment</span>
             </button>
             
-            <button 
-              className="pre-action-button"
-              onClick={handlePreviewAllQuestions}
-            >
-              <FontAwesomeIcon icon={faEye} />
-              <span>Preview All Questions</span>
-            </button>
             
             <button 
               className="pre-action-button"
@@ -1762,7 +2296,21 @@ const PreAssessment = () => {
                       preAssessment.questions : formData.questions;
                     
                     const questionsInCategory = questionsArray ? 
-                      questionsArray.filter(q => q.questionTypeId === category).length : 0;
+                      questionsArray.filter(q => {
+                        // Check questionTypeId first
+                        if (q.questionTypeId === category) return true;
+                        
+                        // Check category name mapping
+                        const categoryNameMap = {
+                          'alphabet_knowledge': 'Alphabet Knowledge',
+                          'phonological_awareness': 'Phonological Awareness',
+                          'decoding': 'Decoding',
+                          'word_recognition': 'Word Recognition', 
+                          'reading_comprehension': 'Reading Comprehension'
+                        };
+                        
+                        return q.category === categoryNameMap[category];
+                      }).length : 0;
                     
                     return (
                         <div key={category} className="pre-category-count-item">
@@ -1929,22 +2477,38 @@ const PreAssessment = () => {
                     Question Type: <span className="pre-required-field">*</span>
                     <Tooltip text="Specific type within the category" />
                   </label>
-                  <select
-                    id="questionType"
-                    name="questionType"
-                    value={currentQuestionData.questionType || ''}
-                    onChange={handleQuestionDataChange}
-                    required
-                    disabled={!currentQuestionData.questionTypeId}
-                    className={currentQuestionData.questionTypeId && !currentQuestionData.questionType ? 'pre-validation-highlight' : ''}
-                  >
-                    <option value="">Select Type</option>
-                    {getCategoryQuestionTypes(currentQuestionData.questionTypeId).map(type => (
-                      <option key={type} value={type}>
-                        {type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </option>
-                    ))}
-                  </select>
+                  {currentQuestionData.questionTypeId === 'alphabet_knowledge' ? (
+                    <select
+                      id="questionType"
+                      name="questionType"
+                      value={currentQuestionData.questionType || ''}
+                      onChange={handleQuestionDataChange}
+                      required
+                      className={currentQuestionData.questionTypeId && !currentQuestionData.questionType ? 'pre-validation-highlight' : ''}
+                    >
+                      <option value="">Select Type</option>
+                      <option value="patinig">Patinig</option>
+                      <option value="katinig">Katinig</option>
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      id="questionType"
+                      name="questionType"
+                      value={
+                        currentQuestionData.questionTypeId === 'phonological_awareness' ? 'malapantig' :
+                        currentQuestionData.questionTypeId === 'decoding' ? 'decode' :
+                        currentQuestionData.questionTypeId === 'word_recognition' ? 'word' :
+                        currentQuestionData.questionTypeId === 'reading_comprehension' ? 'sentence' :
+                        currentQuestionData.questionType || ''
+                      }
+                      onChange={handleQuestionDataChange}
+                      required
+                      disabled
+                      className="pre-form-input"
+                      style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+                    />
+                  )}
                   {currentQuestionData.questionTypeId && !currentQuestionData.questionType && (
                     <div className="pre-validation-message">Please select a question type</div>
                   )}
@@ -2059,12 +2623,13 @@ const PreAssessment = () => {
                 )}
               </div>
               
-              {/* Answer Options Section - For regular questions */}
-              {currentQuestionData.questionTypeId !== 'reading_comprehension' && (
+              {/* Alphabet Knowledge - Multiple Choice Options */}
+              {currentQuestionData.questionTypeId === 'alphabet_knowledge' && (
                 <div className="pre-options-section">
                   <h5>
                     <FontAwesomeIcon icon={faListAlt} style={{ marginRight: '8px' }} />
-                    Answer Options <span className="pre-required-field">*</span>
+                    Multiple Choice Options <span className="pre-required-field">*</span>
+                    <Tooltip text="Add 3 answer options for Alphabet Knowledge questions (patinig/katinig)" />
                   </h5>
                   
                   {currentQuestionData.options.map((option, index) => (
@@ -2103,16 +2668,653 @@ const PreAssessment = () => {
                   ))}
                 </div>
               )}
+
+              {/* Phonological Awareness - Audio Matching */}
+              {currentQuestionData.questionTypeId === 'phonological_awareness' && (
+                <div className="pre-phonological-section">
+                  <div className="pre-section-header">
+                    <FontAwesomeIcon icon={faVolumeUp} className="pre-section-icon" />
+                    <h5 className="pre-section-title">Audio Matching Configuration <span className="pre-required-field">*</span></h5>
+                    <Tooltip text="Configure audio texts and their matching options for malapantig questions" />
+                  </div>
+                  
+                  {/* Audio Texts */}
+                  <div className="pre-audio-texts-section">
+                    <div className="pre-subsection-header">
+                      <h6 className="pre-subsection-title">Audio Texts (TTS will read these)</h6>
+                      <span className="pre-limit-indicator">{currentQuestionData.questionSet.audioTexts.length}/4 items</span>
+                    </div>
+                    <p className="pre-subsection-description">Enter single letters that will be read aloud by text-to-speech</p>
+                    
+                    <div className="pre-audio-texts-grid">
+                      {currentQuestionData.questionSet.audioTexts.map((audioText, index) => (
+                        <div key={index} className="pre-audio-text-card">
+                          <div className="pre-audio-text-header">
+                            <span className="pre-audio-text-label">Audio {index + 1}</span>
+                            {currentQuestionData.questionSet.audioTexts.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeAudioTextItem(index)}
+                                className="pre-remove-btn-small"
+                                title="Remove"
+                              >
+                                <FontAwesomeIcon icon={faTimes} />
+                              </button>
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            value={audioText}
+                            onChange={(e) => handleAudioTextChange(index, e.target.value)}
+                            placeholder="Enter letter (e.g., H)"
+                            className="pre-audio-text-input"
+                            maxLength="1"
+                          />
+                          <div className="pre-auto-generated">
+                            Auto-match: {audioText ? audioText + audioText.toLowerCase() : 'Hh'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {currentQuestionData.questionSet.audioTexts.length < 4 && (
+                      <button
+                        type="button"
+                        onClick={addAudioTextItem}
+                        className="pre-add-btn-primary"
+                      >
+                        <FontAwesomeIcon icon={faPlus} />
+                        Add Audio Text
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Matching Options - Auto-generated display */}
+                  <div className="pre-matching-options-section">
+                    <div className="pre-subsection-header">
+                      <h6 className="pre-subsection-title">Matching Options (Visual choices)</h6>
+                      <span className="pre-auto-label">Auto-generated & Shuffled</span>
+                    </div>
+                    <p className="pre-subsection-description">These are automatically generated based on your audio texts and will be randomly shuffled for students</p>
+                    
+                    <div className="pre-matching-options-preview">
+                      {shuffleArray(currentQuestionData.questionSet.matchingOptions).map((option, index) => (
+                        <div key={`shuffled-${index}-${option}`} className="pre-matching-option-display">
+                          <span className="pre-option-number">{index + 1}</span>
+                          <span className="pre-option-text">{option || 'Enter audio text first'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Correct Pairs - Auto-configured */}
+                  <div className="pre-correct-pairs-section">
+                    <div className="pre-subsection-header">
+                      <h6 className="pre-subsection-title">Correct Audio-Visual Pairs</h6>
+                      <span className="pre-auto-label">Auto-configured</span>
+                    </div>
+                    <p className="pre-subsection-description">Pairs are automatically created from your audio texts</p>
+                    
+                    <div className="pre-pairs-preview">
+                      {currentQuestionData.questionSet.correctPairs.map((pair, index) => (
+                        <div key={index} className="pre-pair-display">
+                          <div className="pre-pair-number">Pair {index + 1}</div>
+                          <div className="pre-pair-content">
+                            <div className="pre-pair-audio">
+                              <FontAwesomeIcon icon={faVolumeUp} />
+                              <span>{pair.audio || '?'}</span>
+                            </div>
+                            <div className="pre-pair-arrow">
+                              <FontAwesomeIcon icon={faArrowRight} />
+                            </div>
+                            <div className="pre-pair-visual">
+                              <span>{pair.match || '??'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Decoding Question Text Selection - Moved outside */}
+              {currentQuestionData.questionTypeId === 'decoding' && (
+                <div className="pre-form-group">
+                  <label htmlFor="decodingQuestionText">
+                    Question Text: <span className="pre-required-field">*</span>
+                    <Tooltip text="Select the appropriate question text for your decoding exercise" />
+                  </label>
+                  <select
+                    id="decodingQuestionText"
+                    value={currentQuestionData.questionText}
+                    onChange={(e) => {
+                      const selectedText = e.target.value;
+                      setCurrentQuestionData(prev => ({
+                        ...prev,
+                        questionText: selectedText,
+                        // Reset related fields when changing question type
+                        displaySequence: [],
+                        dragElements: [],
+                        correctSequence: [],
+                        completeWord: '',
+                        blankPosition: selectedText === 'Buoin ang salita' ? 0 : null
+                      }));
+                    }}
+                    className="pre-form-select"
+                  >
+                    <option value="">Select question text</option>
+                    <option value="Tukuyin ang nasa larawan?">Tukuyin ang nasa larawan?</option>
+                    <option value="Buoin ang salita">Buoin ang salita</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Decoding - Letter Sequence Configuration */}
+              {currentQuestionData.questionTypeId === 'decoding' && currentQuestionData.questionText && (
+                <div className="pre-decoding-section">
+                  <div className="pre-section-header">
+                    <FontAwesomeIcon icon={faArrowRight} className="pre-section-icon" />
+                    <h5 className="pre-section-title">Letter Sequence Configuration <span className="pre-required-field">*</span></h5>
+                    <Tooltip text="Configure letter sequences for decode questions" />
+                  </div>
+                  
+                  {/* Question Type Note */}
+                  <div className="pre-question-type-note">
+                    <div className="pre-note-content">
+                      <FontAwesomeIcon icon={faInfoCircle} className="pre-note-icon" />
+                      <div className="pre-note-text">
+                        <p><strong>Selected Question Type:</strong></p>
+                        {currentQuestionData.questionText === 'Tukuyin ang nasa larawan?' && (
+                          <p>• Students will identify the complete word from the image by arranging all letters</p>
+                        )}
+                        {currentQuestionData.questionText === 'Buoin ang salita' && (
+                          <p>• Students will fill in missing letter(s) to complete the word</p>
+                        )}
+                        {!currentQuestionData.questionText && (
+                          <p>• Please select a question text to see the configuration options</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {currentQuestionData.questionText && (
+                    <>
+                      {/* Display Sequence */}
+                      <div className="pre-display-sequence-section">
+                        <div className="pre-subsection-header">
+                          <h6 className="pre-subsection-title">
+                            {currentQuestionData.questionText === 'Buoin ang salita' ? 'Word with Blank Position' : 'Complete Word Letters'}
+                          </h6>
+                        </div>
+                        <p className="pre-subsection-description">
+                          {currentQuestionData.questionText === 'Buoin ang salita' 
+                            ? 'Enter the complete word, then mark which position should be blank for students to fill'
+                            : 'Enter all letters of the word that students will arrange from the image'}
+                        </p>
+                        
+                        {currentQuestionData.questionText === 'Buoin ang salita' ? (
+                          // For "Buoin ang salita" - show complete word with blank position selector
+                          <div className="pre-buoin-word-builder">
+                            <div className="pre-form-group">
+                              <label>Complete Word:</label>
+                              <input
+                                type="text"
+                                value={currentQuestionData.completeWord || ''}
+                                onChange={(e) => {
+                                  const word = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                                  const sequence = word.split('');
+                                  setCurrentQuestionData(prev => ({
+                                    ...prev,
+                                    completeWord: word,
+                                    displaySequence: sequence.map((letter, index) => 
+                                      index === (prev.blankPosition || 0) ? '' : letter
+                                    ),
+                                    correctSequence: prev.blankPosition !== null ? [sequence[prev.blankPosition] || ''] : []
+                                  }));
+                                }}
+                                placeholder="Enter complete word (e.g., TINAPAY)"
+                                className="pre-complete-word-input"
+                              />
+                            </div>
+                            
+                            {currentQuestionData.completeWord && (
+                              <div className="pre-blank-position-selector">
+                                <label>Select Blank Position:</label>
+                                <div className="pre-word-positions">
+                                  {currentQuestionData.completeWord.split('').map((letter, index) => (
+                                    <button
+                                      key={index}
+                                      type="button"
+                                      className={`pre-position-btn ${currentQuestionData.blankPosition === index ? 'selected' : ''}`}
+                                      onClick={() => {
+                                        const completeSequence = currentQuestionData.completeWord.split('');
+                                        setCurrentQuestionData(prev => ({
+                                          ...prev,
+                                          blankPosition: index,
+                                          displaySequence: completeSequence.map((l, i) => i === index ? '' : l),
+                                          correctSequence: [letter]
+                                        }));
+                                      }}
+                                    >
+                                      <span className="pre-position-number">Position {index + 1}</span>
+                                      <span className="pre-position-letter">{letter}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          // For "Tukuyin ang nasa larawan" - show letter grid for complete word
+                          <div className="pre-tukuyin-word-builder">
+                            <div className="pre-form-group">
+                              <label>Complete Word (will be scrambled for students):</label>
+                              <input
+                                type="text"
+                                value={currentQuestionData.completeWord || ''}
+                                onChange={(e) => {
+                                  const word = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                                  const sequence = word.split('');
+                                  setCurrentQuestionData(prev => ({
+                                    ...prev,
+                                    completeWord: word,
+                                    displaySequence: sequence,
+                                    correctSequence: sequence,
+                                    blankPosition: null // No blank position for this type
+                                  }));
+                                }}
+                                placeholder="Enter complete word (e.g., YELO)"
+                                className="pre-complete-word-input"
+                              />
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Display Preview */}
+                        {currentQuestionData.displaySequence.length > 0 && (
+                          <div className="pre-sequence-preview">
+                            <h6>Preview (what students will see):</h6>
+                            <div className="pre-preview-word">
+                              {currentQuestionData.displaySequence.map((letter, index) => (
+                                <span 
+                                  key={index} 
+                                  className={`pre-letter-box ${letter === '' ? 'blank' : ''}`}
+                                >
+                                  {letter === '' ? '___' : letter}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Drag Elements */}
+                      <div className="pre-drag-elements-section">
+                        <div className="pre-subsection-header">
+                          <h6 className="pre-subsection-title">Available Letters (Student Options)</h6>
+                        </div>
+                        <p className="pre-subsection-description">
+                          {currentQuestionData.questionText === 'Buoin ang salita' 
+                            ? 'Letters students can choose from to fill the blank (includes correct answer + distractors)'
+                            : 'All letters from the word plus some distractors for students to arrange'}
+                        </p>
+                        
+                        {/* Auto-populate button */}
+                        {currentQuestionData.completeWord && (
+                          <div className="pre-auto-populate-section">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (currentQuestionData.questionText === 'Buoin ang salita') {
+                                  // For "Buoin ang salita" - add correct letter + some distractors
+                                  const correctLetter = currentQuestionData.correctSequence[0] || '';
+                                  const distractors = ['A', 'E', 'I', 'O', 'U', 'B', 'D', 'G', 'P', 'T', 'S', 'N', 'R', 'L'];
+                                  const availableDistractors = distractors.filter(d => d !== correctLetter);
+                                  const selectedDistractors = availableDistractors.slice(0, 3);
+                                  const allOptions = [correctLetter, ...selectedDistractors].filter(Boolean);
+                                  
+                                  setCurrentQuestionData(prev => ({
+                                    ...prev,
+                                    dragElements: allOptions
+                                  }));
+                                } else {
+                                  // For "Tukuyin ang nasa larawan" - add all word letters + some distractors
+                                  const wordLetters = currentQuestionData.completeWord.split('');
+                                  const distractors = ['A', 'E', 'I', 'O', 'U', 'B', 'D', 'G', 'P', 'T', 'S', 'N', 'R', 'L'];
+                                  const availableDistractors = distractors.filter(d => !wordLetters.includes(d));
+                                  const selectedDistractors = availableDistractors.slice(0, 2);
+                                  const allOptions = [...wordLetters, ...selectedDistractors];
+                                  
+                                  setCurrentQuestionData(prev => ({
+                                    ...prev,
+                                    dragElements: allOptions
+                                  }));
+                                }
+                              }}
+                              className="pre-auto-populate-btn"
+                            >
+                              <FontAwesomeIcon icon={faGraduationCap} />
+                              Auto-populate with distractors
+                            </button>
+                          </div>
+                        )}
+                        
+                        <div className="pre-drag-elements-grid">
+                          {currentQuestionData.dragElements.map((element, index) => {
+                            const isCorrectAnswer = currentQuestionData.correctSequence.includes(element);
+                            return (
+                              <div key={index} className={`pre-drag-card ${isCorrectAnswer ? 'correct' : ''}`}>
+                                <input
+                                  type="text"
+                                  value={element}
+                                  onChange={(e) => {
+                                    const newElement = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 1);
+                                    setCurrentQuestionData(prev => ({
+                                      ...prev,
+                                      dragElements: prev.dragElements.map((el, i) => i === index ? newElement : el)
+                                    }));
+                                  }}
+                                  placeholder="Letter"
+                                  className="pre-drag-input"
+                                  maxLength="1"
+                                />
+                                {isCorrectAnswer && (
+                                  <div className="pre-correct-indicator">
+                                    <FontAwesomeIcon icon={faCheckCircle} />
+                                  </div>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCurrentQuestionData(prev => ({
+                                      ...prev,
+                                      dragElements: prev.dragElements.filter((_, i) => i !== index)
+                                    }));
+                                  }}
+                                  className="pre-remove-btn-small"
+                                  title="Remove"
+                                >
+                                  <FontAwesomeIcon icon={faTimes} />
+                                </button>
+                              </div>
+                            );
+                          })}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCurrentQuestionData(prev => ({
+                                ...prev,
+                                dragElements: [...prev.dragElements, '']
+                              }));
+                            }}
+                            className="pre-add-btn-drag"
+                          >
+                            <FontAwesomeIcon icon={faPlus} />
+                            Add Option
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Correct Answer Display */}
+                      <div className="pre-correct-sequence-section">
+                        <div className="pre-subsection-header">
+                          <h6 className="pre-subsection-title">Correct Answer</h6>
+                          <span className="pre-auto-label">Auto-generated</span>
+                        </div>
+                        <p className="pre-subsection-description">
+                          {currentQuestionData.questionText === 'Buoin ang salita' 
+                            ? 'The correct letter that fills the selected blank position'
+                            : 'The complete word sequence that students need to arrange'}
+                        </p>
+                        
+                        <div className="pre-correct-answer-display">
+                          {currentQuestionData.correctSequence.length > 0 ? (
+                            <div className="pre-correct-answers-grid">
+                              {currentQuestionData.correctSequence.map((letter, index) => (
+                                <div key={index} className="pre-correct-answer-chip">
+                                  <span className="pre-answer-text">{letter}</span>
+                                  <span className="pre-answer-type">
+                                    {currentQuestionData.questionText === 'Buoin ang salita' ? 'Missing Letter' : `Position ${index + 1}`}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="pre-no-correct-answers">
+                              <FontAwesomeIcon icon={faInfoCircle} />
+                              <span>
+                                {currentQuestionData.questionText === 'Buoin ang salita' 
+                                  ? 'Select a blank position to auto-generate the correct answer'
+                                  : 'Enter a complete word to auto-generate the correct sequence'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Word Recognition - Enhanced Fill in the Blank */}
+              {currentQuestionData.questionTypeId === 'word_recognition' && (
+                <div className="pre-word-recognition-section">
+                  <div className="pre-section-header">
+                    <FontAwesomeIcon icon={faBook} className="pre-section-icon" />
+                    <h5 className="pre-section-title">Word Recognition Configuration <span className="pre-required-field">*</span></h5>
+                    <Tooltip text="Configure sentences and word options for word recognition questions" />
+                  </div>
+                  
+                  {/* Interactive Sentence Builder */}
+                  <div className="pre-sentence-builder-section">
+                    <div className="pre-subsection-header">
+                      <h6 className="pre-subsection-title">Sentence Builder</h6>
+                      <span className="pre-help-text">Click words to make them blanks</span>
+                    </div>
+                    <p className="pre-subsection-description">Type your sentence below, then click on words to convert them into blanks</p>
+                    
+                    <div className="pre-form-group">
+                      <label htmlFor="sentenceInput">
+                        Enter Complete Sentence: <span className="pre-required-field">*</span>
+                        <Tooltip text="Type the complete sentence first" />
+                      </label>
+                      <textarea
+                        id="sentenceInput"
+                        value={currentQuestionData.completeSentence || ''}
+                        onChange={(e) => {
+                          const newSentence = e.target.value;
+                          setCurrentQuestionData(prev => ({
+                            ...prev,
+                            completeSentence: newSentence,
+                            displayWord: newSentence, // Update display word too
+                            blankWords: [], // Reset blanks when sentence changes
+                            blankedSentence: newSentence
+                          }));
+                        }}
+                        placeholder="e.g., 'Naglalaro siya ng bola sa parke.'"
+                        className="pre-sentence-input"
+                        rows={2}
+                        required
+                      />
+                    </div>
+                    
+                    {/* Word Click Interface */}
+                    {currentQuestionData.completeSentence && (
+                      <div className="pre-word-click-section">
+                        <h6>Click words to make them blanks:</h6>
+                        <div className="pre-interactive-sentence">
+                          {currentQuestionData.completeSentence.split(' ').map((word, index) => {
+                            const cleanWord = word.replace(/[.,!?;:]/g, '');
+                            const punctuation = word.match(/[.,!?;:]/) ? word.match(/[.,!?;:]/)[0] : '';
+                            const isBlank = currentQuestionData.blankWords && currentQuestionData.blankWords.includes(cleanWord.toLowerCase());
+                            
+                            return (
+                              <span key={index} className="pre-word-container">
+                                <button
+                                  type="button"
+                                  className={`pre-word-button ${isBlank ? 'blank' : ''}`}
+                                  onClick={() => {
+                                    const newBlankWords = [...(currentQuestionData.blankWords || [])];
+                                    const wordLower = cleanWord.toLowerCase();
+                                    
+                                    if (isBlank) {
+                                      // Remove from blanks
+                                      const index = newBlankWords.indexOf(wordLower);
+                                      if (index > -1) newBlankWords.splice(index, 1);
+                                    } else {
+                                      // Add to blanks
+                                      if (!newBlankWords.includes(wordLower)) {
+                                        newBlankWords.push(wordLower);
+                                      }
+                                    }
+                                    
+                                    // Update blanked sentence
+                                    const blankedSentence = currentQuestionData.completeSentence.split(' ').map(w => {
+                                      const clean = w.replace(/[.,!?;:]/g, '');
+                                      const punct = w.match(/[.,!?;:]/) ? w.match(/[.,!?;:]/)[0] : '';
+                                      return newBlankWords.includes(clean.toLowerCase()) ? '___' + punct : w;
+                                    }).join(' ');
+                                    
+                                    setCurrentQuestionData(prev => {
+                                      // Auto-add blanked words to correct answers and blank options
+                                      const newCorrectAnswers = [...new Set([...(prev.correctAnswer || []), ...newBlankWords.map(w => w.toUpperCase())])];
+                                      const updatedBlankOptions = [...new Set([...(prev.blankOptions || []), ...newBlankWords.map(w => w.toUpperCase())])];
+                                      
+                                      return {
+                                        ...prev,
+                                        blankWords: newBlankWords,
+                                        blankedSentence: blankedSentence,
+                                        displayWord: blankedSentence,
+                                        correctAnswer: newCorrectAnswers,
+                                        // Auto-add correct answers to blank options as well
+                                        blankOptions: updatedBlankOptions
+                                      };
+                                    });
+                                  }}
+                                >
+                                  {isBlank ? '___' : cleanWord}
+                                </button>
+                                {punctuation && <span className="pre-punctuation">{punctuation}</span>}
+                                {index < currentQuestionData.completeSentence.split(' ').length - 1 && ' '}
+                              </span>
+                            );
+                          })}
+                        </div>
+                        
+                        {/* Display blanked sentence */}
+                        {currentQuestionData.blankedSentence && currentQuestionData.blankedSentence !== currentQuestionData.completeSentence && (
+                          <div className="pre-blanked-preview">
+                            <h6>Preview with blanks:</h6>
+                            <div className="pre-blanked-sentence">{currentQuestionData.blankedSentence}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Answer Options */}
+                  <div className="pre-blank-options-section">
+                    <div className="pre-subsection-header">
+                      <h6 className="pre-subsection-title">Answer Options <span className="pre-required-field">*</span></h6>
+                      <span className="pre-help-text">Include correct answers and distractors</span>
+                    </div>
+                    <p className="pre-subsection-description">Add all possible answer choices (correct answers are auto-added from blanks)</p>
+                    
+                    <div className="pre-blank-options-container">
+                      {currentQuestionData.blankOptions.map((option, index) => {
+                        const isCorrectAnswer = currentQuestionData.correctAnswer && currentQuestionData.correctAnswer.includes(option);
+                        return (
+                          <div key={index} className={`pre-blank-option-item ${isCorrectAnswer ? 'correct' : ''}`}>
+                            <div className="pre-option-content">
+                              <input
+                                type="text"
+                                value={option}
+                                onChange={(e) => handleBlankOptionChange(index, e.target.value)}
+                                placeholder={`Option ${index + 1}`}
+                                className="pre-blank-option-input"
+                              />
+                              {isCorrectAnswer && (
+                                <div className="pre-correct-indicator">
+                                  <FontAwesomeIcon icon={faCheckCircle} />
+                                  <span>Correct</span>
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeBlankOption(index)}
+                              className="pre-remove-btn-small"
+                              title="Remove"
+                            >
+                              <FontAwesomeIcon icon={faTimes} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                      <button
+                        type="button"
+                        onClick={addBlankOption}
+                        className="pre-add-btn-primary"
+                      >
+                        <FontAwesomeIcon icon={faPlus} />
+                        Add Answer Option
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Correct Answers Management */}
+                  <div className="pre-correct-answers-section">
+                    <div className="pre-subsection-header">
+                      <h6 className="pre-subsection-title">Correct Answers</h6>
+                      <span className="pre-auto-label">Auto-managed from blanks</span>
+                    </div>
+                    <p className="pre-subsection-description">These are automatically determined from the words you've made into blanks</p>
+                    
+                    <div className="pre-correct-answers-display">
+                      {currentQuestionData.correctAnswer && currentQuestionData.correctAnswer.length > 0 ? (
+                        currentQuestionData.correctAnswer.map((answer, index) => (
+                          <div key={index} className="pre-correct-answer-chip">
+                            <span className="pre-answer-text">{answer}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newCorrectAnswers = currentQuestionData.correctAnswer.filter((_, i) => i !== index);
+                                setCurrentQuestionData(prev => ({
+                                  ...prev,
+                                  correctAnswer: newCorrectAnswers
+                                }));
+                              }}
+                              className="pre-remove-chip"
+                              title="Remove"
+                            >
+                              <FontAwesomeIcon icon={faTimes} />
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="pre-no-correct-answers">
+                          <FontAwesomeIcon icon={faInfoCircle} />
+                          <span>Make words into blanks to automatically add correct answers</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                  </div>
+                </div>
+              )}
               
               {/* Reading Comprehension Section - For reading_comprehension questions */}
               {currentQuestionData.questionTypeId === 'reading_comprehension' && (
                 <div className="pre-reading-comp-section">
                   {/* Passage Pages */}
                   <div className="pre-passage-section">
-                    <h5>
-                      <FontAwesomeIcon icon={faBook} style={{ marginRight: '8px' }} />
-                      Reading Passage Pages <span className="pre-required-field">*</span>
-                    </h5>
+                    <div className="pre-section-header">
+                      <FontAwesomeIcon icon={faBook} className="pre-section-icon" />
+                      <h5 className="pre-section-title">Reading Passage Pages <span className="pre-required-field">*</span></h5>
+                      <Tooltip text="Add story pages that students will read for comprehension questions" />
+                    </div>
+                    <p className="pre-section-description">Create engaging reading passages with optional images to assess student comprehension</p>
                     
                     {currentQuestionData.passages.map((passage, index) => (
                       <div key={index} className="pre-passage-editor">
@@ -2249,32 +3451,40 @@ const PreAssessment = () => {
                   
                   {/* Comprehension Questions */}
                   <div className="pre-sentence-questions-section">
-                    <h5>
-                      <FontAwesomeIcon icon={faQuestion} style={{ marginRight: '8px' }} />
-                      Comprehension Questions <span className="pre-required-field">*</span>
-                    </h5>
+                    <div className="pre-section-header">
+                      <FontAwesomeIcon icon={faQuestion} className="pre-section-icon" />
+                      <h5 className="pre-section-title">Comprehension Questions <span className="pre-required-field">*</span></h5>
+                      <Tooltip text="Create questions to test student understanding of the reading passage" />
+                    </div>
+                    <p className="pre-section-description">Design questions that assess student comprehension with expected answers and acceptable alternatives</p>
                     
-                    {currentQuestionData.sentenceQuestions.map((question, index) => (
-                      <div key={index} className="pre-sentence-question-editor">
-                        <div className="pre-sentence-question-header">
-                          <h6>Question {index + 1}</h6>
-                          <div className="pre-sentence-question-actions">
-                            {currentQuestionData.sentenceQuestions.length > 1 && (
-                              <button
-                                type="button"
-                                className="pre-remove-question-btn"
-                                onClick={() => {
-                                  setCurrentQuestionData(prev => ({
-                                    ...prev,
-                                    sentenceQuestions: prev.sentenceQuestions.filter((_, i) => i !== index)
-                                  }));
-                                }}
-                              >
-                                <FontAwesomeIcon icon={faTimes} /> Remove
-                              </button>
-                            )}
+                    <div className="pre-comprehension-questions-container">
+                      {currentQuestionData.sentenceQuestions.map((question, index) => (
+                        <div key={index} className="pre-sentence-question-editor">
+                          <div className="pre-sentence-question-header">
+                            <div className="pre-question-header-left">
+                              <FontAwesomeIcon icon={faQuestion} className="pre-question-icon" />
+                              <h6 className="pre-question-title">Question {index + 1}</h6>
+                            </div>
+                            <div className="pre-sentence-question-actions">
+                              {currentQuestionData.sentenceQuestions.length > 1 && (
+                                <button
+                                  type="button"
+                                  className="pre-remove-question-btn"
+                                  onClick={() => {
+                                    setCurrentQuestionData(prev => ({
+                                      ...prev,
+                                      sentenceQuestions: prev.sentenceQuestions.filter((_, i) => i !== index)
+                                    }));
+                                  }}
+                                  title="Remove this question"
+                                >
+                                  <FontAwesomeIcon icon={faTimes} />
+                                  <span>Remove</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
-                        </div>
                         
                         <div className="pre-form-group pre-full-width">
                           <label>
@@ -2302,10 +3512,10 @@ const PreAssessment = () => {
                           )}
                         </div>
                         
-                        <div className="pre-answer-choices-container">
                         <div className="pre-form-group">
                           <label>
-                              Answer Choice 1: <span className="pre-required-field">*</span>
+                            Expected Answer: <span className="pre-required-field">*</span>
+                            <Tooltip text="The main correct answer for this question" />
                           </label>
                           <input
                             type="text"
@@ -2321,90 +3531,80 @@ const PreAssessment = () => {
                                 sentenceQuestions: updatedQuestions
                               }));
                             }}
-                              placeholder="Enter answer choice 1"
+                            placeholder="Enter the expected answer"
                             className={!question.correctAnswer.trim() ? 'pre-validation-highlight' : ''}
                           />
                           {!question.correctAnswer.trim() && (
-                              <div className="pre-validation-message">Answer choice 1 is required</div>
+                            <div className="pre-validation-message">Expected answer is required</div>
                           )}
                         </div>
                         
-                        <div className="pre-form-group">
+                        <div className="pre-acceptable-answers-section">
                           <label>
-                              Answer Choice 2: <span className="pre-required-field">*</span>
+                            Alternative Acceptable Answers:
+                            <Tooltip text="Add other acceptable variations of the answer" />
                           </label>
-                          <input
-                            type="text"
-                            value={question.incorrectAnswer || ''}
-                            onChange={(e) => {
+                          
+                          {question.acceptableAnswers && question.acceptableAnswers.map((answer, answerIndex) => (
+                            <div key={answerIndex} className="pre-acceptable-answer-item">
+                              <input
+                                type="text"
+                                value={answer}
+                                onChange={(e) => {
+                                  const updatedQuestions = [...currentQuestionData.sentenceQuestions];
+                                  updatedQuestions[index] = {
+                                    ...updatedQuestions[index],
+                                    acceptableAnswers: updatedQuestions[index].acceptableAnswers.map((ans, i) => 
+                                      i === answerIndex ? e.target.value : ans
+                                    )
+                                  };
+                                  setCurrentQuestionData(prev => ({
+                                    ...prev,
+                                    sentenceQuestions: updatedQuestions
+                                  }));
+                                }}
+                                placeholder={`Alternative answer ${answerIndex + 1}`}
+                                className="pre-acceptable-answer-input"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updatedQuestions = [...currentQuestionData.sentenceQuestions];
+                                  updatedQuestions[index] = {
+                                    ...updatedQuestions[index],
+                                    acceptableAnswers: updatedQuestions[index].acceptableAnswers.filter((_, i) => i !== answerIndex)
+                                  };
+                                  setCurrentQuestionData(prev => ({
+                                    ...prev,
+                                    sentenceQuestions: updatedQuestions
+                                  }));
+                                }}
+                                className="pre-remove-btn"
+                                title="Remove"
+                              >
+                                <FontAwesomeIcon icon={faTimes} />
+                              </button>
+                            </div>
+                          ))}
+                          
+                          <button
+                            type="button"
+                            onClick={() => {
                               const updatedQuestions = [...currentQuestionData.sentenceQuestions];
                               updatedQuestions[index] = {
                                 ...updatedQuestions[index],
-                                incorrectAnswer: e.target.value
+                                acceptableAnswers: [...(updatedQuestions[index].acceptableAnswers || []), '']
                               };
                               setCurrentQuestionData(prev => ({
                                 ...prev,
                                 sentenceQuestions: updatedQuestions
                               }));
                             }}
-                              placeholder="Enter answer choice 2"
-                            className={!question.incorrectAnswer.trim() ? 'pre-validation-highlight' : ''}
-                          />
-                          {!question.incorrectAnswer.trim() && (
-                              <div className="pre-validation-message">Answer choice 2 is required</div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="pre-form-group pre-correct-answer-selection">
-                          <label>
-                            Correct Answer: <span className="pre-required-field">*</span>
-                          </label>
-                          <div className="pre-radio-group">
-                            <label className="pre-radio-label">
-                              <input
-                                type="radio"
-                                name={`correctAnswerChoice-${index}`}
-                                value="1"
-                                checked={question.correctAnswerChoice === "1"}
-                                onChange={() => {
-                                  const updatedQuestions = [...currentQuestionData.sentenceQuestions];
-                                  updatedQuestions[index] = {
-                                    ...updatedQuestions[index],
-                                    correctAnswerChoice: "1"
-                                  };
-                                  setCurrentQuestionData(prev => ({
-                                    ...prev,
-                                    sentenceQuestions: updatedQuestions
-                                  }));
-                                }}
-                              />
-                              <span>Choice 1 ({question.correctAnswer || 'Not set'})</span>
-                            </label>
-                            <label className="pre-radio-label">
-                              <input
-                                type="radio"
-                                name={`correctAnswerChoice-${index}`}
-                                value="2"
-                                checked={question.correctAnswerChoice === "2"}
-                                onChange={() => {
-                                  const updatedQuestions = [...currentQuestionData.sentenceQuestions];
-                                  updatedQuestions[index] = {
-                                    ...updatedQuestions[index],
-                                    correctAnswerChoice: "2"
-                                  };
-                                  setCurrentQuestionData(prev => ({
-                                    ...prev,
-                                    sentenceQuestions: updatedQuestions
-                                  }));
-                                }}
-                              />
-                              <span>Choice 2 ({question.incorrectAnswer || 'Not set'})</span>
-                            </label>
-                          </div>
-                          {!question.correctAnswerChoice && (
-                            <div className="pre-validation-message">Please select the correct answer choice</div>
-                          )}
+                            className="pre-add-btn"
+                          >
+                            <FontAwesomeIcon icon={faPlus} style={{ marginRight: '8px' }} />
+                            Add Alternative Answer
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -2424,6 +3624,7 @@ const PreAssessment = () => {
                     >
                       <FontAwesomeIcon icon={faPlus} /> Add Question
                     </button>
+                    </div>
                   </div>
                 </div>
               )}

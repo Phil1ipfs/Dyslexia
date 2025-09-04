@@ -21,15 +21,26 @@ const sentenceQuestionSchema = new mongoose.Schema({
   questionImage: { type: String },
   questionImageS3Path: { type: String },
   correctAnswer: { type: String, required: true },
-  incorrectAnswer: { type: String, required: true }
+  incorrectAnswer: { type: String, required: true },
+  acceptableAnswers: [{ type: String }] // Alternative acceptable answers
+}, { _id: false });
+
+// Define the question set schema for phonological awareness
+const questionSetSchema = new mongoose.Schema({
+  audioTexts: [{ type: String }], // Letters/words to be read aloud via TTS
+  matchingOptions: [{ type: String }], // Visual options to match against
+  correctPairs: [{ 
+    audio: { type: String, required: true },
+    match: { type: String, required: true }
+  }] // Correct audio-visual pairs
 }, { _id: false });
 
 // Define the question schema
 const questionSchema = new mongoose.Schema({
   questionId: { type: String, required: true },
   questionNumber: { type: Number, required: true },
-  questionTypeId: { type: String, required: true },
-  questionType: { type: String, required: true },
+  questionTypeId: { type: String, required: true }, // Category: alphabet_knowledge, phonological_awareness, etc.
+  questionType: { type: String, required: true }, // Specific type: patinig, katinig, malapantig, decode, word, sentence
   questionText: { type: String, required: true },
   displayedText: { type: String },
   questionImage: { type: String },
@@ -39,9 +50,28 @@ const questionSchema = new mongoose.Schema({
   audioUrl: { type: String },
   audioS3Path: { type: String },
   difficultyLevel: { type: String, required: true },
+  
+  // For multiple choice questions (alphabet knowledge)
   options: [optionSchema],
+  
+  // For reading comprehension
   passages: [passageSchema],
   sentenceQuestions: [sentenceQuestionSchema],
+  
+  // For phonological awareness (malapantig questions)
+  questionSet: questionSetSchema,
+  
+  // For decoding questions (decode type)
+  displaySequence: [{ type: String }], // Letters shown in sequence (may have blanks)
+  blankPosition: { type: Number }, // Position of blank (null if no blank)
+  dragElements: [{ type: String }], // Available letters to drag
+  correctSequence: [{ type: String }], // Correct letter sequence
+  
+  // For word recognition questions (word type)
+  displayWord: { type: String }, // Sentence with blank or word to analyze
+  blankOptions: [{ type: String }], // Options to fill blank or syllable choices
+  correctAnswer: [{ type: String }], // Correct answer(s)
+  
   order: { type: Number, required: true },
   lastUpdated: { type: Date, default: Date.now }
 }, { _id: false });
@@ -55,9 +85,10 @@ const difficultyLevelSchema = new mongoose.Schema({
 
 // Define the scoring rule schema
 const scoringRuleSchema = new mongoose.Schema({
-  part1ScoreRange: [{ type: Number, required: true }],
-  readingPercentageRange: [{ type: Number, required: true }],
-  correctAnswersRange: [{ type: Number, required: true }]
+  part1ScoreRange: [{ type: Number, required: true }], // [min, max] for first 4 categories
+  readingPercentageRange: { type: [Number], default: null }, // [min, max] or null
+  comprehensionCorrectRange: { type: [Number], default: null }, // [min, max] or null  
+  description: { type: String, required: true }
 }, { _id: false });
 
 // Define the pre-assessment schema

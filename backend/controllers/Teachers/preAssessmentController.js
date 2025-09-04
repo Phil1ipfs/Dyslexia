@@ -16,12 +16,36 @@ const s3Client = new S3Client({
 const getTestDb = () => mongoose.connection.useDb('test'); // for users
 const getPreAssessmentDb = () => mongoose.connection.useDb('Pre_Assessment'); // for assessment data
 
+// Helper function to recalculate category counts from questions
+const recalculateCategoryCounts = (questions) => {
+  const counts = {
+    alphabet_knowledge: 0,
+    phonological_awareness: 0,
+    decoding: 0,
+    word_recognition: 0,
+    reading_comprehension: 0
+  };
+  
+  if (questions && questions.length > 0) {
+    questions.forEach(question => {
+      const categoryKey = question.questionTypeId || question.category;
+      if (categoryKey && counts.hasOwnProperty(categoryKey)) {
+        counts[categoryKey]++;
+      }
+    });
+  }
+  
+  return counts;
+};
+
 // Get all pre-assessments
 exports.getAllPreAssessments = async (req, res) => {
   try {
     const preAssessmentCollection = getPreAssessmentDb().collection('pre-assessment');
     
+    console.log('Querying pre-assessment collection...');
     const preAssessments = await preAssessmentCollection.find({}).toArray();
+    console.log(`Found ${preAssessments.length} pre-assessments`);
     
     // Format the response to include only necessary fields and add category counts
     const formattedAssessments = preAssessments.map(assessment => {
@@ -33,11 +57,12 @@ exports.getAllPreAssessments = async (req, res) => {
         reading_comprehension: 0
       };
       
-      // Count questions by category
+      // Count questions by category (handle both questionTypeId and category fields)
       if (assessment.questions && assessment.questions.length > 0) {
         assessment.questions.forEach(question => {
-          if (question.questionTypeId && categoryCounts.hasOwnProperty(question.questionTypeId)) {
-            categoryCounts[question.questionTypeId]++;
+          const categoryKey = question.questionTypeId || question.category;
+          if (categoryKey && categoryCounts.hasOwnProperty(categoryKey)) {
+            categoryCounts[categoryKey]++;
           }
         });
       }
@@ -95,11 +120,12 @@ exports.getPreAssessmentById = async (req, res) => {
       reading_comprehension: 0
     };
     
-    // Count questions by category
+    // Count questions by category (handle both questionTypeId and category fields)
     if (preAssessment.questions && preAssessment.questions.length > 0) {
       preAssessment.questions.forEach(question => {
-        if (question.questionTypeId && categoryCounts.hasOwnProperty(question.questionTypeId)) {
-          categoryCounts[question.questionTypeId]++;
+        const categoryKey = question.questionTypeId || question.category;
+        if (categoryKey && categoryCounts.hasOwnProperty(categoryKey)) {
+          categoryCounts[categoryKey]++;
         }
       });
     }
@@ -130,14 +156,70 @@ exports.createPreAssessment = async (req, res) => {
     preAssessmentData.type = preAssessmentData.type || 'pre_assessment';
     preAssessmentData.totalQuestions = preAssessmentData.totalQuestions || 25;
     
-    // Ensure categoryCounts exists with default values if not provided
+    // Initialize categoryCounts based on actual questions if provided, otherwise start with zeros
     if (!preAssessmentData.categoryCounts) {
       preAssessmentData.categoryCounts = {
-        alphabet_knowledge: 5,
-        phonological_awareness: 5,
-        decoding: 5,
-        word_recognition: 5,
-        reading_comprehension: 5
+        alphabet_knowledge: 0,
+        phonological_awareness: 0,
+        decoding: 0,
+        word_recognition: 0,
+        reading_comprehension: 0
+      };
+    }
+    
+    // If questions are provided, calculate categoryCounts from actual questions
+    if (preAssessmentData.questions && preAssessmentData.questions.length > 0) {
+      const counts = {
+        alphabet_knowledge: 0,
+        phonological_awareness: 0,
+        decoding: 0,
+        word_recognition: 0,
+        reading_comprehension: 0
+      };
+      
+      preAssessmentData.questions.forEach(question => {
+        if (question.questionTypeId && counts.hasOwnProperty(question.questionTypeId)) {
+          counts[question.questionTypeId]++;
+        }
+      });
+      
+      preAssessmentData.categoryCounts = counts;
+      preAssessmentData.totalQuestions = preAssessmentData.questions.length;
+    }
+    
+    // Add default scoring rules if not provided
+    if (!preAssessmentData.scoringRules) {
+      preAssessmentData.scoringRules = {
+        "Low Emerging": {
+          part1ScoreRange: [0, 16],
+          readingPercentageRange: null,
+          comprehensionCorrectRange: null,
+          description: "Learner with scores 0 to 16 upon administration of Part 1"
+        },
+        "High Emerging": {
+          part1ScoreRange: [17, 30],
+          readingPercentageRange: [0, 25],
+          comprehensionCorrectRange: [0, 0],
+          description: "Scores 17-30 in Part 1, reads less than 25%, cannot answer any RC questions"
+        },
+        "Developing": {
+          part1ScoreRange: [17, 30],
+          readingPercentageRange: [26, 50],
+          comprehensionCorrectRange: [1, 5],
+          description: "Scores 17-30 in Part 1, reads 26-50%, answers at least 1 question correctly"
+        },
+        "Transitioning": {
+          part1ScoreRange: [17, 30],
+          readingPercentageRange: [51, 75],
+          comprehensionCorrectRange: [2, 3],
+          description: "Scores 17-30 in Part 1, reads 51-75%, answers 2-3 questions correctly"
+        },
+        "At Grade Level": {
+          part1ScoreRange: [17, 30],
+          readingPercentageRange: [76, 100],
+          comprehensionCorrectRange: [4, 5],
+          description: "Scores 17-30 in Part 1, reads 76-100%, answers 4-5 questions correctly"
+        }
       };
     }
     
@@ -189,6 +271,12 @@ exports.updatePreAssessment = async (req, res) => {
     const existingAssessment = await preAssessmentCollection.findOne(filter);
     if (!existingAssessment) {
       return res.status(404).json({ message: 'Pre-assessment not found' });
+    }
+    
+    // If questions are being updated, recalculate categoryCounts and totalQuestions
+    if (updateData.questions) {
+      updateData.categoryCounts = recalculateCategoryCounts(updateData.questions);
+      updateData.totalQuestions = updateData.questions.length;
     }
     
     // Update the assessment

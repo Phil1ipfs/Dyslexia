@@ -7,6 +7,105 @@ import {
 } from 'react-icons/fa';
 
 import './css/PreAssessmentResults.css';
+// Helper function to render question answers based on question type
+const renderQuestionAnswers = (question) => {
+  const renderStudentAnswer = () => {
+    const questionType = question.questionType || question.category;
+    
+    switch (questionType) {
+      case 'patinig':
+      case 'katinig':
+        // Alphabet Knowledge - Multiple choice
+        return question.studentSelectedAnswer || `Option ${question.studentAnswer}`;
+        
+      case 'malapantig':
+        // Phonological Awareness - Matching
+        if (question.correctMatches !== undefined && question.totalMatches !== undefined) {
+          return `${question.correctMatches}/${question.totalMatches} matches correct`;
+        }
+        return question.studentAnswer || 'No answer recorded';
+        
+      case 'decode':
+        // Decoding - Letter arrangement
+        if (question.response && Array.isArray(question.response)) {
+          return question.response.join('');
+        }
+        return question.studentAnswer || 'No arrangement recorded';
+        
+      case 'word':
+        // Word Recognition - Fill in blank
+        if (question.response && Array.isArray(question.response)) {
+          return question.response.join(', ');
+        }
+        return question.studentAnswer || 'No answer recorded';
+        
+      case 'sentence':
+        // Reading Comprehension - Text input
+        if (question.hasPassage) {
+          return question.isCorrect ? question.correctAnswer : question.incorrectAnswer;
+        }
+        return question.studentAnswer || 'No answer recorded';
+        
+      default:
+        // Fallback for any other question types
+        return question.studentSelectedAnswer || question.studentAnswer || 'No answer recorded';
+    }
+  };
+
+  return (
+    <div className="pre-assessment-results__question-answers">
+      <div className="pre-assessment-results__answer-row">
+        <span className="pre-assessment-results__answer-label">Student Answer:</span>
+        <span className={`pre-assessment-results__answer-value ${
+          question.isCorrect ? 'pre-assessment-results__answer--correct' : 'pre-assessment-results__answer--incorrect'
+        }`}>
+          {renderStudentAnswer()}
+          {question.isCorrect ? (
+            <FaCheckCircle className="pre-assessment-results__icon-correct" />
+          ) : (
+            <FaTimesCircle className="pre-assessment-results__icon-incorrect" />
+          )}
+        </span>
+      </div>
+
+      {/* Show correct answer if student was wrong */}
+      {!question.isCorrect && (question.correctAnswer || question.studentSelectedAnswer) && (
+        <div className="pre-assessment-results__answer-row">
+          <span className="pre-assessment-results__answer-label">Correct Answer:</span>
+          <span className="pre-assessment-results__answer-value pre-assessment-results__answer--correct">
+            {question.correctAnswer || 'Not specified'}
+            <FaCheckCircle className="pre-assessment-results__icon-correct" />
+          </span>
+        </div>
+      )}
+
+      {/* Show additional details for phonological awareness */}
+      {question.questionType === 'malapantig' && question.correctMatches !== undefined && (
+        <div className="pre-assessment-results__answer-row">
+          <span className="pre-assessment-results__answer-label">Matching Score:</span>
+          <span className="pre-assessment-results__answer-value">
+            {question.correctMatches} out of {question.totalMatches} pairs matched correctly
+          </span>
+        </div>
+      )}
+
+      <div className="pre-assessment-results__answer-row">
+        <span className="pre-assessment-results__answer-label">Difficulty:</span>
+        <span className="pre-assessment-results__answer-value">
+          {question.difficultyLevel?.replace(/_/g, ' ')?.replace(/\b\w/g, l => l.toUpperCase()) || 'Not specified'}
+        </span>
+      </div>
+
+      <div className="pre-assessment-results__answer-row">
+        <span className="pre-assessment-results__answer-label">Question Type:</span>
+        <span className="pre-assessment-results__answer-value">
+          {question.questionType?.replace(/_/g, ' ')?.replace(/\b\w/g, l => l.toUpperCase()) || 'Not specified'}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 const PreAssessmentResults = ({ assessmentData }) => {
   const [expandedSkills, setExpandedSkills] = useState({});
 
@@ -343,44 +442,8 @@ const PreAssessmentResults = ({ assessmentData }) => {
                             </div>
                           )}
 
-                          <div className="pre-assessment-results__question-answers">
-                            <div className="pre-assessment-results__answer-row">
-                              <span className="pre-assessment-results__answer-label">Student Answer:</span>
-                              <span className={`pre-assessment-results__answer-value ${
-                                question.isCorrect ? 'pre-assessment-results__answer--correct' : 'pre-assessment-results__answer--incorrect'
-                              }`}>
-                                {question.hasPassage ? (
-                                  // For reading comprehension, show the actual answer text
-                                  question.isCorrect ? question.correctAnswer : question.incorrectAnswer
-                                ) : (
-                                  // For other questions, show option text
-                                  question.studentAnswerText || `Option ${question.studentAnswer}`
-                                )}
-                                {question.isCorrect ? (
-                                  <FaCheckCircle className="pre-assessment-results__icon-correct" />
-                                ) : (
-                                  <FaTimesCircle className="pre-assessment-results__icon-incorrect" />
-                                )}
-                              </span>
-                            </div>
-
-                            {!question.isCorrect && question.hasPassage && (
-                              <div className="pre-assessment-results__answer-row">
-                                <span className="pre-assessment-results__answer-label">Correct Answer:</span>
-                                <span className="pre-assessment-results__answer-value pre-assessment-results__answer--correct">
-                                  {question.correctAnswer}
-                                  <FaCheckCircle className="pre-assessment-results__icon-correct" />
-                                </span>
-                              </div>
-                            )}
-
-                            <div className="pre-assessment-results__answer-row">
-                              <span className="pre-assessment-results__answer-label">Difficulty:</span>
-                              <span className="pre-assessment-results__answer-value">
-                                {question.difficultyLevel?.replace('_', ' ') || 'Not specified'}
-                              </span>
-                            </div>
-                          </div>
+                          {/* Question-type specific answer display */}
+                          {renderQuestionAnswers(question)}
                         </div>
                       </div>
                     ))}
