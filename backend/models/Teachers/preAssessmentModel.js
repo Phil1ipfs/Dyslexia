@@ -29,26 +29,18 @@ const sentenceQuestionSchema = new mongoose.Schema({
 const questionSetSchema = new mongoose.Schema({
   audioTexts: [{ type: String }], // Letters/words to be read aloud via TTS
   matchingOptions: [{ type: String }], // Visual options to match against
-  correctPairs: [{ 
-    audio: { type: String, required: true },
-    match: { type: String, required: true }
-  }] // Correct audio-visual pairs
+  correctPairs: [mongoose.Schema.Types.Mixed] // Correct audio-visual pairs as key-value objects
 }, { _id: false });
 
 // Define the question schema
 const questionSchema = new mongoose.Schema({
   questionId: { type: String, required: true },
-  questionNumber: { type: Number, required: true },
-  questionTypeId: { type: String, required: true }, // Category: alphabet_knowledge, phonological_awareness, etc.
+  category: { type: String, required: true }, // "Alphabet Knowledge", "Phonological Awareness", etc.
   questionType: { type: String, required: true }, // Specific type: patinig, katinig, malapantig, decode, word, sentence
   questionText: { type: String, required: true },
-  displayedText: { type: String },
   questionImage: { type: String },
   questionImageS3Path: { type: String },
   questionValue: { type: String },
-  hasAudio: { type: Boolean, default: false },
-  audioUrl: { type: String },
-  audioS3Path: { type: String },
   difficultyLevel: { type: String, required: true },
   
   // For multiple choice questions (alphabet knowledge)
@@ -70,10 +62,7 @@ const questionSchema = new mongoose.Schema({
   // For word recognition questions (word type)
   displayWord: { type: String }, // Sentence with blank or word to analyze
   blankOptions: [{ type: String }], // Options to fill blank or syllable choices
-  correctAnswer: [{ type: String }], // Correct answer(s)
-  
-  order: { type: Number, required: true },
-  lastUpdated: { type: Date, default: Date.now }
+  correctAnswer: [{ type: String }] // Correct answer(s)
 }, { _id: false });
 
 // Define the difficulty level schema
@@ -97,13 +86,13 @@ const preAssessmentSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
   instructions: { type: String },
-  totalQuestions: { type: Number, required: true },
+  totalQuestions: { type: Number, default: 0 },
   categoryCounts: {
-    alphabet_knowledge: { type: Number, required: true },
-    phonological_awareness: { type: Number, required: true },
-    decoding: { type: Number, required: true },
-    word_recognition: { type: Number, required: true },
-    reading_comprehension: { type: Number, required: true }
+    alphabet_knowledge: { type: Number, default: 0 },
+    phonological_awareness: { type: Number, default: 0 },
+    decoding: { type: Number, default: 0 },
+    word_recognition: { type: Number, default: 0 },
+    reading_comprehension: { type: Number, default: 0 }
   },
   continueButtonText: { type: String },
   language: { type: String, required: true },

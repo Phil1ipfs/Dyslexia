@@ -16,6 +16,22 @@ const s3Client = new S3Client({
 const getTestDb = () => mongoose.connection.useDb('test'); // for users
 const getPreAssessmentDb = () => mongoose.connection.useDb('Pre_Assessment'); // for assessment data
 
+// Helper function to convert display category names to database keys
+const normalizeCategoryKey = (categoryName) => {
+  if (!categoryName) return null;
+  
+  // Convert display names from database to count keys
+  const categoryMap = {
+    'Alphabet Knowledge': 'alphabet_knowledge',
+    'Phonological Awareness': 'phonological_awareness', 
+    'Decoding': 'decoding',
+    'Word Recognition': 'word_recognition',
+    'Reading Comprehension': 'reading_comprehension'
+  };
+  
+  return categoryMap[categoryName] || categoryName.toLowerCase().replace(/ /g, '_');
+};
+
 // Helper function to recalculate category counts from questions
 const recalculateCategoryCounts = (questions) => {
   const counts = {
@@ -28,7 +44,8 @@ const recalculateCategoryCounts = (questions) => {
   
   if (questions && questions.length > 0) {
     questions.forEach(question => {
-      const categoryKey = question.questionTypeId || question.category;
+      // Use the category field from the database
+      const categoryKey = normalizeCategoryKey(question.category);
       if (categoryKey && counts.hasOwnProperty(categoryKey)) {
         counts[categoryKey]++;
       }
@@ -57,10 +74,10 @@ exports.getAllPreAssessments = async (req, res) => {
         reading_comprehension: 0
       };
       
-      // Count questions by category (handle both questionTypeId and category fields)
+      // Count questions by category (using category field from database)
       if (assessment.questions && assessment.questions.length > 0) {
         assessment.questions.forEach(question => {
-          const categoryKey = question.questionTypeId || question.category;
+          const categoryKey = normalizeCategoryKey(question.category);
           if (categoryKey && categoryCounts.hasOwnProperty(categoryKey)) {
             categoryCounts[categoryKey]++;
           }
@@ -120,10 +137,10 @@ exports.getPreAssessmentById = async (req, res) => {
       reading_comprehension: 0
     };
     
-    // Count questions by category (handle both questionTypeId and category fields)
+    // Count questions by category (using category field from database)
     if (preAssessment.questions && preAssessment.questions.length > 0) {
       preAssessment.questions.forEach(question => {
-        const categoryKey = question.questionTypeId || question.category;
+        const categoryKey = normalizeCategoryKey(question.category);
         if (categoryKey && categoryCounts.hasOwnProperty(categoryKey)) {
           categoryCounts[categoryKey]++;
         }
@@ -146,9 +163,12 @@ exports.createPreAssessment = async (req, res) => {
   try {
     const preAssessmentData = req.body;
     
+    // Always set assessmentId to "1" as per sample JSON structure
+    preAssessmentData.assessmentId = "1";
+    
     // Validate required fields
-    if (!preAssessmentData.assessmentId || !preAssessmentData.title || !preAssessmentData.language) {
-      return res.status(400).json({ message: 'Missing required fields: assessmentId, title, language' });
+    if (!preAssessmentData.title || !preAssessmentData.language) {
+      return res.status(400).json({ message: 'Missing required fields: title, language' });
     }
     
     // Set default values if not provided
@@ -178,8 +198,9 @@ exports.createPreAssessment = async (req, res) => {
       };
       
       preAssessmentData.questions.forEach(question => {
-        if (question.questionTypeId && counts.hasOwnProperty(question.questionTypeId)) {
-          counts[question.questionTypeId]++;
+        const categoryKey = normalizeCategoryKey(question.category);
+        if (categoryKey && counts.hasOwnProperty(categoryKey)) {
+          counts[categoryKey]++;
         }
       });
       
@@ -223,22 +244,33 @@ exports.createPreAssessment = async (req, res) => {
       };
     }
     
-    // Check if assessment with same ID already exists
+    // Check if assessment with same ID already exists - if so, update it instead of creating duplicate
     const preAssessmentCollection = getPreAssessmentDb().collection('pre-assessment');
     const existingAssessment = await preAssessmentCollection.findOne({ assessmentId: preAssessmentData.assessmentId });
     
+    let result;
     if (existingAssessment) {
-      return res.status(409).json({ message: `Assessment with ID ${preAssessmentData.assessmentId} already exists` });
+      // Update the existing assessment instead of creating a duplicate
+      result = await preAssessmentCollection.updateOne(
+        { assessmentId: preAssessmentData.assessmentId },
+        { $set: preAssessmentData }
+      );
+      
+      res.status(200).json({
+        message: 'Pre-assessment updated successfully',
+        assessmentId: preAssessmentData.assessmentId,
+        _id: existingAssessment._id
+      });
+    } else {
+      // Insert the new pre-assessment
+      result = await preAssessmentCollection.insertOne(preAssessmentData);
+      
+      res.status(201).json({
+        message: 'Pre-assessment created successfully',
+        assessmentId: preAssessmentData.assessmentId,
+        _id: result.insertedId
+      });
     }
-    
-    // Insert the new pre-assessment
-    const result = await preAssessmentCollection.insertOne(preAssessmentData);
-    
-    res.status(201).json({
-      message: 'Pre-assessment created successfully',
-      assessmentId: preAssessmentData.assessmentId,
-      _id: result.insertedId
-    });
   } catch (error) {
     console.error('Error creating pre-assessment:', error);
     res.status(500).json({ message: 'Error creating pre-assessment', error: error.message });
@@ -586,8 +618,8 @@ exports.getPreAssessmentResults = async (req, res) => {
     console.log('Found user responses:', userResponses._id);
     
     // Get the pre-assessment structure from Pre_Assessment database
-    // Use FL-G1-001 as default if assessmentId is not available
-    const assessmentId = userResponses.assessmentId || "FL-G1-001";
+    // Always use assessmentId "1" as per sample JSON structure
+    const assessmentId = "1";
     const preAssessment = await preAssessmentCollection.findOne({
       assessmentId: assessmentId
     });
