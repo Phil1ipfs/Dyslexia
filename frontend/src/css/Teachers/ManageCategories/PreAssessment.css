@@ -3619,20 +3619,83 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 
 .pre-subsection-title {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
-  color: #4a5568;
+  color: #2c3e50;
   margin: 0;
 }
 
 .pre-subsection-description {
-  font-size: 13px;
-  color: #7f8c8d;
+  color: #64748b;
+  font-size: 14px;
   margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+/* Preview sections for different question types */
+.pre-phonological-awareness,
+.pre-decoding,
+.pre-word-recognition {
+  background-color: #f8f9fa;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 15px;
+}
+
+.pre-phonological-awareness h4,
+.pre-decoding h4,
+.pre-word-recognition h4 {
+  color: #2c3e50;
+  font-size: 16px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.pre-matching-preview,
+.pre-decoding-preview,
+.pre-word-recognition-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pre-audio-items,
+.pre-matching-options,
+.pre-display-sequence,
+.pre-drag-elements,
+.pre-correct-sequence,
+.pre-display-word,
+.pre-blank-options,
+.pre-correct-answer {
+  background-color: white;
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 4px solid #4e5c93;
+}
+
+.pre-audio-items strong,
+.pre-matching-options strong,
+.pre-display-sequence strong,
+.pre-drag-elements strong,
+.pre-correct-sequence strong,
+.pre-display-word strong,
+.pre-blank-options strong,
+.pre-correct-answer strong {
+  color: #2c3e50;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.pre-no-preview {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
   font-style: italic;
 }
 
@@ -3976,7 +4039,8 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 20px;
-  margin-bottom: 25px;
+  margin-bottom: 30px;
+  clear: both;
 }
 
 .pre-help-text {
@@ -4421,9 +4485,9 @@
 }
 
 .pre-add-btn {
-  background-color: #f8f9fa;
-  color: #4e5c93;
-  border: 1px solid #4e5c93;
+  background-color: #4e5c93;
+  color: white;
+  border: none;
   padding: 8px 12px;
   border-radius: 4px;
   cursor: pointer;
@@ -4437,7 +4501,8 @@
 }
 
 .pre-add-btn:hover {
-  background-color: #edf2ff;
+  background-color: #3d497a;
+  transform: translateY(-1px);
 }
 
 .pre-add-sentence-question-btn {
@@ -4873,9 +4938,31 @@
   padding: 20px;
   border-radius: 8px;
   border: 1px solid #68d391;
-  margin-top: 25px;
-  margin-bottom: 0;
+  margin-top: 30px;
+  margin-bottom: 20px;
   clear: both;
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure proper flow in Word Recognition */
+.pre-word-recognition-section > * {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pre-word-recognition-section .pre-section-header {
+  margin-bottom: 25px;
+}
+
+/* Fix overlapping issue with container spacing */
+.pre-word-recognition-section .pre-blank-options-container {
+  margin-bottom: 20px;
+}
+
+.pre-word-recognition-section .pre-correct-answers-display {
+  margin-bottom: 0;
 }
 
 .pre-correct-answers-section h6 {

@@ -24,7 +24,8 @@ import {
   faTrash,
   faGraduationCap,
   faExclamationCircle,
-  faQuestion
+  faQuestion,
+  faPuzzlePiece
 } from "@fortawesome/free-solid-svg-icons";
 import "../../../css/Teachers/ManageCategories/PreAssessment.css";
 import "../../../css/Teachers/ManageCategories/PreAssessmentUpdates.css";
@@ -2012,7 +2013,7 @@ const PreAssessment = () => {
                 
                 <div className="pre-question-preview">
                   <div className="pre-question-category">
-                    {preAssessment.questions[currentQuestionIndex].questionTypeId.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    {(preAssessment.questions[currentQuestionIndex].questionTypeId || preAssessment.questions[currentQuestionIndex].category || 'Unknown').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     {preAssessment.questions[currentQuestionIndex].questionType && (
                       <span className="pre-question-subtype"> - {preAssessment.questions[currentQuestionIndex].questionType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
                     )}
@@ -2044,15 +2045,26 @@ const PreAssessment = () => {
                     )}
                   </div>
                   
-                  {preAssessment.questions[currentQuestionIndex].questionTypeId === 'reading_comprehension' ? (
+                  {(() => {
+                    const question = preAssessment.questions[currentQuestionIndex];
+                    // Get the question type - handle both questionTypeId and category fields
+                    const questionType = question.questionTypeId || question.category;
+                    const normalizedType = questionType === 'Reading Comprehension' ? 'reading_comprehension' :
+                                         questionType === 'Phonological Awareness' ? 'phonological_awareness' :
+                                         questionType === 'Alphabet Knowledge' ? 'alphabet_knowledge' :
+                                         questionType === 'Word Recognition' ? 'word_recognition' :
+                                         questionType === 'Decoding' ? 'decoding' :
+                                         questionType;
+                    
+                    return normalizedType === 'reading_comprehension' ? (
                     <div className="pre-reading-comprehension">
                       <div className="pre-passages">
                         <h4>
                           <FontAwesomeIcon icon={faBook} style={{ marginRight: '8px' }} />
                           Story Passages
                         </h4>
-                        {preAssessment.questions[currentQuestionIndex].passages && 
-                          preAssessment.questions[currentQuestionIndex].passages.map((passage, idx) => (
+                        {question.passages && 
+                          question.passages.map((passage, idx) => (
                             <div key={idx} className="pre-passage">
                               <div className="pre-passage-header">Page {passage.pageNumber}</div>
                               <div className="pre-passage-content">
@@ -2078,29 +2090,96 @@ const PreAssessment = () => {
                           <FontAwesomeIcon icon={faQuestion} style={{ marginRight: '8px' }} />
                           Comprehension Questions
                         </h4>
-                        {preAssessment.questions[currentQuestionIndex].sentenceQuestions && 
-                          preAssessment.questions[currentQuestionIndex].sentenceQuestions.map((question, idx) => (
+                        {question.sentenceQuestions && 
+                          question.sentenceQuestions.map((sentenceQuestion, idx) => (
                             <div key={idx} className="pre-sentence-question">
-                              <div className="pre-sentence-question-text">{question.questionText}</div>
+                              <div className="pre-sentence-question-text">{sentenceQuestion.questionText}</div>
                               <div className="pre-sentence-options">
                                 <div className="pre-option-item pre-correct-option">
-                                  <div className="pre-option-content">{question.correctAnswer}</div>
+                                  <div className="pre-option-content">{sentenceQuestion.correctAnswer}</div>
                                   <div className="pre-correct-marker">
                                     <FontAwesomeIcon icon={faCheckCircle} />
                                   </div>
                                 </div>
-                                <div className="pre-option-item">
-                                  <div className="pre-option-content">{question.incorrectAnswer}</div>
-                                </div>
+                                {sentenceQuestion.acceptableAnswers && sentenceQuestion.acceptableAnswers.length > 0 && (
+                                  <div className="pre-option-item">
+                                    <div className="pre-option-content">Alternative answers: {sentenceQuestion.acceptableAnswers.join(', ')}</div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ))
                         }
                       </div>
                     </div>
-                  ) : (
+                  ) : normalizedType === 'phonological_awareness' ? (
+                    <div className="pre-phonological-awareness">
+                      <h4>
+                        <FontAwesomeIcon icon={faVolumeUp} style={{ marginRight: '8px' }} />
+                        Audio Matching
+                      </h4>
+                      {question.questionSet && (
+                        <div className="pre-matching-preview">
+                          <div className="pre-audio-items">
+                            <strong>Audio Items:</strong> {question.questionSet.audioTexts && question.questionSet.audioTexts.join(', ')}
+                          </div>
+                          <div className="pre-matching-options">
+                            <strong>Matching Options:</strong> {question.questionSet.matchingOptions && question.questionSet.matchingOptions.join(', ')}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : normalizedType === 'decoding' ? (
+                    <div className="pre-decoding">
+                      <h4>
+                        <FontAwesomeIcon icon={faPuzzlePiece} style={{ marginRight: '8px' }} />
+                        Word Decoding
+                      </h4>
+                      <div className="pre-decoding-preview">
+                        {question.displaySequence && (
+                          <div className="pre-display-sequence">
+                            <strong>Word Sequence:</strong> {question.displaySequence.join(' - ')}
+                          </div>
+                        )}
+                        {question.dragElements && (
+                          <div className="pre-drag-elements">
+                            <strong>Available Letters:</strong> {question.dragElements.join(', ')}
+                          </div>
+                        )}
+                        {question.correctSequence && (
+                          <div className="pre-correct-sequence">
+                            <strong>Correct Answer:</strong> {question.correctSequence.join('')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : normalizedType === 'word_recognition' ? (
+                    <div className="pre-word-recognition">
+                      <h4>
+                        <FontAwesomeIcon icon={faEdit} style={{ marginRight: '8px' }} />
+                        Word Recognition
+                      </h4>
+                      <div className="pre-word-recognition-preview">
+                        {question.displayWord && (
+                          <div className="pre-display-word">
+                            <strong>Sentence:</strong> {question.displayWord}
+                          </div>
+                        )}
+                        {question.blankOptions && (
+                          <div className="pre-blank-options">
+                            <strong>Answer Options:</strong> {question.blankOptions.join(', ')}
+                          </div>
+                        )}
+                        {question.correctAnswer && (
+                          <div className="pre-correct-answer">
+                            <strong>Correct Answer:</strong> {question.correctAnswer.join(', ')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : normalizedType === 'alphabet_knowledge' && question.options ? (
                     <div className="pre-options-preview">
-                      {preAssessment.questions[currentQuestionIndex].options.map((option, index) => (
+                      {question.options.map((option, index) => (
                         <div 
                           key={option.optionId || index} 
                           className={`pre-option-item ${option.isCorrect ? 'pre-correct-option' : ''}`}
@@ -2116,7 +2195,14 @@ const PreAssessment = () => {
                         </div>
                       ))}
                     </div>
-                  )}
+                  ) : (
+                    <div className="pre-no-preview">
+                      <p>Preview not available for this question type: {questionType || 'Unknown'}</p>
+                      <p>Normalized type: {normalizedType}</p>
+                      <p>Available fields: {Object.keys(question).join(', ')}</p>
+                    </div>
+                  );
+                  })()}
                 </div>
                 
            
