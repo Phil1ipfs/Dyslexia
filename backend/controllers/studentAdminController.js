@@ -17,7 +17,7 @@ exports.createStudent = async (req, res) => {
       profileImageUrl = await uploadToS3(req.file, 'student-profiles');
     }
     const {
-      idNumber, firstName, middleName, lastName, age, gender, gradeLevel, section, address
+      idNumber, firstName, middleName, lastName, age, gender, gradeLevel, section, address, email
     } = req.body;
     const now = new Date();
     const studentDoc = {
@@ -30,6 +30,7 @@ exports.createStudent = async (req, res) => {
       gradeLevel,
       section,
       address,
+      email,
       profileImageUrl: profileImageUrl || '',
       completedLessons: [],
       readingLevel: null,

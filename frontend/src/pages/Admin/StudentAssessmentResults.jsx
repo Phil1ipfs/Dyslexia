@@ -21,7 +21,7 @@ const StudentAssessmentResults = () => {
         setLoading(true);
         
         // Fetch student data by idNumber
-        const studentResponse = await axios.get(`https://literexia.onrender.com/api/admin/manage/students/idNumber/${id}`);
+        const studentResponse = await axios.get(`http://localhost:5001/api/admin/manage/students/idNumber/${id}`);
         
         if (!studentResponse.data.success) {
           throw new Error('Failed to fetch student data');
@@ -30,7 +30,7 @@ const StudentAssessmentResults = () => {
         const studentData = studentResponse.data.data;
 
         // Fetch assessment results for the student
-        const assessmentResponse = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/assessment-results/${id}`);
+        const assessmentResponse = await axios.get(`http://localhost:5001/api/admin/assessment-results/${id}`);
         
         if (!assessmentResponse.data.success) {
           throw new Error('Failed to fetch assessment results');

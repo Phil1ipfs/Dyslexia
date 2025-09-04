@@ -2,7 +2,7 @@
 
 // API configuration for the service
 const isProd = import.meta.env?.PROD || false;
-const API_BASE = import.meta.env?.VITE_API_BASE_URL || 'https://literexia.onrender.com/';
+const API_BASE = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:5001/';
 export const API_BASE_URL = `${API_BASE}${isProd ? '/api' : ''}`; // Append /api only in production if not already in VITE_API_BASE_URL
 
 // Content URLs

@@ -30,7 +30,14 @@ router.get('/assessment-results/:idNumber', async (req, res) => {
     if (!result) {
       return res.status(404).json({ success: false, message: 'Assessment result not found' });
     }
-    res.json({ success: true, data: result });
+    // Add assessmentType and ensure isPreAssessment is false for post-assessments
+    const responseData = { 
+      ...result, 
+      assessmentType: 'main-assessment', // Ensure this is main-assessment for post-assessments
+      isPreAssessment: false // Ensure this is false for post-assessments
+    };
+    console.log('Data sent to frontend:', responseData); // Log the data
+    res.json({ success: true, data: responseData });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

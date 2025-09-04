@@ -47,7 +47,7 @@ const userSchema = new mongoose.Schema({
 
 // Request logger middleware
 const requestLogger = (req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} (original: ${req.originalUrl})`);
   next();
 };
 
@@ -58,7 +58,6 @@ app.use(cors({
       'http://localhost:5173',
       'http://localhost:5174',
       'http://192.168.56.1:5173',
-      'https://literexia.onrender.com',
       'http://192.168.1.4:5173',
       process.env.FRONTEND_URL
     ].filter(Boolean);
@@ -131,19 +130,6 @@ const connectDB = async () => {
     const teachersDb = mongoose.connection.useDb('teachers');
     const parentDb = mongoose.connection.useDb('parent');
     
-    // Connect to Pre_Assessment database
-    const preAssessmentDb = mongoose.connection.useDb('Pre_Assessment');
-    console.log('✅ Connected to Pre_Assessment database');
-
-    // List collections in Pre_Assessment database
-    try {
-      const preAssessmentCollections = await preAssessmentDb.db.listCollections().toArray();
-      console.log('Available collections in Pre_Assessment:');
-      preAssessmentCollections.forEach(c => console.log(`- ${c.name}`));
-    } catch (err) {
-      console.warn('⚠️ Could not list Pre_Assessment collections:', err.message);
-    }
-
     const collections = {
       test: [],
       teachers: [],

@@ -11,7 +11,7 @@ const getBackendUrl = () => {
     // Use the current host as fallback
     return window.location.origin.replace('3000', '5001');
   }
-  return 'https://literexia.onrender.com/';
+  return 'http://localhost:5001/';
 };
 
 const BACKEND_URL =

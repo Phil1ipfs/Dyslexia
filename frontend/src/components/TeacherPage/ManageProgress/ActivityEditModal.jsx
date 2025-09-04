@@ -644,7 +644,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   // Helper to build API URLs that work in both dev and production
   const getApiUrl = (path) => {
     // Use environment variable or default to your actual API server
-    const baseUrl = import.meta.env.VITE_API_URL || 'https://literexia.onrender.com/';
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/';
     return `${baseUrl}${path}`;
   };
  
