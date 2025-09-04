@@ -1,12 +1,15 @@
 const mongoose = require('mongoose');
-const AWS = require('aws-sdk');
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { Upload } = require('@aws-sdk/lib-storage');
 const { PreAssessment, QuestionType } = require('../../models/Teachers/preAssessmentModel');
 
-// Configure AWS S3
-const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION
+// Configure AWS S3 client
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
 });
 
 // Get the correct databases
@@ -262,7 +265,12 @@ exports.uploadMedia = async (req, res) => {
       ACL: 'public-read'
     };
     
-    const uploadResult = await s3.upload(params).promise();
+    const upload = new Upload({
+      client: s3Client,
+      params,
+    });
+    
+    const uploadResult = await upload.done();
     
     res.json({
       message: 'File uploaded successfully',
@@ -291,7 +299,8 @@ exports.deleteMedia = async (req, res) => {
       Key: fileKey
     };
     
-    await s3.deleteObject(params).promise();
+    const command = new DeleteObjectCommand(params);
+    await s3Client.send(command);
     
     res.json({
       message: 'File deleted successfully',
@@ -881,7 +890,12 @@ exports.convertImagesToS3 = async (req, res) => {
           };
           
           // Upload to S3
-          await s3.upload(params).promise();
+          const upload = new Upload({
+            client: s3Client,
+            params,
+          });
+          
+          await upload.done();
           
           // Generate S3 URL
           const s3Url = `https://${params.Bucket}.s3.${process.env.AWS_REGION || 'ap-southeast-1'}.amazonaws.com/${key}`;
