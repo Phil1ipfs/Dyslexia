@@ -65,13 +65,6 @@ const questionSchema = new mongoose.Schema({
   correctAnswer: [{ type: String }] // Correct answer(s)
 }, { _id: false });
 
-// Define the difficulty level schema
-const difficultyLevelSchema = new mongoose.Schema({
-  description: { type: String, required: true },
-  targetReadingLevel: { type: String, required: true },
-  weight: { type: Number, required: true }
-}, { _id: false });
-
 // Define the scoring rule schema
 const scoringRuleSchema = new mongoose.Schema({
   part1ScoreRange: [{ type: Number, required: true }], // [min, max] for first 4 categories
@@ -94,20 +87,11 @@ const preAssessmentSchema = new mongoose.Schema({
     word_recognition: { type: Number, default: 0 },
     reading_comprehension: { type: Number, default: 0 }
   },
-  continueButtonText: { type: String },
   language: { type: String, required: true },
   type: { type: String, required: true },
   status: { type: String, required: true },
   isActive: { type: Boolean, default: true },
-  lastUpdated: { type: Date, default: Date.now },
   questions: [questionSchema],
-  difficultyLevels: {
-    low_emerging: difficultyLevelSchema,
-    high_emerging: difficultyLevelSchema,
-    developing: difficultyLevelSchema,
-    transitioning: difficultyLevelSchema,
-    at_grade_level: difficultyLevelSchema
-  },
   scoringRules: {
     "Low Emerging": scoringRuleSchema,
     "High Emerging": scoringRuleSchema,
@@ -121,14 +105,7 @@ const preAssessmentSchema = new mongoose.Schema({
 const questionTypeSchema = new mongoose.Schema({
   typeId: { type: String, required: true, unique: true },
   typeName: { type: String, required: true },
-  description: { type: String },
-  difficultyWeights: {
-    low_emerging: { type: Number, default: 0 },
-    high_emerging: { type: Number, default: 0 },
-    developing: { type: Number, default: 0 },
-    transitioning: { type: Number, default: 0 },
-    at_grade_level: { type: Number, default: 0 }
-  }
+  description: { type: String }
 }, { timestamps: true });
 
 // Create models using the Pre_Assessment database

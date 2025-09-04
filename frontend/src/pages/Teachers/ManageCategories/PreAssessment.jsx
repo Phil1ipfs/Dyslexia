@@ -230,9 +230,9 @@ const PreAssessment = () => {
               fetchedPreAssessment.isActive = fetchedPreAssessment.isActive !== undefined ? 
                 fetchedPreAssessment.isActive : true;
                 
-              // Ensure lastUpdated field exists with a valid date
-              fetchedPreAssessment.lastUpdated = fetchedPreAssessment.lastUpdated || 
-                fetchedPreAssessment.updatedAt || 
+              // Ensure updatedAt field exists with a valid date
+              fetchedPreAssessment.updatedAt = fetchedPreAssessment.updatedAt || 
+                fetchedPreAssessment.lastUpdated || 
                 new Date().toISOString();
               
               // Debug logging for questions
@@ -284,7 +284,7 @@ const PreAssessment = () => {
                 language: fetchedPreAssessment.language || "FL",
                 questions: fetchedPreAssessment.questions ? JSON.parse(JSON.stringify(fetchedPreAssessment.questions)) : [],
                 isActive: fetchedPreAssessment.isActive,
-                lastUpdated: fetchedPreAssessment.lastUpdated
+                updatedAt: fetchedPreAssessment.updatedAt
               });
             } else {
               console.error('Error fetching pre-assessment details:', detailResponse.message);
@@ -327,7 +327,7 @@ const PreAssessment = () => {
               
               // Ensure required fields exist
               freshData.isActive = freshData.isActive !== undefined ? freshData.isActive : true;
-              freshData.lastUpdated = freshData.lastUpdated || freshData.updatedAt || new Date().toISOString();
+              freshData.updatedAt = freshData.updatedAt || freshData.lastUpdated || new Date().toISOString();
               freshData.totalQuestions = freshData.questions ? freshData.questions.length : 0;
               
               console.log('Refreshed data:', freshData);
@@ -451,9 +451,9 @@ const PreAssessment = () => {
         });
       }
       
-      // Ensure we have valid isActive and lastUpdated values
+      // Ensure we have valid isActive and updatedAt values
       const isActive = preAssessment.isActive !== undefined ? preAssessment.isActive : true;
-      const lastUpdated = preAssessment.lastUpdated || preAssessment.updatedAt || new Date().toISOString();
+      const updatedAt = preAssessment.updatedAt || preAssessment.lastUpdated || new Date().toISOString();
       
       // Deep copy the preAssessment data to formData to ensure we have all questions
       setFormData({
@@ -465,7 +465,7 @@ const PreAssessment = () => {
         language: preAssessment.language || "FL",
         questions: preAssessment.questions ? JSON.parse(JSON.stringify(preAssessment.questions)) : [],
         isActive: isActive,
-        lastUpdated: lastUpdated
+        updatedAt: updatedAt
       });
       
       console.log('Form data set with questions count:', 
@@ -512,40 +512,12 @@ const PreAssessment = () => {
         type: "pre_assessment",
         status: "active",
         isActive: formData.isActive !== undefined ? formData.isActive : true,
-        lastUpdated: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         // Always use fixed assessment ID as per sample JSON
         assessmentId: "1", 
         // If we're editing an existing assessment, keep its ID
         ...(preAssessment && { _id: preAssessment._id }),
-        // Add required fields from the schema
-        continueButtonText: formData.continueButtonText || "MAG PATULOY",
-        difficultyLevels: preAssessment?.difficultyLevels || {
-          low_emerging: {
-            description: "Basic recognition tasks",
-            targetReadingLevel: "Low Emerging",
-            weight: 1
-          },
-          high_emerging: {
-            description: "Simple identification and matching",
-            targetReadingLevel: "High Emerging",
-            weight: 2
-          },
-          developing: {
-            description: "Word formation and basic comprehension",
-            targetReadingLevel: "Developing",
-            weight: 3
-          },
-          transitioning: {
-            description: "Sentence-level tasks and short texts",
-            targetReadingLevel: "Transitioning",
-            weight: 4
-          },
-          at_grade_level: {
-            description: "Paragraph-level comprehension",
-            targetReadingLevel: "At Grade Level",
-            weight: 5
-          }
-        },
+        // Removed continueButtonText as it's not in sample JSON
         scoringRules: preAssessment?.scoringRules || {
           "Low Emerging": {
             part1ScoreRange: [0, 10],
@@ -595,11 +567,11 @@ const PreAssessment = () => {
             // Update the preAssessment state with fresh data
             const updatedAssessment = fetchResponse.data;
             
-            // Ensure isActive and lastUpdated fields are set properly
+            // Ensure isActive and updatedAt fields are set properly
             updatedAssessment.isActive = updatedAssessment.isActive !== undefined ? 
               updatedAssessment.isActive : true;
-            updatedAssessment.lastUpdated = updatedAssessment.lastUpdated || 
-              updatedAssessment.updatedAt || 
+            updatedAssessment.updatedAt = updatedAssessment.updatedAt || 
+              updatedAssessment.lastUpdated || 
               new Date().toISOString();
             
             // Update total questions count
@@ -612,7 +584,7 @@ const PreAssessment = () => {
             const fallbackData = {
               ...response.data,
               isActive: assessmentData.isActive,
-              lastUpdated: assessmentData.lastUpdated
+              updatedAt: assessmentData.updatedAt
             };
             setPreAssessment(fallbackData);
           }
@@ -621,7 +593,7 @@ const PreAssessment = () => {
           const fallbackData = {
             ...response.data,
             isActive: assessmentData.isActive,
-            lastUpdated: assessmentData.lastUpdated
+            updatedAt: assessmentData.updatedAt
           };
           setPreAssessment(fallbackData);
         }
@@ -1375,7 +1347,7 @@ const PreAssessment = () => {
         const updatedAssessment = {
           ...preAssessment,
           isActive: isActive,
-          lastUpdated: new Date().toISOString()
+          updatedAt: new Date().toISOString()
         };
         
         setPreAssessment(updatedAssessment);
@@ -1384,7 +1356,7 @@ const PreAssessment = () => {
         setFormData(prev => ({
           ...prev,
           isActive: isActive,
-          lastUpdated: updatedAssessment.lastUpdated
+          updatedAt: updatedAssessment.updatedAt
         }));
         
         // Show success toast with improved visibility
@@ -1437,16 +1409,17 @@ const PreAssessment = () => {
         toast.error('Please select a category');
         return;
       }
+
+      if (!currentQuestionData.difficultyLevel) {
+        toast.error('Please select a difficulty level');
+        return;
+      }
     
       if (!currentQuestionData.questionText.trim()) {
         toast.error('Question text is required');
         return;
       }
     
-      if (!currentQuestionData.difficultyLevel) {
-        toast.error('Please select a difficulty level');
-        return;
-      }
     
       // Category-specific validation
       if (currentQuestionData.category === 'Alphabet Knowledge') {
@@ -1576,6 +1549,90 @@ const PreAssessment = () => {
 
       // Category is now used directly from the form (matches backend sample JSON structure)
       // No conversion needed as we're using the backend format directly
+      
+      // Clean up fields based on question category to match sample JSON structure
+      const categoryKey = categoryDisplayNameToKey[currentQuestionData.category];
+      
+      if (categoryKey === 'reading_comprehension') {
+        // Only Reading Comprehension should have passages and sentenceQuestions
+        // Remove fields not needed for RC
+        delete questionToSave.options;
+        delete questionToSave.questionSet;
+        delete questionToSave.displaySequence;
+        delete questionToSave.blankPosition;
+        delete questionToSave.dragElements;
+        delete questionToSave.correctSequence;
+        delete questionToSave.displayWord;
+        delete questionToSave.blankOptions;
+        delete questionToSave.correctAnswer;
+        delete questionToSave.completeWord;
+        delete questionToSave.completeSentence;
+        delete questionToSave.blankWords;
+        delete questionToSave.blankedSentence;
+      } else if (categoryKey === 'alphabet_knowledge') {
+        // Only Alphabet Knowledge should have options
+        // Remove fields not needed for AK
+        delete questionToSave.passages;
+        delete questionToSave.sentenceQuestions;
+        delete questionToSave.questionSet;
+        delete questionToSave.displaySequence;
+        delete questionToSave.blankPosition;
+        delete questionToSave.dragElements;
+        delete questionToSave.correctSequence;
+        delete questionToSave.displayWord;
+        delete questionToSave.blankOptions;
+        delete questionToSave.correctAnswer;
+        delete questionToSave.completeWord;
+        delete questionToSave.completeSentence;
+        delete questionToSave.blankWords;
+        delete questionToSave.blankedSentence;
+      } else if (categoryKey === 'phonological_awareness') {
+        // Only Phonological Awareness should have questionSet
+        // Remove fields not needed for PA
+        delete questionToSave.passages;
+        delete questionToSave.sentenceQuestions;
+        delete questionToSave.options;
+        delete questionToSave.displaySequence;
+        delete questionToSave.blankPosition;
+        delete questionToSave.dragElements;
+        delete questionToSave.correctSequence;
+        delete questionToSave.displayWord;
+        delete questionToSave.blankOptions;
+        delete questionToSave.correctAnswer;
+        delete questionToSave.completeWord;
+        delete questionToSave.completeSentence;
+        delete questionToSave.blankWords;
+        delete questionToSave.blankedSentence;
+      } else if (categoryKey === 'decoding') {
+        // Only Decoding should have displaySequence, blankPosition, dragElements, correctSequence
+        // Remove fields not needed for Decoding
+        delete questionToSave.passages;
+        delete questionToSave.sentenceQuestions;
+        delete questionToSave.options;
+        delete questionToSave.questionSet;
+        delete questionToSave.displayWord;
+        delete questionToSave.blankOptions;
+        delete questionToSave.correctAnswer;
+        delete questionToSave.completeWord;
+        delete questionToSave.completeSentence;
+        delete questionToSave.blankWords;
+        delete questionToSave.blankedSentence;
+      } else if (categoryKey === 'word_recognition') {
+        // Only Word Recognition should have displayWord, blankOptions, correctAnswer
+        // Remove fields not needed for WR
+        delete questionToSave.passages;
+        delete questionToSave.sentenceQuestions;
+        delete questionToSave.options;
+        delete questionToSave.questionSet;
+        delete questionToSave.displaySequence;
+        delete questionToSave.blankPosition;
+        delete questionToSave.dragElements;
+        delete questionToSave.correctSequence;
+        delete questionToSave.completeWord;
+        delete questionToSave.completeSentence;
+        delete questionToSave.blankWords;
+        delete questionToSave.blankedSentence;
+      }
 
       // Ensure question type is preserved
       if (!questionToSave.questionType || questionToSave.questionType.trim() === '') {

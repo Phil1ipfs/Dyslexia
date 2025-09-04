@@ -174,18 +174,16 @@ exports.createPreAssessment = async (req, res) => {
     // Set default values if not provided
     preAssessmentData.status = preAssessmentData.status || 'draft';
     preAssessmentData.type = preAssessmentData.type || 'pre_assessment';
-    preAssessmentData.totalQuestions = preAssessmentData.totalQuestions || 25;
+    preAssessmentData.totalQuestions = preAssessmentData.totalQuestions || 0;
     
-    // Initialize categoryCounts based on actual questions if provided, otherwise start with zeros
-    if (!preAssessmentData.categoryCounts) {
-      preAssessmentData.categoryCounts = {
-        alphabet_knowledge: 0,
-        phonological_awareness: 0,
-        decoding: 0,
-        word_recognition: 0,
-        reading_comprehension: 0
-      };
-    }
+    // Initialize categoryCounts - always start with zeros and calculate from questions
+    preAssessmentData.categoryCounts = {
+      alphabet_knowledge: 0,
+      phonological_awareness: 0,
+      decoding: 0,
+      word_recognition: 0,
+      reading_comprehension: 0
+    };
     
     // If questions are provided, calculate categoryCounts from actual questions
     if (preAssessmentData.questions && preAssessmentData.questions.length > 0) {
@@ -208,38 +206,88 @@ exports.createPreAssessment = async (req, res) => {
       preAssessmentData.totalQuestions = preAssessmentData.questions.length;
     }
     
-    // Add default scoring rules if not provided
-    if (!preAssessmentData.scoringRules) {
+    // Calculate dynamic scoring rules based on actual question counts - DepEd curriculum standards
+    // Calculate Part 1 total (first 4 categories) from actual questions
+    const part1Total = preAssessmentData.categoryCounts.alphabet_knowledge +
+                      preAssessmentData.categoryCounts.phonological_awareness +
+                      preAssessmentData.categoryCounts.decoding +
+                      preAssessmentData.categoryCounts.word_recognition;
+    
+    const readingComprehensionTotal = preAssessmentData.categoryCounts.reading_comprehension;
+    
+    // Only generate scoring rules if we have questions
+    if (part1Total > 0) {
+      // Calculate scoring thresholds based on DepEd standards (natural proportional scaling)
+      // From DepEd: 16/30 = 53.33% threshold for Low Emerging
+      const lowEmergingMax = Math.floor(part1Total * 0.5333); // 53.33% threshold
+      const part1Passing = lowEmergingMax + 1; // Above 53.33%
+      const part1Max = part1Total; // Maximum possible score
+      
+      
       preAssessmentData.scoringRules = {
         "Low Emerging": {
-          part1ScoreRange: [0, 16],
+          part1ScoreRange: [0, lowEmergingMax],
           readingPercentageRange: null,
           comprehensionCorrectRange: null,
-          description: "Learner with scores 0 to 16 upon administration of Part 1"
+          description: `Learner with scores 0 to ${lowEmergingMax} upon administration of Part 1`
         },
         "High Emerging": {
-          part1ScoreRange: [17, 30],
+          part1ScoreRange: [part1Passing, part1Max],
           readingPercentageRange: [0, 25],
           comprehensionCorrectRange: [0, 0],
-          description: "Scores 17-30 in Part 1, reads less than 25%, cannot answer any RC questions"
+          description: `Learner with scores ${part1Passing} to ${part1Max} upon administration of Part 1 and reads less than 25% and cannot answer any of the questions`
         },
         "Developing": {
-          part1ScoreRange: [17, 30],
+          part1ScoreRange: [part1Passing, part1Max],
           readingPercentageRange: [26, 50],
-          comprehensionCorrectRange: [1, 5],
-          description: "Scores 17-30 in Part 1, reads 26-50%, answers at least 1 question correctly"
+          comprehensionCorrectRange: readingComprehensionTotal > 0 ? [1, readingComprehensionTotal] : [1, 5],
+          description: `Learner with scores ${part1Passing} to ${part1Max} upon administration of Part 1 and reads between 26-50% and answers atleast 1 question correctly`
         },
         "Transitioning": {
-          part1ScoreRange: [17, 30],
+          part1ScoreRange: [part1Passing, part1Max],
           readingPercentageRange: [51, 75],
-          comprehensionCorrectRange: [2, 3],
-          description: "Scores 17-30 in Part 1, reads 51-75%, answers 2-3 questions correctly"
+          comprehensionCorrectRange: readingComprehensionTotal > 0 ? [2, Math.min(3, readingComprehensionTotal)] : [2, 3],
+          description: `Learner with scores ${part1Passing} to ${part1Max} upon administration of Part 1 and reads between 51-75% and answers atleast 2-3 questions correctly`
         },
         "At Grade Level": {
-          part1ScoreRange: [17, 30],
+          part1ScoreRange: [part1Passing, part1Max],
           readingPercentageRange: [76, 100],
-          comprehensionCorrectRange: [4, 5],
-          description: "Scores 17-30 in Part 1, reads 76-100%, answers 4-5 questions correctly"
+          comprehensionCorrectRange: readingComprehensionTotal > 0 ? [Math.min(4, readingComprehensionTotal), readingComprehensionTotal] : [4, 5],
+          description: `Learner with scores ${part1Passing} to ${part1Max} upon administration of Part 1 and reads between 76-100% and answers atleast 4 to 5 questions correctly`
+        }
+      };
+    } else {
+      // Default scoring rules when no questions exist yet
+      preAssessmentData.scoringRules = {
+        "Low Emerging": {
+          part1ScoreRange: [0, 0],
+          readingPercentageRange: null,
+          comprehensionCorrectRange: null,
+          description: "Scoring will be calculated based on actual questions added to the assessment"
+        },
+        "High Emerging": {
+          part1ScoreRange: [0, 0],
+          readingPercentageRange: [0, 25],
+          comprehensionCorrectRange: [0, 0],
+          description: "Scoring will be calculated based on actual questions added to the assessment"
+        },
+        "Developing": {
+          part1ScoreRange: [0, 0],
+          readingPercentageRange: [26, 50],
+          comprehensionCorrectRange: [0, 0],
+          description: "Scoring will be calculated based on actual questions added to the assessment"
+        },
+        "Transitioning": {
+          part1ScoreRange: [0, 0],
+          readingPercentageRange: [51, 75],
+          comprehensionCorrectRange: [0, 0],
+          description: "Scoring will be calculated based on actual questions added to the assessment"
+        },
+        "At Grade Level": {
+          part1ScoreRange: [0, 0],
+          readingPercentageRange: [76, 100],
+          comprehensionCorrectRange: [0, 0],
+          description: "Scoring will be calculated based on actual questions added to the assessment"
         }
       };
     }
