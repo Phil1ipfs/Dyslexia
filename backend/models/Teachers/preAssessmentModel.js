@@ -11,15 +11,13 @@ const optionSchema = new mongoose.Schema({
 const passageSchema = new mongoose.Schema({
   pageNumber: { type: Number, required: true },
   pageText: { type: String, required: true },
-  pageImage: { type: String },
-  pageImageS3Path: { type: String }
+  pageImage: { type: String }
 }, { _id: false });
 
 // Define the sentence question schema for reading comprehension
 const sentenceQuestionSchema = new mongoose.Schema({
   questionText: { type: String, required: true },
   questionImage: { type: String },
-  questionImageS3Path: { type: String },
   correctAnswer: { type: String, required: true },
   incorrectAnswer: { type: String, required: true },
   acceptableAnswers: [{ type: String }] // Alternative acceptable answers
@@ -38,9 +36,8 @@ const questionSchema = new mongoose.Schema({
   category: { type: String, required: true }, // "Alphabet Knowledge", "Phonological Awareness", etc.
   questionType: { type: String, required: true }, // Specific type: patinig, katinig, malapantig, decode, word, sentence
   questionText: { type: String, required: true },
-  questionImage: { type: String },
-  questionImageS3Path: { type: String },
   questionValue: { type: String },
+  questionImage: { type: String },
   difficultyLevel: { type: String, required: true },
   
   // For multiple choice questions (alphabet knowledge)

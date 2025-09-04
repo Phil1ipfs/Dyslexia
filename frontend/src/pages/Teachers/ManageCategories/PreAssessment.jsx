@@ -138,7 +138,7 @@ const PreAssessment = () => {
     
     // For reading comprehension
     passages: [
-      { pageNumber: 1, pageText: '', pageImage: null, pageImageS3Path: null }
+      { pageNumber: 1, pageText: '', pageImage: null }
     ],
     sentenceQuestions: [
       { questionText: '', correctAnswer: '', incorrectAnswer: '', correctAnswerChoice: "1", acceptableAnswers: [] }
@@ -709,6 +709,7 @@ const PreAssessment = () => {
       category: '',
       questionType: '',
       questionText: '',
+      questionValue: '',
       questionImage: null,
       difficultyLevel: '',
       options: [
@@ -716,7 +717,7 @@ const PreAssessment = () => {
         { optionId: '2', optionText: '', isCorrect: false }
       ],
       passages: [
-        { pageNumber: 1, pageText: '', pageImage: null, pageImageS3Path: null }
+        { pageNumber: 1, pageText: '', pageImage: null }
       ],
       sentenceQuestions: [
         { questionText: '', correctAnswer: '', incorrectAnswer: '', correctAnswerChoice: "1" }
@@ -762,7 +763,6 @@ const PreAssessment = () => {
       difficultyLevel: question.difficultyLevel || '',
       questionValue: question.questionValue || '',
       questionImage: question.questionImage || null,
-      questionImageS3Path: question.questionImageS3Path || null,
       
       // Alphabet Knowledge - Multiple choice options
       options: question.options && question.options.length > 0 ? 
@@ -779,9 +779,8 @@ const PreAssessment = () => {
           pageNumber: p.pageNumber,
           pageText: p.pageText || '',
           pageImage: p.pageImage || null,
-          pageImageS3Path: p.pageImageS3Path || null
         })) :
-        [{ pageNumber: 1, pageText: '', pageImage: null, pageImageS3Path: null }],
+        [{ pageNumber: 1, pageText: '', pageImage: null }],
       
       sentenceQuestions: question.sentenceQuestions && question.sentenceQuestions.length > 0 ?
         question.sentenceQuestions.map(sq => ({
@@ -925,6 +924,8 @@ const PreAssessment = () => {
         }),
         
         ...(categoryKey === 'phonological_awareness' && {
+          questionValue: null,
+          questionImage: null,
           questionSet: {
             audioTexts: [],
             matchingOptions: [],
@@ -933,6 +934,7 @@ const PreAssessment = () => {
         }),
         
         ...(categoryKey === 'decoding' && {
+          questionValue: null,
           displaySequence: [],
           blankPosition: null,
           dragElements: [],
@@ -940,6 +942,7 @@ const PreAssessment = () => {
         }),
         
         ...(categoryKey === 'word_recognition' && {
+          questionValue: null,
           displayWord: '',
           blankOptions: [],
           correctAnswer: []
@@ -947,7 +950,7 @@ const PreAssessment = () => {
         
         ...(categoryKey === 'reading_comprehension' && {
           passages: [
-            { pageNumber: 1, pageText: '', pageImage: null, pageImageS3Path: null }
+            { pageNumber: 1, pageText: '', pageImage: null }
           ],
           sentenceQuestions: [
             { questionText: '', correctAnswer: '', acceptableAnswers: [] }
@@ -1021,16 +1024,30 @@ const PreAssessment = () => {
         ...prev.questionSet,
         audioTexts: prev.questionSet.audioTexts.map((item, i) => i === index ? sanitizedValue : item),
         // Auto-update matching options to match audio texts
-        matchingOptions: prev.questionSet.matchingOptions.map((item, i) => 
-          i === index ? (sanitizedValue ? sanitizedValue + sanitizedValue.toLowerCase() : '') : item
-        ),
+        matchingOptions: prev.questionSet.matchingOptions.map((item, i) => {
+          if (i === index) {
+            if (!sanitizedValue) return '';
+            // If single letter, use format "Aa", otherwise use same word
+            return sanitizedValue.length === 1 
+              ? sanitizedValue.toUpperCase() + sanitizedValue.toLowerCase()
+              : sanitizedValue.toUpperCase();
+          }
+          return item;
+        }),
         // Auto-update correct pairs
-        correctPairs: prev.questionSet.correctPairs.map((pair, i) => 
-          i === index ? { 
-            audio: sanitizedValue, 
-            match: sanitizedValue ? sanitizedValue + sanitizedValue.toLowerCase() : '' 
-          } : pair
-        )
+        correctPairs: prev.questionSet.correctPairs.map((pair, i) => {
+          if (i === index) {
+            if (!sanitizedValue) return { audio: '', match: '' };
+            const matchValue = sanitizedValue.length === 1 
+              ? sanitizedValue.toUpperCase() + sanitizedValue.toLowerCase()
+              : sanitizedValue.toUpperCase();
+            return { 
+              audio: sanitizedValue.toUpperCase(), 
+              match: matchValue
+            };
+          }
+          return pair;
+        })
       }
     }));
   };
@@ -1555,6 +1572,10 @@ const PreAssessment = () => {
       
       if (categoryKey === 'reading_comprehension') {
         // Only Reading Comprehension should have passages and sentenceQuestions
+        // Set questionValue and questionImage to null for RC questions
+        questionToSave.questionValue = null;
+        questionToSave.questionImage = null;
+        
         // Remove fields not needed for RC
         delete questionToSave.options;
         delete questionToSave.questionSet;
@@ -1571,6 +1592,8 @@ const PreAssessment = () => {
         delete questionToSave.blankedSentence;
       } else if (categoryKey === 'alphabet_knowledge') {
         // Only Alphabet Knowledge should have options
+        // Keep questionValue for AK questions (e.g., "E", "O")
+        
         // Remove fields not needed for AK
         delete questionToSave.passages;
         delete questionToSave.sentenceQuestions;
@@ -1588,6 +1611,10 @@ const PreAssessment = () => {
         delete questionToSave.blankedSentence;
       } else if (categoryKey === 'phonological_awareness') {
         // Only Phonological Awareness should have questionSet
+        // Set questionValue and questionImage to null for PA questions
+        questionToSave.questionValue = null;
+        questionToSave.questionImage = null;
+        
         // Remove fields not needed for PA
         delete questionToSave.passages;
         delete questionToSave.sentenceQuestions;
@@ -1604,7 +1631,10 @@ const PreAssessment = () => {
         delete questionToSave.blankWords;
         delete questionToSave.blankedSentence;
       } else if (categoryKey === 'decoding') {
-        // Only Decoding should have displaySequence, blankPosition, dragElements, correctSequence
+        // Only Decoding should have displaySequence, blankPosition, dragElements, correctSequence  
+        // Set questionValue to null for Decoding questions
+        questionToSave.questionValue = null;
+        
         // Remove fields not needed for Decoding
         delete questionToSave.passages;
         delete questionToSave.sentenceQuestions;
@@ -1619,6 +1649,9 @@ const PreAssessment = () => {
         delete questionToSave.blankedSentence;
       } else if (categoryKey === 'word_recognition') {
         // Only Word Recognition should have displayWord, blankOptions, correctAnswer
+        // Set questionValue to null for WR questions (field is hidden in UI)
+        questionToSave.questionValue = null;
+        
         // Remove fields not needed for WR
         delete questionToSave.passages;
         delete questionToSave.sentenceQuestions;
@@ -1662,7 +1695,6 @@ const PreAssessment = () => {
             const response = await PreAssessmentService.uploadMedia(formData);
             if (response.success) {
               questionToSave.questionImage = response.fileUrl;
-              questionToSave.questionImageS3Path = response.s3Path;
             }
           } catch (error) {
             console.error('Error uploading question image:', error);
@@ -1675,7 +1707,6 @@ const PreAssessment = () => {
         // For reading comprehension, explicitly set questionValue and questionImage to null
         questionToSave.questionValue = null;
         questionToSave.questionImage = null;
-        questionToSave.questionImageS3Path = null;
       }
 
       // Upload passage images if present and new
@@ -1699,7 +1730,6 @@ const PreAssessment = () => {
               const response = await PreAssessmentService.uploadMedia(formData);
               if (response.success) {
                 questionToSave.passages[i].pageImage = response.fileUrl;
-                questionToSave.passages[i].pageImageS3Path = response.s3Path;
               }
             } catch (error) {
               console.error('Error uploading passage image:', error);
@@ -1711,13 +1741,6 @@ const PreAssessment = () => {
         }
       }
 
-      // Add question number if not editing
-      if (editingQuestionIndex === -1) {
-        questionToSave.questionNumber = formData.questions.length + 1;
-      } else {
-        // Keep the existing question number when editing
-        questionToSave.questionNumber = formData.questions[editingQuestionIndex].questionNumber;
-      }
 
       // Update the questions array
       const updatedQuestions = [...formData.questions];
@@ -1743,6 +1766,15 @@ const PreAssessment = () => {
         questions: updatedQuestions,
         categoryCounts: updatedCategoryCounts,
         totalQuestions: updatedQuestions.length
+      }));
+
+      // Also update preAssessment state immediately to reflect changes in UI
+      setPreAssessment(prev => ({
+        ...prev,
+        questions: updatedQuestions,
+        categoryCounts: updatedCategoryCounts,
+        totalQuestions: updatedQuestions.length,
+        updatedAt: new Date().toISOString()
       }));
 
       // Close the question editor
@@ -2790,8 +2822,8 @@ const PreAssessment = () => {
                   </div>
                 )}
                 
-                {/* Only show Question Value for non-reading comprehension questions */}
-                {categoryDisplayNameToKey[currentQuestionData.category] !== 'reading_comprehension' && (
+                {/* Only show Question Value for categories that use it (only alphabet knowledge) */}
+                {categoryDisplayNameToKey[currentQuestionData.category] === 'alphabet_knowledge' && (
                 <div className="pre-form-group">
                   <label htmlFor="questionValue">
                     Question Value:
@@ -2808,8 +2840,10 @@ const PreAssessment = () => {
                 </div>
                 )}
                 
-                {/* Only show Question Image for non-reading comprehension questions */}
-                {categoryDisplayNameToKey[currentQuestionData.category] !== 'reading_comprehension' && (
+                {/* Only show Question Image for categories that use it (exclude reading comprehension and phonological awareness) */}
+                {(categoryDisplayNameToKey[currentQuestionData.category] === 'alphabet_knowledge' ||
+                  categoryDisplayNameToKey[currentQuestionData.category] === 'decoding' ||
+                  categoryDisplayNameToKey[currentQuestionData.category] === 'word_recognition') && (
                 <div className="pre-form-group">
                   <label htmlFor="questionImage" style={{ color: '#4a5568' }}>
                     Question Image:
@@ -2903,7 +2937,7 @@ const PreAssessment = () => {
                   <div className="pre-section-header">
                     <FontAwesomeIcon icon={faVolumeUp} className="pre-section-icon" />
                     <h5 className="pre-section-title">Audio Matching Configuration <span className="pre-required-field">*</span></h5>
-                    <Tooltip text="Configure audio texts and their matching options for malapantig questions" />
+                    <Tooltip text="Configure audio texts (letters or words) and their matching options for malapantig questions" />
                   </div>
                   
                   {/* Audio Texts */}
@@ -2912,7 +2946,7 @@ const PreAssessment = () => {
                       <h6 className="pre-subsection-title">Audio Texts (TTS will read these)</h6>
                       <span className="pre-limit-indicator">{currentQuestionData.questionSet.audioTexts.length}/4 items</span>
                     </div>
-                    <p className="pre-subsection-description">Enter single letters that will be read aloud by text-to-speech</p>
+                    <p className="pre-subsection-description">Enter letters (e.g., H, T) or words (e.g., DAGA, MATA) that will be read aloud by text-to-speech</p>
                     
                     <div className="pre-audio-texts-grid">
                       {currentQuestionData.questionSet.audioTexts.map((audioText, index) => (
@@ -2934,12 +2968,15 @@ const PreAssessment = () => {
                             type="text"
                             value={audioText}
                             onChange={(e) => handleAudioTextChange(index, e.target.value)}
-                            placeholder="Enter letter (e.g., H)"
+                            placeholder="Enter letter (e.g., H) or word (e.g., DAGA)"
                             className="pre-audio-text-input"
-                            maxLength="1"
                           />
                           <div className="pre-auto-generated">
-                            Auto-match: {audioText ? audioText + audioText.toLowerCase() : 'Hh'}
+                            Auto-match: {audioText ? (
+                              audioText.length === 1 
+                                ? audioText.toUpperCase() + audioText.toLowerCase()
+                                : audioText.toUpperCase()
+                            ) : 'Hh'}
                           </div>
                         </div>
                       ))}
@@ -3718,8 +3755,7 @@ const PreAssessment = () => {
                                     updatedPassages[index] = {
                                       ...updatedPassages[index],
                                       pageImage: null,
-                                      pageImageS3Path: null
-                                    };
+                                                                  };
                                     setCurrentQuestionData(prev => ({
                                       ...prev,
                                       passages: updatedPassages
@@ -3747,8 +3783,7 @@ const PreAssessment = () => {
                               pageNumber: prev.passages.length + 1,
                               pageText: '',
                               pageImage: null,
-                              pageImageS3Path: null
-                            }
+                                                  }
                           ]
                         }));
                       }}

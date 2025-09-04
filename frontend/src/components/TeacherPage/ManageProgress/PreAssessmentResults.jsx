@@ -339,7 +339,7 @@ const PreAssessmentResults = ({ assessmentData }) => {
                       <div key={question.questionId} className="pre-assessment-results__question-item">
                         <div className="pre-assessment-results__question-header">
                           <span className="pre-assessment-results__question-number">
-                            Question {question.questionNumber}
+                            Question {qIndex + 1}
                           </span>
                           <span className={`pre-assessment-results__question-status ${
                             question.isCorrect ? 'correct' : 'incorrect'
