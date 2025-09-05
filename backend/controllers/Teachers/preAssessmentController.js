@@ -637,8 +637,6 @@ exports.getPreAssessmentResults = async (req, res) => {
   try {
     const studentId = req.params.id;
     console.log('⭐ Getting pre-assessment results for student ID:', studentId);
-    console.log('⭐ Full request path:', req.originalUrl);
-    console.log('⭐ Request method:', req.method);
     
     // Get collections from correct databases
     const usersCollection = getTestDb().collection('users');
@@ -649,12 +647,13 @@ exports.getPreAssessmentResults = async (req, res) => {
     let student;
     try {
       // Try as ObjectId first
-      console.log('Attempting to find student with ObjectId:', studentId);
       student = await usersCollection.findOne({ _id: new mongoose.Types.ObjectId(studentId) });
     } catch (err) {
       // If not valid ObjectId, try as idNumber
-      console.log('Not a valid ObjectId, trying as idNumber:', studentId);
-      student = await usersCollection.findOne({ idNumber: studentId });
+      const idNum = parseInt(studentId);
+      if (!isNaN(idNum)) {
+        student = await usersCollection.findOne({ idNumber: idNum });
+      }
     }
     
     if (!student) {
@@ -662,29 +661,33 @@ exports.getPreAssessmentResults = async (req, res) => {
       return res.status(404).json({ message: 'Student not found' });
     }
     
-    console.log('✅ Found student:', student.firstName, student.lastName);
+    console.log('✅ Found student:', student.firstName, student.lastName, 'idNumber:', student.idNumber);
     
-    // Find user responses from Pre_Assessment database
-    // Try multiple ways to match the user ID
-    let userResponses = null;
-    const possibleUserIds = [
-      student.idNumber?.toString(),
-      student._id.toString(),
-      studentId
-    ];
+    // Find ALL individual user responses for this student from Pre_Assessment database
+    // Based on CLAUDE.md sample, user_responses are individual records per question
+    const possibleStudentIds = [
+      student.idNumber,
+      parseInt(studentId),
+      student._id
+    ].filter(id => id !== null && id !== undefined);
     
-    // Try each possible user ID until we find a match
-    for (const userId of possibleUserIds) {
-      if (!userId) continue;
+    let allUserResponses = [];
+    
+    // Try each possible student ID to find responses
+    for (const possibleId of possibleStudentIds) {
+      const responses = await userResponsesCollection.find({
+        studentId: possibleId,
+        assessmentId: "1" // Always use assessmentId "1" as per sample
+      }).toArray();
       
-      userResponses = await userResponsesCollection.findOne({
-        userId: userId
-      });
-      
-      if (userResponses) break;
+      if (responses && responses.length > 0) {
+        allUserResponses = responses;
+        console.log(`✅ Found ${responses.length} individual responses for studentId: ${possibleId}`);
+        break;
+      }
     }
     
-    if (!userResponses) {
+    if (!allUserResponses || allUserResponses.length === 0) {
       return res.status(404).json({ 
         message: 'No pre-assessment results found for this student',
         studentId: studentId,
@@ -692,24 +695,20 @@ exports.getPreAssessmentResults = async (req, res) => {
       });
     }
     
-    console.log('Found user responses:', userResponses._id);
-    
-    // Get the pre-assessment structure from Pre_Assessment database
-    // Always use assessmentId "1" as per sample JSON structure
-    const assessmentId = "1";
+    // Get the pre-assessment structure
     const preAssessment = await preAssessmentCollection.findOne({
-      assessmentId: assessmentId
+      assessmentId: "1"
     });
     
     if (!preAssessment) {
-      console.error(`Pre-assessment structure not found for assessmentId: ${assessmentId}`);
-      return res.status(404).json({ message: `Pre-assessment structure not found for assessmentId: ${assessmentId}` });
+      console.error('Pre-assessment structure not found for assessmentId: 1');
+      return res.status(404).json({ message: 'Pre-assessment structure not found' });
     }
     
-    console.log('Found pre-assessment structure:', preAssessment.title);
+    console.log('✅ Found pre-assessment structure:', preAssessment.title);
     
-    // Process the results
-    const processedResults = await processAssessmentResults(userResponses, preAssessment, student);
+    // Process individual responses into the expected format
+    const processedResults = await aggregateIndividualResponses(allUserResponses, preAssessment, student);
     
     res.json(processedResults);
     
