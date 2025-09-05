@@ -721,184 +721,423 @@ exports.getPreAssessmentResults = async (req, res) => {
   }
 };
 
-async function processAssessmentResults(userResponses, preAssessment, student) {
+// Function to aggregate individual user responses into assessment results format
+async function aggregateIndividualResponses(allUserResponses, preAssessment, student) {
+  console.log('🔄 Aggregating individual responses into assessment format...');
+  
+  // Group responses by category
+  const responsesByCategory = {};
+  const categoryStats = {};
+  let totalCorrect = 0;
+  
+  // Initialize category stats
+  const categories = ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'];
+  categories.forEach(category => {
+    responsesByCategory[category] = [];
+    categoryStats[category] = {
+      correct: 0,
+      total: 0,
+      percentage: 0
+    };
+  });
+  
+  // Process each individual response and calculate total time
+  let totalResponseTime = 0;
+  allUserResponses.forEach(response => {
+    const category = response.category;
+    if (responsesByCategory[category]) {
+      responsesByCategory[category].push(response);
+      categoryStats[category].total++;
+      
+      // Add response time to total
+      if (response.responseTime && typeof response.responseTime === 'number') {
+        totalResponseTime += response.responseTime;
+      }
+      
+      if (response.isCorrect) {
+        categoryStats[category].correct++;
+        totalCorrect++;
+      }
+    }
+  });
+  
+  // Calculate percentages
+  categories.forEach(category => {
+    const stats = categoryStats[category];
+    stats.percentage = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+  });
+  
+  // Calculate Part 1 Score (first 4 categories)
+  const part1Categories = ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition'];
+  const part1Correct = part1Categories.reduce((sum, cat) => sum + categoryStats[cat].correct, 0);
+  const part1Total = part1Categories.reduce((sum, cat) => sum + categoryStats[cat].total, 0);
+  
+  // Get Reading Comprehension details for percentage calculation
+  const rcStats = categoryStats['Reading Comprehension'];
+  const readingPercentage = rcStats.percentage;
+  
+  // Determine reading level based on scoring rules
+  const scoringRules = preAssessment.scoringRules || {};
+  let determinedReadingLevel = 'Not Assessed';
+  
+  if (part1Correct <= 16) {
+    determinedReadingLevel = 'Low Emerging';
+  } else if (part1Correct >= 17) {
+    if (readingPercentage <= 25 && rcStats.correct === 0) {
+      determinedReadingLevel = 'High Emerging';
+    } else if (readingPercentage >= 26 && readingPercentage <= 50 && rcStats.correct >= 1) {
+      determinedReadingLevel = 'Developing';
+    } else if (readingPercentage >= 51 && readingPercentage <= 75 && rcStats.correct >= 2) {
+      determinedReadingLevel = 'Transitioning';
+    } else if (readingPercentage >= 76 && rcStats.correct >= 4) {
+      determinedReadingLevel = 'At Grade Level';
+    } else {
+      determinedReadingLevel = 'High Emerging'; // Default for scores 17-30 not meeting other criteria
+    }
+  }
+  
+  // Build the results structure
   const results = {
     studentId: student._id,
     studentName: `${student.firstName} ${student.lastName}`,
-    assessmentId: userResponses.assessmentId,
-    readingLevel: userResponses.readingLevel || student.readingLevel,
-    overallScore: userResponses.readingPercentage || 0,
-    totalQuestions: userResponses.totalQuestions || 25,
-    correctAnswers: userResponses.score || 0,
-    part1Score: userResponses.part1Score || 0,
-    completedAt: userResponses.completedAt,
-    timeTaken: userResponses.timeTaken,
-    categoryScores: userResponses.categoryScores || {},
-    difficultyBreakdown: userResponses.difficultyBreakdown || {},
+    studentInfo: {
+      firstName: student.firstName,
+      lastName: student.lastName,
+      age: student.age,
+      gradeLevel: student.gradeLevel,
+      section: student.section
+    },
+    assessmentId: "1",
+    readingLevel: student.readingLevel || determinedReadingLevel,
+    overallScore: Math.round((totalCorrect / allUserResponses.length) * 100),
+    totalQuestions: allUserResponses.length,
+    correctAnswers: totalCorrect,
+    part1Score: part1Correct,
+    part1Total: part1Total,
+    readingComprehensionScore: rcStats.correct,
+    readingComprehensionTotal: rcStats.total,
+    readingComprehensionPercentage: readingPercentage,
+    completedAt: student.lastAssessmentDate || new Date().toISOString(),
+    totalResponseTime: Math.round(totalResponseTime), // Total time in seconds
+    averageResponseTime: Math.round(totalResponseTime / allUserResponses.length), // Average time per question
+    hasCompleted: true,
+    categoryScores: {},
     skillDetails: [],
-    focusAreas: [],
-    hasCompleted: true
+    focusAreas: []
   };
   
-  // Normalize the category scores keys to handle both formats
-  let normalizedCategoryScores = {};
-  if (userResponses.categoryScores) {
-    // Log the original category scores for debugging
-    console.log('Original category scores:', JSON.stringify(userResponses.categoryScores));
+  // Process each category to build skill details
+  categories.forEach(category => {
+    const categoryResponses = responsesByCategory[category];
+    const stats = categoryStats[category];
+    const categoryKey = normalizeCategoryKey(category);
     
-    // Process each category key to ensure consistency
-    Object.keys(userResponses.categoryScores).forEach(key => {
-      // Convert key to lowercase with underscores if it has capitals or spaces
-      const normalizedKey = key.includes(' ') ? 
-        key.toLowerCase().replace(/ /g, '_') : 
-        key.toLowerCase();
-        
-      normalizedCategoryScores[normalizedKey] = userResponses.categoryScores[key];
-    });
-    
-    // Log the normalized scores
-    console.log('Normalized category scores:', JSON.stringify(normalizedCategoryScores));
-  }
-  
-  // Group questions by category
-  const questionsByCategory = {};
-  preAssessment.questions.forEach(question => {
-    const categoryId = question.questionTypeId;
-    if (!questionsByCategory[categoryId]) {
-      questionsByCategory[categoryId] = [];
-    }
-    questionsByCategory[categoryId].push(question);
-  });
-  
-  // Log available categories for debugging
-  console.log('Question categories available:', Object.keys(questionsByCategory));
-  console.log('Normalized category keys available:', Object.keys(normalizedCategoryScores));
-  
-  // Process each category
-  Object.keys(questionsByCategory).forEach(categoryKey => {
-    const categoryQuestions = questionsByCategory[categoryKey];
-    // Use the normalized category data or create default if missing
-    const categoryData = normalizedCategoryScores[categoryKey] || {
-      total: categoryQuestions.length,
-      correct: 0,
-      score: 0
+    // Add to category scores
+    results.categoryScores[categoryKey] = {
+      correct: stats.correct,
+      total: stats.total,
+      percentage: stats.percentage
     };
     
-    // Log processing info for debugging
-    console.log(`Processing category ${categoryKey} with ${categoryQuestions.length} questions`);
+    // Get questions from pre-assessment for this category
+    const categoryQuestions = preAssessment.questions.filter(q => q.category === category);
     
-    // Special handling for reading comprehension
-    if (categoryKey === 'reading_comprehension') {
-      // Process reading comprehension questions directly
-      const processedQuestions = categoryQuestions.map(q => {
-        const studentAnswer = userResponses.answers[q.questionId];
-        
-        // Get ALL passage pages and their text
-        const allPages = q.passages || [];
-        const passageText = allPages.map(page => page.pageText).join(' ');
-        
-        // Get the actual comprehension questions from sentenceQuestions
-        const comprehensionQuestions = q.sentenceQuestions || [];
-        const mainComprehensionQ = comprehensionQuestions[0] || {};
-        
-        // Determine if student was correct based on the correctAnswerChoice field
-        // If correctAnswerChoice is "2", then "2" is the correct answer, otherwise "1" is correct
-        const correctAnswer = mainComprehensionQ.correctAnswerChoice === "2" ? "2" : "1";
-        const isCorrect = studentAnswer === correctAnswer;
-        
-        return {
-          questionId: q.questionId,
-          mainInstruction: q.questionText, // "Basahin ang kwento at sagutin ang tanong"
-          
-          // Story/Passage information
-          passageText: passageText, // Combined story text
-          passages: allPages, // Individual pages with pageText and pageImage
-          
-          // Actual question information
-          actualQuestion: mainComprehensionQ.questionText, // The real question like "Ano ang kinain ni Maria?"
-          
-          // Answer information
-          studentAnswer: studentAnswer,
-          correctAnswer: mainComprehensionQ.correctAnswerChoice === "2" ? mainComprehensionQ.incorrectAnswer : mainComprehensionQ.correctAnswer,
-          incorrectAnswer: mainComprehensionQ.correctAnswerChoice === "2" ? mainComprehensionQ.correctAnswer : mainComprehensionQ.incorrectAnswer,
-          correctAnswerChoice: mainComprehensionQ.correctAnswerChoice || "1",
-          isCorrect: isCorrect,
-          
-          // Additional metadata
-          difficultyLevel: q.difficultyLevel,
-          questionType: q.questionType,
-          hasPassage: true,
-          allComprehensionQuestions: comprehensionQuestions // In case there are multiple questions per passage
-        };
-      });
-
-      // Create the skill detail
-      const skillDetail = {
-        category: categoryKey,
-        categoryName: getCategoryDisplayName(categoryKey),
-        score: categoryData.score || 0,
-        correct: categoryData.correct || 0,
-        total: categoryData.total || 5,
-        questions: processedQuestions
-      };
-      
-      results.skillDetails.push(skillDetail);
+    let skillDetail;
+    
+    if (category === 'Reading Comprehension') {
+      skillDetail = processReadingComprehensionCategory(categoryQuestions, categoryResponses, stats);
+    } else if (category === 'Phonological Awareness') {
+      skillDetail = processPhonologicalAwarenessCategory(categoryQuestions, categoryResponses, stats);
+    } else if (category === 'Decoding') {
+      skillDetail = processDecodingCategory(categoryQuestions, categoryResponses, stats);
+    } else if (category === 'Word Recognition') {
+      skillDetail = processWordRecognitionCategory(categoryQuestions, categoryResponses, stats);
     } else {
-      const skillDetail = processRegularCategory(
-        categoryKey, 
-        categoryQuestions, 
-        userResponses.answers, 
-        categoryData
-      );
-      results.skillDetails.push(skillDetail);
+      // Alphabet Knowledge and other categories
+      skillDetail = processAlphabetKnowledgeCategory(categoryQuestions, categoryResponses, stats);
     }
     
+    skillDetail.category = categoryKey;
+    skillDetail.categoryName = category;
+    results.skillDetails.push(skillDetail);
+    
     // Add to focus areas if score is below 75%
-    if (categoryData.score < 75) {
-      results.focusAreas.push(getCategoryDisplayName(categoryKey));
+    if (stats.percentage < 75) {
+      results.focusAreas.push(category);
     }
   });
   
-  // Log the final skill details to verify they were created properly
-  console.log(`Generated ${results.skillDetails.length} skill details`);
+  console.log('✅ Successfully aggregated individual responses');
+  console.log(`📊 Overall Score: ${results.overallScore}% (${totalCorrect}/${allUserResponses.length})`);
+  console.log(`📚 Reading Level: ${results.readingLevel}`);
+  console.log(`🎯 Part 1 Score: ${part1Correct}/${part1Total}`);
   
   return results;
 }
 
-function processRegularCategory(categoryKey, categoryQuestions, studentAnswers, categoryData) {
-  const questions = categoryQuestions.map(question => {
-    const studentAnswerOptionId = studentAnswers[question.questionId];
-    const correctOption = question.options.find(opt => opt.isCorrect);
-    const studentSelectedOption = question.options.find(opt => opt.optionId === studentAnswerOptionId);
+// Process Reading Comprehension category (sentence type questions)
+function processReadingComprehensionCategory(questions, responses, stats) {
+  const processedQuestions = questions.map(question => {
+    // Find the response for this question
+    const response = responses.find(r => r.questionId === question.questionId);
     
-    // Based on your data: "1" is correct, "2" is incorrect
-    const isCorrect = studentAnswerOptionId === "1";
+    const passages = question.passages || [];
+    const sentenceQuestions = question.sentenceQuestions || [];
+    
+    // Get the full passage text
+    const passageText = passages.map(passage => passage.pageText).join(' ').trim();
+    
+    // Get the main comprehension question and correct answer
+    const mainQuestion = sentenceQuestions.length > 0 ? sentenceQuestions[0] : {};
+    const correctAnswerText = mainQuestion.correctAnswer || 'Unknown';
+    const acceptableAnswers = mainQuestion.acceptableAnswers || [];
+    
+    // Get student's answer
+    let studentAnswerText = 'No answer';
+    if (response && response.response && Array.isArray(response.response) && response.response.length > 0) {
+      studentAnswerText = response.response[0];
+    }
+    
+    // Check if student answer matches any acceptable answer
+    let isAcceptableAnswer = false;
+    if (studentAnswerText !== 'No answer') {
+      const studentLower = studentAnswerText.toLowerCase().trim();
+      const correctLower = correctAnswerText.toLowerCase().trim();
+      
+      isAcceptableAnswer = studentLower === correctLower || 
+                          acceptableAnswers.some(acceptable => 
+                            acceptable.toLowerCase().trim() === studentLower
+                          );
+    }
     
     return {
       questionId: question.questionId,
       questionText: question.questionText,
-      questionImage: question.questionImage,
-      questionValue: question.questionValue,
-      studentAnswer: studentAnswerOptionId,
-      correctAnswer: correctOption ? correctOption.optionText : null,
-      studentSelectedAnswer: studentSelectedOption ? studentSelectedOption.optionText : null,
-      isCorrect: isCorrect,
-      difficultyLevel: question.difficultyLevel,
       questionType: question.questionType,
-      hasAudio: question.hasAudio || false,
-      audioUrl: question.audioUrl
+      difficultyLevel: question.difficultyLevel,
+      passages: passages,
+      passageText: passageText,
+      sentenceQuestions: sentenceQuestions,
+      mainQuestion: mainQuestion,
+      correctAnswerText: correctAnswerText,
+      acceptableAnswers: acceptableAnswers,
+      studentResponse: response ? response.response : null,
+      studentAnswerText: studentAnswerText,
+      isAcceptableAnswer: isAcceptableAnswer,
+      isCorrect: response ? response.isCorrect : false,
+      responseTime: response ? response.responseTime : 0,
+      answeredAt: response ? response.answeredAt : null
     };
   });
   
   return {
-    category: categoryKey,
-    categoryName: getCategoryDisplayName(categoryKey),
-    score: categoryData.score || 0,
-    correct: categoryData.correct || 0,
-    total: categoryData.total || 5,
-    questions
+    score: stats.percentage,
+    correct: stats.correct,
+    total: stats.total,
+    questions: processedQuestions
   };
 }
+
+// Process Phonological Awareness category (malapantig type questions)
+function processPhonologicalAwarenessCategory(questions, responses, stats) {
+  const processedQuestions = questions.map(question => {
+    const response = responses.find(r => r.questionId === question.questionId);
+    
+    // Process the audio-visual matching pairs
+    let audioTexts = [];
+    let matchingOptions = [];
+    let correctPairs = [];
+    let studentMatches = [];
+    
+    if (question.questionSet) {
+      audioTexts = question.questionSet.audioTexts || [];
+      matchingOptions = question.questionSet.matchingOptions || [];
+      correctPairs = question.questionSet.correctPairs || [];
+    }
+    
+    // Process student's matching responses
+    if (response && response.response && Array.isArray(response.response)) {
+      studentMatches = response.response.map(match => ({
+        audio: match.audio,
+        studentMatch: match.match,
+        isCorrectMatch: correctPairs.some(pair => 
+          Object.keys(pair)[0] === match.audio && pair[match.audio] === match.match
+        )
+      }));
+    }
+    
+    return {
+      questionId: question.questionId,
+      questionText: question.questionText,
+      questionType: question.questionType,
+      difficultyLevel: question.difficultyLevel,
+      questionSet: question.questionSet,
+      audioTexts: audioTexts,
+      matchingOptions: matchingOptions,
+      correctPairs: correctPairs,
+      studentResponse: response ? response.response : null,
+      studentMatches: studentMatches,
+      correctMatches: response ? response.correctMatches : 0,
+      totalMatches: response ? response.totalMatches : 0,
+      isCorrect: response ? response.isCorrect : false,
+      responseTime: response ? response.responseTime : 0,
+      answeredAt: response ? response.answeredAt : null
+    };
+  });
+  
+  return {
+    score: stats.percentage,
+    correct: stats.correct,
+    total: stats.total,
+    questions: processedQuestions
+  };
+}
+
+// Process Decoding category (decode type questions)
+function processDecodingCategory(questions, responses, stats) {
+  const processedQuestions = questions.map(question => {
+    const response = responses.find(r => r.questionId === question.questionId);
+    
+    // Format student answer and correct answer for display
+    let studentAnswerText = 'No answer';
+    let correctAnswerText = 'Unknown';
+    
+    if (response && response.response && Array.isArray(response.response)) {
+      studentAnswerText = response.response.join('');
+    }
+    
+    if (question.correctSequence && Array.isArray(question.correctSequence)) {
+      correctAnswerText = question.correctSequence.join('');
+    }
+    
+    // Determine if it's a fill-in-the-blank question or complete word question
+    const isBlankQuestion = question.blankPosition !== null && question.blankPosition !== undefined;
+    let questionDisplayText = question.questionText;
+    
+    if (isBlankQuestion && question.displaySequence) {
+      // Show the word with blank filled by student answer
+      const displayWithAnswer = [...question.displaySequence];
+      if (response && response.response && response.response.length > 0) {
+        displayWithAnswer[question.blankPosition] = response.response[0] || '_';
+      }
+      questionDisplayText = `${question.questionText} → ${displayWithAnswer.join('')}`;
+    }
+    
+    return {
+      questionId: question.questionId,
+      questionText: question.questionText,
+      questionDisplayText: questionDisplayText,
+      questionType: question.questionType,
+      difficultyLevel: question.difficultyLevel,
+      questionImage: question.questionImage,
+      displaySequence: question.displaySequence,
+      blankPosition: question.blankPosition,
+      dragElements: question.dragElements,
+      correctSequence: question.correctSequence,
+      studentResponse: response ? response.response : null,
+      studentAnswerText: studentAnswerText,
+      correctAnswerText: correctAnswerText,
+      isBlankQuestion: isBlankQuestion,
+      isCorrect: response ? response.isCorrect : false,
+      responseTime: response ? response.responseTime : 0,
+      answeredAt: response ? response.answeredAt : null
+    };
+  });
+  
+  return {
+    score: stats.percentage,
+    correct: stats.correct,
+    total: stats.total,
+    questions: processedQuestions
+  };
+}
+
+// Process Word Recognition category (word type questions)
+function processWordRecognitionCategory(questions, responses, stats) {
+  const processedQuestions = questions.map(question => {
+    const response = responses.find(r => r.questionId === question.questionId);
+    
+    // Format student answer text
+    let studentAnswerText = 'No answer';
+    let correctAnswerText = 'Unknown';
+    
+    if (response && response.response && Array.isArray(response.response)) {
+      studentAnswerText = response.response.join(', ');
+    }
+    
+    if (question.correctAnswer && Array.isArray(question.correctAnswer)) {
+      correctAnswerText = question.correctAnswer.join(', ');
+    }
+    
+    return {
+      questionId: question.questionId,
+      questionText: question.questionText,
+      questionType: question.questionType,
+      difficultyLevel: question.difficultyLevel,
+      questionValue: question.questionValue,
+      questionImage: question.questionImage,
+      displayWord: question.displayWord,
+      blankOptions: question.blankOptions,
+      correctAnswer: question.correctAnswer,
+      studentResponse: response ? response.response : null,
+      studentAnswerText: studentAnswerText,
+      correctAnswerText: correctAnswerText,
+      isCorrect: response ? response.isCorrect : false,
+      responseTime: response ? response.responseTime : 0,
+      answeredAt: response ? response.answeredAt : null
+    };
+  });
+  
+  return {
+    score: stats.percentage,
+    correct: stats.correct,
+    total: stats.total,
+    questions: processedQuestions
+  };
+}
+
+// Process Alphabet Knowledge category (patinig/katinig type questions)
+function processAlphabetKnowledgeCategory(questions, responses, stats) {
+  const processedQuestions = questions.map(question => {
+    const response = responses.find(r => r.questionId === question.questionId);
+    
+    // Get student's selected option details
+    let studentSelectedOption = null;
+    let correctOption = null;
+    
+    if (question.options && response && response.response && response.response.length > 0) {
+      const selectedOptionId = response.response[0]; // Get the optionId from response array
+      studentSelectedOption = question.options.find(opt => opt.optionId === selectedOptionId);
+      correctOption = question.options.find(opt => opt.isCorrect === true);
+    }
+    
+    return {
+      questionId: question.questionId,
+      questionText: question.questionText,
+      questionType: question.questionType,
+      difficultyLevel: question.difficultyLevel,
+      questionValue: question.questionValue,
+      questionImage: question.questionImage,
+      options: question.options,
+      studentResponse: response ? response.response : null,
+      studentSelectedOption: studentSelectedOption,
+      studentAnswerText: studentSelectedOption ? studentSelectedOption.optionText : 'No answer',
+      correctOption: correctOption,
+      correctAnswerText: correctOption ? correctOption.optionText : 'Unknown',
+      isCorrect: response ? response.isCorrect : false,
+      responseTime: response ? response.responseTime : 0,
+      answeredAt: response ? response.answeredAt : null
+    };
+  });
+  
+  return {
+    score: stats.percentage,
+    correct: stats.correct,
+    total: stats.total,
+    questions: processedQuestions
+  };
+}
+
 
 function getCategoryDisplayName(categoryKey) {
   const categoryMap = {

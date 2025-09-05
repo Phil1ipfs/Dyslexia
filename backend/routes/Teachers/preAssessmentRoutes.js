@@ -39,6 +39,7 @@ if (process.env.NODE_ENV === 'development') {
   router.post('/test/convert-images/:id', preAssessmentController.convertImagesToS3);
   router.get('/test/assessments', preAssessmentController.getAllPreAssessments);
   router.get('/test/assessments/:id', preAssessmentController.getPreAssessmentById);
+  router.get('/test/student-results/:id', preAssessmentController.getPreAssessmentResults);
 }
 
 // Student results routes

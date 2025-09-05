@@ -16,7 +16,7 @@ const renderQuestionAnswers = (question) => {
       case 'patinig':
       case 'katinig':
         // Alphabet Knowledge - Multiple choice
-        return question.studentSelectedAnswer || `Option ${question.studentAnswer}`;
+        return question.studentAnswerText || question.studentSelectedAnswer || `Option ${question.studentAnswer}`;
         
       case 'malapantig':
         // Phonological Awareness - Matching
@@ -27,28 +27,46 @@ const renderQuestionAnswers = (question) => {
         
       case 'decode':
         // Decoding - Letter arrangement
+        if (question.studentAnswerText && question.studentAnswerText !== 'No answer') {
+          return question.studentAnswerText;
+        }
         if (question.response && Array.isArray(question.response)) {
           return question.response.join('');
+        }
+        if (question.studentResponse && Array.isArray(question.studentResponse)) {
+          return question.studentResponse.join('');
         }
         return question.studentAnswer || 'No arrangement recorded';
         
       case 'word':
         // Word Recognition - Fill in blank
+        if (question.studentAnswerText && question.studentAnswerText !== 'No answer') {
+          return question.studentAnswerText;
+        }
         if (question.response && Array.isArray(question.response)) {
           return question.response.join(', ');
+        }
+        if (question.studentResponse && Array.isArray(question.studentResponse)) {
+          return question.studentResponse.join(', ');
         }
         return question.studentAnswer || 'No answer recorded';
         
       case 'sentence':
         // Reading Comprehension - Text input
+        if (question.studentAnswerText && question.studentAnswerText !== 'No answer') {
+          return question.studentAnswerText;
+        }
         if (question.hasPassage) {
           return question.isCorrect ? question.correctAnswer : question.incorrectAnswer;
+        }
+        if (question.studentResponse && Array.isArray(question.studentResponse)) {
+          return question.studentResponse.join(', ');
         }
         return question.studentAnswer || 'No answer recorded';
         
       default:
         // Fallback for any other question types
-        return question.studentSelectedAnswer || question.studentAnswer || 'No answer recorded';
+        return question.studentAnswerText || question.studentSelectedAnswer || question.studentAnswer || 'No answer recorded';
     }
   };
 
@@ -69,11 +87,11 @@ const renderQuestionAnswers = (question) => {
       </div>
 
       {/* Show correct answer if student was wrong */}
-      {!question.isCorrect && (question.correctAnswer || question.studentSelectedAnswer) && (
+      {!question.isCorrect && (question.correctAnswerText || question.correctAnswer || question.studentSelectedAnswer) && (
         <div className="pre-assessment-results__answer-row">
           <span className="pre-assessment-results__answer-label">Correct Answer:</span>
           <span className="pre-assessment-results__answer-value pre-assessment-results__answer--correct">
-            {question.correctAnswer || 'Not specified'}
+            {question.correctAnswerText || question.correctAnswer || 'Not specified'}
             <FaCheckCircle className="pre-assessment-results__icon-correct" />
           </span>
         </div>
@@ -280,7 +298,7 @@ const PreAssessmentResults = ({ assessmentData }) => {
             <div className="pre-assessment-results__overview-item-content">
               <div className="pre-assessment-results__overview-item-label">Time Taken</div>
               <div className="pre-assessment-results__overview-item-value">
-                {formatTime(assessmentData.timeTaken)}
+                {formatTime(assessmentData.totalResponseTime)}
               </div>
             </div>
           </div>
