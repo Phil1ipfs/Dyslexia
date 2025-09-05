@@ -1,10 +1,15 @@
 const mongoose = require('mongoose');
 const MainAssessment = require('../../models/Teachers/mainAssessmentModel');
 
-// Helper to get the main_assessment collection
+// Helper to get database collections
 const getMainAssessmentCollection = () => {
   const testDb = mongoose.connection.useDb('test');
   return testDb.collection('main_assessment');
+};
+
+const getResponsesCollection = () => {
+  const testDb = mongoose.connection.useDb('test');
+  return testDb.collection('main_assessment_responses');
 };
 
 /**
@@ -31,7 +36,7 @@ exports.getAllAssessments = async (req, res) => {
     // Execute query with pagination
     const assessments = await mainAssessmentCollection
       .find(filter)
-      .sort({ createdAt: -1 })
+      .sort({ readingLevel: 1, category: 1, createdAt: -1 })
       .skip(skip)
       .limit(limitNum)
       .toArray();
@@ -96,44 +101,272 @@ exports.getAssessmentById = async (req, res) => {
 };
 
 /**
- * Get filtered assessments by reading level and category
+ * Get questions by reading level and category
  */
-exports.getFilteredAssessments = async (req, res) => {
+exports.getQuestionsByLevelAndCategory = async (req, res) => {
   try {
-    const { readingLevel, category, active } = req.query;
+    const { readingLevel, category } = req.params;
     
-    if (!readingLevel && !category) {
+    // Validate reading level and category
+    const validReadingLevels = ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'];
+    const validCategories = ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'];
+    
+    if (!validReadingLevels.includes(readingLevel)) {
       return res.status(400).json({
         success: false,
-        message: 'At least one filter parameter is required'
+        message: 'Invalid reading level'
       });
     }
     
-    // Build filter object
-    const filter = {};
-    if (readingLevel) filter.readingLevel = readingLevel;
-    if (category) filter.category = category;
-    if (active !== undefined) filter.isActive = active === 'true';
-    filter.status = 'active'; // Only return active assessments
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid category'
+      });
+    }
     
     // Get main_assessment collection
     const mainAssessmentCollection = getMainAssessmentCollection();
     
-    // Execute query
-    const assessments = await mainAssessmentCollection
+    // Find assessment for this reading level and category
+    const assessment = await mainAssessmentCollection.findOne({
+      readingLevel,
+      category,
+      status: 'active',
+      isActive: true
+    });
+    
+    if (!assessment) {
+      return res.status(404).json({
+        success: false,
+        message: 'No active assessment found for this reading level and category'
+      });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        _id: assessment._id,
+        readingLevel: assessment.readingLevel,
+        category: assessment.category,
+        questionType: assessment.questionType,
+        questions: assessment.questions
+      }
+    });
+  } catch (error) {
+    console.error('Error getting questions:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error retrieving questions',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get student responses for analysis
+ */
+exports.getStudentResponses = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { category, readingLevel } = req.query;
+    
+    // Build filter
+    const filter = { studentId: parseInt(studentId) };
+    if (category) filter.category = category;
+    if (readingLevel) filter.readingLevel = readingLevel;
+    
+    // Get responses collection
+    const responsesCollection = getResponsesCollection();
+    
+    // Get student responses
+    const responses = await responsesCollection
       .find(filter)
+      .sort({ answeredAt: 1 })
       .toArray();
     
     return res.status(200).json({
       success: true,
-      count: assessments.length,
-      data: assessments
+      count: responses.length,
+      data: responses
     });
   } catch (error) {
-    console.error('Error getting filtered assessments:', error);
+    console.error('Error getting student responses:', error);
     return res.status(500).json({
       success: false,
-      message: 'Error retrieving filtered assessments',
+      message: 'Error retrieving student responses',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get student results with answer analysis
+ */
+exports.getStudentResults = async (req, res) => {
+  try {
+    const { studentId, category } = req.params;
+    
+    // Get responses collection
+    const responsesCollection = getResponsesCollection();
+    const mainAssessmentCollection = getMainAssessmentCollection();
+    
+    // Get student responses for this category
+    const responses = await responsesCollection
+      .find({ 
+        studentId: parseInt(studentId), 
+        category 
+      })
+      .sort({ answeredAt: 1 })
+      .toArray();
+    
+    if (responses.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No responses found for this student and category'
+      });
+    }
+    
+    // Get the assessment questions to compare answers
+    const readingLevel = responses[0].readingLevel;
+    const assessment = await mainAssessmentCollection.findOne({
+      readingLevel,
+      category,
+      status: 'active'
+    });
+    
+    if (!assessment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Assessment not found'
+      });
+    }
+    
+    // Analyze responses against correct answers
+    const analysisResults = responses.map(response => {
+      const question = assessment.questions.find(q => q.questionId === response.questionId);
+      if (!question) {
+        return {
+          ...response,
+          analysis: { error: 'Question not found' }
+        };
+      }
+      
+      return {
+        ...response,
+        question: question,
+        analysis: analyzeResponse(response, question)
+      };
+    });
+    
+    // Calculate summary statistics
+    const totalQuestions = analysisResults.length;
+    const correctAnswers = analysisResults.filter(r => r.isCorrect).length;
+    const accuracy = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+    const averageResponseTime = totalQuestions > 0 
+      ? analysisResults.reduce((sum, r) => sum + r.responseTime, 0) / totalQuestions 
+      : 0;
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        studentId: parseInt(studentId),
+        category,
+        readingLevel,
+        summary: {
+          totalQuestions,
+          correctAnswers,
+          accuracy: Math.round(accuracy * 100) / 100,
+          averageResponseTime: Math.round(averageResponseTime * 100) / 100
+        },
+        responses: analysisResults
+      }
+    });
+  } catch (error) {
+    console.error('Error getting student results:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error retrieving student results',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get student progress across all categories
+ */
+exports.getStudentProgress = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    
+    // Get responses collection
+    const responsesCollection = getResponsesCollection();
+    
+    // Get all responses for this student grouped by category
+    const responses = await responsesCollection
+      .find({ studentId: parseInt(studentId) })
+      .toArray();
+    
+    if (responses.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No responses found for this student'
+      });
+    }
+    
+    // Group responses by category
+    const categorySummary = {};
+    const readingLevel = responses[0].readingLevel;
+    
+    responses.forEach(response => {
+      const category = response.category;
+      if (!categorySummary[category]) {
+        categorySummary[category] = {
+          totalQuestions: 0,
+          correctAnswers: 0,
+          totalTime: 0,
+          responses: []
+        };
+      }
+      
+      categorySummary[category].totalQuestions++;
+      if (response.isCorrect) {
+        categorySummary[category].correctAnswers++;
+      }
+      categorySummary[category].totalTime += response.responseTime;
+      categorySummary[category].responses.push(response);
+    });
+    
+    // Calculate percentages and averages
+    Object.keys(categorySummary).forEach(category => {
+      const summary = categorySummary[category];
+      summary.accuracy = summary.totalQuestions > 0 
+        ? Math.round((summary.correctAnswers / summary.totalQuestions) * 10000) / 100 
+        : 0;
+      summary.averageTime = summary.totalQuestions > 0 
+        ? Math.round((summary.totalTime / summary.totalQuestions) * 100) / 100 
+        : 0;
+    });
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        studentId: parseInt(studentId),
+        readingLevel,
+        overallSummary: {
+          totalQuestions: responses.length,
+          correctAnswers: responses.filter(r => r.isCorrect).length,
+          totalCategories: Object.keys(categorySummary).length,
+          overallAccuracy: Math.round((responses.filter(r => r.isCorrect).length / responses.length) * 10000) / 100
+        },
+        categorySummary
+      }
+    });
+  } catch (error) {
+    console.error('Error getting student progress:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error retrieving student progress',
       error: error.message
     });
   }
@@ -145,13 +378,11 @@ exports.getFilteredAssessments = async (req, res) => {
 exports.createAssessment = async (req, res) => {
   try {
     console.log('[CREATE ASSESSMENT] Request received:', JSON.stringify(req.body, null, 2));
-    console.log('[CREATE ASSESSMENT] User:', req.user);
     
     const assessmentData = req.body;
     
     // Validate using Mongoose model
     try {
-      console.log('[CREATE ASSESSMENT] Validating assessment data with Mongoose');
       const mainAssessment = new MainAssessment(assessmentData);
       await mainAssessment.validate();
     } catch (validationError) {
@@ -164,34 +395,27 @@ exports.createAssessment = async (req, res) => {
     }
     
     // Get main_assessment collection
-    console.log('[CREATE ASSESSMENT] Getting collection');
     const mainAssessmentCollection = getMainAssessmentCollection();
     
     // Check if assessment for this reading level and category already exists
-    console.log('[CREATE ASSESSMENT] Checking for existing assessment');
     const existing = await mainAssessmentCollection.findOne({
       readingLevel: assessmentData.readingLevel,
       category: assessmentData.category
     });
     
     if (existing) {
-      console.log('[CREATE ASSESSMENT] Found existing assessment:', existing._id);
       return res.status(400).json({
         success: false,
         message: 'An assessment for this reading level and category already exists'
       });
     }
     
-    // Ensure each question has a proper questionId based on category
-    console.log('[CREATE ASSESSMENT] Processing questions');
+    // Ensure each question has proper questionId and category
     const categoryPrefix = getCategoryPrefix(assessmentData.category);
     assessmentData.questions.forEach((question, index) => {
-      // Format: AK_001, PA_002, etc.
       const questionNumber = String(index + 1).padStart(3, '0');
       question.questionId = `${categoryPrefix}_${questionNumber}`;
-      
-      // Ensure order is set
-      question.order = index + 1;
+      question.category = assessmentData.category;
     });
     
     // Set timestamps
@@ -199,10 +423,8 @@ exports.createAssessment = async (req, res) => {
     assessmentData.updatedAt = new Date();
     
     // Insert into collection
-    console.log('[CREATE ASSESSMENT] Inserting into database');
     const result = await mainAssessmentCollection.insertOne(assessmentData);
     
-    console.log('[CREATE ASSESSMENT] Success. Inserted ID:', result.insertedId);
     return res.status(201).json({
       success: true,
       message: 'Assessment created successfully',
@@ -213,12 +435,10 @@ exports.createAssessment = async (req, res) => {
     });
   } catch (error) {
     console.error('[CREATE ASSESSMENT] Error:', error);
-    console.error('[CREATE ASSESSMENT] Stack trace:', error.stack);
     return res.status(500).json({
       success: false,
       message: 'Error creating assessment',
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error.message
     });
   }
 };
@@ -254,16 +474,13 @@ exports.updateAssessment = async (req, res) => {
       });
     }
     
-    // If questions are being updated, ensure proper questionIds
+    // If questions are being updated, ensure proper questionIds and categories
     if (updateData.questions) {
       const categoryPrefix = getCategoryPrefix(existing.category);
       updateData.questions.forEach((question, index) => {
-        // Format: AK_001, PA_002, etc.
         const questionNumber = String(index + 1).padStart(3, '0');
         question.questionId = `${categoryPrefix}_${questionNumber}`;
-        
-        // Ensure order is set
-        question.order = index + 1;
+        question.category = existing.category;
       });
     }
     
@@ -391,6 +608,70 @@ exports.toggleAssessmentStatus = async (req, res) => {
 };
 
 /**
+ * Helper function to analyze student response against correct answer
+ */
+function analyzeResponse(response, question) {
+  const analysis = {
+    isCorrect: response.isCorrect,
+    responseTime: response.responseTime,
+    difficulty: 'normal'
+  };
+  
+  switch (response.category) {
+    case 'Alphabet Knowledge':
+      const correctOption = question.choiceOptions.find(opt => opt.isCorrect);
+      analysis.correctAnswer = correctOption ? correctOption.optionId : 'Unknown';
+      analysis.studentAnswer = response.response[0];
+      analysis.explanation = response.isCorrect 
+        ? 'Correct letter identification' 
+        : `Incorrect. Correct answer is option ${analysis.correctAnswer}`;
+      break;
+      
+    case 'Phonological Awareness':
+      analysis.correctPairs = question.questionSet.correctPairs;
+      analysis.studentPairs = response.response;
+      analysis.correctMatches = response.correctMatches || 0;
+      analysis.totalMatches = response.totalMatches || 0;
+      analysis.explanation = `Matched ${analysis.correctMatches} out of ${analysis.totalMatches} pairs correctly`;
+      break;
+      
+    case 'Decoding':
+      analysis.correctSequence = question.correctSequence;
+      analysis.studentSequence = response.response;
+      analysis.explanation = response.isCorrect 
+        ? 'Correct letter arrangement' 
+        : `Incorrect sequence. Correct: ${analysis.correctSequence.join('')}`;
+      break;
+      
+    case 'Word Recognition':
+      analysis.correctAnswers = question.correctAnswer;
+      analysis.studentAnswer = response.response;
+      analysis.explanation = response.isCorrect 
+        ? 'Correct word/syllable recognition' 
+        : `Incorrect. Correct answer(s): ${analysis.correctAnswers.join(', ')}`;
+      break;
+      
+    case 'Reading Comprehension':
+      analysis.correctAnswer = question.questionText; // This might need adjustment based on actual structure
+      analysis.acceptableAnswers = question.acceptableAnswers || [];
+      analysis.studentAnswer = response.response[0];
+      analysis.explanation = response.isCorrect 
+        ? 'Correct comprehension answer' 
+        : 'Incorrect comprehension answer';
+      break;
+  }
+  
+  // Determine difficulty based on response time
+  if (response.responseTime > 30) {
+    analysis.difficulty = 'challenging';
+  } else if (response.responseTime < 10) {
+    analysis.difficulty = 'easy';
+  }
+  
+  return analysis;
+}
+
+/**
  * Helper function to get category prefix
  */
 function getCategoryPrefix(category) {
@@ -403,4 +684,4 @@ function getCategoryPrefix(category) {
   };
   
   return prefixMap[category];
-} 
+}

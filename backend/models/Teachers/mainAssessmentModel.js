@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
 
-// Define Choice Option Schema
+// Schema for Alphabet Knowledge questions (multiple_choice)
 const choiceOptionSchema = new mongoose.Schema({
   optionId: {
     type: String,
-    required: true
+    required: true,
+    enum: ['1', '2', '3']
   },
   optionText: {
     type: String,
@@ -13,18 +14,49 @@ const choiceOptionSchema = new mongoose.Schema({
   isCorrect: {
     type: Boolean,
     required: true
-  },
-  description: {
-    type: String,
-    required: true
   }
-});
+}, { _id: false });
 
-// Define Passage Page Schema
+// Schema for Phonological Awareness questions (matching)
+const questionSetSchema = new mongoose.Schema({
+  audioTexts: {
+    type: [String],
+    required: true,
+    validate: {
+      validator: function(audioTexts) {
+        return audioTexts && audioTexts.length > 0;
+      },
+      message: 'Audio texts array must have at least one element'
+    }
+  },
+  matchingOptions: {
+    type: [String],
+    required: true,
+    validate: {
+      validator: function(options) {
+        return options && options.length > 0;
+      },
+      message: 'Matching options array must have at least one element'
+    }
+  },
+  correctPairs: {
+    type: [mongoose.Schema.Types.Mixed],
+    required: true,
+    validate: {
+      validator: function(pairs) {
+        return pairs && pairs.length > 0;
+      },
+      message: 'Correct pairs array must have at least one pair'
+    }
+  }
+}, { _id: false });
+
+// Schema for Reading Comprehension questions (text_input)
 const passagePageSchema = new mongoose.Schema({
   pageNumber: {
     type: Number,
-    required: true
+    required: true,
+    min: 1
   },
   pageText: {
     type: String,
@@ -34,54 +66,59 @@ const passagePageSchema = new mongoose.Schema({
     type: String,
     default: null
   }
-});
+}, { _id: false });
 
-// Define Sentence Question Schema
-const sentenceQuestionSchema = new mongoose.Schema({
-  questionText: {
-    type: String,
-    required: true
-  },
-  correctAnswer: {
-    type: String,
-    required: true
-  },
-  incorrectAnswer: {
-    type: String,
-    required: true
-  },
-  correctDescription: {
-    type: String,
-    default: ""
-  },
-  incorrectDescription: {
-    type: String,
-    default: ""
-  },
-  questionImage: {
-    type: String,
-    default: null
-  },
-  questionId: {
-    type: String,
-    required: true
-  },
-  order: {
-    type: Number,
-    required: true
-  }
-});
-
-// Define Question Schema
+// Main question schema that supports all 5 question types
 const questionSchema = new mongoose.Schema({
   questionId: {
     type: String,
+    required: true,
+    validate: {
+      validator: function(questionId) {
+        // Validate format: AK_001, PA_002, DC_003, WR_004, RC_005
+        const regex = /^(AK|PA|DC|WR|RC)_\d{3}$/;
+        return regex.test(questionId);
+      },
+      message: 'Question ID must follow the format XX_000 where XX is category prefix'
+    }
+  },
+  category: {
+    type: String,
+    enum: ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'],
     required: true
   },
   questionType: {
     type: String,
-    enum: ['patinig', 'katinig', 'malapantig', 'word', 'sentence'],
-    required: true
+    required: true,
+    validate: {
+      validator: function(questionType) {
+        const validTypes = {
+          'Alphabet Knowledge': 'multiple_choice',
+          'Phonological Awareness': 'matching',
+          'Decoding': 'drag_drop',
+          'Word Recognition': 'fill_blank',
+          'Reading Comprehension': 'text_input'
+        };
+        return validTypes[this.category] === questionType;
+      },
+      message: 'Question type must match the category requirements'
+    }
+  },
+  // For subcategories within question types (e.g., patinig/katinig for Alphabet Knowledge)
+  questionSubtype: {
+    type: String,
+    required: function() {
+      return this.category === 'Alphabet Knowledge';
+    },
+    validate: {
+      validator: function(subtype) {
+        if (this.category === 'Alphabet Knowledge') {
+          return ['patinig', 'katinig'].includes(subtype);
+        }
+        return true;
+      },
+      message: 'Alphabet Knowledge questions must have subtype: patinig or katinig'
+    }
   },
   questionText: {
     type: String,
@@ -93,73 +130,105 @@ const questionSchema = new mongoose.Schema({
   },
   questionValue: {
     type: String,
-    required: function() {
-      // questionValue is NOT required - make it optional for all types
-      return false;
-    },
-    default: function() {
-      // Set default based on question type
-      return this.questionType === 'sentence' ? null : "";
-    }
+    default: null
   },
+
+  // For Alphabet Knowledge (multiple_choice)
   choiceOptions: {
     type: [choiceOptionSchema],
     required: function() {
-      // choiceOptions are required for all types except sentence
-      return this.questionType !== 'sentence';
+      return this.category === 'Alphabet Knowledge';
     },
     validate: {
       validator: function(options) {
-        // Skip validation for sentence type
-        if (this.questionType === 'sentence') return true;
-        
-        // At least one option must be correct
-        return options.some(option => option.isCorrect === true);
+        if (this.category !== 'Alphabet Knowledge') return true;
+        return options && options.length === 3 && options.some(opt => opt.isCorrect);
       },
-      message: 'At least one option must be marked as correct'
+      message: 'Alphabet Knowledge questions must have exactly 3 options with one correct'
     }
   },
-  // Passage pages for sentence type questions
+
+  // For Phonological Awareness (matching)
+  questionSet: {
+    type: questionSetSchema,
+    required: function() {
+      return this.category === 'Phonological Awareness';
+    }
+  },
+
+  // For Decoding (drag_drop)
+  displaySequence: {
+    type: [String],
+    required: function() {
+      return this.category === 'Decoding';
+    }
+  },
+  blankPosition: {
+    type: Number,
+    default: null
+  },
+  dragElements: {
+    type: [String],
+    required: function() {
+      return this.category === 'Decoding';
+    }
+  },
+  correctSequence: {
+    type: [String],
+    required: function() {
+      return this.category === 'Decoding';
+    }
+  },
+
+  // For Word Recognition (fill_blank)
+  displayWord: {
+    type: String,
+    required: function() {
+      return this.category === 'Word Recognition';
+    }
+  },
+  blankOptions: {
+    type: [String],
+    required: function() {
+      return this.category === 'Word Recognition';
+    }
+  },
+  correctAnswer: {
+    type: [String],
+    required: function() {
+      return this.category === 'Word Recognition';
+    }
+  },
+
+  // For Reading Comprehension (text_input)
+  storyTitle: {
+    type: String,
+    required: function() {
+      return this.category === 'Reading Comprehension';
+    }
+  },
   passages: {
     type: [passagePageSchema],
     required: function() {
-      return this.questionType === 'sentence';
+      return this.category === 'Reading Comprehension';
     },
     validate: {
       validator: function(passages) {
-        // Skip validation for non-sentence types
-        if (this.questionType !== 'sentence') return true;
-        
-        // Must have at least one passage
-        return passages && passages.length > 0;
+        if (this.category !== 'Reading Comprehension') return true;
+        return passages === null || (passages && passages.length > 0);
       },
-      message: 'Sentence questions must have at least one passage'
+      message: 'Reading Comprehension questions must have passages array or null'
     }
   },
-  // Comprehension questions for sentence type
-  sentenceQuestions: {
-    type: [sentenceQuestionSchema],
+  acceptableAnswers: {
+    type: [String],
     required: function() {
-      return this.questionType === 'sentence';
-    },
-    validate: {
-      validator: function(questions) {
-        // Skip validation for non-sentence types
-        if (this.questionType !== 'sentence') return true;
-        
-        // Must have at least one comprehension question
-        return questions && questions.length > 0;
-      },
-      message: 'Sentence questions must have at least one comprehension question'
+      return this.category === 'Reading Comprehension';
     }
-  },
-  order: {
-    type: Number,
-    required: true
   }
-});
+}, { _id: false });
 
-// Define Main Assessment Schema
+// Main Assessment Schema
 const mainAssessmentSchema = new mongoose.Schema({
   readingLevel: {
     type: String,
@@ -171,29 +240,41 @@ const mainAssessmentSchema = new mongoose.Schema({
     enum: ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'],
     required: true
   },
+  questionType: {
+    type: String,
+    required: true,
+    validate: {
+      validator: function(questionType) {
+        const validTypes = {
+          'Alphabet Knowledge': 'multiple_choice',
+          'Phonological Awareness': 'matching',
+          'Decoding': 'drag_drop',
+          'Word Recognition': 'fill_blank',
+          'Reading Comprehension': 'text_input'
+        };
+        return validTypes[this.category] === questionType;
+      },
+      message: 'Question type must match the category requirements'
+    }
+  },
   questions: {
     type: [questionSchema],
     required: true,
     validate: {
       validator: function(questions) {
-        // Must have at least one question
-        return questions.length > 0;
+        return questions && questions.length > 0;
       },
       message: 'Assessment must have at least one question'
     }
-  },
-  isActive: {
-    type: Boolean,
-    default: true
   },
   status: {
     type: String,
     enum: ['active', 'draft', 'inactive'],
     default: 'draft'
   },
-  rejectionReason: {
-    type: String,
-    default: null
+  isActive: {
+    type: Boolean,
+    default: true
   },
   createdAt: {
     type: Date,
@@ -207,25 +288,25 @@ const mainAssessmentSchema = new mongoose.Schema({
   collection: 'main_assessment'
 });
 
-// Add index for efficient querying
-mainAssessmentSchema.index({ readingLevel: 1, category: 1 });
+// Compound index for efficient querying
+mainAssessmentSchema.index({ readingLevel: 1, category: 1, isActive: 1 });
 
-// Middleware to update the updatedAt field on document update
+// Middleware to update updatedAt on save
 mainAssessmentSchema.pre('save', function(next) {
   this.updatedAt = new Date();
   next();
 });
 
-// Middleware to validate questionIds are unique within a category
+// Middleware to validate questionIds are unique within an assessment
 mainAssessmentSchema.pre('save', function(next) {
   const questionIds = this.questions.map(q => q.questionId);
   const uniqueQuestionIds = [...new Set(questionIds)];
   
   if (questionIds.length !== uniqueQuestionIds.length) {
-    return next(new Error('Question IDs must be unique within a category'));
+    return next(new Error('Question IDs must be unique within an assessment'));
   }
   
-  // Validate questionId follows the required format (e.g., "AK_001")
+  // Validate questionId follows the required format and matches category
   const categoryPrefix = getCategoryPrefix(this.category);
   const validFormat = this.questions.every(q => {
     const regex = new RegExp(`^${categoryPrefix}_\\d{3}$`);
@@ -234,6 +315,12 @@ mainAssessmentSchema.pre('save', function(next) {
   
   if (!validFormat) {
     return next(new Error(`Question IDs must follow the format ${categoryPrefix}_XXX where XXX is a 3-digit number`));
+  }
+  
+  // Ensure all questions belong to the same category
+  const allSameCategory = this.questions.every(q => q.category === this.category);
+  if (!allSameCategory) {
+    return next(new Error('All questions in an assessment must belong to the same category'));
   }
   
   next();
@@ -255,4 +342,4 @@ function getCategoryPrefix(category) {
 // Create and export the model
 const MainAssessment = mongoose.model('MainAssessment', mainAssessmentSchema);
 
-module.exports = MainAssessment; 
+module.exports = MainAssessment;

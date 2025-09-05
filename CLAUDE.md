@@ -1,579 +1,715 @@
-# CLAUDE.md
+# Main Assessment System
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Overview
 
-## Project Overview
+The main assessment system is used after students complete the pre-assessment to provide targeted practice questions based on their reading level. Unlike the pre-assessment which uses consistent multiple choice formats, the main assessment employs different interaction types for each category to better match educational approaches.
 
-LITEREXIA is a dyslexia assessment and intervention platform built with React and Node.js/Express. The application serves teachers, parents, and administrators with tools for assessing, monitoring, and supporting students with dyslexia.
+## Database Structure
 
-## Architecture
+### Main Assessment Collection (`main_assessment`)
 
-### Frontend (`/frontend`)
-- **Framework**: React 19.1.0 with Vite build system
-- **UI Libraries**: React Bootstrap, FontAwesome, Radix UI components
-- **Routing**: React Router DOM 7.4.1
-- **Charts**: Recharts for data visualization
-- **State Management**: Context API (AuthContext, ChatbotContexts)
-- **Key Features**: 
-  - Teacher dashboard and assessment tools
-  - Parent portal for child progress monitoring
-  - Admin panel for system management
-  - Responsive design with Bootstrap
+#### Core Attributes
+- `_id`: ObjectId - Unique identifier for the assessment document
+- `readingLevel`: String - Target reading level ("Low Emerging", "High Emerging", "Developing", "Transitioning", "At Grade Level")
+- `category`: String - Assessment category ("Alphabet Knowledge", "Phonological Awareness", "Decoding", "Word Recognition", "Reading Comprehension")
+- `questionType`: String - Interaction method (varies by category)
+- `questions`: Array - Questions specific to the category and reading level
+- `status`: String - Assessment status ("active", "draft", "inactive")
+- `isActive`: Boolean - Whether this assessment set is currently active
+- `createdAt`: ISODate - Creation timestamp
+- `updatedAt`: ISODate - Last modification timestamp
 
-### Backend (`/backend`)
-- **Framework**: Express.js 4.21.2
-- **Database**: MongoDB with Mongoose ODM
-- **Authentication**: JWT tokens with bcrypt password hashing
-- **File Storage**: AWS S3 integration for images/documents
-- **AI Integration**: OpenAI API for chatbot functionality
-- **Email**: Nodemailer for notifications
-- **Multi-database**: Uses separate MongoDB databases (test, teachers, parent, users_web)
+## Category-Specific Implementations
 
-### Database Structure
-- `users_web` - User authentication and roles
-- `teachers` - Teacher profiles and data
-- `parent` - Parent profiles and data
-- `test` - Student data and assessment results
+### 1. Alphabet Knowledge
+**Question Type**: `"multiple_choice"`
+**Approach**: 3-option multiple choice questions
 
-## Pre-Assessment System
-
-### Overview
-The pre-assessment is a comprehensive Filipino reading assessment that evaluates students across 5 categories to determine their reading level according to DepEd standards.
-
-### Database Collections
-
-#### 1. Pre_Assessment Collection (pre-assessment table)
-**Purpose**: Stores the master assessment questions and configuration
-
-**Key Attributes**:
+#### Question Structure
 ```javascript
 {
-  _id: ObjectId,                    // MongoDB ObjectId
-  title: String,                    // "Filipino Reading Comprehension Assessment"
-  description: String,              // "CRLA Standard Deped Curriculum"
-  instructions: String,             // Instructions for students
-  totalQuestions: Number,           // Total questions (65 total: 15+15+15+15+5)
-  
-  categoryCounts: {                 // Distribution of questions per category
-    alphabet_knowledge: 15,
-    phonological_awareness: 15,
-    decoding: 15,
-    word_recognition: 15,
-    reading_comprehension: 5
-  },
-  
-  language: String,                 // "FL" for Filipino
-  questions: [Array],               // All assessment questions (see detailed structure below)
-  scoringRules: Object,             // Reading level determination rules
-  type: String,                     // "pre_assessment"
-  status: String,                   // "active" or "inactive"
-  isActive: Boolean,                // true/false
-  assessmentId: String,             // Always "1"
-  createdAt: ISODate,
-  updatedAt: ISODate
-}
-```
-
-#### 2. User_Responses Collection
-**Purpose**: Stores individual student responses to assessment questions
-
-**Key Attributes**:
-```javascript
-{
-  _id: ObjectId,
-  studentId: Number,                // From users.idNumber
-  assessmentId: String,             // "1" (links to pre_assessment.assessmentId)
-  questionId: String,               // Links to specific question (e.g., "AK_001")
-  category: String,                 // Question category
-  questionType: String,             // Specific question type within category
-  response: [Array],                // Student's answer (format varies by question type)
-  isCorrect: Boolean,               // Whether answer was correct
-  responseTime: Number,             // Time taken in seconds
-  answeredAt: ISODate,              // When question was answered
-  createdAt: ISODate,
-  
-  // Additional fields for specific question types:
-  correctMatches: Number,           // For phonological awareness only
-  totalMatches: Number              // For phonological awareness only
-}
-```
-
-#### 3. Test.Users Collection
-**Purpose**: Student records that get updated after pre-assessment completion
-
-**Key Attributes**:
-```javascript
-{
-  _id: ObjectId,
-  idNumber: Number,                 // Unique student identifier
-  firstName: String,
-  middleName: String,
-  lastName: String,
-  age: String,
-  gender: String,                   // "Male" or "Female"
-  gradeLevel: String,               // "Grade 1", "Grade 2", etc.
-  section: String,                  // Class section name
-  address: String,
-  email: String,                    // Usually null for students
-  profileImageUrl: String,          // S3 URL or empty string
-  completedLessons: [Array],        // Array of completed lesson IDs
-  
-  // These fields are updated after pre-assessment:
-  readingLevel: String,             // "Low Emerging", "High Emerging", "Developing", "Transitioning", "At Grade Level"
-  readingPercentage: Number,        // Calculated percentage score
-  preAssessmentCompleted: Boolean,  // Set to true when assessment is done
-  lastAssessmentDate: String,       // ISO date string of last assessment
-  
-  parentId: ObjectId,               // Link to parent record
-  createdAt: ISODate,
-  updatedAt: String                 // ISO date string
-}
-```
-
-### Question Categories and Types
-
-#### 1. Alphabet Knowledge (15 questions)
-**Question Types**: 
-- `patinig` (vowels) - Multiple choice with 3 options
-- `katinig` (consonants) - Multiple choice with 3 options
-
-**Question Structure**:
-```javascript
-{
-  questionId: String,               // "AK_001", "AK_002", etc.
-  category: "Alphabet Knowledge",
-  questionType: String,             // "patinig" or "katinig"
-  questionText: String,             // Question prompt in Filipino
-  questionValue: String,            // The letter being tested
-  questionImage: String,            // S3 URL or null
-  options: [                        // Array of 3 options
+  questionId: String,           // Unique identifier (e.g., "AK_001")
+  questionText: String,         // Question prompt in Filipino
+  questionImage: String,        // S3 bucket URL for image (can be null)
+  questionValue: String|null,   // Letter being tested (can be null)
+  choiceOptions: [
     {
-      optionId: String,             // "1", "2", "3"
-      optionText: String,           // Option text
-      isCorrect: Boolean            // Only one should be true
+      optionId: String,         // Choice identifier ("1", "2", "3")
+      optionText: String,       // Display text for option
+      isCorrect: Boolean,       // Whether this is the correct answer
+      description: String       // Explanation for correctness (optional)
     }
   ]
 }
 ```
 
-**Response Format**:
+#### Question Types in Alphabet Knowledge
+- **Letter Case Matching**: "Anong katumbas na maliit/malaking letra?"
+- **Letter Sound Recognition**: "Anong tunog ng letra?"
+- **Letter Classification**: "Tukuyin ang letra kung Patinig o Katinig"
+- **Initial Letter Identification**: "Tukuyin ang unang letra na nasa larawan?"
+
+### 2. Phonological Awareness
+**Question Type**: `"matching"`
+**Approach**: Audio-to-text matching with multiple pairs
+
+#### Question Structure
 ```javascript
 {
-  response: ["2"],                  // Array with selected optionId
-  isCorrect: true/false
+  questionId: String,           // Unique identifier (e.g., "PA_001")
+  questionText: String,         // Instructions for matching task
+  questionSet: [
+    {
+      audioTexts: [String],     // Audio elements (converted to TTS)
+      matchingOptions: [String], // Visual options for matching
+      correctPairs: [
+        { "audioItem": "matchingItem" }  // Correct audio-visual pairs
+      ]
+    }
+  ]
 }
 ```
 
-#### 2. Phonological Awareness (15 questions)
-**Question Types**: 
-- `malapantig` - Audio-based matching exercises
+#### Phonological Awareness Types
+- **Letter Matching**: Individual letters to letter pairs (H → Hh)
+- **Word Matching**: Complete words (DAGA → DAGA)
+- **Syllable Matching**: Syllable components (GA → GA)
 
-**Question Structure**:
+**Important Notes**:
+- Audio elements use text-to-speech conversion
+- Options should be shuffled for each student
+- Students drag/connect audio to visual elements
+
+### 3. Decoding
+**Question Type**: `"drag_drop"`
+**Approach**: Letter arrangement and word completion
+
+#### Question Structure
 ```javascript
 {
-  questionId: String,               // "PA_001", "PA_002", etc.
-  category: "Phonological Awareness",
-  questionType: "malapantig",
-  questionText: String,             // Instructions for matching
-  questionValue: null,              // Always null for this category
-  questionImage: null,              // Always null for this category
-  questionSet: {
-    audioTexts: [Array],            // Letters/words to be read aloud via TTS
-    matchingOptions: [Array],       // Visual options to match against
-    correctPairs: [Array]           // Correct audio-visual pairs
-  }
+  questionId: String,           // Unique identifier (e.g., "DC_001")
+  questionText: String,         // Task instructions
+  questionImage: String,        // S3 image URL (can be null)
+  displaySequence: [String]|null, // Word pattern with blanks (null for identification)
+  blankPosition: Number|null,   // Position of blank (0-indexed, null if no blanks)
+  dragElements: [String],       // Available letters to drag
+  correctSequence: [String]     // Correct letter sequence/answer
 }
 ```
 
-**Response Format**:
+#### Decoding Question Types
+1. **Word Identification**: "Tukuyin ang nasa larawan"
+   - `displaySequence`: null
+   - `blankPosition`: null
+   - Students arrange all letters to form the word
+
+2. **Word Completion**: "Buoin ang salita"
+   - `displaySequence`: ["_", "S", "O"] (example)
+   - `blankPosition`: 0 (position of missing letter)
+   - Students fill in the missing letter(s)
+
+### 4. Word Recognition
+**Question Type**: `"fill_blank"`
+**Approach**: Sentence completion and rhyming word identification
+
+#### Question Structure
+```javascript
+{
+  questionId: String,           // Unique identifier (e.g., "WR_001")
+  questionText: String,         // Task instructions
+  questionImage: String|null,   // S3 image URL (optional)
+  displayWord: String,          // Sentence with blank or target word
+  blankOptions: [String],       // Multiple choice options
+  correctAnswer: [String]       // Correct answer(s) - array for multiple answers
+}
+```
+
+#### Word Recognition Types
+1. **Sentence Completion**: "Basahin ang pangungusap. Piliin ang tamang salita"
+   - `displayWord`: "Naglalaro siya ng ___ sa parke"
+   - Single correct answer selection
+
+2. **Rhyming/Sound Recognition**: "Anong kasing tunog ng salitang nakikita?"
+   - `displayWord`: Target word (e.g., "SUMBRERO")
+   - Multiple syllables may be correct (e.g., ["LIB", "RO"])
+
+### 5. Reading Comprehension
+**Question Type**: `"text_input"`
+**Approach**: Story reading with typed responses
+
+#### Question Structure
+```javascript
+{
+  questionId: String,           // Unique identifier (e.g., "RC_001")
+  storyTitle: String,           // Story title for grouping
+  passages: [
+    {
+      pageNumber: Number,       // Page sequence number
+      pageText: String,         // Story text for this page
+      pageImage: String|null    // S3 image URL (optional)
+    }
+  ] | null,                    // null for subsequent questions of same story
+  questionText: String,         // Comprehension question
+  correctAnswer: String,        // Primary correct answer
+  acceptableAnswers: [String]   // Alternative acceptable answers
+}
+```
+
+#### Reading Comprehension Features
+- **Multi-page Stories**: Stories can span multiple pages/screens
+- **Story Grouping**: Questions reference the same story using `storyTitle`
+- **Flexible Answers**: Accept multiple valid response formats
+- **No Passage Repetition**: Subsequent questions for same story have `passages: null`
+
+## Student Response Collection (`main_assessment_responses`)
+
+### Universal Response Attributes
+- `_id`: ObjectId - Unique response identifier
+- `studentId`: Number - Student ID number (NOT string)
+- `categoryId`: ObjectId - Reference to category results
+- `questionId`: String - Reference to main assessment question
+- `category`: String - Assessment category name
+- `readingLevel`: String - Student's reading level (from user profile)
+- `responseTime`: Number - Time taken in seconds
+- `answeredAt`: ISODate - Response timestamp
+- `createdAt`: ISODate - Record creation timestamp
+- `isCorrect`: Boolean - Whether response was correct
+
+### Category-Specific Response Formats
+
+#### Alphabet Knowledge Responses
+```javascript
+{
+  response: [String],           // Selected optionId (e.g., ["2"])
+  // ... universal attributes
+}
+```
+
+#### Phonological Awareness Responses
 ```javascript
 {
   response: [
-    { audio: "H", match: "Hh" },
-    { audio: "T", match: "Tt" }
+    { audio: String, match: String }  // Audio-visual pairs
   ],
-  correctMatches: Number,           // How many pairs were correct
-  totalMatches: Number,             // Total pairs in the question
-  isCorrect: Boolean                // True if all matches are correct
+  correctMatches: Number,       // Number of correct pairs
+  totalMatches: Number,         // Total pairs attempted
+  // ... universal attributes
 }
 ```
 
-#### 3. Decoding (15 questions)
-**Question Types**: 
-- `decode` - Drag and drop letter arrangement
-
-**Question Structure**:
+#### Decoding Responses
 ```javascript
 {
-  questionId: String,               // "DC_001", "DC_002", etc.
-  category: "Decoding",
-  questionType: "decode",
-  questionText: String,             // Question prompt
-  questionValue: null,              // Always null for this category
-  questionImage: String,            // S3 URL with image to decode
-  displaySequence: [Array],         // Letters shown in sequence (may have blanks)
-  blankPosition: Number,            // Position of blank (null if no blank)
-  dragElements: [Array],            // Available letters to drag
-  correctSequence: [Array]          // Correct letter sequence
+  response: [String],           // Letter sequence (e.g., ["Y", "E", "L", "O"])
+  // ... universal attributes
 }
 ```
 
-**Response Format**:
+#### Word Recognition Responses
 ```javascript
 {
-  response: ["Y", "E", "L", "O"],   // Array of dragged letters in order
-  isCorrect: Boolean                // True if matches correctSequence
+  response: [String],           // Selected answer(s) (e.g., ["BOLA"])
+  // ... universal attributes
 }
 ```
 
-#### 4. Word Recognition (15 questions)
-**Question Types**: 
-- `word` - Fill in the blank or syllable matching
-
-**Question Structure**:
+#### Reading Comprehension Responses
 ```javascript
 {
-  questionId: String,               // "WR_001", "WR_002", etc.
-  category: "Word Recognition",
-  questionType: "word",
-  questionText: String,             // Question prompt
-  questionValue: String,            // Word being tested (or null)
-  questionImage: String,            // S3 URL or null
-  displayWord: String,              // Sentence with blank or word to analyze
-  blankOptions: [Array],            // Options to fill blank or syllable choices
-  correctAnswer: [Array]            // Correct answer(s)
+  response: [String],           // Typed answer (e.g., ["Juan"])
+  // ... universal attributes
 }
 ```
 
-**Response Format**:
-```javascript
-{
-  response: ["BOLA"],               // Array with selected answer(s)
-  isCorrect: Boolean
-}
-```
+## Implementation Guidelines
 
-#### 5. Reading Comprehension (5 questions)
-**Question Types**: 
-- `sentence` - Short story comprehension with typed answers
+### Question Distribution by Reading Level
+- **Low Emerging**: Alphabet Knowledge focus
+- **High Emerging**: Alphabet Knowledge + Phonological Awareness
+- **Developing**: Decoding emphasis
+- **Transitioning**: Word Recognition focus
+- **At Grade Level**: Reading Comprehension priority
 
-**Question Structure**:
-```javascript
-{
-  questionId: String,               // "RC_001", "RC_002", etc.
-  category: "Reading Comprehension",
-  questionType: "sentence",
-  questionText: String,             // General instruction
-  questionValue: null,              // Always null
-  questionImage: null,              // Always null
-  passages: [                       // Story content
-    {
-      pageNumber: Number,           // Page number
-      pageText: String,             // Story text for this page
-      pageImage: String             // S3 URL or null
-    }
-  ],
-  sentenceQuestions: [              // Questions about the story
-    {
-      questionText: String,         // Specific question
-      correctAnswer: String,        // Expected answer
-      acceptableAnswers: [Array]    // Alternative acceptable answers
-    }
-  ]
-}
-```
+### Response Validation
+1. **Alphabet Knowledge**: Exact optionId match
+2. **Phonological Awareness**: All pairs must be correct for `isCorrect: true`
+3. **Decoding**: Exact sequence match with `correctSequence`
+4. **Word Recognition**: Match against `correctAnswer` array
+5. **Reading Comprehension**: Check against `correctAnswer` or `acceptableAnswers`
 
-**Response Format**:
-```javascript
-{
-  response: ["Mansanas"],           // Array with typed answer
-  isCorrect: Boolean                // True if matches correctAnswer or acceptableAnswers
-}
-```
+### Audio Implementation Notes
+- Phonological Awareness uses text-to-speech for `audioTexts`
+- Audio elements should be clearly distinguishable
+- Implement audio replay functionality
+- Consider speech rate appropriate for target age group
 
-### Scoring and Reading Level Determination
+### Image Requirements
+- All images stored in S3 bucket
+- Consistent sizing and quality
+- Alt text for accessibility
+- Fallback handling for missing images
 
-#### Scoring Rules
-The system uses a complex scoring algorithm based on:
-1. **Part 1 Score**: Total correct answers from first 4 categories (60 questions max)
-2. **Reading Percentage**: Percentage of reading comprehension questions answered
-3. **Comprehension Correct Range**: Number of reading comprehension questions correct
+### Randomization
+- Shuffle `matchingOptions` in Phonological Awareness
+- Randomize `blankOptions` order in Word Recognition
+- Vary `dragElements` position in Decoding
+- Maintain consistent `correctSequence` reference
 
-#### Reading Levels
-```javascript
-scoringRules: {
-  "Low Emerging": {
-    part1ScoreRange: [0, 16],
-    readingPercentageRange: null,
-    comprehensionCorrectRange: null,
-    description: "Learner with scores 0 to 16 upon administration of Part 1"
-  },
-  "High Emerging": {
-    part1ScoreRange: [17, 30],
-    readingPercentageRange: [0, 25],
-    comprehensionCorrectRange: [0, 0],
-    description: "Scores 17-30 in Part 1, reads less than 25%, cannot answer any RC questions"
-  },
-  "Developing": {
-    part1ScoreRange: [17, 30],
-    readingPercentageRange: [26, 50],
-    comprehensionCorrectRange: [1, 5],
-    description: "Scores 17-30 in Part 1, reads 26-50%, answers at least 1 question correctly"
-  },
-  "Transitioning": {
-    part1ScoreRange: [17, 30],
-    readingPercentageRange: [51, 75],
-    comprehensionCorrectRange: [2, 3],
-    description: "Scores 17-30 in Part 1, reads 51-75%, answers 2-3 questions correctly"
-  },
-  "At Grade Level": {
-    part1ScoreRange: [17, 30],
-    readingPercentageRange: [76, 100],
-    comprehensionCorrectRange: [4, 5],
-    description: "Scores 17-30 in Part 1, reads 76-100%, answers 4-5 questions correctly"
-  }
-}
-```
+## Frontend Integration Points
 
-### Assessment Workflow
+### Question Rendering
+- **Multiple Choice**: Standard radio button interface
+- **Matching**: Drag-and-drop or click-to-connect interface
+- **Drag Drop**: Letter tile arrangement interface
+- **Fill Blank**: Dropdown or button selection
+- **Text Input**: Text field with validation
 
-1. **Student starts assessment**: System retrieves questions from pre_assessment collection
-2. **Question presentation**: Based on question type, appropriate UI is shown:
-   - Alphabet Knowledge: Multiple choice with 3 options
-   - Phonological Awareness: Audio playback with drag-and-drop matching
-   - Decoding: Image with drag-and-drop letter arrangement
-   - Word Recognition: Fill-in-the-blank or syllable selection
-   - Reading Comprehension: Story display with text input for answers
+### Progress Tracking
+- Track completion per reading level
+- Monitor response times for difficulty assessment
+- Store partial progress for session resumption
+- Generate performance analytics per category
 
-3. **Response recording**: Each answer is saved to user_responses collection with:
-   - Student ID and question ID linking
-   - Response time tracking
-   - Immediate correctness evaluation
-   - Specific response format based on question type
+### Accessibility Features
+- High contrast mode support
+- Text-to-speech for all text content
+- Keyboard navigation support
+- Scalable UI elements
+- Dyslexia-friendly fonts (Atkinson Hyperlegible)
 
-4. **Score calculation**: After completion, system:
-   - Calculates total correct answers per category
-   - Determines Part 1 score (first 4 categories)
-   - Calculates reading comprehension percentage
-   - Applies scoring rules to determine reading level
+## API Endpoints Structure
 
-5. **Student record update**: Updates test.users collection:
-   - `readingLevel`: Determined from scoring rules
-   - `readingPercentage`: Calculated percentage
-   - `preAssessmentCompleted`: Set to `true`
-   - `lastAssessmentDate`: Current timestamp
-   - `updatedAt`: Current timestamp
+### Main Assessment Endpoints (Web Backend for Teachers/Admins)
+- `GET /api/main-assessment/:readingLevel/:category` - Get questions for level/category (for viewing/editing)
+- `GET /api/main-assessment/responses/:studentId` - Get student responses for analysis
+- `GET /api/main-assessment/progress/:studentId` - Get completion status
+- `GET /api/main-assessment/results/:studentId/:category` - Get category results with answer analysis
+- `GET /api/main-assessment/analytics/:readingLevel/:category` - Get aggregated performance data
 
-### API Endpoints Structure
-- `GET /api/pre-assessment` - Retrieve assessment questions
-- `POST /api/pre-assessment/response` - Submit individual question response
-- `POST /api/pre-assessment/complete` - Finalize assessment and update student record
-- `GET /api/student/:id/assessment-results` - Retrieve student's assessment results
+### Response Data Flow Architecture
+**Mobile App (Student Assessment):**
+1. Mobile app requests questions from backend
+2. Student completes assessment on mobile device
+3. Mobile app submits responses directly to `main_assessment_responses` collection
+4. Mobile app handles all response validation and scoring
 
-## Development Commands
+**Web Backend (Teacher/Admin Dashboard):**
+1. Web backend **reads** responses from `main_assessment_responses` collection
+2. Compares student responses against correct answers from question data
+3. Generates performance analytics and reports
+4. Provides viewing interface for teachers to analyze student performance
+5. No creation or modification of student responses - **read-only for analysis**
 
-### Frontend Development
-```bash
-cd frontend
-npm run dev          # Start development server (Vite)
-npm run build        # Build for production
-npm run preview      # Preview production build
-```
+## Data Validation Rules
 
-### Backend Development
-```bash
-cd backend
-npm run dev          # Start with nodemon (auto-reload)
-npm start           # Start production server
-npm run init-iep    # Initialize IEP system
-```
+### Required Fields by Category
+- **All Categories**: questionId, category, readingLevel
+- **Alphabet Knowledge**: choiceOptions with exactly 3 options
+- **Phonological Awareness**: questionSet with audioTexts and matchingOptions
+- **Decoding**: dragElements and correctSequence
+- **Word Recognition**: displayWord, blankOptions, correctAnswer
+- **Reading Comprehension**: questionText, correctAnswer, acceptableAnswers
 
-### Root Level
-The root `package.json` contains minimal dependencies (axios, form-data, react-toastify) for shared utilities.
+### Business Logic Constraints
+- Questions must belong to valid reading levels
+- Response times must be positive numbers
+- Student IDs must exist in users collection
+- Category and reading level must match available assessments
+- Image URLs must be valid S3 paths
 
-## Key Configuration
+## Performance Considerations
 
-### Frontend (Vite)
-- **Dev Server**: http://localhost:5173 (proxies /api to backend)
-- **API Proxy**: All `/api` requests forwarded to http://localhost:5001
-- **Build Output**: `dist/` directory
-- **Assets**: Custom fonts (Atkinson Hyperlegible) for dyslexia accessibility
+### Database Indexing
+- Index on `readingLevel` and `category` for question queries
+- Index on `studentId` and `questionId` for response queries
+- Compound index on `readingLevel + category + isActive`
 
-### Backend (Express)
-- **Server Port**: 5001 (configurable via PORT env var)
-- **CORS**: Configured for multiple frontend origins including localhost:5173
-- **File Uploads**: 50MB limit for large file handling
-- **Database**: MongoDB connection with timeout settings
-- **S3 Integration**: AWS SDK v3 for file storage
+### Caching Strategy
+- Cache frequently accessed question sets
+- Store reading level mappings in memory
+- Implement CDN for image assets
+- Cache student progress data
 
-## Environment Variables
-
-### Required Backend Variables
-- `MONGO_URI` - MongoDB connection string
-- `JWT_SECRET` - JWT signing key
-- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` - S3 configuration
-- `AWS_BUCKET_NAME` - S3 bucket name
-- `FRONTEND_URL` - Frontend URL for CORS
-
-## Key Directories
-
-### Frontend Structure
-- `src/components/` - Reusable UI components organized by domain (Admin, TeacherPage, ParentPage, Homepage)
-- `src/pages/` - Page components for routing
-- `src/services/` - API service layers for backend communication
-- `src/contexts/` - React context providers
-- `src/assets/` - Static assets including accessibility fonts
-
-### Backend Structure
-- `controllers/` - Route handlers organized by domain
-- `models/` - Mongoose schema definitions
-- `routes/` - Express route definitions
-- `services/` - Business logic and external integrations
-- `middleware/` - Express middlewares for auth, uploads
-- `utils/` - Utility functions
-
-## Testing
-
-Currently no test framework is configured. The backend has a placeholder test script that exits with error.
-
-## Special Features
-
-### Accessibility
-- Uses Atkinson Hyperlegible font specifically designed for dyslexia
-- Responsive design considerations for various devices
-- Audio-based questions with Text-to-Speech integration
-
-### Multi-tenant Architecture
-- Separate database collections for different user types
-- Role-based access control with JWT
-
-### File Management
-- S3 integration with fallback to database storage
-- Image proxy endpoint for secure S3 access
-- Large file upload support (50MB limit)
-
-### AI Integration
-- OpenAI chatbot for teacher assistance
-- Automated assessment analysis and recommendations
-
-## Development Notes
-
-- Frontend uses Vite for fast development and modern build process
-- Backend implements comprehensive error handling and logging
-- Database connections are established before route registration
-- Multiple CORS origins supported for different development environments
-- Extensive fallback data systems for development/demo purposes
-- Assessment system uses real-time response tracking and immediate feedback
-- All images are stored in S3 with CDN distribution for optimal performance
+### Scalability Notes
+- Separate collections per reading level if data grows large
+- Implement question versioning for content updates
+- Consider read replicas for high-traffic periods
+- Monitor response time analytics for performance optimization
 
 
 
-Sample Json File of the pre assessment 
 
 [{
   "_id": {
-    "$oid": "683c8b5bb3d25e77531903d6"
+    "$oid": "683cb98951eaae9b315b8c31"
   },
-  "title": "Filipino Reading Comprehension Assessment",
-  "description": "CRLA Standard Deped Curriculum",
-  "instructions": "Complete the pre assessment for student to assess reading level",
-  "totalQuestions": 35,
-  "categoryCounts": {
-    "alphabet_knowledge": 15,
-    "phonological_awareness": 15,
-    "decoding": 15,
-    "word_recognition": 15,
-    "reading_comprehension": 5
+  "readingLevel": "High Emerging",
+  "category": "Phonological Awareness",
+  "questionType": "matching",
+  "questions": [
+    {
+      "questionId": "PA_001",
+      "questionText": "Pakinggan ang audio. Itugma ito sa katumbas na letra sa kabilang hanay.",
+      "questionSet": [
+        {
+          "audioTexts": [
+            "H",
+            "T",
+            "N",
+            "L",
+            "P"
+          ],
+          "matchingOptions": [
+            "Hh",
+            "Tt",
+            "Nn",
+            "Ll",
+            "Pp"
+          ],
+          "correctPairs": [
+            {
+              "H": "Hh"
+            },
+            {
+              "T": "Tt"
+            },
+            {
+              "N": "Nn"
+            },
+            {
+              "L": "Ll"
+            },
+            {
+              "P": "Pp"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "questionId": "PA_002",
+      "questionText": "Pakinggan ang audio. Itugma ito sa katumbas na letra sa kabilang hanay.",
+      "questionSet": [
+        {
+          "audioTexts": [
+            "Daga",
+            "Ilaw",
+            "Mata",
+            "Puno"
+          ],
+          "matchingOptions": [
+            "Mata",
+            "Puno",
+            "Daga",
+            "Ilaw"
+          ],
+          "correctPairs": [
+            {
+              "Daga": "Daga"
+            },
+            {
+              "Ilaw": "Ilaw"
+            },
+            {
+              "Mata": "Mata"
+            },
+            {
+              "Puno": "Puno"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "questionId": "PA_003",
+      "questionText": "Pakinggan ang audio. Itugma ito sa katumbas na letra sa kabilang hanay.",
+      "questionSet": [
+        {
+          "audioTexts": [
+            "L",
+            "P",
+            "B"
+          ],
+          "matchingOptions": [
+            "Ll",
+            "Pp",
+            "Bb"
+          ],
+          "correctPairs": [
+            {
+              "L": "Ll"
+            },
+            {
+              "P": "Pp"
+            },
+            {
+              "B": "Bb"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "status": "active",
+  "isActive": true,
+  "createdAt": {
+    "$date": "2025-06-01T19:23:35.208Z"
   },
-  "language": "FL",
+  "updatedAt": {
+    "$date": "2025-06-02T20:14:49.561Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "683cbaa951eaae9b315b8c42"
+  },
+  "readingLevel": "Developing",
+  "category": "Decoding",
+  "questionType": "drag_drop",
+  "questions": [
+    {
+      "questionId": "DC_001",
+      "questionText": "Tukuyin ang nasa larawan..",
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/decoding/1748895526838-YELO.png",
+      "displaySequence": null,
+      "blankPosition": null,
+      "dragElements": [
+        "Y",
+        "E",
+        "L",
+        "O",
+        "A",
+        "U"
+      ],
+      "correctSequence": [
+        "Y",
+        "E",
+        "L",
+        "O"
+      ]
+    },
+    {
+      "questionId": "DC_002",
+      "questionText": "Buoin ang salita…",
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/decoding/1748895783318-OSO.png",
+      "displaySequence": [
+        "_",
+        "S",
+        "O"
+      ],
+      "blankPosition": 0,
+      "dragElements": [
+        "O",
+        "A",
+        "E",
+        "S"
+      ],
+      "correctSequence": [
+        "O"
+      ]
+    }
+  ],
+  "status": "active",
+  "isActive": true,
+  "createdAt": {
+    "$date": "2025-06-01T20:10:37.081Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-10T20:21:28.810Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "683cbb7451eaae9b315b8c4a"
+  },
+  "readingLevel": "Transitioning",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "questions": [
+    {
+      "questionId": "WR_001",
+      "questionText": "Basahin ang pangungusap",
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/word-recognition/1748897392625-SUMBRERO.png",
+      "displayWord": "Naglalaro siya ng __ sa parke",
+      "blankOptions": [
+        "Kutsara",
+        "Papel",
+        "Bola",
+        "Damit"
+      ],
+      "correctAnswer": [
+        "Bola"
+      ]
+    },
+    {
+      "questionId": "WR_002",
+      "questionText": "Anong kasing tunog ng",
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/word-recognition/1748897392625-SUMBRERO.png",
+      "displayWord": "Sumbrero",
+      "blankOptions": [
+        "LIB",
+        "RO",
+        "ME",
+        "SA"
+      ],
+      "correctAnswer": [
+        "LIB",
+        "RO"
+      ]
+    }
+  ],
+  "status": "active",
+  "isActive": true,
+  "createdAt": {
+    "$date": "2025-06-01T20:13:31.554Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-02T20:50:17.268Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "683e0fc10a6d5b9eb216970c"
+  },
+  "readingLevel": "At Grade Level",
+  "category": "Reading Comprehension",
+  "questionType": "text_input",
+  "questions": [
+    {
+      "questionId": "RC_001",
+      "storyTitle": "Si Juan at ang Aso",
+      "passages": [
+        {
+          "pageNumber": 1,
+          "pageText": "Tuwing umaga, si Juan at ang kaniyang aso na si Max ay naglalaro sa Parke",
+          "pageImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/reading-comprehension/1748897996981-page_1_1748897996667.jpg"
+        },
+        {
+          "pageNumber": 2,
+          "pageText": "Tuwing gabi, si Max at ang kaniyang pusa na si Max ay naglalaro sa Dagat",
+          "pageImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/reading-comprehension/1748897998186-page_2_1748897998178.jpg"
+        },
+        {
+          "pageNumber": 3,
+          "pageText": "Silang dalawa ay masayang uuwi ng tahanan.",
+          "pageImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/reading-comprehension/1748897998943-page_3_1748897998622.jpg"
+        }
+      ],
+      "questionText": "Sino ang may aso?",
+      "correctAnswer": "Juan",
+      "acceptableAnswers": [
+        "Juan",
+        "juan",
+        "Si Juan",
+        "si juan"
+      ]
+    },
+    {
+      "questionId": "RC_002",
+      "storyTitle": "Si Juan at ang Aso",
+      "passages": null,
+      "questionText": "Saan naglaro si Juan at Max?",
+      "correctAnswer": "Parke",
+      "acceptableAnswers": [
+        "Parke",
+        "parke",
+        "sa parke",
+        "Sa parke"
+      ]
+    }
+  ],
+  "status": "active",
+  "isActive": true,
+  "createdAt": {
+    "$date": "2025-06-02T20:55:29.800Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-02T21:12:09.760Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "683a51d3168ffbb611dab96a"
+  },
+  "readingLevel": "Low Emerging",
+  "category": "Alphabet Knowledge",
+  "questionType": "multiple_choice",
   "questions": [
     {
       "questionId": "AK_001",
-      "category": "Alphabet Knowledge",
-      "questionType": "patinig",
-      "questionText": "Anong ang katumbas na maliit na letra?",
-      "questionValue": "E",
-      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748891553508-o231plbj3e.png",
-      "difficultyLevel": "low_emerging",
-      "options": [
+      "questionText": "Anong katumbas na maliit na letra?",
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/alphabet-knowledge/1748804756818-big-E.png",
+      "questionValue": null,
+      "choiceOptions": [
         {
           "optionId": "1",
-          "optionText": "e",
-          "isCorrect": true
-        },
-        {
-          "optionId": "2",
           "optionText": "a",
           "isCorrect": false
         },
         {
+          "optionId": "2",
+          "optionText": "e",
+          "isCorrect": true
+        },
+        {
           "optionId": "3",
-          "optionText": "c",
+          "optionText": "b",
           "isCorrect": false
         }
       ]
     },
     {
       "questionId": "AK_002",
-      "category": "Alphabet Knowledge",
-      "questionType": "patinig",
       "questionText": "Anong ang katumbas na maliit na letra?",
-      "questionValue": "O",
-      "questionImage": null,
-      "difficultyLevel": "low_emerging",
-      "options": [
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/alphabet-knowledge/1748804844121-big-O.png",
+      "questionValue": null,
+      "choiceOptions": [
         {
           "optionId": "1",
           "optionText": "u",
-          "isCorrect": false
+          "isCorrect": true
         },
         {
           "optionId": "2",
           "optionText": "o",
-          "isCorrect": true
+          "isCorrect": false
         },
         {
           "optionId": "3",
-          "optionText": "j",
+          "optionText": "a",
           "isCorrect": false
         }
       ]
     },
     {
       "questionId": "AK_003",
-      "category": "Alphabet Knowledge",
-      "questionType": "katinig",
       "questionText": "Anong ang katumbas na maliit na letra?",
-      "questionValue": "B",
-      "questionImage": null,
-      "difficultyLevel": "low_emerging",
-      "options": [
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/alphabet-knowledge/1748804867850-big-B.png",
+      "questionValue": null,
+      "choiceOptions": [
         {
           "optionId": "1",
-          "optionText": "b",
-          "isCorrect": true
-        },
-        {
-          "optionId": "2",
           "optionText": "i",
           "isCorrect": false
         },
         {
+          "optionId": "2",
+          "optionText": "b",
+          "isCorrect": true
+        },
+        {
           "optionId": "3",
-          "optionText": "d",
+          "optionText": "a",
           "isCorrect": false
         }
       ]
     },
     {
       "questionId": "AK_004",
-      "category": "Alphabet Knowledge",
-      "questionType": "patinig",
       "questionText": "Anong ang katumbas na malaking letra?",
-      "questionValue": "u",
-      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748891612703-6zaxr91juo7.png",
-      "difficultyLevel": "low_emerging",
-      "options": [
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/alphabet-knowledge/1748804999251-small-u.png",
+      "questionValue": null,
+      "choiceOptions": [
         {
           "optionId": "1",
           "optionText": "U",
@@ -586,20 +722,17 @@ Sample Json File of the pre assessment
         },
         {
           "optionId": "3",
-          "optionText": "V",
+          "optionText": "O",
           "isCorrect": false
         }
       ]
     },
     {
       "questionId": "AK_005",
-      "category": "Alphabet Knowledge",
-      "questionType": "katinig",
       "questionText": "Anong ang katumbas na malaking letra?",
-      "questionValue": "d",
-      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748891900805-jy66cw08we8.png",
-      "difficultyLevel": "low_emerging",
-      "options": [
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/alphabet-knowledge/1748805052258-small-d.png",
+      "questionValue": null,
+      "choiceOptions": [
         {
           "optionId": "1",
           "optionText": "W",
@@ -612,20 +745,17 @@ Sample Json File of the pre assessment
         },
         {
           "optionId": "3",
-          "optionText": "B",
+          "optionText": "F",
           "isCorrect": false
         }
       ]
     },
     {
       "questionId": "AK_006",
-      "category": "Alphabet Knowledge",
-      "questionType": "katinig",
       "questionText": "Anong ang katumbas na malaking letra?",
-      "questionValue": "k",
-      "questionImage": null,
-      "difficultyLevel": "low_emerging",
-      "options": [
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/alphabet-knowledge/1748805081664-small-k.png",
+      "questionValue": null,
+      "choiceOptions": [
         {
           "optionId": "1",
           "optionText": "K",
@@ -638,20 +768,17 @@ Sample Json File of the pre assessment
         },
         {
           "optionId": "3",
-          "optionText": "F",
+          "optionText": "K",
           "isCorrect": false
         }
       ]
     },
     {
       "questionId": "AK_007",
-      "category": "Alphabet Knowledge",
-      "questionType": "patinig",
       "questionText": "Anong tunog ng letra?",
-      "questionValue": "A",
-      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748891924936-aner7cujhme.png",
-      "difficultyLevel": "low_emerging",
-      "options": [
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/alphabet-knowledge/1748805140298-big-A.png",
+      "questionValue": null,
+      "choiceOptions": [
         {
           "optionId": "1",
           "optionText": "/geh/",
@@ -664,20 +791,17 @@ Sample Json File of the pre assessment
         },
         {
           "optionId": "3",
-          "optionText": "/ee/",
+          "optionText": "/ieey/",
           "isCorrect": false
         }
       ]
     },
     {
       "questionId": "AK_008",
-      "category": "Alphabet Knowledge",
-      "questionType": "katinig",
       "questionText": "Anong tunog ng letra?",
-      "questionValue": "R",
-      "questionImage": null,
-      "difficultyLevel": "low_emerging",
-      "options": [
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/alphabet-knowledge/1748805185488-big-R.png",
+      "questionValue": null,
+      "choiceOptions": [
         {
           "optionId": "1",
           "optionText": "/ar/",
@@ -690,20 +814,17 @@ Sample Json File of the pre assessment
         },
         {
           "optionId": "3",
-          "optionText": "/beh/",
+          "optionText": "/esaa/",
           "isCorrect": false
         }
       ]
     },
     {
       "questionId": "AK_009",
-      "category": "Alphabet Knowledge",
-      "questionType": "katinig",
-      "questionText": "Anong tunog ng letra?",
-      "questionValue": "S",
-      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748891952089-2f0m5w03m45.png",
-      "difficultyLevel": "low_emerging",
-      "options": [
+      "questionText": "Anong tunog ng letra",
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/alphabet-knowledge/1748805229560-big-S.png",
+      "questionValue": null,
+      "choiceOptions": [
         {
           "optionId": "1",
           "optionText": "/ar/",
@@ -716,1632 +837,41 @@ Sample Json File of the pre assessment
         },
         {
           "optionId": "3",
-          "optionText": "/the/",
+          "optionText": "/araa/",
           "isCorrect": false
         }
       ]
     },
     {
-      "questionId": "AK_010",
-      "category": "Alphabet Knowledge",
-      "questionType": "patinig",
-      "questionText": "Tukuyin ang letra kung Patinig o Katinig",
-      "questionValue": "I",
-      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748892181633-nseun67drmr.png",
-      "difficultyLevel": "high_emerging",
-      "options": [
-        {
-          "optionId": "1",
-          "optionText": "Patinig",
-          "isCorrect": true
-        },
-        {
-          "optionId": "2",
-          "optionText": "Katinig",
-          "isCorrect": false
-        }
-      ]
-    },
-    {
-      "questionId": "AK_011",
-      "category": "Alphabet Knowledge",
-      "questionType": "katinig",
-      "questionText": "Tukuyin ang letra kung Patinig o Katinig",
-      "questionValue": "Y",
-      "questionImage": null,
-      "difficultyLevel": "high_emerging",
-      "options": [
-        {
-          "optionId": "1",
-          "optionText": "Katinig",
-          "isCorrect": true
-        },
-        {
-          "optionId": "2",
-          "optionText": "Patinig",
-          "isCorrect": false
-        }
-      ]
-    },
-    {
-      "questionId": "AK_012",
-      "category": "Alphabet Knowledge",
-      "questionType": "katinig",
-      "questionText": "Tukuyin ang letra kung Patinig o Katinig",
-      "questionValue": "M",
-      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748892205955-i7ui7c32pro.png",
-      "difficultyLevel": "high_emerging",
-      "options": [
-        {
-          "optionId": "1",
-          "optionText": "Patinig",
-          "isCorrect": false
-        },
-        {
-          "optionId": "2",
-          "optionText": "Katinig",
-          "isCorrect": true
-        }
-      ]
-    },
-    {
-      "questionId": "AK_013",
-      "category": "Alphabet Knowledge",
-      "questionType": "katinig",
+      "questionId": "AK_10",
       "questionText": "Tukuyin ang unang letra na nasa larawan?",
-      "questionValue": "gulay",
-      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748892370350-k6fyokc9jos.png",
-      "difficultyLevel": "high_emerging",
-      "options": [
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/alphabet-knowledge/1748805524230-GULAY.png",
+      "questionValue": "g u l a y",
+      "choiceOptions": [
         {
           "optionId": "1",
-          "optionText": "G",
-          "isCorrect": true
-        },
-        {
-          "optionId": "2",
           "optionText": "u",
           "isCorrect": false
         },
         {
-          "optionId": "3",
-          "optionText": "l",
-          "isCorrect": false
-        }
-      ]
-    },
-    {
-      "questionId": "AK_014",
-      "category": "Alphabet Knowledge",
-      "questionType": "katinig",
-      "questionText": "Tukuyin ang unang letra na nasa larawan?",
-      "questionValue": "walis",
-      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748892390177-97s3qqdxc6n.png",
-      "difficultyLevel": "high_emerging",
-      "options": [
-        {
-          "optionId": "1",
-          "optionText": "w",
+          "optionId": "2",
+          "optionText": "g",
           "isCorrect": true
         },
         {
-          "optionId": "2",
-          "optionText": "a",
-          "isCorrect": false
-        },
-        {
-          "optionId": "3",
-          "optionText": "l",
-          "isCorrect": false
-        }
-      ]
-    },
-    {
-      "questionId": "AK_015",
-      "category": "Alphabet Knowledge",
-      "questionType": "katinig",
-      "questionText": "Tukuyin ang unang letra na nasa larawan?",
-      "questionValue": "Kalabaw",
-      "questionImage": null,
-      "difficultyLevel": "high_emerging",
-      "options": [
-        {
           "optionId": "1",
-          "optionText": "K",
-          "isCorrect": true
-        },
-        {
-          "optionId": "2",
-          "optionText": "a",
+          "optionText": "u",
           "isCorrect": false
-        },
-        {
-          "optionId": "3",
-          "optionText": "l",
-          "isCorrect": false
-        }
-      ]
-    },
-    {
-      "questionId": "PA_001",
-      "category": "Phonological Awareness",
-      "questionType": "malapantig",
-      "questionText": "Pakinggan ang letra sa audio. Itugma ito sa katumbas na letra sa kabilang hanay.",
-      "questionValue": null,
-      "questionImage": null,
-      "difficultyLevel": "high_emerging",
-      "questionSet": {
-        "audioTexts": [
-          "H",
-          "T",
-          "N",
-          "L",
-          "P"
-        ],
-        "matchingOptions": [
-          "Hh",
-          "Tt",
-          "Nn",
-          "Ll",
-          "Pp"
-        ],
-        "correctPairs": [
-          {
-            "H": "Hh"
-          },
-          {
-            "T": "Tt"
-          },
-          {
-            "N": "Nn"
-          },
-          {
-            "L": "Ll"
-          },
-          {
-            "P": "Pp"
-          }
-        ]
-      }
-    },
-    {
-      "questionId": "PA_002",
-      "category": "Phonological Awareness",
-      "questionType": "malapantig",
-      "questionText": "Pakinggan ang salita sa audio. Itugma ito sa katumbas na salita sa kabilang hanay.",
-      "questionValue": null,
-      "questionImage": null,
-      "difficultyLevel": "high_emerging",
-      "questionSet": {
-        "audioTexts": [
-          "DAGA",
-          "ILAW",
-          "MATA",
-          "PUNO",
-          "RELO"
-        ],
-        "matchingOptions": [
-          "Daga",
-          "Ilaw",
-          "Mata",
-          "Puno",
-          "Relo"
-        ],
-        "correctPairs": [
-          {
-            "DAGA": "DAGA"
-          },
-          {
-            "ILAW": "ILAW"
-          },
-          {
-            "MATA": "MATA"
-          },
-          {
-            "PUNO": "PUNO"
-          },
-          {
-            "RELO": "RELO"
-          }
-        ]
-      }
-    },
-    {
-      "questionId": "PA_003",
-      "category": "Phonological Awareness",
-      "questionType": "malapantig",
-      "questionText": "Pakinggan ang pantig sa audio. Itugma ito sa katumbas na pantig sa kabilang hanay.",
-      "questionValue": null,
-      "questionImage": null,
-      "difficultyLevel": "high_emerging",
-      "questionSet": {
-        "audioTexts": [
-          "GA",
-          "LO",
-          "PI",
-          "NGA",
-          "WU"
-        ],
-        "matchingOptions": [
-          "GA",
-          "LO",
-          "PI",
-          "NGA",
-          "WU"
-        ],
-        "correctPairs": [
-          {
-            "GA": "GA"
-          },
-          {
-            "LO": "LO"
-          },
-          {
-            "PI": "PI"
-          },
-          {
-            "NGA": "NGA"
-          },
-          {
-            "WU": "WU"
-          }
-        ]
-      }
-    },
-    {
-      "questionId": "DC_001",
-      "category": "Decoding",
-      "questionType": "decode",
-      "questionText": "Tukuyin ang nasa larawan?",
-      "questionValue": null,
-      "questionImage": "s3 bucket link",
-      "difficultyLevel": "developing",
-      "displaySequence": [
-        "Y",
-        "E",
-        "L",
-        "O"
-      ],
-      "blankPosition": null,
-      "dragElements": [
-        "Y",
-        "A",
-        "L",
-        "E",
-        "O"
-      ],
-      "correctSequence": [
-        "Y",
-        "E",
-        "L",
-        "O"
-      ]
-    },
-    {
-      "questionId": "DC_002",
-      "category": "Decoding",
-      "questionType": "decode",
-      "questionText": "Tukuyin ang nasa larawan?",
-      "questionValue": null,
-      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748893185897-7yd0qu3sj3.png",
-      "difficultyLevel": "developing",
-      "displaySequence": [
-        "A",
-        "R",
-        "A",
-        "W"
-      ],
-      "blankPosition": null,
-      "dragElements": [
-        "A",
-        "N",
-        "R",
-        "A",
-        "P",
-        "W"
-      ],
-      "correctSequence": [
-        "A",
-        "R",
-        "A",
-        "W"
-      ]
-    },
-    {
-      "questionId": "DC_003",
-      "category": "Decoding",
-      "questionType": "decode",
-      "questionText": "Tukuyin ang nasa larawan?",
-      "questionValue": null,
-      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748893244646-7yuayk0eu5c.png",
-      "difficultyLevel": "developing",
-      "displaySequence": [
-        "N",
-        "G",
-        "I",
-        "P",
-        "I",
-        "N"
-      ],
-      "blankPosition": null,
-      "dragElements": [
-        "N",
-        "G",
-        "I",
-        "P",
-        "I",
-        "N"
-      ],
-      "correctSequence": [
-        "N",
-        "G",
-        "I",
-        "P",
-        "I",
-        "N"
-      ]
-    },
-    {
-      "questionId": "DC_004",
-      "category": "Decoding",
-      "questionType": "decode",
-      "questionText": "Buoin ang salita",
-      "questionValue": null,
-      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748893244646-7yuayk0eu5c.png",
-      "difficultyLevel": "developing",
-      "displaySequence": [
-        "",
-        "i",
-        "n",
-        "a",
-        "p",
-        "a",
-        "y"
-      ],
-      "blankPosition": 0,
-      "dragElements": [
-        "T",
-        "y",
-        "A",
-        "E"
-      ],
-      "correctSequence": [
-        "T"
-      ]
-    },
-    {
-      "questionId": "DC_005",
-      "category": "Decoding",
-      "questionType": "decode",
-      "questionText": "Buoin ang salita",
-      "questionValue": null,
-      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748893244646-7yuayk0eu5c.png",
-      "difficultyLevel": "developing",
-      "displaySequence": [
-        "",
-        "s",
-        "o"
-      ],
-      "blankPosition": 0,
-      "dragElements": [
-        "O",
-        "A",
-        "E",
-        "S"
-      ],
-      "correctSequence": [
-        "O"
-      ]
-    },
-    {
-      "questionId": "DC_006",
-      "category": "Decoding",
-      "questionType": "decode",
-      "questionText": "Buoin ang salita",
-      "questionValue": null,
-      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748893244646-7yuayk0eu5c.png",
-      "difficultyLevel": "developing",
-      "displaySequence": [
-        "",
-        "p",
-        "o"
-      ],
-      "blankPosition": 0,
-      "dragElements": [
-        "U",
-        "O",
-        "A",
-        "E"
-      ],
-      "correctSequence": [
-        "U"
-      ]
-    },
-    {
-      "questionId": "WR_001",
-      "category": "Word Recognition",
-      "questionType": "word",
-      "questionText": "Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.",
-      "questionValue": null,
-      "questionImage": null,
-      "difficultyLevel": "transitioning",
-      "displayWord": "Naglalaro siya ng ___ sa parke.",
-      "blankOptions": [
-        "KUTSARA",
-        "PAPEL",
-        "BOLA",
-        "DAMIT"
-      ],
-      "correctAnswer": [
-        "BOLA"
-      ]
-    },
-    {
-      "questionId": "WR_002",
-      "category": "Word Recognition",
-      "questionType": "word",
-      "questionText": "Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.",
-      "questionValue": null,
-      "questionImage": null,
-      "difficultyLevel": "transitioning",
-      "displayWord": "Malaki ang ___ sa zoo.",
-      "blankOptions": [
-        "ELEPANTE",
-        "LAMESA",
-        "NANAY",
-        "MANOK"
-      ],
-      "correctAnswer": [
-        "ELEPANTE"
-      ]
-    },
-    {
-      "questionId": "WR_003",
-      "category": "Word Recognition",
-      "questionType": "word",
-      "questionText": "Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.",
-      "questionValue": null,
-      "questionImage": null,
-      "difficultyLevel": "transitioning",
-      "displayWord": "Mahilig magluto ang ___ ko.",
-      "blankOptions": [
-        "MANOK",
-        "BOLA",
-        "NANAY",
-        "ELEPANTE"
-      ],
-      "correctAnswer": [
-        "NANAY"
-      ]
-    },
-    {
-      "questionId": "WR_004",
-      "category": "Word Recognition",
-      "questionType": "word",
-      "questionText": "Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.",
-      "questionValue": null,
-      "questionImage": null,
-      "difficultyLevel": "transitioning",
-      "displayWord": "Nasa ___ ang mga libro.",
-      "blankOptions": [
-        "PAPEL",
-        "LAMESA",
-        "MANOK",
-        "BOLA"
-      ],
-      "correctAnswer": [
-        "LAMESA"
-      ]
-    },
-    {
-      "questionId": "WR_005",
-      "category": "Word Recognition",
-      "questionType": "word",
-      "questionText": "Anong kasing tunog ng salitang nakikita?",
-      "questionValue": "SUMBRERO",
-      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748893507991-y80mnxe4oa.png",
-      "difficultyLevel": "transitioning",
-      "displayWord": "SUMBRERO",
-      "blankOptions": [
-        "LIB",
-        "RO",
-        "ME",
-        "SA"
-      ],
-      "correctAnswer": [
-        "LIB",
-        "RO"
-      ]
-    },
-    {
-      "questionId": "RC_001",
-      "category": "Reading Comprehension",
-      "questionType": "sentence",
-      "questionText": "Tukuyin ang angkop na sagot",
-      "questionValue": null,
-      "questionImage": null,
-      "difficultyLevel": "at_grade_level",
-      "passages": [
-        {
-          "pageNumber": 1,
-          "pageText": "Si Maria ay kumain ng mansanas.",
-          "pageImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748893727535-eb17jnoo94.png"
-        }
-      ],
-      "sentenceQuestions": [
-        {
-          "questionText": "Ano ang kinain ni Maria?",
-          "correctAnswer": "Mansanas",
-          "acceptableAnswers": [
-            "Si Mansanas",
-            "ako si mansanas"
-          ]
-        }
-      ]
-    },
-    {
-      "questionId": "RC_002",
-      "category": "Reading Comprehension",
-      "questionType": "sentence",
-      "questionText": "Tukuyin ang angkop na sagot",
-      "questionValue": null,
-      "questionImage": null,
-      "difficultyLevel": "at_grade_level",
-      "passages": [
-        {
-          "pageNumber": 1,
-          "pageText": "Si Juan ay naglalaro ng bola sa parke.",
-          "pageImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748893746148-srpxj0f44w.png"
-        }
-      ],
-      "sentenceQuestions": [
-        {
-          "questionText": "Ano ang nilalaro ni Juan?",
-          "correctAnswer": "Bola",
-          "acceptableAnswers": [
-            "Bola",
-            "bola"
-          ]
-        }
-      ]
-    },
-    {
-      "questionId": "RC_003",
-      "category": "Reading Comprehension",
-      "questionType": "sentence",
-      "questionText": "Tukuyin ang angkop na sagot",
-      "questionValue": null,
-      "questionImage": null,
-      "difficultyLevel": "at_grade_level",
-      "passages": [
-        {
-          "pageNumber": 1,
-          "pageText": "Ang aso ay tumakbo sa hardin.",
-          "pageImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748893767966-cadtn6hapn8.png"
-        }
-      ],
-      "sentenceQuestions": [
-        {
-          "questionText": "Saan tumakbo ang aso?",
-          "correctAnswer": "Hardin",
-          "acceptableAnswers": [
-            "Hardin",
-            "hardin"
-          ]
-        }
-      ]
-    },
-    {
-      "questionId": "RC_004",
-      "category": "Reading Comprehension",
-      "questionType": "sentence",
-      "questionText": "Tukuyin ang angkop na sagot",
-      "questionValue": null,
-      "questionImage": null,
-      "difficultyLevel": "at_grade_level",
-      "passages": [
-        {
-          "pageNumber": 1,
-          "pageText": "Si nanay ay nagluto ng adobo.",
-          "pageImage": null
-        }
-      ],
-      "sentenceQuestions": [
-        {
-          "questionText": "Ano ang niluto ni nanay?",
-          "correctAnswer": "Adobo",
-          "acceptableAnswers": [
-            "Adobo",
-            "adobo"
-          ]
-        }
-      ]
-    },
-    {
-      "questionId": "RC_005",
-      "category": "Reading Comprehension",
-      "questionType": "sentence",
-      "questionText": "Tukuyin ang angkop na sagot",
-      "questionValue": null,
-      "questionImage": null,
-      "difficultyLevel": "at_grade_level",
-      "passages": [
-        {
-          "pageNumber": 1,
-          "pageText": "Ang bata ay nag-aaral ng aralin.",
-          "pageImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1748893830023-fcpgi0t4ef.png"
-        }
-      ],
-      "sentenceQuestions": [
-        {
-          "questionText": "Ano ang ginagawa ng bata?",
-          "correctAnswer": "Nag-aaral",
-          "acceptableAnswers": [
-            "Nag-aaral",
-            "nag-aaral",
-            "Nag aaral"
-          ]
         }
       ]
     }
   ],
-  "scoringRules": {
-    "Low Emerging": {
-      "part1ScoreRange": [
-        0,
-        16
-      ],
-      "description": "Learner with scores 0 to 16 upon administration of Part 1",
-      "readingPercentageRange": null,
-      "comprehensionCorrectRange": null
-    },
-    "High Emerging": {
-      "part1ScoreRange": [
-        17,
-        30
-      ],
-      "readingPercentageRange": [
-        0,
-        25
-      ],
-      "comprehensionCorrectRange": [
-        0,
-        0
-      ],
-      "description": "Scores 17-30 in Part 1, reads less than 25%, cannot answer any Reading Comprehension questions"
-    },
-    "Developing": {
-      "part1ScoreRange": [
-        17,
-        30
-      ],
-      "readingPercentageRange": [
-        26,
-        50
-      ],
-      "comprehensionCorrectRange": [
-        1,
-        5
-      ],
-      "description": "Scores 17-30 in Part 1, reads 26-50%, answers at least 1 question correctly"
-    },
-    "Transitioning": {
-      "part1ScoreRange": [
-        17,
-        30
-      ],
-      "readingPercentageRange": [
-        51,
-        75
-      ],
-      "comprehensionCorrectRange": [
-        2,
-        3
-      ],
-      "description": "Scores 17-30 in Part 1, reads 51-75%, answers 2-3 questions correctly"
-    },
-    "At Grade Level": {
-      "part1ScoreRange": [
-        17,
-        30
-      ],
-      "readingPercentageRange": [
-        76,
-        100
-      ],
-      "comprehensionCorrectRange": [
-        4,
-        5
-      ],
-      "description": "Scores 17-30 in Part 1, reads 76-100%, answers 4-5 questions correctly"
-    }
-  },
-  "type": "pre_assessment",
   "status": "active",
   "isActive": true,
-  "assessmentId": "1",
   "createdAt": {
-    "$date": "2025-01-15T10:00:00.000Z"
+    "$date": "2025-05-31T00:48:19.659Z"
   },
   "updatedAt": {
-    "$date": "2025-01-15T10:00:00.000Z"
-  }
-}]
-
-
-
-SAMPLE RECORD OF user_responses
-
-[{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb6f2"
-  },
-  "studentId": 202533333,
-  "assessmentId": "1",
-  "questionId": "AK_002",
-  "category": "Alphabet Knowledge",
-  "questionType": "patinig",
-  "response": [
-    "2"
-  ],
-  "isCorrect": true,
-  "responseTime": 6.2,
-  "answeredAt": {
-    "$date": "2025-08-18T12:03:32.700Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:03:32.700Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb6f3"
-  },
-  "studentId": 202533333,
-  "assessmentId": "1",
-  "questionId": "AK_003",
-  "category": "Alphabet Knowledge",
-  "questionType": "katinig",
-  "response": [
-    "1"
-  ],
-  "isCorrect": true,
-  "responseTime": 7.8,
-  "answeredAt": {
-    "$date": "2025-08-18T12:03:41.500Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:03:41.500Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb6f4"
-  },
-  "studentId": 202533333,
-  "assessmentId": "1",
-  "questionId": "PA_001",
-  "category": "Phonological Awareness",
-  "questionType": "malapantig",
-  "response": [
-    {
-      "audio": "H",
-      "match": "Hh"
-    },
-    {
-      "audio": "T",
-      "match": "Tt"
-    },
-    {
-      "audio": "N",
-      "match": "Nn"
-    },
-    {
-      "audio": "L",
-      "match": "Ll"
-    },
-    {
-      "audio": "P",
-      "match": "Pp"
-    }
-  ],
-  "correctMatches": 5,
-  "totalMatches": 5,
-  "isCorrect": true,
-  "responseTime": 45.7,
-  "answeredAt": {
-    "$date": "2025-08-18T12:04:27.200Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:04:27.200Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb6f5"
-  },
-  "studentId": 202533333,
-  "assessmentId": "1",
-  "questionId": "DC_001",
-  "category": "Decoding",
-  "questionType": "decode",
-  "response": [
-    "Y",
-    "E",
-    "L",
-    "O"
-  ],
-  "isCorrect": true,
-  "responseTime": 25.3,
-  "answeredAt": {
-    "$date": "2025-08-18T12:04:52.500Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:04:52.500Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb6f6"
-  },
-  "studentId": 202533333,
-  "assessmentId": "1",
-  "questionId": "WR_001",
-  "category": "Word Recognition",
-  "questionType": "word",
-  "response": [
-    "BOLA"
-  ],
-  "isCorrect": true,
-  "responseTime": 18.9,
-  "answeredAt": {
-    "$date": "2025-08-18T12:05:11.400Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:05:11.400Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb6f7"
-  },
-  "studentId": 202533333,
-  "assessmentId": "1",
-  "questionId": "RC_001",
-  "category": "Reading Comprehension",
-  "questionType": "sentence",
-  "response": [
-    "Mansanas"
-  ],
-  "isCorrect": true,
-  "responseTime": 35.6,
-  "answeredAt": {
-    "$date": "2025-08-18T12:05:47.000Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:05:47.000Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68484489bc8ea7a4e8583501"
-  },
-  "studentId": 202511111,
-  "assessmentId": "1",
-  "questionId": "AK_001",
-  "category": "Alphabet Knowledge",
-  "questionType": "patinig",
-  "response": [
-    "1"
-  ],
-  "isCorrect": true,
-  "responseTime": 12.3,
-  "answeredAt": {
-    "$date": "2025-06-11T13:20:45.500Z"
-  },
-  "createdAt": {
-    "$date": "2025-06-11T13:20:45.500Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68484489bc8ea7a4e8583502"
-  },
-  "studentId": 202511111,
-  "assessmentId": "1",
-  "questionId": "AK_002",
-  "category": "Alphabet Knowledge",
-  "questionType": "patinig",
-  "response": [
-    "3"
-  ],
-  "isCorrect": false,
-  "responseTime": 9.8,
-  "answeredAt": {
-    "$date": "2025-06-11T13:20:55.300Z"
-  },
-  "createdAt": {
-    "$date": "2025-06-11T13:20:55.300Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68484489bc8ea7a4e8583503"
-  },
-  "studentId": 202511111,
-  "assessmentId": "1",
-  "questionId": "PA_001",
-  "category": "Phonological Awareness",
-  "questionType": "malapantig",
-  "response": [
-    {
-      "audio": "H",
-      "match": "Tt"
-    },
-    {
-      "audio": "T",
-      "match": "Hh"
-    },
-    {
-      "audio": "N",
-      "match": "Nn"
-    },
-    {
-      "audio": "L",
-      "match": "Ll"
-    },
-    {
-      "audio": "P",
-      "match": "Pp"
-    }
-  ],
-  "correctMatches": 3,
-  "totalMatches": 5,
-  "isCorrect": false,
-  "responseTime": 52.4,
-  "answeredAt": {
-    "$date": "2025-06-11T13:21:47.700Z"
-  },
-  "createdAt": {
-    "$date": "2025-06-11T13:21:47.700Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68484489bc8ea7a4e8583504"
-  },
-  "studentId": 202511111,
-  "assessmentId": "1",
-  "questionId": "DC_002",
-  "category": "Decoding",
-  "questionType": "decode",
-  "response": [
-    "A",
-    "N",
-    "A",
-    "W"
-  ],
-  "isCorrect": false,
-  "responseTime": 38.7,
-  "answeredAt": {
-    "$date": "2025-06-11T13:22:26.400Z"
-  },
-  "createdAt": {
-    "$date": "2025-06-11T13:22:26.400Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68484489bc8ea7a4e8583505"
-  },
-  "studentId": 202511111,
-  "assessmentId": "1",
-  "questionId": "WR_002",
-  "category": "Word Recognition",
-  "questionType": "word",
-  "response": [
-    "ELEPANTE"
-  ],
-  "isCorrect": true,
-  "responseTime": 22.1,
-  "answeredAt": {
-    "$date": "2025-06-11T13:22:48.500Z"
-  },
-  "createdAt": {
-    "$date": "2025-06-11T13:22:48.500Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68484489bc8ea7a4e8583506"
-  },
-  "studentId": 202511111,
-  "assessmentId": "1",
-  "questionId": "RC_002",
-  "category": "Reading Comprehension",
-  "questionType": "sentence",
-  "response": [
-    "Bola"
-  ],
-  "isCorrect": true,
-  "responseTime": 28.9,
-  "answeredAt": {
-    "$date": "2025-06-11T13:23:17.400Z"
-  },
-  "createdAt": {
-    "$date": "2025-06-11T13:23:17.400Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308c01"
-  },
-  "studentId": 202522233,
-  "assessmentId": "1",
-  "questionId": "AK_001",
-  "category": "Alphabet Knowledge",
-  "questionType": "patinig",
-  "response": [
-    "1"
-  ],
-  "isCorrect": true,
-  "responseTime": 5.2,
-  "answeredAt": {
-    "$date": "2025-08-20T04:47:15.200Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T04:47:15.200Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308c02"
-  },
-  "studentId": 202522233,
-  "assessmentId": "1",
-  "questionId": "AK_002",
-  "category": "Alphabet Knowledge",
-  "questionType": "patinig",
-  "response": [
-    "2"
-  ],
-  "isCorrect": true,
-  "responseTime": 4.8,
-  "answeredAt": {
-    "$date": "2025-08-20T04:47:20.000Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T04:47:20.000Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308c03"
-  },
-  "studentId": 202522233,
-  "assessmentId": "1",
-  "questionId": "AK_003",
-  "category": "Alphabet Knowledge",
-  "questionType": "katinig",
-  "response": [
-    "1"
-  ],
-  "isCorrect": true,
-  "responseTime": 6.1,
-  "answeredAt": {
-    "$date": "2025-08-20T04:47:26.100Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T04:47:26.100Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308c04"
-  },
-  "studentId": 202522233,
-  "assessmentId": "1",
-  "questionId": "PA_001",
-  "category": "Phonological Awareness",
-  "questionType": "malapantig",
-  "response": [
-    {
-      "audio": "H",
-      "match": "Hh"
-    },
-    {
-      "audio": "T",
-      "match": "Tt"
-    },
-    {
-      "audio": "N",
-      "match": "Nn"
-    },
-    {
-      "audio": "L",
-      "match": "Ll"
-    },
-    {
-      "audio": "P",
-      "match": "Pp"
-    }
-  ],
-  "correctMatches": 5,
-  "totalMatches": 5,
-  "isCorrect": true,
-  "responseTime": 32.6,
-  "answeredAt": {
-    "$date": "2025-08-20T04:47:58.700Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T04:47:58.700Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308c05"
-  },
-  "studentId": 202522233,
-  "assessmentId": "1",
-  "questionId": "PA_002",
-  "category": "Phonological Awareness",
-  "questionType": "malapantig",
-  "response": [
-    {
-      "audio": "DAGA",
-      "match": "ILAW"
-    },
-    {
-      "audio": "ILAW",
-      "match": "DAGA"
-    },
-    {
-      "audio": "MATA",
-      "match": "MATA"
-    },
-    {
-      "audio": "PUNO",
-      "match": "PUNO"
-    },
-    {
-      "audio": "RELO",
-      "match": "RELO"
-    }
-  ],
-  "correctMatches": 3,
-  "totalMatches": 5,
-  "isCorrect": false,
-  "responseTime": 41.3,
-  "answeredAt": {
-    "$date": "2025-08-20T04:48:40.000Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T04:48:40.000Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308c06"
-  },
-  "studentId": 202522233,
-  "assessmentId": "1",
-  "questionId": "DC_001",
-  "category": "Decoding",
-  "questionType": "decode",
-  "response": [
-    "Y",
-    "E",
-    "L",
-    "O"
-  ],
-  "isCorrect": true,
-  "responseTime": 18.4,
-  "answeredAt": {
-    "$date": "2025-08-20T04:48:58.400Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T04:48:58.400Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308c07"
-  },
-  "studentId": 202522233,
-  "assessmentId": "1",
-  "questionId": "DC_002",
-  "category": "Decoding",
-  "questionType": "decode",
-  "response": [
-    "A",
-    "R",
-    "A",
-    "W"
-  ],
-  "isCorrect": true,
-  "responseTime": 21.7,
-  "answeredAt": {
-    "$date": "2025-08-20T04:49:20.100Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T04:49:20.100Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308c08"
-  },
-  "studentId": 202522233,
-  "assessmentId": "1",
-  "questionId": "WR_001",
-  "category": "Word Recognition",
-  "questionType": "word",
-  "response": [
-    "BOLA"
-  ],
-  "isCorrect": true,
-  "responseTime": 14.2,
-  "answeredAt": {
-    "$date": "2025-08-20T04:49:34.300Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T04:49:34.300Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308c09"
-  },
-  "studentId": 202522233,
-  "assessmentId": "1",
-  "questionId": "WR_002",
-  "category": "Word Recognition",
-  "questionType": "word",
-  "response": [
-    "ELEPANTE"
-  ],
-  "isCorrect": true,
-  "responseTime": 16.8,
-  "answeredAt": {
-    "$date": "2025-08-20T04:49:51.100Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T04:49:51.100Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308c10"
-  },
-  "studentId": 202522233,
-  "assessmentId": "1",
-  "questionId": "RC_001",
-  "category": "Reading Comprehension",
-  "questionType": "sentence",
-  "response": [
-    "Mansanas"
-  ],
-  "isCorrect": true,
-  "responseTime": 24.5,
-  "answeredAt": {
-    "$date": "2025-08-20T04:50:15.600Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T04:50:15.600Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308c11"
-  },
-  "studentId": 202522233,
-  "assessmentId": "1",
-  "questionId": "RC_002",
-  "category": "Reading Comprehension",
-  "questionType": "sentence",
-  "response": [
-    "Bola"
-  ],
-  "isCorrect": true,
-  "responseTime": 19.3,
-  "answeredAt": {
-    "$date": "2025-08-20T04:50:34.900Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T04:50:34.900Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308c12"
-  },
-  "studentId": 202522233,
-  "assessmentId": "1",
-  "questionId": "RC_003",
-  "category": "Reading Comprehension",
-  "questionType": "sentence",
-  "response": [
-    "Hardin"
-  ],
-  "isCorrect": true,
-  "responseTime": 22.7,
-  "answeredAt": {
-    "$date": "2025-08-20T04:50:57.600Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T04:50:57.600Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308c13"
-  },
-  "studentId": 202522233,
-  "assessmentId": "1",
-  "questionId": "RC_004",
-  "category": "Reading Comprehension",
-  "questionType": "sentence",
-  "response": [
-    "Adobo"
-  ],
-  "isCorrect": true,
-  "responseTime": 18.9,
-  "answeredAt": {
-    "$date": "2025-08-20T04:51:16.500Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T04:51:16.500Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308c14"
-  },
-  "studentId": 202522233,
-  "assessmentId": "1",
-  "questionId": "RC_005",
-  "category": "Reading Comprehension",
-  "questionType": "sentence",
-  "response": [
-    "Nag-aaral"
-  ],
-  "isCorrect": true,
-  "responseTime": 26.4,
-  "answeredAt": {
-    "$date": "2025-08-20T04:51:42.900Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T04:51:42.900Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491428988139e71b308d01"
-  },
-  "studentId": 2025121,
-  "assessmentId": "1",
-  "questionId": "AK_001",
-  "category": "Alphabet Knowledge",
-  "questionType": "patinig",
-  "response": [
-    "1"
-  ],
-  "isCorrect": true,
-  "responseTime": 15.3,
-  "answeredAt": {
-    "$date": "2025-08-19T12:43:45.200Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-19T12:43:45.200Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491428988139e71b308d02"
-  },
-  "studentId": 2025121,
-  "assessmentId": "1",
-  "questionId": "AK_002",
-  "category": "Alphabet Knowledge",
-  "questionType": "patinig",
-  "response": [
-    "1"
-  ],
-  "isCorrect": false,
-  "responseTime": 18.7,
-  "answeredAt": {
-    "$date": "2025-08-19T12:44:03.900Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-19T12:44:03.900Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491428988139e71b308d03"
-  },
-  "studentId": 2025121,
-  "assessmentId": "1",
-  "questionId": "AK_003",
-  "category": "Alphabet Knowledge",
-  "questionType": "katinig",
-  "response": [
-    "2"
-  ],
-  "isCorrect": false,
-  "responseTime": 22.1,
-  "answeredAt": {
-    "$date": "2025-08-19T12:44:26.000Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-19T12:44:26.000Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491428988139e71b308d04"
-  },
-  "studentId": 2025121,
-  "assessmentId": "1",
-  "questionId": "PA_001",
-  "category": "Phonological Awareness",
-  "questionType": "malapantig",
-  "response": [
-    {
-      "audio": "H",
-      "match": "Hh"
-    },
-    {
-      "audio": "T",
-      "match": "Nn"
-    },
-    {
-      "audio": "N",
-      "match": "Tt"
-    },
-    {
-      "audio": "L",
-      "match": "Ll"
-    },
-    {
-      "audio": "P",
-      "match": "Pp"
-    }
-  ],
-  "correctMatches": 3,
-  "totalMatches": 5,
-  "isCorrect": false,
-  "responseTime": 68.4,
-  "answeredAt": {
-    "$date": "2025-08-19T12:45:34.400Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-19T12:45:34.400Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491428988139e71b308d05"
-  },
-  "studentId": 2025121,
-  "assessmentId": "1",
-  "questionId": "DC_004",
-  "category": "Decoding",
-  "questionType": "decode",
-  "response": [
-    "T"
-  ],
-  "isCorrect": true,
-  "responseTime": 42.6,
-  "answeredAt": {
-    "$date": "2025-08-19T12:46:17.000Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-19T12:46:17.000Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491428988139e71b308d06"
-  },
-  "studentId": 2025121,
-  "assessmentId": "1",
-  "questionId": "DC_005",
-  "category": "Decoding",
-  "questionType": "decode",
-  "response": [
-    "A"
-  ],
-  "isCorrect": false,
-  "responseTime": 35.8,
-  "answeredAt": {
-    "$date": "2025-08-19T12:46:52.800Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-19T12:46:52.800Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491428988139e71b308d07"
-  },
-  "studentId": 2025121,
-  "assessmentId": "1",
-  "questionId": "WR_003",
-  "category": "Word Recognition",
-  "questionType": "word",
-  "response": [
-    "NANAY"
-  ],
-  "isCorrect": true,
-  "responseTime": 28.3,
-  "answeredAt": {
-    "$date": "2025-08-19T12:47:21.100Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-19T12:47:21.100Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491428988139e71b308d08"
-  },
-  "studentId": 2025121,
-  "assessmentId": "1",
-  "questionId": "WR_004",
-  "category": "Word Recognition",
-  "questionType": "word",
-  "response": [
-    "BOLA"
-  ],
-  "isCorrect": false,
-  "responseTime": 31.7,
-  "answeredAt": {
-    "$date": "2025-08-19T12:47:52.800Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-19T12:47:52.800Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68491428988139e71b308d09"
-  },
-  "studentId": 2025121,
-  "assessmentId": "1",
-  "questionId": "RC_003",
-  "category": "Reading Comprehension",
-  "questionType": "sentence",
-  "response": [
-    "hardin"
-  ],
-  "isCorrect": true,
-  "responseTime": 45.2,
-  "answeredAt": {
-    "$date": "2025-08-19T12:48:38.000Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-19T12:48:38.000Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb6f1"
-  },
-  "studentId": 202533333,
-  "assessmentId": "1",
-  "questionId": "AK_001",
-  "category": "Alphabet Knowledge",
-  "questionType": "patinig",
-  "response": [
-    "1"
-  ],
-  "isCorrect": true,
-  "responseTime": 8.5,
-  "answeredAt": {
-    "$date": "2025-08-18T12:03:25.500Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:03:25.500Z"
+    "$date": "2025-06-02T19:57:35.764Z"
   }
 }]

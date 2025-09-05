@@ -929,85 +929,64 @@ connectDB().then(async (connected) => {
       }
     });
 
-    // Get main assessment questions by reading level
-    app.get('/api/main-assessment', async (req, res) => {
+    // Mobile app endpoint for students to get questions by reading level and category
+    app.get('/api/mobile/main-assessment/:readingLevel/:category', async (req, res) => {
       try {
-        const { readingLevel } = req.query;
+        const { readingLevel, category } = req.params;
         
-        if (!readingLevel) {
-          return res.status(400).json({ message: 'Reading level parameter is required' });
-        }
+        // Validate parameters
+        const validReadingLevels = ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'];
+        const validCategories = ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'];
         
-        // Get the test database
-        const testDb = mongoose.connection.useDb('test');
-        const mainAssessmentCollection = testDb.collection('main_assessment');
-        
-        // Find all assessment items for this reading level
-        const assessmentItems = await mainAssessmentCollection
-          .find({ readingLevel })
-          .toArray();
-        
-        if (!assessmentItems || assessmentItems.length === 0) {
-          return res.status(404).json({ 
-            message: `No assessment items found for reading level: ${readingLevel}` 
+        if (!validReadingLevels.includes(readingLevel)) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Invalid reading level',
+            validLevels: validReadingLevels 
           });
         }
         
-        return res.json(assessmentItems);
-      } catch (error) {
-        console.error('Error fetching main assessment data:', error);
-        res.status(500).json({ 
-          message: 'Error fetching main assessment data', 
-          error: error.message 
-        });
-      }
-    });
-
-    // Also add the endpoint to the student routes for alternative access
-    app.get('/api/student/main-assessment', async (req, res) => {
-      try {
-        const { readingLevel } = req.query;
-        
-        if (!readingLevel) {
-          return res.status(400).json({ message: 'Reading level parameter is required' });
+        if (!validCategories.includes(category)) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Invalid category',
+            validCategories: validCategories 
+          });
         }
         
         // Get the test database
         const testDb = mongoose.connection.useDb('test');
         const mainAssessmentCollection = testDb.collection('main_assessment');
         
-        // Find all assessment items for this reading level
-        const assessmentItems = await mainAssessmentCollection
-          .find({ readingLevel })
-          .toArray();
+        // Find active assessment for this reading level and category
+        const assessment = await mainAssessmentCollection.findOne({
+          readingLevel,
+          category,
+          status: 'active',
+          isActive: true
+        });
         
-        if (!assessmentItems || assessmentItems.length === 0) {
-          // Provide fallback data if no items found
-          const fallbackItems = [
-            {
-              readingLevel,
-              category: "Phonological Awareness",
-              questions: [
-                {
-                  questionType: "malapantig",
-                  questionText: "Kapag pinagsama ang mga pantig, ano ang mabubuo?",
-                  questionValue: "BO + LA",
-                  choiceOptions: [
-                    { optionText: "BOLA", isCorrect: true },
-                    { optionText: "LABO", isCorrect: false }
-                  ],
-                  order: 1
-                }
-              ]
-            }
-          ];
-          return res.json(fallbackItems);
+        if (!assessment) {
+          return res.status(404).json({ 
+            success: false,
+            message: `No active assessment found for ${category} at ${readingLevel} level`
+          });
         }
         
-        return res.json(assessmentItems);
+        return res.json({
+          success: true,
+          data: {
+            _id: assessment._id,
+            readingLevel: assessment.readingLevel,
+            category: assessment.category,
+            questionType: assessment.questionType,
+            questions: assessment.questions
+          }
+        });
       } catch (error) {
         console.error('Error fetching main assessment data:', error);
         res.status(500).json({ 
+          success: false,
           message: 'Error fetching main assessment data', 
           error: error.message 
         });
