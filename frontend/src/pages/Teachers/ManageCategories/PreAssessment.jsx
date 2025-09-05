@@ -1189,9 +1189,11 @@ const PreAssessment = () => {
 
   // Word Recognition handlers
   const handleBlankOptionChange = (index, value) => {
+    // Automatically convert to uppercase for word recognition answer options
+    const uppercaseValue = value.toUpperCase();
     setCurrentQuestionData(prev => ({
       ...prev,
-      blankOptions: prev.blankOptions.map((item, i) => i === index ? value : item)
+      blankOptions: prev.blankOptions.map((item, i) => i === index ? uppercaseValue : item)
     }));
   };
 
@@ -1210,9 +1212,11 @@ const PreAssessment = () => {
   };
 
   const handleCorrectAnswerChange = (index, value) => {
+    // Automatically convert to uppercase for word recognition correct answers
+    const uppercaseValue = value.toUpperCase();
     setCurrentQuestionData(prev => ({
       ...prev,
-      correctAnswer: prev.correctAnswer.map((item, i) => i === index ? value : item)
+      correctAnswer: prev.correctAnswer.map((item, i) => i === index ? uppercaseValue : item)
     }));
   };
 
