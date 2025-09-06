@@ -381,6 +381,17 @@ exports.createAssessment = async (req, res) => {
     
     const assessmentData = req.body;
     
+    // Automatically set questionType based on category
+    const questionTypeMap = {
+      'Alphabet Knowledge': 'multiple_choice',
+      'Phonological Awareness': 'matching',
+      'Decoding': 'drag_drop',
+      'Word Recognition': 'fill_blank',
+      'Reading Comprehension': 'text_input'
+    };
+    
+    assessmentData.questionType = questionTypeMap[assessmentData.category];
+    
     // Validate using Mongoose model
     try {
       const mainAssessment = new MainAssessment(assessmentData);
@@ -410,12 +421,13 @@ exports.createAssessment = async (req, res) => {
       });
     }
     
-    // Ensure each question has proper questionId and category
+    // Ensure each question has proper questionId - no need to set category as it's already at assessment level
     const categoryPrefix = getCategoryPrefix(assessmentData.category);
     assessmentData.questions.forEach((question, index) => {
       const questionNumber = String(index + 1).padStart(3, '0');
       question.questionId = `${categoryPrefix}_${questionNumber}`;
-      question.category = assessmentData.category;
+      // Remove duplicated category field from individual questions
+      delete question.category;
     });
     
     // Set timestamps
@@ -459,6 +471,15 @@ exports.updateAssessment = async (req, res) => {
       });
     }
     
+    // Automatically set questionType based on category if updating
+    const questionTypeMap = {
+      'Alphabet Knowledge': 'multiple_choice',
+      'Phonological Awareness': 'matching',
+      'Decoding': 'drag_drop',
+      'Word Recognition': 'fill_blank',
+      'Reading Comprehension': 'text_input'
+    };
+    
     // Get main_assessment collection
     const mainAssessmentCollection = getMainAssessmentCollection();
     
@@ -474,13 +495,17 @@ exports.updateAssessment = async (req, res) => {
       });
     }
     
-    // If questions are being updated, ensure proper questionIds and categories
+    // Set questionType based on existing category
+    updateData.questionType = questionTypeMap[existing.category];
+    
+    // If questions are being updated, ensure proper questionIds - no duplicated category
     if (updateData.questions) {
       const categoryPrefix = getCategoryPrefix(existing.category);
       updateData.questions.forEach((question, index) => {
         const questionNumber = String(index + 1).padStart(3, '0');
         question.questionId = `${categoryPrefix}_${questionNumber}`;
-        question.category = existing.category;
+        // Remove duplicated category field from individual questions
+        delete question.category;
       });
     }
     

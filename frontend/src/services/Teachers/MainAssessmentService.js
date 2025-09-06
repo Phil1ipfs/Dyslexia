@@ -402,8 +402,8 @@ class MainAssessmentService {
       // Try multiple endpoints for upload - these are fallbacks in case one fails
       const endpoints = [
         '/api/main-assessment/upload-image',
-        '/api/upload/s3',
-        '/api/teachers/upload/s3'
+        '/api/uploads/s3',
+        '/api/teachers/s3'
       ];
       
       let uploadError = null;

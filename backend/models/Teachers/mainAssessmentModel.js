@@ -82,44 +82,6 @@ const questionSchema = new mongoose.Schema({
       message: 'Question ID must follow the format XX_000 where XX is category prefix'
     }
   },
-  category: {
-    type: String,
-    enum: ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'],
-    required: true
-  },
-  questionType: {
-    type: String,
-    required: true,
-    validate: {
-      validator: function(questionType) {
-        const validTypes = {
-          'Alphabet Knowledge': 'multiple_choice',
-          'Phonological Awareness': 'matching',
-          'Decoding': 'drag_drop',
-          'Word Recognition': 'fill_blank',
-          'Reading Comprehension': 'text_input'
-        };
-        return validTypes[this.category] === questionType;
-      },
-      message: 'Question type must match the category requirements'
-    }
-  },
-  // For subcategories within question types (e.g., patinig/katinig for Alphabet Knowledge)
-  questionSubtype: {
-    type: String,
-    required: function() {
-      return this.category === 'Alphabet Knowledge';
-    },
-    validate: {
-      validator: function(subtype) {
-        if (this.category === 'Alphabet Knowledge') {
-          return ['patinig', 'katinig'].includes(subtype);
-        }
-        return true;
-      },
-      message: 'Alphabet Knowledge questions must have subtype: patinig or katinig'
-    }
-  },
   questionText: {
     type: String,
     required: true
@@ -150,7 +112,7 @@ const questionSchema = new mongoose.Schema({
 
   // For Phonological Awareness (matching)
   questionSet: {
-    type: questionSetSchema,
+    type: [questionSetSchema],
     required: function() {
       return this.category === 'Phonological Awareness';
     }
@@ -317,11 +279,7 @@ mainAssessmentSchema.pre('save', function(next) {
     return next(new Error(`Question IDs must follow the format ${categoryPrefix}_XXX where XXX is a 3-digit number`));
   }
   
-  // Ensure all questions belong to the same category
-  const allSameCategory = this.questions.every(q => q.category === this.category);
-  if (!allSameCategory) {
-    return next(new Error('All questions in an assessment must belong to the same category'));
-  }
+  // Questions no longer have individual category field - validation removed
   
   next();
 });

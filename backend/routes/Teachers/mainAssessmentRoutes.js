@@ -26,10 +26,31 @@ router.get('/ping', (req, res) => {
   res.status(200).json({ success: true, message: "Main Assessment API is available" });
 });
 
-// File upload route for S3 - with authentication
+// File upload route for S3 - with conditional authentication
 router.post('/upload-image', 
-  authenticateToken,
-  authorize('teacher', 'guro', 'admin'),
+  (req, res, next) => {
+    // Optional authentication middleware for development environments
+    if (process.env.NODE_ENV === 'development' || process.env.BYPASS_AUTH === 'true') {
+      console.log('[MAIN ASSESSMENT] Bypassing authentication for image upload in development');
+      // Assign a default teacher role for development
+      req.user = { 
+        id: 'dev-user-id',
+        roles: ['teacher']
+      };
+      return next();
+    }
+    // Otherwise use standard auth
+    authenticateToken(req, res, next);
+  },
+  (req, res, next) => {
+    // Optional role authorization middleware for development
+    if (process.env.NODE_ENV === 'development' || process.env.BYPASS_AUTH === 'true') {
+      console.log('[MAIN ASSESSMENT] Bypassing role authorization for image upload in development');
+      return next();
+    }
+    // Otherwise use standard role authorization
+    authorize('teacher', 'guro', 'admin')(req, res, next);
+  },
   upload, 
   async (req, res) => {
     try {

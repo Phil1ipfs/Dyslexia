@@ -1015,7 +1015,7 @@ const PreAssessment = () => {
 
   // Phonological Awareness handlers
   const handleAudioTextChange = (index, value) => {
-    // Validation: Only allow single letters
+    // Validation: Only allow letters and convert to uppercase
     const sanitizedValue = value.replace(/[^a-zA-Z]/g, '').toUpperCase();
     
     setCurrentQuestionData(prev => ({
@@ -1189,11 +1189,11 @@ const PreAssessment = () => {
 
   // Word Recognition handlers
   const handleBlankOptionChange = (index, value) => {
-    // Automatically convert to uppercase for word recognition answer options
-    const uppercaseValue = value.toUpperCase();
+    // Allow letters only, preserve case (no numbers)
+    const sanitizedValue = value.replace(/[^a-zA-Z\s]/g, '');
     setCurrentQuestionData(prev => ({
       ...prev,
-      blankOptions: prev.blankOptions.map((item, i) => i === index ? uppercaseValue : item)
+      blankOptions: prev.blankOptions.map((item, i) => i === index ? sanitizedValue : item)
     }));
   };
 
@@ -1212,11 +1212,11 @@ const PreAssessment = () => {
   };
 
   const handleCorrectAnswerChange = (index, value) => {
-    // Automatically convert to uppercase for word recognition correct answers
-    const uppercaseValue = value.toUpperCase();
+    // Allow letters only, preserve case (no numbers)
+    const sanitizedValue = value.replace(/[^a-zA-Z\s]/g, '');
     setCurrentQuestionData(prev => ({
       ...prev,
-      correctAnswer: prev.correctAnswer.map((item, i) => i === index ? uppercaseValue : item)
+      correctAnswer: prev.correctAnswer.map((item, i) => i === index ? sanitizedValue : item)
     }));
   };
 
@@ -3100,7 +3100,7 @@ const PreAssessment = () => {
                                 type="text"
                                 value={currentQuestionData.completeWord || ''}
                                 onChange={(e) => {
-                                  const word = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                                  const word = e.target.value.replace(/[^a-zA-Z]/g, '');
                                   const sequence = word.split('');
                                   setCurrentQuestionData(prev => ({
                                     ...prev,
@@ -3152,7 +3152,7 @@ const PreAssessment = () => {
                                 type="text"
                                 value={currentQuestionData.completeWord || ''}
                                 onChange={(e) => {
-                                  const word = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                                  const word = e.target.value.replace(/[^a-zA-Z]/g, '');
                                   const sequence = word.split('');
                                   setCurrentQuestionData(prev => ({
                                     ...prev,
