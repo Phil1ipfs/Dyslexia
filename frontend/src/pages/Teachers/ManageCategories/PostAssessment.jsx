@@ -4948,8 +4948,53 @@ const MainAssessment = ({ templates }) => {
                                           padding: '12px',
                                           backgroundColor: 'white',
                                           borderRadius: '8px',
-                                          border: '1px solid #e5e7eb'
+                                          border: '1px solid #e5e7eb',
+                                          position: 'relative'
                                         }}>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const updatedPassages = [...questionFormData.passages];
+                                              updatedPassages[index] = {
+                                                ...updatedPassages[index],
+                                                pageImage: null
+                                              };
+                                              setQuestionFormData(prev => ({
+                                                ...prev,
+                                                passages: updatedPassages
+                                              }));
+                                            }}
+                                            style={{
+                                              position: 'absolute',
+                                              top: '8px',
+                                              right: '8px',
+                                              background: '#ef4444',
+                                              color: 'white',
+                                              border: 'none',
+                                              borderRadius: '50%',
+                                              width: '32px',
+                                              height: '32px',
+                                              cursor: 'pointer',
+                                              fontSize: '14px',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                              boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                              transition: 'all 0.2s ease',
+                                              zIndex: 10
+                                            }}
+                                            onMouseEnter={(e) => {
+                                              e.target.style.backgroundColor = '#dc2626';
+                                              e.target.style.transform = 'scale(1.1)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                              e.target.style.backgroundColor = '#ef4444';
+                                              e.target.style.transform = 'scale(1)';
+                                            }}
+                                            title="Remove image"
+                                          >
+                                            <FontAwesomeIcon icon={faTimes} />
+                                          </button>
                                           <img
                                             src={page?.pageImage}
                                             alt={`Page ${index + 1} preview`}
@@ -4961,6 +5006,14 @@ const MainAssessment = ({ templates }) => {
                                               objectFit: 'contain'
                                             }}
                                           />
+                                          <div style={{
+                                            marginTop: '8px',
+                                            fontSize: '12px',
+                                            color: '#6b7280',
+                                            textAlign: 'center'
+                                          }}>
+                                            Page {index + 1} preview - Click X to remove
+                                          </div>
                                         </div>
                                       )}
                                     </div>
@@ -5124,48 +5177,63 @@ const MainAssessment = ({ templates }) => {
 
                             <div style={{ 
                               border: '2px solid #e1effe', 
-                              borderRadius: '12px', 
-                              padding: '32px', 
+                              borderRadius: '16px', 
+                              padding: '40px', 
                               backgroundColor: 'white',
-                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+                              margin: '0 auto',
+                              maxWidth: '800px'
                             }}>
                               {/* Question Text */}
-                              <div className="pa-form-group" style={{ marginBottom: '28px' }}>
+                              <div className="pa-form-group" style={{ marginBottom: '40px' }}>
                                 <label style={{ 
-                                  display: 'block', 
-                                  marginBottom: '8px', 
-                                  fontSize: '14px', 
-                                  fontWeight: '500', 
-                                  color: '#374151'
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  marginBottom: '16px', 
+                                  fontSize: '18px', 
+                                  fontWeight: '600', 
+                                  color: '#374151',
+                                  letterSpacing: '0.5px'
                                 }}>
+                                  <FontAwesomeIcon icon={faQuestion} style={{ marginRight: '10px', color: '#3b82f6' }} />
                                   Question Text:
-                                  <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>
+                                  <span style={{ color: '#ef4444', marginLeft: '6px', fontSize: '16px' }}>*</span>
                                 </label>
                                 <input
                                   type="text"
                                   value={questionFormData.tempComprehensionQuestion.questionText}
                                   onChange={(e) => {
+                                    // Allow only letters, spaces, and common punctuation for reading comprehension
+                                    const value = e.target.value.replace(/[0-9]/g, '');
                                     setQuestionFormData(prev => ({
                                       ...prev,
                                       tempComprehensionQuestion: {
                                         ...prev.tempComprehensionQuestion,
-                                        questionText: e.target.value
+                                        questionText: value
                                       }
                                     }));
                                   }}
                                   placeholder="Enter your question (e.g., 'Sino ang pangunahing tauhan?')"
                                   style={{
                                     width: '100%',
-                                    padding: '12px 14px',
+                                    padding: '16px 20px',
                                     border: '2px solid #d1d5db',
-                                    borderRadius: '8px',
-                                    fontSize: '14px',
+                                    borderRadius: '12px',
+                                    fontSize: '16px',
+                                    fontWeight: '500',
                                     backgroundColor: '#fafafa',
-                                    transition: 'border-color 0.2s ease',
-                                    outline: 'none'
+                                    transition: 'all 0.2s ease',
+                                    outline: 'none',
+                                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
                                   }}
-                                  onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-                                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                                  onFocus={(e) => {
+                                    e.target.style.borderColor = '#3b82f6';
+                                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                                  }}
+                                  onBlur={(e) => {
+                                    e.target.style.borderColor = '#d1d5db';
+                                    e.target.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+                                  }}
                                 />
                               </div>
 
