@@ -3261,26 +3261,6 @@
   background-color: rgba(220, 53, 69, 0.05);
 }
 
-/* Preview All Button */
-.pa-preview-all-btn {
-  background-color: #4e5c93;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: background-color 0.2s ease;
-  margin-left: auto;
-}
-
-.pa-preview-all-btn:hover {
-  background-color: #3e4a7a;
-}
 
 /* Enhanced Form Styling for Better Visual Appeal */
 .pa-form-label {

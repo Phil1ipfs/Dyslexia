@@ -1,6 +1,5 @@
 // Export all teacher services from this directory
 import MainAssessmentService from './MainAssessmentService';
-import TemplateService from './templateService';
 import TeacherService from './teacherService';
 import ViewStudentService from './ViewStudentService';
 import StudentDetailsService from './StudentDetailsService';
@@ -12,7 +11,6 @@ import PreAssessmentService from './PreAssessmentService';
 
 export {
   MainAssessmentService,
-  TemplateService,
   TeacherService,
   ViewStudentService,
   StudentDetailsService,
@@ -26,7 +24,6 @@ export {
 // Default export for backward compatibility
 export default {
   MainAssessmentService,
-  TemplateService,
   TeacherService,
   ViewStudentService,
   StudentDetailsService,

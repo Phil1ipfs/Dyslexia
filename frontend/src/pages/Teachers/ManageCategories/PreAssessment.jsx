@@ -30,7 +30,6 @@ import {
 import "../../../css/Teachers/ManageCategories/PreAssessment.css";
 import "../../../css/Teachers/ManageCategories/PreAssessmentUpdates.css";
 import PreAssessmentService from "../../../services/Teachers/PreAssessmentService";
-import UnifiedTemplatePreview from "./UnifiedTemplatePreview";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -4169,17 +4168,6 @@ const PreAssessment = () => {
         </div>
       )}
 
-      {/* Preview All dialog */}
-      <UnifiedTemplatePreview 
-        isOpen={isPreviewAllDialogOpen}
-        onClose={() => setIsPreviewAllDialogOpen(false)}
-        templates={previewAllTemplates}
-        templateType="preassessment"
-        onEditTemplate={() => {
-          setIsPreviewAllDialogOpen(false);
-          handleEditPreAssessment();
-        }}
-      />
 
       <ToastContainer
         position="top-center"

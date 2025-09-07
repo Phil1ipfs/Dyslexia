@@ -47,7 +47,6 @@ import MainAssessmentService from '../../../services/Teachers/MainAssessmentServ
 import { toast } from 'react-toastify';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import UnifiedTemplatePreview from "./UnifiedTemplatePreview";
 
 // Add import for file helpers
 import { dataURLtoFile, validateFileForUpload } from '../../../utils/fileHelpers';
@@ -142,10 +141,6 @@ const MainAssessment = ({ templates }) => {
   const [duplicateRestrictionDialog, setDuplicateRestrictionDialog] = useState(false);
   const [restrictionReason, setRestrictionReason] = useState("");
   const [apiMessage, setApiMessage] = useState(null);
-  // Preview All state variables
-  const [isPreviewAllDialogOpen, setIsPreviewAllDialogOpen] = useState(false);
-  const [previewAllTemplates, setPreviewAllTemplates] = useState([]);
-  const [previewAllCurrentIndex, setPreviewAllCurrentIndex] = useState(0);
   
   // Add refs to track component stability and prevent race conditions
   const componentMounted = useRef(false);
@@ -883,12 +878,6 @@ const MainAssessment = ({ templates }) => {
     setShowModal(true);
   };
 
-  const handlePreviewAllAssessments = () => {
-    // Use filtered assessments for preview all
-    setPreviewAllTemplates(filteredAssessments);
-    setPreviewAllCurrentIndex(0);
-    setIsPreviewAllDialogOpen(true);
-  };
 
   const handleDeleteConfirm = (assessment) => {
     setModalType("delete");
@@ -2341,7 +2330,6 @@ const MainAssessment = ({ templates }) => {
     <div className="post-assessment-container">
       <div className="pa-header">
         <h2>
-          <FontAwesomeIcon icon={faClipboardList} />
           Main Assessment Management
         </h2>
         <p>Create and manage targeted assessments for specific reading levels and categories based on student performance and learning progress.</p>
@@ -2624,15 +2612,6 @@ const MainAssessment = ({ templates }) => {
           </select>
         </div>
 
-        {filteredAssessments.length > 0 && (
-          <button
-            className="pa-preview-all-btn"
-            onClick={handlePreviewAllAssessments}
-            title="Preview all assessments"
-          >
-            <FontAwesomeIcon icon={faEye} /> Preview All
-          </button>
-        )}
       </div>
 
       {apiMessage && (
@@ -5975,17 +5954,6 @@ const MainAssessment = ({ templates }) => {
         </div>
       )}
 
-      {/* Unified Template Preview for Preview All functionality */}
-      <UnifiedTemplatePreview
-        isOpen={isPreviewAllDialogOpen}
-        onClose={() => setIsPreviewAllDialogOpen(false)}
-        templates={previewAllTemplates}
-        templateType="assessment"
-        onEditTemplate={(assessment) => {
-          setIsPreviewAllDialogOpen(false);
-          handleEditAssessment(assessment);
-        }}
-      />
 
       <ToastContainer position="top-center" />
     </div>
