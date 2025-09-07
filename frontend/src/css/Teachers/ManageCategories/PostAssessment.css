@@ -410,7 +410,7 @@
 
 .pa-process-flow h3 {
   font-size: 18px;
-  color: #2c3e50;
+  color: #2c3e50 !important;
   margin-bottom: 20px;
 }
 
@@ -437,7 +437,7 @@
 .pa-step-number {
   width: 30px;
   height: 30px;
-  background-color: #4e5c93;
+  background-color: #4e5c93 important;
   color: white;
   border-radius: 50%;
   display: flex;
@@ -5219,7 +5219,7 @@
 }
 
 .pa-answer-correct-btn {
-  background: #10b981;
+  background: #10b981 important;
   color: white;
   border: none;
   padding: 8px 12px;
@@ -5232,7 +5232,7 @@
 }
 
 .pa-answer-correct-btn .correct {
-  color: #22c55e;
+  color: #22c55e important;
 }
 
 .pa-remove-answer {
@@ -7602,3 +7602,58 @@
     padding: 16px;
   }
 }
+
+/* FINAL OVERRIDE: Enhanced Correct Button State - When answer is marked as correct */
+.pa-answer-correct-btn:has(.correct),
+.pa-answer-correct-btn:has(svg.correct),
+.pa-answer-correct-btn:contains("Correct") {
+  background: #10b981 !important;
+  border-color: #10b981 !important;
+  color: white !important;
+}
+
+.pa-answer-correct-btn:has(.correct):hover,
+.pa-answer-correct-btn:has(svg.correct):hover,
+.pa-answer-correct-btn:contains("Correct"):hover {
+  background: #059669 !important;
+  border-color: #059669 !important;
+  color: white !important;
+}
+
+.pa-answer-correct-btn:has(.correct) svg,
+.pa-answer-correct-btn:has(svg.correct) svg,
+.pa-answer-correct-btn:contains("Correct") svg {
+  color: white !important;
+}
+
+.pa-answer-correct-btn:has(.correct) .correct,
+.pa-answer-correct-btn:has(svg.correct) .correct,
+.pa-answer-correct-btn:contains("Correct") .correct {
+  color: white !important;
+}
+
+/* MOST SPECIFIC OVERRIDE - Target buttons that show "Correct" text */
+.pa-answer-item .pa-answer-correct-btn:not(:empty) {
+  background: #10b981 !important;
+  border-color: #10b981 !important;
+  color: white !important;
+}
+
+.pa-answer-item .pa-answer-correct-btn:not(:empty):hover {
+  background: #059669 !important;
+  border-color: #059669 !important;
+  color: white !important;
+}
+
+.pa-answer-item .pa-answer-correct-btn:not(:empty) svg {
+  color: white !important;
+}
+
+/* Even more specific - when button contains any text (meaning it's in "Correct" state) */
+.pa-word-recognition-sentence .pa-answer-correct-btn:not(:empty),
+.pa-word-recognition-sound .pa-answer-correct-btn:not(:empty) {
+  background: #10b981 !important;
+  border-color: #10b981 !important;
+  color: white !important;
+}
+
