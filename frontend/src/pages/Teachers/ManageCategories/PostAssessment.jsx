@@ -4799,14 +4799,33 @@ const MainAssessment = ({ templates }) => {
                                 : [{ pageNumber: 1, pageText: "", pageImage: null }]
                               ).map((page, index) => (
                                 <div key={index} style={{ 
-                                  border: '1px solid #e5e7eb', 
-                                  borderRadius: '6px', 
-                                  padding: '16px', 
-                                  marginBottom: '16px',
-                                  backgroundColor: 'white'
+                                  border: '2px solid #e2e8f0', 
+                                  borderRadius: '12px', 
+                                  padding: '24px', 
+                                  marginBottom: '20px',
+                                  backgroundColor: 'white',
+                                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+                                  transition: 'all 0.2s ease'
                                 }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                    <h6 style={{ margin: 0, color: '#374151', fontSize: '14px', fontWeight: '600' }}>Page {index + 1}</h6>
+                                  <div style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between', 
+                                    alignItems: 'center', 
+                                    marginBottom: '20px',
+                                    paddingBottom: '12px',
+                                    borderBottom: '2px solid #f1f5f9'
+                                  }}>
+                                    <h6 style={{ 
+                                      margin: 0, 
+                                      color: '#1e40af', 
+                                      fontSize: '18px', 
+                                      fontWeight: '700',
+                                      display: 'flex',
+                                      alignItems: 'center'
+                                    }}>
+                                      <FontAwesomeIcon icon={faBook} style={{ marginRight: '8px', color: '#3b82f6' }} />
+                                      Page {index + 1}
+                                    </h6>
                                     {index > 0 && (
                                       <button
                                         type="button"
@@ -4832,9 +4851,19 @@ const MainAssessment = ({ templates }) => {
                                     )}
                                   </div>
 
-                                  <div className="pa-form-group">
-                                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '500', color: '#374151' }}>
+                                  <div className="pa-form-group" style={{ marginBottom: '24px' }}>
+                                    <label style={{ 
+                                      display: 'block', 
+                                      marginBottom: '12px', 
+                                      fontSize: '16px', 
+                                      fontWeight: '600', 
+                                      color: '#374151',
+                                      display: 'flex',
+                                      alignItems: 'center'
+                                    }}>
+                                      <FontAwesomeIcon icon={faFileAlt} style={{ marginRight: '8px', color: '#10b981' }} />
                                       Page Text:
+                                      <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>
                                     </label>
                                     <textarea
                                       value={page?.pageText || ""}
@@ -4849,34 +4878,57 @@ const MainAssessment = ({ templates }) => {
                                           passages: updatedPassages
                                         }));
                                       }}
-                                      placeholder="Enter the text for this page of the story"
-                                      rows={3}
+                                      placeholder="Enter the text for this page of the story (e.g., 'Tuwing umaga, si Juan at ang kaniyang aso na si Max ay naglalaro sa parke.')"
+                                      rows={4}
                                       style={{
                                         width: '100%',
-                                        padding: '8px',
-                                        border: '1px solid #d1d5db',
-                                        borderRadius: '4px',
-                                        fontSize: '14px',
-                                        resize: 'vertical'
+                                        padding: '14px 16px',
+                                        border: '2px solid #d1d5db',
+                                        borderRadius: '10px',
+                                        fontSize: '15px',
+                                        fontFamily: 'inherit',
+                                        lineHeight: '1.6',
+                                        resize: 'none',
+                                        outline: 'none',
+                                        transition: 'border-color 0.2s ease',
+                                        backgroundColor: '#fafafa'
                                       }}
+                                      onFocus={(e) => e.target.style.borderColor = '#10b981'}
+                                      onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                                     ></textarea>
                                   </div>
 
                                   <div className="pa-form-group">
-                                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '500', color: '#374151' }}>
+                                    <label style={{ 
+                                      display: 'flex', 
+                                      alignItems: 'center',
+                                      marginBottom: '12px', 
+                                      fontSize: '16px', 
+                                      fontWeight: '600', 
+                                      color: '#374151'
+                                    }}>
+                                      <FontAwesomeIcon icon={faImages} style={{ marginRight: '8px', color: '#f59e0b' }} />
                                       Page Image (Optional):
                                     </label>
-                                    <div className="pa-file-upload">
+                                    <div className="pa-file-upload" style={{
+                                      padding: '16px',
+                                      border: '2px dashed #e5e7eb',
+                                      borderRadius: '10px',
+                                      textAlign: 'center',
+                                      backgroundColor: '#fafafa'
+                                    }}>
                                       <label style={{
                                         display: 'inline-block',
-                                        padding: '8px 16px',
+                                        padding: '12px 24px',
                                         backgroundColor: '#3b82f6',
                                         color: 'white',
-                                        borderRadius: '4px',
+                                        borderRadius: '8px',
                                         cursor: 'pointer',
-                                        fontSize: '13px'
+                                        fontSize: '14px',
+                                        fontWeight: '500',
+                                        transition: 'all 0.2s ease'
                                       }}>
-                                        <FontAwesomeIcon icon={faUpload} style={{ marginRight: '6px' }} /> Choose Image
+                                        <FontAwesomeIcon icon={faUpload} style={{ marginRight: '8px' }} /> Choose Image
                                         <input
                                           type="file"
                                           accept="image/*"
@@ -4884,18 +4936,30 @@ const MainAssessment = ({ templates }) => {
                                           style={{ display: 'none' }}
                                         />
                                       </label>
-                                      <span style={{ marginLeft: '12px', fontSize: '13px', color: '#6b7280' }}>
+                                      <div style={{ marginTop: '12px', fontSize: '14px', color: '#6b7280' }}>
                                         {page?.pageImage
-                                          ? `Page ${index + 1} image uploaded`
-                                          : "No file chosen"}
-                                      </span>
+                                          ? `Page ${index + 1} image uploaded successfully`
+                                          : "No image selected"}
+                                      </div>
 
                                       {page?.pageImage && (
-                                        <div style={{ marginTop: '8px' }}>
+                                        <div style={{ 
+                                          marginTop: '16px',
+                                          padding: '12px',
+                                          backgroundColor: 'white',
+                                          borderRadius: '8px',
+                                          border: '1px solid #e5e7eb'
+                                        }}>
                                           <img
                                             src={page?.pageImage}
                                             alt={`Page ${index + 1} preview`}
-                                            style={{ maxWidth: '200px', maxHeight: '150px', borderRadius: '4px', border: '1px solid #e5e7eb' }}
+                                            style={{ 
+                                              maxWidth: '100%', 
+                                              maxHeight: '200px', 
+                                              borderRadius: '8px', 
+                                              border: '2px solid #e5e7eb',
+                                              objectFit: 'contain'
+                                            }}
                                           />
                                         </div>
                                       )}
@@ -5185,7 +5249,7 @@ const MainAssessment = ({ templates }) => {
                                           }
                                         }));
                                       }}
-                                      placeholder={`Variation ${index + 1}`}
+                                      placeholder="Enter answer variation (e.g., 'juan', 'si juan')"
                                       style={{
                                         flex: 1,
                                         padding: '8px 12px',
@@ -5215,7 +5279,15 @@ const MainAssessment = ({ templates }) => {
                                 {/* Add new acceptable answer button */}
                                 <button
                                   type="button"
-                                  onClick={() => addAcceptableAnswer('')}
+                                  onClick={() => {
+                                    setQuestionFormData(prev => ({
+                                      ...prev,
+                                      tempComprehensionQuestion: {
+                                        ...prev.tempComprehensionQuestion,
+                                        acceptableAnswers: [...prev.tempComprehensionQuestion.acceptableAnswers, '']
+                                      }
+                                    }));
+                                  }}
                                   style={{
                                     display: 'flex',
                                     alignItems: 'center',
