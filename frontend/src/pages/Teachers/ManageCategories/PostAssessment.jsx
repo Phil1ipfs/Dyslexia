@@ -3115,8 +3115,8 @@ const MainAssessment = ({ templates }) => {
                           )}
                         </div>
 
-                        {/* Right Column - Image Upload (Hidden for Phonological Awareness) */}
-                        {formData.category !== "Phonological Awareness" && (
+                        {/* Right Column - Image Upload (Hidden for Phonological Awareness and Reading Comprehension) */}
+                        {formData.category !== "Phonological Awareness" && formData.category !== "Reading Comprehension" && (
                           <div className="pa-question-right-column">
                           {/* Show questionImage only for Alphabet Knowledge, Decoding, and Word Recognition */}
                           {(formData.category === "Alphabet Knowledge" ||
