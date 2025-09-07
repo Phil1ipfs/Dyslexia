@@ -3284,7 +3284,7 @@
 
 /* Enhanced Form Styling for Better Visual Appeal */
 .pa-form-label {
-  font-size: 14px;
+  font-size: 200px;
   font-weight: 600;
   color: #2c3e50;
   display: flex;
@@ -3295,7 +3295,8 @@
 
 .pa-label-icon {
   color: #4e5c93;
-  font-size: 14px;
+  font-size: 19px;
+  margin-right: 10px;
 }
 
 .pa-disabled-input {
@@ -7243,10 +7244,10 @@
 }
 
 .pa-acceptable-answers {
-  background: #edf2ff;
+  background: #f0f9ff;
   border-radius: 8px;
   padding: 16px;
-  border: 1px solid #cbd5e0;
+  border: 1px solid #bae6fd;
 }
 
 .pa-acceptable-list {
@@ -7263,14 +7264,14 @@
   background: white;
   padding: 6px 12px;
   border-radius: 16px;
-  border: 1px solid #4e5c93;
-  color: #3d497a;
+  border: 1px solid #0ea5e9;
+  color: #0369a1;
   font-weight: 500;
   font-size: 14px;
 }
 
 .correct-icon, .acceptable-icon {
-  color: #0ca678;
+  color: #10b981;
 }
 
 /* Responsive Design */

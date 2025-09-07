@@ -4333,7 +4333,7 @@ const MainAssessment = ({ templates }) => {
                             <div className="pa-word-recognition-sound">
                               <div className="pa-section-title">
                                 <h4>Word and Sound Configuration</h4>
-                                <p className="pa-section-description">Set up a word that students will identify matching sounds or syllables for</p>
+                                <p className="pa-section-description">Set up a word that students will identify matching sounds or syllables</p>
                               </div>
 
                               {/* Display Word Input */}
