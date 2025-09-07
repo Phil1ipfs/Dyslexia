@@ -388,7 +388,7 @@ class MainAssessmentService {
    * @param {string} path - The path within the bucket (e.g., 'main-assessment')
    * @returns {Promise} Promise with the uploaded file URL
    */
-  uploadImageToS3 = async (file, path = 'main-assessment') => {
+  uploadImageToS3 = async (file, path = 'main-assessment/reading-comprehension') => {
     try {
       if (!file) {
         throw new Error('No file provided for upload');
@@ -396,11 +396,18 @@ class MainAssessmentService {
       
       // Validate file before uploading
       if (file.size === 0) {
-        throw new Error('File is empty');
+        throw new Error('Selected file is empty');
       }
       
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        throw new Error('File size exceeds 10MB limit');
+      const maxSize = 10 * 1024 * 1024; // 10MB limit
+      if (file.size > maxSize) {
+        const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+        throw new Error(`Image file is too large (${sizeMB}MB). Please use an image smaller than 10MB.`);
+      }
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Invalid file type. Please select an image file (JPG, PNG, GIF, etc.).');
       }
       
       // Create form data for the file upload
@@ -418,42 +425,12 @@ class MainAssessmentService {
         }
       };
       
-      // Try multiple endpoints for upload - these are fallbacks in case one fails
-      const endpoints = [
-        '/api/main-assessment/upload-image',
-        '/api/uploads/s3',
-        '/api/teachers/s3'
-      ];
+      // Use single, standardized upload endpoint
+      console.log(`Uploading to endpoint: /api/main-assessment/upload-image`);
+      const response = await axios.post('/api/main-assessment/upload-image', formData, uploadConfig);
       
-      let lastError = null;
-      let response = null;
-      
-      // Try each endpoint until one works
-      for (const endpoint of endpoints) {
-        try {
-          console.log(`Trying to upload to endpoint: ${endpoint}`);
-          response = await axios.post(endpoint, formData, uploadConfig);
-          
-          if (response.data && (response.data.success || response.data.url)) {
-            console.log(`Upload successful using ${endpoint}`);
-            break; // Break the loop if upload succeeds
-          } else {
-            throw new Error(`Upload endpoint ${endpoint} returned invalid response`);
-          }
-        } catch (err) {
-          lastError = err;
-          console.warn(`Upload failed for endpoint ${endpoint}:`, err.message);
-          
-          // If it's an auth error, don't try other endpoints
-          if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-            throw new Error(`Authentication failed: ${err.response.data?.message || 'Access denied'}`);
-          }
-        }
-      }
-      
-      // If we still don't have a successful response after trying all endpoints
-      if (!response || !response.data || (!response.data.success && !response.data.url)) {
-        const errorMsg = lastError?.response?.data?.message || lastError?.message || 'Failed to upload file to any endpoint';
+      if (!response.data || (!response.data.success && !response.data.url)) {
+        const errorMsg = response.data?.message || 'Upload failed - no response data';
         throw new Error(errorMsg);
       }
       
@@ -477,22 +454,41 @@ class MainAssessmentService {
       console.error('Error uploading image to S3:', error);
       
       // Return more specific error information
-      let errorMessage = 'Failed to upload file to storage';
+      let errorMessage = 'Failed to upload image to storage';
       
       if (error.response) {
-        if (error.response.status === 401 || error.response.status === 403) {
-          errorMessage = 'Authentication failed - please refresh the page and try again';
-        } else if (error.response.status === 413) {
-          errorMessage = 'File size too large - please use a smaller image';
-        } else if (error.response.status === 500) {
-          errorMessage = 'Server error - please try again later';
-        } else {
-          errorMessage = error.response.data?.message || `Server error (${error.response.status})`;
+        const status = error.response.status;
+        const serverMessage = error.response.data?.message;
+        
+        switch (status) {
+          case 400:
+            errorMessage = serverMessage || 'Invalid file format. Please select a valid image file.';
+            break;
+          case 401:
+            errorMessage = 'Authentication expired. Please refresh the page and try again.';
+            break;
+          case 403:
+            errorMessage = 'Permission denied. Please check your access rights.';
+            break;
+          case 413:
+            errorMessage = 'File size too large. Please use an image smaller than 10MB.';
+            break;
+          case 500:
+            errorMessage = 'Server error. Please try again in a few moments.';
+            break;
+          case 503:
+            errorMessage = 'Service temporarily unavailable. Please try again later.';
+            break;
+          default:
+            errorMessage = serverMessage || `Upload failed with error ${status}. Please try again.`;
         }
-      } else if (error.message.includes('Network Error')) {
-        errorMessage = 'Network error - please check your internet connection';
-      } else if (error.message.includes('timeout')) {
-        errorMessage = 'Upload timeout - please try with a smaller image or check your connection';
+      } else if (error.message.includes('Network Error') || error.message.includes('Failed to fetch')) {
+        errorMessage = 'Network connection error. Please check your internet connection and try again.';
+      } else if (error.message.includes('timeout') || error.message.includes('aborted')) {
+        errorMessage = 'Upload timed out. Please try with a smaller image or check your connection.';
+      } else if (error.message) {
+        // Use the specific error message if it's already user-friendly
+        errorMessage = error.message;
       }
       
       return {

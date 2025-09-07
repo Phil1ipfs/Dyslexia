@@ -1603,7 +1603,7 @@ const MainAssessment = ({ templates }) => {
       if (questionFormData.imageFile) {
         try {
           console.log('Starting image upload for file:', questionFormData.imageFile.name);
-          const result = await MainAssessmentService.uploadImageToS3(questionFormData.imageFile, s3Path);
+          const result = await MainAssessmentService.uploadImageToS3(questionFormData.imageFile);
           console.log('Upload result:', result);
 
           if (result && result.success && result.url) {
@@ -1646,97 +1646,21 @@ const MainAssessment = ({ templates }) => {
           }
 
           // Check if this passage has a blob URL that needs uploading
-          if (passage.pageImage && typeof passage.pageImage === 'string' && passage.pageImage.startsWith('blob:')) {
+          if (passage.pageImage && passage.pageImage instanceof File) {
             try {
-              // Enhanced blob URL validation
-              if (!passage.pageImage || passage.pageImage === 'blob:' || passage.pageImage.length < 10) {
-                console.warn(`Invalid blob URL for page ${passage.pageNumber}: "${passage.pageImage}"`);
-                toast.error(`Image for page ${passage.pageNumber} is invalid. Please re-select the image.`);
-                throw new Error(`Invalid blob URL for page ${passage.pageNumber}`);
-              }
-
               console.log(`Processing image upload for page ${passage.pageNumber}`);
+              const imageFile = passage.pageImage;
 
-              // Convert blob URL back to File object with improved error handling
-              let response;
-              try {
-                // Add timeout to prevent hanging
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-                
-                response = await fetch(passage.pageImage, { 
-                  signal: controller.signal,
-                  mode: 'cors'
-                });
-                clearTimeout(timeoutId);
-                
-                if (!response.ok) {
-                  throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-              } catch (fetchError) {
-                console.error(`Failed to fetch blob for page ${passage.pageNumber}:`, fetchError);
-                if (fetchError.name === 'AbortError') {
-                  toast.error(`Image access timed out for page ${passage.pageNumber}. Please re-select the image.`);
-                } else {
-                  toast.error(`Cannot access image for page ${passage.pageNumber}. The image may have expired. Please re-select it.`);
-                }
-                throw new Error(`Blob fetch failed for page ${passage.pageNumber}: ${fetchError.message}`);
-              }
-
-              let blob;
-              try {
-                blob = await response.blob();
-                if (!blob || blob.size === 0) {
-                  throw new Error('Retrieved blob is empty or invalid');
-                }
-                
-                // Validate blob type
-                if (!blob.type.startsWith('image/')) {
-                  throw new Error(`Invalid file type: ${blob.type}. Please select an image file.`);
-                }
-              } catch (blobError) {
-                console.error(`Failed to convert to blob for page ${passage.pageNumber}:`, blobError);
-                toast.error(`Image data is corrupted for page ${passage.pageNumber}. Please re-select the image.`);
-                throw new Error(`Blob conversion failed for page ${passage.pageNumber}: ${blobError.message}`);
-              }
 
               // Validate file size (limit to 10MB)
               const maxSizeBytes = 10 * 1024 * 1024;
-              if (blob.size > maxSizeBytes) {
-                const sizeMB = (blob.size / 1024 / 1024).toFixed(1);
+              if (imageFile.size > maxSizeBytes) {
+                const sizeMB = (imageFile.size / 1024 / 1024).toFixed(1);
                 console.error(`Image too large for page ${passage.pageNumber}: ${sizeMB}MB`);
                 toast.error(`Image for page ${passage.pageNumber} is too large (${sizeMB}MB). Please use an image smaller than 10MB.`);
                 throw new Error(`Image too large for page ${passage.pageNumber}: ${sizeMB}MB`);
               }
 
-              // Create file with proper extension based on blob type
-              const getFileExtension = (mimeType) => {
-                const extensions = {
-                  'image/jpeg': 'jpg',
-                  'image/jpg': 'jpg',
-                  'image/png': 'png',
-                  'image/webp': 'webp',
-                  'image/gif': 'gif'
-                };
-                return extensions[mimeType] || 'jpg';
-              };
-
-              const fileExtension = getFileExtension(blob.type);
-              const fileName = `page_${passage.pageNumber}_${Date.now()}.${fileExtension}`;
-              
-              let imageFile;
-              try {
-                imageFile = new File([blob], fileName, { type: blob.type });
-                
-                // Validate the created file
-                if (!imageFile || imageFile.size === 0) {
-                  throw new Error('Created file is invalid');
-                }
-              } catch (fileError) {
-                console.error(`Failed to create File object for page ${passage.pageNumber}:`, fileError);
-                toast.error(`Cannot prepare image for upload on page ${passage.pageNumber}. Please try again.`);
-                throw new Error(`File creation failed for page ${passage.pageNumber}: ${fileError.message}`);
-              }
 
               // Upload to S3 with improved retry mechanism
               let uploadResult;
@@ -1746,7 +1670,7 @@ const MainAssessment = ({ templates }) => {
               while (retryCount < maxRetries) {
                 try {
                   console.log(`Uploading image for page ${passage.pageNumber} (attempt ${retryCount + 1}/${maxRetries})`);
-                  uploadResult = await MainAssessmentService.uploadImageToS3(imageFile, s3Path);
+                  uploadResult = await MainAssessmentService.uploadImageToS3(imageFile);
                   
                   if (uploadResult && uploadResult.success && uploadResult.url) {
                     console.log(`Upload successful for page ${passage.pageNumber}:`, uploadResult.url);
@@ -2007,15 +1931,12 @@ const MainAssessment = ({ templates }) => {
       return;
     }
 
-    // Create a temporary URL for preview
-    const previewUrl = URL.createObjectURL(file);
-
-    // Store the file for later upload when the question is submitted
+    // Store the file directly instead of using blob URLs
     if (field === 'questionImage') {
       setQuestionFormData(prev => ({
         ...prev,
-        questionImage: previewUrl,
-        imageFile: file, // Store the file for later S3 upload with proper category folder
+        questionImage: file, // Store the file directly
+        imageFile: file, // Keep for backwards compatibility
         imageName: file.name
       }));
     } else if (field.includes('pageImage')) {
@@ -2024,8 +1945,8 @@ const MainAssessment = ({ templates }) => {
         const updatedPassages = [...prev.passages];
         updatedPassages[pageIndex] = {
           ...updatedPassages[pageIndex],
-          pageImage: previewUrl, // Store blob URL for preview
-          _imageFile: file, // Store the actual file for later upload
+          pageImage: file, // Store File object directly instead of blob URL
+          _imageFile: file, // Keep for backwards compatibility
           _imageName: file.name
         };
         return {
@@ -2378,6 +2299,18 @@ const MainAssessment = ({ templates }) => {
     } catch (error) {
       console.error('Error toggling assessment status:', error);
       alert(handleApiError(error, "Failed to update status. Please try again."));
+    }
+  };
+
+  // Helper function to clean up object URLs
+  const cleanupImageObjectURL = (imageValue) => {
+    if (imageValue instanceof File) {
+      try {
+        const objectUrl = URL.createObjectURL(imageValue);
+        URL.revokeObjectURL(objectUrl);
+      } catch (error) {
+        console.warn('Error cleaning up object URL:', error);
+      }
     }
   };
 
@@ -3494,10 +3427,12 @@ const MainAssessment = ({ templates }) => {
                                     <div className="pa-image-preview">
                                       <img
                                         src={
-                                          typeof questionFormData.questionImage === 'string' &&
-                                            questionFormData.questionImage.startsWith('data:')
+                                          questionFormData.questionImage instanceof File
+                                            ? URL.createObjectURL(questionFormData.questionImage) // Create object URL for File objects
+                                            : typeof questionFormData.questionImage === 'string' &&
+                                              questionFormData.questionImage.startsWith('data:')
                                             ? questionFormData.questionImage // Show data URL for preview
-                                            : questionFormData.questionImage // Show existing URL
+                                            : questionFormData.questionImage // Show existing URL string
                                         }
                                         alt="Question"
                                         className="pa-preview-image"
@@ -3508,6 +3443,10 @@ const MainAssessment = ({ templates }) => {
                                           borderRadius: '8px',
                                           border: '2px solid #e2e8f0'
                                         }}
+                                        onError={(e) => {
+                                          console.error('Image failed to load:', questionFormData.questionImage);
+                                          e.target.style.display = 'none';
+                                        }}
                                       />
 
                                       <div className="pa-file-name" style={{
@@ -3516,12 +3455,15 @@ const MainAssessment = ({ templates }) => {
                                         color: '#6b7280',
                                         textAlign: 'center'
                                       }}>
-                                        {questionFormData.questionImage ? "Question image uploaded" : "Image Preview"}
+                                        {questionFormData.questionImage instanceof File 
+                                          ? `File: ${questionFormData.questionImage.name}` 
+                                          : "Question image uploaded"}
                                       </div>
 
                                       <button
                                         type="button"
                                         onClick={() => {
+                                          cleanupImageObjectURL(questionFormData.questionImage);
                                           setQuestionFormData({
                                             ...questionFormData,
                                             questionImage: null,
@@ -5076,6 +5018,8 @@ const MainAssessment = ({ templates }) => {
                                           <button
                                             type="button"
                                             onClick={() => {
+                                              const currentPage = questionFormData.passages[index];
+                                              cleanupImageObjectURL(currentPage.pageImage);
                                               const updatedPassages = [...questionFormData.passages];
                                               updatedPassages[index] = {
                                                 ...updatedPassages[index],
@@ -5118,7 +5062,7 @@ const MainAssessment = ({ templates }) => {
                                             <FontAwesomeIcon icon={faTimes} />
                                           </button>
                                           <img
-                                            src={page?.pageImage}
+                                            src={page?.pageImage instanceof File ? URL.createObjectURL(page.pageImage) : page?.pageImage}
                                             alt={`Page ${index + 1} preview`}
                                             style={{ 
                                               maxWidth: '100%', 
@@ -5126,6 +5070,10 @@ const MainAssessment = ({ templates }) => {
                                               borderRadius: '8px', 
                                               border: '2px solid #e5e7eb',
                                               objectFit: 'contain'
+                                            }}
+                                            onError={(e) => {
+                                              console.error('Page image failed to load:', page?.pageImage);
+                                              e.target.style.display = 'none';
                                             }}
                                           />
                                           <div style={{
