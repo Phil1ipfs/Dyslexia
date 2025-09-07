@@ -256,20 +256,25 @@ const MainAssessment = ({ templates }) => {
           break;
 
         case "Decoding":
+          // Different formatting based on question type
+          const isWordIdentification = question.questionText === "Tukuyin ang nasa larawan?";
+          
           sanitized.displaySequence = Array.isArray(question.displaySequence) ? 
             question.displaySequence.map(item => {
               if (typeof item === 'string') {
                 const cleaned = item.replace(/[^a-zA-Z]/g, '');
-                return cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase();
+                return isWordIdentification ? cleaned.toUpperCase() : 
+                       (cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase());
               }
               return item;
-            }) : [];
+            }) : (isWordIdentification ? null : []);
           sanitized.blankPosition = typeof question.blankPosition === 'number' ? question.blankPosition : null;
           sanitized.dragElements = Array.isArray(question.dragElements) ? 
             question.dragElements.map(item => {
               if (typeof item === 'string') {
                 const cleaned = item.replace(/[^a-zA-Z]/g, '');
-                return cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase();
+                return isWordIdentification ? cleaned.toUpperCase() : 
+                       (cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase());
               }
               return item;
             }) : [];
@@ -277,7 +282,8 @@ const MainAssessment = ({ templates }) => {
             question.correctSequence.map(item => {
               if (typeof item === 'string') {
                 const cleaned = item.replace(/[^a-zA-Z]/g, '');
-                return cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase();
+                return isWordIdentification ? cleaned.toUpperCase() : 
+                       (cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase());
               }
               return item;
             }) : [];
@@ -506,11 +512,9 @@ const MainAssessment = ({ templates }) => {
 
   // Component stability tracking
   useEffect(() => {
-    console.log('🔧 Component mounting');
     componentMounted.current = true;
     
     return () => {
-      console.log('🔧 Component unmounting');
       componentMounted.current = false;
       questionFormInitializing.current = false;
     };
@@ -989,27 +993,20 @@ const MainAssessment = ({ templates }) => {
   };
 
   const handleAddQuestion = () => {
-    console.log('🚀 handleAddQuestion called');
-    console.log('📝 Current showQuestionForm state:', showQuestionForm);
-    
     // Prevent multiple rapid calls and race conditions
     if (questionFormInitializing.current === true) {
-      console.log('⚠️  Question form initialization already in progress, ignoring');
       return;
     }
     
     if (showQuestionForm === true) {
-      console.log('⚠️  Question form is already showing, ignoring');
       return;
     }
     
     // Set flag to prevent race conditions
     questionFormInitializing.current = true;
-    console.log('🔒 Setting initialization flag');
     
     // Validate that category is set
     if (!formData.category) {
-      console.log('❌ No category selected');
       questionFormInitializing.current = false;
       toast.error("Please select a category before adding questions.");
       return;
@@ -1018,7 +1015,6 @@ const MainAssessment = ({ templates }) => {
     setShowQuestionForm(true);
     setCurrentQuestion(null);
     
-    console.log('✅ Question form initialized successfully');
     questionFormInitializing.current = false;
 
     const initialQuestionType =
@@ -1455,8 +1451,12 @@ const MainAssessment = ({ templates }) => {
           case "Decoding":
             // Auto-null required fields
             sanitized.questionValue = null;
-            // Ensure arrays exist
-            sanitized.displaySequence = sanitized.displaySequence || [];
+            // Set displaySequence based on question type
+            if (sanitized.questionText === "Tukuyin ang nasa larawan?") {
+              sanitized.displaySequence = null;
+            } else {
+              sanitized.displaySequence = sanitized.displaySequence || [];
+            }
             sanitized.dragElements = sanitized.dragElements || [];
             sanitized.correctSequence = sanitized.correctSequence || [];
             // Set blankPosition based on question text
@@ -3083,7 +3083,7 @@ const MainAssessment = ({ templates }) => {
                                     ...prev,
                                     questionText: selectedText,
                                     // Reset related fields when changing question type
-                                    displaySequence: [],
+                                    displaySequence: selectedText === 'Tukuyin ang nasa larawan?' ? null : [],
                                     dragElements: [],
                                     correctSequence: [],
                                     blankPosition: selectedText === 'Buoin ang salita' ? 0 : null
@@ -3523,15 +3523,22 @@ const MainAssessment = ({ templates }) => {
                                 <label>Complete Word (will be scrambled for students):</label>
                                 <input
                                   type="text"
-                                  placeholder="Enter complete word (e.g., Yelo)"
+                                  placeholder={questionFormData.questionText === "Tukuyin ang nasa larawan?" ? 
+                                    "Enter complete word (e.g., YELO)" : 
+                                    "Enter complete word (e.g., Yelo)"}
                                   value={questionFormData.correctSequence?.join('') || ''}
                                   onChange={(e) => {
                                     const cleanWord = e.target.value.replace(/[^a-zA-Z]/g, '').replace(/\s+/g, ''); // Remove numbers, symbols, and spaces
-                                    // Auto-capitalize first letter, make rest lowercase
-                                    const formattedWord = cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1).toLowerCase();
+                                    // Format based on question type: uppercase for "Tukuyin ang nasa larawan?", mixed case for others
+                                    const isWordIdentification = questionFormData.questionText === "Tukuyin ang nasa larawan?";
+                                    const formattedWord = isWordIdentification ? 
+                                      cleanWord.toUpperCase() : 
+                                      (cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1).toLowerCase());
                                     const letters = formattedWord.split('');
-                                    // Add mixed case distractors instead of all capitals
-                                    const distractors = ['a', 'E', 'i', 'O', 'u', 'n', 't', 'r'];
+                                    // Add distractors matching the case style
+                                    const distractors = isWordIdentification ? 
+                                      ['A', 'E', 'I', 'O', 'U', 'N', 'T', 'R'] : 
+                                      ['a', 'E', 'i', 'O', 'u', 'n', 't', 'r'];
                                     const selectedDistractors = distractors.slice(0, 2); // Take 2 distractors
                                     setQuestionFormData(prev => ({
                                       ...prev,
@@ -3624,7 +3631,7 @@ const MainAssessment = ({ templates }) => {
                                   value={questionFormData.displaySequence?.join('').replace('_', (questionFormData.correctSequence?.[0] || '')) || ''}
                                   onChange={(e) => {
                                     const cleanWord = e.target.value.replace(/[^a-zA-Z]/g, '').replace(/\s+/g, ''); // Remove numbers, symbols, and spaces
-                                    // Auto-capitalize first letter, make rest lowercase
+                                    // For "Buoin ang salita", use mixed case (first letter uppercase, rest lowercase)
                                     const formattedWord = cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1).toLowerCase();
                                     setQuestionFormData(prev => ({
                                       ...prev,
@@ -5060,8 +5067,8 @@ const MainAssessment = ({ templates }) => {
                           value={formData.category}
                           onChange={handleFormChange}
                           required
-                          disabled={modalType === 'edit'}
-                          className={`pa-select-input ${modalType === 'edit' ? 'pa-disabled-input' : ''} ${modalType === 'create' && formData.readingLevel && formData.category && !canCreateAssessment(formData.readingLevel, formData.category).canCreate ? 'pa-select-error' : ''}`}
+                          disabled={modalType === 'edit' || formData.questions.length > 0}
+                          className={`pa-select-input ${(modalType === 'edit' || formData.questions.length > 0) ? 'pa-disabled-input' : ''} ${modalType === 'create' && formData.readingLevel && formData.category && !canCreateAssessment(formData.readingLevel, formData.category).canCreate ? 'pa-select-error' : ''}`}
                         >
                           <option value="">Choose a category...</option>
                           <option value="Alphabet Knowledge">Alphabet Knowledge</option>
@@ -5074,6 +5081,13 @@ const MainAssessment = ({ templates }) => {
                           <div className="pa-help-text">
                             <FontAwesomeIcon icon={faInfoCircle} />
                             Category cannot be changed during editing to maintain question type consistency.
+                          </div>
+                        )}
+                        
+                        {modalType === 'create' && formData.questions.length > 0 && (
+                          <div className="pa-help-text">
+                            <FontAwesomeIcon icon={faInfoCircle} />
+                            Category cannot be changed after questions have been created to maintain uniformity and prevent errors.
                           </div>
                         )}
 

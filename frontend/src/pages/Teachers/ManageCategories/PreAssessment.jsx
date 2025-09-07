@@ -1112,7 +1112,7 @@ const PreAssessment = () => {
       ...prev,
       questionText: questionType,
       // Reset arrays when switching question type
-      displaySequence: [],
+      displaySequence: questionType === 'Tukuyin ang nasa larawan' ? null : [],
       blankPosition: questionType === 'Buoin ang salita' ? 0 : null,
       dragElements: [],
       correctSequence: []
@@ -1490,8 +1490,8 @@ const PreAssessment = () => {
         }
       } else if (categoryDisplayNameToKey[currentQuestionData.category] === 'decoding') {
         // Decoding validation
-        if (!currentQuestionData.displaySequence || currentQuestionData.displaySequence.length === 0) {
-          toast.error('Display sequence is required for decoding questions');
+        if (currentQuestionData.questionText === 'Buoin ang salita' && (!currentQuestionData.displaySequence || currentQuestionData.displaySequence.length === 0)) {
+          toast.error('Display sequence is required for "Buoin ang salita" questions');
           return;
         }
         if (!currentQuestionData.dragElements || currentQuestionData.dragElements.length === 0) {
@@ -2769,7 +2769,7 @@ const PreAssessment = () => {
                           ...prev,
                           questionText: selectedText,
                           // Reset related fields when changing question type
-                          displaySequence: [],
+                          displaySequence: selectedText === 'Tukuyin ang nasa larawan' ? null : [],
                           dragElements: [],
                           correctSequence: [],
                           completeWord: '',
@@ -3157,7 +3157,7 @@ const PreAssessment = () => {
                                   setCurrentQuestionData(prev => ({
                                     ...prev,
                                     completeWord: word,
-                                    displaySequence: sequence,
+                                    displaySequence: null,
                                     correctSequence: sequence,
                                     blankPosition: null // No blank position for this type
                                   }));
@@ -3170,7 +3170,7 @@ const PreAssessment = () => {
                         )}
                         
                         {/* Display Preview */}
-                        {currentQuestionData.displaySequence.length > 0 && (
+                        {currentQuestionData.displaySequence && currentQuestionData.displaySequence.length > 0 && (
                           <div className="pre-sequence-preview">
                             <h6>Preview (what students will see):</h6>
                             <div className="pre-preview-word">
