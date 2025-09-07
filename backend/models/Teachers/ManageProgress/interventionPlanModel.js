@@ -132,15 +132,15 @@ interventionPlanSchema.pre('save', function(next) {
   next();
 });
 
-// Initialize progress record after creating a new intervention plan
+// Initialize results record after creating a new intervention plan
 interventionPlanSchema.post('save', async function(doc) {
   try {
     // Check if this is a new document being created
     if (this.isNew) {
-      const InterventionProgress = mongoose.model('InterventionProgress');
+      const InterventionResults = mongoose.model('InterventionResults');
       
-      // Create a default progress record
-      await InterventionProgress.create({
+      // Create a default results record
+      await InterventionResults.create({
         studentId: doc.studentId,
         interventionPlanId: doc._id,
         completedActivities: 0,

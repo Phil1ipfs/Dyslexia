@@ -391,7 +391,7 @@ exports.getProgressData = async (req, res) => {
     const id = req.params.id;
 
     // Get progress data collections
-    const progressCollection = getUsersDb().collection('intervention_progress');
+    const progressCollection = getUsersDb().collection('intervention_results');
 
     // Find progress data
     const progressData = await progressCollection.find({ studentId: id }).toArray();

@@ -31,13 +31,13 @@ try {
   CategoryResult = mongoose.model('CategoryResult', categoryResultSchema);
 }
 
-// Get InterventionProgress model
-let InterventionProgress;
+// Get InterventionResults model
+let InterventionResults;
 try {
-  InterventionProgress = mongoose.model('InterventionProgress');
+  InterventionResults = mongoose.model('InterventionResults');
 } catch (error) {
   // If model doesn't exist yet, define it using the schema
-  const interventionProgressSchema = new mongoose.Schema({
+  const interventionResultsSchema = new mongoose.Schema({
     studentId: mongoose.Schema.Types.ObjectId,
     interventionPlanId: mongoose.Schema.Types.ObjectId,
     completedActivities: Number,
@@ -51,9 +51,9 @@ try {
     notes: String,
     createdAt: Date,
     updatedAt: Date
-  }, { collection: 'intervention_progress' });
+  }, { collection: 'intervention_results' });
   
-  InterventionProgress = mongoose.model('InterventionProgress', interventionProgressSchema);
+  InterventionResults = mongoose.model('InterventionResults', interventionResultsSchema);
 }
 
 // Get PrescriptiveAnalysis model
@@ -97,11 +97,11 @@ exports.getDashboardData = async (req, res) => {
     const categoryResults = await CategoryResult.find({}).lean();
     console.log(`Found ${categoryResults.length} category results`);
     
-    // Fetch interventions in progress
-    const interventionProgress = await InterventionProgress.find({}).lean();
-    console.log(`Found ${interventionProgress.length} interventions in progress`);
+    // Fetch intervention results
+    const interventionResults = await InterventionResults.find({}).lean();
+    console.log(`Found ${interventionResults.length} intervention results`);
 
-    const processedInterventions = await processInterventionData(interventionProgress, studentsData);
+    const processedInterventions = await processInterventionData(interventionResults, studentsData);
 
     // Process students data for dashboard
     const processedData = await processStudentData(studentsData, categoryResults);
@@ -130,7 +130,7 @@ exports.getDashboardData = async (req, res) => {
       prescriptiveData: prescriptiveData || [],
       sections: sections.length > 0 ? sections : ['Sampaguita', 'Unity', 'Dignity'],
       progressData,
-      interventionProgress: processedInterventions
+      interventionResults: processedInterventions
     });
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
@@ -139,10 +139,10 @@ exports.getDashboardData = async (req, res) => {
 };
 
 /**
- * Process intervention progress data
+ * Process intervention results data
  */
-const processInterventionData = async (interventionProgress, students) => {
-    if (!interventionProgress || interventionProgress.length === 0) {
+const processInterventionData = async (interventionResults, students) => {
+    if (!interventionResults || interventionResults.length === 0) {
       return [];
     }
     
@@ -167,8 +167,8 @@ const processInterventionData = async (interventionProgress, students) => {
     });
   }
 
-    // Process each intervention progress record
-    return interventionProgress.map(progress => {
+    // Process each intervention results record
+    return interventionResults.map(progress => {
         // Get student ID
         const studentId = progress.studentId ? 
           (typeof progress.studentId === 'object' ? progress.studentId.toString() : progress.studentId.toString()) : '';
@@ -726,18 +726,18 @@ exports.getStudentsNeedingAttention = async (req, res) => {
 };
 
 /**
- * Update intervention progress
+ * Update intervention results
  */
 exports.updateActivity = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
     
-    // Extract the intervention progress ID from the activity ID
+    // Extract the intervention results ID from the activity ID
     const progressId = id.replace('act-', '');
     
-    // Find and update the intervention progress
-    const progress = await InterventionProgress.findById(progressId);
+    // Find and update the intervention results
+    const progress = await InterventionResults.findById(progressId);
     
     if (!progress) {
       return res.status(404).json({ message: 'Activity not found' });

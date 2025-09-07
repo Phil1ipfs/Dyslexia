@@ -1,7 +1,7 @@
-// models/Teachers/ManageProgress/interventionProgressModel.js
+// models/Teachers/ManageProgress/interventionResultsModel.js
 const mongoose = require('mongoose');
 
-const interventionProgressSchema = new mongoose.Schema({
+const interventionResultsSchema = new mongoose.Schema({
   studentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -61,15 +61,15 @@ const interventionProgressSchema = new mongoose.Schema({
     default: Date.now
   }
 }, {
-  collection: 'intervention_progress'
+  collection: 'intervention_results'
 });
 
 // Update timestamp on save
-interventionProgressSchema.pre('save', function(next) {
+interventionResultsSchema.pre('save', function(next) {
   this.updatedAt = new Date();
   next();
 });
 
-const InterventionProgress = mongoose.models.InterventionProgress || mongoose.model('InterventionProgress', interventionProgressSchema);
+const InterventionResults = mongoose.models.InterventionResults || mongoose.model('InterventionResults', interventionResultsSchema);
 
-module.exports = InterventionProgress;
+module.exports = InterventionResults;

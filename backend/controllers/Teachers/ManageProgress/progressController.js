@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const CategoryResult = require('../../../models/Teachers/ManageProgress/categoryResultModel');
 const PrescriptiveAnalysis = require('../../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
 const InterventionPlan = require('../../../models/Teachers/ManageProgress/interventionPlanModel');
-const InterventionProgress = require('../../../models/Teachers/ManageProgress/interventionProgressModel');
+const InterventionResults = require('../../../models/Teachers/ManageProgress/interventionResultsModel');
 const StudentResponse = require('../../../models/Teachers/ManageProgress/studentResponseModel');
 
 /**
@@ -489,8 +489,8 @@ class ProgressController {
                 createdBy: req.user ? req.user.id : null
             });
 
-            // Initialize progress tracking
-            await InterventionProgress.create({
+            // Initialize results tracking
+            await InterventionResults.create({
                 studentId: new mongoose.Types.ObjectId(studentId),
                 interventionPlanId: newPlan._id,
                 completedActivities: 0,
@@ -538,7 +538,7 @@ class ProgressController {
             // Get progress for each plan
             const interventionsWithProgress = await Promise.all(
                 interventionPlans.map(async (plan) => {
-                    const progress = await InterventionProgress.findOne({
+                    const progress = await InterventionResults.findOne({
                         interventionPlanId: plan._id
                     });
 
@@ -586,8 +586,8 @@ class ProgressController {
                 });
             }
 
-            // Get progress
-            const progress = await InterventionProgress.findOne({
+            // Get results
+            const progress = await InterventionResults.findOne({
                 interventionPlanId: interventionId
             });
 
@@ -609,7 +609,7 @@ class ProgressController {
     }
 
     /**
-     * Update intervention progress
+     * Update intervention results
      */
     async updateInterventionProgress(req, res) {
         try {
@@ -632,14 +632,14 @@ class ProgressController {
                 });
             }
 
-            // Get current progress or create a new one if it doesn't exist
-            let progress = await InterventionProgress.findOne({
+            // Get current results or create a new one if it doesn't exist
+            let progress = await InterventionResults.findOne({
                 interventionPlanId: interventionId
             });
 
             if (!progress) {
-                // Create a new progress record if it doesn't exist
-                progress = await InterventionProgress.create({
+                // Create a new results record if it doesn't exist
+                progress = await InterventionResults.create({
                     studentId: intervention.studentId,
                     interventionPlanId: interventionId,
                     completedActivities: 0,
@@ -653,14 +653,14 @@ class ProgressController {
                 });
             }
 
-            // Update progress
+            // Update results
             const totalActivities = intervention.questions.length;
             const percentComplete = (completedActivities / totalActivities) * 100;
             const totalAnswers = correctAnswers + incorrectAnswers;
             const percentCorrect = totalAnswers > 0 ? (correctAnswers / totalAnswers) * 100 : 0;
             const passedThreshold = percentCorrect >= (intervention.passThreshold || 75);
 
-            progress = await InterventionProgress.findOneAndUpdate(
+            progress = await InterventionResults.findOneAndUpdate(
                 { interventionPlanId: interventionId },
                 {
                     completedActivities,

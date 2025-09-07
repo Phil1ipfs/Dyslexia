@@ -1,6 +1,6 @@
 // src/pages/Teachers/ManageCategories/PostAssessment.jsx
 // This file has been renamed functionally to MainAssessment but kept the same filename for compatibility
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
@@ -10,7 +10,12 @@ import {
   faTimes,
   faExclamationTriangle,
   faSearch,
+  faCheck,
   faCheckCircle,
+  faLanguage,
+  faBookOpen,
+  faSpellCheck,
+  faMagic,
   faLock,
   faUpload,
   faBook,
@@ -47,6 +52,7 @@ import { toast } from 'react-toastify';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import UnifiedTemplatePreview from "./UnifiedTemplatePreview";
+import CategoryPreview from "../../../components/Teachers/CategoryPreview";
 
 // Add import for file helpers
 import { dataURLtoFile, validateFileForUpload } from '../../../utils/fileHelpers';
@@ -111,18 +117,21 @@ const MainAssessment = ({ templates }) => {
     questionImage: null,
     questionValue: "",
     choiceOptions: [],
-    passages: [],
-    sentenceQuestions: [],
     questionSet: [],
-    // Reading Comprehension specific fields for multiple questions
+    displaySequence: null,
+    blankPosition: null,
+    dragElements: [],
+    correctSequence: [],
+    displayWord: "",
+    blankOptions: [],
+    correctAnswer: [],
     storyTitle: "",
-    comprehensionQuestions: [],
-    currentComprehensionIndex: -1, // -1 means adding new, >=0 means editing existing
-    tempComprehensionQuestion: {
-      questionText: "",
-      correctAnswer: "",
-      acceptableAnswers: []
-    }
+    passages: [],
+    acceptableAnswers: [],
+    currentComprehensionIndex: -1,
+    audioTexts: [],
+    matchingOptions: [],
+    correctPairs: []
   });
   const [previewPage, setPreviewPage] = useState(0);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -130,16 +139,14 @@ const MainAssessment = ({ templates }) => {
   const [deleteSuccessDialog, setDeleteSuccessDialog] = useState(false);
   const [submitConfirmDialog, setSubmitConfirmDialog] = useState(false);
   const [duplicateRestrictionDialog, setDuplicateRestrictionDialog] = useState(false);
+  const [showAddLetterInput, setShowAddLetterInput] = useState(false);
+  const [newLetterInput, setNewLetterInput] = useState('');
   const [restrictionReason, setRestrictionReason] = useState("");
   const [apiMessage, setApiMessage] = useState(null);
   // Preview All state variables
   const [isPreviewAllDialogOpen, setIsPreviewAllDialogOpen] = useState(false);
   const [previewAllTemplates, setPreviewAllTemplates] = useState([]);
   const [previewAllCurrentIndex, setPreviewAllCurrentIndex] = useState(0);
-  
-  // Add refs to track component stability and prevent race conditions
-  const componentMounted = useRef(false);
-  const questionFormInitializing = useRef(false);
   
   // State for add option inputs
   const [showAddAnswerInput, setShowAddAnswerInput] = useState(false);
@@ -504,17 +511,16 @@ const MainAssessment = ({ templates }) => {
     return { canCreate: true };
   };
 
-  // Component stability tracking
+  // Debug useEffect for showQuestionForm state changes
   useEffect(() => {
-    console.log('🔧 Component mounting');
-    componentMounted.current = true;
-    
-    return () => {
-      console.log('🔧 Component unmounting');
-      componentMounted.current = false;
-      questionFormInitializing.current = false;
-    };
-  }, []);
+    console.log('🔍 showQuestionForm state changed:', showQuestionForm);
+    console.log('🔍 currentQuestion state:', currentQuestion);
+  }, [showQuestionForm, currentQuestion]);
+
+  // Debug useEffect for questionFormData state changes
+  useEffect(() => {
+    console.log('🔍 questionFormData state changed:', questionFormData);
+  }, [questionFormData]);
 
   useEffect(() => {
     // Fetch assessments data from the backend
@@ -802,6 +808,34 @@ const MainAssessment = ({ templates }) => {
     }));
   };
 
+  // Helper functions for adding drag elements in decoding questions
+  const toggleAddLetterInput = () => {
+    setShowAddLetterInput(!showAddLetterInput);
+    if (showAddLetterInput) {
+      setNewLetterInput(''); // Reset input when hiding
+    }
+  };
+
+  const handleAddLetter = () => {
+    if (newLetterInput && newLetterInput.trim()) {
+      const cleanLetter = newLetterInput.toUpperCase().trim();
+      // Check if letter already exists
+      if (!questionFormData.dragElements?.includes(cleanLetter)) {
+        setQuestionFormData(prev => ({
+          ...prev,
+          dragElements: [...(prev.dragElements || []), cleanLetter]
+        }));
+      }
+      setNewLetterInput('');
+      setShowAddLetterInput(false);
+    }
+  };
+
+  const handleCancelAddLetter = () => {
+    setNewLetterInput('');
+    setShowAddLetterInput(false);
+  };
+
   const categories = ["all", "Alphabet Knowledge", "Phonological Awareness",
     "Decoding", "Word Recognition", "Reading Comprehension"];
 
@@ -849,7 +883,7 @@ const MainAssessment = ({ templates }) => {
     // Create a fixed copy of the questions with questionValue guaranteed
     const fixedQuestions = assessment.questions.map(q => ({
       ...q,
-      questionValue: q.questionValue !== undefined ? q.questionValue : (q.questionType === "sentence" ? "" : null)
+      questionValue: q.questionValue !== undefined ? q.questionValue : (assessment.category === "Reading Comprehension" ? "" : null)
     }));
 
     setFormData({
@@ -989,37 +1023,38 @@ const MainAssessment = ({ templates }) => {
   };
 
   const handleAddQuestion = () => {
-    console.log('🚀 handleAddQuestion called');
+    console.log('🚀 === handleAddQuestion CALLED ===');
+    console.log('📊 Current formData:', JSON.stringify(formData, null, 2));
+    console.log('🏷️  modalType:', modalType);
     console.log('📝 Current showQuestionForm state:', showQuestionForm);
-    
-    // Prevent multiple rapid calls and race conditions
-    if (questionFormInitializing.current === true) {
-      console.log('⚠️  Question form initialization already in progress, ignoring');
-      return;
-    }
-    
-    if (showQuestionForm === true) {
-      console.log('⚠️  Question form is already showing, ignoring');
-      return;
-    }
-    
-    // Set flag to prevent race conditions
-    questionFormInitializing.current = true;
-    console.log('🔒 Setting initialization flag');
+    console.log('❓ Current currentQuestion state:', currentQuestion);
     
     // Validate that category is set
     if (!formData.category) {
-      console.log('❌ No category selected');
-      questionFormInitializing.current = false;
+      console.log('❌ Validation failed: No category selected');
       toast.error("Please select a category before adding questions.");
       return;
     }
+    console.log('✅ Category validation passed:', formData.category);
     
+    // Validate that reading level is set for create mode
+    if (modalType === 'create' && !formData.readingLevel) {
+      console.log('❌ Validation failed: No reading level selected for create mode');
+      toast.error("Please select a reading level before adding questions.");
+      return;
+    }
+    console.log('✅ Reading level validation passed:', formData.readingLevel);
+    
+    // Prevent multiple rapid calls
+    if (showQuestionForm) {
+      console.log('⚠️  handleAddQuestion called but showQuestionForm is already true, ignoring');
+      return;
+    }
+
+    console.log('🔄 Setting showQuestionForm to true...');
     setShowQuestionForm(true);
+    console.log('🔄 Setting currentQuestion to null...');
     setCurrentQuestion(null);
-    
-    console.log('✅ Question form initialized successfully');
-    questionFormInitializing.current = false;
 
     const initialQuestionType =
       formData.category === "Alphabet Knowledge" ? "multiple_choice" :
@@ -1027,11 +1062,21 @@ const MainAssessment = ({ templates }) => {
           formData.category === "Decoding" ? "drag_drop" :
             formData.category === "Word Recognition" ? "fill_blank" :
               "text_input";
+    console.log('🎯 Determined initialQuestionType:', initialQuestionType);
 
     // Generate a temporary questionId based on category only for non-sentence types
+    console.log('🔧 Generating questionId...');
     const categoryPrefix = getCategoryPrefix(formData.category);
+    console.log('🏷️  Category prefix:', categoryPrefix);
+    if (!categoryPrefix) {
+      console.log('❌ Failed to get category prefix');
+      toast.error("Invalid category selected. Please try again.");
+      return;
+    }
+    
     const questionNumber = String(formData.questions.length + 1).padStart(3, '0');
     const tempQuestionId = `${categoryPrefix}_${questionNumber}`;
+    console.log('🆔 Generated questionId:', tempQuestionId);
 
     // For text_input questions, we'll use a parent ID to generate child IDs, but not store it on the parent
     const parentId = initialQuestionType === "text_input" ? tempQuestionId : null;
@@ -1077,9 +1122,20 @@ const MainAssessment = ({ templates }) => {
       }
     };
 
+    console.log('🔧 Getting initial field values...');
     const initialFields = getInitialFieldValues();
+    console.log('📝 Initial fields:', initialFields);
+    
+    // Additional safety check for questionFormData fields 
+    if (!initialFields) {
+      console.log('❌ Failed to get initial field values');
+      toast.error("Failed to initialize question form. Please try again.");
+      return;
+    }
 
-    setQuestionFormData({
+    console.log('💾 Setting questionFormData...');
+    try {
+      setQuestionFormData({
       questionText: "",
       questionImage: initialFields.questionImage,
       questionValue: initialFields.questionValue,
@@ -1108,6 +1164,23 @@ const MainAssessment = ({ templates }) => {
       correctAnswer: initialQuestionType === "text_input" ? "" : [],
       acceptableAnswers: []
     });
+    console.log('✅ questionFormData set successfully');
+    console.log('🏁 handleAddQuestion completed successfully');
+    
+    // Use setTimeout to ensure state updates are processed
+    setTimeout(() => {
+      console.log('⏱️  Post-timeout check - showQuestionForm:', showQuestionForm);
+      if (!showQuestionForm) {
+        console.log('⚠️  showQuestionForm was reset unexpectedly, setting it back to true');
+        setShowQuestionForm(true);
+      }
+    }, 100);
+    
+    } catch (error) {
+      console.error("❌ Error initializing question form:", error);
+      toast.error("Failed to initialize question form. Please try again.");
+      setShowQuestionForm(false);
+    }
   };
 
   const handleEditQuestion = (question, index) => {
@@ -1218,7 +1291,6 @@ const MainAssessment = ({ templates }) => {
       choiceOptions: prev.choiceOptions.filter((_, i) => i !== index)
     }));
   };
-
 
   const handleQuestionFormSubmit = async (e) => {
     e.preventDefault();
@@ -1726,7 +1798,6 @@ const MainAssessment = ({ templates }) => {
         const nextParentId = formData.category === "Reading Comprehension" ? nextTempQuestionId : null;
 
         setQuestionFormData({
-          questionType: categoryToQuestionTypeMap[formData.category],
           questionText: "",
           questionImage: null,
           // Ensure it has a default value
@@ -1774,7 +1845,6 @@ const MainAssessment = ({ templates }) => {
         const nextParentId = formData.category === "Reading Comprehension" ? nextTempQuestionId : null;
 
         setQuestionFormData({
-          questionType: categoryToQuestionTypeMap[formData.category],
           questionText: "",
           questionImage: null,
           // Ensure it has a default value
@@ -1806,6 +1876,33 @@ const MainAssessment = ({ templates }) => {
 
         console.log('Question successfully added to form! Total questions now:', formData.questions.length + 1);
         toast.success("Question added! You can add another or click Back to return to the assessment.");
+        
+        // Reset question form state after successful save
+        setShowQuestionForm(false);
+        setCurrentQuestion(null);
+        
+        // Reset question form data to initial state
+        setQuestionFormData({
+          questionText: "",
+          questionImage: null,
+          questionValue: "",
+          choiceOptions: [],
+          questionSet: [],
+          displaySequence: null,
+          blankPosition: null,
+          dragElements: [],
+          correctSequence: [],
+          displayWord: "",
+          blankOptions: [],
+          correctAnswer: [],
+          storyTitle: "",
+          passages: [],
+          acceptableAnswers: [],
+          currentComprehensionIndex: -1,
+          audioTexts: [],
+          matchingOptions: [],
+          correctPairs: []
+        });
         }
       
       } catch (saveError) {
@@ -2050,8 +2147,7 @@ const MainAssessment = ({ templates }) => {
             const assessmentData = {
               readingLevel: formData.readingLevel,
               category: formData.category,
-              questionType: categoryToQuestionTypeMap[formData.category],
-              questions: [singleQuestionData], // Single question per assessment
+                  questions: [singleQuestionData], // Single question per assessment
               isActive: formData.isActive,
               status: formData.status
             };
@@ -2074,10 +2170,7 @@ const MainAssessment = ({ templates }) => {
             readingLevel: formData.readingLevel,
             category: formData.category,
             questionType: categoryToQuestionTypeMap[formData.category],
-            questions: finalQuestions.map(question => ({
-              ...question,
-              category: formData.category // Required by backend model for validation
-            })),
+            questions: finalQuestions,
             isActive: formData.isActive,
             status: formData.status
           };
@@ -2814,6 +2907,13 @@ const MainAssessment = ({ templates }) => {
             </div>
 
             <div className="pa-modal-body">
+              {(() => {
+                console.log('🎭 MODAL BODY RENDERING');
+                console.log('🏷️  modalType:', modalType);
+                console.log('📝 showQuestionForm:', showQuestionForm);
+                console.log('👀 selectedAssessment:', selectedAssessment);
+                return null;
+              })()}
               {modalType === 'delete' ? (
                 <div className="pa-delete-confirm">
                   <div className="pa-delete-icon">
@@ -2869,166 +2969,144 @@ const MainAssessment = ({ templates }) => {
                       Assessment Questions
                     </h4>
 
-                    {selectedAssessment.questions.map((question, index) => (
-                      <div key={index} className="pa-preview-question-card">
-                        <div className="pa-question-header">
-                          <div className="pa-question-metadata">
-                            <span className="pa-question-num">Question {index + 1}</span>
-                            <span className="pa-question-type">
-                              <FontAwesomeIcon
-                                icon={
-                                  question.questionType === "patinig" || question.questionType === "katinig"
-                                    ? faFont
-                                    : question.questionType === "malapantig"
-                                      ? faPuzzlePiece
-                                      : question.questionType === "sentence"
-                                        ? faBook
-                                        : faFileAlt
-                                }
-                                className="pa-question-type-icon"
-                              />
-                              {getQuestionTypeDisplay(question.questionType, question.questionSubtype)}
-                            </span>
-                          </div>
-                        </div>
+                    {(() => {
+                      if (selectedAssessment.category === 'Reading Comprehension') {
+                        // Group questions by storyTitle
+                        const groupedQuestions = selectedAssessment.questions.reduce((acc, question, index) => {
+                          const storyTitle = question.storyTitle;
+                          if (!acc[storyTitle]) {
+                            acc[storyTitle] = [];
+                          }
+                          acc[storyTitle].push({ question, index });
+                          return acc;
+                        }, {});
 
-                        <div className="pa-question-content">
-                          <div className="pa-question-prompt">
-                            {question.questionImage && (
-                              <div className="pa-question-image-container">
-                                <img
-                                  src={question.questionImage}
-                                  alt="Question visual"
-                                  className="pa-question-image"
-                                />
-                              </div>
-                            )}
-
-                            <div className="pa-question-text-container">
-                              <p className="pa-question-text">{question.questionText}</p>
-                              {question.questionValue && (
-                                <div className="pa-question-value">
-                                  <strong>Value:</strong> {question.questionValue}
-                                </div>
-                              )}
+                        return Object.entries(groupedQuestions).map(([storyTitle, storyQuestions]) => (
+                          <div key={storyTitle} className="cp-story-group">
+                            <div className="cp-story-header">
+                              <h4 className="cp-story-title">
+                                <FontAwesomeIcon icon={faBook} /> Story: {storyTitle}
+                              </h4>
                             </div>
-                          </div>
-
-                          {question.questionType === 'sentence' && question.passages ? (
-                            <div className="pa-passage-preview">
-                              <h5><FontAwesomeIcon icon={faBook} /> Reading Passage</h5>
-
-                              <div className="pa-passage-navigation">
-                                <button
-                                  className="pa-page-nav-btn"
-                                  onClick={() => handlePreviewPageChange('prev')}
-                                  disabled={previewPage === 0}
-                                >
-                                  <FontAwesomeIcon icon={faArrowLeft} /> Previous
-                                </button>
-
-                                <span className="pa-page-indicator">
-                                  Page {previewPage + 1} of {question.passages.length}
-                                </span>
-
-                                <button
-                                  className="pa-page-nav-btn"
-                                  onClick={() => handlePreviewPageChange('next')}
-                                  disabled={previewPage >= question.passages.length - 1}
-                                >
-                                  Next <FontAwesomeIcon icon={faArrowRight} />
-                                </button>
-                              </div>
-
-                              <div className="pa-passage-container">
-                                {question.passages[previewPage]?.pageImage && (
-                                  <div className="pa-passage-image-container">
-                                    <img
-                                      src={question.passages[previewPage].pageImage}
-                                      alt={`Page ${previewPage + 1} illustration`}
-                                      className="pa-passage-image"
-                                    />
-                                  </div>
-                                )}
-
-                                <div className="pa-passage-text-container">
-                                  <p className="pa-passage-text">{question.passages[previewPage]?.pageText}</p>
-                                </div>
-                              </div>
-
-                              <div className="pa-comprehension-questions">
-                                <h5><FontAwesomeIcon icon={faQuestion} /> Comprehension Questions</h5>
-                                {question.sentenceQuestions && question.sentenceQuestions.length > 0 ? (
-                                  question.sentenceQuestions.map((sq, sqIndex) => (
-                                    <div key={sqIndex} className="pa-comprehension-question">
-                                      <div className="pa-comprehension-q-header">
-                                        <span className="pa-comprehension-q-number">Q{sqIndex + 1}:</span>
-                                        <span className="pa-comprehension-q-text">{sq.questionText}</span>
-                                      </div>
-
-                                      <div className="pa-comprehension-options">
-                                        <div className="pa-option pa-option-correct">
-                                          <FontAwesomeIcon icon={faCheckCircle} className="pa-option-icon" />
-                                          {sq.correctAnswer}
-                                        </div>
-                                        <div className="pa-option">
-                                          {sq.incorrectAnswer}
-                                        </div>
-                                      </div>
+                            
+                            {/* Show passages only once for the first question */}
+                            {storyQuestions[0].question.passages && (
+                              <div className="cp-story-passages">
+                                {storyQuestions[0].question.passages.map((passage, passageIndex) => (
+                                  <div key={passageIndex} className="cp-passage-card">
+                                    <div className="cp-passage-header">
+                                      <span className="cp-page-number">Page {passage.pageNumber}</span>
                                     </div>
-                                  ))
-                                ) : (
-                                  <div className="pa-no-questions">
-                                    <p>No comprehension questions added yet.</p>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="pa-choice-options">
-                              <h5><FontAwesomeIcon icon={faCheckDouble} /> Answer Options</h5>
-
-                              <div className="pa-options-list">
-                                {question.choiceOptions && question.choiceOptions.map((option, optIndex) => (
-                                  <div
-                                    key={optIndex}
-                                    className={`pa-option ${option.isCorrect ? 'pa-option-correct' : ''}`}
-                                  >
-                                    <div className="pa-option-header">
-                                      {option.isCorrect && (
-                                        <FontAwesomeIcon icon={faCheckCircle} className="pa-option-icon" />
+                                    <div className="cp-passage-content">
+                                      {passage.pageImage && (
+                                        <div className="cp-passage-image">
+                                          <img
+                                            src={passage.pageImage}
+                                            alt={`Page ${passage.pageNumber} illustration`}
+                                            className="cp-story-image"
+                                          />
+                                        </div>
                                       )}
-                                      {option.optionText}
+                                      <div className="cp-passage-text">
+                                        <p>{passage.pageText}</p>
+                                      </div>
                                     </div>
-
                                   </div>
                                 ))}
                               </div>
+                            )}
+
+                            {/* Show all questions for this story */}
+                            <div className="cp-story-questions">
+                              <h5 className="cp-questions-title">
+                                <FontAwesomeIcon icon={faQuestion} /> Questions
+                              </h5>
+                              {storyQuestions.map(({ question, index }) => (
+                                <div key={index} className="cp-story-question-item">
+                                  <div className="cp-question-header">
+                                    <div className="cp-question-number-circle">
+                                      <span>{index + 1}</span>
+                                    </div>
+                                    <div className="cp-question-text">
+                                      <strong>Q{index + 1}:</strong> {question.questionText}
+                                    </div>
+                                  </div>
+                                  <div className="cp-answer-section">
+                                    <div className="cp-correct-answer">
+                                      <div className="cp-primary-answer">
+                                        <span className="cp-answer-label">Primary:</span>
+                                        <span className="cp-answer-text">{question.correctAnswer}</span>
+                                      </div>
+                                      {question.acceptableAnswers && question.acceptableAnswers.length > 0 && (
+                                        <div className="cp-acceptable-answers">
+                                          <span className="cp-answer-label">Also Accepted:</span>
+                                          <div className="cp-answer-list">
+                                            {question.acceptableAnswers.map((answer, answerIndex) => (
+                                              <span key={answerIndex} className="cp-acceptable-answer">
+                                                {answer}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                          </div>
+                        ));
+                      } else {
+                        return selectedAssessment.questions.map((question, index) => (
+                          <CategoryPreview
+                            key={index}
+                            assessment={selectedAssessment}
+                            question={question}
+                            questionIndex={index}
+                          />
+                        ));
+                      }
+                    })()}
                   </div>
                 </div>
               ) : showQuestionForm ? (
-                <div className="pa-question-form">
-                  <div className="pa-question-form-header">
-                    <h4>
-                      {currentQuestion !== null ? (
-                        <><FontAwesomeIcon icon={faEdit} /> Edit Question #{currentQuestion + 1}</>
-                      ) : (
-                        <><FontAwesomeIcon icon={faPlus} /> Add New Question</>
-                      )}
-                    </h4>
-                    <button
-                      type="button"
-                      className="pa-back-to-form-btn"
-                      onClick={() => setShowQuestionForm(false)}
-                    >
-                      <FontAwesomeIcon icon={faArrowLeft} /> Back to Assessment
-                    </button>
-                  </div>
+                <>
+                  {(() => {
+                    console.log('🎯 RENDERING QUESTION FORM');
+                    console.log('📝 showQuestionForm:', showQuestionForm);
+                    console.log('❓ currentQuestion:', currentQuestion);
+                    console.log('📊 questionFormData:', questionFormData);
+                    console.log('🔍 formData.category:', formData.category);
+                    
+                    // Add defensive check
+                    if (!showQuestionForm) {
+                      console.log('⚠️  showQuestionForm is false in render, this should not happen');
+                      return <div>Loading question form...</div>;
+                    }
+                    
+                    return null;
+                  })()}
+                  {formData.category && showQuestionForm && (
+                    <div className="pa-question-form">
+                    <div className="pa-question-form-header">
+                      <h4>
+                        {currentQuestion !== null ? (
+                          <><FontAwesomeIcon icon={faEdit} /> Edit Question #{currentQuestion + 1}</>
+                        ) : (
+                          <><FontAwesomeIcon icon={faPlus} /> Add New Question</>
+                        )}
+                      </h4>
+                      <button
+                        type="button"
+                        className="pa-back-to-form-btn"
+                        onClick={() => {
+                          console.log('🔙 Back to Assessment button clicked');
+                          setShowQuestionForm(false);
+                        }}
+                      >
+                        <FontAwesomeIcon icon={faArrowLeft} /> Back to Assessment
+                      </button>
+                    </div>
 
                   <div className="pa-question-form-content">
                     {/* Question types are now automatically determined by category */}
@@ -3523,16 +3601,31 @@ const MainAssessment = ({ templates }) => {
                                 <label>Complete Word (will be scrambled for students):</label>
                                 <input
                                   type="text"
-                                  placeholder="Enter complete word (e.g., Yelo)"
+                                  placeholder="Enter complete word (e.g., YELO)"
                                   value={questionFormData.correctSequence?.join('') || ''}
                                   onChange={(e) => {
                                     const cleanWord = e.target.value.replace(/[^a-zA-Z]/g, '').replace(/\s+/g, ''); // Remove numbers, symbols, and spaces
-                                    // Auto-capitalize first letter, make rest lowercase
-                                    const formattedWord = cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1).toLowerCase();
+                                    // Convert all letters to uppercase
+                                    const formattedWord = cleanWord.toUpperCase();
                                     const letters = formattedWord.split('');
-                                    // Add mixed case distractors instead of all capitals
-                                    const distractors = ['a', 'E', 'i', 'O', 'u', 'n', 't', 'r'];
-                                    const selectedDistractors = distractors.slice(0, 2); // Take 2 distractors
+                                    
+                                    // Generate mixed random distractors
+                                    const generateRandomDistractors = (existingLetters, count = 2) => {
+                                      const allLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 
+                                                         'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+                                      const availableLetters = allLetters.filter(letter => !existingLetters.includes(letter));
+                                      const distractors = [];
+                                      
+                                      while (distractors.length < count && availableLetters.length > 0) {
+                                        const randomIndex = Math.floor(Math.random() * availableLetters.length);
+                                        const selectedLetter = availableLetters.splice(randomIndex, 1)[0];
+                                        distractors.push(selectedLetter);
+                                      }
+                                      
+                                      return distractors;
+                                    };
+                                    
+                                    const selectedDistractors = generateRandomDistractors(letters, 2);
                                     setQuestionFormData(prev => ({
                                       ...prev,
                                       correctSequence: letters,
@@ -3540,7 +3633,7 @@ const MainAssessment = ({ templates }) => {
                                     }));
                                   }}
                                   className="pa-word-input"
-                                  style={{ textTransform: 'none' }}
+                                  style={{ textTransform: 'uppercase' }}
                                 />
                               </div>
 
@@ -3555,6 +3648,7 @@ const MainAssessment = ({ templates }) => {
 
                               <div className="pa-available-letters">
                                 <h5>Available Letters (Student Options)</h5>
+                                <br></br>
                                 <p>All letters from the word plus some distractors for students to arrange</p>
                                 <div className="pa-letter-options">
                                   {questionFormData.dragElements?.map((letter, index) => (
@@ -3577,21 +3671,53 @@ const MainAssessment = ({ templates }) => {
                                       )}
                                     </div>
                                   ))}
-                                  <button
-                                    type="button"
-                                    className="pa-add-letter"
-                                    onClick={() => {
-                                      const letter = prompt('Add distractor letter:');
-                                      if (letter && letter.trim()) {
-                                        setQuestionFormData(prev => ({
-                                          ...prev,
-                                          dragElements: [...(prev.dragElements || []), letter.toUpperCase().trim()]
-                                        }));
-                                      }
-                                    }}
-                                  >
-                                    <FontAwesomeIcon icon={faPlus} /> Add Option
-                                  </button>
+                                  {!showAddLetterInput ? (
+                                    <button
+                                      type="button"
+                                      className="pa-add-letter"
+                                      onClick={toggleAddLetterInput}
+                                    >
+                                      <FontAwesomeIcon icon={faPlus} /> Add Option
+                                    </button>
+                                  ) : (
+                                    <div className="pa-add-letter-input">
+                                      <input
+                                        type="text"
+                                        value={newLetterInput}
+                                        onChange={(e) => setNewLetterInput(e.target.value)}
+                                        placeholder="Enter letter (e.g., A, B, C)"
+                                        className="pa-letter-input-field"
+                                        maxLength={1}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleAddLetter();
+                                          } else if (e.key === 'Escape') {
+                                            e.preventDefault();
+                                            handleCancelAddLetter();
+                                          }
+                                        }}
+                                        autoFocus
+                                      />
+                                      <div className="pa-add-letter-actions">
+                                        <button
+                                          type="button"
+                                          className="pa-confirm-add"
+                                          onClick={handleAddLetter}
+                                          disabled={!newLetterInput.trim()}
+                                        >
+                                          <FontAwesomeIcon icon={faCheck} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="pa-cancel-add"
+                                          onClick={handleCancelAddLetter}
+                                        >
+                                          <FontAwesomeIcon icon={faTimes} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
 
@@ -3709,8 +3835,26 @@ const MainAssessment = ({ templates }) => {
                                   className="pa-auto-populate-btn"
                                   onClick={() => {
                                     const correctLetter = questionFormData.correctSequence?.[0] || '';
-                                    const distractors = ['A', 'E', 'I', 'O'];
-                                    const availableLetters = [correctLetter, ...distractors.filter(d => d !== correctLetter)].slice(0, 4);
+                                    
+                                    // Generate mixed random distractors
+                                    const generateRandomLetterDistractors = (correctLetter, count = 3) => {
+                                      const allLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 
+                                                         'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+                                      const availableLetters = allLetters.filter(letter => letter !== correctLetter);
+                                      const distractors = [];
+                                      
+                                      while (distractors.length < count && availableLetters.length > 0) {
+                                        const randomIndex = Math.floor(Math.random() * availableLetters.length);
+                                        const selectedLetter = availableLetters.splice(randomIndex, 1)[0];
+                                        distractors.push(selectedLetter);
+                                      }
+                                      
+                                      return distractors;
+                                    };
+                                    
+                                    const distractors = generateRandomLetterDistractors(correctLetter, 3);
+                                    const availableLetters = [correctLetter, ...distractors];
+                                    
                                     setQuestionFormData(prev => ({
                                       ...prev,
                                       dragElements: availableLetters
@@ -3767,40 +3911,74 @@ const MainAssessment = ({ templates }) => {
                       {/* Word Recognition - Fill Blank */}
                       {formData.category === "Word Recognition" && (
                         <div className="pa-form-section">
-                          <div className="pa-section-header">
-                            <FontAwesomeIcon icon={faImages} className="pa-section-icon" />
-                            <h3>Word and Sound Configuration</h3>
-                            <span className="pa-config-subtitle">Configure word with syllable/sound options</span>
+                          <div className="pa-section-header pa-word-recognition-header">
+                            <div className="pa-header-icon-wrapper">
+                              <FontAwesomeIcon icon={faLanguage} className="pa-section-icon" />
+                            </div>
+                            <div className="pa-header-content">
+                              <h3 className="pa-section-title">Word Recognition Configuration</h3>
+                              <span className="pa-config-subtitle">Create engaging word and sentence completion exercises</span>
+                            </div>
                           </div>
 
                           {/* Sentence Completion */}
                           {questionFormData.questionText === "Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay." && (
-                            <div className="pa-word-recognition-sentence">
-                              <div className="pa-section-title">
-                                <h4>Sentence with Blank Position</h4>
-                                <p className="pa-section-description">Enter the complete sentence, then mark which position should be blank for students to fill</p>
+                            <div className="pa-word-recognition-sentence pa-enhanced-section">
+                              <div className="pa-section-card">
+                                <div className="pa-card-header">
+                                  <div className="pa-card-icon">
+                                    <FontAwesomeIcon icon={faBookOpen} />
+                                  </div>
+                                  <div className="pa-card-content">
+                                    <h4 className="pa-card-title">Sentence with Blank Position</h4>
+                                    <p className="pa-card-description">Enter the complete sentence, then mark which position should be blank for students to fill</p>
+                                  </div>
+                                </div>
                               </div>
 
                               {/* Complete Sentence Input */}
-                              <div className="pa-form-group">
-                                <label className="pa-form-label">COMPLETE SENTENCE:</label>
-                                <textarea
-                                  placeholder="Naglalaro siya ng bola sa parke"
-                                  value={questionFormData.displayWord || ''}
-                                  onChange={(e) => {
-                                    setQuestionFormData(prev => ({
-                                      ...prev,
-                                      displayWord: e.target.value
-                                    }));
-                                  }}
-                                  className="pa-sentence-input"
-                                />
+                              <div className="pa-form-group pa-enhanced-input-group">
+                                <div className="pa-input-card">
+                                  <div className="pa-input-header">
+                                    <div className="pa-input-icon">
+                                      <FontAwesomeIcon icon={faEdit} />
+                                    </div>
+                                    <label className="pa-enhanced-label">Complete Sentence</label>
+                                  </div>
+                                  <div className="pa-input-wrapper">
+                                    <textarea
+                                      placeholder="Example: Naglalaro siya ng bola sa parke"
+                                      value={questionFormData.displayWord || ''}
+                                      onChange={(e) => {
+                                        setQuestionFormData(prev => ({
+                                          ...prev,
+                                          displayWord: e.target.value
+                                        }));
+                                      }}
+                                      className="pa-enhanced-textarea"
+                                      rows="3"
+                                    />
+                                    <div className="pa-input-hint">
+                                      <FontAwesomeIcon icon={faInfoCircle} />
+                                      <span>Enter the complete sentence that students will read</span>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
 
                               {/* Select Blank Position */}
-                              <div className="pa-form-group pa-blank-position-section">
-                                <label className="pa-form-label">Select Blank Position:</label>
-                                <p className="pa-help-text">Click on a position to make it blank. Click again to unselect and restore the letter.</p>
+                              <div className="pa-form-group pa-blank-position-section pa-enhanced-selection">
+                                <div className="pa-selection-card">
+                                  <div className="pa-selection-header">
+                                    <div className="pa-selection-icon">
+                                      <FontAwesomeIcon icon={faSpellCheck} />
+                                    </div>
+                                    <div className="pa-selection-content">
+                                      <label className="pa-enhanced-label">Select Blank Position</label>
+                                      <p className="pa-selection-description">Click on a word to make it blank. Click again to unselect and restore the word.</p>
+                                    </div>
+                                  </div>
+                                </div>
                                 <div className="pa-word-tokens">
                                   {questionFormData.displayWord?.split(' ').map((word, index) => {
                                     // Check if this word is already a blank (contains underscores)
@@ -3849,30 +4027,42 @@ const MainAssessment = ({ templates }) => {
                               </div>
 
                               {/* Preview Section */}
-                              <div className="pa-form-group pa-preview-section">
-                                <label className="pa-form-label">PREVIEW (WHAT STUDENTS WILL SEE):</label>
-                                <div className="pa-sentence-preview">
-                                  {questionFormData.displayWord?.replace(/__([^_]+)__/g, ' ___ ') || ''}
+                              <div className="pa-form-group pa-preview-section pa-enhanced-preview">
+                                <div className="pa-preview-card">
+                                  <div className="pa-preview-header">
+                                    <div className="pa-preview-icon">
+                                      <FontAwesomeIcon icon={faEye} />
+                                    </div>
+                                    <div className="pa-preview-content">
+                                      <label className="pa-enhanced-label">Student Preview</label>
+                                      <p className="pa-preview-description">This is how students will see the question</p>
+                                    </div>
+                                  </div>
+                                  <div className="pa-preview-display">
+                                    <div className="pa-preview-sentence">
+                                      {questionFormData.displayWord?.replace(/__([^_]+)__/g, ' ___ ') || 'Enter a sentence above to see the preview'}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
 
                               {/* Available Letters Section */}
-                              <div className="pa-form-group pa-available-letters-section">
-                                <label className="pa-form-label">Available Letters (Student Options)</label>
-                                <p className="pa-help-text">Letters students can choose from to fill the blank (includes correct answer + distractors)</p>
-                                <button
-                                  type="button"
-                                  className="pa-auto-populate-btn"
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    width: 'auto',
-                                    minWidth: '200px',
-                                    fontSize: '14px',
-                                    fontWeight: '600'
-                                  }}
-                                  onClick={(e) => {
+                              <div className="pa-form-group pa-available-letters-section pa-enhanced-options">
+                                <div className="pa-options-card">
+                                  <div className="pa-options-header">
+                                    <div className="pa-options-icon">
+                                      <FontAwesomeIcon icon={faGraduationCap} />
+                                    </div>
+                                    <div className="pa-options-content">
+                                      <label className="pa-enhanced-label">Available Answer Options</label>
+                                      <p className="pa-options-description">Options students can choose from to fill the blank (includes correct answer + distractors)</p>
+                                    </div>
+                                  </div>
+                                  <div className="pa-auto-populate-wrapper">
+                                    <button
+                                      type="button"
+                                      className="pa-enhanced-auto-populate-btn"
+                                      onClick={(e) => {
                                     e.preventDefault();
                                     
                                     // Disable button temporarily to show it's working
@@ -3926,10 +4116,15 @@ const MainAssessment = ({ templates }) => {
                                     }, 500);
                                   }}
                                 >
-                                  <FontAwesomeIcon icon={faGraduationCap} /> AUTO-POPULATE WITH DISTRACTORS
-                                </button>
+                                      <div className="pa-btn-content">
+                                        <FontAwesomeIcon icon={faMagic} />
+                                        <span>Auto-Generate Options</span>
+                                      </div>
+                                    </button>
+                                  </div>
+                                </div>
 
-                                <div className="pa-answer-options">
+                                <div className="pa-answer-options pa-enhanced-answer-options">
                                   <div className="pa-answer-items">
                                   {questionFormData.blankOptions?.map((option, index) => (
                                     <div key={index} className="pa-answer-item">
@@ -5000,6 +5195,7 @@ const MainAssessment = ({ templates }) => {
                     </div>
                   </div>
                 </div>
+                </>
               ) : (
                 <div className="pa-assessment-form">
                   <div className="pa-assessment-form-header">
@@ -5131,8 +5327,14 @@ const MainAssessment = ({ templates }) => {
                         <button
                           type="button"
                           className="pa-add-question-btn"
-                          onClick={handleAddQuestion}
-                          disabled={!formData.category || (modalType === 'create' && formData.readingLevel && formData.category && !canCreateAssessment(formData.readingLevel, formData.category).canCreate)}
+                          onClick={() => {
+                            console.log('🖱️  ADD QUESTION BUTTON CLICKED');
+                            console.log('🔒 Button disabled state:', !formData.category || !formData.readingLevel);
+                            console.log('📊 formData.category:', formData.category);
+                            console.log('📊 formData.readingLevel:', formData.readingLevel);
+                            handleAddQuestion();
+                          }}
+                          disabled={!formData.category || !formData.readingLevel}
                         >
                           <FontAwesomeIcon icon={faPlus} /> Add Question
                         </button>
@@ -5162,7 +5364,7 @@ const MainAssessment = ({ templates }) => {
                                   <span className="pa-question-number">Q{index + 1}</span>
                                   <div className="pa-question-details">
                                     <span className="pa-question-category">
-                                      {getQuestionTypeDisplay(question.questionType, question.questionSubtype)}
+                                      {selectedAssessment.category}
                                     </span>
                                     <span className="pa-question-text-preview">
                                       {question.questionText}
@@ -5195,7 +5397,7 @@ const MainAssessment = ({ templates }) => {
                                       <FontAwesomeIcon icon={faImages} /> Has Image
                                     </span>
                                   )}
-                                  {question.questionType === "sentence" ? (
+                                  {selectedAssessment.category === "Reading Comprehension" ? (
                                     <>
                                       <span className="pa-meta-tag">
                                         <FontAwesomeIcon icon={faBook} /> {question.passages?.length || 0} Pages
@@ -5249,7 +5451,14 @@ const MainAssessment = ({ templates }) => {
                   <FontAwesomeIcon icon={faTimes} /> Close Preview
                 </button>
               ) : showQuestionForm ? (
-                null
+                <>
+                  <button
+                    className="pa-modal-cancel"
+                    onClick={() => setShowQuestionForm(false)}
+                  >
+                    <FontAwesomeIcon icon={faArrowLeft} /> Back to Assessment
+                  </button>
+                </>
               ) : (
                 <>
                   <button

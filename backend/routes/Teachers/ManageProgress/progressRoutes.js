@@ -37,8 +37,8 @@ router.get('/student/:studentId/interventions', authorize('teacher', 'admin', 'p
 // GET /api/progress/interventions/:interventionId
 router.get('/interventions/:interventionId', authorize('teacher', 'admin', 'parent'), progressController.getInterventionDetails);
 
-// Update intervention progress
-// PUT /api/progress/interventions/:interventionId/progress
-router.put('/interventions/:interventionId/progress', authorize('teacher', 'admin'), progressController.updateInterventionProgress);
+// Update intervention results
+// PUT /api/progress/interventions/:interventionId/results
+router.put('/interventions/:interventionId/results', authorize('teacher', 'admin'), progressController.updateInterventionProgress);
 
 module.exports = router;

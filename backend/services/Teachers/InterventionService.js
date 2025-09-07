@@ -1,7 +1,7 @@
 // services/Teachers/InterventionService.js
 const mongoose = require('mongoose');
 const InterventionPlan = require('../../models/Teachers/ManageProgress/interventionPlanModel');
-const InterventionProgress = require('../../models/Teachers/ManageProgress/interventionProgressModel');
+const InterventionResults = require('../../models/Teachers/ManageProgress/interventionResultsModel');
 const TemplateQuestion = require('../../models/Teachers/ManageProgress/templatesQuestionsModel');
 const TemplateChoice = require('../../models/Teachers/ManageProgress/templatesChoicesModel');
 const SentenceTemplate = require('../../models/Teachers/ManageProgress/sentenceTemplateModel');
@@ -51,7 +51,7 @@ class InterventionService {
       // Get progress for each intervention
       const interventionsWithProgress = await Promise.all(interventions.map(async (intervention) => {
         try {
-          const progress = await InterventionProgress.findOne({
+          const progress = await InterventionResults.findOne({
             interventionPlanId: intervention._id
           }).lean();
           
@@ -93,7 +93,7 @@ class InterventionService {
       }
       
       // Get progress for this intervention
-      const progress = await InterventionProgress.findOne({ 
+      const progress = await InterventionResults.findOne({ 
         interventionPlanId: intervention._id 
       });
       
@@ -210,7 +210,7 @@ class InterventionService {
       // Create intervention progress record first
       let interventionProgress = null;
       try {
-        interventionProgress = new InterventionProgress({
+        interventionProgress = new InterventionResults({
           studentId: interventionData.studentId,
           completedActivities: 0,
           totalActivities: interventionData.questions?.length || 0,
@@ -220,7 +220,7 @@ class InterventionService {
           percentCorrect: 0,
           passedThreshold: false
         });
-        console.log('Created InterventionProgress object:', interventionProgress);
+        console.log('Created InterventionResults object:', interventionProgress);
       } catch (progressError) {
         console.error('Error creating progress record object:', progressError);
         // Continue with intervention creation even if progress record creation fails
@@ -397,8 +397,8 @@ class InterventionService {
         throw new Error('Intervention not found');
       }
       
-      // Delete associated progress
-      await InterventionProgress.deleteMany({ interventionPlanId: interventionId });
+      // Delete associated results
+      await InterventionResults.deleteMany({ interventionPlanId: interventionId });
       
       return intervention;
     } catch (error) {
@@ -822,7 +822,7 @@ class InterventionService {
       await response.save();
       
       // Update progress
-      const progress = await InterventionProgress.findOne({
+      const progress = await InterventionResults.findOne({
         studentId: responseData.studentId,
         interventionPlanId: responseData.interventionPlanId
       });
