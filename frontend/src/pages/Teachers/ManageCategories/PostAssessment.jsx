@@ -5189,15 +5189,14 @@ const MainAssessment = ({ templates }) => {
                                 <label style={{ 
                                   display: 'flex',
                                   alignItems: 'center',
-                                  marginBottom: '16px', 
-                                  fontSize: '18px', 
+                                  marginBottom: '12px', 
+                                  fontSize: '16px', 
                                   fontWeight: '600', 
-                                  color: '#374151',
-                                  letterSpacing: '0.5px'
+                                  color: '#374151'
                                 }}>
-                                  <FontAwesomeIcon icon={faQuestion} style={{ marginRight: '10px', color: '#3b82f6' }} />
+                                  <FontAwesomeIcon icon={faQuestion} style={{ marginRight: '8px', color: '#3b82f6' }} />
                                   Question Text:
-                                  <span style={{ color: '#ef4444', marginLeft: '6px', fontSize: '16px' }}>*</span>
+                                  <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>
                                 </label>
                                 <input
                                   type="text"
@@ -5216,11 +5215,12 @@ const MainAssessment = ({ templates }) => {
                                   placeholder="Enter your question (e.g., 'Sino ang pangunahing tauhan?')"
                                   style={{
                                     width: '100%',
-                                    padding: '16px 20px',
+                                    padding: '14px 16px',
                                     border: '2px solid #d1d5db',
-                                    borderRadius: '12px',
-                                    fontSize: '16px',
-                                    fontWeight: '500',
+                                    borderRadius: '10px',
+                                    fontSize: '15px',
+                                    fontFamily: 'inherit',
+                                    lineHeight: '1.6',
                                     backgroundColor: '#fafafa',
                                     transition: 'all 0.2s ease',
                                     outline: 'none',
@@ -5238,14 +5238,16 @@ const MainAssessment = ({ templates }) => {
                               </div>
 
                               {/* Primary Answer */}
-                              <div className="pa-form-group" style={{ marginBottom: '32px' }}>
+                              <div className="pa-form-group" style={{ marginBottom: '40px' }}>
                                 <label style={{ 
-                                  display: 'block', 
-                                  marginBottom: '8px', 
-                                  fontSize: '14px', 
-                                  fontWeight: '500', 
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  marginBottom: '12px', 
+                                  fontSize: '16px', 
+                                  fontWeight: '600', 
                                   color: '#374151'
                                 }}>
+                                  <FontAwesomeIcon icon={faCheckCircle} style={{ marginRight: '8px', color: '#10b981' }} />
                                   Primary Correct Answer:
                                   <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>
                                 </label>
@@ -5253,45 +5255,62 @@ const MainAssessment = ({ templates }) => {
                                   type="text"
                                   value={questionFormData.tempComprehensionQuestion.correctAnswer}
                                   onChange={(e) => {
+                                    // Allow only letters, spaces, and common punctuation - no numbers for reading comprehension answers
+                                    const value = e.target.value.replace(/[0-9]/g, '');
                                     setQuestionFormData(prev => ({
                                       ...prev,
                                       tempComprehensionQuestion: {
                                         ...prev.tempComprehensionQuestion,
-                                        correctAnswer: e.target.value
+                                        correctAnswer: value
                                       }
                                     }));
                                   }}
                                   placeholder="Enter the main correct answer (e.g., 'Juan')"
                                   style={{
                                     width: '100%',
-                                    padding: '12px 14px',
+                                    padding: '14px 16px',
                                     border: '2px solid #10b981',
-                                    borderRadius: '8px',
-                                    fontSize: '14px',
+                                    borderRadius: '10px',
+                                    fontSize: '15px',
+                                    fontFamily: 'inherit',
+                                    lineHeight: '1.6',
                                     backgroundColor: '#f0fdf4',
-                                    transition: 'border-color 0.2s ease',
-                                    outline: 'none'
+                                    transition: 'all 0.2s ease',
+                                    outline: 'none',
+                                    boxShadow: '0 1px 3px rgba(16, 185, 129, 0.2)'
                                   }}
-                                  onFocus={(e) => e.target.style.borderColor = '#059669'}
-                                  onBlur={(e) => e.target.style.borderColor = '#10b981'}
+                                  onFocus={(e) => {
+                                    e.target.style.borderColor = '#059669';
+                                    e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                                  }}
+                                  onBlur={(e) => {
+                                    e.target.style.borderColor = '#10b981';
+                                    e.target.style.boxShadow = '0 1px 3px rgba(16, 185, 129, 0.2)';
+                                  }}
                                 />
                               </div>
 
                               {/* Answer Variations Section */}
                               <div className="pa-form-group">
                                 <label style={{ 
-                                  display: 'block', 
-                                  marginBottom: '8px', 
-                                  fontSize: '14px', 
-                                  fontWeight: '500', 
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  marginBottom: '12px', 
+                                  fontSize: '16px', 
+                                  fontWeight: '600', 
                                   color: '#374151'
                                 }}>
+                                  <FontAwesomeIcon icon={faListUl} style={{ marginRight: '8px', color: '#f59e0b' }} />
                                   Acceptable Answer Variations (Optional):
                                 </label>
                                 <div style={{ 
-                                  fontSize: '12px', 
+                                  fontSize: '14px', 
                                   color: '#6b7280', 
-                                  marginBottom: '12px'
+                                  marginBottom: '16px',
+                                  padding: '12px 16px',
+                                  backgroundColor: '#f9fafb',
+                                  borderRadius: '8px',
+                                  border: '1px solid #e5e7eb'
                                 }}>
                                   Add different ways students might answer correctly (different cases, with/without titles, etc.)
                                 </div>
@@ -5307,8 +5326,10 @@ const MainAssessment = ({ templates }) => {
                                       type="text"
                                       value={answer}
                                       onChange={(e) => {
+                                        // Remove numbers from acceptable answers
+                                        const value = e.target.value.replace(/[0-9]/g, '');
                                         const updatedAnswers = [...questionFormData.tempComprehensionQuestion.acceptableAnswers];
-                                        updatedAnswers[index] = e.target.value;
+                                        updatedAnswers[index] = value;
                                         setQuestionFormData(prev => ({
                                           ...prev,
                                           tempComprehensionQuestion: {
@@ -5320,12 +5341,18 @@ const MainAssessment = ({ templates }) => {
                                       placeholder="Enter answer variation (e.g., 'juan', 'si juan')"
                                       style={{
                                         flex: 1,
-                                        padding: '8px 12px',
-                                        border: '1px solid #d1d5db',
-                                        borderRadius: '6px',
-                                        fontSize: '14px',
-                                        marginRight: '8px'
+                                        padding: '12px 14px',
+                                        border: '2px solid #d1d5db',
+                                        borderRadius: '8px',
+                                        fontSize: '15px',
+                                        fontFamily: 'inherit',
+                                        lineHeight: '1.6',
+                                        marginRight: '12px',
+                                        outline: 'none',
+                                        transition: 'border-color 0.2s ease'
                                       }}
+                                      onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                                      onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                                     />
                                     <button
                                       type="button"
