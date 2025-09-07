@@ -3245,63 +3245,66 @@ const MainAssessment = ({ templates }) => {
                             />
                           </div>
 
-                          <div className="pa-form-group">
-                            <label className="pa-form-label" htmlFor="questionText">
-                              <FontAwesomeIcon icon={faFileAlt} className="pa-label-icon" />
-                              Question Text
-                              <span className="pa-required-field">*</span>
-                              <Tooltip text="The main instruction or question that will be displayed to students. Make it clear and age-appropriate." />
-                            </label>
-                            {formData.category === "Decoding" ? (
-                              <select
-                                id="questionText"
-                                name="questionText"
-                                value={questionFormData.questionText}
-                                onChange={(e) => {
-                                  const selectedText = e.target.value;
-                                  setQuestionFormData(prev => ({
-                                    ...prev,
-                                    questionText: selectedText,
-                                    // Reset related fields when changing question type
-                                    displaySequence: selectedText === 'Tukuyin ang nasa larawan?' ? null : [],
-                                    dragElements: [],
-                                    correctSequence: [],
-                                    blankPosition: selectedText === 'Buoin ang salita' ? 0 : null
-                                  }));
-                                }}
-                                className="pa-select-input"
-                                required
-                              >
-                                <option value="">Select question text</option>
-                                <option value="Tukuyin ang nasa larawan?">Tukuyin ang nasa larawan?</option>
-                                <option value="Buoin ang salita">Buoin ang salita</option>
-                              </select>
-                            ) : formData.category === "Word Recognition" ? (
-                              <select
-                                id="questionText"
-                                name="questionText"
-                                value={questionFormData.questionText}
-                                onChange={handleQuestionFormChange}
-                                className="pa-select-input"
-                                required
-                              >
-                                <option value="">Select question text</option>
-                                <option value="Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.">Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.</option>
-                                <option value="Anong kasing tunog ng salitang nakikita?">Anong kasing tunog ng salitang nakikita?</option>
-                              </select>
-                            ) : (
-                              <input
-                                type="text"
-                                id="questionText"
-                                name="questionText"
-                                value={questionFormData.questionText}
-                                onChange={handleQuestionFormChange}
-                                placeholder="Enter the question text (e.g., 'Anong katumbas na maliit na letra?')"
-                                required
-                                className="pa-text-input"
-                              />
-                            )}
-                          </div>
+                          {/* Hide Question Text field for Reading Comprehension - it has its own question text inputs */}
+                          {formData.category !== "Reading Comprehension" && (
+                            <div className="pa-form-group">
+                              <label className="pa-form-label" htmlFor="questionText">
+                                <FontAwesomeIcon icon={faFileAlt} className="pa-label-icon" />
+                                Question Text
+                                <span className="pa-required-field">*</span>
+                                <Tooltip text="The main instruction or question that will be displayed to students. Make it clear and age-appropriate." />
+                              </label>
+                              {formData.category === "Decoding" ? (
+                                <select
+                                  id="questionText"
+                                  name="questionText"
+                                  value={questionFormData.questionText}
+                                  onChange={(e) => {
+                                    const selectedText = e.target.value;
+                                    setQuestionFormData(prev => ({
+                                      ...prev,
+                                      questionText: selectedText,
+                                      // Reset related fields when changing question type
+                                      displaySequence: selectedText === 'Tukuyin ang nasa larawan?' ? null : [],
+                                      dragElements: [],
+                                      correctSequence: [],
+                                      blankPosition: selectedText === 'Buoin ang salita' ? 0 : null
+                                    }));
+                                  }}
+                                  className="pa-select-input"
+                                  required
+                                >
+                                  <option value="">Select question text</option>
+                                  <option value="Tukuyin ang nasa larawan?">Tukuyin ang nasa larawan?</option>
+                                  <option value="Buoin ang salita">Buoin ang salita</option>
+                                </select>
+                              ) : formData.category === "Word Recognition" ? (
+                                <select
+                                  id="questionText"
+                                  name="questionText"
+                                  value={questionFormData.questionText}
+                                  onChange={handleQuestionFormChange}
+                                  className="pa-select-input"
+                                  required
+                                >
+                                  <option value="">Select question text</option>
+                                  <option value="Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.">Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.</option>
+                                  <option value="Anong kasing tunog ng salitang nakikita?">Anong kasing tunog ng salitang nakikita?</option>
+                                </select>
+                              ) : (
+                                <input
+                                  type="text"
+                                  id="questionText"
+                                  name="questionText"
+                                  value={questionFormData.questionText}
+                                  onChange={handleQuestionFormChange}
+                                  placeholder="Enter the question text (e.g., 'Anong katumbas na maliit na letra?')"
+                                  required
+                                  className="pa-text-input"
+                                />
+                              )}
+                            </div>
+                          )}
 
                           {/* Show questionValue only for Alphabet Knowledge */}
                           {formData.category === "Alphabet Knowledge" && (
