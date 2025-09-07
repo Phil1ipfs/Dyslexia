@@ -42,6 +42,7 @@ import {
   faLink
 } from "@fortawesome/free-solid-svg-icons";
 import "../../../css/Teachers/ManageCategories/PostAssessment.css";
+import "../../../css/Teachers/ManageCategories/PostAssessment-enhanced.css";
 import MainAssessmentService from '../../../services/Teachers/MainAssessmentService';
 import { toast } from 'react-toastify';
 import { ToastContainer } from 'react-toastify';
@@ -58,6 +59,13 @@ const Tooltip = ({ text }) => (
     <span className="pa-tooltip-text">{text}</span>
   </div>
 );
+
+// Helper function for ordinal suffixes
+const getOrdinalSuffix = (num) => {
+  const suffixes = ['th', 'st', 'nd', 'rd'];
+  const value = num % 100;
+  return suffixes[(value - 20) % 10] || suffixes[value] || suffixes[0];
+};
 
 // Helper function to handle API errors and display user-friendly messages
 const handleApiError = (error, defaultMessage = "An error occurred. Please try again.") => {
@@ -1485,13 +1493,25 @@ const MainAssessment = ({ templates }) => {
           case "Word Recognition":
             // Auto-null required fields
             sanitized.questionValue = null;
-            // Ensure arrays exist
-            sanitized.blankOptions = sanitized.blankOptions || [];
-            sanitized.correctAnswer = sanitized.correctAnswer || [];
-            // Normalize displayWord formatting - convert __word__ to ___ for database storage
+            // Ensure arrays exist and properly capitalize
+            sanitized.blankOptions = (sanitized.blankOptions || []).map(option => 
+              typeof option === 'string' && option.length > 0 
+                ? option.charAt(0).toUpperCase() + option.slice(1).toLowerCase() 
+                : option
+            );
+            sanitized.correctAnswer = (sanitized.correctAnswer || []).map(answer => 
+              typeof answer === 'string' && answer.length > 0 
+                ? answer.charAt(0).toUpperCase() + answer.slice(1).toLowerCase() 
+                : answer
+            );
+            // Normalize displayWord formatting - convert __word__ to dynamic blanks for database storage
             if (sanitized.displayWord) {
               sanitized.displayWord = sanitized.displayWord
-                .replace(/__([^_]+)__/g, ' ___ ') // Convert __word__ to simple ___
+                .replace(/__([^_]+)__/g, (_, word) => {
+                  // Create dynamic blanks based on word length
+                  const blankLength = word.length;
+                  return ` ${'_'.repeat(blankLength)} `;
+                }) // Convert __word__ to dynamic length blanks
                 .replace(/\s+/g, ' ') // Normalize multiple spaces to single spaces
                 .trim(); // Remove leading/trailing spaces
             }
@@ -3511,6 +3531,7 @@ const MainAssessment = ({ templates }) => {
                               <p className="pa-section-description">
                                 Enter letters (e.g., H, T) or words (e.g., DAGA, MATA) that will be read aloud by text-to-speech
                               </p>
+                              <br></br>
 
                               <div className="pa-audio-cards">
                                 {questionFormData.questionSet?.[0]?.audioTexts?.map((audioText, index) => (
@@ -4067,8 +4088,12 @@ const MainAssessment = ({ templates }) => {
                               {/* Preview Section */}
                               <div className="pa-form-group pa-preview-section">
                                 <label className="pa-form-label">PREVIEW (WHAT STUDENTS WILL SEE):</label>
-                                <div className="pa-sentence-preview">
-                                  {questionFormData.displayWord?.replace(/__([^_]+)__/g, ' ___ ') || ''}
+                                <div className="pa-sentence-preview pa-enhanced-preview">
+                                  {questionFormData.displayWord?.replace(/__([^_]+)__/g, (_, word) => {
+                                    // Create dynamic blanks based on word length
+                                    const blankLength = word.length;
+                                    return ` ${'_'.repeat(blankLength)} `;
+                                  }) || 'Enter a sentence above to see preview...'}
                                 </div>
                               </div>
 
@@ -4104,25 +4129,30 @@ const MainAssessment = ({ templates }) => {
                                         const correctAnswer = blankMatch ? blankMatch[1].trim() : '';
                                         
                                         if (correctAnswer) {
-                                          // Create distractors - common words for sentence completion
+                                          // Create distractors - common words for sentence completion with proper capitalization
                                           const commonWords = ['bola', 'papel', 'kutsara', 'damit', 'libro', 'laruan', 'sapatos', 'tubig', 'mesa', 'silla', 'pusa', 'aso', 'bahay', 'kotse', 'payong', 'lapis', 'upuan', 'aklat', 'plato', 'baso'];
+                                          
+                                          // Capitalize first letter of correct answer
+                                          const capitalizedCorrectAnswer = correctAnswer.charAt(0).toUpperCase() + correctAnswer.slice(1).toLowerCase();
+                                          
                                           const distractors = commonWords
                                             .filter(word => word.toLowerCase() !== correctAnswer.toLowerCase())
-                                            .slice(0, 3);
-                                          // Preserve the original case of the correct answer, lowercase distractors
-                                          const availableOptions = [correctAnswer, ...distractors];
+                                            .slice(0, 3)
+                                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()); // Capitalize distractors too
+                                          
+                                          const availableOptions = [capitalizedCorrectAnswer, ...distractors];
                                           
                                           setQuestionFormData(prev => ({
                                             ...prev,
                                             blankOptions: availableOptions,
-                                            correctAnswer: [correctAnswer]
+                                            correctAnswer: [capitalizedCorrectAnswer]
                                           }));
                                           
                                           // Success feedback with toast instead of alert
-                                          toast.success(`Generated ${availableOptions.length} options with "${correctAnswer}" as the correct answer!`);
+                                          toast.success(`Generated ${availableOptions.length} options with "${capitalizedCorrectAnswer}" as the correct answer!`);
                                         } else {
-                                          // Fallback: if no blank selected, show generic options
-                                          const genericWords = ['bola', 'papel', 'kutsara', 'damit'];
+                                          // Fallback: if no blank selected, show generic options with proper capitalization
+                                          const genericWords = ['Bola', 'Papel', 'Kutsara', 'Damit'];
                                           setQuestionFormData(prev => ({
                                             ...prev,
                                             blankOptions: genericWords,
@@ -4403,7 +4433,9 @@ const MainAssessment = ({ templates }) => {
                                             }}
                                           />
                                           <FontAwesomeIcon icon={faCheckCircle} />
-                                          Correct
+                                          {questionFormData.correctAnswer?.includes(option) ? 
+                                            `${questionFormData.correctAnswer.indexOf(option) + 1}${getOrdinalSuffix(questionFormData.correctAnswer.indexOf(option) + 1)} Correct` : 
+                                            'Mark Correct'}
                                         </label>
                                         <button
                                           type="button"
@@ -4491,11 +4523,12 @@ const MainAssessment = ({ templates }) => {
                               </div>
 
                               <div className="pa-correct-answers">
-                                <h5>Correct Answers <span className="pa-selected-options">SELECTED FROM OPTIONS</span></h5>
-                                <p>Check the correct options above to mark them as correct answers</p>
+                                <h5>Correct Answers <span className="pa-selected-options">IN ORDER SELECTED</span></h5>
+                                <p>Check the correct options above to mark them as correct answers (shows order: 1st, 2nd, 3rd...)</p>
                                 <div className="pa-correct-sounds-display">
                                   {questionFormData.correctAnswer?.map((answer, index) => (
                                     <div key={index} className="pa-correct-sound-item">
+                                      <span className="pa-answer-order">{index + 1}{getOrdinalSuffix(index + 1)}</span>
                                       <span style={{ textTransform: 'uppercase', fontWeight: '600' }}>{answer}</span>
                                       <button
                                         type="button"

@@ -1022,7 +1022,7 @@
 
 .pa-header-icon {
   margin-right: 8px;
-  color: #4e5c93;
+  color: #4e5c93 !important;
   font-size: 14px;
 }
 
@@ -4654,8 +4654,8 @@
 }
 
 .pa-header-icon-wrapper .pa-section-icon {
-  color: white;
-  font-size: 24px;
+  color: white !important;
+  font-size: 24px !important;
 }
 
 .pa-header-content .pa-section-title {
