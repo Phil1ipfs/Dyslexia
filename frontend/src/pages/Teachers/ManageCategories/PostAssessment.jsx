@@ -1789,7 +1789,7 @@ const MainAssessment = ({ templates }) => {
             };
           });
 
-          // Reset for a new question and keep the form open
+          // Reset for a NEW STORY (after updating an existing question)
           setCurrentQuestion(null);
           console.log('Question update completed successfully');
 
@@ -1800,8 +1800,10 @@ const MainAssessment = ({ templates }) => {
 
         setQuestionFormData({
           questionType: categoryToQuestionTypeMap[formData.category],
-          questionText: formData.category === "Reading Comprehension" ? null : "",
+          questionText: formData.category === "Reading Comprehension" ? "" : "",
           questionImage: null,
+          imageFile: null,
+          imageName: "",
           // Ensure it has a default value
           questionValue: formData.category === "Reading Comprehension" ? "" : null,
           // Include questionId for all question types
@@ -1826,7 +1828,25 @@ const MainAssessment = ({ templates }) => {
               questionId: nextParentId ? `${nextParentId}_SQ01` : null
             }
           ] : [],
-          // Question added successfully
+          // Reading Comprehension specific fields - RESET FOR NEW STORY
+          storyTitle: "",
+          comprehensionQuestions: [],
+          currentComprehensionIndex: -1,
+          tempComprehensionQuestion: {
+            questionText: "",
+            correctAnswer: "",
+            acceptableAnswers: []
+          },
+          // Other question type fields to ensure clean state
+          displaySequence: null,
+          blankPosition: null,
+          dragElements: [],
+          correctSequence: [],
+          displayWord: "",
+          blankOptions: [],
+          correctAnswer: formData.category === "Reading Comprehension" ? "" : [],
+          acceptableAnswers: formData.category === "Reading Comprehension" ? [] : [],
+          questionSet: []
         });
 
         toast.success("Question updated! You can add another or click Back to return to the assessment.");
@@ -1840,7 +1860,7 @@ const MainAssessment = ({ templates }) => {
           questions: [...prev.questions, finalQuestionData]
         }));
 
-        // Reset for a new question and keep the form open
+        // Reset for a NEW STORY (completely fresh form for Reading Comprehension)
         // Generate temporary questionId for the next question
         const nextQuestionNumber = String(formData.questions.length + 2).padStart(3, '0'); // +2 because we just added one
         const nextTempQuestionId = `${getCategoryPrefix(formData.category)}_${nextQuestionNumber}`;
@@ -1848,8 +1868,10 @@ const MainAssessment = ({ templates }) => {
 
         setQuestionFormData({
           questionType: categoryToQuestionTypeMap[formData.category],
-          questionText: formData.category === "Reading Comprehension" ? null : "",
+          questionText: formData.category === "Reading Comprehension" ? "" : "",
           questionImage: null,
+          imageFile: null,
+          imageName: "",
           // Ensure it has a default value
           questionValue: formData.category === "Reading Comprehension" ? "" : null,
           // Include questionId for all question types
@@ -1874,7 +1896,25 @@ const MainAssessment = ({ templates }) => {
               questionId: nextParentId ? `${nextParentId}_SQ01` : null
             }
           ] : [],
-          // Question added successfully
+          // Reading Comprehension specific fields - RESET FOR NEW STORY
+          storyTitle: "",
+          comprehensionQuestions: [],
+          currentComprehensionIndex: -1,
+          tempComprehensionQuestion: {
+            questionText: "",
+            correctAnswer: "",
+            acceptableAnswers: []
+          },
+          // Other question type fields to ensure clean state
+          displaySequence: null,
+          blankPosition: null,
+          dragElements: [],
+          correctSequence: [],
+          displayWord: "",
+          blankOptions: [],
+          correctAnswer: formData.category === "Reading Comprehension" ? "" : [],
+          acceptableAnswers: formData.category === "Reading Comprehension" ? [] : [],
+          questionSet: []
         });
 
         console.log('Question successfully added to form! Total questions now:', formData.questions.length + 1);
