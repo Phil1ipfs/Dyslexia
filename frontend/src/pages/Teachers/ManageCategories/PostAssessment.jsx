@@ -4022,7 +4022,7 @@ const MainAssessment = ({ templates }) => {
                               <div className="pa-form-group">
                                 <label className="pa-form-label">COMPLETE SENTENCE:</label>
                                 <textarea
-                                  placeholder="Naglalaro siya ng bola sa parke"
+                                  placeholder=""
                                   value={questionFormData.displayWord || ''}
                                   onChange={(e) => {
                                     setQuestionFormData(prev => ({
