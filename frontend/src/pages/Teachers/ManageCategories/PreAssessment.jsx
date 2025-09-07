@@ -3221,7 +3221,9 @@ const PreAssessment = () => {
                                   const wordLetters = currentQuestionData.completeWord.split('');
                                   const distractors = ['A', 'E', 'I', 'O', 'U', 'B', 'D', 'G', 'P', 'T', 'S', 'N', 'R', 'L'];
                                   const availableDistractors = distractors.filter(d => !wordLetters.includes(d));
-                                  const selectedDistractors = availableDistractors.slice(0, 2);
+                                  // Randomize distractor selection
+                                  const shuffled = availableDistractors.sort(() => Math.random() - 0.5);
+                                  const selectedDistractors = shuffled.slice(0, 2);
                                   const allOptions = [...wordLetters, ...selectedDistractors];
                                   
                                   setCurrentQuestionData(prev => ({

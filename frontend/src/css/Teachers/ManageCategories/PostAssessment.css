@@ -6448,3 +6448,88 @@
   color: #059669;
   font-weight: 500;
 }
+
+/* Distractor Input Modal */
+.pa-distractor-input-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.pa-distractor-input-content {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  max-width: 400px;
+  width: 90%;
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+}
+
+.pa-distractor-input-content label {
+  display: block;
+  margin-bottom: 12px;
+  font-weight: 600;
+  font-size: 16px;
+  color: #374151;
+}
+
+.pa-distractor-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 20px;
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+  transition: border-color 0.2s ease;
+}
+
+.pa-distractor-input:focus {
+  outline: none;
+  border-color: #6b7280;
+}
+
+.pa-distractor-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.pa-cancel-btn, .pa-add-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+}
+
+.pa-cancel-btn {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.pa-cancel-btn:hover {
+  background: #e5e7eb;
+}
+
+.pa-add-btn {
+  background: #10b981;
+  color: white;
+}
+
+.pa-add-btn:hover {
+  background: #059669;
+}

@@ -127,6 +127,8 @@ const MainAssessment = ({ templates }) => {
   const [previewPage, setPreviewPage] = useState(0);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [submitSuccessDialog, setSubmitSuccessDialog] = useState(false);
+  const [showDistractorInput, setShowDistractorInput] = useState(false);
+  const [distractorValue, setDistractorValue] = useState("");
   const [deleteSuccessDialog, setDeleteSuccessDialog] = useState(false);
   const [submitConfirmDialog, setSubmitConfirmDialog] = useState(false);
   const [duplicateRestrictionDialog, setDuplicateRestrictionDialog] = useState(false);
@@ -3539,7 +3541,10 @@ const MainAssessment = ({ templates }) => {
                                     const distractors = isWordIdentification ? 
                                       ['A', 'E', 'I', 'O', 'U', 'N', 'T', 'R'] : 
                                       ['a', 'E', 'i', 'O', 'u', 'n', 't', 'r'];
-                                    const selectedDistractors = distractors.slice(0, 2); // Take 2 distractors
+                                    // Randomize distractor selection - filter out letters already in the word
+                                    const availableDistractors = distractors.filter(d => !letters.includes(d));
+                                    const shuffled = availableDistractors.sort(() => Math.random() - 0.5);
+                                    const selectedDistractors = shuffled.slice(0, 2); // Take 2 random distractors
                                     setQuestionFormData(prev => ({
                                       ...prev,
                                       correctSequence: letters,
@@ -3587,18 +3592,55 @@ const MainAssessment = ({ templates }) => {
                                   <button
                                     type="button"
                                     className="pa-add-letter"
-                                    onClick={() => {
-                                      const letter = prompt('Add distractor letter:');
-                                      if (letter && letter.trim()) {
-                                        setQuestionFormData(prev => ({
-                                          ...prev,
-                                          dragElements: [...(prev.dragElements || []), letter.toUpperCase().trim()]
-                                        }));
-                                      }
-                                    }}
+                                    onClick={() => setShowDistractorInput(true)}
                                   >
                                     <FontAwesomeIcon icon={faPlus} /> Add Option
                                   </button>
+                                  
+                                  {showDistractorInput && (
+                                    <div className="pa-distractor-input-modal">
+                                      <div className="pa-distractor-input-content">
+                                        <label>Add distractor letter:</label>
+                                        <input
+                                          type="text"
+                                          maxLength="1"
+                                          value={distractorValue}
+                                          onChange={(e) => setDistractorValue(e.target.value.toUpperCase())}
+                                          className="pa-distractor-input"
+                                          placeholder="Enter single letter"
+                                          autoFocus
+                                        />
+                                        <div className="pa-distractor-buttons">
+                                          <button
+                                            type="button"
+                                            className="pa-cancel-btn"
+                                            onClick={() => {
+                                              setShowDistractorInput(false);
+                                              setDistractorValue("");
+                                            }}
+                                          >
+                                            Cancel
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="pa-add-btn"
+                                            onClick={() => {
+                                              if (distractorValue && distractorValue.trim()) {
+                                                setQuestionFormData(prev => ({
+                                                  ...prev,
+                                                  dragElements: [...(prev.dragElements || []), distractorValue.trim()]
+                                                }));
+                                                setShowDistractorInput(false);
+                                                setDistractorValue("");
+                                              }
+                                            }}
+                                          >
+                                            OK
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
 
