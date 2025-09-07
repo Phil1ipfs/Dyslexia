@@ -394,10 +394,29 @@ class MainAssessmentService {
         throw new Error('No file provided for upload');
       }
       
+      // Validate file before uploading
+      if (file.size === 0) {
+        throw new Error('File is empty');
+      }
+      
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        throw new Error('File size exceeds 10MB limit');
+      }
+      
       // Create form data for the file upload
       const formData = new FormData();
       formData.append('file', file);
       formData.append('path', path);
+      
+      // Get authentication headers (modified to work with FormData)
+      const authHeaders = this.getAuthHeaders();
+      const uploadConfig = {
+        ...authHeaders,
+        headers: {
+          ...authHeaders.headers,
+          'Content-Type': 'multipart/form-data'
+        }
+      };
       
       // Try multiple endpoints for upload - these are fallbacks in case one fails
       const endpoints = [
@@ -406,28 +425,36 @@ class MainAssessmentService {
         '/api/teachers/s3'
       ];
       
-      let uploadError = null;
+      let lastError = null;
       let response = null;
       
       // Try each endpoint until one works
       for (const endpoint of endpoints) {
         try {
           console.log(`Trying to upload to endpoint: ${endpoint}`);
-          response = await axios.post(endpoint, formData);
+          response = await axios.post(endpoint, formData, uploadConfig);
           
           if (response.data && (response.data.success || response.data.url)) {
             console.log(`Upload successful using ${endpoint}`);
             break; // Break the loop if upload succeeds
+          } else {
+            throw new Error(`Upload endpoint ${endpoint} returned invalid response`);
           }
         } catch (err) {
-          uploadError = err;
+          lastError = err;
           console.warn(`Upload failed for endpoint ${endpoint}:`, err.message);
+          
+          // If it's an auth error, don't try other endpoints
+          if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+            throw new Error(`Authentication failed: ${err.response.data?.message || 'Access denied'}`);
+          }
         }
       }
       
       // If we still don't have a successful response after trying all endpoints
       if (!response || !response.data || (!response.data.success && !response.data.url)) {
-        throw new Error(uploadError?.message || 'Failed to upload file to any endpoint');
+        const errorMsg = lastError?.response?.data?.message || lastError?.message || 'Failed to upload file to any endpoint';
+        throw new Error(errorMsg);
       }
       
       // Process the successful response
@@ -449,9 +476,29 @@ class MainAssessmentService {
     } catch (error) {
       console.error('Error uploading image to S3:', error);
       
+      // Return more specific error information
+      let errorMessage = 'Failed to upload file to storage';
+      
+      if (error.response) {
+        if (error.response.status === 401 || error.response.status === 403) {
+          errorMessage = 'Authentication failed - please refresh the page and try again';
+        } else if (error.response.status === 413) {
+          errorMessage = 'File size too large - please use a smaller image';
+        } else if (error.response.status === 500) {
+          errorMessage = 'Server error - please try again later';
+        } else {
+          errorMessage = error.response.data?.message || `Server error (${error.response.status})`;
+        }
+      } else if (error.message.includes('Network Error')) {
+        errorMessage = 'Network error - please check your internet connection';
+      } else if (error.message.includes('timeout')) {
+        errorMessage = 'Upload timeout - please try with a smaller image or check your connection';
+      }
+      
       return {
         success: false,
-        error: error.message || 'Failed to upload file to storage'
+        error: error.message || errorMessage,
+        statusCode: error.response?.status
       };
     }
   };

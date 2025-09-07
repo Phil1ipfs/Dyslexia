@@ -1637,32 +1637,179 @@ const MainAssessment = ({ templates }) => {
         for (const passage of finalQuestionData.passages) {
           let updatedPassage = { ...passage };
 
+          // Validate passage data before processing
+          if (!passage.pageNumber) {
+            console.warn('Passage missing pageNumber, skipping image processing');
+            updatedPassage.pageImage = null;
+            updatedPassages.push(updatedPassage);
+            continue;
+          }
+
           // Check if this passage has a blob URL that needs uploading
           if (passage.pageImage && typeof passage.pageImage === 'string' && passage.pageImage.startsWith('blob:')) {
             try {
-              // Convert blob URL back to File object
-              const response = await fetch(passage.pageImage);
-              const blob = await response.blob();
-              const fileName = `page_${passage.pageNumber}_${Date.now()}.jpg`;
-              const imageFile = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+              // Enhanced blob URL validation
+              if (!passage.pageImage || passage.pageImage === 'blob:' || passage.pageImage.length < 10) {
+                console.warn(`Invalid blob URL for page ${passage.pageNumber}: "${passage.pageImage}"`);
+                toast.error(`Image for page ${passage.pageNumber} is invalid. Please re-select the image.`);
+                throw new Error(`Invalid blob URL for page ${passage.pageNumber}`);
+              }
 
-              // Upload to S3
-              const uploadResult = await MainAssessmentService.uploadImageToS3(imageFile, s3Path);
+              console.log(`Processing image upload for page ${passage.pageNumber}`);
 
-              if (uploadResult.success) {
+              // Convert blob URL back to File object with improved error handling
+              let response;
+              try {
+                // Add timeout to prevent hanging
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                
+                response = await fetch(passage.pageImage, { 
+                  signal: controller.signal,
+                  mode: 'cors'
+                });
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                  throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+              } catch (fetchError) {
+                console.error(`Failed to fetch blob for page ${passage.pageNumber}:`, fetchError);
+                if (fetchError.name === 'AbortError') {
+                  toast.error(`Image access timed out for page ${passage.pageNumber}. Please re-select the image.`);
+                } else {
+                  toast.error(`Cannot access image for page ${passage.pageNumber}. The image may have expired. Please re-select it.`);
+                }
+                throw new Error(`Blob fetch failed for page ${passage.pageNumber}: ${fetchError.message}`);
+              }
+
+              let blob;
+              try {
+                blob = await response.blob();
+                if (!blob || blob.size === 0) {
+                  throw new Error('Retrieved blob is empty or invalid');
+                }
+                
+                // Validate blob type
+                if (!blob.type.startsWith('image/')) {
+                  throw new Error(`Invalid file type: ${blob.type}. Please select an image file.`);
+                }
+              } catch (blobError) {
+                console.error(`Failed to convert to blob for page ${passage.pageNumber}:`, blobError);
+                toast.error(`Image data is corrupted for page ${passage.pageNumber}. Please re-select the image.`);
+                throw new Error(`Blob conversion failed for page ${passage.pageNumber}: ${blobError.message}`);
+              }
+
+              // Validate file size (limit to 10MB)
+              const maxSizeBytes = 10 * 1024 * 1024;
+              if (blob.size > maxSizeBytes) {
+                const sizeMB = (blob.size / 1024 / 1024).toFixed(1);
+                console.error(`Image too large for page ${passage.pageNumber}: ${sizeMB}MB`);
+                toast.error(`Image for page ${passage.pageNumber} is too large (${sizeMB}MB). Please use an image smaller than 10MB.`);
+                throw new Error(`Image too large for page ${passage.pageNumber}: ${sizeMB}MB`);
+              }
+
+              // Create file with proper extension based on blob type
+              const getFileExtension = (mimeType) => {
+                const extensions = {
+                  'image/jpeg': 'jpg',
+                  'image/jpg': 'jpg',
+                  'image/png': 'png',
+                  'image/webp': 'webp',
+                  'image/gif': 'gif'
+                };
+                return extensions[mimeType] || 'jpg';
+              };
+
+              const fileExtension = getFileExtension(blob.type);
+              const fileName = `page_${passage.pageNumber}_${Date.now()}.${fileExtension}`;
+              
+              let imageFile;
+              try {
+                imageFile = new File([blob], fileName, { type: blob.type });
+                
+                // Validate the created file
+                if (!imageFile || imageFile.size === 0) {
+                  throw new Error('Created file is invalid');
+                }
+              } catch (fileError) {
+                console.error(`Failed to create File object for page ${passage.pageNumber}:`, fileError);
+                toast.error(`Cannot prepare image for upload on page ${passage.pageNumber}. Please try again.`);
+                throw new Error(`File creation failed for page ${passage.pageNumber}: ${fileError.message}`);
+              }
+
+              // Upload to S3 with improved retry mechanism
+              let uploadResult;
+              let retryCount = 0;
+              const maxRetries = 3;
+
+              while (retryCount < maxRetries) {
+                try {
+                  console.log(`Uploading image for page ${passage.pageNumber} (attempt ${retryCount + 1}/${maxRetries})`);
+                  uploadResult = await MainAssessmentService.uploadImageToS3(imageFile, s3Path);
+                  
+                  if (uploadResult && uploadResult.success && uploadResult.url) {
+                    console.log(`Upload successful for page ${passage.pageNumber}:`, uploadResult.url);
+                    break; // Success, exit retry loop
+                  } else {
+                    throw new Error(uploadResult?.error || 'Upload service returned no URL');
+                  }
+                } catch (uploadError) {
+                  retryCount++;
+                  console.warn(`Upload attempt ${retryCount} failed for page ${passage.pageNumber}:`, uploadError.message);
+                  
+                  if (retryCount >= maxRetries) {
+                    console.error(`All upload attempts failed for page ${passage.pageNumber}:`, uploadError);
+                    
+                    // Provide specific, actionable error messages
+                    let userMessage = `Failed to upload image for page ${passage.pageNumber}.`;
+                    
+                    if (uploadError.message.includes('Authentication failed') || 
+                        uploadError.message.includes('401') || 
+                        uploadError.message.includes('403')) {
+                      userMessage += ' Authentication error. Please refresh the page and try again.';
+                    } else if (uploadError.message.includes('Network') || 
+                               uploadError.message.includes('timeout')) {
+                      userMessage += ' Network error. Please check your internet connection and try again.';
+                    } else if (uploadError.message.includes('413') || 
+                               uploadError.message.includes('too large') ||
+                               uploadError.message.includes('size exceeds')) {
+                      userMessage += ' The image file is too large. Please use a smaller image.';
+                    } else if (uploadError.message.includes('500')) {
+                      userMessage += ' Server error. Please try again in a few moments.';
+                    } else {
+                      userMessage += ' Please try again or use a different image. If the problem persists, try refreshing the page.';
+                    }
+                    
+                    toast.error(userMessage);
+                    const passageError = new Error(`Upload failed for page ${passage.pageNumber} after ${maxRetries} attempts: ${uploadError.message}`);
+                    passageError.userNotified = true;
+                    throw passageError;
+                  } else {
+                    // Wait before retrying with exponential backoff
+                    const delay = Math.pow(2, retryCount - 1) * 1000; // 1s, 2s, 4s
+                    console.log(`Waiting ${delay}ms before retry ${retryCount + 1} for page ${passage.pageNumber}`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                  }
+                }
+              }
+
+              if (uploadResult && uploadResult.success && uploadResult.url) {
                 updatedPassage.pageImage = uploadResult.url;
                 console.log(`Successfully uploaded page ${passage.pageNumber} image:`, uploadResult.url);
+                toast.success(`Image uploaded successfully for page ${passage.pageNumber}`, { autoClose: 2000 });
               } else {
-                console.error(`Failed to upload image for page ${passage.pageNumber}:`, uploadResult.error);
-                const passageError = new Error(`Failed to upload image for page ${passage.pageNumber}`);
-                passageError.userNotified = true;
-                toast.error(`Failed to upload image for page ${passage.pageNumber}`);
-                throw passageError;
+                console.error(`Upload result missing for page ${passage.pageNumber}:`, uploadResult);
+                toast.error(`Upload completed but no URL received for page ${passage.pageNumber}. Please try again.`);
+                throw new Error(`Upload result invalid for page ${passage.pageNumber}`);
               }
+
             } catch (error) {
               console.error(`Error processing image for page ${passage.pageNumber}:`, error);
+              
+              // Only show generic error if we haven't shown a specific one
               if (!error.userNotified) {
-                toast.error(`Error processing image for page ${passage.pageNumber}`);
+                toast.error(`Unable to process image for page ${passage.pageNumber}. Please remove and re-add the image.`);
                 error.userNotified = true;
               }
               throw error;
