@@ -1075,7 +1075,7 @@ const MainAssessment = ({ templates }) => {
     const initialFields = getInitialFieldValues();
 
     setQuestionFormData({
-      questionText: "",
+      questionText: formData.category === "Reading Comprehension" ? null : "",
       questionImage: initialFields.questionImage,
       questionValue: initialFields.questionValue,
       // Add questionId for all question types
@@ -1100,7 +1100,7 @@ const MainAssessment = ({ templates }) => {
       passages: initialQuestionType === "text_input" ? [
         { pageNumber: 1, pageText: "", pageImage: null }
       ] : [],
-      correctAnswer: initialQuestionType === "text_input" ? "" : [],
+      correctAnswer: initialQuestionType === "text_input" ? null : [],
       acceptableAnswers: [],
       // Reading Comprehension specific fields for multiple questions
       comprehensionQuestions: [],
@@ -1150,7 +1150,7 @@ const MainAssessment = ({ templates }) => {
       
       // Handle the direct question format from the database
       baseQuestionData.questionText = baseQuestionData.questionText || "";
-      baseQuestionData.correctAnswer = baseQuestionData.correctAnswer || "";
+      baseQuestionData.correctAnswer = baseQuestionData.correctAnswer || null;
       baseQuestionData.acceptableAnswers = baseQuestionData.acceptableAnswers || [];
       
       // Handle passages: if null, this question references a previous story's passages
@@ -1350,13 +1350,8 @@ const MainAssessment = ({ templates }) => {
         return;
       }
 
-      // Note: questionText not required at document level for Reading Comprehension
+      // Note: questionText and correctAnswer not required at document level for Reading Comprehension
       // Questions are handled at sentence level in comprehensionQuestions
-      
-      if (!questionFormData.correctAnswer || !questionFormData.correctAnswer.trim()) {
-        toast.error("Please enter a correct answer.");
-        return;
-      }
 
       // For new stories (no existing passages), require passage content
       if (!hasExistingPassages(questionFormData.storyTitle)) {
@@ -1521,7 +1516,7 @@ const MainAssessment = ({ templates }) => {
             
             // Ensure required fields exist
             sanitized.questionText = sanitized.questionText || "";
-            sanitized.correctAnswer = sanitized.correctAnswer || "";
+            sanitized.correctAnswer = sanitized.correctAnswer || null;
             
             // Clean and normalize acceptableAnswers array
             sanitized.acceptableAnswers = sanitized.acceptableAnswers || [];
@@ -1587,8 +1582,9 @@ const MainAssessment = ({ templates }) => {
           delete sanitized.currentComprehensionIndex;
           delete sanitized.tempComprehensionQuestion;
         } else {
-          // For Reading Comprehension, remove questionText at document level since questions are in sentenceQuestions
+          // For Reading Comprehension, remove questionText and correctAnswer at document level since questions are in sentenceQuestions
           delete sanitized.questionText;
+          delete sanitized.correctAnswer;
         }
 
         console.log('Data after sanitization:', sanitized);

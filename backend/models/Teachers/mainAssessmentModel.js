@@ -84,7 +84,9 @@ const questionSchema = new mongoose.Schema({
   },
   questionText: {
     type: String,
-    required: true
+    required: function() {
+      return this.category !== 'Reading Comprehension';
+    }
   },
   questionImage: {
     type: String,
