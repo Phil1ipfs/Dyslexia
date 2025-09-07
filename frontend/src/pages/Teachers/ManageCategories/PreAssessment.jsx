@@ -3207,9 +3207,16 @@ const PreAssessment = () => {
                                 if (currentQuestionData.questionText === 'Buoin ang salita') {
                                   // For "Buoin ang salita" - add correct letter + some distractors
                                   const correctLetter = currentQuestionData.correctSequence[0] || '';
-                                  const distractors = ['A', 'E', 'I', 'O', 'U', 'B', 'D', 'G', 'P', 'T', 'S', 'N', 'R', 'L'];
+                                  // Match case of correct letter - if lowercase, use lowercase distractors
+                                  const isLowercase = correctLetter === correctLetter.toLowerCase();
+                                  const baseDistractors = ['A', 'E', 'I', 'O', 'U', 'B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'];
+                                  const distractors = isLowercase ? 
+                                    baseDistractors.map(d => d.toLowerCase()) : 
+                                    baseDistractors;
                                   const availableDistractors = distractors.filter(d => d !== correctLetter);
-                                  const selectedDistractors = availableDistractors.slice(0, 3);
+                                  // Randomize distractor selection
+                                  const shuffled = availableDistractors.sort(() => Math.random() - 0.5);
+                                  const selectedDistractors = shuffled.slice(0, 3);
                                   const allOptions = [correctLetter, ...selectedDistractors].filter(Boolean);
                                   
                                   setCurrentQuestionData(prev => ({
@@ -3219,7 +3226,7 @@ const PreAssessment = () => {
                                 } else {
                                   // For "Tukuyin ang nasa larawan" - add all word letters + some distractors
                                   const wordLetters = currentQuestionData.completeWord.split('');
-                                  const distractors = ['A', 'E', 'I', 'O', 'U', 'B', 'D', 'G', 'P', 'T', 'S', 'N', 'R', 'L'];
+                                  const distractors = ['A', 'E', 'I', 'O', 'U', 'B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'];
                                   const availableDistractors = distractors.filter(d => !wordLetters.includes(d));
                                   // Randomize distractor selection
                                   const shuffled = availableDistractors.sort(() => Math.random() - 0.5);

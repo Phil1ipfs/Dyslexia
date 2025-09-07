@@ -3539,8 +3539,8 @@ const MainAssessment = ({ templates }) => {
                                     const letters = formattedWord.split('');
                                     // Add distractors matching the case style
                                     const distractors = isWordIdentification ? 
-                                      ['A', 'E', 'I', 'O', 'U', 'N', 'T', 'R'] : 
-                                      ['a', 'E', 'i', 'O', 'u', 'n', 't', 'r'];
+                                      ['A', 'E', 'I', 'O', 'U', 'B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'] : 
+                                      ['a', 'e', 'i', 'o', 'u', 'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z'];
                                     // Randomize distractor selection - filter out letters already in the word
                                     const availableDistractors = distractors.filter(d => !letters.includes(d));
                                     const shuffled = availableDistractors.sort(() => Math.random() - 0.5);
@@ -3758,8 +3758,17 @@ const MainAssessment = ({ templates }) => {
                                   className="pa-auto-populate-btn"
                                   onClick={() => {
                                     const correctLetter = questionFormData.correctSequence?.[0] || '';
-                                    const distractors = ['A', 'E', 'I', 'O'];
-                                    const availableLetters = [correctLetter, ...distractors.filter(d => d !== correctLetter)].slice(0, 4);
+                                    // Match case of correct letter - if lowercase, use lowercase distractors
+                                    const isLowercase = correctLetter === correctLetter.toLowerCase();
+                                    const baseDistractors = ['A', 'E', 'I', 'O', 'U', 'B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'];
+                                    const distractors = isLowercase ? 
+                                      baseDistractors.map(d => d.toLowerCase()) : 
+                                      baseDistractors;
+                                    // Randomize distractor selection
+                                    const availableDistractors = distractors.filter(d => d !== correctLetter);
+                                    const shuffled = availableDistractors.sort(() => Math.random() - 0.5);
+                                    const selectedDistractors = shuffled.slice(0, 3); // Take 3 random distractors
+                                    const availableLetters = [correctLetter, ...selectedDistractors];
                                     setQuestionFormData(prev => ({
                                       ...prev,
                                       dragElements: availableLetters
