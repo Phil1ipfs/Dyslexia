@@ -1580,7 +1580,8 @@ const PreAssessment = () => {
         questionToSave.questionValue = null;
         questionToSave.questionImage = null;
         
-        // Remove fields not needed for RC
+        // Remove fields not needed for RC - questionText is at sentence level only
+        delete questionToSave.questionText;
         delete questionToSave.options;
         delete questionToSave.questionSet;
         delete questionToSave.displaySequence;

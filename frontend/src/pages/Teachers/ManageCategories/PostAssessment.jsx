@@ -1223,8 +1223,8 @@ const MainAssessment = ({ templates }) => {
   const handleQuestionFormSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate required fields
-    if (!questionFormData.questionText) {
+    // Validate required fields (questionText not required for Reading Comprehension)
+    if (formData.category !== "Reading Comprehension" && !questionFormData.questionText) {
       toast.error("Please enter a question text.");
       return;
     }
@@ -1350,11 +1350,8 @@ const MainAssessment = ({ templates }) => {
         return;
       }
 
-      // Check question content
-      if (!questionFormData.questionText || !questionFormData.questionText.trim()) {
-        toast.error("Please enter a question text.");
-        return;
-      }
+      // Note: questionText not required at document level for Reading Comprehension
+      // Questions are handled at sentence level in comprehensionQuestions
       
       if (!questionFormData.correctAnswer || !questionFormData.correctAnswer.trim()) {
         toast.error("Please enter a correct answer.");
@@ -1589,6 +1586,9 @@ const MainAssessment = ({ templates }) => {
           delete sanitized.comprehensionQuestions;
           delete sanitized.currentComprehensionIndex;
           delete sanitized.tempComprehensionQuestion;
+        } else {
+          // For Reading Comprehension, remove questionText at document level since questions are in sentenceQuestions
+          delete sanitized.questionText;
         }
 
         console.log('Data after sanitization:', sanitized);
@@ -1733,7 +1733,7 @@ const MainAssessment = ({ templates }) => {
 
         setQuestionFormData({
           questionType: categoryToQuestionTypeMap[formData.category],
-          questionText: "",
+          questionText: formData.category === "Reading Comprehension" ? null : "",
           questionImage: null,
           // Ensure it has a default value
           questionValue: formData.category === "Reading Comprehension" ? "" : null,
@@ -1781,7 +1781,7 @@ const MainAssessment = ({ templates }) => {
 
         setQuestionFormData({
           questionType: categoryToQuestionTypeMap[formData.category],
-          questionText: "",
+          questionText: formData.category === "Reading Comprehension" ? null : "",
           questionImage: null,
           // Ensure it has a default value
           questionValue: formData.category === "Reading Comprehension" ? "" : null,
