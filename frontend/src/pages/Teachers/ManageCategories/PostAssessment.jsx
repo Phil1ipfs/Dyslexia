@@ -2045,9 +2045,24 @@ const MainAssessment = ({ templates }) => {
           const storyTitle = questionFormData.storyTitle;
           const passages = questionFormData.passages;
           
+          // Find the highest existing question number for this story title
+          const existingQuestions = assessments
+            .filter(assessment => 
+              assessment.readingLevel === formData.readingLevel && 
+              assessment.category === "Reading Comprehension"
+            )
+            .flatMap(assessment => assessment.questions)
+            .filter(question => question.storyTitle === storyTitle)
+            .map(question => {
+              const match = question.questionId.match(/RC_(\d+)/);
+              return match ? parseInt(match[1]) : 0;
+            });
+          
+          const startingNumber = existingQuestions.length > 0 ? Math.max(...existingQuestions) + 1 : 1;
+          
           for (let i = 0; i < questionFormData.comprehensionQuestions.length; i++) {
             const comprQuestion = questionFormData.comprehensionQuestions[i];
-            const questionId = `RC_${String(i + 1).padStart(3, '0')}`;
+            const questionId = `RC_${String(startingNumber + i).padStart(3, '0')}`;
             
             const singleQuestionData = {
               questionId: questionId,
@@ -2056,7 +2071,7 @@ const MainAssessment = ({ templates }) => {
               questionImage: null,
               questionValue: null,
               storyTitle: storyTitle,
-              passages: i === 0 ? passages : null, // First question gets passages, others get null
+              passages: i === 0 && passages && passages.some(p => p.pageText && p.pageText.trim()) ? passages : null, // First question gets passages only if they have content, others get null
               correctAnswer: comprQuestion.correctAnswer,
               acceptableAnswers: comprQuestion.acceptableAnswers
             };
@@ -4587,9 +4602,18 @@ const MainAssessment = ({ templates }) => {
                         </div>
                       )}
 
-                      {/* Reading Comprehension - Simplified Text Input */}
+                      {/* Reading Comprehension - Enhanced Design */}
                       {formData.category === "Reading Comprehension" && (
-                        <div className="pa-passage-form pa-full-width" style={{ backgroundColor: '#f8fafe', border: '1px solid #e1effe', borderRadius: '8px', padding: '24px' }}>
+                        <div className="pa-reading-comprehension-form" style={{ 
+                          background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', 
+                          border: '2px solid #e2e8f0', 
+                          borderRadius: '16px', 
+                          padding: '40px', 
+                          marginTop: '32px',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                          position: 'relative',
+                          backdropFilter: 'blur(10px)'
+                        }}>
                           {/* Show story context for subsequent questions */}
                           {questionFormData.passages === null && questionFormData.storyTitle && (
                             <div style={{
@@ -4611,15 +4635,42 @@ const MainAssessment = ({ templates }) => {
 
                           {/* Story Title Section - Hide if adding subsequent question with passages: null */}
                           {questionFormData.passages !== null && (
-                            <div className="pa-form-section" style={{ marginBottom: '24px' }}>
-                            <h5 style={{ color: '#1e40af', marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>
-                              <FontAwesomeIcon icon={faBook} style={{ marginRight: '8px', color: '#3b82f6' }} /> 
+                            <div className="pa-form-section" style={{ 
+                              marginBottom: '32px', 
+                              padding: '24px',
+                              background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                              border: '2px solid #bfdbfe',
+                              borderRadius: '12px',
+                              boxShadow: '0 2px 8px rgba(59, 130, 246, 0.1)'
+                            }}>
+                            <h5 style={{ 
+                              color: '#1e40af', 
+                              marginBottom: '20px', 
+                              fontSize: '18px', 
+                              fontWeight: '700',
+                              display: 'flex',
+                              alignItems: 'center',
+                              textShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                            }}>
+                              <FontAwesomeIcon icon={faBook} style={{ 
+                                marginRight: '12px', 
+                                color: '#3b82f6',
+                                fontSize: '20px'
+                              }} /> 
                               Story Information
                             </h5>
                             
                             <div className="pa-form-group">
-                              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+                              <label style={{ 
+                                display: 'block', 
+                                marginBottom: '12px', 
+                                fontSize: '16px', 
+                                fontWeight: '600', 
+                                color: '#1e40af',
+                                letterSpacing: '0.5px'
+                              }}>
                                 Story Title:
+                                <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>
                                 <Tooltip text="Enter the story title. The system will automatically detect if this story already exists." />
                               </label>
                               
@@ -4658,7 +4709,26 @@ const MainAssessment = ({ templates }) => {
                                     }}
                                     placeholder="Type story title (e.g., Si Juan at ang Aso)"
                                     className="pa-text-input"
-                                    style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                                    style={{ 
+                                      width: '100%', 
+                                      padding: '14px 16px', 
+                                      border: '2px solid #bfdbfe', 
+                                      borderRadius: '10px',
+                                      fontSize: '16px',
+                                      fontWeight: '500',
+                                      background: 'white',
+                                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                                      transition: 'all 0.2s ease',
+                                      outline: 'none'
+                                    }}
+                                    onFocus={(e) => {
+                                      e.target.style.borderColor = '#3b82f6';
+                                      e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.target.style.borderColor = '#bfdbfe';
+                                      e.target.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                                    }}
                                     required
                                   />
                                 );
@@ -4684,9 +4754,28 @@ const MainAssessment = ({ templates }) => {
 
                           {/* Story Pages Section - Hide if adding subsequent question with passages: null */}
                           {questionFormData.storyTitle && questionFormData.passages !== null && (
-                            <div className="pa-form-section" style={{ marginBottom: '24px' }}>
-                              <h5 style={{ color: '#1e40af', marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>
-                                <FontAwesomeIcon icon={faBook} style={{ marginRight: '8px', color: '#3b82f6' }} /> 
+                            <div className="pa-form-section" style={{ 
+                              marginBottom: '32px',
+                              padding: '24px',
+                              background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                              border: '2px solid #bbf7d0',
+                              borderRadius: '12px',
+                              boxShadow: '0 2px 8px rgba(34, 197, 94, 0.1)'
+                            }}>
+                              <h5 style={{ 
+                                color: '#15803d', 
+                                marginBottom: '20px', 
+                                fontSize: '18px', 
+                                fontWeight: '700',
+                                display: 'flex',
+                                alignItems: 'center',
+                                textShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                              }}>
+                                <FontAwesomeIcon icon={faBook} style={{ 
+                                  marginRight: '12px', 
+                                  color: '#22c55e',
+                                  fontSize: '20px'
+                                }} /> 
                                 Story Pages
                               </h5>
                               
@@ -4846,16 +4935,28 @@ const MainAssessment = ({ templates }) => {
                           )}
 
                           {/* Comprehension Questions Management */}
-                          <div className="pa-form-section" style={{ marginBottom: '32px' }}>
+                          <div className="pa-form-section" style={{ 
+                            marginBottom: '40px',
+                            padding: '32px',
+                            background: 'linear-gradient(135deg, #fefce8 0%, #fef3c7 100%)',
+                            border: '2px solid #fbbf24',
+                            borderRadius: '16px',
+                            boxShadow: '0 4px 12px rgba(245, 158, 11, 0.15)'
+                          }}>
                             <h5 style={{ 
-                              color: '#1e40af', 
-                              marginBottom: '24px', 
-                              fontSize: '16px', 
-                              fontWeight: '600',
+                              color: '#92400e', 
+                              marginBottom: '28px', 
+                              fontSize: '20px', 
+                              fontWeight: '700',
                               display: 'flex',
-                              alignItems: 'center'
+                              alignItems: 'center',
+                              textShadow: '0 1px 2px rgba(0,0,0,0.1)'
                             }}>
-                              <FontAwesomeIcon icon={faQuestion} style={{ marginRight: '8px', color: '#3b82f6' }} /> 
+                              <FontAwesomeIcon icon={faQuestion} style={{ 
+                                marginRight: '12px', 
+                                color: '#d97706',
+                                fontSize: '22px'
+                              }} /> 
                               Comprehension Questions
                             </h5>
 
