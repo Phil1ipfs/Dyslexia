@@ -140,7 +140,7 @@ const PreAssessment = () => {
       { pageNumber: 1, pageText: '', pageImage: null }
     ],
     sentenceQuestions: [
-      { questionText: '', correctAnswer: '', incorrectAnswer: '', correctAnswerChoice: "1", acceptableAnswers: [] }
+      { questionText: '', correctAnswer: '', acceptableAnswers: [] }
     ],
     
     // For phonological awareness (malapantig questions)
@@ -719,7 +719,7 @@ const PreAssessment = () => {
         { pageNumber: 1, pageText: '', pageImage: null }
       ],
       sentenceQuestions: [
-        { questionText: '', correctAnswer: '', incorrectAnswer: '', correctAnswerChoice: "1" }
+        { questionText: '', correctAnswer: '', acceptableAnswers: [] }
       ]
     });
     
@@ -1435,7 +1435,8 @@ const PreAssessment = () => {
         return;
       }
     
-      if (!currentQuestionData.questionText.trim()) {
+      // Skip questionText validation for Reading Comprehension (questions are at sentence level)
+      if (currentQuestionData.category !== 'Reading Comprehension' && !currentQuestionData.questionText.trim()) {
         toast.error('Question text is required');
         return;
       }
@@ -2730,7 +2731,8 @@ const PreAssessment = () => {
                 {/* Question Text - Only for categories that don't have specific question text options */}
                 {currentQuestionData.category && 
                  categoryDisplayNameToKey[currentQuestionData.category] !== 'decoding' && 
-                 categoryDisplayNameToKey[currentQuestionData.category] !== 'word_recognition' && (
+                 categoryDisplayNameToKey[currentQuestionData.category] !== 'word_recognition' && 
+                 categoryDisplayNameToKey[currentQuestionData.category] !== 'reading_comprehension' && (
                   <div className="pre-form-group pre-full-width">
                     <label htmlFor="questionText">
                       Question Text: <span className="pre-required-field">*</span>
@@ -3972,7 +3974,7 @@ const PreAssessment = () => {
                           ...prev,
                           sentenceQuestions: [
                             ...prev.sentenceQuestions,
-                            { questionText: '', correctAnswer: '', incorrectAnswer: '', correctAnswerChoice: "1" }
+                            { questionText: '', correctAnswer: '', acceptableAnswers: [] }
                           ]
                         }));
                       }}

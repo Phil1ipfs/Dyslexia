@@ -17,9 +17,7 @@ const passageSchema = new mongoose.Schema({
 // Define the sentence question schema for reading comprehension
 const sentenceQuestionSchema = new mongoose.Schema({
   questionText: { type: String, required: true },
-  questionImage: { type: String },
   correctAnswer: { type: String, required: true },
-  incorrectAnswer: { type: String, required: true },
   acceptableAnswers: [{ type: String }] // Alternative acceptable answers
 }, { _id: false });
 
@@ -35,7 +33,7 @@ const questionSchema = new mongoose.Schema({
   questionId: { type: String, required: true },
   category: { type: String, required: true }, // "Alphabet Knowledge", "Phonological Awareness", etc.
   questionType: { type: String, required: true }, // Specific type: patinig, katinig, malapantig, decode, word, sentence
-  questionText: { type: String, required: true },
+  questionText: { type: String, required: false }, // Not required for Reading Comprehension - questions are at sentence level
   questionValue: { type: String },
   questionImage: { type: String },
   difficultyLevel: { type: String, required: true },
