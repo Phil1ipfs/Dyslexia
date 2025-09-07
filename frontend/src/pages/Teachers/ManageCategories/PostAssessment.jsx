@@ -1104,7 +1104,17 @@ const MainAssessment = ({ templates }) => {
         { pageNumber: 1, pageText: "", pageImage: null }
       ] : [],
       correctAnswer: initialQuestionType === "text_input" ? "" : [],
-      acceptableAnswers: []
+      acceptableAnswers: [],
+      // Reading Comprehension specific fields for multiple questions
+      comprehensionQuestions: [],
+      currentComprehensionIndex: -1,
+      tempComprehensionQuestion: {
+        questionText: "",
+        correctAnswer: "",
+        acceptableAnswers: []
+      },
+      // Phonological Awareness specific fields
+      questionSet: initialFields.questionSet || []
     });
   };
 
@@ -1168,6 +1178,17 @@ const MainAssessment = ({ templates }) => {
     
     console.log('Final baseQuestionData:', baseQuestionData);
     
+    // Ensure all required fields are present for Reading Comprehension
+    if (formData.category === "Reading Comprehension") {
+      baseQuestionData.comprehensionQuestions = baseQuestionData.comprehensionQuestions || [];
+      baseQuestionData.currentComprehensionIndex = baseQuestionData.currentComprehensionIndex || -1;
+      baseQuestionData.tempComprehensionQuestion = baseQuestionData.tempComprehensionQuestion || {
+        questionText: "",
+        correctAnswer: "",
+        acceptableAnswers: []
+      };
+    }
+    
     setQuestionFormData(baseQuestionData);
   };
 
@@ -1200,22 +1221,6 @@ const MainAssessment = ({ templates }) => {
     });
   };
 
-  const handleAddChoice = () => {
-    setQuestionFormData(prev => ({
-      ...prev,
-      choiceOptions: [
-        ...prev.choiceOptions,
-        { optionId: (prev.choiceOptions.length + 1).toString(), optionText: "", isCorrect: false }
-      ]
-    }));
-  };
-
-  const handleRemoveChoice = (index) => {
-    setQuestionFormData(prev => ({
-      ...prev,
-      choiceOptions: prev.choiceOptions.filter((_, i) => i !== index)
-    }));
-  };
 
 
   const handleQuestionFormSubmit = async (e) => {
@@ -1588,16 +1593,6 @@ const MainAssessment = ({ templates }) => {
 
       // No additional processing needed for sentenceQuestions
 
-      // Construct S3 path with category folder using existing helper
-      const categoryFolderMap = {
-        'Alphabet Knowledge': 'alphabet-knowledge',
-        'Phonological Awareness': 'phonological-awareness',
-        'Decoding': 'decoding',
-        'Word Recognition': 'word-recognition',
-        'Reading Comprehension': 'reading-comprehension'
-      };
-      const categoryFolder = categoryFolderMap[formData.category] || '';
-      const s3Path = categoryFolder ? `main-assessment/${categoryFolder}` : 'main-assessment';
 
       // If there's an image file pending upload, upload it to S3 first
       if (questionFormData.imageFile) {
@@ -1931,9 +1926,6 @@ const MainAssessment = ({ templates }) => {
     try {
       setSubmitConfirmDialog(false);
 
-      // Construct S3 path with category folder
-      const categoryFolder = getCategoryFolder(modalType === 'edit' ? selectedAssessment.category : formData.category);
-      const s3Path = categoryFolder ? `main-assessment/${categoryFolder}` : 'main-assessment';
 
       // Ensure each question has proper format
       const formattedQuestions = formData.questions.map((question, index) => {
@@ -2199,17 +2191,6 @@ const MainAssessment = ({ templates }) => {
     }
   };
 
-  // Helper function to get icon for question type
-  const getQuestionTypeIcon = (type) => {
-    switch (type) {
-      case 'multiple_choice': return faCheckCircle;
-      case 'matching': return faArrowRight;
-      case 'drag_drop': return faPuzzlePiece;
-      case 'fill_blank': return faEdit;
-      case 'text_input': return faFileAlt;
-      default: return faQuestion;
-    }
-  };
 
   // Handle status toggle
   const handleToggleStatus = async (assessment) => {
@@ -2266,17 +2247,6 @@ const MainAssessment = ({ templates }) => {
     }
   };
 
-  // Helper function to get category-specific folder for S3 uploads
-  const getCategoryFolder = (category) => {
-    const folderMap = {
-      'Alphabet Knowledge': 'alphabet-knowledge',
-      'Phonological Awareness': 'phonological-awareness',
-      'Decoding': 'decoding',
-      'Word Recognition': 'word-recognition',
-      'Reading Comprehension': 'reading-comprehension'
-    };
-    return folderMap[category] || '';
-  };
 
   if (loading) {
     return (
