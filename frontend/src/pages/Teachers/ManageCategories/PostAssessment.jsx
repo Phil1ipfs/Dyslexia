@@ -2800,187 +2800,375 @@ const MainAssessment = ({ templates }) => {
                   </div>
                 </div>
               ) : modalType === 'preview' ? (
-                <div className="pa-assessment-preview">
-                  <div className="pa-preview-header">
-                    <div className="pa-preview-info">
-                      <div className="pa-preview-section">
-                        <span className="pa-preview-label">Reading Level:</span>
-                        <span className="pa-preview-value">{selectedAssessment.readingLevel}</span>
-                      </div>
-
-                      <div className="pa-preview-section">
-                        <span className="pa-preview-label">Category:</span>
-                        <span className="pa-preview-value">{selectedAssessment.category}</span>
-                      </div>
-
-                      <div className="pa-preview-section">
-                        <span className="pa-preview-label">Total Questions:</span>
-                        <span className="pa-preview-value">{selectedAssessment.questions.length}</span>
-                      </div>
-
-                      <div className="pa-preview-section">
-                        <span className="pa-preview-label">Status:</span>
-                        <span className="pa-preview-value">
-                          {selectedAssessment.isActive ? (
-                            <span className="pa-status-tag active">
-                              <FontAwesomeIcon icon={faCheckCircle} /> Active
+                <div className="pa-assessment-preview-enhanced">
+                  <div className="pa-preview-header-enhanced">
+                    <div className="pa-preview-summary-card">
+                      <div className="pa-summary-row">
+                        <div className="pa-summary-item">
+                          <FontAwesomeIcon icon={faGraduationCap} className="pa-summary-icon" />
+                          <div className="pa-summary-content">
+                            <span className="pa-summary-label">Reading Level</span>
+                            <span className="pa-summary-value">{selectedAssessment.readingLevel}</span>
+                          </div>
+                        </div>
+                        <div className="pa-summary-item">
+                          <FontAwesomeIcon icon={
+                            selectedAssessment.category === "Reading Comprehension" ? faBook :
+                            selectedAssessment.category === "Alphabet Knowledge" ? faFont :
+                            selectedAssessment.category === "Phonological Awareness" ? faVolumeUp :
+                            selectedAssessment.category === "Decoding" ? faPuzzlePiece :
+                            faImages
+                          } className="pa-summary-icon" />
+                          <div className="pa-summary-content">
+                            <span className="pa-summary-label">Category</span>
+                            <span className="pa-summary-value">{selectedAssessment.category}</span>
+                          </div>
+                        </div>
+                        <div className="pa-summary-item">
+                          <FontAwesomeIcon icon={faClipboardList} className="pa-summary-icon" />
+                          <div className="pa-summary-content">
+                            <span className="pa-summary-label">Questions</span>
+                            <span className="pa-summary-value">{selectedAssessment.questions.length}</span>
+                          </div>
+                        </div>
+                        <div className="pa-summary-item">
+                          <FontAwesomeIcon icon={selectedAssessment.isActive ? faCheckCircle : faExclamationTriangle} className="pa-summary-icon" />
+                          <div className="pa-summary-content">
+                            <span className="pa-summary-label">Status</span>
+                            <span className={`pa-summary-status ${selectedAssessment.isActive ? 'active' : 'inactive'}`}>
+                              {selectedAssessment.isActive ? 'Active' : 'Inactive'}
                             </span>
-                          ) : (
-                            <span className="pa-status-tag inactive">
-                              <FontAwesomeIcon icon={faExclamationTriangle} /> Inactive
-                            </span>
-                          )}
-                        </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="pa-preview-content">
-                    <h4>
-                      <FontAwesomeIcon icon={faClipboardList} className="pa-preview-icon" />
-                      Assessment Questions
-                    </h4>
+                  <div className="pa-preview-questions-section">
+                    <div className="pa-questions-header-enhanced">
+                      <h3><FontAwesomeIcon icon={faClipboardList} /> Assessment Questions</h3>
+                      <div className="pa-question-type-badge">
+                        <FontAwesomeIcon icon={
+                          selectedAssessment.category === "Reading Comprehension" ? faBook :
+                          selectedAssessment.category === "Alphabet Knowledge" ? faFont :
+                          selectedAssessment.category === "Phonological Awareness" ? faVolumeUp :
+                          selectedAssessment.category === "Decoding" ? faPuzzlePiece :
+                          faImages
+                        } />
+                        {selectedAssessment.questionType}
+                      </div>
+                    </div>
 
-                    {selectedAssessment.questions.map((question, index) => (
-                      <div key={index} className="pa-preview-question-card">
-                        <div className="pa-question-header">
-                          <div className="pa-question-metadata">
-                            <span className="pa-question-num">Question {index + 1}</span>
-                            <span className="pa-question-type">
-                              <FontAwesomeIcon
-                                icon={
-                                  question.questionType === "patinig" || question.questionType === "katinig"
-                                    ? faFont
-                                    : question.questionType === "malapantig"
-                                      ? faPuzzlePiece
-                                      : question.questionType === "sentence"
-                                        ? faBook
-                                        : faFileAlt
-                                }
-                                className="pa-question-type-icon"
-                              />
-                              {getQuestionTypeDisplay(question.questionType, question.questionSubtype)}
-                            </span>
+                    <div className="pa-questions-container-enhanced">
+                      {selectedAssessment.questions.map((question, index) => (
+                        <div key={index} className="pa-question-card-enhanced">
+                          <div className="pa-question-header-enhanced">
+                            <div className="pa-question-number-badge">
+                              <FontAwesomeIcon icon={faQuestion} />
+                              <span>Question {index + 1}</span>
+                            </div>
+                            <div className="pa-question-id-badge">
+                              ID: {question.questionId || `${getCategoryPrefix(selectedAssessment.category)}_${String(index + 1).padStart(3, '0')}`}
+                            </div>
                           </div>
-                        </div>
 
-                        <div className="pa-question-content">
-                          <div className="pa-question-prompt">
-                            {question.questionImage && (
-                              <div className="pa-question-image-container">
-                                <img
-                                  src={question.questionImage}
-                                  alt="Question visual"
-                                  className="pa-question-image"
-                                />
+                          <div className="pa-question-body-enhanced">
+                            <div className="pa-question-prompt-enhanced">
+                              {question.questionImage && (
+                                <div className="pa-question-image-wrapper">
+                                  <img
+                                    src={question.questionImage}
+                                    alt="Question visual"
+                                    className="pa-question-image-enhanced"
+                                  />
+                                </div>
+                              )}
+                              
+                              <div className="pa-question-text-enhanced">
+                                <h4 className="pa-question-instruction">{question.questionText}</h4>
+                                {question.questionValue && (
+                                  <div className="pa-question-value-display">
+                                    <span className="pa-value-label">Display Text:</span>
+                                    <span className="pa-value-content">{question.questionValue}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Render category-specific content */}
+                            {selectedAssessment.category === "Alphabet Knowledge" && (
+                              <div className="pa-alphabet-knowledge-content">
+                                <h5 className="pa-answer-section-title">
+                                  <FontAwesomeIcon icon={faCheckDouble} /> Multiple Choice Options
+                                </h5>
+                                <div className="pa-choice-options-enhanced">
+                                  {question.choiceOptions && question.choiceOptions.map((option, optIndex) => (
+                                    <div
+                                      key={optIndex}
+                                      className={`pa-choice-option ${option.isCorrect ? 'correct' : 'incorrect'}`}
+                                    >
+                                      <div className="pa-option-indicator">
+                                        {option.isCorrect ? (
+                                          <FontAwesomeIcon icon={faCheckCircle} className="correct-icon" />
+                                        ) : (
+                                          <span className="option-letter">{String.fromCharCode(65 + optIndex)}</span>
+                                        )}
+                                      </div>
+                                      <div className="pa-option-content">
+                                        <span className="pa-option-text">{option.optionText}</span>
+                                        {option.isCorrect && <span className="pa-correct-label">Correct Answer</span>}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             )}
 
-                            <div className="pa-question-text-container">
-                              <p className="pa-question-text">{question.questionText}</p>
-                              {question.questionValue && (
-                                <div className="pa-question-value">
-                                  <strong>Value:</strong> {question.questionValue}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {question.questionType === 'sentence' && question.passages ? (
-                            <div className="pa-passage-preview">
-                              <h5><FontAwesomeIcon icon={faBook} /> Reading Passage</h5>
-
-                              <div className="pa-passage-navigation">
-                                <button
-                                  className="pa-page-nav-btn"
-                                  onClick={() => handlePreviewPageChange('prev')}
-                                  disabled={previewPage === 0}
-                                >
-                                  <FontAwesomeIcon icon={faArrowLeft} /> Previous
-                                </button>
-
-                                <span className="pa-page-indicator">
-                                  Page {previewPage + 1} of {question.passages.length}
-                                </span>
-
-                                <button
-                                  className="pa-page-nav-btn"
-                                  onClick={() => handlePreviewPageChange('next')}
-                                  disabled={previewPage >= question.passages.length - 1}
-                                >
-                                  Next <FontAwesomeIcon icon={faArrowRight} />
-                                </button>
-                              </div>
-
-                              <div className="pa-passage-container">
-                                {question.passages[previewPage]?.pageImage && (
-                                  <div className="pa-passage-image-container">
-                                    <img
-                                      src={question.passages[previewPage].pageImage}
-                                      alt={`Page ${previewPage + 1} illustration`}
-                                      className="pa-passage-image"
-                                    />
-                                  </div>
-                                )}
-
-                                <div className="pa-passage-text-container">
-                                  <p className="pa-passage-text">{question.passages[previewPage]?.pageText}</p>
-                                </div>
-                              </div>
-
-                              <div className="pa-comprehension-questions">
-                                <h5><FontAwesomeIcon icon={faQuestion} /> Comprehension Questions</h5>
-                                {question.sentenceQuestions && question.sentenceQuestions.length > 0 ? (
-                                  question.sentenceQuestions.map((sq, sqIndex) => (
-                                    <div key={sqIndex} className="pa-comprehension-question">
-                                      <div className="pa-comprehension-q-header">
-                                        <span className="pa-comprehension-q-number">Q{sqIndex + 1}:</span>
-                                        <span className="pa-comprehension-q-text">{sq.questionText}</span>
-                                      </div>
-
-                                      <div className="pa-comprehension-options">
-                                        <div className="pa-option pa-option-correct">
-                                          <FontAwesomeIcon icon={faCheckCircle} className="pa-option-icon" />
-                                          {sq.correctAnswer}
-                                        </div>
-                                        <div className="pa-option">
-                                          {sq.incorrectAnswer}
-                                        </div>
+                            {selectedAssessment.category === "Phonological Awareness" && (
+                              <div className="pa-phonological-awareness-content">
+                                <h5 className="pa-answer-section-title">
+                                  <FontAwesomeIcon icon={faVolumeUp} /> Audio Matching Pairs
+                                </h5>
+                                {question.questionSet && question.questionSet[0] && (
+                                  <div className="pa-matching-content">
+                                    <div className="pa-audio-section">
+                                      <h6><FontAwesomeIcon icon={faVolumeUp} /> Audio Elements</h6>
+                                      <div className="pa-audio-items">
+                                        {question.questionSet[0].audioTexts && question.questionSet[0].audioTexts.map((audio, audioIndex) => (
+                                          <div key={audioIndex} className="pa-audio-item">
+                                            <FontAwesomeIcon icon={faVolumeUp} />
+                                            <span>{audio}</span>
+                                          </div>
+                                        ))}
                                       </div>
                                     </div>
-                                  ))
-                                ) : (
-                                  <div className="pa-no-questions">
-                                    <p>No comprehension questions added yet.</p>
+                                    <div className="pa-matching-arrow">
+                                      <FontAwesomeIcon icon={faArrowRight} />
+                                    </div>
+                                    <div className="pa-visual-section">
+                                      <h6><FontAwesomeIcon icon={faImages} /> Visual Options</h6>
+                                      <div className="pa-visual-items">
+                                        {question.questionSet[0].matchingOptions && question.questionSet[0].matchingOptions.map((visual, visualIndex) => (
+                                          <div key={visualIndex} className="pa-visual-item">
+                                            <FontAwesomeIcon icon={faImages} />
+                                            <span>{visual}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <div className="pa-correct-pairs-section">
+                                      <h6><FontAwesomeIcon icon={faCheckCircle} /> Correct Pairs</h6>
+                                      <div className="pa-pairs-list">
+                                        {question.questionSet[0].correctPairs && question.questionSet[0].correctPairs.map((pair, pairIndex) => (
+                                          <div key={pairIndex} className="pa-correct-pair">
+                                            {Object.entries(pair).map(([audio, visual]) => (
+                                              <div key={audio} className="pa-pair-connection">
+                                                <span className="pa-pair-audio">{audio}</span>
+                                                <FontAwesomeIcon icon={faArrowRight} className="pa-pair-arrow" />
+                                                <span className="pa-pair-visual">{visual}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
                                   </div>
                                 )}
                               </div>
-                            </div>
-                          ) : (
-                            <div className="pa-choice-options">
-                              <h5><FontAwesomeIcon icon={faCheckDouble} /> Answer Options</h5>
+                            )}
 
-                              <div className="pa-options-list">
-                                {question.choiceOptions && question.choiceOptions.map((option, optIndex) => (
-                                  <div
-                                    key={optIndex}
-                                    className={`pa-option ${option.isCorrect ? 'pa-option-correct' : ''}`}
-                                  >
-                                    <div className="pa-option-header">
-                                      {option.isCorrect && (
-                                        <FontAwesomeIcon icon={faCheckCircle} className="pa-option-icon" />
+                            {selectedAssessment.category === "Decoding" && (
+                              <div className="pa-decoding-content">
+                                <h5 className="pa-answer-section-title">
+                                  <FontAwesomeIcon icon={faPuzzlePiece} /> Drag & Drop Elements
+                                </h5>
+                                <div className="pa-decoding-layout">
+                                  <div className="pa-decoding-question-type">
+                                    <span className={`pa-decoding-type ${question.questionText === 'Tukuyin ang nasa larawan?' ? 'identification' : 'completion'}`}>
+                                      {question.questionText === 'Tukuyin ang nasa larawan?' ? 'Word Identification' : 'Word Completion'}
+                                    </span>
+                                  </div>
+                                  
+                                  {question.displaySequence && question.displaySequence.length > 0 && (
+                                    <div className="pa-display-sequence">
+                                      <h6><FontAwesomeIcon icon={faListUl} /> Display Pattern</h6>
+                                      <div className="pa-sequence-items">
+                                        {question.displaySequence.map((item, seqIndex) => (
+                                          <div key={seqIndex} className={`pa-sequence-item ${item === '_' ? 'blank' : 'filled'}`}>
+                                            {item === '_' ? (
+                                              <div className="pa-blank-space">
+                                                <FontAwesomeIcon icon={faQuestion} />
+                                              </div>
+                                            ) : (
+                                              <span>{item}</span>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                      {question.blankPosition !== null && (
+                                        <div className="pa-blank-info">
+                                          <span>Blank Position: {question.blankPosition + 1}</span>
+                                        </div>
                                       )}
-                                      {option.optionText}
                                     </div>
+                                  )}
 
+                                  <div className="pa-drag-elements">
+                                    <h6><FontAwesomeIcon icon={faPuzzlePiece} /> Available Elements</h6>
+                                    <div className="pa-drag-items">
+                                      {question.dragElements && question.dragElements.map((element, dragIndex) => (
+                                        <div key={dragIndex} className="pa-drag-item">
+                                          {element}
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
-                                ))}
+
+                                  <div className="pa-correct-sequence">
+                                    <h6><FontAwesomeIcon icon={faCheckCircle} /> Correct Answer</h6>
+                                    <div className="pa-correct-items">
+                                      {question.correctSequence && question.correctSequence.map((correct, corrIndex) => (
+                                        <div key={corrIndex} className="pa-correct-item">
+                                          {correct}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
+
+                            {selectedAssessment.category === "Word Recognition" && (
+                              <div className="pa-word-recognition-content">
+                                <h5 className="pa-answer-section-title">
+                                  <FontAwesomeIcon icon={faFileAlt} /> Fill in the Blank
+                                </h5>
+                                <div className="pa-word-recognition-layout">
+                                  <div className="pa-display-word-section">
+                                    <h6><FontAwesomeIcon icon={faBook} /> Sentence/Word Display</h6>
+                                    <div className="pa-display-word">
+                                      {question.displayWord}
+                                    </div>
+                                  </div>
+
+                                  <div className="pa-blank-options-section">
+                                    <h6><FontAwesomeIcon icon={faListUl} /> Answer Options</h6>
+                                    <div className="pa-blank-options">
+                                      {question.blankOptions && question.blankOptions.map((option, optIndex) => (
+                                        <div key={optIndex} className={`pa-blank-option ${question.correctAnswer && question.correctAnswer.includes(option) ? 'correct' : 'incorrect'}`}>
+                                          <div className="pa-option-indicator">
+                                            {question.correctAnswer && question.correctAnswer.includes(option) ? (
+                                              <FontAwesomeIcon icon={faCheckCircle} className="correct-icon" />
+                                            ) : (
+                                              <span className="option-letter">{String.fromCharCode(65 + optIndex)}</span>
+                                            )}
+                                          </div>
+                                          <div className="pa-option-content">
+                                            <span className="pa-option-text">{option}</span>
+                                            {question.correctAnswer && question.correctAnswer.includes(option) && (
+                                              <span className="pa-correct-label">Correct</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  <div className="pa-correct-answers-section">
+                                    <h6><FontAwesomeIcon icon={faCheckCircle} /> Correct Answer(s)</h6>
+                                    <div className="pa-correct-answers">
+                                      {question.correctAnswer && question.correctAnswer.map((answer, ansIndex) => (
+                                        <div key={ansIndex} className="pa-correct-answer-item">
+                                          <FontAwesomeIcon icon={faCheckCircle} />
+                                          <span>{answer}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {selectedAssessment.category === "Reading Comprehension" && (
+                              <div className="pa-reading-comprehension-content">
+                                <h5 className="pa-answer-section-title">
+                                  <FontAwesomeIcon icon={faBook} /> Story & Comprehension
+                                </h5>
+                                
+                                <div className="pa-story-info">
+                                  <div className="pa-story-title-section">
+                                    <h6><FontAwesomeIcon icon={faBook} /> Story Title</h6>
+                                    <div className="pa-story-title">{question.storyTitle}</div>
+                                  </div>
+                                </div>
+
+                                {question.passages && question.passages.length > 0 ? (
+                                  <div className="pa-passages-section">
+                                    <h6><FontAwesomeIcon icon={faImages} /> Story Passages</h6>
+                                    <div className="pa-passages-container">
+                                      {question.passages.map((passage, passageIndex) => (
+                                        <div key={passageIndex} className="pa-passage-card">
+                                          <div className="pa-passage-header">
+                                            <span className="pa-page-number">Page {passage.pageNumber}</span>
+                                          </div>
+                                          <div className="pa-passage-content">
+                                            {passage.pageImage && (
+                                              <div className="pa-passage-image-container">
+                                                <img
+                                                  src={passage.pageImage}
+                                                  alt={`Page ${passage.pageNumber} illustration`}
+                                                  className="pa-passage-image"
+                                                />
+                                              </div>
+                                            )}
+                                            <div className="pa-passage-text">
+                                              {passage.pageText}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="pa-no-passages">
+                                    <FontAwesomeIcon icon={faLink} />
+                                    <span>References existing story passages</span>
+                                  </div>
+                                )}
+
+                                <div className="pa-comprehension-question-section">
+                                  <h6><FontAwesomeIcon icon={faQuestion} /> Question & Answer</h6>
+                                  <div className="pa-question-answer-pair">
+                                    <div className="pa-comprehension-question-text">
+                                      <strong>Q:</strong> {question.questionText}
+                                    </div>
+                                    <div className="pa-comprehension-answers">
+                                      <div className="pa-primary-answer">
+                                        <FontAwesomeIcon icon={faCheckCircle} className="correct-icon" />
+                                        <span><strong>Primary Answer:</strong> {question.correctAnswer}</span>
+                                      </div>
+                                      {question.acceptableAnswers && question.acceptableAnswers.length > 1 && (
+                                        <div className="pa-acceptable-answers">
+                                          <h6><FontAwesomeIcon icon={faCheckDouble} /> Acceptable Answers</h6>
+                                          <div className="pa-acceptable-list">
+                                            {question.acceptableAnswers.map((answer, ansIndex) => (
+                                              <div key={ansIndex} className="pa-acceptable-answer">
+                                                <FontAwesomeIcon icon={faCheckCircle} className="acceptable-icon" />
+                                                <span>{answer}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               ) : showQuestionForm ? (
