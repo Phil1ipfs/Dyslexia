@@ -710,10 +710,20 @@ const MainAssessment = ({ templates }) => {
 
   // Helper functions for managing comprehension questions
   const addComprehensionQuestion = () => {
+    // Validate required fields
+    if (!questionFormData.tempComprehensionQuestion.questionText.trim()) {
+      alert("Please enter a question text for the comprehension question.");
+      return;
+    }
+    if (!questionFormData.tempComprehensionQuestion.correctAnswer.trim()) {
+      alert("Please enter a correct answer for the comprehension question.");
+      return;
+    }
+
     const newQuestion = {
-      questionText: questionFormData.tempComprehensionQuestion.questionText,
-      correctAnswer: questionFormData.tempComprehensionQuestion.correctAnswer,
-      acceptableAnswers: [...questionFormData.tempComprehensionQuestion.acceptableAnswers]
+      questionText: questionFormData.tempComprehensionQuestion.questionText.trim(),
+      correctAnswer: questionFormData.tempComprehensionQuestion.correctAnswer.trim(),
+      acceptableAnswers: questionFormData.tempComprehensionQuestion.acceptableAnswers.map(ans => ans.trim()).filter(ans => ans)
     };
 
     const updatedQuestions = [...questionFormData.comprehensionQuestions, newQuestion];
@@ -744,11 +754,21 @@ const MainAssessment = ({ templates }) => {
   };
 
   const saveComprehensionQuestion = () => {
+    // Validate required fields
+    if (!questionFormData.tempComprehensionQuestion.questionText.trim()) {
+      alert("Please enter a question text for the comprehension question.");
+      return;
+    }
+    if (!questionFormData.tempComprehensionQuestion.correctAnswer.trim()) {
+      alert("Please enter a correct answer for the comprehension question.");
+      return;
+    }
+
     const updatedQuestions = [...questionFormData.comprehensionQuestions];
     updatedQuestions[questionFormData.currentComprehensionIndex] = {
-      questionText: questionFormData.tempComprehensionQuestion.questionText,
-      correctAnswer: questionFormData.tempComprehensionQuestion.correctAnswer,
-      acceptableAnswers: [...questionFormData.tempComprehensionQuestion.acceptableAnswers]
+      questionText: questionFormData.tempComprehensionQuestion.questionText.trim(),
+      correctAnswer: questionFormData.tempComprehensionQuestion.correctAnswer.trim(),
+      acceptableAnswers: questionFormData.tempComprehensionQuestion.acceptableAnswers.map(ans => ans.trim()).filter(ans => ans)
     };
     
     setQuestionFormData(prev => ({
@@ -1350,8 +1370,24 @@ const MainAssessment = ({ templates }) => {
         return;
       }
 
-      // Note: questionText and correctAnswer not required at document level for Reading Comprehension
-      // Questions are handled at sentence level in comprehensionQuestions
+      // Validate comprehension questions
+      if (questionFormData.comprehensionQuestions.length === 0) {
+        toast.error("Please add at least one comprehension question for the story.");
+        return;
+      }
+
+      // Validate that all comprehension questions have required fields
+      for (let i = 0; i < questionFormData.comprehensionQuestions.length; i++) {
+        const question = questionFormData.comprehensionQuestions[i];
+        if (!question.questionText || !question.questionText.trim()) {
+          toast.error(`Question ${i + 1} is missing question text. Please add question text for all comprehension questions.`);
+          return;
+        }
+        if (!question.correctAnswer || !question.correctAnswer.trim()) {
+          toast.error(`Question ${i + 1} is missing correct answer. Please add correct answer for all comprehension questions.`);
+          return;
+        }
+      }
 
       // For new stories (no existing passages), require passage content
       if (!hasExistingPassages(questionFormData.storyTitle)) {
@@ -2003,22 +2039,10 @@ const MainAssessment = ({ templates }) => {
       return;
     }
 
-    // Special validation for Reading Comprehension
-    if (formData.category === "Reading Comprehension") {
-      if (questionFormData.comprehensionQuestions.length === 0) {
-        alert("Please add at least one comprehension question for the story.");
-        return;
-      }
-      if (!questionFormData.storyTitle || !questionFormData.storyTitle.trim()) {
-        alert("Please enter a story title.");
-        return;
-      }
-    } else {
-      // For other categories, check regular questions array
-      if (formData.questions.length === 0) {
-        alert("Please add at least one question.");
-        return;
-      }
+    // Check if we have any questions regardless of category
+    if (formData.questions.length === 0) {
+      alert("Please add at least one question.");
+      return;
     }
 
     // Check restrictions for new assessments
@@ -2305,6 +2329,112 @@ const MainAssessment = ({ templates }) => {
       case "sentence": return "Reading Passage";
       default: return type;
     }
+  };
+
+  // Helper function to get meaningful metadata for each question type
+  const getQuestionMetadata = (question) => {
+    const metadata = [];
+    
+    switch (question.questionType) {
+      case "multiple_choice":
+        if (question.choiceOptions && question.choiceOptions.length > 0) {
+          const correctOption = question.choiceOptions.find(opt => opt.isCorrect);
+          metadata.push({
+            icon: faCheckCircle,
+            text: correctOption ? `Answer: "${correctOption.optionText}"` : `${question.choiceOptions.length} choices`
+          });
+        }
+        break;
+        
+      case "matching":
+        if (question.questionSet && question.questionSet[0]) {
+          const audioCount = question.questionSet[0].audioTexts?.length || 0;
+          const matchCount = question.questionSet[0].matchingOptions?.length || 0;
+          metadata.push({
+            icon: faClipboardList,
+            text: `${audioCount} audio → ${matchCount} matches`
+          });
+        }
+        break;
+        
+      case "drag_drop":
+        if (question.correctSequence && question.correctSequence.length > 0) {
+          metadata.push({
+            icon: faPuzzlePiece,
+            text: `Answer: "${question.correctSequence.join('')}"`
+          });
+        }
+        if (question.dragElements && question.dragElements.length > 0) {
+          metadata.push({
+            icon: faLayerGroup,
+            text: `${question.dragElements.length} letters available`
+          });
+        }
+        break;
+        
+      case "fill_blank":
+        if (question.correctAnswer && question.correctAnswer.length > 0) {
+          metadata.push({
+            icon: faCheckCircle,
+            text: `Answer: "${question.correctAnswer.join(', ')}"`
+          });
+        }
+        if (question.blankOptions && question.blankOptions.length > 0) {
+          metadata.push({
+            icon: faClipboardList,
+            text: `${question.blankOptions.length} options`
+          });
+        }
+        break;
+        
+      case "text_input":
+        if (question.storyTitle) {
+          metadata.push({
+            icon: faBook,
+            text: `Story: "${question.storyTitle}"`
+          });
+        }
+        if (question.passages && question.passages.length > 0) {
+          metadata.push({
+            icon: faFileAlt,
+            text: `${question.passages.length} pages`
+          });
+        }
+        if (question.correctAnswer) {
+          metadata.push({
+            icon: faCheckCircle,
+            text: `Answer: "${question.correctAnswer}"`
+          });
+        }
+        break;
+        
+      // Legacy support for old question types
+      case "sentence":
+        if (question.passages && question.passages.length > 0) {
+          metadata.push({
+            icon: faBook,
+            text: `${question.passages.length} pages`
+          });
+        }
+        if (question.sentenceQuestions && question.sentenceQuestions.length > 0) {
+          metadata.push({
+            icon: faQuestion,
+            text: `${question.sentenceQuestions.length} questions`
+          });
+        }
+        break;
+        
+      default:
+        // For unknown types, show generic info if available
+        if (question.choiceOptions && question.choiceOptions.length > 0) {
+          metadata.push({
+            icon: faCheckCircle,
+            text: `${question.choiceOptions.length} options`
+          });
+        }
+    }
+    
+    return metadata;
   };
 
   // Helper function to get question type for category
@@ -5832,20 +5962,11 @@ const MainAssessment = ({ templates }) => {
                                       <FontAwesomeIcon icon={faImages} /> Has Image
                                     </span>
                                   )}
-                                  {question.questionType === "sentence" ? (
-                                    <>
-                                      <span className="pa-meta-tag">
-                                        <FontAwesomeIcon icon={faBook} /> {question.passages?.length || 0} Pages
-                                      </span>
-                                      <span className="pa-meta-tag">
-                                        <FontAwesomeIcon icon={faQuestion} /> {question.sentenceQuestions?.length || 0} Questions
-                                      </span>
-                                    </>
-                                  ) : (
-                                    <span className="pa-meta-tag">
-                                      <FontAwesomeIcon icon={faCheckCircle} /> {question.choiceOptions?.length || 0} Options
+                                  {getQuestionMetadata(question).map((meta, metaIndex) => (
+                                    <span key={metaIndex} className="pa-meta-tag">
+                                      <FontAwesomeIcon icon={meta.icon} /> {meta.text}
                                     </span>
-                                  )}
+                                  ))}
                                 </div>
                               </div>
                             </div>
