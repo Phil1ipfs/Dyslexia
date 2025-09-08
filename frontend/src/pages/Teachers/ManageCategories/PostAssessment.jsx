@@ -1623,9 +1623,35 @@ const MainAssessment = ({ templates }) => {
           delete sanitized.currentComprehensionIndex;
           delete sanitized.tempComprehensionQuestion;
         } else {
-          // For Reading Comprehension, remove questionText and correctAnswer at document level since questions are in sentenceQuestions
-          delete sanitized.questionText;
-          delete sanitized.correctAnswer;
+          // For Reading Comprehension, ensure required fields are properly structured
+          // Keep storyTitle, passages, and sentenceQuestions as required by backend model
+          
+          // Ensure storyTitle exists
+          if (!sanitized.storyTitle) {
+            sanitized.storyTitle = questionFormData.storyTitle || "";
+          }
+          
+          // Ensure passages exists (array or null)
+          if (!sanitized.passages) {
+            sanitized.passages = questionFormData.passages || [];
+          }
+          
+          // Ensure sentenceQuestions array is properly structured
+          if (!sanitized.sentenceQuestions || !Array.isArray(sanitized.sentenceQuestions)) {
+            sanitized.sentenceQuestions = questionFormData.sentenceQuestions || [];
+          }
+          
+          // Validate each sentence question has required fields
+          sanitized.sentenceQuestions = sanitized.sentenceQuestions.map(sq => ({
+            questionText: sq.questionText || "",
+            correctAnswer: sq.correctAnswer || "",
+            acceptableAnswers: Array.isArray(sq.acceptableAnswers) ? sq.acceptableAnswers : []
+          }));
+          
+          // Remove fields not needed at document level for Reading Comprehension
+          delete sanitized.questionText; // This should be in sentenceQuestions, not at question level
+          delete sanitized.correctAnswer; // This should be in sentenceQuestions, not at question level
+          
           // Also remove temporary form fields for Reading Comprehension
           delete sanitized.currentComprehensionIndex;
           delete sanitized.tempComprehensionQuestion;
