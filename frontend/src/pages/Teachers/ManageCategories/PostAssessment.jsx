@@ -3008,13 +3008,13 @@ const MainAssessment = ({ templates }) => {
               ) : modalType === 'preview' ? (
                 <div className="pa-assessment-preview-enhanced">
                   <div className="pa-preview-header-enhanced">
-                    <div className="pa-preview-summary-card">
+                    <div className="pa-preview-summary-card" style={{ color: '#ffffff' }}>
                       <div className="pa-summary-row">
                         <div className="pa-summary-item">
                           <FontAwesomeIcon icon={faGraduationCap} className="pa-summary-icon" />
                           <div className="pa-summary-content">
-                            <span className="pa-summary-label">Reading Level</span>
-                            <span className="pa-summary-value">{selectedAssessment.readingLevel}</span>
+                            <span className="pa-summary-label" style={{ color: '#ffffff' }}>Reading Level</span>
+                            <span className="pa-summary-value" style={{ color: '#ffffff' }}>{selectedAssessment.readingLevel}</span>
                           </div>
                         </div>
                         <div className="pa-summary-item">
@@ -3026,22 +3026,22 @@ const MainAssessment = ({ templates }) => {
                             faImages
                           } className="pa-summary-icon" />
                           <div className="pa-summary-content">
-                            <span className="pa-summary-label">Category</span>
-                            <span className="pa-summary-value">{selectedAssessment.category}</span>
+                            <span className="pa-summary-label" style={{ color: '#ffffff' }}>Category</span>
+                            <span className="pa-summary-value" style={{ color: '#ffffff' }}>{selectedAssessment.category}</span>
                           </div>
                         </div>
                         <div className="pa-summary-item">
                           <FontAwesomeIcon icon={faClipboardList} className="pa-summary-icon" />
                           <div className="pa-summary-content">
-                            <span className="pa-summary-label">Questions</span>
-                            <span className="pa-summary-value">{selectedAssessment.questions.length}</span>
+                            <span className="pa-summary-label" style={{ color: '#ffffff' }}>Questions</span>
+                            <span className="pa-summary-value" style={{ color: '#ffffff' }}>{selectedAssessment.questions.length}</span>
                           </div>
                         </div>
                         <div className="pa-summary-item">
                           <FontAwesomeIcon icon={selectedAssessment.isActive ? faCheckCircle : faExclamationTriangle} className="pa-summary-icon" />
                           <div className="pa-summary-content">
-                            <span className="pa-summary-label">Status</span>
-                            <span className={`pa-summary-status ${selectedAssessment.isActive ? 'active' : 'inactive'}`}>
+                            <span className="pa-summary-label" style={{ color: '#ffffff' }}>Status</span>
+                            <span className={`pa-summary-status ${selectedAssessment.isActive ? 'active' : 'inactive'}`} style={{ color: '#ffffff' }}>
                               {selectedAssessment.isActive ? 'Active' : 'Inactive'}
                             </span>
                           </div>

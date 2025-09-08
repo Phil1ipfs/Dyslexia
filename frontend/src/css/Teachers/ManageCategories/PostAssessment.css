@@ -7638,3 +7638,25 @@
   color: white !important;
 }
 
+
+
+/* FIX: Force white text in Assessment Preview cards */
+.pa-preview-summary-card .pa-summary-label,
+.pa-preview-summary-card .pa-summary-value,
+.pa-preview-summary-card .pa-summary-status {
+  color: white !important;
+}
+
+/* More specific override for text color in preview cards */
+.pa-assessment-preview-enhanced .pa-summary-label,
+.pa-assessment-preview-enhanced .pa-summary-value,
+.pa-assessment-preview-enhanced .pa-summary-status {
+  color: white !important;
+}
+
+/* Even more specific - target the exact elements */
+.pa-modal .pa-assessment-preview-enhanced .pa-preview-header-enhanced .pa-summary-label,
+.pa-modal .pa-assessment-preview-enhanced .pa-preview-header-enhanced .pa-summary-value,
+.pa-modal .pa-assessment-preview-enhanced .pa-preview-header-enhanced .pa-summary-status {
+  color: #ffffff !important;
+}
