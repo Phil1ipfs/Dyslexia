@@ -123,7 +123,6 @@ const MainAssessment = ({ templates }) => {
     questionSet: [],
     // Reading Comprehension specific fields for multiple questions
     storyTitle: "",
-    comprehensionQuestions: [],
     currentComprehensionIndex: -1, // -1 means adding new, >=0 means editing existing
     tempComprehensionQuestion: {
       questionText: "",
@@ -228,6 +227,7 @@ const MainAssessment = ({ templates }) => {
             ...baseStructure,
             storyTitle: "",
             passages: [],
+            sentenceQuestions: [],
             acceptableAnswers: []
           };
 
@@ -303,6 +303,13 @@ const MainAssessment = ({ templates }) => {
         case "Reading Comprehension":
           sanitized.storyTitle = (question.storyTitle || "").toString().trim();
           sanitized.passages = DataSanitizer.sanitizePassages(question.passages);
+          sanitized.sentenceQuestions = Array.isArray(question.sentenceQuestions) 
+            ? question.sentenceQuestions.map(sq => ({
+                questionText: sq.questionText || "",
+                correctAnswer: sq.correctAnswer || "",
+                acceptableAnswers: Array.isArray(sq.acceptableAnswers) ? sq.acceptableAnswers : []
+              }))
+            : [];
           sanitized.acceptableAnswers = Array.isArray(question.acceptableAnswers) ? question.acceptableAnswers : [];
           break;
 
@@ -440,8 +447,8 @@ const MainAssessment = ({ templates }) => {
           if (!question.storyTitle || question.storyTitle.trim() === "") {
             errors.push("Reading Comprehension must have story title");
           }
-          if (!Array.isArray(question.acceptableAnswers) || question.acceptableAnswers.length === 0) {
-            errors.push("Reading Comprehension must have acceptable answers");
+          if (!Array.isArray(question.sentenceQuestions) || question.sentenceQuestions.length === 0) {
+            errors.push("Reading Comprehension must have sentence questions");
           }
           break;
       }
@@ -726,11 +733,11 @@ const MainAssessment = ({ templates }) => {
       acceptableAnswers: questionFormData.tempComprehensionQuestion.acceptableAnswers.map(ans => ans.trim()).filter(ans => ans)
     };
 
-    const updatedQuestions = [...questionFormData.comprehensionQuestions, newQuestion];
+    const updatedQuestions = [...questionFormData.sentenceQuestions, newQuestion];
     
     setQuestionFormData(prev => ({
       ...prev,
-      comprehensionQuestions: updatedQuestions,
+      sentenceQuestions: updatedQuestions,
       tempComprehensionQuestion: {
         questionText: "",
         correctAnswer: "",
@@ -741,7 +748,7 @@ const MainAssessment = ({ templates }) => {
   };
 
   const editComprehensionQuestion = (index) => {
-    const questionToEdit = questionFormData.comprehensionQuestions[index];
+    const questionToEdit = questionFormData.sentenceQuestions[index];
     setQuestionFormData(prev => ({
       ...prev,
       currentComprehensionIndex: index,
@@ -764,7 +771,7 @@ const MainAssessment = ({ templates }) => {
       return;
     }
 
-    const updatedQuestions = [...questionFormData.comprehensionQuestions];
+    const updatedQuestions = [...questionFormData.sentenceQuestions];
     updatedQuestions[questionFormData.currentComprehensionIndex] = {
       questionText: questionFormData.tempComprehensionQuestion.questionText.trim(),
       correctAnswer: questionFormData.tempComprehensionQuestion.correctAnswer.trim(),
@@ -773,7 +780,7 @@ const MainAssessment = ({ templates }) => {
     
     setQuestionFormData(prev => ({
       ...prev,
-      comprehensionQuestions: updatedQuestions,
+      sentenceQuestions: updatedQuestions,
       tempComprehensionQuestion: {
         questionText: "",
         correctAnswer: "",
@@ -784,10 +791,10 @@ const MainAssessment = ({ templates }) => {
   };
 
   const deleteComprehensionQuestion = (index) => {
-    const updatedQuestions = questionFormData.comprehensionQuestions.filter((_, i) => i !== index);
+    const updatedQuestions = questionFormData.sentenceQuestions.filter((_, i) => i !== index);
     setQuestionFormData(prev => ({
       ...prev,
-      comprehensionQuestions: updatedQuestions,
+      sentenceQuestions: updatedQuestions,
       currentComprehensionIndex: -1,
       tempComprehensionQuestion: {
         questionText: "",
@@ -1120,10 +1127,10 @@ const MainAssessment = ({ templates }) => {
       passages: initialQuestionType === "text_input" ? [
         { pageNumber: 1, pageText: "", pageImage: null }
       ] : [],
+      sentenceQuestions: initialQuestionType === "text_input" ? [] : [],
       correctAnswer: initialQuestionType === "text_input" ? null : [],
       acceptableAnswers: [],
       // Reading Comprehension specific fields for multiple questions
-      comprehensionQuestions: [],
       currentComprehensionIndex: -1,
       tempComprehensionQuestion: {
         questionText: "",
@@ -1197,7 +1204,6 @@ const MainAssessment = ({ templates }) => {
     
     // Ensure all required fields are present for Reading Comprehension
     if (formData.category === "Reading Comprehension") {
-      baseQuestionData.comprehensionQuestions = baseQuestionData.comprehensionQuestions || [];
       baseQuestionData.currentComprehensionIndex = baseQuestionData.currentComprehensionIndex || -1;
       baseQuestionData.tempComprehensionQuestion = baseQuestionData.tempComprehensionQuestion || {
         questionText: "",
@@ -1370,21 +1376,21 @@ const MainAssessment = ({ templates }) => {
         return;
       }
 
-      // Validate comprehension questions
-      if (questionFormData.comprehensionQuestions.length === 0) {
-        toast.error("Please add at least one comprehension question for the story.");
+      // Validate sentence questions
+      if (questionFormData.sentenceQuestions.length === 0) {
+        toast.error("Please add at least one sentence question for the story.");
         return;
       }
 
-      // Validate that all comprehension questions have required fields
-      for (let i = 0; i < questionFormData.comprehensionQuestions.length; i++) {
-        const question = questionFormData.comprehensionQuestions[i];
+      // Validate that all sentence questions have required fields
+      for (let i = 0; i < questionFormData.sentenceQuestions.length; i++) {
+        const question = questionFormData.sentenceQuestions[i];
         if (!question.questionText || !question.questionText.trim()) {
-          toast.error(`Question ${i + 1} is missing question text. Please add question text for all comprehension questions.`);
+          toast.error(`Question ${i + 1} is missing question text. Please add question text for all sentence questions.`);
           return;
         }
         if (!question.correctAnswer || !question.correctAnswer.trim()) {
-          toast.error(`Question ${i + 1} is missing correct answer. Please add correct answer for all comprehension questions.`);
+          toast.error(`Question ${i + 1} is missing correct answer. Please add correct answer for all sentence questions.`);
           return;
         }
       }
@@ -1594,7 +1600,6 @@ const MainAssessment = ({ templates }) => {
             delete sanitized.correctSequence;
             delete sanitized.displayWord;
             delete sanitized.blankOptions;
-            delete sanitized.sentenceQuestions;
             break;
 
           default:
@@ -1614,13 +1619,16 @@ const MainAssessment = ({ templates }) => {
           delete sanitized.storyTitle;
           delete sanitized.acceptableAnswers;
           delete sanitized.passages;
-          delete sanitized.comprehensionQuestions;
+          delete sanitized.sentenceQuestions;
           delete sanitized.currentComprehensionIndex;
           delete sanitized.tempComprehensionQuestion;
         } else {
           // For Reading Comprehension, remove questionText and correctAnswer at document level since questions are in sentenceQuestions
           delete sanitized.questionText;
           delete sanitized.correctAnswer;
+          // Also remove temporary form fields for Reading Comprehension
+          delete sanitized.currentComprehensionIndex;
+          delete sanitized.tempComprehensionQuestion;
         }
 
         console.log('Data after sanitization:', sanitized);
@@ -1858,15 +1866,12 @@ const MainAssessment = ({ templates }) => {
             {
               questionText: "",
               correctAnswer: "",
-              incorrectAnswer: "",
-              correctDescription: "",
-              incorrectDescription: "",
+              acceptableAnswers: [],
               questionId: nextParentId ? `${nextParentId}_SQ01` : null
             }
           ] : [],
           // Reading Comprehension specific fields - RESET FOR NEW STORY
           storyTitle: "",
-          comprehensionQuestions: [],
           currentComprehensionIndex: -1,
           tempComprehensionQuestion: {
             questionText: "",
@@ -1926,15 +1931,12 @@ const MainAssessment = ({ templates }) => {
             {
               questionText: "",
               correctAnswer: "",
-              incorrectAnswer: "",
-              correctDescription: "",
-              incorrectDescription: "",
+              acceptableAnswers: [],
               questionId: nextParentId ? `${nextParentId}_SQ01` : null
             }
           ] : [],
           // Reading Comprehension specific fields - RESET FOR NEW STORY
           storyTitle: "",
-          comprehensionQuestions: [],
           currentComprehensionIndex: -1,
           tempComprehensionQuestion: {
             questionText: "",
@@ -2040,7 +2042,11 @@ const MainAssessment = ({ templates }) => {
     }
 
     // Check if we have any questions regardless of category
-    if (formData.questions.length === 0) {
+    const hasQuestions = formData.category === "Reading Comprehension" 
+      ? questionFormData.sentenceQuestions.length > 0
+      : formData.questions.length > 0;
+      
+    if (!hasQuestions) {
       alert("Please add at least one question.");
       return;
     }
@@ -2089,26 +2095,11 @@ const MainAssessment = ({ templates }) => {
         // Prepare sentenceQuestions with proper field names for backend
         let formattedSentenceQuestions;
         if (isSentenceType && question.sentenceQuestions) {
-          formattedSentenceQuestions = question.sentenceQuestions.map((sq, sqIndex) => {
-            // If there's no questionId, generate one
-            const subQuestionNumber = String(sqIndex + 1).padStart(2, '0');
-            // Get a base ID for generating subQuestionIds if needed
-            const categoryPrefix = getCategoryPrefix(modalType === 'edit' ? selectedAssessment.category : formData.category);
-            const questionNumber = String(index + 1).padStart(3, '0');
-            const baseId = `${categoryPrefix}_${questionNumber}`;
-            // Use existing questionId, or generate a new one based on baseId
-            const subQuestionId = sq.questionId || `${baseId}_SQ${subQuestionNumber}`;
-
-            return {
-              questionText: sq.questionText,
-              correctAnswer: sq.correctAnswer,
-              incorrectAnswer: sq.incorrectAnswer,
-              correctDescription: sq.correctDescription || "",
-              incorrectDescription: sq.incorrectDescription || "",
-              questionImage: sq.questionImage || null,
-              questionId: subQuestionId
-            };
-          });
+          formattedSentenceQuestions = question.sentenceQuestions.map((sq) => ({
+            questionText: sq.questionText,
+            correctAnswer: sq.correctAnswer,
+            acceptableAnswers: sq.acceptableAnswers || []
+          }));
         }
 
         return {
@@ -2155,85 +2146,40 @@ const MainAssessment = ({ templates }) => {
         // Create new assessment - include all fields
         // Get the questionType based on category (using global mapping)
 
-        // Special handling for Reading Comprehension with multiple questions
-        if (formData.category === "Reading Comprehension" && questionFormData.comprehensionQuestions.length > 0) {
-          // Create multiple assessments, one for each comprehension question
-          const responses = [];
-          const storyTitle = questionFormData.storyTitle;
-          const passages = questionFormData.passages;
-          
-          // Find the highest existing question number for this story title
-          const existingQuestions = assessments
-            .filter(assessment => 
-              assessment.readingLevel === formData.readingLevel && 
-              assessment.category === "Reading Comprehension"
-            )
-            .flatMap(assessment => assessment.questions)
-            .filter(question => question.storyTitle === storyTitle)
-            .map(question => {
-              const match = question.questionId.match(/RC_(\d+)/);
-              return match ? parseInt(match[1]) : 0;
-            });
-          
-          const startingNumber = existingQuestions.length > 0 ? Math.max(...existingQuestions) + 1 : 1;
-          
-          for (let i = 0; i < questionFormData.comprehensionQuestions.length; i++) {
-            const comprQuestion = questionFormData.comprehensionQuestions[i];
-            const questionId = `RC_${String(startingNumber + i).padStart(3, '0')}`;
-            
-            const singleQuestionData = {
-              questionId: questionId,
-              category: formData.category,
-              questionText: comprQuestion.questionText,
-              questionImage: null,
-              questionValue: null,
-              storyTitle: storyTitle,
-              passages: i === 0 && passages && passages.some(p => p.pageText && p.pageText.trim()) ? passages : null, // First question gets passages only if they have content, others get null
-              correctAnswer: comprQuestion.correctAnswer,
-              acceptableAnswers: comprQuestion.acceptableAnswers
-            };
+        // Create assessment data - Reading Comprehension uses single assessment with sentenceQuestions
+        const assessmentData = {
+          readingLevel: formData.readingLevel,
+          category: formData.category,
+          questionType: categoryToQuestionTypeMap[formData.category],
+          isActive: formData.isActive,
+          status: formData.status
+        };
 
-            const assessmentData = {
-              readingLevel: formData.readingLevel,
-              category: formData.category,
-              questionType: categoryToQuestionTypeMap[formData.category],
-              questions: [singleQuestionData], // Single question per assessment
-              isActive: formData.isActive,
-              status: formData.status
-            };
-
-            console.log(`Creating Reading Comprehension assessment ${i + 1}:`, JSON.stringify(assessmentData, null, 2));
-            
-            try {
-              const singleResponse = await MainAssessmentService.createAssessment(assessmentData);
-              responses.push(singleResponse);
-            } catch (error) {
-              console.error(`Error creating assessment ${i + 1}:`, error);
-              throw error;
-            }
-          }
-          
-          response = responses[0]; // Use first response for success checking
-        } else {
-          // Original logic for other categories
-          const assessmentData = {
-            readingLevel: formData.readingLevel,
-            category: formData.category,
-            questionType: categoryToQuestionTypeMap[formData.category],
-            questions: finalQuestions.map(question => ({
-              ...question,
-              category: formData.category // Required by backend model for validation
-            })),
-            isActive: formData.isActive,
-            status: formData.status
+        if (formData.category === "Reading Comprehension") {
+          // For Reading Comprehension, create single question with sentenceQuestions array
+          const questionId = `RC_001`;
+          const singleQuestionData = {
+            questionId: questionId,
+            storyTitle: questionFormData.storyTitle,
+            passages: questionFormData.passages.filter(p => p.pageText && p.pageText.trim()),
+            sentenceQuestions: questionFormData.sentenceQuestions,
+            acceptableAnswers: [] // Not needed at question level since it's in sentenceQuestions
           };
-
-          // For debugging - log the data being sent
-          console.log("Submitting assessment data:", JSON.stringify(assessmentData, null, 2));
-
-          // Create new assessment
-          response = await MainAssessmentService.createAssessment(assessmentData);
+          
+          assessmentData.questions = [singleQuestionData];
+        } else {
+          // For other categories, use finalQuestions
+          assessmentData.questions = finalQuestions.map(question => ({
+            ...question,
+            category: formData.category // Required by backend model for validation
+          }));
         }
+
+        // For debugging - log the data being sent
+        console.log("Submitting assessment data:", JSON.stringify(assessmentData, null, 2));
+
+        // Create new assessment
+        response = await MainAssessmentService.createAssessment(assessmentData);
       }
 
       // Check if response indicates success - handle different response formats
@@ -5087,7 +5033,6 @@ const MainAssessment = ({ templates }) => {
 
                                   <div className="pa-form-group" style={{ marginBottom: '24px' }}>
                                     <label style={{ 
-                                      display: 'block', 
                                       marginBottom: '12px', 
                                       fontSize: '16px', 
                                       fontWeight: '600', 
@@ -5317,8 +5262,8 @@ const MainAssessment = ({ templates }) => {
                               Comprehension Questions
                             </h5>
 
-                            {/* Show existing comprehension questions */}
-                            {questionFormData.comprehensionQuestions.length > 0 && (
+                            {/* Show existing sentence questions */}
+                            {questionFormData.sentenceQuestions.length > 0 && (
                               <div style={{ marginBottom: '24px' }}>
                                 <div style={{
                                   fontSize: '14px',
@@ -5326,10 +5271,10 @@ const MainAssessment = ({ templates }) => {
                                   color: '#374151',
                                   marginBottom: '12px'
                                 }}>
-                                  Questions for this story ({questionFormData.comprehensionQuestions.length}):
+                                  Questions for this story ({questionFormData.sentenceQuestions.length}):
                                 </div>
                                 
-                                {questionFormData.comprehensionQuestions.map((question, index) => (
+                                {questionFormData.sentenceQuestions.map((question, index) => (
                                   <div key={index} style={{
                                     border: '2px solid #e5e7eb',
                                     borderRadius: '8px',
@@ -5932,7 +5877,9 @@ const MainAssessment = ({ templates }) => {
                                       {getQuestionTypeDisplay(question.questionType, question.questionSubtype)}
                                     </span>
                                     <span className="pa-question-text-preview">
-                                      {question.questionText}
+                                      {formData.category === "Reading Comprehension" 
+                                        ? `Story: ${question.storyTitle || 'Untitled'} (${question.sentenceQuestions?.length || 0} questions)`
+                                        : question.questionText}
                                     </span>
                                   </div>
                                 </div>
@@ -6019,7 +5966,11 @@ const MainAssessment = ({ templates }) => {
                   <button
                     className="pa-modal-save"
                     onClick={handleSaveAssessment}
-                    disabled={!formData.readingLevel || !formData.category || formData.questions.length === 0 || (modalType === 'create' && !canCreateAssessment(formData.readingLevel, formData.category).canCreate)}
+                    disabled={!formData.readingLevel || !formData.category || 
+                      (formData.category === "Reading Comprehension" 
+                        ? formData.questions.length === 0 || !formData.questions.some(q => q.sentenceQuestions?.length > 0) 
+                        : formData.questions.length === 0) ||
+                      (modalType === 'create' && !canCreateAssessment(formData.readingLevel, formData.category).canCreate)}
                   >
                     <FontAwesomeIcon icon={modalType === 'create' ? faPlus : faEdit} />
                     {modalType === 'create' ? ' Create Assessment' : ' Save Changes'}

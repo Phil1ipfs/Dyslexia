@@ -51,6 +51,22 @@ const questionSetSchema = new mongoose.Schema({
   }
 }, { _id: false });
 
+// Schema for Reading Comprehension sentence questions (similar to pre-assessment)
+const sentenceQuestionSchema = new mongoose.Schema({
+  questionText: {
+    type: String,
+    required: true
+  },
+  correctAnswer: {
+    type: String,
+    required: true
+  },
+  acceptableAnswers: {
+    type: [String],
+    default: []
+  }
+}, { _id: false });
+
 // Schema for Reading Comprehension questions (text_input)
 const passagePageSchema = new mongoose.Schema({
   pageNumber: {
@@ -85,7 +101,7 @@ const questionSchema = new mongoose.Schema({
   questionText: {
     type: String,
     required: function() {
-      return this.category !== 'Reading Comprehension';
+      return this.parent?.().category !== 'Reading Comprehension';
     }
   },
   questionImage: {
@@ -101,11 +117,11 @@ const questionSchema = new mongoose.Schema({
   choiceOptions: {
     type: [choiceOptionSchema],
     required: function() {
-      return this.category === 'Alphabet Knowledge';
+      return this.parent?.().category === 'Alphabet Knowledge';
     },
     validate: {
       validator: function(options) {
-        if (this.category !== 'Alphabet Knowledge') return true;
+        if (this.parent?.().category !== 'Alphabet Knowledge') return true;
         return options && options.length === 3 && options.some(opt => opt.isCorrect);
       },
       message: 'Alphabet Knowledge questions must have exactly 3 options with one correct'
@@ -116,7 +132,7 @@ const questionSchema = new mongoose.Schema({
   questionSet: {
     type: [questionSetSchema],
     required: function() {
-      return this.category === 'Phonological Awareness';
+      return this.parent?.().category === 'Phonological Awareness';
     }
   },
 
@@ -124,7 +140,7 @@ const questionSchema = new mongoose.Schema({
   displaySequence: {
     type: [String],
     required: function() {
-      return this.category === 'Decoding';
+      return this.parent?.().category === 'Decoding';
     }
   },
   blankPosition: {
@@ -134,13 +150,13 @@ const questionSchema = new mongoose.Schema({
   dragElements: {
     type: [String],
     required: function() {
-      return this.category === 'Decoding';
+      return this.parent?.().category === 'Decoding';
     }
   },
   correctSequence: {
     type: [String],
     required: function() {
-      return this.category === 'Decoding';
+      return this.parent?.().category === 'Decoding';
     }
   },
 
@@ -148,19 +164,19 @@ const questionSchema = new mongoose.Schema({
   displayWord: {
     type: String,
     required: function() {
-      return this.category === 'Word Recognition';
+      return this.parent?.().category === 'Word Recognition';
     }
   },
   blankOptions: {
     type: [String],
     required: function() {
-      return this.category === 'Word Recognition';
+      return this.parent?.().category === 'Word Recognition';
     }
   },
   correctAnswer: {
     type: [String],
     required: function() {
-      return this.category === 'Word Recognition';
+      return this.parent?.().category === 'Word Recognition';
     }
   },
 
@@ -168,26 +184,39 @@ const questionSchema = new mongoose.Schema({
   storyTitle: {
     type: String,
     required: function() {
-      return this.category === 'Reading Comprehension';
+      return this.parent?.().category === 'Reading Comprehension';
     }
   },
   passages: {
     type: [passagePageSchema],
     required: function() {
-      return this.category === 'Reading Comprehension';
+      return this.parent?.().category === 'Reading Comprehension';
     },
     validate: {
       validator: function(passages) {
-        if (this.category !== 'Reading Comprehension') return true;
+        if (this.parent?.().category !== 'Reading Comprehension') return true;
         return passages === null || (passages && passages.length > 0);
       },
       message: 'Reading Comprehension questions must have passages array or null'
     }
   },
+  sentenceQuestions: {
+    type: [sentenceQuestionSchema],
+    required: function() {
+      return this.parent?.().category === 'Reading Comprehension';
+    },
+    validate: {
+      validator: function(sentenceQuestions) {
+        if (this.parent?.().category !== 'Reading Comprehension') return true;
+        return sentenceQuestions && sentenceQuestions.length > 0;
+      },
+      message: 'Reading Comprehension questions must have at least one sentence question'
+    }
+  },
   acceptableAnswers: {
     type: [String],
     required: function() {
-      return this.category === 'Reading Comprehension';
+      return this.parent?.().category === 'Reading Comprehension';
     }
   }
 }, { _id: false });
