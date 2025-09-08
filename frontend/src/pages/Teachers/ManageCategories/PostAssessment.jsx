@@ -1651,6 +1651,11 @@ const MainAssessment = ({ templates }) => {
           // Remove fields not needed at document level for Reading Comprehension
           delete sanitized.questionText; // This should be in sentenceQuestions, not at question level
           delete sanitized.correctAnswer; // This should be in sentenceQuestions, not at question level
+          delete sanitized.acceptableAnswers; // This should be in sentenceQuestions, not at question level
+          delete sanitized.questionSet; // Not used by Reading Comprehension
+          
+          // Ensure questionImage is always null for Reading Comprehension
+          sanitized.questionImage = null;
           
           // Also remove temporary form fields for Reading Comprehension
           delete sanitized.currentComprehensionIndex;
@@ -1711,6 +1716,9 @@ const MainAssessment = ({ templates }) => {
           if (!passage.pageNumber) {
             console.warn('Passage missing pageNumber, skipping image processing');
             updatedPassage.pageImage = null;
+            // Remove temporary fields
+            delete updatedPassage._imageFile;
+            delete updatedPassage._imageName;
             updatedPassages.push(updatedPassage);
             continue;
           }
@@ -1818,6 +1826,9 @@ const MainAssessment = ({ templates }) => {
             updatedPassage.pageImage = passage.pageImage;
           }
 
+          // Remove temporary fields before finalizing
+          delete updatedPassage._imageFile;
+          delete updatedPassage._imageName;
           updatedPassages.push(updatedPassage);
         }
 
