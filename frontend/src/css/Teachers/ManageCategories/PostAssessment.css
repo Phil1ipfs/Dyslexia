@@ -2495,6 +2495,279 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
+/* Assessment Preview - Reading Comprehension Specific Styles */
+.pa-passage-image-container {
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  display: block;
+  background-color: white;
+  padding: 16px;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.pa-passage-image {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  display: block;
+  max-width: 100%;
+  min-height: 200px;
+}
+
+/* Reading Comprehension Question Styles */
+.pa-sentence-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.pa-sentence-question-item {
+  margin-bottom: 20px;
+  padding: 28px;
+  background-color: #f8fafc;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.pa-sentence-question-item:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-3px);
+  border-color: #cbd5e0;
+}
+
+.pa-comprehension-question-text {
+  margin-bottom: 24px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.6;
+  padding: 18px 24px;
+  background-color: white;
+  border-radius: 10px;
+  border-left: 5px solid #4e5c93;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.pa-comprehension-question-text strong {
+  color: #4e5c93;
+  font-size: 18px;
+  margin-right: 8px;
+}
+
+.pa-comprehension-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pa-primary-answer {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  color: #059669;
+  padding: 18px 24px;
+  background-color: #ecfdf5;
+  border-radius: 10px;
+  border: 2px solid #a7f3d0;
+  font-size: 18px;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.1);
+}
+
+.pa-primary-answer .correct-icon {
+  margin-right: 14px;
+  font-size: 20px;
+  color: #10b981;
+}
+
+.pa-primary-answer strong {
+  font-size: 16px;
+  margin-right: 8px;
+}
+
+.pa-acceptable-answers {
+  padding: 24px;
+  background-color: white;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.pa-acceptable-answers-title {
+  font-size: 16px;
+  color: #4b5563;
+  margin-bottom: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pa-acceptable-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.pa-acceptable-answer {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background-color: #ecfccb;
+  border: 2px solid #bef264;
+  border-radius: 8px;
+  font-size: 16px;
+  color: #365314;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(190, 242, 100, 0.2);
+}
+
+.pa-acceptable-answer:hover {
+  background-color: #d9f99d;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(34, 197, 94, 0.2);
+  border-color: #a3e635;
+}
+
+.pa-acceptable-answer .acceptable-icon {
+  margin-right: 8px;
+  font-size: 14px;
+  color: #22c55e;
+}
+
+/* Question & Answer Section Title */
+.pa-comprehension-question-section h6 {
+  font-size: 20px;
+  color: #374151;
+  font-weight: 700;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 3px solid #e5e7eb;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Story Title and Passages Section */
+.pa-story-info {
+  margin-bottom: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-radius: 12px;
+  border: 2px solid #bfdbfe;
+}
+
+.pa-story-title-section h6 {
+  font-size: 16px;
+  color: #1e40af;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pa-story-title {
+  font-size: 20px;
+  color: #1e3a8a;
+  font-weight: 600;
+  text-align: center;
+  padding: 12px 20px;
+  background-color: white;
+  border-radius: 8px;
+  border: 2px solid #dbeafe;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+}
+
+/* Passages Section */
+.pa-passages-section {
+  margin-bottom: 24px;
+}
+
+.pa-passages-section h6 {
+  font-size: 16px;
+  color: #374151;
+  font-weight: 600;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.pa-passages-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pa-passage-card {
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.pa-passage-card:hover {
+  border-color: #4e5c93;
+  box-shadow: 0 8px 20px rgba(78, 92, 147, 0.15);
+  transform: translateY(-3px);
+}
+
+.pa-passage-header {
+  background: linear-gradient(135deg, #4e5c93 0%, #6c8ef4 100%);
+  padding: 12px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pa-page-number {
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pa-passage-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pa-passage-text {
+  font-size: 16px;
+  color: #374151;
+  line-height: 1.7;
+  text-align: justify;
+  padding: 16px 20px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #4e5c93;
+  font-family: 'Atkinson Hyperlegible', serif;
+}
+
 .pa-passage-container {
   background-color: #f8f9fa;
   border-radius: 8px;

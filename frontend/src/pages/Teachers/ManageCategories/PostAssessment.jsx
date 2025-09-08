@@ -3369,30 +3369,69 @@ const MainAssessment = ({ templates }) => {
 
                                 <div className="pa-comprehension-question-section">
                                   <h6><FontAwesomeIcon icon={faQuestion} /> Question & Answer</h6>
-                                  <div className="pa-question-answer-pair">
-                                    <div className="pa-comprehension-question-text">
-                                      <strong>Q:</strong> {question.questionText}
-                                    </div>
-                                    <div className="pa-comprehension-answers">
-                                      <div className="pa-primary-answer">
-                                        <FontAwesomeIcon icon={faCheckCircle} className="correct-icon" />
-                                        <span><strong>Primary Answer:</strong> {question.correctAnswer}</span>
-                                      </div>
-                                      {question.acceptableAnswers && question.acceptableAnswers.length > 1 && (
-                                        <div className="pa-acceptable-answers">
-                                          <h6><FontAwesomeIcon icon={faCheckDouble} /> Acceptable Answers</h6>
-                                          <div className="pa-acceptable-list">
-                                            {question.acceptableAnswers.map((answer, ansIndex) => (
-                                              <div key={ansIndex} className="pa-acceptable-answer">
-                                                <FontAwesomeIcon icon={faCheckCircle} className="acceptable-icon" />
-                                                <span>{answer}</span>
+                                  
+                                  {/* Handle the new structure with sentenceQuestions array */}
+                                  {question.sentenceQuestions && question.sentenceQuestions.length > 0 ? (
+                                    <div className="pa-sentence-questions-list">
+                                      {question.sentenceQuestions.map((sentenceQ, sqIndex) => (
+                                        <div key={sqIndex} className="pa-sentence-question-item">
+                                          <div className="pa-comprehension-question-text">
+                                            <strong>Q{sqIndex + 1}:</strong> {sentenceQ.questionText}
+                                          </div>
+                                          <div className="pa-comprehension-answers">
+                                            <div className="pa-primary-answer">
+                                              <FontAwesomeIcon icon={faCheckCircle} className="correct-icon" />
+                                              <span><strong>Primary Answer:</strong> {sentenceQ.correctAnswer}</span>
+                                            </div>
+                                            {sentenceQ.acceptableAnswers && sentenceQ.acceptableAnswers.length > 0 && (
+                                              <div className="pa-acceptable-answers">
+                                                <h6 className="pa-acceptable-answers-title">
+                                                  <FontAwesomeIcon icon={faCheckDouble} /> 
+                                                  Acceptable Answers
+                                                </h6>
+                                                <div className="pa-acceptable-list">
+                                                  {sentenceQ.acceptableAnswers.map((answer, ansIndex) => (
+                                                    <div key={ansIndex} className="pa-acceptable-answer">
+                                                      <FontAwesomeIcon icon={faCheckCircle} className="acceptable-icon" />
+                                                      <span>{answer}</span>
+                                                    </div>
+                                                  ))}
+                                                </div>
                                               </div>
-                                            ))}
+                                            )}
                                           </div>
                                         </div>
-                                      )}
+                                      ))}
                                     </div>
-                                  </div>
+                                  ) : (
+                                    /* Fallback for old structure - if questionText exists at question level */
+                                    question.questionText && (
+                                      <div className="pa-question-answer-pair">
+                                        <div className="pa-comprehension-question-text">
+                                          <strong>Q:</strong> {question.questionText}
+                                        </div>
+                                        <div className="pa-comprehension-answers">
+                                          <div className="pa-primary-answer">
+                                            <FontAwesomeIcon icon={faCheckCircle} className="correct-icon" />
+                                            <span><strong>Primary Answer:</strong> {question.correctAnswer}</span>
+                                          </div>
+                                          {question.acceptableAnswers && question.acceptableAnswers.length > 1 && (
+                                            <div className="pa-acceptable-answers">
+                                              <h6><FontAwesomeIcon icon={faCheckDouble} /> Acceptable Answers</h6>
+                                              <div className="pa-acceptable-list">
+                                                {question.acceptableAnswers.map((answer, ansIndex) => (
+                                                  <div key={ansIndex} className="pa-acceptable-answer">
+                                                    <FontAwesomeIcon icon={faCheckCircle} className="acceptable-icon" />
+                                                    <span>{answer}</span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )
+                                  )}
                                 </div>
                               </div>
                             )}
