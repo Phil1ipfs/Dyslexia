@@ -227,8 +227,7 @@ const MainAssessment = ({ templates }) => {
             ...baseStructure,
             storyTitle: "",
             passages: [],
-            sentenceQuestions: [],
-            acceptableAnswers: []
+            sentenceQuestions: []
           };
 
         default:
@@ -310,7 +309,7 @@ const MainAssessment = ({ templates }) => {
                 acceptableAnswers: Array.isArray(sq.acceptableAnswers) ? sq.acceptableAnswers : []
               }))
             : [];
-          sanitized.acceptableAnswers = Array.isArray(question.acceptableAnswers) ? question.acceptableAnswers : [];
+          // Note: acceptableAnswers should only exist within sentenceQuestions, not at question level
           break;
 
         default:
@@ -1129,7 +1128,6 @@ const MainAssessment = ({ templates }) => {
       ] : [],
       sentenceQuestions: initialQuestionType === "text_input" ? [] : [],
       correctAnswer: initialQuestionType === "text_input" ? null : [],
-      acceptableAnswers: [],
       // Reading Comprehension specific fields for multiple questions
       currentComprehensionIndex: -1,
       tempComprehensionQuestion: {
@@ -1178,7 +1176,6 @@ const MainAssessment = ({ templates }) => {
       // Handle the direct question format from the database
       baseQuestionData.questionText = baseQuestionData.questionText || "";
       baseQuestionData.correctAnswer = baseQuestionData.correctAnswer || null;
-      baseQuestionData.acceptableAnswers = baseQuestionData.acceptableAnswers || [];
       
       // Handle passages: if null, this question references a previous story's passages
       if (baseQuestionData.passages === null) {
@@ -1191,13 +1188,20 @@ const MainAssessment = ({ templates }) => {
         ];
       } else {
         console.log('Found existing passages:', baseQuestionData.passages.length);
-        // Ensure each passage has required fields
+        // Ensure each passage has required fields and clean temporary fields
         baseQuestionData.passages = baseQuestionData.passages.map((passage, idx) => ({
           pageNumber: passage.pageNumber || idx + 1,
           pageText: passage.pageText || "",
           pageImage: passage.pageImage || null
+          // Remove temporary fields: _imageFile and _imageName are automatically excluded
         }));
       }
+      
+      // Remove acceptableAnswers at question level (should only be in sentenceQuestions)
+      delete baseQuestionData.acceptableAnswers;
+      
+      // Clean up unwanted fields for Reading Comprehension
+      delete baseQuestionData.questionSet; // Not used by Reading Comprehension
     }
     
     console.log('Final baseQuestionData:', baseQuestionData);
@@ -1560,22 +1564,7 @@ const MainAssessment = ({ templates }) => {
             sanitized.questionText = sanitized.questionText || "";
             sanitized.correctAnswer = sanitized.correctAnswer || null;
             
-            // Clean and normalize acceptableAnswers array
-            sanitized.acceptableAnswers = sanitized.acceptableAnswers || [];
-            // Filter out empty strings and normalize whitespace
-            sanitized.acceptableAnswers = sanitized.acceptableAnswers
-              .map(answer => answer ? answer.toString().trim() : '')
-              .filter(answer => answer.length > 0);
-            
-            // Ensure primary answer is included in acceptableAnswers if not already present
-            if (sanitized.correctAnswer && !sanitized.acceptableAnswers.includes(sanitized.correctAnswer)) {
-              sanitized.acceptableAnswers.unshift(sanitized.correctAnswer);
-            }
-            
-            // If no acceptable answers provided, use the correct answer
-            if (sanitized.acceptableAnswers.length === 0 && sanitized.correctAnswer) {
-              sanitized.acceptableAnswers = [sanitized.correctAnswer];
-            }
+            // Note: acceptableAnswers only exist within sentenceQuestions, not at question level
             
             sanitized.storyTitle = sanitized.storyTitle || "";
             
@@ -1648,10 +1637,12 @@ const MainAssessment = ({ templates }) => {
             acceptableAnswers: Array.isArray(sq.acceptableAnswers) ? sq.acceptableAnswers : []
           }));
           
+          // Remove acceptableAnswers at question level (should only be in sentenceQuestions)
+          delete sanitized.acceptableAnswers;
+          
           // Remove fields not needed at document level for Reading Comprehension
           delete sanitized.questionText; // This should be in sentenceQuestions, not at question level
           delete sanitized.correctAnswer; // This should be in sentenceQuestions, not at question level
-          delete sanitized.acceptableAnswers; // This should be in sentenceQuestions, not at question level
           delete sanitized.questionSet; // Not used by Reading Comprehension
           
           // Ensure questionImage is always null for Reading Comprehension
@@ -1923,7 +1914,6 @@ const MainAssessment = ({ templates }) => {
           displayWord: "",
           blankOptions: [],
           correctAnswer: formData.category === "Reading Comprehension" ? "" : [],
-          acceptableAnswers: formData.category === "Reading Comprehension" ? [] : [],
           questionSet: []
         });
 
@@ -1988,7 +1978,6 @@ const MainAssessment = ({ templates }) => {
           displayWord: "",
           blankOptions: [],
           correctAnswer: formData.category === "Reading Comprehension" ? "" : [],
-          acceptableAnswers: formData.category === "Reading Comprehension" ? [] : [],
           questionSet: []
         });
 
@@ -2199,8 +2188,7 @@ const MainAssessment = ({ templates }) => {
             questionId: questionId,
             storyTitle: questionFormData.storyTitle,
             passages: questionFormData.passages.filter(p => p.pageText && p.pageText.trim()),
-            sentenceQuestions: questionFormData.sentenceQuestions,
-            acceptableAnswers: [] // Not needed at question level since it's in sentenceQuestions
+            sentenceQuestions: questionFormData.sentenceQuestions
           };
           
           assessmentData.questions = [singleQuestionData];

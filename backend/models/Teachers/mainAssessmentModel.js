@@ -216,7 +216,8 @@ const questionSchema = new mongoose.Schema({
   acceptableAnswers: {
     type: [String],
     required: function() {
-      return this.parent?.().category === 'Reading Comprehension';
+      // acceptableAnswers should only be at sentenceQuestion level, not at question level
+      return false;
     }
   }
 }, { _id: false });
