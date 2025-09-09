@@ -554,6 +554,7 @@ const StudentProgressView = () => {
         {(categoryResults || assessmentData) && (
           <AssessmentSummaryCard
             assessmentData={categoryResults || assessmentData}
+            student={student}
           />
         )}
       </div>

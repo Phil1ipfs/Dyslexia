@@ -6,11 +6,12 @@ import {
 } from 'react-icons/fa';
 import '../ManageProgress/css/AssessmentSummaryCard.css'; 
 
-const AssessmentSummaryCard = ({ assessmentData }) => {
+const AssessmentSummaryCard = ({ assessmentData, student }) => {
   if (!assessmentData) return null;
 
-  // Check if student has been assessed
-  const isAssessed = assessmentData.readingLevel && assessmentData.readingLevel !== 'Not Assessed';
+  // Check if student has been assessed - use student's reading level from users table
+  const studentReadingLevel = student?.readingLevel || 'Not Assessed';
+  const isAssessed = studentReadingLevel && studentReadingLevel !== 'Not Assessed';
   
   // Get reading level class based on the level
   const getReadingLevelClass = (level) => {
@@ -47,24 +48,13 @@ const AssessmentSummaryCard = ({ assessmentData }) => {
     // This is category_results format (Post-Assessment)
     assessmentType = 'Post-Assessment';
     
-    // Use overallScore from category_results if available
-    if (assessmentData.overallScore !== undefined) {
-      readingPercentage = assessmentData.overallScore;
-    } else {
-      // Calculate average from completed categories only
-      const completedCategories = assessmentData.categories.filter(cat => cat.isCompleted && cat.score !== undefined);
-      if (completedCategories.length > 0) {
-        const totalScore = completedCategories.reduce((sum, cat) => sum + cat.score, 0);
-        readingPercentage = Math.round(totalScore / completedCategories.length);
-      } else {
-        // No completed categories, use readingPercentage from users table
-        readingPercentage = assessmentData.readingPercentage || 0;
-      }
-    }
+    // Use overallScore from category_results
+    readingPercentage = assessmentData.overallScore || 0;
   } else {
-    // This is users table data (Pre-Assessment results)
+    // This is pre-assessment or no category results yet
+    // Use readingPercentage from users table
     assessmentType = 'Pre-Assessment';
-    readingPercentage = assessmentData.readingPercentage || 0;
+    readingPercentage = student?.readingPercentage || 0;
   }
   
   // Round the percentage for display
@@ -107,8 +97,8 @@ const AssessmentSummaryCard = ({ assessmentData }) => {
   // Get the assessment date - check multiple possible properties
   const assessmentDate = assessmentData.assessmentDate || assessmentData.lastAssessmentDate;
   
-  // Get reading level - prioritize from users table over category_results
-  const displayReadingLevel = assessmentData.userReadingLevel || assessmentData.readingLevel || "Not Assessed";
+  // Always use reading level from student (users table)
+  const displayReadingLevel = studentReadingLevel;
   
   // Get level class
   const currentLevelClass = getReadingLevelClass(displayReadingLevel);
