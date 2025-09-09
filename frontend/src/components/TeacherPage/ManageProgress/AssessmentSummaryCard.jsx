@@ -65,7 +65,9 @@ const AssessmentSummaryCard = ({ assessmentData, student }) => {
                              cat.categoryName && 
                              cat.score !== undefined && 
                              cat.isPassed !== undefined
-                           );
+                           ) &&
+                           (assessmentData.overallScore > 0 || // Has meaningful score, OR
+                            assessmentData.categories.some(cat => cat.isCompleted === true)); // Has completed categories
   
   console.log('Is Post Assessment:', isPostAssessment);
   console.log('Assessment Type:', assessmentData.assessmentType);
