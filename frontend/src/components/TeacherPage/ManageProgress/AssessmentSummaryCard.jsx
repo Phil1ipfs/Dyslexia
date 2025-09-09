@@ -40,35 +40,31 @@ const AssessmentSummaryCard = ({ assessmentData }) => {
   };
   
   // Calculate score from available data sources
-  // First check if this is category_results data
   let readingPercentage;
-  let assessmentType = 'post-Assessment';
+  let assessmentType = 'Post-Assessment';
   
   if (assessmentData.categories && assessmentData.categories.length > 0) {
-    // This is category_results format
-    assessmentType = assessmentData.assessmentType === 'main-assessment' && assessmentData.isPreAssessment !== true 
-      ? 'Post-Assessment' 
-      : 'Post-Assessment';
+    // This is category_results format (Post-Assessment)
+    assessmentType = 'Post-Assessment';
     
-    // Calculate overall percentage from categories if available
+    // Use overallScore from category_results if available
     if (assessmentData.overallScore !== undefined) {
       readingPercentage = assessmentData.overallScore;
-    } else if (assessmentData.readingPercentage !== undefined) {
-      readingPercentage = assessmentData.readingPercentage;
     } else {
-      // Calculate average from categories
-      const totalScore = assessmentData.categories.reduce((sum, cat) => sum + (cat.score || 0), 0);
-      readingPercentage = Math.round(totalScore / assessmentData.categories.length);
+      // Calculate average from completed categories only
+      const completedCategories = assessmentData.categories.filter(cat => cat.isCompleted && cat.score !== undefined);
+      if (completedCategories.length > 0) {
+        const totalScore = completedCategories.reduce((sum, cat) => sum + cat.score, 0);
+        readingPercentage = Math.round(totalScore / completedCategories.length);
+      } else {
+        // No completed categories, use readingPercentage from users table
+        readingPercentage = assessmentData.readingPercentage || 0;
+      }
     }
-  } else if (assessmentData.scores && assessmentData.scores.overall !== undefined) {
-    // This is pre-assessment data format
-    readingPercentage = parseFloat(assessmentData.scores.overall);
-  } else if (assessmentData.readingPercentage !== undefined) {
-    readingPercentage = assessmentData.readingPercentage;
-  } else if (assessmentData.overallScore !== undefined) {
-    readingPercentage = assessmentData.overallScore;
   } else {
-    readingPercentage = isAssessed ? 75 : 0; // Default only as last resort
+    // This is users table data (Pre-Assessment results)
+    assessmentType = 'Pre-Assessment';
+    readingPercentage = assessmentData.readingPercentage || 0;
   }
   
   // Round the percentage for display
@@ -111,8 +107,11 @@ const AssessmentSummaryCard = ({ assessmentData }) => {
   // Get the assessment date - check multiple possible properties
   const assessmentDate = assessmentData.assessmentDate || assessmentData.lastAssessmentDate;
   
+  // Get reading level - prioritize from users table over category_results
+  const displayReadingLevel = assessmentData.userReadingLevel || assessmentData.readingLevel || "Not Assessed";
+  
   // Get level class
-  const currentLevelClass = getReadingLevelClass(assessmentData.readingLevel);
+  const currentLevelClass = getReadingLevelClass(displayReadingLevel);
   const scoreClass = getScoreClass(score);
   
   return (
@@ -137,7 +136,7 @@ const AssessmentSummaryCard = ({ assessmentData }) => {
               Current Reading Level
             </div>
             <div className={`unique-literexia-item-value ${currentLevelClass}`}>
-              {assessmentData.readingLevel || "Not Assessed"}
+              {displayReadingLevel}
             </div>
           </div>
         </div>

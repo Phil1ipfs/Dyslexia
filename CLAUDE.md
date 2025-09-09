@@ -348,3 +348,106 @@ The LITEREXIA platform implements a comprehensive dyslexia assessment system wit
 
 5. **Intervention Tracking**: Show intervention requirements, attempts, and success/failure status
 
+users table 
+
+{
+  "_id": {
+    "$oid": "68491110988139e71b308b55"
+  },
+  "idNumber": 202522233,
+  "firstName": "Ali",
+  "middleName": "Kat",
+  "lastName": "Alejaga",
+  "age": "7",
+  "gender": "Female",
+  "gradeLevel": "Grade 1",
+  "section": "Integrity",
+  "address": "123 Maharlika Street Los Baños Laguna",
+  "email": null,
+  "profileImageUrl": "",
+  "completedLessons": [],
+  "readingLevel": "At Grade Level",
+  "readingPercentage": 80,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-06-11T05:16:00.131Z"
+  },
+  "updatedAt": "2025-08-20T04:47:39.678396",
+  "lastAssessmentDate": "2025-08-20T04:47:39.677994"
+},
+
+category_results table
+{
+  "_id": {
+    "$oid": "683e948a9b13d43b098eb802"
+  },
+  "studentId": 202522233,
+  "assessmentDate": {
+    "$date": "2025-08-20T05:13:00.100Z"
+  },
+  "categories": [
+    {
+      "categoryName": "Alphabet Knowledge",
+      "totalQuestions": 15,
+      "correctAnswers": 15,
+      "score": 100,
+      "isPassed": true,
+      "passingThreshold": 75,
+      "isCompleted": true,
+      "lastQuestionAnswered": "AK_015"
+    },
+    {
+      "categoryName": "Phonological Awareness",
+      "totalQuestions": 3,
+      "totalPossibleMatches": 13,
+      "correctMatches": 13,
+      "score": 100,
+      "isPassed": true,
+      "passingThreshold": 75,
+      "isCompleted": true,
+      "lastQuestionAnswered": "PA_003"
+    },
+    {
+      "categoryName": "Decoding",
+      "totalQuestions": 6,
+      "correctAnswers": 5,
+      "score": 83,
+      "isPassed": true,
+      "passingThreshold": 75,
+      "isCompleted": true,
+      "lastQuestionAnswered": "DC_006"
+    },
+    {
+      "categoryName": "Word Recognition",
+      "totalQuestions": 5,
+      "correctAnswers": 5,
+      "score": 100,
+      "isPassed": true,
+      "passingThreshold": 75,
+      "isCompleted": true,
+      "lastQuestionAnswered": "WR_005"
+    },
+    {
+      "categoryName": "Reading Comprehension",
+      "totalQuestions": 5,
+      "correctAnswers": 5,
+      "score": 100,
+      "isPassed": true,
+      "passingThreshold": 75,
+      "isCompleted": true,
+      "lastQuestionAnswered": "RC_005"
+    }
+  ],
+  "overallScore": 97,
+  "completedCategories": 5,
+  "totalCategories": 5,
+  "allCategoriesPassed": true,
+  "readingLevel": "At Grade Level",
+  "readingLevelUpdated": true,
+  "createdAt": {
+    "$date": "2025-08-20T05:13:00.100Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-20T05:13:00.100Z"
+  }
+}]
