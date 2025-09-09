@@ -2,9 +2,19 @@
 const express = require('express');
 const router = express.Router();
 const { auth } = require('../../middleware/auth');
-const categoryProgressController = require('../../controllers/Teachers/ManageProgress/categoryProgressController');
+const {
+  getCategoryProgress,
+  getSpecificCategoryProgress,
+  getAllStudentsCategoryProgress
+} = require('../../controllers/Teachers/ManageProgress/categoryProgressController');
 
-// Get category progress for a student
-router.get('/category-progress/:id', categoryProgressController.getCategoryProgress);
+// Get all students category progress summary
+router.get('/all', getAllStudentsCategoryProgress);
+
+// Get category progress for a specific student
+router.get('/:studentId', getCategoryProgress);
+
+// Get specific category progress for a student
+router.get('/:studentId/:categoryName', getSpecificCategoryProgress);
 
 module.exports = router;

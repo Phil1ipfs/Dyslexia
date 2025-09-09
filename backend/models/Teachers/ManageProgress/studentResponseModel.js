@@ -1,34 +1,38 @@
 const mongoose = require('mongoose');
 
 /**
- * Model for the test.student_responses collection
- * Records student responses to assessment questions
+ * Model for the test.student_responses collection  
+ * Records student responses to main assessment questions (READ-ONLY for web interface)
+ * Based on actual data structure from database
  */
 const studentResponseSchema = new mongoose.Schema({
   studentId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: mongoose.Schema.Types.Mixed, // Can be integer or string
     required: true
   },
-  categoryResultId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'CategoryResult'
-  },
   categoryId: {
-    type: mongoose.Schema.Types.ObjectId
+    type: mongoose.Schema.Types.ObjectId,
+    required: true
   },
-  questionOrder: {
-    type: Number
-  },
-  category: {
+  questionId: {
     type: String,
     required: true
   },
-  sentenceQuestionIndex: {
+  category: {
+    type: String,
+    required: true,
+    enum: ['Alphabet Knowledge', 'Phonological Awareness', 'Word Recognition', 'Decoding', 'Reading Comprehension']
+  },
+  response: {
+    type: mongoose.Schema.Types.Mixed, // Array with different formats per question type
+    required: true
+  },
+  // For Phonological Awareness questions only
+  correctMatches: {
     type: Number
   },
-  selectedOption: {
-    type: String
+  totalMatches: {
+    type: Number  
   },
   isCorrect: {
     type: Boolean,
@@ -39,15 +43,16 @@ const studentResponseSchema = new mongoose.Schema({
   },
   answeredAt: {
     type: Date,
-    default: Date.now
+    required: true
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    required: true
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+  readingLevel: {
+    type: String,
+    required: true,
+    enum: ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level']
   }
 }, {
   collection: 'student_responses'

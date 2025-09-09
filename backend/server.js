@@ -212,14 +212,8 @@ const connectDB = async () => {
       console.warn('⚠️ Could not initialize progress collections:', error.message);
     }
 
-    // Run automatic migration of category results
-    try {
-      const CategoryResultsService = require('./services/Teachers/CategoryResultsService');
-      await CategoryResultsService.migrateStudentIds();
-      console.log('✅ Completed automatic migration of category results');
-    } catch (error) {
-      console.warn('⚠️ Could not run category results migration:', error.message);
-    }
+    // Category results service is now ready for read-only operations
+    console.log('✅ Category results service initialized for read-only access');
 
     console.log('\n✅ Database setup complete');
     return true;
@@ -412,6 +406,15 @@ connectDB().then(async (connected) => {
       console.log('✅ Loaded manage progress routes');
     } catch (error) {
       console.warn('⚠️ Could not load manage progress routes:', error.message);
+    }
+
+    // Load category progress routes
+    try {
+      const categoryProgressRoutes = require('./routes/Teachers/categoryProgressRoutes');
+      app.use('/api/category-progress', categoryProgressRoutes);
+      console.log('✅ Loaded category progress routes at /api/category-progress/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load category progress routes:', error.message);
     }
 
     // Load intervention routes

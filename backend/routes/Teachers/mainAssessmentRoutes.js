@@ -208,4 +208,16 @@ router.get(
   mainAssessmentController.getStudentProgress
 );
 
+// === TEST ROUTES (Development only) ===
+if (process.env.NODE_ENV === 'development') {
+  // Test route for student responses (no authentication required)
+  router.get('/test/responses/:studentId', mainAssessmentController.getStudentResponses);
+  
+  // Test route for student results by category (no authentication required)
+  router.get('/test/results/:studentId/:category', mainAssessmentController.getStudentResults);
+  
+  // Test route for student progress (no authentication required)
+  router.get('/test/progress/:studentId', mainAssessmentController.getStudentProgress);
+}
+
 module.exports = router;

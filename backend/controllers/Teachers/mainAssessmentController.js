@@ -9,7 +9,7 @@ const getMainAssessmentCollection = () => {
 
 const getResponsesCollection = () => {
   const testDb = mongoose.connection.useDb('test');
-  return testDb.collection('main_assessment_responses');
+  return testDb.collection('student_responses');
 };
 
 /**
