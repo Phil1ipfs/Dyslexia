@@ -190,13 +190,28 @@ class PreAssessmentPDFService {
     pdf.setFont('helvetica', 'bold');
     pdf.text('ASSESSMENT OVERVIEW', margin + 6, yPos + 7);
     
-    // Reading level badge with clean styling
+    // Reading level badge with clean styling - use enhanced reading level info
+    const readingLevelInfo = assessmentData.readingLevelInfo;
     const readingLevel = assessmentData.readingLevel || 'Not Assessed';
-    const levelText = readingLevel;
+    
+    // Determine display text and badge color based on assessment type
+    let levelText = readingLevel;
+    let badgeColor = [80, 140, 80]; // Default green
+    
+    if (readingLevelInfo && readingLevelInfo.hasProgressData) {
+      // Post-assessment data available
+      levelText = readingLevel + ' (Post)';
+      badgeColor = [70, 90, 150]; // Blue for post-assessment
+    } else {
+      // Pre-assessment only
+      levelText = readingLevel + ' (Pre)';
+      badgeColor = [120, 120, 120]; // Gray for pre-assessment only
+    }
+    
     const badgeWidth = pdf.getTextWidth(levelText) + 12;
     
-    // Clean success badge
-    pdf.setFillColor(80, 140, 80); // Clean green
+    // Clean badge with appropriate color
+    pdf.setFillColor(badgeColor[0], badgeColor[1], badgeColor[2]);
     pdf.rect(pageWidth - margin - badgeWidth - 6, yPos + 1, badgeWidth, 8, 'F');
     
     pdf.setTextColor(255, 255, 255);
@@ -216,9 +231,22 @@ class PreAssessmentPDFService {
       'OVERALL SCORE', `${assessmentData.correctAnswers || 0}/45`, 
       `${Math.round(((assessmentData.correctAnswers || 0) / 45) * 100)}%`);
     
-    // Reading Level Card with clean header
+    // Reading Level Card with enhanced information
+    let readingLevelTitle = 'READING LEVEL';
+    let readingLevelSubtext = 'Determined';
+    
+    if (readingLevelInfo) {
+      if (readingLevelInfo.hasProgressData) {
+        readingLevelTitle = 'CURRENT LEVEL';
+        readingLevelSubtext = 'Post-Assessment';
+      } else {
+        readingLevelTitle = 'READING LEVEL'; 
+        readingLevelSubtext = 'Pre-Assessment';
+      }
+    }
+    
     this.addCleanOverviewCard(pdf, margin + cardWidth + 10, yPos, cardWidth, cardHeight,
-      'READING LEVEL', readingLevel, assessmentData.readingPercentage ? `${assessmentData.readingPercentage}%` : 'Determined');
+      readingLevelTitle, readingLevel, readingLevelSubtext);
     
     // Assessment Date Card with clean header
     const completedDate = assessmentData.completedAt ? 
@@ -663,6 +691,117 @@ class PreAssessmentPDFService {
     pdf.text(`Date: ${currentDate}`, rightSigX, footerY + 14);
     
     // Removed the generated text footer for cleaner appearance
+  }
+
+  /**
+   * Add assessment summary with progress information
+   */
+  static addAssessmentSummary(pdf, assessmentData, pageWidth, pageHeight, margin, bottomMargin, currentY) {
+    let yPos = currentY;
+    
+    // Check if we need a new page
+    if (yPos + 60 > pageHeight - bottomMargin) {
+      pdf.addPage();
+      yPos = margin;
+    }
+    
+    yPos += 15; // Add some space before summary
+    
+    // Section header with clean professional styling
+    pdf.setFillColor(70, 90, 150); // Clean professional blue
+    pdf.rect(margin, yPos, pageWidth - (margin * 2), 9, 'F');
+    
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('ASSESSMENT SUMMARY', margin + 6, yPos + 6.5);
+    
+    yPos += 15;
+    pdf.setTextColor(0, 0, 0);
+    
+    const readingLevelInfo = assessmentData.readingLevelInfo;
+    const currentLevel = assessmentData.readingLevel || 'Not Assessed';
+    
+    // Main summary text
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    
+    if (readingLevelInfo && readingLevelInfo.hasProgressData) {
+      // Student has both pre and post assessment data
+      pdf.text('Based on the student\'s assessment results:', margin + 5, yPos + 8);
+      yPos += 12;
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(70, 90, 150);
+      pdf.text(`Current Reading Level: ${currentLevel} (Post-Assessment)`, margin + 10, yPos + 8);
+      yPos += 10;
+      
+      if (readingLevelInfo.preAssessmentLevel && readingLevelInfo.preAssessmentLevel !== 'Not Assessed') {
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(`Pre-Assessment Baseline: ${readingLevelInfo.preAssessmentLevel}`, margin + 10, yPos + 8);
+        yPos += 10;
+        
+        // Progress indicator
+        if (readingLevelInfo.preAssessmentLevel !== currentLevel) {
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(46, 204, 113); // Green for progress
+          pdf.text('✓ Progress demonstrated from baseline to current assessment', margin + 10, yPos + 8);
+          yPos += 10;
+        }
+      }
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(60, 60, 60);
+      pdf.text('The student has completed main assessment activities and achieved their', margin + 5, yPos + 8);
+      yPos += 8;
+      pdf.text('current reading level through demonstrated skills and interventions.', margin + 5, yPos + 8);
+      
+    } else {
+      // Student has only pre-assessment data
+      pdf.text('Based on the pre-assessment screening results:', margin + 5, yPos + 8);
+      yPos += 12;
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(70, 90, 150);
+      pdf.text(`Initial Reading Level: ${currentLevel} (Pre-Assessment)`, margin + 10, yPos + 8);
+      yPos += 10;
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(60, 60, 60);
+      pdf.text('This level represents the student\'s initial screening results and serves as', margin + 5, yPos + 8);
+      yPos += 8;
+      pdf.text('the baseline for future progress tracking and main assessment activities.', margin + 5, yPos + 8);
+    }
+    
+    yPos += 15;
+    
+    // Next steps section
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(102, 51, 153); // Purple for next steps
+    pdf.text('Next Steps:', margin + 5, yPos + 8);
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(60, 60, 60);
+    
+    if (readingLevelInfo && readingLevelInfo.hasProgressData) {
+      yPos += 10;
+      pdf.text('• Continue monitoring progress through ongoing assessments', margin + 10, yPos + 8);
+      yPos += 8;
+      pdf.text('• Implement targeted interventions for areas needing improvement', margin + 10, yPos + 8);
+      yPos += 8;
+      pdf.text('• Track skill development and reading level advancement', margin + 10, yPos + 8);
+    } else {
+      yPos += 10;
+      pdf.text('• Proceed to main assessment activities based on current level', margin + 10, yPos + 8);
+      yPos += 8;
+      pdf.text('• Implement targeted instruction for identified skill areas', margin + 10, yPos + 8);
+      yPos += 8;
+      pdf.text('• Monitor progress through ongoing evaluation', margin + 10, yPos + 8);
+    }
+    
+    return yPos + 20;
   }
 
   /**

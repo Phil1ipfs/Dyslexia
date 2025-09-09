@@ -185,22 +185,37 @@ const PreAssessmentResults = ({ assessmentData, userResponses, student }) => {
   useEffect(() => {
     if (userResponses && Array.isArray(userResponses) && userResponses.length > 0) {
       console.log('Processing user responses:', userResponses);
-      const processed = PreAssessmentDataProcessor.processStudentResponses(userResponses);
-      console.log('Processed data:', processed);
       
-      // Use actual student reading level if available, otherwise use calculated one
-      if (student && student.readingLevel) {
-        processed.readingLevel = student.readingLevel;
-        console.log('Using student reading level from database:', student.readingLevel);
-      }
+      // TODO: In a full implementation, you would fetch category_results data from the backend here
+      // For now, we'll simulate checking for category_results data
+      // Example: const categoryResults = await fetchCategoryResults(student.id);
+      const categoryResults = null; // This should come from an API call in real implementation
+      
+      // Use enhanced processing that properly handles reading level determination
+      const processed = PreAssessmentDataProcessor.processStudentResponsesWithReadingLevel(
+        userResponses, 
+        null, // preAssessmentQuestions (optional)
+        student, // student data from users table
+        categoryResults // category_results data (will be null for pre-assessment only students)
+      );
+      
+      console.log('Enhanced processed data:', processed);
+      console.log('Reading level info:', processed.readingLevelInfo);
       
       setProcessedData(processed);
     } else if (assessmentData && assessmentData.skillDetails) {
       // Fallback to existing assessment data format
       let processedAssessment = { ...assessmentData };
-      if (student && student.readingLevel) {
-        processedAssessment.readingLevel = student.readingLevel;
-      }
+      
+      // Apply the same logic for fallback data
+      const categoryResults = null; // Should fetch this from backend
+      const readingLevelInfo = PreAssessmentDataProcessor.determineCurrentReadingLevel(student, categoryResults);
+      
+      processedAssessment.readingLevel = readingLevelInfo.currentLevel;
+      processedAssessment.readingLevelInfo = readingLevelInfo;
+      processedAssessment.displayReadingLevel = readingLevelInfo.displayText;
+      processedAssessment.hasProgressData = readingLevelInfo.hasProgressData;
+      
       setProcessedData(processedAssessment);
     }
   }, [assessmentData, userResponses, student]);

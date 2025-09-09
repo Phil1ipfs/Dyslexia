@@ -1240,6 +1240,95 @@ class PreAssessmentDataProcessor {
     const match = questionId.match(/_([0-9]+)$/);
     return match ? parseInt(match[1], 10) : 1;
   }
+
+  /**
+   * Determine current reading level with proper business logic
+   * Checks for post-assessment data first, then falls back to pre-assessment
+   * @param {Object} student - Student data from users table
+   * @param {Array} categoryResults - Category results from main assessment (optional)
+   * @returns {Object} Reading level information with source and display text
+   */
+  static determineCurrentReadingLevel(student, categoryResults = null) {
+    const result = {
+      currentLevel: null,
+      preAssessmentLevel: null,
+      displayText: '',
+      assessmentType: '',
+      hasProgressData: false,
+      progressFromBaseline: ''
+    };
+
+    // Always preserve pre-assessment level as baseline
+    result.preAssessmentLevel = student?.readingLevel || 'Not Assessed';
+
+    // Check if student has completed main assessment (category_results data)
+    if (categoryResults && categoryResults.length > 0) {
+      // Find the most recent category result with reading level data
+      const latestResult = categoryResults
+        .filter(result => result.readingLevel && result.readingLevel !== 'Not Assessed')
+        .sort((a, b) => new Date(b.assessmentDate || b.createdAt) - new Date(a.assessmentDate || a.createdAt))[0];
+
+      if (latestResult) {
+        result.currentLevel = latestResult.readingLevel;
+        result.assessmentType = 'post-assessment';
+        result.hasProgressData = true;
+        result.displayText = `Current Level: ${latestResult.readingLevel} (Post-Assessment)`;
+        
+        // Add progress comparison if different from baseline
+        if (result.preAssessmentLevel !== 'Not Assessed' && 
+            result.preAssessmentLevel !== result.currentLevel) {
+          result.progressFromBaseline = `Pre-Assessment Baseline: ${result.preAssessmentLevel}`;
+        }
+        
+        return result;
+      }
+    }
+
+    // Fall back to pre-assessment data only
+    result.currentLevel = result.preAssessmentLevel;
+    result.assessmentType = 'pre-assessment';
+    result.hasProgressData = false;
+    result.displayText = result.preAssessmentLevel !== 'Not Assessed' 
+      ? `Reading Level: ${result.preAssessmentLevel} (Pre-Assessment)`
+      : 'Reading Level: Not Assessed';
+
+    return result;
+  }
+
+  /**
+   * Enhanced student response processing with proper reading level logic
+   * @param {Array} userResponses - Array of user response objects  
+   * @param {Array|null} preAssessmentQuestions - Optional pre-assessment questions array
+   * @param {Object} student - Student data from users table
+   * @param {Array} categoryResults - Category results from main assessment (optional)
+   * @returns {Object} Processed assessment data with proper reading level information
+   */
+  static processStudentResponsesWithReadingLevel(userResponses, preAssessmentQuestions = null, student = null, categoryResults = null) {
+    // First process the responses normally
+    const processedData = this.processStudentResponses(userResponses, preAssessmentQuestions);
+    
+    if (!processedData.hasCompleted) {
+      return processedData;
+    }
+
+    // Then determine the proper reading level using business logic
+    const readingLevelInfo = this.determineCurrentReadingLevel(student, categoryResults);
+    
+    // Update processed data with proper reading level information
+    processedData.readingLevel = readingLevelInfo.currentLevel;
+    processedData.readingLevelInfo = readingLevelInfo;
+    processedData.displayReadingLevel = readingLevelInfo.displayText;
+    processedData.hasProgressData = readingLevelInfo.hasProgressData;
+    
+    console.log('📊 Enhanced reading level determination:', {
+      current: readingLevelInfo.currentLevel,
+      baseline: readingLevelInfo.preAssessmentLevel,
+      type: readingLevelInfo.assessmentType,
+      hasProgress: readingLevelInfo.hasProgressData
+    });
+
+    return processedData;
+  }
 }
 
 export default PreAssessmentDataProcessor;
