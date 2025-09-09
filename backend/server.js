@@ -417,6 +417,15 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load category progress routes:', error.message);
     }
 
+    // Load student response routes
+    try {
+      const studentResponseRoutes = require('./routes/Teachers/studentResponseRoutes');
+      app.use('/api/student-responses', studentResponseRoutes);
+      console.log('✅ Loaded student response routes at /api/student-responses/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load student response routes:', error.message);
+    }
+
     // Load intervention routes
     try {
       const interventionRoutes = require('./routes/Teachers/ManageProgress/interventionRoutes');
