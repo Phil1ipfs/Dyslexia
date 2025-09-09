@@ -814,17 +814,17 @@ async function aggregateIndividualResponses(allUserResponses, preAssessment, stu
     },
     assessmentId: "1",
     readingLevel: student.readingLevel || determinedReadingLevel,
-    overallScore: student.readingPercentage || 0, // Use stored readingPercentage from users table
-    totalQuestions: allUserResponses.length,
-    correctAnswers: totalCorrect,
-    part1Score: part1Correct,
-    part1Total: part1Total,
-    readingComprehensionScore: rcStats.correct,
-    readingComprehensionTotal: rcStats.total,
-    readingComprehensionPercentage: readingPercentage,
+    overallScore: Math.max(0, Math.min(100, student.readingPercentage || 0)), // Sanitize: 0-100 range
+    totalQuestions: Math.max(1, preAssessment.totalQuestions || 45), // Use total from pre-assessment structure
+    correctAnswers: Math.max(0, Math.round(((preAssessment.totalQuestions || 45) * (student.readingPercentage || 0)) / 100)), // Calculate based on stored percentage and actual total
+    part1Score: Math.max(0, part1Correct || 0), // Sanitize: >= 0
+    part1Total: Math.max(1, part1Total || 1), // Sanitize: minimum 1
+    readingComprehensionScore: Math.max(0, rcStats.correct || 0), // Sanitize: >= 0
+    readingComprehensionTotal: Math.max(0, rcStats.total || 0), // Sanitize: >= 0
+    readingComprehensionPercentage: Math.max(0, Math.min(100, readingPercentage || 0)), // Sanitize: 0-100 range
     completedAt: student.lastAssessmentDate || new Date().toISOString(),
-    totalResponseTime: Math.round(totalResponseTime), // Total time in seconds
-    averageResponseTime: Math.round(totalResponseTime / allUserResponses.length), // Average time per question
+    totalResponseTime: Math.max(0, Math.round(totalResponseTime || 0)), // Sanitize: >= 0 seconds
+    averageResponseTime: allUserResponses.length > 0 ? Math.max(0, Math.round((totalResponseTime || 0) / allUserResponses.length)) : 0, // Sanitize: avoid division by zero
     hasCompleted: true,
     categoryScores: {},
     skillDetails: [],
@@ -873,9 +873,11 @@ async function aggregateIndividualResponses(allUserResponses, preAssessment, stu
   });
   
   console.log('✅ Successfully aggregated individual responses');
-  console.log(`📊 Overall Score: ${results.overallScore}% (${totalCorrect}/${allUserResponses.length})`);
+  console.log(`📊 Overall Score: ${results.overallScore}% (${results.correctAnswers}/${results.totalQuestions})`);
   console.log(`📚 Reading Level: ${results.readingLevel}`);
   console.log(`🎯 Part 1 Score: ${part1Correct}/${part1Total}`);
+  console.log(`⏱️ Total Response Time: ${results.totalResponseTime} seconds (${Math.round(results.totalResponseTime/60)}m ${results.totalResponseTime%60}s)`);
+  console.log(`📝 Processed ${allUserResponses.length} user responses`);
   
   return results;
 }

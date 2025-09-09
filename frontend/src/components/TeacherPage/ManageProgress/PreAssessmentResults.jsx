@@ -208,9 +208,10 @@ const PreAssessmentResults = ({ assessmentData }) => {
   };
 
   const formatTime = (seconds) => {
-    if (!seconds) return 'Not recorded';
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
+    if (!seconds || seconds < 0 || !Number.isFinite(seconds)) return 'Not recorded';
+    const sanitizedSeconds = Math.max(0, Math.round(seconds));
+    const minutes = Math.floor(sanitizedSeconds / 60);
+    const remainingSeconds = sanitizedSeconds % 60;
     return `${minutes}m ${remainingSeconds}s`;
   };
 
@@ -274,7 +275,7 @@ const PreAssessmentResults = ({ assessmentData }) => {
             <div className="pre-assessment-results__overview-item-content">
               <div className="pre-assessment-results__overview-item-label">Overall Score</div>
               <div className="pre-assessment-results__overview-item-value">
-                {assessmentData.correctAnswers}/{assessmentData.totalQuestions} ({assessmentData.overallScore}%)
+                {Math.max(0, assessmentData.correctAnswers || 0)}/{Math.max(1, assessmentData.totalQuestions || 1)} ({Math.max(0, Math.min(100, assessmentData.overallScore || 0))}%)
               </div>
             </div>
           </div>
@@ -298,7 +299,7 @@ const PreAssessmentResults = ({ assessmentData }) => {
             <div className="pre-assessment-results__overview-item-content">
               <div className="pre-assessment-results__overview-item-label">Time Taken</div>
               <div className="pre-assessment-results__overview-item-value">
-                {formatTime(assessmentData.totalResponseTime)}
+                {formatTime(Math.max(0, assessmentData.totalResponseTime || 0))}
               </div>
             </div>
           </div>
