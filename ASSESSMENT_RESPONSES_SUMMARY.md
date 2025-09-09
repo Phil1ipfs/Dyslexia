@@ -2279,3 +2279,259 @@ user responses table
     "$date": "2025-08-18T12:03:25.500Z"
   }
 }]
+
+
+users table 
+
+{
+  "_id": {
+    "$oid": "683e948a9b13d43b098eb6e3"
+  },
+  "idNumber": 202533333,
+  "firstName": "Philip",
+  "middleName": "Casingal",
+  "lastName": "Pangilinan",
+  "age": "6",
+  "gender": "Male",
+  "gradeLevel": "Grade 1",
+  "section": "Patience",
+  "address": "Mandaluyong",
+  "email": null,
+  "profileImageUrl": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/student-profiles/1748931720760_rfdryb.png",
+  "completedLessons": [],
+  "readingLevel": "High Emerging",
+  "readingPercentage": 50,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-06-03T06:22:02.826Z"
+  },
+  "updatedAt": "2025-08-18T12:03:31.912721",
+  "parentId": {
+    "$oid": "683e7186a1338769a9095a7a"
+  },
+  "lastAssessmentDate": "2025-08-18T12:03:31.912503",
+  "lastLogin": {
+    "$date": "2025-09-05T15:49:06.017Z"
+  }
+}
+
+
+CATEGORY_RESULTS TABLE
+[{
+  "_id": {
+    "$oid": "683e948a9b13d43b098eb800"
+  },
+  "studentId": 202533333,
+  "assessmentDate": {
+    "$date": "2025-08-18T12:20:30.500Z"
+  },
+  "categories": [
+    {
+      "categoryName": "Alphabet Knowledge",
+      "totalQuestions": 15,
+      "correctAnswers": 12,
+      "score": 80,
+      "isPassed": true,
+      "passingThreshold": 75,
+      "isCompleted": true,
+      "lastQuestionAnswered": "AK_015"
+    }
+  ],
+  "overallScore": 80,
+  "completedCategories": 1,
+  "totalCategories": 1,
+  "allCategoriesPassed": true,
+  "readingLevel": "Alphabet Knowledge",
+  "readingLevelUpdated": true,
+  "createdAt": {
+    "$date": "2025-08-18T12:20:30.500Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-18T12:20:30.500Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "683e948a9b13d43b098eb801"
+  },
+  "studentId": 202511111,
+  "assessmentDate": {
+    "$date": "2025-06-11T14:35:15.200Z"
+  },
+  "categories": [
+    {
+      "categoryName": "Alphabet Knowledge",
+      "totalQuestions": 15,
+      "correctAnswers": 10,
+      "score": 67,
+      "isPassed": false,
+      "passingThreshold": 75,
+      "isCompleted": true,
+      "lastQuestionAnswered": "AK_015",
+      "interventionRequired": true,
+      "interventionAttempts": 2,
+      "interventionCompleted": true,
+      "currentInterventionId": {
+        "$oid": "683f948a9b13d43b098eb901"
+      },
+      "interventionHistory": [
+        {
+          "attemptNumber": 1,
+          "interventionId": {
+            "$oid": "683f948a9b13d43b098eb900"
+          },
+          "interventionResultId": {
+            "$oid": "683f948a9b13d43b098eb901"
+          },
+          "score": 65,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-06-11T15:20:10.300Z"
+          },
+          "completedAt": {
+            "$date": "2025-06-11T15:35:22.100Z"
+          }
+        },
+        {
+          "attemptNumber": 2,
+          "interventionId": {
+            "$oid": "683f948a9b13d43b098eb901"
+          },
+          "interventionResultId": {
+            "$oid": "683f948a9b13d43b098eb902"
+          },
+          "score": 78,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-06-12T09:15:20.500Z"
+          },
+          "completedAt": {
+            "$date": "2025-06-12T09:28:45.800Z"
+          }
+        }
+      ]
+    },
+    {
+      "categoryName": "Phonological Awareness",
+      "totalQuestions": 3,
+      "totalPossibleMatches": 13,
+      "correctMatches": 8,
+      "score": 62,
+      "isPassed": false,
+      "passingThreshold": 75,
+      "isCompleted": false,
+      "lastQuestionAnswered": "PA_010",
+      "interventionRequired": true,
+      "interventionAttempts": 1,
+      "interventionCompleted": false,
+      "currentInterventionId": {
+        "$oid": "683f948a9b13d43b098eb910"
+      },
+      "interventionHistory": [
+        {
+          "attemptNumber": 1,
+          "interventionId": {
+            "$oid": "683f948a9b13d43b098eb910"
+          },
+          "interventionResultId": {
+            "$oid": "683f948a9b13d43b098eb911"
+          },
+          "score": 69,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-06-12T14:10:15.400Z"
+          },
+          "completedAt": {
+            "$date": "2025-06-12T14:25:30.200Z"
+          }
+        }
+      ]
+    }
+  ],
+  "overallScore": 73,
+  "completedCategories": 2,
+  "totalCategories": 2,
+  "allCategoriesPassed": false,
+  "readingLevel": "High Emerging",
+  "readingLevelUpdated": false,
+  "createdAt": {
+    "$date": "2025-06-11T14:35:15.200Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T14:25:30.200Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "683e948a9b13d43b098eb802"
+  },
+  "studentId": 202522233,
+  "assessmentDate": {
+    "$date": "2025-08-20T05:13:00.100Z"
+  },
+  "categories": [
+    {
+      "categoryName": "Alphabet Knowledge",
+      "totalQuestions": 15,
+      "correctAnswers": 15,
+      "score": 100,
+      "isPassed": true,
+      "passingThreshold": 75,
+      "isCompleted": true,
+      "lastQuestionAnswered": "AK_015"
+    },
+    {
+      "categoryName": "Phonological Awareness",
+      "totalQuestions": 3,
+      "totalPossibleMatches": 13,
+      "correctMatches": 13,
+      "score": 100,
+      "isPassed": true,
+      "passingThreshold": 75,
+      "isCompleted": true,
+      "lastQuestionAnswered": "PA_003"
+    },
+    {
+      "categoryName": "Decoding",
+      "totalQuestions": 6,
+      "correctAnswers": 5,
+      "score": 83,
+      "isPassed": true,
+      "passingThreshold": 75,
+      "isCompleted": true,
+      "lastQuestionAnswered": "DC_006"
+    },
+    {
+      "categoryName": "Word Recognition",
+      "totalQuestions": 5,
+      "correctAnswers": 5,
+      "score": 100,
+      "isPassed": true,
+      "passingThreshold": 75,
+      "isCompleted": true,
+      "lastQuestionAnswered": "WR_005"
+    },
+    {
+      "categoryName": "Reading Comprehension",
+      "totalQuestions": 5,
+      "correctAnswers": 5,
+      "score": 100,
+      "isPassed": true,
+      "passingThreshold": 75,
+      "isCompleted": true,
+      "lastQuestionAnswered": "RC_005"
+    }
+  ],
+  "overallScore": 97,
+  "completedCategories": 5,
+  "totalCategories": 5,
+  "allCategoriesPassed": true,
+  "readingLevel": "At Grade Level",
+  "readingLevelUpdated": true,
+  "createdAt": {
+    "$date": "2025-08-20T05:13:00.100Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-20T05:13:00.100Z"
+  }
+}]

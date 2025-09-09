@@ -136,21 +136,13 @@ class PreAssessmentPDFService {
     
     yPos += 15;
     
-    // Student information card with clean professional styling
-    const cardHeight = 45;
-    pdf.setDrawColor(150, 150, 150); // Clean gray border
-    pdf.setLineWidth(0.8);
+    // Student information without card background - cleaner layout
+    const leftColumn = margin + 5;
+    const rightColumn = pageWidth / 2 + 5;
+    const lineHeight = 12; // Increased for better spacing
+    const startY = yPos + 8;
     
-    // Clean white background
-    pdf.setFillColor(255, 255, 255);
-    pdf.rect(margin, yPos, pageWidth - (margin * 2), cardHeight, 'FD');
-    
-    const leftColumn = margin + 12;
-    const rightColumn = pageWidth / 2 + 12;
-    const lineHeight = 10;
-    const startY = yPos + 12;
-    
-    // Student information with better spacing
+    // Student information with better spacing - no background card
     pdf.setFontSize(9);
     pdf.setTextColor(0, 0, 0);
     
@@ -170,7 +162,7 @@ class PreAssessmentPDFService {
     });
     this.addEnhancedInfoField(pdf, 'Report Date:', currentDate, rightColumn, startY + lineHeight * 2);
     
-    return yPos + cardHeight + 20;
+    return startY + lineHeight * 3 + 15; // Adjusted for cleaner spacing
   }
 
   static addInfoField(pdf, label, value, x, y) {
@@ -215,9 +207,9 @@ class PreAssessmentPDFService {
     yPos += 18;
     pdf.setTextColor(0, 0, 0);
     
-    // Overview cards with clean professional styling - reduced height
-    const cardWidth = (pageWidth - margin * 2 - 16) / 3;
-    const cardHeight = 26; // Reduced from 30
+    // Overview cards with clean professional styling - optimized sizing
+    const cardWidth = (pageWidth - margin * 2 - 20) / 3; // Slightly wider cards
+    const cardHeight = 32; // Increased height for better content fit
     
     // Overall Score Card with clean header
     this.addCleanOverviewCard(pdf, margin, yPos, cardWidth, cardHeight, 
@@ -406,8 +398,9 @@ class PreAssessmentPDFService {
         // Add questions for this category with smart pagination
         if (skill.questions && skill.questions.length > 0) {
           skill.questions.forEach((question, qIndex) => {
-            // Check if we need a new page for question (reduced space requirement)
-            if (yPos + 40 > pageHeight - bottomMargin) {
+            // Check if we need a new page for question - account for phonological awareness height
+            const requiredSpace = question.questionType === 'malapantig' ? 48 : 40;
+            if (yPos + requiredSpace > pageHeight - bottomMargin) {
               pdf.addPage();
               yPos = margin;
             }
@@ -669,11 +662,7 @@ class PreAssessmentPDFService {
     pdf.text(`Date: ${currentDate}`, leftSigX, footerY + 14);
     pdf.text(`Date: ${currentDate}`, rightSigX, footerY + 14);
     
-    // Footer note with current date
-    pdf.setFontSize(7);
-    pdf.setTextColor(80, 80, 80);
-    const generatedText = `Generated on ${currentDate} by LITEREXIA - Dyslexia Assessment Platform`;
-    pdf.text(generatedText, pageWidth / 2, pageHeight - 6, { align: 'center' });
+    // Removed the generated text footer for cleaner appearance
   }
 
   /**
@@ -713,32 +702,32 @@ class PreAssessmentPDFService {
     pdf.setFillColor(255, 255, 255);
     pdf.rect(x, y, width, height, 'F');
     
-    // Clean header - reduced height
+    // Clean header with better proportions
     pdf.setFillColor(245, 245, 245);
-    pdf.rect(x, y, width, 10, 'F');
+    pdf.rect(x, y, width, 12, 'F');
     
     // Professional border
     pdf.setDrawColor(150, 150, 150);
     pdf.setLineWidth(0.8);
     pdf.rect(x, y, width, height);
     
-    // Title with clean text - smaller font
-    pdf.setFontSize(7);
+    // Title with clean text - optimized size
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(60, 60, 60);
-    pdf.text(title, x + width / 2, y + 7, { align: 'center' });
+    pdf.text(title, x + width / 2, y + 8, { align: 'center' });
     
-    // Main value with clean emphasis - slightly smaller
-    pdf.setFontSize(12);
+    // Main value with clean emphasis - better sizing
+    pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(70, 90, 150);
-    pdf.text(mainValue, x + width / 2, y + 20, { align: 'center' });
+    pdf.text(mainValue, x + width / 2, y + 22, { align: 'center' });
     
-    // Sub value with clean text - smaller font
-    pdf.setFontSize(7);
+    // Sub value with clean text - proper size
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(100, 100, 100);
-    pdf.text(subValue, x + width / 2, y + 26, { align: 'center' });
+    pdf.text(subValue, x + width / 2, y + 29, { align: 'center' });
     
     pdf.setTextColor(0, 0, 0); // Reset color
   }
@@ -803,8 +792,9 @@ class PreAssessmentPDFService {
    * Add clean question card with professional design
    */
   static addCleanQuestionCard(pdf, question, questionNumber, yPos, pageWidth, margin) {
-    // Clean question card with proper spacing
-    const cardHeight = 52; // Slightly reduced height for better space usage
+    // Clean question card with proper spacing - adjust height based on question type
+    const baseHeight = 52;
+    const cardHeight = question.questionType === 'malapantig' ? baseHeight + 8 : baseHeight; // More height for phonological awareness
     const cardPadding = 8; // Reduced padding for more content space
     
     // Card background with clean white
@@ -934,22 +924,39 @@ class PreAssessmentPDFService {
       studentBgColor = [255, 245, 245]; // Light red for incorrect
     }
     
+    // Adjust answer box height for phonological awareness
+    const answerBoxHeight = question.questionType === 'malapantig' && studentAnswer.includes('→') ? 12 : 7;
+    
     pdf.setFillColor(studentBgColor[0], studentBgColor[1], studentBgColor[2]);
-    pdf.rect(margin + cardPadding, answerY + 2, leftColumnWidth, 7, 'F');
+    pdf.rect(margin + cardPadding, answerY + 2, leftColumnWidth, answerBoxHeight, 'F');
     
     // Add border
     pdf.setDrawColor(200, 200, 200);
     pdf.setLineWidth(0.2);
-    pdf.rect(margin + cardPadding, answerY + 2, leftColumnWidth, 7);
+    pdf.rect(margin + cardPadding, answerY + 2, leftColumnWidth, answerBoxHeight);
     
     pdf.setTextColor(60, 60, 60);
     
     // Handle special formatting for phonological awareness questions
     if (question.questionType === 'malapantig' && studentAnswer.includes('→')) {
-      // For phonological awareness with multiple lines, split and display properly
+      // For phonological awareness with multiple lines, show first few pairs and count
       const lines = studentAnswer.split('\n');
-      const firstLine = lines[0];
-      pdf.text(firstLine.length > 25 ? firstLine.substring(0, 25) + '...' : firstLine, margin + cardPadding + 1, answerY + 6);
+      let displayText = lines[0]; // First pair
+      if (lines.length > 1 && !lines[1].includes('(')) {
+        // Add second pair if available and not the count line
+        displayText += '\n' + lines[1];
+      }
+      // Extract count from the answer
+      const countMatch = studentAnswer.match(/\((\d+\/\d+)\s+correct\)/);
+      if (countMatch) {
+        displayText += '\n(' + countMatch[1] + ' correct)';
+      }
+      
+      // Display multi-line text for phonological awareness
+      const displayLines = displayText.split('\n');
+      displayLines.forEach((line, index) => {
+        pdf.text(line, margin + cardPadding + 1, answerY + 6 + (index * 3));
+      });
     } else {
       // Truncate long answers to fit in the box
       const truncatedAnswer = studentAnswer.length > 28 ? studentAnswer.substring(0, 28) + '...' : studentAnswer;
@@ -961,24 +968,35 @@ class PreAssessmentPDFService {
     pdf.setTextColor(46, 204, 113); // Green for correct answer
     pdf.text('Correct Answer:', rightColumnStart, answerY);
     
-    // Correct answer with background
+    // Correct answer with background - adjust height for phonological awareness
     pdf.setFont('helvetica', 'normal');
+    const correctAnswerBoxHeight = question.questionType === 'malapantig' && correctAnswer.includes('→') ? 12 : 7;
+    
     pdf.setFillColor(240, 255, 240); // Light green background
-    pdf.rect(rightColumnStart, answerY + 2, leftColumnWidth, 7, 'F');
+    pdf.rect(rightColumnStart, answerY + 2, leftColumnWidth, correctAnswerBoxHeight, 'F');
     
     // Add border
     pdf.setDrawColor(200, 200, 200);
     pdf.setLineWidth(0.2);
-    pdf.rect(rightColumnStart, answerY + 2, leftColumnWidth, 7);
+    pdf.rect(rightColumnStart, answerY + 2, leftColumnWidth, correctAnswerBoxHeight);
     
     pdf.setTextColor(60, 60, 60);
     
     // Handle special formatting for phonological awareness questions
     if (question.questionType === 'malapantig' && correctAnswer.includes('→')) {
-      // For phonological awareness with multiple lines, split and display properly
+      // For phonological awareness with multiple lines, show first few pairs
       const lines = correctAnswer.split('\n');
-      const firstLine = lines[0];
-      pdf.text(firstLine.length > 25 ? firstLine.substring(0, 25) + '...' : firstLine, rightColumnStart + 1, answerY + 6);
+      let displayText = '';
+      for (let i = 0; i < Math.min(lines.length, 3); i++) {
+        displayText += lines[i];
+        if (i < Math.min(lines.length, 3) - 1) displayText += '\n';
+      }
+      
+      // Display multi-line text for phonological awareness
+      const displayLines = displayText.split('\n');
+      displayLines.forEach((line, index) => {
+        pdf.text(line, rightColumnStart + 1, answerY + 6 + (index * 3));
+      });
     } else {
       // Truncate long answers to fit in the box
       const truncatedAnswer = correctAnswer.length > 28 ? correctAnswer.substring(0, 28) + '...' : correctAnswer;
@@ -986,7 +1004,9 @@ class PreAssessmentPDFService {
     }
     
     // Additional details INSIDE the question box with proper layout
-    const detailY = answerY + 13;
+    // Adjust position based on answer box height
+    const maxAnswerBoxHeight = Math.max(answerBoxHeight, correctAnswerBoxHeight || 7);
+    const detailY = answerY + maxAnswerBoxHeight + 6;
     pdf.setFontSize(7);
     
     // Focus and Difficulty in organized layout WITHIN the card boundaries
