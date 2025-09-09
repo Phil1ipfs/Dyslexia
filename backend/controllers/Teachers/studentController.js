@@ -683,11 +683,13 @@ exports.getCategoryResults = async (req, res) => {
     const studentObjId = student._id;
     console.log('Looking for category results for student ID:', studentObjId);
     
-    // Build the query
+    // Build the query - match both string and integer formats
     const query = {
       $or: [
         { studentId: id.toString() },
+        { studentId: parseInt(id) || null },
         { studentId: student.idNumber ? student.idNumber.toString() : null },
+        { studentId: student.idNumber || null },
         { studentObjectId: studentObjId }
       ]
     };
