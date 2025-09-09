@@ -528,78 +528,104 @@ const MainAssessment = ({ templates }) => {
     };
   }, []);
 
-  useEffect(() => {
-    // Fetch assessments data from the backend
-    const fetchAssessments = async () => {
-      try {
-        setLoading(true);
-        console.log("Attempting to fetch assessments...");
+  // Function to refresh assessments data
+  const refreshAssessments = async () => {
+    try {
+      setLoading(true);
+      setError(null); // Clear any previous errors
+      console.log("Refreshing assessments...");
 
-        // Add retry mechanism
-        let attempts = 0;
-        const maxAttempts = 3;
-        let response = null;
-        let lastError = null;
+      // Add retry mechanism
+      let attempts = 0;
+      const maxAttempts = 3;
+      let response = null;
+      let lastError = null;
 
-        while (attempts < maxAttempts) {
-          try {
-            console.log(`Fetch attempt ${attempts + 1} of ${maxAttempts}`);
-            response = await MainAssessmentService.getAllAssessments();
-            // If successful, break out of the retry loop
-            break;
-          } catch (err) {
-            lastError = err;
-            console.error(`Attempt ${attempts + 1} failed:`, err);
-            attempts++;
-            if (attempts < maxAttempts) {
-              // Wait 1 second before retrying
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }
+      while (attempts < maxAttempts) {
+        try {
+          console.log(`Refresh attempt ${attempts + 1} of ${maxAttempts}`);
+          response = await MainAssessmentService.getAllAssessments();
+          // If successful, break out of the retry loop
+          break;
+        } catch (err) {
+          lastError = err;
+          console.error(`Refresh attempt ${attempts + 1} failed:`, err);
+          attempts++;
+          if (attempts < maxAttempts) {
+            // Wait 1 second before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000));
           }
         }
-
-        if (!response && lastError) {
-          throw lastError;
-        }
-
-        console.log("API Response:", response); // Debug log
-
-        if (response && response.success) {
-          const assessmentData = response.data || [];
-          console.log("Setting assessments:", assessmentData.length, "items"); // Debug log
-
-          if (assessmentData.length === 0) {
-            console.log("No assessments found in the response");
-            setApiMessage("No assessment templates found. This could be because templates haven't been created yet, or there might be an issue with the database connection.");
-          }
-
-          setAssessments(assessmentData);
-
-          // If there's a message from the API, store it
-          if (response.message) {
-            setApiMessage(response.message);
-          }
-        } else if (response && !response.success) {
-          console.error("API request was not successful:", response.message || "Unknown error");
-          setError(response.message || "Failed to load assessments due to an unknown error.");
-          setApiMessage(response.message || "There was an error loading assessment templates. Please try again later.");
-        } else {
-          console.log("No data or unsuccessful response");
-          setAssessments([]);
-          setApiMessage("No assessment templates found. This could be because templates haven't been created yet.");
-        }
-
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching assessments:', err);
-        const errorMessage = handleApiError(err, "Failed to load assessments. Please try again later.");
-        setError(errorMessage);
-        setApiMessage("There was an error connecting to the assessment service. Please check your connection and try again.");
-        setLoading(false);
       }
-    };
 
-    fetchAssessments();
+      if (!response && lastError) {
+        throw lastError;
+      }
+
+      console.log("Refresh API Response:", response); // Debug log
+
+      if (response && response.success) {
+        const assessmentData = response.data || [];
+        console.log("Refreshing assessments:", assessmentData.length, "items"); // Debug log
+
+        if (assessmentData.length === 0) {
+          console.log("No assessments found in the refresh response");
+          setApiMessage("No assessment templates found. This could be because templates haven't been created yet, or there might be an issue with the database connection.");
+        }
+
+        setAssessments(assessmentData);
+
+        // If there's a message from the API, store it
+        if (response.message) {
+          setApiMessage(response.message);
+        }
+      } else if (response && !response.success) {
+        console.error("Refresh API request was not successful:", response.message || "Unknown error");
+        setError(response.message || "Failed to load assessments due to an unknown error.");
+        setApiMessage(response.message || "There was an error loading assessment templates. Please try again later.");
+      } else {
+        console.log("No data or unsuccessful refresh response");
+        setAssessments([]);
+        setApiMessage("No assessment templates found. This could be because templates haven't been created yet.");
+      }
+
+      setLoading(false);
+    } catch (err) {
+      console.error('Error refreshing assessments:', err);
+      const errorMessage = handleApiError(err, "Failed to refresh assessments. Please try again later.");
+      setError(errorMessage);
+      setApiMessage("There was an error connecting to the assessment service. Please check your connection and try again.");
+      setLoading(false);
+    }
+  };
+
+  // Force refresh function for critical operations
+  const forceRefreshAssessments = async () => {
+    try {
+      console.log("Force refreshing assessments with cache bypass...");
+      setLoading(true);
+      setError(null);
+      
+      // Clear any cached data
+      setAssessments([]);
+      setApiMessage(null);
+      
+      // Wait a moment to ensure state clears
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Call refresh with explicit cache bypass
+      await refreshAssessments();
+      
+      console.log("Force refresh completed");
+    } catch (error) {
+      console.error("Force refresh failed:", error);
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    // Initial fetch on component mount
+    refreshAssessments();
   }, []);
 
   // Add debug logging to see what assessments are loaded
@@ -915,8 +941,12 @@ const MainAssessment = ({ templates }) => {
       const response = await MainAssessmentService.deleteAssessment(selectedAssessment._id);
 
       if (response && response.success) {
-        // Remove from local state
-        setAssessments(prev => prev.filter(a => a._id !== selectedAssessment._id));
+        // Refresh assessments data from server to ensure consistency
+        await refreshAssessments();
+        
+        // Add a small delay to ensure state updates are processed
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         setShowModal(false);
         setSelectedAssessment(null);
 
@@ -2213,15 +2243,11 @@ const MainAssessment = ({ templates }) => {
         // Get the assessment data from the response
         const assessmentResponse = response.data || (response.success ? response : null);
 
-        if (modalType === 'edit' && selectedAssessment) {
-          // Update local state for edit
-          setAssessments(prev =>
-            prev.map(a => a._id === selectedAssessment._id ? assessmentResponse : a)
-          );
-        } else {
-          // Add to local state for create
-          setAssessments(prev => [...prev, assessmentResponse]);
-        }
+        // Refresh assessments data from server to ensure consistency
+        await refreshAssessments();
+
+        // Add a small delay to ensure state updates are processed
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         // Reset form and close modal
         setShowModal(false);

@@ -4195,57 +4195,30 @@ const PreAssessment = () => {
             </div>
             
             <div className="pre-modal-body">
-              <div className="pre-delete-content">
-                <div className="pre-delete-icon-container">
-                  <div className="pre-delete-icon">
-                    <FontAwesomeIcon icon={faExclamationTriangle} />
-                  </div>
-                </div>
-                
-                <div className="pre-delete-message">
-                  <h4>Delete Pre-Assessment Curriculum</h4>
-                  <p>Are you sure you want to delete this pre-assessment curriculum?</p>
-                  <div className="pre-delete-warning">
-                    <FontAwesomeIcon icon={faExclamationTriangle} />
-                    <span>This action cannot be undone and will permanently remove all associated data.</span>
-                  </div>
-                </div>
-                
-                <div className="pre-delete-details">
-                  <h5>Assessment Details:</h5>
-                  <div className="pre-delete-summary">
-                    <div className="pre-summary-row">
-                      <div className="pre-summary-item">
-                        <FontAwesomeIcon icon={faClipboardCheck} className="pre-summary-icon" />
-                        <div className="pre-summary-content">
-                          <span className="pre-summary-label">Assessment Title</span>
-                          <span className="pre-summary-value">{preAssessment?.title || 'Unknown Assessment'}</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="pre-summary-row">
-                      <div className="pre-summary-item">
-                        <FontAwesomeIcon icon={faQuestionCircle} className="pre-summary-icon" />
-                        <div className="pre-summary-content">
-                          <span className="pre-summary-label">Total Questions</span>
-                          <span className="pre-summary-value">{preAssessment?.totalQuestions || 0} questions</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="pre-summary-row">
-                      <div className="pre-summary-item">
-                        <FontAwesomeIcon icon={faBook} className="pre-summary-icon" />
-                        <div className="pre-summary-content">
-                          <span className="pre-summary-label">Language</span>
-                          <span className="pre-summary-value">{preAssessment?.language === 'FL' ? 'Filipino' : preAssessment?.language || 'Unknown'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div className="pre-delete-icon">
+                <FontAwesomeIcon icon={faExclamationTriangle} />
               </div>
+              <div className="pre-delete-message">
+                <p>Are you sure you want to delete this pre-assessment?</p>
+                <p className="pre-delete-warning">This action cannot be undone.</p>
+              </div>
+              
+              {preAssessment && (
+                <div className="pre-delete-summary">
+                  <div className="pre-summary-item">
+                    <span className="pre-summary-label">Assessment Title:</span>
+                    <span className="pre-summary-value">{preAssessment.title || 'Unknown Assessment'}</span>
+                  </div>
+                  <div className="pre-summary-item">
+                    <span className="pre-summary-label">Total Questions:</span>
+                    <span className="pre-summary-value">{preAssessment.totalQuestions || 0} questions</span>
+                  </div>
+                  <div className="pre-summary-item">
+                    <span className="pre-summary-label">Language:</span>
+                    <span className="pre-summary-value">{preAssessment.language === 'FL' ? 'Filipino' : preAssessment.language || 'Unknown'}</span>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="pre-modal-footer">
