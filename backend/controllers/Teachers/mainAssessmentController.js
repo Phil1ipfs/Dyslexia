@@ -392,6 +392,10 @@ exports.createAssessment = async (req, res) => {
     
     assessmentData.questionType = questionTypeMap[assessmentData.category];
     
+    // Ensure status is always 'active' and isActive is true
+    assessmentData.status = 'active';
+    assessmentData.isActive = true;
+    
     // Validate using Mongoose model
     try {
       const mainAssessment = new MainAssessment(assessmentData);
@@ -497,6 +501,10 @@ exports.updateAssessment = async (req, res) => {
     
     // Set questionType based on existing category
     updateData.questionType = questionTypeMap[existing.category];
+    
+    // Ensure status remains 'active' and isActive is true
+    updateData.status = 'active';
+    updateData.isActive = true;
     
     // If questions are being updated, ensure proper questionIds - no duplicated category
     if (updateData.questions) {

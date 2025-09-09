@@ -19,8 +19,6 @@ import {
   faQuestionCircle,
   faVolumeUp,
   faArrowLeft,
-  faLock,
-  faBan,
   faTrash,
   faGraduationCap,
   faExclamationCircle,
@@ -114,6 +112,8 @@ const PreAssessment = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeleteQuestionModal, setShowDeleteQuestionModal] = useState(false);
+  const [questionToDelete, setQuestionToDelete] = useState(null);
   const [showSubmitConfirmModal, setShowSubmitConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -252,6 +252,11 @@ const PreAssessment = () => {
               fetchedPreAssessment.totalQuestions = fetchedPreAssessment.questions ? 
                 fetchedPreAssessment.questions.length : 0;
               
+              // Ensure updatedAt field exists
+              fetchedPreAssessment.updatedAt = fetchedPreAssessment.updatedAt || 
+                fetchedPreAssessment.lastUpdated || 
+                new Date().toISOString();
+              
               setPreAssessment(fetchedPreAssessment);
               
               // Calculate actual category counts based on questions
@@ -314,13 +319,14 @@ const PreAssessment = () => {
     if (dataChangeCounter > 0) {
       const refreshData = async () => {
         try {
-          setLoading(true);
+          // Don't set loading to true during refresh to prevent showing empty state
+          // setLoading(true);
           
           if (preAssessment && preAssessment._id) {
             console.log('Refreshing pre-assessment data after change...');
             const refreshResponse = await PreAssessmentService.getPreAssessmentById(preAssessment._id);
             
-            if (refreshResponse.success) {
+            if (refreshResponse.success && refreshResponse.data) {
               // Update with fresh data from server
               const freshData = refreshResponse.data;
               
@@ -329,14 +335,45 @@ const PreAssessment = () => {
               freshData.updatedAt = freshData.updatedAt || freshData.lastUpdated || new Date().toISOString();
               freshData.totalQuestions = freshData.questions ? freshData.questions.length : 0;
               
+              // Calculate category counts from questions
+              if (freshData.questions) {
+                freshData.categoryCounts = recalculateCategoryCounts(freshData.questions);
+              } else {
+                // Ensure categoryCounts exist even if no questions
+                freshData.categoryCounts = {
+                  alphabet_knowledge: 0,
+                  phonological_awareness: 0,
+                  decoding: 0,
+                  word_recognition: 0,
+                  reading_comprehension: 0
+                };
+              }
+              
               console.log('Refreshed data:', freshData);
-              setPreAssessment(freshData);
+              
+              // Only update if we have valid data
+              if (freshData._id) {
+                setPreAssessment(freshData);
+                
+                // Also update formData to keep it in sync
+                setFormData(prev => ({
+                  ...prev,
+                  questions: freshData.questions || [],
+                  categoryCounts: freshData.categoryCounts || {},
+                  totalQuestions: freshData.totalQuestions || 0,
+                  isActive: freshData.isActive,
+                  updatedAt: freshData.updatedAt
+                }));
+              }
+            } else {
+              console.warn('Refresh response was not successful or data was empty');
             }
           }
         } catch (err) {
           console.error('Error refreshing data:', err);
+          // Don't update state if refresh fails to prevent data loss
         } finally {
-          setLoading(false);
+          // setLoading(false);
         }
       };
       
@@ -815,14 +852,20 @@ const PreAssessment = () => {
   };
 
   // Restore missing handleDeleteQuestion function
-  const handleDeleteQuestion = async (index) => {
+  const handleDeleteQuestion = (index) => {
     // Show confirmation modal before deleting
-    if (window.confirm('Are you sure you want to delete this question?')) {
+    setQuestionToDelete(index);
+    setShowDeleteQuestionModal(true);
+  };
+
+  // Confirm delete question function
+  const confirmDeleteQuestion = async () => {
+    if (questionToDelete !== null) {
       try {
         setLoading(true);
         
         // Get the question ID from the questions array
-        const questionId = formData.questions[index].questionId;
+        const questionId = formData.questions[questionToDelete].questionId;
         
         if (preAssessment && preAssessment._id && questionId) {
           console.log(`Deleting question ${questionId} from assessment ${preAssessment._id}`);
@@ -852,6 +895,9 @@ const PreAssessment = () => {
             });
             
             toast.success("Question deleted successfully!");
+            
+            // Trigger refresh to ensure data consistency
+            setDataChangeCounter(prev => prev + 1);
           } else {
             setError(response.message || "Failed to delete question. Please try again.");
             toast.error(response.message || "Failed to delete question. Please try again.");
@@ -859,7 +905,7 @@ const PreAssessment = () => {
         } else {
           // No assessment ID yet, just update the local state
           setFormData(prev => {
-            const newQuestions = prev.questions.filter((_, i) => i !== index);
+            const newQuestions = prev.questions.filter((_, i) => i !== questionToDelete);
             const updatedCategoryCounts = recalculateCategoryCounts(newQuestions);
             return {
               ...prev,
@@ -869,6 +915,16 @@ const PreAssessment = () => {
             };
           });
           
+          // Also update preAssessment state if it exists
+          if (preAssessment) {
+            setPreAssessment(prev => ({
+              ...prev,
+              questions: formData.questions.filter((_, i) => i !== questionToDelete),
+              categoryCounts: recalculateCategoryCounts(formData.questions.filter((_, i) => i !== questionToDelete)),
+              totalQuestions: formData.questions.filter((_, i) => i !== questionToDelete).length
+            }));
+          }
+          
           toast.success("Question removed from draft!");
         }
       } catch (err) {
@@ -877,6 +933,9 @@ const PreAssessment = () => {
         toast.error("Failed to delete question. Please try again.");
       } finally {
         setLoading(false);
+        // Close modal and reset state
+        setShowDeleteQuestionModal(false);
+        setQuestionToDelete(null);
       }
     }
   };
@@ -1339,87 +1398,6 @@ const PreAssessment = () => {
     }));
   };
 
-  // New function to handle toggling active status
-  const handleToggleActiveStatus = async (isActive) => {
-    try {
-      setLoading(true);
-      
-      if (!preAssessment || !preAssessment._id) {
-        setError("Cannot toggle status: No pre-assessment selected");
-        toast.error("Cannot toggle status: No pre-assessment selected", {
-          position: "top-center",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          theme: "colored"
-        });
-        return;
-      }
-      
-      console.log(`Toggling pre-assessment active status to: ${isActive}`);
-      
-      const response = await PreAssessmentService.toggleActiveStatus(preAssessment._id, isActive);
-      
-      if (response.success) {
-        // Immediately update UI
-        const updatedAssessment = {
-          ...preAssessment,
-          isActive: isActive,
-          updatedAt: new Date().toISOString()
-        };
-        
-        setPreAssessment(updatedAssessment);
-        
-        // Update formData state
-        setFormData(prev => ({
-          ...prev,
-          isActive: isActive,
-          updatedAt: updatedAssessment.updatedAt
-        }));
-        
-        // Show success toast with improved visibility
-        toast.success(`Pre-assessment ${isActive ? 'activated' : 'deactivated'} successfully!`, {
-          position: "top-center",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          theme: "colored"
-        });
-        
-        // Trigger refresh
-        setDataChangeCounter(prev => prev + 1);
-      } else {
-        setError(response.message || "Failed to update pre-assessment status. Please try again.");
-        toast.error(response.message || "Failed to update pre-assessment status. Please try again.", {
-          position: "top-center",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          theme: "colored"
-        });
-      }
-    } catch (err) {
-      console.error('Exception in handleToggleActiveStatus:', err);
-      setError("Failed to update pre-assessment status. Please try again.");
-      toast.error("Failed to update pre-assessment status. Please try again.", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "colored"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Modified to handle S3 upload when saving
   const handleSaveQuestion = async () => {
@@ -1774,17 +1752,71 @@ const PreAssessment = () => {
       }));
 
       // Also update preAssessment state immediately to reflect changes in UI
-      setPreAssessment(prev => ({
-        ...prev,
+      const updatedPreAssessment = {
+        ...preAssessment,
         questions: updatedQuestions,
         categoryCounts: updatedCategoryCounts,
         totalQuestions: updatedQuestions.length,
         updatedAt: new Date().toISOString()
-      }));
+      };
+
+      setPreAssessment(updatedPreAssessment);
+
+      // Now save the changes to the backend
+      try {
+        let apiResponse;
+        if (editingQuestionIndex >= 0) {
+          // Update existing question
+          apiResponse = await PreAssessmentService.updateQuestionInPreAssessment(
+            preAssessment._id,
+            questionToSave.questionId,
+            questionToSave
+          );
+        } else {
+          // Add new question  
+          apiResponse = await PreAssessmentService.addQuestionToPreAssessment(
+            preAssessment._id,
+            questionToSave
+          );
+        }
+
+        if (apiResponse.success) {
+          // Update with fresh data from server to ensure consistency
+          const freshAssessment = apiResponse.data;
+          freshAssessment.totalQuestions = freshAssessment.questions ? freshAssessment.questions.length : 0;
+          freshAssessment.categoryCounts = recalculateCategoryCounts(freshAssessment.questions || []);
+          
+          setPreAssessment(freshAssessment);
+          setFormData(prev => ({
+            ...prev,
+            questions: freshAssessment.questions || [],
+            categoryCounts: freshAssessment.categoryCounts,
+            totalQuestions: freshAssessment.totalQuestions
+          }));
+
+          // Trigger refresh to ensure UI consistency
+          setDataChangeCounter(prev => prev + 1);
+          
+          toast.success(editingQuestionIndex >= 0 ? 'Question updated successfully' : 'Question added successfully');
+        } else {
+          throw new Error(apiResponse.message || 'Failed to save question');
+        }
+      } catch (error) {
+        console.error('Error saving question to backend:', error);
+        // Revert local changes if backend save failed
+        setPreAssessment(preAssessment);
+        setFormData(prev => ({
+          ...prev,
+          questions: preAssessment.questions || [],
+          categoryCounts: preAssessment.categoryCounts || {},
+          totalQuestions: preAssessment.totalQuestions || 0
+        }));
+        toast.error('Failed to save question to server. Changes reverted.');
+        return;
+      }
 
       // Close the question editor
       setShowQuestionEditor(false);
-      toast.success(editingQuestionIndex >= 0 ? 'Question updated successfully' : 'Question added successfully');
     } catch (error) {
       console.error('Error saving question:', error);
       toast.error('Failed to save question');
@@ -1877,9 +1909,9 @@ const PreAssessment = () => {
                 <FontAwesomeIcon icon={faClipboardCheck} className="pre-icon" />
                 <h3>{preAssessment.title}</h3>
                 <div className="pre-status-container">
-                  <span className={`pre-status-badge ${preAssessment.isActive ? 'active' : 'inactive'}`}>
-                    <FontAwesomeIcon icon={preAssessment.isActive ? faCheckCircle : faBan} /> 
-                    {preAssessment.isActive ? 'Active' : 'Inactive'}
+                  <span className="pre-status-badge active">
+                    <FontAwesomeIcon icon={faCheckCircle} /> 
+                    Active
                   </span>
                 </div>
               </div>
@@ -1893,22 +1925,13 @@ const PreAssessment = () => {
                 <div className="pre-detail-item">
                   <span className="pre-detail-label">Last Updated:</span>
                   <span className="pre-detail-value">
-                    {preAssessment.lastUpdated ? 
-                      new Date(preAssessment.lastUpdated).toLocaleString() : 
-                      "Not available"}
+                    {preAssessment.lastUpdated || preAssessment.updatedAt ? 
+                      new Date(preAssessment.lastUpdated || preAssessment.updatedAt).toLocaleString() : 
+                      new Date().toLocaleString()}
                   </span>
                 </div>
               </div>
               
-              <div className="pre-assessment-actions">
-                <button 
-                  className={`pre-toggle-status-btn ${preAssessment.isActive ? 'deactivate' : 'activate'}`}
-                  onClick={() => handleToggleActiveStatus(!preAssessment.isActive)}
-                >
-                  <FontAwesomeIcon icon={preAssessment.isActive ? faBan : faCheckCircle} />
-                  {preAssessment.isActive ? 'Deactivate Assessment' : 'Activate Assessment'}
-                </button>
-              </div>
               
               <div className="pre-category-distribution">
                 <h4>Category Distribution</h4>
@@ -2894,46 +2917,102 @@ const PreAssessment = () => {
               {/* Alphabet Knowledge - Multiple Choice Options */}
               {categoryDisplayNameToKey[currentQuestionData.category] === 'alphabet_knowledge' && (
                 <div className="pre-options-section">
-                  <h5>
-                    <FontAwesomeIcon icon={faListAlt} style={{ marginRight: '8px' }} />
-                    Multiple Choice Options <span className="pre-required-field">*</span>
-                    <Tooltip text="Add 3 answer options for Alphabet Knowledge questions (patinig/katinig)" />
-                  </h5>
+                  <div className="pre-section-header">
+                    <h5>
+                      <FontAwesomeIcon icon={faListAlt} className="pre-section-icon" />
+                      Multiple Choice Options
+                      <span className="pre-required-field">*</span>
+                    </h5>
+                    <div className="pre-section-info">
+                      <FontAwesomeIcon icon={faInfoCircle} />
+                      <span>Create 3 answer options for Alphabet Knowledge questions</span>
+                    </div>
+                  </div>
                   
-                  {currentQuestionData.options.map((option, index) => (
-                    <div key={index} className={`pre-option-item-editor ${!option.optionText.trim() ? 'has-error' : ''}`}>
-                      <div className="pre-option-header">
-                        <span className="pre-option-label">Option {index + 1}</span>
-                        <div className="pre-option-controls">
-                          <label className="pre-correct-checkbox">
+                  <div className="pre-options-container">
+                    {currentQuestionData.options.map((option, index) => (
+                      <div key={index} className={`pre-option-card ${option.isCorrect ? 'correct-option' : ''} ${!option.optionText.trim() ? 'has-error' : ''}`}>
+                        <div className="pre-option-header">
+                          <div className="pre-option-number">
+                            <span>{String.fromCharCode(65 + index)}</span>
+                          </div>
+                          <div className="pre-option-title">
+                            <span>Option {index + 1}</span>
+                            {option.isCorrect && (
+                              <div className="pre-correct-badge">
+                                <FontAwesomeIcon icon={faCheckCircle} />
+                                <span>Correct Answer</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="pre-option-content">
+                          <div className="pre-option-input-group">
                             <input
-                              type="radio"
-                              name="correctOption"
-                              checked={option.isCorrect || false}
-                              onChange={() => handleOptionCorrectChange(index)}
+                              type="text"
+                              value={option.optionText || ''}
+                              onChange={(e) => handleOptionTextChange(index, e.target.value)}
+                              placeholder={`Enter option ${String.fromCharCode(65 + index)} text...`}
+                              className={`pre-option-input ${!option.optionText.trim() ? 'error' : ''}`}
+                              aria-label={`Option ${index + 1} text`}
                             />
-                            <span className="pre-checkbox-label">
-                              <FontAwesomeIcon icon={option.isCorrect ? faCheckCircle : faQuestionCircle} />
-                              Correct Answer
-                            </span>
-                          </label>
+                            {!option.optionText.trim() && (
+                              <div className="pre-input-error">
+                                <FontAwesomeIcon icon={faExclamationTriangle} />
+                                <span>Option text is required</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="pre-option-controls">
+                            <label className={`pre-correct-toggle ${option.isCorrect ? 'active' : ''}`}>
+                              <input
+                                type="radio"
+                                name="correctOption"
+                                checked={option.isCorrect || false}
+                                onChange={() => handleOptionCorrectChange(index)}
+                                className="pre-hidden-radio"
+                              />
+                              <div className="pre-toggle-content">
+                                <FontAwesomeIcon icon={option.isCorrect ? faCheckCircle : faQuestionCircle} />
+                                <span>{option.isCorrect ? 'Correct Answer' : 'Mark as Correct'}</span>
+                              </div>
+                            </label>
+                          </div>
                         </div>
                       </div>
-                      
-                      <input
-                        type="text"
-                        value={option.optionText || ''}
-                        onChange={(e) => handleOptionTextChange(index, e.target.value)}
-                        placeholder={`Enter option ${index + 1} text`}
-                        required
-                        className={`pre-option-input ${!option.optionText.trim() ? 'pre-validation-highlight' : ''}`}
-                        aria-label={`Option ${index + 1} text`}
-                      />
-                      {!option.optionText.trim() && (
-                        <div className="pre-validation-message">Option text is required</div>
-                      )}
+                    ))}
+                  </div>
+                  
+                  <div className="pre-options-footer">
+                    <div className="pre-help-text">
+                      <FontAwesomeIcon icon={faInfoCircle} className="help-icon" />
+                      <div className="help-content">
+                        <strong>Instructions:</strong>
+                        <ul>
+                          <li>Fill in all 3 answer options with meaningful text</li>
+                          <li>Select exactly one option as the correct answer</li>
+                          <li>Options will be randomized for students during assessment</li>
+                        </ul>
+                      </div>
                     </div>
-                  ))}
+                    
+                    <div className="pre-options-summary">
+                      <div className="summary-item">
+                        <span className="summary-label">Completed Options:</span>
+                        <span className="summary-value">
+                          {currentQuestionData.options.filter(opt => opt.optionText.trim()).length}/3
+                        </span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">Correct Answer Set:</span>
+                        <span className={`summary-value ${currentQuestionData.options.some(opt => opt.isCorrect) ? 'success' : 'error'}`}>
+                          {currentQuestionData.options.some(opt => opt.isCorrect) ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -4116,22 +4195,55 @@ const PreAssessment = () => {
             </div>
             
             <div className="pre-modal-body">
-              <div className="pre-delete-icon">
-                <FontAwesomeIcon icon={faExclamationTriangle} />
-              </div>
-              <div className="pre-delete-message">
-                <p>Are you sure you want to delete this pre-assessment curriculum?</p>
-                <p className="pre-delete-warning">This action cannot be undone and will remove all associated data.</p>
-              </div>
-              
-              <div className="pre-delete-summary">
-                <div className="pre-summary-item">
-                  <span className="pre-summary-label">Assessment:</span>
-                  <span className="pre-summary-value">{preAssessment.title}</span>
+              <div className="pre-delete-content">
+                <div className="pre-delete-icon-container">
+                  <div className="pre-delete-icon">
+                    <FontAwesomeIcon icon={faExclamationTriangle} />
+                  </div>
                 </div>
-                <div className="pre-summary-item">
-                  <span className="pre-summary-label">Questions:</span>
-                  <span className="pre-summary-value">{preAssessment.totalQuestions}</span>
+                
+                <div className="pre-delete-message">
+                  <h4>Delete Pre-Assessment Curriculum</h4>
+                  <p>Are you sure you want to delete this pre-assessment curriculum?</p>
+                  <div className="pre-delete-warning">
+                    <FontAwesomeIcon icon={faExclamationTriangle} />
+                    <span>This action cannot be undone and will permanently remove all associated data.</span>
+                  </div>
+                </div>
+                
+                <div className="pre-delete-details">
+                  <h5>Assessment Details:</h5>
+                  <div className="pre-delete-summary">
+                    <div className="pre-summary-row">
+                      <div className="pre-summary-item">
+                        <FontAwesomeIcon icon={faClipboardCheck} className="pre-summary-icon" />
+                        <div className="pre-summary-content">
+                          <span className="pre-summary-label">Assessment Title</span>
+                          <span className="pre-summary-value">{preAssessment?.title || 'Unknown Assessment'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="pre-summary-row">
+                      <div className="pre-summary-item">
+                        <FontAwesomeIcon icon={faQuestionCircle} className="pre-summary-icon" />
+                        <div className="pre-summary-content">
+                          <span className="pre-summary-label">Total Questions</span>
+                          <span className="pre-summary-value">{preAssessment?.totalQuestions || 0} questions</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="pre-summary-row">
+                      <div className="pre-summary-item">
+                        <FontAwesomeIcon icon={faBook} className="pre-summary-icon" />
+                        <div className="pre-summary-content">
+                          <span className="pre-summary-label">Language</span>
+                          <span className="pre-summary-value">{preAssessment?.language === 'FL' ? 'Filipino' : preAssessment?.language || 'Unknown'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -4148,6 +4260,77 @@ const PreAssessment = () => {
                 onClick={handleDelete}
               >
                 <FontAwesomeIcon icon={faTrash} /> Delete Assessment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Question Confirmation Modal */}
+      {showDeleteQuestionModal && (
+        <div className="pre-modal-overlay">
+          <div className="pre-modal pre-confirm-modal">
+            <div className="pre-modal-header">
+              <h3>
+                <FontAwesomeIcon icon={faTrash} className="pre-modal-header-icon" />
+                Delete Question
+              </h3>
+              <button 
+                className="pre-modal-close"
+                onClick={() => {
+                  setShowDeleteQuestionModal(false);
+                  setQuestionToDelete(null);
+                }}
+              >
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+            
+            <div className="pre-modal-body">
+              <div className="pre-delete-icon">
+                <FontAwesomeIcon icon={faExclamationTriangle} />
+              </div>
+              <div className="pre-delete-message">
+                <p>Are you sure you want to delete this question?</p>
+                <p className="pre-delete-warning">This action cannot be undone.</p>
+              </div>
+              
+              {questionToDelete !== null && formData.questions[questionToDelete] && (
+                <div className="pre-delete-summary">
+                  <div className="pre-summary-item">
+                    <span className="pre-summary-label">Question ID:</span>
+                    <span className="pre-summary-value">{formData.questions[questionToDelete].questionId || 'New Question'}</span>
+                  </div>
+                  <div className="pre-summary-item">
+                    <span className="pre-summary-label">Category:</span>
+                    <span className="pre-summary-value">{formData.questions[questionToDelete].category}</span>
+                  </div>
+                  <div className="pre-summary-item">
+                    <span className="pre-summary-label">Question Text:</span>
+                    <span className="pre-summary-value">
+                      {formData.questions[questionToDelete].questionText?.substring(0, 50) || 'No text'}
+                      {formData.questions[questionToDelete].questionText?.length > 50 ? '...' : ''}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="pre-modal-footer">
+              <button 
+                className="pre-button secondary"
+                onClick={() => {
+                  setShowDeleteQuestionModal(false);
+                  setQuestionToDelete(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="pre-button danger"
+                onClick={confirmDeleteQuestion}
+              >
+                <FontAwesomeIcon icon={faTrash} /> Delete Question
               </button>
             </div>
           </div>

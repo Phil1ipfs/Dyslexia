@@ -232,40 +232,6 @@ class PreAssessmentService {
     }
   };
 
-  /**
-   * Toggle the active status of a pre-assessment
-   * @param {string} id - The ID of the assessment to toggle
-   * @param {boolean} isActive - The new active status
-   * @returns {Promise} Promise with the updated assessment
-   */
-  toggleActiveStatus = async (id, isActive) => {
-    try {
-      console.log(`Toggling pre-assessment ${id} active status to: ${isActive}`);
-      
-      const response = await axios.put(
-        `${this.apiUrl}/assessments/${id}/toggle-active`,
-        { isActive },
-        this.getAuthHeaders()
-      );
-      
-      return {
-        success: true,
-        data: response.data.assessment || response.data
-      };
-    } catch (error) {
-      // Log authentication errors but don't expose them to components
-      if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-        console.warn('Authentication required for pre-assessment API.');
-      }
-      
-      console.error(`Error toggling pre-assessment ${id} active status:`, error);
-      return {
-        success: false,
-        data: null,
-        message: `Failed to update pre-assessment status. Please try again later.`
-      };
-    }
-  };
 
   /**
    * Get all question types

@@ -19,7 +19,6 @@ router.get('/assessments/:id', authenticateToken, authorize('teacher', 'guro'), 
 router.post('/assessments', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.createPreAssessment);
 router.put('/assessments/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.updatePreAssessment);
 router.delete('/assessments/:id', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.deletePreAssessment);
-router.put('/assessments/:id/toggle-active', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.toggleActiveStatus);
 
 // Question type routes
 router.get('/question-types', authenticateToken, authorize('teacher', 'guro'), preAssessmentController.getAllQuestionTypes);

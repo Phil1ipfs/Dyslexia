@@ -11,7 +11,6 @@ import {
   faExclamationTriangle,
   faSearch,
   faCheckCircle,
-  faLock,
   faUpload,
   faBook,
   faFont,
@@ -35,8 +34,6 @@ import {
   faGraduationCap,
   faQuestion,
   faCloudUploadAlt,
-  faClock,
-  faTimesCircle,
   faListUl,
   faVolumeUp,
   faLink
@@ -2421,27 +2418,6 @@ const MainAssessment = ({ templates }) => {
   };
 
 
-  // Handle status toggle
-  const handleToggleStatus = async (assessment) => {
-    try {
-      const newStatus = assessment.status === 'active' ? 'inactive' : 'active';
-      const newIsActive = newStatus === 'active';
-
-      const response = await MainAssessmentService.toggleAssessmentStatus(assessment._id, newStatus);
-
-      if (response && response.success) {
-        // Update local state
-        setAssessments(prev =>
-          prev.map(a => a._id === assessment._id ?
-            { ...a, status: newStatus, isActive: newIsActive } : a
-          )
-        );
-      }
-    } catch (error) {
-      console.error('Error toggling assessment status:', error);
-      alert(handleApiError(error, "Failed to update status. Please try again."));
-    }
-  };
 
   // Helper function to clean up object URLs
   const cleanupImageObjectURL = (imageValue) => {
@@ -2577,15 +2553,6 @@ const MainAssessment = ({ templates }) => {
             </div>
           </div>
 
-          <div className="pa-stat-card inactive">
-            <div className="pa-stat-icon">
-              <FontAwesomeIcon icon={faExclamationTriangle} />
-            </div>
-            <div className="pa-stat-content">
-              <div className="pa-stat-number">{stats.inactive}</div>
-              <div className="pa-stat-label">Inactive</div>
-            </div>
-          </div>
         </div>
 
         <div className="pa-reading-level-overview">
@@ -2944,15 +2911,9 @@ const MainAssessment = ({ templates }) => {
                 </div>
                 <div className="pa-cell">{assessment.questions.length}</div>
                 <div className="pa-cell">
-                  {assessment.isActive ? (
-                    <span className="pa-status pa-active">
-                      <FontAwesomeIcon icon={faCheckCircle} /> Active
-                    </span>
-                  ) : (
-                    <span className="pa-status pa-inactive">
-                      <FontAwesomeIcon icon={faExclamationTriangle} /> Inactive
-                    </span>
-                  )}
+                  <span className="pa-status pa-active">
+                    <FontAwesomeIcon icon={faCheckCircle} /> Active
+                  </span>
                 </div>
                 <div className="pa-cell pa-actions">
                   <button
@@ -2971,13 +2932,6 @@ const MainAssessment = ({ templates }) => {
                     <FontAwesomeIcon icon={faEye} />
                   </button>
 
-                  <button
-                    className={`pa-status-toggle-btn ${assessment.isActive ? 'active' : 'inactive'}`}
-                    onClick={() => handleToggleStatus(assessment)}
-                    title={assessment.isActive ? "Deactivate assessment" : "Activate assessment"}
-                  >
-                    <FontAwesomeIcon icon={assessment.isActive ? faLock : faCheckCircle} />
-                  </button>
 
                   <button
                     className="pa-delete-btn"
@@ -3063,11 +3017,11 @@ const MainAssessment = ({ templates }) => {
                           </div>
                         </div>
                         <div className="pa-summary-item">
-                          <FontAwesomeIcon icon={selectedAssessment.isActive ? faCheckCircle : faExclamationTriangle} className="pa-summary-icon" />
+                          <FontAwesomeIcon icon={faCheckCircle} className="pa-summary-icon" />
                           <div className="pa-summary-content">
                             <span className="pa-summary-label" style={{ color: '#ffffff' }}>Status</span>
-                            <span className={`pa-summary-status ${selectedAssessment.isActive ? 'active' : 'inactive'}`} style={{ color: '#ffffff' }}>
-                              {selectedAssessment.isActive ? 'Active' : 'Inactive'}
+                            <span className="pa-summary-status active" style={{ color: '#ffffff' }}>
+                              Active
                             </span>
                           </div>
                         </div>
@@ -5881,9 +5835,9 @@ const MainAssessment = ({ templates }) => {
                       <div className="pa-assessment-status-display">
                         <div className="pa-status-item">
                           <span className="pa-status-label">Current Status:</span>
-                          <span className={`pa-status-badge ${selectedAssessment.status === 'active' ? 'pa-status-active' : selectedAssessment.status === 'inactive' ? 'pa-status-inactive' : 'pa-status-draft'}`}>
-                            <FontAwesomeIcon icon={selectedAssessment.status === 'active' ? faCheckCircle : selectedAssessment.status === 'inactive' ? faTimesCircle : faClock} />
-                            {selectedAssessment.status === 'active' ? 'Active' : selectedAssessment.status === 'inactive' ? 'Inactive' : 'Draft'}
+                          <span className="pa-status-badge pa-status-active">
+                            <FontAwesomeIcon icon={faCheckCircle} />
+                            Active
                           </span>
                         </div>
                         <div className="pa-status-item">
@@ -6178,9 +6132,9 @@ const MainAssessment = ({ templates }) => {
                           <h5>Existing Assessment Details:</h5>
                           <div className="pa-existing-detail">
                             <span className="pa-existing-label">Status:</span>
-                            <span className={`pa-existing-value ${existing.isActive ? 'active' : 'inactive'}`}>
-                              <FontAwesomeIcon icon={existing.isActive ? faCheckCircle : faExclamationTriangle} />
-                              {existing.isActive ? 'Active' : 'Inactive'}
+                            <span className="pa-existing-value active">
+                              <FontAwesomeIcon icon={faCheckCircle} />
+                              Active
                             </span>
                           </div>
                           <div className="pa-existing-detail">
@@ -6202,7 +6156,7 @@ const MainAssessment = ({ templates }) => {
                   <ul className="pa-restriction-list">
                     <li>Edit the existing assessment instead of creating a new one</li>
                     <li>Choose a different reading level or category combination</li>
-                    <li>Deactivate or delete the existing assessment first</li>
+                    <li>Delete the existing assessment first</li>
                     <li>Contact an administrator if you need special assistance</li>
                   </ul>
                 </div>
