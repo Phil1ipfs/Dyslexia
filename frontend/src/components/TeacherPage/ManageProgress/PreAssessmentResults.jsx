@@ -9,118 +9,169 @@ import {
 import './css/PreAssessmentResults.css';
 import ImagePreviewModal from './ImagePreviewModal';
 import PreAssessmentDataProcessor from '../../../services/Teachers/PreAssessmentDataProcessor';
-// Helper function to render question answers based on question type
-const renderQuestionAnswers = (question, onImageClick) => {
+// Helper function to render question comparison with correct answers
+const renderQuestionComparison = (question, onImageClick) => {
+  const getAnswerStatus = (question) => {
+    if (!question.wasAnswered) return 'no-record';
+    return question.isCorrect ? 'correct' : 'incorrect';
+  };
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'correct':
+        return (
+          <span className="pre-assessment-results__status-badge pre-assessment-results__status-badge--correct">
+            <FaCheckCircle /> Correct
+          </span>
+        );
+      case 'incorrect':
+        return (
+          <span className="pre-assessment-results__status-badge pre-assessment-results__status-badge--incorrect">
+            <FaTimesCircle /> Incorrect
+          </span>
+        );
+      case 'no-record':
+      default:
+        return (
+          <span className="pre-assessment-results__status-badge pre-assessment-results__status-badge--no-record">
+            <FaExclamationCircle /> No Record
+          </span>
+        );
+    }
+  };
+
   const renderStudentAnswer = () => {
-    const questionType = question.questionType || question.category;
+    if (!question.wasAnswered) return 'Not answered yet';
+    
+    const questionType = question.questionType;
     
     switch (questionType) {
       case 'patinig':
       case 'katinig':
+      case 'malaking':
+      case 'tunog':
         // Alphabet Knowledge - Multiple choice
-        return question.studentAnswerText || question.studentSelectedAnswer || `Option ${question.studentAnswer}`;
+        return question.studentAnswerText || `Option ${question.studentAnswer}`;
         
       case 'malapantig':
         // Phonological Awareness - Matching
         if (question.correctMatches !== undefined && question.totalMatches !== undefined) {
-          return `${question.correctMatches}/${question.totalMatches} matches correct`;
+          return `${question.correctMatches}/${question.totalMatches} correct matches`;
         }
-        return question.studentAnswer || 'No answer recorded';
+        return Array.isArray(question.studentResponse) 
+          ? `Matched ${question.studentResponse.length} items` 
+          : 'Matching response';
         
       case 'decode':
         // Decoding - Letter arrangement
-        if (question.studentAnswerText && question.studentAnswerText !== 'No answer') {
-          return question.studentAnswerText;
-        }
-        if (question.response && Array.isArray(question.response)) {
-          return question.response.join('');
-        }
-        if (question.studentResponse && Array.isArray(question.studentResponse)) {
+        if (Array.isArray(question.studentResponse)) {
           return question.studentResponse.join('');
         }
-        return question.studentAnswer || 'No arrangement recorded';
+        return question.studentAnswerText || 'Letter arrangement';
         
       case 'word':
-        // Word Recognition - Fill in blank
-        if (question.studentAnswerText && question.studentAnswerText !== 'No answer') {
-          return question.studentAnswerText;
-        }
-        if (question.response && Array.isArray(question.response)) {
-          return question.response.join(', ');
-        }
-        if (question.studentResponse && Array.isArray(question.studentResponse)) {
+        // Word Recognition
+        if (Array.isArray(question.studentResponse)) {
           return question.studentResponse.join(', ');
         }
-        return question.studentAnswer || 'No answer recorded';
+        return question.studentAnswerText || 'Word selection';
         
       case 'sentence':
         // Reading Comprehension - Text input
-        if (question.studentAnswerText && question.studentAnswerText !== 'No answer') {
-          return question.studentAnswerText;
-        }
-        if (question.hasPassage) {
-          return question.isCorrect ? question.correctAnswer : question.incorrectAnswer;
-        }
-        if (question.studentResponse && Array.isArray(question.studentResponse)) {
+        if (Array.isArray(question.studentResponse)) {
           return question.studentResponse.join(', ');
         }
-        return question.studentAnswer || 'No answer recorded';
+        return question.studentAnswerText || 'Text response';
         
       default:
-        // Fallback for any other question types
-        return question.studentAnswerText || question.studentSelectedAnswer || question.studentAnswer || 'No answer recorded';
+        return question.studentAnswerText || 'Response recorded';
     }
   };
 
+  const renderCorrectAnswer = () => {
+    const questionType = question.questionType;
+    
+    switch (questionType) {
+      case 'patinig':
+      case 'katinig':
+      case 'malaking':
+      case 'tunog':
+        // Find the correct option from the question's options
+        if (question.options) {
+          const correctOption = question.options.find(opt => opt.isCorrect);
+          return correctOption ? correctOption.optionText : 'Correct option';
+        }
+        return question.correctAnswerText || 'See correct option';
+        
+      case 'malapantig':
+        // Phonological Awareness - Show expected matches
+        if (question.correctPairs) {
+          return `${question.correctPairs.length} correct pairs expected`;
+        }
+        return 'All audio-text pairs matched correctly';
+        
+      case 'decode':
+        // Decoding - Show correct sequence
+        if (question.correctSequence && Array.isArray(question.correctSequence)) {
+          return question.correctSequence.join('');
+        }
+        return question.correctAnswerText || 'Correct letter arrangement';
+        
+      case 'word':
+        // Word Recognition
+        if (question.correctAnswer && Array.isArray(question.correctAnswer)) {
+          return question.correctAnswer.join(', ');
+        }
+        return question.correctAnswerText || 'Correct word(s)';
+        
+      case 'sentence':
+        // Reading Comprehension
+        return question.correctAnswer || question.correctAnswerText || 'Expected text response';
+        
+      default:
+        return question.correctAnswerText || 'Correct response';
+    }
+  };
+
+  const answerStatus = getAnswerStatus(question);
+
   return (
-    <div className="pre-assessment-results__question-answers">
-      <div className="pre-assessment-results__answer-row">
-        <span className="pre-assessment-results__answer-label">Student Answer:</span>
-        <span className={`pre-assessment-results__answer-value ${
-          question.isCorrect ? 'pre-assessment-results__answer--correct' : 'pre-assessment-results__answer--incorrect'
-        }`}>
-          {renderStudentAnswer()}
-          {question.isCorrect ? (
-            <FaCheckCircle className="pre-assessment-results__icon-correct" />
-          ) : (
-            <FaTimesCircle className="pre-assessment-results__icon-incorrect" />
-          )}
-        </span>
+    <div className="pre-assessment-results__question-comparison">
+      <div className="pre-assessment-results__comparison-header">
+        <div className="pre-assessment-results__question-id">ID: {question.questionId}</div>
+        {getStatusBadge(answerStatus)}
       </div>
 
-      {/* Show correct answer if student was wrong */}
-      {!question.isCorrect && (question.correctAnswerText || question.correctAnswer || question.studentSelectedAnswer) && (
-        <div className="pre-assessment-results__answer-row">
-          <span className="pre-assessment-results__answer-label">Correct Answer:</span>
-          <span className="pre-assessment-results__answer-value pre-assessment-results__answer--correct">
-            {question.correctAnswerText || question.correctAnswer || 'Not specified'}
-            <FaCheckCircle className="pre-assessment-results__icon-correct" />
+      <div className="pre-assessment-results__comparison-content">
+        <div className="pre-assessment-results__comparison-row">
+          <span className="pre-assessment-results__comparison-label">Student Answer:</span>
+          <span className={`pre-assessment-results__comparison-value pre-assessment-results__comparison-value--${answerStatus}`}>
+            {renderStudentAnswer()}
           </span>
         </div>
-      )}
 
-      {/* Show additional details for phonological awareness */}
-      {question.questionType === 'malapantig' && question.correctMatches !== undefined && (
-        <div className="pre-assessment-results__answer-row">
-          <span className="pre-assessment-results__answer-label">Matching Score:</span>
-          <span className="pre-assessment-results__answer-value">
-            {question.correctMatches} out of {question.totalMatches} pairs matched correctly
+        <div className="pre-assessment-results__comparison-row">
+          <span className="pre-assessment-results__comparison-label">Correct Answer:</span>
+          <span className="pre-assessment-results__comparison-value pre-assessment-results__comparison-value--correct">
+            {renderCorrectAnswer()}
           </span>
         </div>
-      )}
 
-      <div className="pre-assessment-results__answer-row">
-        <span className="pre-assessment-results__answer-label">Difficulty:</span>
-        <span className="pre-assessment-results__answer-value">
-          {question.difficultyLevel?.replace(/_/g, ' ')?.replace(/\b\w/g, l => l.toUpperCase()) || 'Not specified'}
-        </span>
-      </div>
+        {question.wasAnswered && question.responseTime && (
+          <div className="pre-assessment-results__comparison-row">
+            <span className="pre-assessment-results__comparison-label">Response Time:</span>
+            <span className="pre-assessment-results__comparison-value">
+              {question.responseTime.toFixed(1)}s
+            </span>
+          </div>
+        )}
 
-      <div className="pre-assessment-results__answer-row">
-        <span className="pre-assessment-results__answer-label">Question Type:</span>
-        <span className="pre-assessment-results__answer-value">
-          {question.questionType?.replace(/_/g, ' ')?.replace(/\b\w/g, l => l.toUpperCase()) || 'Not specified'}
-        </span>
+        <div className="pre-assessment-results__comparison-row">
+          <span className="pre-assessment-results__comparison-label">Difficulty:</span>
+          <span className="pre-assessment-results__comparison-value">
+            {question.difficultyLevel?.replace(/_/g, ' ')?.replace(/\b\w/g, l => l.toUpperCase()) || 'Not specified'}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -370,7 +421,7 @@ const PreAssessmentResults = ({ assessmentData, userResponses }) => {
                     className="pre-assessment-results__skill-score"
                     style={{ color: getScoreColor(skill.score) }}
                   >
-                    {skill.correct}/{skill.total} ({skill.score}%)
+                    {skill.answeredQuestions || 0}/{skill.totalQuestions || skill.total} answered ({skill.score}%)
                   </span>
                 </div>
                 <button
@@ -397,26 +448,16 @@ const PreAssessmentResults = ({ assessmentData, userResponses }) => {
                     <FaClipboardList />
                     Question Details
                   </h4>
-                  <div className="pre-assessment-results__sample-questions">
+                  <div className="pre-assessment-results__questions-list">
                     {skill.questions && skill.questions.map((question, qIndex) => (
                       <div key={question.questionId} className="pre-assessment-results__question-item">
                         <div className="pre-assessment-results__question-header">
-                          <span className="pre-assessment-results__question-number">
+                          <div className="pre-assessment-results__question-number">
                             Question {qIndex + 1}
-                          </span>
-                          <span className={`pre-assessment-results__question-status ${
-                            question.isCorrect ? 'correct' : 'incorrect'
-                          }`}>
-                            {question.isCorrect ? (
-                              <>
-                                <FaCheckCircle /> Correct
-                              </>
-                            ) : (
-                              <>
-                                <FaTimesCircle /> Incorrect
-                              </>
-                            )}
-                          </span>
+                          </div>
+                          <div className="pre-assessment-results__question-type">
+                            {question.questionType?.replace(/_/g, ' ')?.replace(/\b\w/g, l => l.toUpperCase())}
+                          </div>
                         </div>
 
                         <div className="pre-assessment-results__question-content">
@@ -459,64 +500,68 @@ const PreAssessmentResults = ({ assessmentData, userResponses }) => {
                           )}
 
                           {/* Special handling for reading comprehension */}
-                          {question.hasPassage && (
-                            <div className="pre-assessment-results__reading-comprehension">
-                              {/* Main instruction */}
-                              <div className="pre-assessment-results__main-instruction">
-                                <strong>Instruction:</strong> {question.mainInstruction}
+                          {/* Special handling for reading comprehension passages */}
+                          {question.questionType === 'sentence' && question.passages && (
+                            <div className="pre-assessment-results__reading-passages">
+                              <div className="pre-assessment-results__passages-header">
+                                <FaBook /> Reading Passage:
                               </div>
-                              
-                              {/* The actual story/passage */}
-                              <div className="pre-assessment-results__story-section">
-                                <div className="pre-assessment-results__story-header">
-                                  <FaBook /> Story:
-                                </div>
-                                {question.passages && question.passages.length > 0 ? (
-                                  <div className="pre-assessment-results__story-content">
-                                    {question.passages.map((page, pageIndex) => (
-                                      <div key={pageIndex} className="pre-assessment-results__story-page">
-                                        {question.passages.length > 1 && (
-                                          <div className="pre-assessment-results__page-number">
-                                            Page {page.pageNumber}:
-                                          </div>
-                                        )}
-                                        <p className="pre-assessment-results__story-text">
-                                          {page.pageText}
-                                        </p>
-                                        {page.pageImage && (
-                                          <div className="pre-assessment-results__story-image">
-                                            <FaImage /> Story illustration provided
-                                          </div>
-                                        )}
+                              <div className="pre-assessment-results__passages-content">
+                                {question.passages.map((page, pageIndex) => (
+                                  <div key={pageIndex} className="pre-assessment-results__passage-page">
+                                    {question.passages.length > 1 && (
+                                      <div className="pre-assessment-results__page-number">
+                                        Page {page.pageNumber}:
                                       </div>
-                                    ))}
+                                    )}
+                                    <p className="pre-assessment-results__passage-text">
+                                      {page.pageText}
+                                    </p>
+                                    {page.pageImage && (
+                                      <div className="pre-assessment-results__passage-image">
+                                        <button
+                                          className="pre-assessment-results__image-preview-btn"
+                                          onClick={() => handleImageClick(
+                                            page.pageImage,
+                                            `Passage ${pageIndex + 1} Image`,
+                                            page.pageText
+                                          )}
+                                          title="Click to view passage image"
+                                        >
+                                          <FaImage /> View Passage Image
+                                        </button>
+                                      </div>
+                                    )}
                                   </div>
-                                ) : (
-                                  <p className="pre-assessment-results__story-text">
-                                    {question.passageText}
-                                  </p>
-                                )}
+                                ))}
                               </div>
-                              
-                              {/* The actual comprehension question */}
-                              <div className="pre-assessment-results__actual-question">
-                                <div className="pre-assessment-results__question-header">
-                                  <FaQuestionCircle /> Question about the story:
-                                </div>
-                                <div className="pre-assessment-results__question-text">
-                                  {question.actualQuestion}
-                                </div>
-                                {question.questionImage && (
-                                  <div className="pre-assessment-results__question-media">
-                                    <FaImage /> Question image provided
+                              {question.sentenceQuestions && question.sentenceQuestions.length > 0 && (
+                                <div className="pre-assessment-results__comprehension-questions">
+                                  <div className="pre-assessment-results__comprehension-header">
+                                    <FaQuestionCircle /> Comprehension Questions:
                                   </div>
-                                )}
-                              </div>
+                                  {question.sentenceQuestions.map((sentenceQ, sqIndex) => (
+                                    <div key={sqIndex} className="pre-assessment-results__comprehension-question">
+                                      <div className="pre-assessment-results__question-text">
+                                        <strong>Q{sqIndex + 1}:</strong> {sentenceQ.questionText}
+                                      </div>
+                                      <div className="pre-assessment-results__expected-answer">
+                                        <strong>Expected Answer:</strong> {sentenceQ.correctAnswer}
+                                      </div>
+                                      {sentenceQ.acceptableAnswers && sentenceQ.acceptableAnswers.length > 0 && (
+                                        <div className="pre-assessment-results__acceptable-answers">
+                                          <strong>Acceptable Variations:</strong> {sentenceQ.acceptableAnswers.join(', ')}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           )}
 
-                          {/* Question-type specific answer display */}
-                          {renderQuestionAnswers(question, handleImageClick)}
+                          {/* Answer comparison display */}
+                          {renderQuestionComparison(question, handleImageClick)}
                         </div>
                       </div>
                     ))}
