@@ -28,6 +28,7 @@ exclude:
   - vendor/
   - Gemfile
   - Gemfile.lock
+  - ASSESSMENT_RESPONSES_SUMMARY.md
 
 # Include specific files if needed
 include:
