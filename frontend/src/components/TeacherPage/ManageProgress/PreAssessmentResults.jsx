@@ -158,14 +158,6 @@ const renderQuestionComparison = (question, onImageClick) => {
           </span>
         </div>
 
-        {question.wasAnswered && question.responseTime && question.questionType !== 'malapantig' && (
-          <div className="pre-assessment-results__comparison-row">
-            <span className="pre-assessment-results__comparison-label">Response Time:</span>
-            <span className="pre-assessment-results__comparison-value">
-              {question.responseTime.toFixed(1)}s
-            </span>
-          </div>
-        )}
 
         <div className="pre-assessment-results__comparison-row">
           <span className="pre-assessment-results__comparison-label">Difficulty:</span>
