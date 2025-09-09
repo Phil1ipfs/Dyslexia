@@ -170,7 +170,7 @@ const renderQuestionComparison = (question, onImageClick) => {
   );
 };
 
-const PreAssessmentResults = ({ assessmentData, userResponses, student }) => {
+const PreAssessmentResults = ({ assessmentData, userResponses, student, categoryResults }) => {
   const [expandedSkills, setExpandedSkills] = useState({});
   const [processedData, setProcessedData] = useState(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -382,14 +382,20 @@ const PreAssessmentResults = ({ assessmentData, userResponses, student }) => {
         <div className="pre-assessment-results__overview-header">
           <h3>
             <FaChartBar className="pre-assessment-results__overview-icon" />
-            Assessment Overview
+            {categoryResults && categoryResults.categories && categoryResults.categories.length > 0 && !categoryResults.isPreAssessment ? 
+              'Assessment Progress Overview' : 
+              'Assessment Overview'
+            }
           </h3>
           <div className="pre-assessment-results__overview-actions">
             <button
               className="pre-assessment-results__download-btn"
               onClick={handleDownloadPDF}
               disabled={isGeneratingPDF || !dataToDisplay.hasCompleted}
-              title="Download Pre-Assessment Report as PDF"
+              title={categoryResults && categoryResults.categories && categoryResults.categories.length > 0 && !categoryResults.isPreAssessment ? 
+                'Download Assessment Progress Report as PDF' : 
+                'Download Pre-Assessment Report as PDF'
+              }
             >
               {isGeneratingPDF ? (
                 <>
@@ -399,12 +405,15 @@ const PreAssessmentResults = ({ assessmentData, userResponses, student }) => {
               ) : (
                 <>
                   <FaDownload />
-                  Download PDF Report
+                  {categoryResults && categoryResults.categories && categoryResults.categories.length > 0 && !categoryResults.isPreAssessment ? 
+                    'Download Progress Report' : 
+                    'Download PDF Report'
+                  }
                 </>
               )}
             </button>
-            <div className={`pre-assessment-results__score-badge ${getReadingLevelClass(dataToDisplay.readingLevel)}`}>
-              {dataToDisplay.readingLevel}
+            <div className={`pre-assessment-results__score-badge ${getReadingLevelClass(student?.readingLevel || dataToDisplay.readingLevel)}`}>
+              {student?.readingLevel || dataToDisplay.readingLevel}
             </div>
           </div>
         </div>
@@ -628,15 +637,15 @@ const PreAssessmentResults = ({ assessmentData, userResponses, student }) => {
           Assessment Summary
         </h3>
         <p className="pre-assessment-results__conclusion-text">
-          {student && student.categoryResults && student.categoryResults.length > 0 ? (
+          {categoryResults && categoryResults.categories && categoryResults.categories.length > 0 && !categoryResults.isPreAssessment ? (
             <>
-              Based on both pre-assessment and post-assessment results, the student is currently at the <strong>{dataToDisplay.readingLevel}</strong> reading level. 
+              Based on both pre-assessment and post-assessment results, the student is currently at the <strong>{student?.readingLevel || dataToDisplay.readingLevel}</strong> reading level. 
               The student has completed multiple assessment phases and their progress is being tracked across various skill categories.
             </>
           ) : (
             <>
               Based on the pre-assessment results, the student has been 
-              placed at the <strong>{dataToDisplay.readingLevel}</strong> reading level.
+              placed at the <strong>{student?.readingLevel || dataToDisplay.readingLevel}</strong> reading level.
             </>
           )}
           {dataToDisplay.focusAreas && dataToDisplay.focusAreas.length > 0 && (
@@ -646,7 +655,7 @@ const PreAssessmentResults = ({ assessmentData, userResponses, student }) => {
           )}
         </p>
         
-        {student && student.categoryResults && student.categoryResults.length > 0 ? (
+        {categoryResults && categoryResults.categories && categoryResults.categories.length > 0 && !categoryResults.isPreAssessment ? (
           <div className="pre-assessment-results__focus-areas">
             <strong>Progress Tracking Active!</strong> The student has progressed beyond the initial assessment phase 
             and is actively working on skill-specific assessments and interventions as needed.
