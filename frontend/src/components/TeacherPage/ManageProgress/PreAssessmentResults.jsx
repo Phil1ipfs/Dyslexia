@@ -3,12 +3,13 @@ import {
   FaInfoCircle, FaChartBar, FaExpandArrowsAlt, FaCompressArrowsAlt,
   FaCheckCircle, FaTimesCircle, FaClock, FaUser, FaCalendarAlt,
   FaClipboardList, FaQuestionCircle, FaLightbulb, FaFileAlt, FaImage,
-  FaVolumeUp, FaBook, FaEye, FaExclamationCircle
+  FaVolumeUp, FaBook, FaEye, FaExclamationCircle, FaDownload, FaSpinner
 } from 'react-icons/fa';
 
 import './css/PreAssessmentResults.css';
 import ImagePreviewModal from './ImagePreviewModal';
 import PreAssessmentDataProcessor from '../../../services/Teachers/PreAssessmentDataProcessor';
+import PreAssessmentPDFService from '../../../services/Teachers/PreAssessmentPDFService';
 // Helper function to render question comparison with correct answers
 const renderQuestionComparison = (question, onImageClick) => {
   const getAnswerStatus = (question) => {
@@ -177,9 +178,10 @@ const renderQuestionComparison = (question, onImageClick) => {
   );
 };
 
-const PreAssessmentResults = ({ assessmentData, userResponses }) => {
+const PreAssessmentResults = ({ assessmentData, userResponses, student }) => {
   const [expandedSkills, setExpandedSkills] = useState({});
   const [processedData, setProcessedData] = useState(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [imagePreview, setImagePreview] = useState({
     isOpen: false,
     imageUrl: '',
@@ -193,12 +195,45 @@ const PreAssessmentResults = ({ assessmentData, userResponses }) => {
       console.log('Processing user responses:', userResponses);
       const processed = PreAssessmentDataProcessor.processStudentResponses(userResponses);
       console.log('Processed data:', processed);
+      
+      // Use actual student reading level if available, otherwise use calculated one
+      if (student && student.readingLevel) {
+        processed.readingLevel = student.readingLevel;
+        console.log('Using student reading level from database:', student.readingLevel);
+      }
+      
       setProcessedData(processed);
     } else if (assessmentData && assessmentData.skillDetails) {
       // Fallback to existing assessment data format
-      setProcessedData(assessmentData);
+      let processedAssessment = { ...assessmentData };
+      if (student && student.readingLevel) {
+        processedAssessment.readingLevel = student.readingLevel;
+      }
+      setProcessedData(processedAssessment);
     }
-  }, [assessmentData, userResponses]);
+  }, [assessmentData, userResponses, student]);
+
+  // Handle PDF generation
+  const handleDownloadPDF = async () => {
+    if (!processedData || !student) {
+      alert('Unable to generate PDF. Student or assessment data is missing.');
+      return;
+    }
+
+    try {
+      setIsGeneratingPDF(true);
+      await PreAssessmentPDFService.generatePreAssessmentPDF(
+        student, 
+        processedData, 
+        userResponses
+      );
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF report. Please try again.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
 
   // Handle image preview
   const handleImageClick = (imageUrl, title, questionText) => {
@@ -356,8 +391,28 @@ const PreAssessmentResults = ({ assessmentData, userResponses }) => {
             <FaChartBar className="pre-assessment-results__overview-icon" />
             Assessment Overview
           </h3>
-          <div className={`pre-assessment-results__score-badge ${getReadingLevelClass(dataToDisplay.readingLevel)}`}>
-            {dataToDisplay.readingLevel}
+          <div className="pre-assessment-results__overview-actions">
+            <button
+              className="pre-assessment-results__download-btn"
+              onClick={handleDownloadPDF}
+              disabled={isGeneratingPDF || !dataToDisplay.hasCompleted}
+              title="Download Pre-Assessment Report as PDF"
+            >
+              {isGeneratingPDF ? (
+                <>
+                  <FaSpinner className="pre-assessment-results__spinner" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <FaDownload />
+                  Download PDF Report
+                </>
+              )}
+            </button>
+            <div className={`pre-assessment-results__score-badge ${getReadingLevelClass(dataToDisplay.readingLevel)}`}>
+              {dataToDisplay.readingLevel}
+            </div>
           </div>
         </div>
 

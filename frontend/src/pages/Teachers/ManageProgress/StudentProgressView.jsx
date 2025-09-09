@@ -624,7 +624,7 @@ const StudentProgressView = () => {
             </div>
             <div className="literexia-panel-content">
               {assessmentData && assessmentData.skillDetails && assessmentData.skillDetails.length > 0 ? (
-                <PreAssessmentResults assessmentData={assessmentData} userResponses={userResponses} />
+                <PreAssessmentResults assessmentData={assessmentData} userResponses={userResponses} student={student} />
               ) : (
                 <div className="literexia-empty-state">
                   <FaExclamationTriangle />

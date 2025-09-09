@@ -87,6 +87,54 @@
     padding-bottom: 1rem;
     border-bottom: 2px solid #f0f3f8;
   }
+
+  .pre-assessment-results__overview-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .pre-assessment-results__download-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #4a5494, #6b7dc8);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(74, 84, 148, 0.3);
+  }
+
+  .pre-assessment-results__download-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #5c6bae, #7d8de0);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(74, 84, 148, 0.4);
+  }
+
+  .pre-assessment-results__download-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(74, 84, 148, 0.3);
+  }
+
+  .pre-assessment-results__download-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .pre-assessment-results__spinner {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
   
   .pre-assessment-results__overview-header h3 {
     margin: 0;
@@ -702,9 +750,20 @@
       align-items: flex-start;
       gap: 1rem;
     }
+
+    .pre-assessment-results__overview-actions {
+      width: 100%;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    
+    .pre-assessment-results__download-btn {
+      width: 100%;
+      justify-content: center;
+    }
     
     .pre-assessment-results__score-badge {
-      align-self: flex-start;
+      align-self: center;
     }
    
     .pre-assessment-results__question-header {
