@@ -551,11 +551,23 @@ const StudentProgressView = () => {
       {/* Top cards - Student info and assessment summary */}
       <div className="literexia-top-cards">
         {student && <StudentProfileCard student={student} />}
-        {(categoryResults || assessmentData) && (
+        
+        {console.log('🚨 StudentProgressView render check:')}
+        {console.log('🚨 categoryResults:', categoryResults)}
+        {console.log('🚨 assessmentData:', assessmentData)}
+        {console.log('🚨 student:', student)}
+        {console.log('🚨 Should render AssessmentSummaryCard:', !!(categoryResults || assessmentData))}
+        
+        {(categoryResults || assessmentData) ? (
           <AssessmentSummaryCard
+            key={`assessment-${student?.id}-${Date.now()}`}
             assessmentData={categoryResults || assessmentData}
             student={student}
           />
+        ) : (
+          <div key="no-assessment-data" style={{display: 'none'}}>
+            {console.log('🚨 No assessment data - component should not be visible')}
+          </div>
         )}
       </div>
 

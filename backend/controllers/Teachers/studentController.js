@@ -280,6 +280,7 @@ exports.getStudentById = async (req, res) => {
       gradeLevel: student.gradeLevel || 'Grade 1',
       section: student.section,
       readingLevel: student.readingLevel || 'Not Assessed',
+      readingPercentage: student.readingPercentage || 0, // Include readingPercentage from users table
       profileImageUrl: student.profileImageUrl,
       parentId: student.parentId,
       parent: parentInfo, // Include parent info directly

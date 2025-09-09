@@ -814,7 +814,7 @@ async function aggregateIndividualResponses(allUserResponses, preAssessment, stu
     },
     assessmentId: "1",
     readingLevel: student.readingLevel || determinedReadingLevel,
-    overallScore: Math.round((totalCorrect / allUserResponses.length) * 100),
+    overallScore: student.readingPercentage || 0, // Use stored readingPercentage from users table
     totalQuestions: allUserResponses.length,
     correctAnswers: totalCorrect,
     part1Score: part1Correct,

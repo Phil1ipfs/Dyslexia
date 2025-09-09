@@ -7,11 +7,21 @@ import {
 import '../ManageProgress/css/AssessmentSummaryCard.css'; 
 
 const AssessmentSummaryCard = ({ assessmentData, student }) => {
-  if (!assessmentData) return null;
+  console.log('🔥 AssessmentSummaryCard RENDERED');
+  console.log('🔥 assessmentData:', assessmentData);
+  console.log('🔥 student:', student);
+  
+  if (!assessmentData) {
+    console.log('🔥 No assessmentData, returning null');
+    return null;
+  }
 
   // Check if student has been assessed - use student's reading level from users table
   const studentReadingLevel = student?.readingLevel || 'Not Assessed';
   const isAssessed = studentReadingLevel && studentReadingLevel !== 'Not Assessed';
+  
+  console.log('🔥 studentReadingLevel:', studentReadingLevel);
+  console.log('🔥 isAssessed:', isAssessed);
   
   // Get reading level class based on the level
   const getReadingLevelClass = (level) => {
@@ -42,19 +52,34 @@ const AssessmentSummaryCard = ({ assessmentData, student }) => {
   
   // Calculate score from available data sources
   let readingPercentage;
-  let assessmentType = 'Post-Assessment';
+  let assessmentType;
   
-  if (assessmentData.categories && assessmentData.categories.length > 0) {
+  // Check if student has completed main assessment (category_results exists)
+  
+  // Check if this is ACTUAL post-assessment data (category_results from main assessment)
+  // vs transformed pre-assessment data
+  const isPostAssessment = assessmentData.categories && 
+                           assessmentData.categories.length > 0 && 
+                           assessmentData.assessmentType !== 'pre-assessment' && // Key check!
+                           assessmentData.categories.some(cat => 
+                             cat.categoryName && 
+                             cat.score !== undefined && 
+                             cat.isPassed !== undefined
+                           );
+  
+  console.log('Is Post Assessment:', isPostAssessment);
+  console.log('Assessment Type:', assessmentData.assessmentType);
+  
+  if (isPostAssessment) {
     // This is category_results format (Post-Assessment)
     assessmentType = 'Post-Assessment';
-    
-    // Use overallScore from category_results
     readingPercentage = assessmentData.overallScore || 0;
+    console.log('Using Post-Assessment - overallScore:', assessmentData.overallScore);
   } else {
-    // This is pre-assessment or no category results yet
-    // Use readingPercentage from users table
+    // This is pre-assessment - use stored readingPercentage from users table
     assessmentType = 'Pre-Assessment';
-    readingPercentage = student?.readingPercentage || 0;
+    readingPercentage = student?.readingPercentage || 0; // Use readingPercentage from users table
+    console.log('Using Pre-Assessment - readingPercentage from users table:', readingPercentage);
   }
   
   // Round the percentage for display
