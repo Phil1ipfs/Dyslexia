@@ -1223,6 +1223,57 @@ exports.getStudentPreAssessmentStatus = async (req, res) => {
 
 
 // Convert base64 images to S3 paths for a pre-assessment
+exports.getPreAssessmentUserResponses = async (req, res) => {
+  try {
+    const studentObjectId = req.params.id;
+    console.log('⭐ Getting pre-assessment user responses for student ObjectId:', studentObjectId);
+    
+    // First, get the user from test database to find their idNumber
+    const testDb = getTestDb();
+    const usersCollection = testDb.collection('users');
+    
+    // Look up user by ObjectId
+    const user = await usersCollection.findOne({ 
+      _id: new mongoose.Types.ObjectId(studentObjectId) 
+    });
+    
+    if (!user) {
+      console.log('❌ User not found with ObjectId:', studentObjectId);
+      return res.json([]);
+    }
+    
+    console.log('⭐ Found user with idNumber:', user.idNumber);
+    
+    // Now get user responses from the Pre_Assessment database using idNumber
+    const preAssessmentDb = getPreAssessmentDb();
+    const userResponsesCollection = preAssessmentDb.collection('user_responses');
+    
+    console.log('⭐ Searching for responses with studentId:', user.idNumber);
+    
+    // Find all user responses for this student using their idNumber
+    const userResponses = await userResponsesCollection.find({ 
+      studentId: user.idNumber 
+    }).toArray();
+    
+    console.log('⭐ Found', userResponses.length, 'user responses for student');
+    
+    if (userResponses.length === 0) {
+      console.log('⭐ No user responses found for studentId:', user.idNumber);
+      return res.json([]);
+    }
+    
+    console.log('⭐ Successfully retrieved user responses');
+    res.json(userResponses);
+    
+  } catch (error) {
+    console.error('❌ Error getting pre-assessment user responses:', error);
+    res.status(500).json({ 
+      message: 'Error retrieving pre-assessment user responses', 
+      error: error.message 
+    });
+  }
+};
+
 exports.convertImagesToS3 = async (req, res) => {
   try {
     const { id } = req.params;

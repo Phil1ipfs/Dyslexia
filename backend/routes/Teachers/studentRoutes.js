@@ -85,5 +85,6 @@ router.get('/:id/reading-level-progress', auth, authorize('teacher', 'admin'), s
 // NEW PRE-ASSESSMENT ROUTES
 router.get('/:id/pre-assessment-results', auth, authorize('teacher', 'admin'), preAssessmentController.getPreAssessmentResults);
 router.get('/:id/pre-assessment-status', auth, authorize('teacher', 'admin'), preAssessmentController.getStudentPreAssessmentStatus);
+router.get('/:id/pre-assessment-user-responses', auth, authorize('teacher', 'admin'), preAssessmentController.getPreAssessmentUserResponses);
 
 module.exports = router;

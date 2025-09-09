@@ -918,9 +918,9 @@ class PreAssessmentDataProcessor {
         }
       });
 
-      // Calculate category score based on answered questions
-      categoryData.score = categoryData.answered > 0 ? 
-        Math.round((categoryData.correct / categoryData.answered) * 100) : 0;
+      // Calculate category score based on correct vs total questions (not just answered)
+      categoryData.score = categoryData.total > 0 ? 
+        Math.round((categoryData.correct / categoryData.total) * 100) : 0;
       
       console.log(`📈 DEBUG: ${categoryName} final stats:`, {
         answered: categoryData.answered,
@@ -1000,7 +1000,7 @@ class PreAssessmentDataProcessor {
       case 'malapantig':
         // Audio matching questions
         processedQuestion.studentAnswerText = this.getMatchingAnswerText(response);
-        processedQuestion.correctAnswerText = `All ${question.questionSet?.correctPairs?.length || 0} pairs correct`;
+        processedQuestion.correctAnswerText = this.getMatchingCorrectAnswerText(question);
         processedQuestion.correctMatches = response.correctMatches || 0;
         processedQuestion.totalMatches = response.totalMatches || question.questionSet?.correctPairs?.length || 0;
         break;
@@ -1083,10 +1083,31 @@ class PreAssessmentDataProcessor {
    * Get matching question answer text
    */
   static getMatchingAnswerText(response) {
+    if (Array.isArray(response.response) && response.response.length > 0) {
+      // Show actual student pairings
+      const pairs = response.response.map(pair => `${pair.audio} → ${pair.match}`).join(', ');
+      const matches = response.correctMatches !== undefined && response.totalMatches !== undefined 
+        ? ` (${response.correctMatches}/${response.totalMatches} correct)`
+        : '';
+      return pairs + matches;
+    }
     if (response.correctMatches !== undefined && response.totalMatches !== undefined) {
       return `${response.correctMatches}/${response.totalMatches} matches correct`;
     }
     return 'Matching response recorded';
+  }
+
+  /**
+   * Get matching question correct answer text
+   */
+  static getMatchingCorrectAnswerText(question) {
+    if (question.questionSet?.correctPairs && Array.isArray(question.questionSet.correctPairs)) {
+      const correctPairs = question.questionSet.correctPairs
+        .map(pair => `${pair.audio} → ${pair.match}`)
+        .join(', ');
+      return correctPairs;
+    }
+    return `All ${question.questionSet?.correctPairs?.length || 0} pairs correct`;
   }
 
   /**

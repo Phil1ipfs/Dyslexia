@@ -157,7 +157,7 @@ const renderQuestionComparison = (question, onImageClick) => {
           </span>
         </div>
 
-        {question.wasAnswered && question.responseTime && (
+        {question.wasAnswered && question.responseTime && question.questionType !== 'malapantig' && (
           <div className="pre-assessment-results__comparison-row">
             <span className="pre-assessment-results__comparison-label">Response Time:</span>
             <span className="pre-assessment-results__comparison-value">
@@ -370,7 +370,7 @@ const PreAssessmentResults = ({ assessmentData, userResponses }) => {
             <div className="pre-assessment-results__overview-item-content">
               <div className="pre-assessment-results__overview-item-label">Overall Score</div>
               <div className="pre-assessment-results__overview-item-value">
-                {Math.max(0, dataToDisplay.correctAnswers || 0)}/{Math.max(1, dataToDisplay.totalQuestions || 1)} ({Math.max(0, Math.min(100, dataToDisplay.overallScore || 0))}%)
+                {Math.max(0, dataToDisplay.correctAnswers || 0)}/45
               </div>
             </div>
           </div>
@@ -421,15 +421,15 @@ const PreAssessmentResults = ({ assessmentData, userResponses }) => {
                     className="pre-assessment-results__skill-score"
                     style={{ color: getScoreColor(skill.score) }}
                   >
-                    {skill.answeredQuestions || 0}/{skill.totalQuestions || skill.total} answered ({skill.score}%)
+                    {skill.correct || 0}/{skill.totalQuestions || skill.total} correct ({skill.score}%)
                   </span>
                 </div>
                 <button
                   className="pre-assessment-results__expand-btn"
-                  onClick={() => toggleSkillExpansion(skill.category)}
-                  aria-label={expandedSkills[skill.category] ? 'Collapse' : 'Expand'}
+                  onClick={() => toggleSkillExpansion(skill.categoryName || skill.category)}
+                  aria-label={expandedSkills[skill.categoryName || skill.category] ? 'Collapse' : 'Expand'}
                 >
-                  {expandedSkills[skill.category] ? <FaCompressArrowsAlt /> : <FaExpandArrowsAlt />}
+                  {expandedSkills[skill.categoryName || skill.category] ? <FaCompressArrowsAlt /> : <FaExpandArrowsAlt />}
                 </button>
               </div>
 
@@ -442,7 +442,7 @@ const PreAssessmentResults = ({ assessmentData, userResponses }) => {
                 />
               </div>
 
-              {expandedSkills[skill.category] && (
+              {expandedSkills[skill.categoryName || skill.category] && (
                 <div className="pre-assessment-results__skill-details">
                   <h4>
                     <FaClipboardList />
