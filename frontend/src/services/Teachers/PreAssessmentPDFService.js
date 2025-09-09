@@ -215,9 +215,9 @@ class PreAssessmentPDFService {
     yPos += 18;
     pdf.setTextColor(0, 0, 0);
     
-    // Overview cards with clean professional styling
+    // Overview cards with clean professional styling - reduced height
     const cardWidth = (pageWidth - margin * 2 - 16) / 3;
-    const cardHeight = 30;
+    const cardHeight = 26; // Reduced from 30
     
     // Overall Score Card with clean header
     this.addCleanOverviewCard(pdf, margin, yPos, cardWidth, cardHeight, 
@@ -239,7 +239,7 @@ class PreAssessmentPDFService {
     this.addCleanOverviewCard(pdf, margin + (cardWidth + 10) * 2, yPos, cardWidth, cardHeight,
       'COMPLETED ON', completedDate, 'Assessment Date');
     
-    return yPos + cardHeight + 18;
+    return yPos + cardHeight + 15; // Reduced spacing
   }
 
   static addOverviewCard(pdf, x, y, width, height, title, mainValue, subValue) {
@@ -379,16 +379,16 @@ class PreAssessmentPDFService {
       yPos = margin;
     }
     
-    // Section header with clean professional styling
+    // Section header with clean professional styling - reduced height
     pdf.setFillColor(70, 90, 150); // Clean professional blue
-    pdf.rect(margin, yPos, pageWidth - (margin * 2), 10, 'F');
+    pdf.rect(margin, yPos, pageWidth - (margin * 2), 9, 'F');
     
     pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(11);
+    pdf.setFontSize(10); // Reduced font size
     pdf.setFont('helvetica', 'bold');
-    pdf.text('QUESTION-BY-QUESTION ANALYSIS', margin + 6, yPos + 7);
+    pdf.text('QUESTION-BY-QUESTION ANALYSIS', margin + 6, yPos + 6.5);
     
-    yPos += 18;
+    yPos += 15; // Reduced spacing
     pdf.setTextColor(0, 0, 0);
     
     // Process questions by category with proper page management
@@ -406,18 +406,18 @@ class PreAssessmentPDFService {
         // Add questions for this category with smart pagination
         if (skill.questions && skill.questions.length > 0) {
           skill.questions.forEach((question, qIndex) => {
-            // Check if we need a new page for question (increased space requirement)
-            if (yPos + 45 > pageHeight - bottomMargin) {
+            // Check if we need a new page for question (reduced space requirement)
+            if (yPos + 40 > pageHeight - bottomMargin) {
               pdf.addPage();
               yPos = margin;
             }
             
             yPos = this.addCleanQuestionCard(pdf, question, qIndex + 1, yPos, pageWidth, margin);
-            yPos += 5; // Proper gap between questions
+            yPos += 3; // Reduced gap between questions
           });
         }
         
-        yPos += 12; // Proper gap between categories
+        yPos += 8; // Reduced gap between categories
       });
     }
     
@@ -529,7 +529,10 @@ class PreAssessmentPDFService {
   }
 
   static formatStudentAnswer(question) {
-    if (!question.wasAnswered) return 'Not answered';
+    // Check if question was answered - handle different possible flags
+    const wasAnswered = question.wasAnswered !== false && question.isAnswered !== false && question.studentResponse !== null;
+    
+    if (!wasAnswered) return 'Not answered';
     
     const questionType = question.questionType;
     
@@ -685,7 +688,7 @@ class PreAssessmentPDFService {
   }
 
   /**
-   * Add enhanced info field with clean styling
+   * Add enhanced info field with clean styling - no boxes
    */
   static addEnhancedInfoField(pdf, label, value, x, y) {
     pdf.setFont('helvetica', 'bold');
@@ -698,17 +701,8 @@ class PreAssessmentPDFService {
     pdf.setTextColor(60, 60, 60);
     const labelWidth = pdf.getTextWidth(label);
     
-    // Clean value background
-    const valueWidth = pdf.getTextWidth(value);
-    pdf.setFillColor(248, 248, 248); // Light gray background
-    pdf.rect(x + labelWidth + 5, y - 3, valueWidth + 4, 7, 'F');
-    
-    // Add subtle border
-    pdf.setDrawColor(200, 200, 200);
-    pdf.setLineWidth(0.3);
-    pdf.rect(x + labelWidth + 5, y - 3, valueWidth + 4, 7);
-    
-    pdf.text(value, x + labelWidth + 7, y);
+    // Simple text without background boxes for cleaner look
+    pdf.text(value, x + labelWidth + 5, y);
   }
 
   /**
@@ -719,32 +713,32 @@ class PreAssessmentPDFService {
     pdf.setFillColor(255, 255, 255);
     pdf.rect(x, y, width, height, 'F');
     
-    // Clean header
+    // Clean header - reduced height
     pdf.setFillColor(245, 245, 245);
-    pdf.rect(x, y, width, 12, 'F');
+    pdf.rect(x, y, width, 10, 'F');
     
     // Professional border
     pdf.setDrawColor(150, 150, 150);
     pdf.setLineWidth(0.8);
     pdf.rect(x, y, width, height);
     
-    // Title with clean text
-    pdf.setFontSize(8);
+    // Title with clean text - smaller font
+    pdf.setFontSize(7);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(60, 60, 60);
-    pdf.text(title, x + width / 2, y + 8, { align: 'center' });
+    pdf.text(title, x + width / 2, y + 7, { align: 'center' });
     
-    // Main value with clean emphasis
-    pdf.setFontSize(14);
+    // Main value with clean emphasis - slightly smaller
+    pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(70, 90, 150);
-    pdf.text(mainValue, x + width / 2, y + 22, { align: 'center' });
+    pdf.text(mainValue, x + width / 2, y + 20, { align: 'center' });
     
-    // Sub value with clean text
-    pdf.setFontSize(8);
+    // Sub value with clean text - smaller font
+    pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(100, 100, 100);
-    pdf.text(subValue, x + width / 2, y + 28, { align: 'center' });
+    pdf.text(subValue, x + width / 2, y + 26, { align: 'center' });
     
     pdf.setTextColor(0, 0, 0); // Reset color
   }
@@ -758,8 +752,8 @@ class PreAssessmentPDFService {
     const correct = skill.correct || 0;
     const total = skill.totalQuestions || skill.total || 0;
     
-    // Clean category header with professional styling
-    const headerHeight = 18;
+    // Clean category header with professional styling - reduced height for better spacing
+    const headerHeight = 15;
     
     // Clean background
     pdf.setFillColor(240, 240, 240);
@@ -770,20 +764,20 @@ class PreAssessmentPDFService {
     pdf.setLineWidth(0.8);
     pdf.rect(margin, yPos, pageWidth - (margin * 2), headerHeight);
     
-    // Category name with clean text
-    pdf.setFontSize(12);
+    // Category name with clean text - reduced font size
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(70, 90, 150);
-    pdf.text(categoryName, margin + 10, yPos + 12);
+    pdf.text(categoryName, margin + 8, yPos + 10);
     
-    // Score text with clean styling
-    pdf.setFontSize(11);
+    // Score text with clean styling - reduced font size
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(60, 60, 60);
     const scoreText = `${correct}/${total} correct (${score}%)`;
-    pdf.text(scoreText, pageWidth - margin - pdf.getTextWidth(scoreText) - 10, yPos + 12);
+    pdf.text(scoreText, pageWidth - margin - pdf.getTextWidth(scoreText) - 8, yPos + 10);
     
-    return yPos + headerHeight + 8;
+    return yPos + headerHeight + 6; // Reduced spacing after header
   }
 
   static getCategoryIcon(category) {
@@ -810,8 +804,8 @@ class PreAssessmentPDFService {
    */
   static addCleanQuestionCard(pdf, question, questionNumber, yPos, pageWidth, margin) {
     // Clean question card with proper spacing
-    const cardHeight = 55; // Increased height for better spacing
-    const cardPadding = 10; // Increased padding
+    const cardHeight = 52; // Slightly reduced height for better space usage
+    const cardPadding = 8; // Reduced padding for more content space
     
     // Card background with clean white
     pdf.setFillColor(255, 255, 255);
@@ -819,48 +813,84 @@ class PreAssessmentPDFService {
     
     // Clean border
     const isCorrect = question.isCorrect;
+    const wasAnswered = question.wasAnswered !== false; // Default to true if not specified
+    
     pdf.setDrawColor(150, 150, 150);
     pdf.setLineWidth(0.8);
     pdf.rect(margin, yPos, pageWidth - (margin * 2), cardHeight);
     
     // Question header area with clean background
     pdf.setFillColor(248, 248, 248);
-    pdf.rect(margin, yPos, pageWidth - (margin * 2), 15, 'F');
+    pdf.rect(margin, yPos, pageWidth - (margin * 2), 14, 'F');
     
-    // Question number with clean styling
-    const statusText = isCorrect ? 'CORRECT' : 'INCORRECT';
+    // Determine status and colors based on answer state
+    let statusText, statusColor;
+    if (!wasAnswered) {
+      statusText = 'NOT ANSWERED';
+      statusColor = [120, 120, 120]; // Neutral gray
+    } else if (isCorrect) {
+      statusText = 'CORRECT';
+      statusColor = [80, 140, 80]; // Green
+    } else {
+      statusText = 'INCORRECT';
+      statusColor = [180, 60, 60]; // Red
+    }
     
-    pdf.setFontSize(10);
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(70, 90, 150);
-    pdf.text(`Question ${questionNumber}`, margin + cardPadding, yPos + 10);
+    pdf.text(`Question ${questionNumber}`, margin + cardPadding, yPos + 9);
     
     // Clean status badge
-    pdf.setFontSize(9);
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
     const statusWidth = pdf.getTextWidth(statusText);
     
     // Clean colored status badge
-    const statusColor = isCorrect ? [80, 140, 80] : [180, 60, 60];
     pdf.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
-    pdf.rect(pageWidth - margin - statusWidth - 12, yPos + 3, statusWidth + 8, 9, 'F');
+    pdf.rect(pageWidth - margin - statusWidth - 10, yPos + 2.5, statusWidth + 6, 8, 'F');
     
     pdf.setTextColor(255, 255, 255);
-    pdf.text(statusText, pageWidth - margin - statusWidth - 8, yPos + 10);
+    pdf.text(statusText, pageWidth - margin - statusWidth - 7, yPos + 9);
     
     const borderColor = [70, 90, 150]; // Clean blue for consistency
     
     // Question content area with better spacing
-    let contentY = yPos + 22;
+    let contentY = yPos + 20;
     
-    // Question text with proper formatting
-    pdf.setFontSize(9);
+    // Question text with proper formatting - handle different question types
+    pdf.setFontSize(8);
     pdf.setTextColor(60, 60, 60);
     pdf.setFont('helvetica', 'normal');
     
-    const questionText = question.questionText || 'Question text not available';
-    const maxWidth = pageWidth - (margin * 2) - (cardPadding * 2) - 20;
-    const wrappedText = this.wrapText(pdf, questionText, maxWidth, 9);
+    // Get question text based on question type
+    let questionText = question.questionText || 'Question text not available';
+    
+    // Special handling for reading comprehension questions
+    if (question.questionType === 'sentence' && question.sentenceQuestions && question.sentenceQuestions.length > 0) {
+      // For RC questions, try to get the specific comprehension question
+      if (question.studentResponse) {
+        const studentAnswer = Array.isArray(question.studentResponse) ? question.studentResponse[0] : question.studentResponse;
+        // Try to match with specific question based on answer
+        for (const sentenceQ of question.sentenceQuestions) {
+          if (sentenceQ.correctAnswer?.toLowerCase() === studentAnswer?.toLowerCase() || 
+              sentenceQ.acceptableAnswers?.some(ans => ans.toLowerCase() === studentAnswer?.toLowerCase())) {
+            questionText = sentenceQ.questionText;
+            break;
+          }
+        }
+        // If no match, use first question
+        if (questionText === 'Question text not available') {
+          questionText = question.sentenceQuestions[0].questionText;
+        }
+      } else {
+        // For unanswered questions, show the first comprehension question
+        questionText = question.sentenceQuestions[0].questionText;
+      }
+    }
+    
+    const maxWidth = pageWidth - (margin * 2) - (cardPadding * 2) - 18;
+    const wrappedText = this.wrapText(pdf, questionText, maxWidth, 8);
     
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
@@ -869,43 +899,62 @@ class PreAssessmentPDFService {
     pdf.setTextColor(60, 60, 60);
     
     if (wrappedText.length > 1) {
-      pdf.text(wrappedText[0], margin + cardPadding + 25, contentY);
+      pdf.text(wrappedText[0], margin + cardPadding + 22, contentY);
       if (wrappedText[1]) {
-        pdf.text(wrappedText[1], margin + cardPadding + 25, contentY + 5);
-        contentY += 5;
+        pdf.text(wrappedText[1], margin + cardPadding + 22, contentY + 4);
+        contentY += 4;
       }
     } else {
-      pdf.text(questionText, margin + cardPadding + 25, contentY);
+      pdf.text(questionText, margin + cardPadding + 22, contentY);
     }
     
     // Answer comparison with proper layout and spacing
-    const answerY = contentY + 10;
+    const answerY = contentY + 8;
     const studentAnswer = this.formatStudentAnswer(question);
     const correctAnswer = this.formatCorrectAnswer(question);
     
     // Create two-column layout for answers with proper spacing
-    const leftColumnWidth = (pageWidth - (margin * 2) - (cardPadding * 2) - 15) / 2;
-    const rightColumnStart = margin + cardPadding + leftColumnWidth + 15;
+    const leftColumnWidth = (pageWidth - (margin * 2) - (cardPadding * 2) - 12) / 2;
+    const rightColumnStart = margin + cardPadding + leftColumnWidth + 12;
     
     // Student answer section - Left column
-    pdf.setFontSize(8);
+    pdf.setFontSize(7);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
     pdf.text('Student Answer:', margin + cardPadding, answerY);
     
-    // Student answer with background
+    // Student answer with background - adjust color based on answer state
     pdf.setFont('helvetica', 'normal');
-    const studentBgColor = isCorrect ? [240, 255, 240] : [255, 240, 240];
+    let studentBgColor;
+    if (!wasAnswered) {
+      studentBgColor = [248, 248, 248]; // Light gray for unanswered
+    } else if (isCorrect) {
+      studentBgColor = [240, 255, 240]; // Light green for correct
+    } else {
+      studentBgColor = [255, 245, 245]; // Light red for incorrect
+    }
+    
     pdf.setFillColor(studentBgColor[0], studentBgColor[1], studentBgColor[2]);
-    pdf.rect(margin + cardPadding, answerY + 3, leftColumnWidth, 8, 'F');
+    pdf.rect(margin + cardPadding, answerY + 2, leftColumnWidth, 7, 'F');
     
     // Add border
     pdf.setDrawColor(200, 200, 200);
-    pdf.setLineWidth(0.3);
-    pdf.rect(margin + cardPadding, answerY + 3, leftColumnWidth, 8);
+    pdf.setLineWidth(0.2);
+    pdf.rect(margin + cardPadding, answerY + 2, leftColumnWidth, 7);
     
     pdf.setTextColor(60, 60, 60);
-    pdf.text(studentAnswer, margin + cardPadding + 2, answerY + 8);
+    
+    // Handle special formatting for phonological awareness questions
+    if (question.questionType === 'malapantig' && studentAnswer.includes('→')) {
+      // For phonological awareness with multiple lines, split and display properly
+      const lines = studentAnswer.split('\n');
+      const firstLine = lines[0];
+      pdf.text(firstLine.length > 25 ? firstLine.substring(0, 25) + '...' : firstLine, margin + cardPadding + 1, answerY + 6);
+    } else {
+      // Truncate long answers to fit in the box
+      const truncatedAnswer = studentAnswer.length > 28 ? studentAnswer.substring(0, 28) + '...' : studentAnswer;
+      pdf.text(truncatedAnswer, margin + cardPadding + 1, answerY + 6);
+    }
     
     // Correct answer section - Right column
     pdf.setFont('helvetica', 'bold');
@@ -915,19 +964,30 @@ class PreAssessmentPDFService {
     // Correct answer with background
     pdf.setFont('helvetica', 'normal');
     pdf.setFillColor(240, 255, 240); // Light green background
-    pdf.rect(rightColumnStart, answerY + 3, leftColumnWidth, 8, 'F');
+    pdf.rect(rightColumnStart, answerY + 2, leftColumnWidth, 7, 'F');
     
     // Add border
     pdf.setDrawColor(200, 200, 200);
-    pdf.setLineWidth(0.3);
-    pdf.rect(rightColumnStart, answerY + 3, leftColumnWidth, 8);
+    pdf.setLineWidth(0.2);
+    pdf.rect(rightColumnStart, answerY + 2, leftColumnWidth, 7);
     
     pdf.setTextColor(60, 60, 60);
-    pdf.text(correctAnswer, rightColumnStart + 2, answerY + 8);
+    
+    // Handle special formatting for phonological awareness questions
+    if (question.questionType === 'malapantig' && correctAnswer.includes('→')) {
+      // For phonological awareness with multiple lines, split and display properly
+      const lines = correctAnswer.split('\n');
+      const firstLine = lines[0];
+      pdf.text(firstLine.length > 25 ? firstLine.substring(0, 25) + '...' : firstLine, rightColumnStart + 1, answerY + 6);
+    } else {
+      // Truncate long answers to fit in the box
+      const truncatedAnswer = correctAnswer.length > 28 ? correctAnswer.substring(0, 28) + '...' : correctAnswer;
+      pdf.text(truncatedAnswer, rightColumnStart + 1, answerY + 6);
+    }
     
     // Additional details INSIDE the question box with proper layout
-    const detailY = answerY + 16;
-    pdf.setFontSize(8);
+    const detailY = answerY + 13;
+    pdf.setFontSize(7);
     
     // Focus and Difficulty in organized layout WITHIN the card boundaries
     if (question.questionValue || question.difficultyLevel) {
@@ -938,7 +998,7 @@ class PreAssessmentPDFService {
         pdf.text('Focus:', margin + cardPadding, detailY);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(80, 80, 80);
-        pdf.text(question.questionValue, margin + cardPadding + 22, detailY);
+        pdf.text(question.questionValue, margin + cardPadding + 18, detailY);
       }
       
       // Difficulty - Right column (within card)
@@ -949,7 +1009,9 @@ class PreAssessmentPDFService {
         pdf.text('Difficulty:', rightColumnStart, detailY);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(80, 80, 80);
-        pdf.text(difficulty, rightColumnStart + 30, detailY);
+        // Truncate long difficulty text
+        const truncatedDifficulty = difficulty.length > 15 ? difficulty.substring(0, 15) + '...' : difficulty;
+        pdf.text(truncatedDifficulty, rightColumnStart + 25, detailY);
       }
     }
     
