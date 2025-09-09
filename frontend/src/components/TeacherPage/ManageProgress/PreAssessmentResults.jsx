@@ -54,13 +54,12 @@ const renderQuestionComparison = (question, onImageClick) => {
         return question.studentAnswerText || `Option ${question.studentAnswer}`;
         
       case 'malapantig':
-        // Phonological Awareness - Matching
-        if (question.correctMatches !== undefined && question.totalMatches !== undefined) {
-          return `${question.correctMatches}/${question.totalMatches} correct matches`;
-        }
-        return Array.isArray(question.studentResponse) 
-          ? `Matched ${question.studentResponse.length} items` 
-          : 'Matching response';
+        // Phonological Awareness - Use formatted text with actual pairs
+        return question.studentAnswerText || (
+          question.correctMatches !== undefined && question.totalMatches !== undefined 
+            ? `${question.correctMatches}/${question.totalMatches} correct matches`
+            : 'Matching response'
+        );
         
       case 'decode':
         // Decoding - Letter arrangement
@@ -104,11 +103,12 @@ const renderQuestionComparison = (question, onImageClick) => {
         return question.correctAnswerText || 'See correct option';
         
       case 'malapantig':
-        // Phonological Awareness - Show expected matches
-        if (question.correctPairs) {
-          return `${question.correctPairs.length} correct pairs expected`;
-        }
-        return 'All audio-text pairs matched correctly';
+        // Phonological Awareness - Use formatted text with actual pairs
+        return question.correctAnswerText || (
+          question.correctPairs 
+            ? `${question.correctPairs.length} correct pairs expected`
+            : 'All audio-text pairs matched correctly'
+        );
         
       case 'decode':
         // Decoding - Show correct sequence
@@ -145,14 +145,14 @@ const renderQuestionComparison = (question, onImageClick) => {
       <div className="pre-assessment-results__comparison-content">
         <div className="pre-assessment-results__comparison-row">
           <span className="pre-assessment-results__comparison-label">Student Answer:</span>
-          <span className={`pre-assessment-results__comparison-value pre-assessment-results__comparison-value--${answerStatus}`}>
+          <span className={`pre-assessment-results__comparison-value pre-assessment-results__comparison-value--${answerStatus}${question.questionType === 'malapantig' ? ' pre-assessment-results__comparison-value--phonological' : ''}`}>
             {renderStudentAnswer()}
           </span>
         </div>
 
         <div className="pre-assessment-results__comparison-row">
           <span className="pre-assessment-results__comparison-label">Correct Answer:</span>
-          <span className="pre-assessment-results__comparison-value pre-assessment-results__comparison-value--correct">
+          <span className={`pre-assessment-results__comparison-value pre-assessment-results__comparison-value--correct${question.questionType === 'malapantig' ? ' pre-assessment-results__comparison-value--phonological' : ''}`}>
             {renderCorrectAnswer()}
           </span>
         </div>

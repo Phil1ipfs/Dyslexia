@@ -1084,10 +1084,10 @@ class PreAssessmentDataProcessor {
    */
   static getMatchingAnswerText(response) {
     if (Array.isArray(response.response) && response.response.length > 0) {
-      // Show actual student pairings
-      const pairs = response.response.map(pair => `${pair.audio} → ${pair.match}`).join(', ');
+      // Show actual student pairings with better formatting
+      const pairs = response.response.map(pair => `${pair.audio} → ${pair.match}`).join('\n');
       const matches = response.correctMatches !== undefined && response.totalMatches !== undefined 
-        ? ` (${response.correctMatches}/${response.totalMatches} correct)`
+        ? `\n(${response.correctMatches}/${response.totalMatches} correct)`
         : '';
       return pairs + matches;
     }
@@ -1104,7 +1104,7 @@ class PreAssessmentDataProcessor {
     if (question.questionSet?.correctPairs && Array.isArray(question.questionSet.correctPairs)) {
       const correctPairs = question.questionSet.correctPairs
         .map(pair => `${pair.audio} → ${pair.match}`)
-        .join(', ');
+        .join('\n');
       return correctPairs;
     }
     return `All ${question.questionSet?.correctPairs?.length || 0} pairs correct`;

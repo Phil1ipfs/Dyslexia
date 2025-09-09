@@ -996,6 +996,17 @@
   font-style: italic;
 }
 
+/* Phonological awareness pairing styles */
+.pre-assessment-results__comparison-value {
+  line-height: 1.6;
+}
+
+.pre-assessment-results__comparison-value--phonological {
+  font-family: 'Courier New', monospace;
+  white-space: pre-wrap;
+  line-height: 1.8;
+}
+
 /* Fix difficulty text visibility */
 .pre-assessment-results__comparison-row:last-child .pre-assessment-results__comparison-value {
   color: #4b5563 !important;
