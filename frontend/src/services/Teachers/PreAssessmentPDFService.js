@@ -190,27 +190,14 @@ class PreAssessmentPDFService {
     pdf.setFont('helvetica', 'bold');
     pdf.text('ASSESSMENT OVERVIEW', margin + 6, yPos + 7);
     
-    // Reading level badge with clean styling - use enhanced reading level info
-    const readingLevelInfo = assessmentData.readingLevelInfo;
+    // Simple reading level badge - just show the reading level without complex logic
     const readingLevel = assessmentData.readingLevel || 'Not Assessed';
-    
-    // Determine display text and badge color based on assessment type
-    let levelText = readingLevel;
-    let badgeColor = [80, 140, 80]; // Default green
-    
-    if (readingLevelInfo && readingLevelInfo.hasProgressData) {
-      // Post-assessment data available
-      levelText = readingLevel + ' (Post)';
-      badgeColor = [70, 90, 150]; // Blue for post-assessment
-    } else {
-      // Pre-assessment only
-      levelText = readingLevel + ' (Pre)';
-      badgeColor = [120, 120, 120]; // Gray for pre-assessment only
-    }
+    const levelText = readingLevel;
+    const badgeColor = [80, 140, 80]; // Simple green badge
     
     const badgeWidth = pdf.getTextWidth(levelText) + 12;
     
-    // Clean badge with appropriate color
+    // Clean badge
     pdf.setFillColor(badgeColor[0], badgeColor[1], badgeColor[2]);
     pdf.rect(pageWidth - margin - badgeWidth - 6, yPos + 1, badgeWidth, 8, 'F');
     
@@ -229,24 +216,11 @@ class PreAssessmentPDFService {
     // Overall Score Card with clean header
     this.addCleanOverviewCard(pdf, margin, yPos, cardWidth, cardHeight, 
       'OVERALL SCORE', `${assessmentData.correctAnswers || 0}/45`, 
-      `${Math.round(((assessmentData.correctAnswers || 0) / 45) * 100)}%`);
+      'Questions Answered');
     
-    // Reading Level Card with enhanced information
-    let readingLevelTitle = 'READING LEVEL';
-    let readingLevelSubtext = 'Determined';
-    
-    if (readingLevelInfo) {
-      if (readingLevelInfo.hasProgressData) {
-        readingLevelTitle = 'CURRENT LEVEL';
-        readingLevelSubtext = 'Post-Assessment';
-      } else {
-        readingLevelTitle = 'READING LEVEL'; 
-        readingLevelSubtext = 'Pre-Assessment';
-      }
-    }
-    
+    // Simple Reading Level Card
     this.addCleanOverviewCard(pdf, margin + cardWidth + 10, yPos, cardWidth, cardHeight,
-      readingLevelTitle, readingLevel, readingLevelSubtext);
+      'READING LEVEL', readingLevel, 'Determined');
     
     // Assessment Date Card with clean header
     const completedDate = assessmentData.completedAt ? 

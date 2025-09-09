@@ -186,36 +186,22 @@ const PreAssessmentResults = ({ assessmentData, userResponses, student }) => {
     if (userResponses && Array.isArray(userResponses) && userResponses.length > 0) {
       console.log('Processing user responses:', userResponses);
       
-      // TODO: In a full implementation, you would fetch category_results data from the backend here
-      // For now, we'll simulate checking for category_results data
-      // Example: const categoryResults = await fetchCategoryResults(student.id);
-      const categoryResults = null; // This should come from an API call in real implementation
+      // Use simple processing - just process the pre-assessment responses
+      const processed = PreAssessmentDataProcessor.processStudentResponses(userResponses);
       
-      // Use enhanced processing that properly handles reading level determination
-      const processed = PreAssessmentDataProcessor.processStudentResponsesWithReadingLevel(
-        userResponses, 
-        null, // preAssessmentQuestions (optional)
-        student, // student data from users table
-        categoryResults // category_results data (will be null for pre-assessment only students)
-      );
+      // Use actual student reading level from database if available
+      if (student && student.readingLevel) {
+        processed.readingLevel = student.readingLevel;
+      }
       
-      console.log('Enhanced processed data:', processed);
-      console.log('Reading level info:', processed.readingLevelInfo);
-      
+      console.log('Processed data:', processed);
       setProcessedData(processed);
     } else if (assessmentData && assessmentData.skillDetails) {
       // Fallback to existing assessment data format
       let processedAssessment = { ...assessmentData };
-      
-      // Apply the same logic for fallback data
-      const categoryResults = null; // Should fetch this from backend
-      const readingLevelInfo = PreAssessmentDataProcessor.determineCurrentReadingLevel(student, categoryResults);
-      
-      processedAssessment.readingLevel = readingLevelInfo.currentLevel;
-      processedAssessment.readingLevelInfo = readingLevelInfo;
-      processedAssessment.displayReadingLevel = readingLevelInfo.displayText;
-      processedAssessment.hasProgressData = readingLevelInfo.hasProgressData;
-      
+      if (student && student.readingLevel) {
+        processedAssessment.readingLevel = student.readingLevel;
+      }
       setProcessedData(processedAssessment);
     }
   }, [assessmentData, userResponses, student]);
@@ -642,8 +628,17 @@ const PreAssessmentResults = ({ assessmentData, userResponses, student }) => {
           Assessment Summary
         </h3>
         <p className="pre-assessment-results__conclusion-text">
-          Based on the pre-assessment results, the student has been 
-          placed at the <strong>{dataToDisplay.readingLevel}</strong> reading level. 
+          {student && student.categoryResults && student.categoryResults.length > 0 ? (
+            <>
+              Based on both pre-assessment and post-assessment results, the student is currently at the <strong>{dataToDisplay.readingLevel}</strong> reading level. 
+              The student has completed multiple assessment phases and their progress is being tracked across various skill categories.
+            </>
+          ) : (
+            <>
+              Based on the pre-assessment results, the student has been 
+              placed at the <strong>{dataToDisplay.readingLevel}</strong> reading level.
+            </>
+          )}
           {dataToDisplay.focusAreas && dataToDisplay.focusAreas.length > 0 && (
             <>
              
@@ -651,12 +646,17 @@ const PreAssessmentResults = ({ assessmentData, userResponses, student }) => {
           )}
         </p>
         
-        {dataToDisplay.overallScore >= 90 && (
+        {student && student.categoryResults && student.categoryResults.length > 0 ? (
+          <div className="pre-assessment-results__focus-areas">
+            <strong>Progress Tracking Active!</strong> The student has progressed beyond the initial assessment phase 
+            and is actively working on skill-specific assessments and interventions as needed.
+          </div>
+        ) : dataToDisplay.overallScore >= 90 ? (
           <div className="pre-assessment-results__focus-areas">
             <strong>Excellent Performance!</strong> The student demonstrates strong reading skills 
             across all assessed categories and is ready for grade-level instruction.
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Process Note */}
