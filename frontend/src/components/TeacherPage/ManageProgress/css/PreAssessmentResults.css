@@ -112,29 +112,29 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
   
-  /* Reading Level Badge Colors - Aligned with other components */
+  /* Reading Level Badge Colors - Uniform Blue Theme */
   .pre-assessment-results__score-badge.reading-level-early {
-    background: linear-gradient(135deg, #1e548d, #3B4F81);
+    background: linear-gradient(135deg, #2c3a6b, #3B4F81);
     color: white;
   }
   
   .pre-assessment-results__score-badge.reading-level-developing {
-    background: linear-gradient(135deg, #FF9800, #F57C00);
+    background: linear-gradient(135deg, #3B4F81, #4a5494);
     color: white;
   }
   
   .pre-assessment-results__score-badge.reading-level-fluent {
-    background: linear-gradient(135deg, #4CAF50, #388E3C);
+    background: linear-gradient(135deg, #4a5494, #556bb3);
     color: white;
   }
   
   .pre-assessment-results__score-badge.reading-level-advanced {
-    background: linear-gradient(135deg, #3F51B5, #303F9F);
+    background: linear-gradient(135deg, #556bb3, #6484d4);
     color: white;
   }
   
   .pre-assessment-results__score-badge.reading-level-not-assessed {
-    background: linear-gradient(135deg, #F9A825, #F57F17);
+    background: linear-gradient(135deg, #4a5494, #6b7280);
     color: white;
   }
   
@@ -450,6 +450,36 @@
     color: #6b7280;
     font-size: 0.875rem;
     font-style: italic;
+    margin: 0.5rem 0;
+  }
+
+  /* Image Preview Button Styles */
+  .pre-assessment-results__image-preview-btn {
+    background: linear-gradient(135deg, #4a5494, #3B4F81);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 8px rgba(74, 84, 148, 0.2);
+    font-style: normal;
+  }
+
+  .pre-assessment-results__image-preview-btn:hover {
+    background: linear-gradient(135deg, #3B4F81, #2c3a6b);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(74, 84, 148, 0.3);
+  }
+
+  .pre-assessment-results__image-preview-btn:focus {
+    outline: 2px solid #4a5494;
+    outline-offset: 2px;
   }
   
   .pre-assessment-results__displayed-text,
@@ -533,9 +563,8 @@
   }
   
   .pre-assessment-results__icon-incorrect {
-    color: #4a5494;
+    color: #FF4757;
     margin-left: 5px;
-    opacity: 0.7;
   }
   
   /* ===== CONCLUSION SECTION ===== */

@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FaInfoCircle, FaChartBar, FaExpandArrowsAlt, FaCompressArrowsAlt,
   FaCheckCircle, FaTimesCircle, FaClock, FaUser, FaCalendarAlt,
   FaClipboardList, FaQuestionCircle, FaLightbulb, FaFileAlt, FaImage,
-  FaVolumeUp, FaBook
+  FaVolumeUp, FaBook, FaEye, FaExclamationCircle
 } from 'react-icons/fa';
 
 import './css/PreAssessmentResults.css';
+import ImagePreviewModal from './ImagePreviewModal';
+import PreAssessmentDataProcessor from '../../../services/Teachers/PreAssessmentDataProcessor';
 // Helper function to render question answers based on question type
-const renderQuestionAnswers = (question) => {
+const renderQuestionAnswers = (question, onImageClick) => {
   const renderStudentAnswer = () => {
     const questionType = question.questionType || question.category;
     
@@ -124,10 +126,52 @@ const renderQuestionAnswers = (question) => {
   );
 };
 
-const PreAssessmentResults = ({ assessmentData }) => {
+const PreAssessmentResults = ({ assessmentData, userResponses }) => {
   const [expandedSkills, setExpandedSkills] = useState({});
+  const [processedData, setProcessedData] = useState(null);
+  const [imagePreview, setImagePreview] = useState({
+    isOpen: false,
+    imageUrl: '',
+    title: '',
+    questionText: ''
+  });
 
-  if (!assessmentData) {
+  // Process the assessment data when component mounts or data changes
+  useEffect(() => {
+    if (userResponses && Array.isArray(userResponses) && userResponses.length > 0) {
+      console.log('Processing user responses:', userResponses);
+      const processed = PreAssessmentDataProcessor.processStudentResponses(userResponses);
+      console.log('Processed data:', processed);
+      setProcessedData(processed);
+    } else if (assessmentData && assessmentData.skillDetails) {
+      // Fallback to existing assessment data format
+      setProcessedData(assessmentData);
+    }
+  }, [assessmentData, userResponses]);
+
+  // Handle image preview
+  const handleImageClick = (imageUrl, title, questionText) => {
+    setImagePreview({
+      isOpen: true,
+      imageUrl,
+      title: title || 'Question Image',
+      questionText: questionText || ''
+    });
+  };
+
+  const handleCloseImagePreview = () => {
+    setImagePreview({
+      isOpen: false,
+      imageUrl: '',
+      title: '',
+      questionText: ''
+    });
+  };
+
+  // Use processed data if available, otherwise fall back to original assessmentData
+  const dataToDisplay = processedData || assessmentData;
+
+  if (!dataToDisplay) {
     return (
       <div className="pre-assessment-results__empty-state">
         <FaInfoCircle size={48} />
@@ -137,18 +181,18 @@ const PreAssessmentResults = ({ assessmentData }) => {
     );
   }
 
-  if (!assessmentData.hasCompleted) {
+  if (!dataToDisplay.hasCompleted) {
     return (
       <div className="pre-assessment-results__empty-state">
         <FaInfoCircle size={48} />
         <h3>Pre-Assessment Not Completed</h3>
-        <p>{assessmentData.message || 'This student has not completed the pre-assessment yet.'}</p>
+        <p>{dataToDisplay.message || 'This student has not completed the pre-assessment yet.'}</p>
       </div>
     );
   }
 
   // Check if skillDetails is missing
-  if (!assessmentData.skillDetails || assessmentData.skillDetails.length === 0) {
+  if (!dataToDisplay.skillDetails || dataToDisplay.skillDetails.length === 0) {
     return (
       <div className="pre-assessment-results__empty-state">
         <FaInfoCircle size={48} />
@@ -261,8 +305,8 @@ const PreAssessmentResults = ({ assessmentData }) => {
             <FaChartBar className="pre-assessment-results__overview-icon" />
             Assessment Overview
           </h3>
-          <div className={`pre-assessment-results__score-badge ${getReadingLevelClass(assessmentData.readingLevel)}`}>
-            {assessmentData.readingLevel}
+          <div className={`pre-assessment-results__score-badge ${getReadingLevelClass(dataToDisplay.readingLevel)}`}>
+            {dataToDisplay.readingLevel}
           </div>
         </div>
 
@@ -275,7 +319,7 @@ const PreAssessmentResults = ({ assessmentData }) => {
             <div className="pre-assessment-results__overview-item-content">
               <div className="pre-assessment-results__overview-item-label">Overall Score</div>
               <div className="pre-assessment-results__overview-item-value">
-                {Math.max(0, assessmentData.correctAnswers || 0)}/{Math.max(1, assessmentData.totalQuestions || 1)} ({Math.max(0, Math.min(100, assessmentData.overallScore || 0))}%)
+                {Math.max(0, dataToDisplay.correctAnswers || 0)}/{Math.max(1, dataToDisplay.totalQuestions || 1)} ({Math.max(0, Math.min(100, dataToDisplay.overallScore || 0))}%)
               </div>
             </div>
           </div>
@@ -287,7 +331,7 @@ const PreAssessmentResults = ({ assessmentData }) => {
             <div className="pre-assessment-results__overview-item-content">
               <div className="pre-assessment-results__overview-item-label">Completed On</div>
               <div className="pre-assessment-results__overview-item-value">
-                {formatDate(assessmentData.completedAt)}
+                {formatDate(dataToDisplay.completedAt)}
               </div>
             </div>
           </div>
@@ -299,7 +343,7 @@ const PreAssessmentResults = ({ assessmentData }) => {
             <div className="pre-assessment-results__overview-item-content">
               <div className="pre-assessment-results__overview-item-label">Time Taken</div>
               <div className="pre-assessment-results__overview-item-value">
-                {formatTime(Math.max(0, assessmentData.totalResponseTime || 0))}
+                {formatTime(Math.max(0, dataToDisplay.totalResponseTime || 0))}
               </div>
             </div>
           </div>
@@ -314,7 +358,7 @@ const PreAssessmentResults = ({ assessmentData }) => {
         </h3>
 
         <div className="pre-assessment-results__skill-list">
-          {assessmentData.skillDetails && assessmentData.skillDetails.map((skill, index) => (
+          {dataToDisplay.skillDetails && dataToDisplay.skillDetails.map((skill, index) => (
             <div key={skill.category} className="pre-assessment-results__skill-item">
               <div className="pre-assessment-results__skill-header">
                 <div className="pre-assessment-results__skill-title">
@@ -382,7 +426,17 @@ const PreAssessmentResults = ({ assessmentData }) => {
 
                           {question.questionImage && (
                             <div className="pre-assessment-results__question-media">
-                              <FaImage /> Image provided
+                              <button
+                                className="pre-assessment-results__image-preview-btn"
+                                onClick={() => handleImageClick(
+                                  question.questionImage,
+                                  `Question ${qIndex + 1} Image`,
+                                  question.questionText
+                                )}
+                                title="Click to view image"
+                              >
+                                <FaEye /> View Image
+                              </button>
                             </div>
                           )}
 
@@ -462,7 +516,7 @@ const PreAssessmentResults = ({ assessmentData }) => {
                           )}
 
                           {/* Question-type specific answer display */}
-                          {renderQuestionAnswers(question)}
+                          {renderQuestionAnswers(question, handleImageClick)}
                         </div>
                       </div>
                     ))}
@@ -481,16 +535,16 @@ const PreAssessmentResults = ({ assessmentData }) => {
           Assessment Summary
         </h3>
         <p className="pre-assessment-results__conclusion-text">
-          Based on the pre-assessment results, <strong>{assessmentData.studentName}</strong> has been 
-          placed at the <strong>{assessmentData.readingLevel}</strong> reading level. 
-          {assessmentData.focusAreas && assessmentData.focusAreas.length > 0 && (
+          Based on the pre-assessment results, the student has been 
+          placed at the <strong>{dataToDisplay.readingLevel}</strong> reading level. 
+          {dataToDisplay.focusAreas && dataToDisplay.focusAreas.length > 0 && (
             <>
              
             </>
           )}
         </p>
         
-        {assessmentData.overallScore >= 90 && (
+        {dataToDisplay.overallScore >= 90 && (
           <div className="pre-assessment-results__focus-areas">
             <strong>Excellent Performance!</strong> The student demonstrates strong reading skills 
             across all assessed categories and is ready for grade-level instruction.
@@ -509,6 +563,15 @@ const PreAssessmentResults = ({ assessmentData }) => {
           </p>
         </div>
       </div>
+
+      {/* Image Preview Modal */}
+      <ImagePreviewModal
+        isOpen={imagePreview.isOpen}
+        onClose={handleCloseImagePreview}
+        imageUrl={imagePreview.imageUrl}
+        title={imagePreview.title}
+        questionText={imagePreview.questionText}
+      />
     </div>
   );
 };
