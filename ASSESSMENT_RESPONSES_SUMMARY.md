@@ -1,205 +1,36 @@
-# Assessment Response Systems - Complete Configuration
-
-## ✅ PROPERLY CONFIGURED SYSTEMS
-
-Both assessment response systems are **properly configured** and working correctly as **READ-ONLY** interfaces for the web application.
-
----
-
-## 🎯 1. PRE-ASSESSMENT USER RESPONSES
-
-### Database & Collection
-- **Database**: `Pre_Assessment`
-- **Collection**: `user_responses`
-- **Purpose**: CRLA screening assessment responses
-
-### Data Structure (Example)
-```json
-{
-  "_id": "ObjectId",
-  "studentId": 202533333,
-  "assessmentId": "1", 
-  "questionId": "AK_002",
-  "category": "Alphabet Knowledge",
-  "questionType": "patinig",
-  "response": ["2"],
-  "isCorrect": true,
-  "responseTime": 6.2,
-  "answeredAt": "2025-08-18T12:03:32.700Z",
-  "createdAt": "2025-08-18T12:03:32.700Z"
-}
-```
-
-### Backend Implementation
-- **Controller**: `backend/controllers/Teachers/preAssessmentController.js`
-  - Method: `getPreAssessmentResults()`
-  - Lines: 641-727
-- **Routes**: `backend/routes/Teachers/preAssessmentRoutes.js`  
-  - Production: `GET /api/pre-assessment/student-results/:id`
-  - Test: `GET /api/pre-assessment/test/student-results/:id`
-- **Model**: Uses direct database collection access (no Mongoose model)
-
-### Key Features
-- ✅ Integer studentId support (202533333, 2025121, etc.)
-- ✅ Compares responses with pre-assessment question bank
-- ✅ Calculates reading level and percentage
-- ✅ Shows scoring analysis and reading level determination
-- ✅ READ-ONLY (no creation/modification allowed)
-
----
-
-## 🎯 2. MAIN ASSESSMENT STUDENT RESPONSES
-
-### Database & Collection  
-- **Database**: `test`
-- **Collection**: `student_responses`
-- **Purpose**: Category-based main assessment responses
-
-### Data Structure (Example)
-```json
-{
-  "_id": "ObjectId",
-  "studentId": 202533333,
-  "categoryId": "ObjectId(683a51d3168ffbb611dab96a)",
-  "questionId": "AK_001", 
-  "category": "Alphabet Knowledge",
-  "response": ["2"],
-  "correctMatches": 5,
-  "totalMatches": 5,
-  "isCorrect": true,
-  "responseTime": 7.4,
-  "answeredAt": "2025-08-18T12:15:25.500Z",
-  "createdAt": "2025-08-18T12:15:25.500Z",
-  "readingLevel": "High Emerging"
-}
-```
-
-### Backend Implementation
-- **Controller**: `backend/controllers/Teachers/mainAssessmentController.js`
-  - Methods: `getStudentResponses()`, `getStudentResults()`, `getStudentProgress()`
-  - Lines: 169-201, 206-255, 298+
-- **Routes**: `backend/routes/Teachers/mainAssessmentRoutes.js`
-  - Production: `GET /api/main-assessment/responses/:studentId`
-  - Production: `GET /api/main-assessment/results/:studentId/:category` 
-  - Production: `GET /api/main-assessment/progress/:studentId`
-  - Test: `GET /api/main-assessment/test/*` (same endpoints)
-- **Model**: `backend/models/Teachers/ManageProgress/studentResponseModel.js`
-
-### Key Features
-- ✅ Integer studentId support with validation
-- ✅ Category-wise filtering (`?category=X&readingLevel=Y`)
-- ✅ Detailed answer analysis with question comparison
-- ✅ Progress tracking across all categories
-- ✅ READ-ONLY (no creation/modification allowed)
-
----
-
-## 📊 KEY DIFFERENCES
-
-| Aspect | Pre-Assessment | Main Assessment |
-|--------|---------------|-----------------|
-| **Database** | `Pre_Assessment.user_responses` | `test.student_responses` |
-| **Purpose** | CRLA Screening | Category Assessment |
-| **Unique Fields** | `assessmentId`, `questionType` | `categoryId`, `readingLevel` |
-| **Response Analysis** | Reading level determination | Category-wise performance |
-| **Route Prefix** | `/api/pre-assessment/*` | `/api/main-assessment/*` |
-
----
-
-## 🔒 AUTHENTICATION & SECURITY
-
-### Production Endpoints
-- **Authentication Required**: JWT token with teacher/guro/admin roles
-- **Authorization**: `authenticateToken` + `authorize('teacher', 'guro', 'admin')`
-- **Access Control**: READ-ONLY operations only
-
-### Test Endpoints (Development Only)
-- **Environment**: `NODE_ENV=development`
-- **No Authentication**: Direct access for testing
-- **Same Functionality**: Identical to production endpoints
-
----
-
-## 🧪 TESTING STATUS
-
-### Comprehensive Tests ✅
-- ✅ **Endpoint Connectivity**: All endpoints respond correctly
-- ✅ **Error Handling**: Proper 404 responses for missing data
-- ✅ **Integer StudentId**: Validation and parsing working
-- ✅ **Filter Parameters**: Category and reading level filters functional
-- ✅ **Data Structure**: Models match actual database structure
-- ✅ **Authentication Bypass**: Development test routes working
-
-### Test Results
-- **Pre-Assessment Tests**: 4/4 passed
-- **Main Assessment Tests**: 4/4 passed  
-- **Overall Success Rate**: 100%
-
----
-
-## 🏗️ SYSTEM INTEGRATION
-
-### Server Route Registration
-```javascript
-// Pre-Assessment Routes  
-app.use('/api/pre-assessment', preAssessmentRoutes);
-
-// Main Assessment Routes
-app.use('/api/main-assessment', mainAssessmentRoutes);
-```
-
-### Database Connections
-```javascript
-// Pre-Assessment Database
-const preAssessmentDb = mongoose.connection.useDb('Pre_Assessment');
-const userResponsesCollection = preAssessmentDb.collection('user_responses');
-
-// Main Assessment Database  
-const testDb = mongoose.connection.useDb('test');
-const studentResponsesCollection = testDb.collection('student_responses');
-```
-
----
-
-## 📋 USAGE EXAMPLES
-
-### Pre-Assessment Results
-```bash
-# Get pre-assessment results for student
-GET /api/pre-assessment/student-results/202533333
-
-# Response includes:
-# - Individual question responses
-# - Reading percentage calculation  
-# - Reading level determination
-# - Score analysis per category
-```
-
-### Main Assessment Responses
-```bash
-# Get all responses for student
-GET /api/main-assessment/responses/202533333
-
-# Get filtered responses  
-GET /api/main-assessment/responses/202533333?category=Alphabet%20Knowledge
-
-# Get detailed results for specific category
-GET /api/main-assessment/results/202533333/Alphabet%20Knowledge
-
-# Get overall progress
-GET /api/main-assessment/progress/202533333
-```
-
----
-
-## ✅ VERIFICATION COMPLETE
-
-Both assessment response systems are:
-- ✅ **Properly Configured**: Correct database connections and collections
-- ✅ **Structurally Sound**: Data models match actual database structure  
-- ✅ **Functionally Complete**: All required endpoints implemented
-- ✅ **Security Compliant**: READ-ONLY access with proper authentication
-- ✅ **Integration Ready**: Routes registered and endpoints tested
-- ✅ **Distinction Clear**: Pre-assessment vs Main assessment properly separated
-
-**Status: PRODUCTION READY** 🚀
+/usr/bin/docker run --name ghcrioactionsjekyllbuildpagesv1013_77cfbf --label b90ef8 --workdir /github/workspace --rm -e "INPUT_SOURCE" -e "INPUT_DESTINATION" -e "INPUT_FUTURE" -e "INPUT_BUILD_REVISION" -e "INPUT_VERBOSE" -e "INPUT_TOKEN" -e "HOME" -e "GITHUB_JOB" -e "GITHUB_REF" -e "GITHUB_SHA" -e "GITHUB_REPOSITORY" -e "GITHUB_REPOSITORY_OWNER" -e "GITHUB_REPOSITORY_OWNER_ID" -e "GITHUB_RUN_ID" -e "GITHUB_RUN_NUMBER" -e "GITHUB_RETENTION_DAYS" -e "GITHUB_RUN_ATTEMPT" -e "GITHUB_ACTOR_ID" -e "GITHUB_ACTOR" -e "GITHUB_WORKFLOW" -e "GITHUB_HEAD_REF" -e "GITHUB_BASE_REF" -e "GITHUB_EVENT_NAME" -e "GITHUB_SERVER_URL" -e "GITHUB_API_URL" -e "GITHUB_GRAPHQL_URL" -e "GITHUB_REF_NAME" -e "GITHUB_REF_PROTECTED" -e "GITHUB_REF_TYPE" -e "GITHUB_WORKFLOW_REF" -e "GITHUB_WORKFLOW_SHA" -e "GITHUB_REPOSITORY_ID" -e "GITHUB_TRIGGERING_ACTOR" -e "GITHUB_WORKSPACE" -e "GITHUB_ACTION" -e "GITHUB_EVENT_PATH" -e "GITHUB_ACTION_REPOSITORY" -e "GITHUB_ACTION_REF" -e "GITHUB_PATH" -e "GITHUB_ENV" -e "GITHUB_STEP_SUMMARY" -e "GITHUB_STATE" -e "GITHUB_OUTPUT" -e "RUNNER_OS" -e "RUNNER_ARCH" -e "RUNNER_NAME" -e "RUNNER_ENVIRONMENT" -e "RUNNER_TOOL_CACHE" -e "RUNNER_TEMP" -e "RUNNER_WORKSPACE" -e "ACTIONS_RUNTIME_URL" -e "ACTIONS_RUNTIME_TOKEN" -e "ACTIONS_CACHE_URL" -e "ACTIONS_ID_TOKEN_REQUEST_URL" -e "ACTIONS_ID_TOKEN_REQUEST_TOKEN" -e "ACTIONS_RESULTS_URL" -e GITHUB_ACTIONS=true -e CI=true -v "/var/run/docker.sock":"/var/run/docker.sock" -v "/home/runner/work/_temp/_github_home":"/github/home" -v "/home/runner/work/_temp/_github_workflow":"/github/workflow" -v "/home/runner/work/_temp/_runner_file_commands":"/github/file_commands" -v "/home/runner/work/Dyslexia/Dyslexia":"/github/workspace" ghcr.io/actions/jekyll-build-pages:v1.0.13
+Configuration file: none
+To use retry middleware with Faraday v2.0+, install `faraday-retry` gem
+  Liquid Exception: Liquid syntax error (line 50): Variable '{{a}' was not properly terminated with regexp: /\}\}/ in backend/node_modules/balanced-match/README.md
+/usr/local/bundle/gems/liquid-4.0.4/lib/liquid/block_body.rb:136:in `raise_missing_variable_terminator': Liquid syntax error (line 50): Variable '{{a}' was not properly terminated with regexp: /\}\}/ (Liquid::SyntaxError)
+	from /usr/local/bundle/gems/liquid-4.0.4/lib/liquid/block_body.rb:128:in `create_variable'
+	from /usr/local/bundle/gems/liquid-4.0.4/lib/liquid/block_body.rb:39:in `parse'
+	from /usr/local/bundle/gems/liquid-4.0.4/lib/liquid/document.rb:10:in `parse'
+	from /usr/local/bundle/gems/liquid-4.0.4/lib/liquid/document.rb:5:in `parse'
+	from /usr/local/bundle/gems/liquid-4.0.4/lib/liquid/template.rb:130:in `parse'
+	from /usr/local/bundle/gems/liquid-4.0.4/lib/liquid/template.rb:114:in `parse'
+	from /usr/local/bundle/gems/jekyll-3.10.0/lib/jekyll/liquid_renderer/file.rb:13:in `block in parse'
+	from /usr/local/bundle/gems/jekyll-3.10.0/lib/jekyll/liquid_renderer/file.rb:49:in `measure_time'
+	from /usr/local/bundle/gems/jekyll-3.10.0/lib/jekyll/liquid_renderer/file.rb:12:in `parse'
+	from /usr/local/bundle/gems/jekyll-3.10.0/lib/jekyll/renderer.rb:121:in `render_liquid'
+	from /usr/local/bundle/gems/jekyll-3.10.0/lib/jekyll/renderer.rb:79:in `render_document'
+	from /usr/local/bundle/gems/jekyll-3.10.0/lib/jekyll/renderer.rb:62:in `run'
+	from /usr/local/bundle/gems/jekyll-3.10.0/lib/jekyll/site.rb:479:in `render_regenerated'
+	from /usr/local/bundle/gems/jekyll-3.10.0/lib/jekyll/site.rb:472:in `block in render_pages'
+	from /usr/local/bundle/gems/jekyll-3.10.0/lib/jekyll/site.rb:471:in `each'
+	from /usr/local/bundle/gems/jekyll-3.10.0/lib/jekyll/site.rb:471:in `render_pages'
+	from /usr/local/bundle/gems/jekyll-3.10.0/lib/jekyll/site.rb:192:in `render'
+	from /usr/local/bundle/gems/jekyll-3.10.0/lib/jekyll/site.rb:71:in `process'
+	from /usr/local/bundle/gems/jekyll-3.10.0/lib/jekyll/command.rb:28:in `process_site'
+	from /usr/local/bundle/gems/jekyll-3.10.0/lib/jekyll/commands/build.rb:65:in `build'
+	from /usr/local/bundle/gems/jekyll-3.10.0/lib/jekyll/commands/build.rb:36:in `process'
+	from /usr/local/bundle/gems/github-pages-232/bin/github-pages:70:in `block (3 levels) in <top (required)>'
+	from /usr/local/bundle/gems/mercenary-0.3.6/lib/mercenary/command.rb:220:in `block in execute'
+	from /usr/local/bundle/gems/mercenary-0.3.6/lib/mercenary/command.rb:220:in `each'
+	from /usr/local/bundle/gems/mercenary-0.3.6/lib/mercenary/command.rb:220:in `execute'
+	from /usr/local/bundle/gems/mercenary-0.3.6/lib/mercenary/program.rb:42:in `go'
+	from /usr/local/bundle/gems/mercenary-0.3.6/lib/mercenary.rb:19:in `program'
+	from /usr/local/bundle/gems/github-pages-232/bin/github-pages:6:in `<top (required)>'
+	from /usr/local/bundle/bin/github-pages:25:in `load'
+	from /usr/local/bundle/bin/github-pages:25:in `<main>'
+Error:  Logging at level: debug GitHub Pages: github-pages v232 GitHub Pages: jekyll v3.10.0 Theme: jekyll-theme-primer Theme source: /usr/local/bundle/gems/jekyll-theme-primer-0.6.0 Requiring: jekyll-github-metadata Requiring: jekyll-seo-tag Requiring: jekyll-coffeescript Requiring: jekyll-commonmark-ghpages Requiring: jekyll-gist Requiring: jekyll-github-metadata Requiring: jekyll-paginate Requiring: jekyll-relative-links Requiring: jekyll-optional-front-matter Requiring: jekyll-readme-index Requiring: jekyll-default-layout Requiring: jekyll-titles-from-headings GitHub Metadata: Initializing... Source: /github/workspace/. Destination: /github/workspace/./_site Incremental build: disabled. Enable with --incremental Generating... EntryFilter: excluded /node_modules Generating: JekyllOptionalFrontMatter::Generator finished in 0.025049962 seconds. Generating: JekyllReadmeIndex::Generator finished in 0.794561444 seconds. Generating: Jekyll::Paginate::Pagination finished in 7.815e-06 seconds. GitHub Metadata: Generating for Phil1ipfs/Dyslexia GitHub Metadata: Calling @client.pages("Phil1ipfs/Dyslexia", {}) Generating: JekyllRelativeLinks::Generator finished in 1.530253976 seconds. Generating: JekyllDefaultLayout::Generator finished in 0.004591668 seconds. Requiring: kramdown-parser-gfm Generating: JekyllTitlesFromHeadings::Generator finished in 0.122209611 seconds. Rendering: assets/css/style.scss Pre-Render Hooks: assets/css/style.scss Rendering Markup: assets/css/style.scss Rendering: ASSESSMENT_RESPONSES_SUMMARY.md Pre-Render Hooks: ASSESSMENT_RESPONSES_SUMMARY.md Rendering Markup: ASSESSMENT_RESPONSES_SUMMARY.md Rendering Layout: ASSESSMENT_RESPONSES_SUMMARY.md Layout source: theme GitHub Metadata: Calling @client.repository("Phil1ipfs/Dyslexia", {:accept=>"application/vnd.github.drax-preview+json"}) Rendering: CLAUDE.md Pre-Render Hooks: CLAUDE.md Rendering Markup: CLAUDE.md Rendering Layout: CLAUDE.md Layout source: theme Rendering: backend/node_modules/@aws-crypto/crc32/CHANGELOG.md Pre-Render Hooks: backend/node_modules/@aws-crypto/crc32/CHANGELOG.md Rendering Markup: backend/node_modules/@aws-crypto/crc32/CHANGELOG.md Rendering Layout: backend/node_modules/@aws-crypto/crc32/CHANGELOG.md Layout source: theme Rendering: backend/node_modules/@aws-crypto/crc32c/CHANGELOG.md Pre-Render Hooks: backend/node_modules/@aws-crypto/crc32c/CHANGELOG.md Rendering Markup: backend/node_modules/@aws-crypto/crc32c/CHANGELOG.md Rendering Layout: backend/node_modules/@aws-crypto/crc32c/CHANGELOG.md Layout source: theme Rendering: backend/node_modules/@aws-crypto/sha1-browser/CHANGELOG.md Pre-Render Hooks: backend/node_modules/@aws-crypto/sha1-browser/CHANGELOG.md Rendering Markup: backend/node_modules/@aws-crypto/sha1-browser/CHANGELOG.md Rendering Layout: backend/node_modules/@aws-crypto/sha1-browser/CHANGELOG.md Layout source: theme Rendering: backend/node_modules/@aws-crypto/sha256-browser/CHANGELOG.md Pre-Render Hooks: backend/node_modules/@aws-crypto/sha256-browser/CHANGELOG.md Rendering Markup: backend/node_modules/@aws-crypto/sha256-browser/CHANGELOG.md Rendering Layout: backend/node_modules/@aws-crypto/sha256-browser/CHANGELOG.md Layout source: theme Rendering: backend/node_modules/@aws-crypto/sha256-js/CHANGELOG.md Pre-Render Hooks: backend/node_modules/@aws-crypto/sha256-js/CHANGELOG.md Rendering Markup: backend/node_modules/@aws-crypto/sha256-js/CHANGELOG.md Rendering Layout: backend/node_modules/@aws-crypto/sha256-js/CHANGELOG.md Layout source: theme Rendering: backend/node_modules/@aws-crypto/supports-web-crypto/CHANGELOG.md Pre-Render Hooks: backend/node_modules/@aws-crypto/supports-web-crypto/CHANGELOG.md Rendering Markup: backend/node_modules/@aws-crypto/supports-web-crypto/CHANGELOG.md Rendering Layout: backend/node_modules/@aws-crypto/supports-web-crypto/CHANGELOG.md Layout source: theme Rendering: backend/node_modules/@aws-crypto/util/CHANGELOG.md Pre-Render Hooks: backend/node_modules/@aws-crypto/util/CHANGELOG.md Rendering Markup: backend/node_modules/@aws-crypto/util/CHANGELOG.md Rendering Layout: backend/node_modules/@a

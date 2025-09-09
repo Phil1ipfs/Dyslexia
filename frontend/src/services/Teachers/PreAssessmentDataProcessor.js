@@ -30,11 +30,11 @@ const PRE_ASSESSMENT_QUESTIONS = {
     questionImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/pre-assessment/image/1757026961201-l8mzg7m0f4.png",
     difficultyLevel: "low_emerging",
     options: [
-      { optionId: "1", optionText: "o", isCorrect: true },
-      { optionId: "2", optionText: "u", isCorrect: false },
+      { optionId: "1", optionText: "u", isCorrect: false },  // Fixed: match actual mobile app behavior
+      { optionId: "2", optionText: "o", isCorrect: true },   // Fixed: option 2 is actually correct
       { optionId: "3", optionText: "j", isCorrect: false }
     ],
-    correctAnswer: "1"
+    correctAnswer: "2"  // Fixed: correct answer is option 2
   },
   "AK_003": {
     questionId: "AK_003",
@@ -832,7 +832,13 @@ class PreAssessmentDataProcessor {
    * @returns {Object} Processed assessment data
    */
   static processStudentResponses(userResponses, preAssessmentQuestions = null) {
+    console.log('🔍 DEBUG: Processing student responses:', {
+      totalResponses: userResponses?.length,
+      firstResponse: userResponses?.[0]
+    });
+    
     if (!userResponses || !Array.isArray(userResponses)) {
+      console.log('❌ DEBUG: No user responses found');
       return {
         hasCompleted: false,
         message: 'No responses found for this student'
@@ -860,8 +866,11 @@ class PreAssessmentDataProcessor {
     // Create a map of answered questions
     const answeredQuestions = new Map();
     userResponses.forEach(response => {
+      console.log(`📝 DEBUG: Student answered ${response.questionId} (${response.category}) - Option: ${response.response?.[0]} - Correct: ${response.isCorrect}`);
       answeredQuestions.set(response.questionId, response);
     });
+    
+    console.log('📊 DEBUG: Answered questions map:', Array.from(answeredQuestions.keys()));
 
     // Process all questions (answered and unanswered) by category
     Object.keys(CATEGORY_MAPPINGS).forEach(categoryName => {
@@ -878,6 +887,7 @@ class PreAssessmentDataProcessor {
         const response = answeredQuestions.get(questionId);
         
         if (response) {
+          console.log(`✅ DEBUG: Processing answered question ${questionId} in ${categoryName}`);
           // Process answered question
           const processedQuestion = this.processQuestionResponse(question, response);
           categoryData.questions.push(processedQuestion);
@@ -911,14 +921,29 @@ class PreAssessmentDataProcessor {
       // Calculate category score based on answered questions
       categoryData.score = categoryData.answered > 0 ? 
         Math.round((categoryData.correct / categoryData.answered) * 100) : 0;
+      
+      console.log(`📈 DEBUG: ${categoryName} final stats:`, {
+        answered: categoryData.answered,
+        correct: categoryData.correct,
+        total: categoryData.total,
+        score: categoryData.score
+      });
     });
 
     // Convert to skill details format and add answered question counts
-    const skillDetails = Object.values(responsesByCategory).map(category => ({
-      ...category,
-      answeredQuestions: category.answered,  // Add this for component compatibility
-      totalQuestions: category.total         // Add this for component compatibility
-    }));
+    const skillDetails = Object.values(responsesByCategory).map(category => {
+      const result = {
+        ...category,
+        answeredQuestions: category.answered,  // Add this for component compatibility
+        totalQuestions: category.total         // Add this for component compatibility
+      };
+      console.log(`🎯 DEBUG: Final category result for ${category.categoryName}:`, {
+        answered: result.answeredQuestions,
+        total: result.totalQuestions,
+        questions: result.questions?.length
+      });
+      return result;
+    });
     
     // Calculate overall stats
     const overallScore = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
@@ -1022,7 +1047,8 @@ class PreAssessmentDataProcessor {
     const selectedOptionId = response.response[0];
     const selectedOption = question.options?.find(opt => opt.optionId === selectedOptionId);
     
-    return selectedOption ? selectedOption.optionText : `Option ${selectedOptionId}`;
+    // If we can't find the option text, just show what they selected - trust the mobile app validation
+    return selectedOption ? selectedOption.optionText : `Selected option ${selectedOptionId}`;
   }
 
   /**

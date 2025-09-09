@@ -39,6 +39,7 @@ const StudentProgressView = () => {
   const [student, setStudent] = useState(null);
   const [assessmentData, setAssessmentData] = useState(null);
   const [categoryResults, setCategoryResults] = useState(null);
+  const [userResponses, setUserResponses] = useState(null);
   
   // State for prescriptive analysis
   const [prescriptiveRecommendations, setPrescriptiveRecommendations] = useState([]);
@@ -84,6 +85,11 @@ const StudentProgressView = () => {
         
         setPreAssessmentCompleted(hasCompletedPreAssessment);
         setAssessmentData(preAssessmentData);
+
+        // Get pre-assessment user responses
+        const preAssessmentUserResponses = await StudentApiService.getPreAssessmentUserResponses(id);
+        console.log('Pre-assessment user responses received:', preAssessmentUserResponses);
+        setUserResponses(preAssessmentUserResponses);
 
         // Get data for progress report
         const fetchProgressData = async () => {
@@ -618,7 +624,7 @@ const StudentProgressView = () => {
             </div>
             <div className="literexia-panel-content">
               {assessmentData && assessmentData.skillDetails && assessmentData.skillDetails.length > 0 ? (
-                <PreAssessmentResults assessmentData={assessmentData} />
+                <PreAssessmentResults assessmentData={assessmentData} userResponses={userResponses} />
               ) : (
                 <div className="literexia-empty-state">
                   <FaExclamationTriangle />

@@ -252,6 +252,20 @@ const StudentApiService = {
     }
   },
 
+  // Get pre-assessment user responses
+  getPreAssessmentUserResponses: async (id) => {
+    try {
+      console.log(`Calling pre-assessment user responses with ID: ${id}`);
+      const { data } = await api.get(`${id}/pre-assessment-user-responses`);
+      console.log("Success! Received pre-assessment user responses:", data);
+      return data;
+    } catch (error) {
+      console.error(`Error fetching pre-assessment user responses for student ID ${id}:`, error);
+      console.error(`Full URL attempted: ${error.config?.url}`);
+      return [];
+    }
+  },
+
   // Parent profile
   getParentProfile: async (parentId) => {
     try {
