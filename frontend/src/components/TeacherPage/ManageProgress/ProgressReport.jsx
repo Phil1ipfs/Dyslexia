@@ -28,12 +28,16 @@ import {
   FaClock,
   FaEye,
   FaImage,
-  FaClipboardList
+  FaClipboardList,
+  FaFilePdf,
+  FaDownload,
+  FaSpinner
 } from 'react-icons/fa';
 
 import './css/ProgressReport.css';
 import ProgressApiService from '../../../services/Teachers/ManageProgress/ProgressApiService';
 import MainAssessmentService from '../../../services/Teachers/MainAssessmentService';
+import PdfReportService from '../../../services/Teachers/ManageProgress/PdfReportService';
 import ImagePreviewModal from './ImagePreviewModal';
 
 const ProgressReport = ({ progressData, onViewRecommendations }) => {
@@ -50,6 +54,11 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
     imageUrl: '',
     title: '',
     questionText: ''
+  });
+  const [pdfGeneration, setPdfGeneration] = useState({
+    isGenerating: false,
+    progress: 0,
+    error: null
   });
   
   useEffect(() => {
@@ -450,10 +459,66 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
     console.log('assessmentQuestions:', assessmentQuestions);
     console.log('expandedCategories:', expandedCategories);
   };
+
+  // PDF Generation function - integrated with PdfReportService
+  const generatePdfReport = async () => {
+    try {
+      setPdfGeneration({ isGenerating: true, progress: 0, error: null });
+      
+      // Prepare student data for PDF generation
+      const studentData = {
+        studentId: progressData?.studentId || 'N/A',
+        fullName: progressData?.studentName || `Student ${progressData?.studentId}`,
+        gradeLevel: progressData?.gradeLevel || 'Not specified',
+        readingLevel: progressData?.readingLevel || 'Unknown',
+        assessmentDate: progressData?.assessmentDate ? 
+          new Date(progressData.assessmentDate).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }) : 'Not specified'
+      };
+
+      // Progress callback function
+      const onProgress = (step, progress) => {
+        console.log(`${progress}% - ${step}`);
+        setPdfGeneration(prev => ({ ...prev, progress }));
+      };
+
+      // Generate PDF using the service
+      const pdfBlob = await PdfReportService.generateProgressReport(
+        studentData,
+        progressData,
+        studentResponses,
+        onProgress
+      );
+
+      // Create download link and trigger download
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Progress_Report_${studentData.studentId}_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      console.log('📄 PDF Report Generated and Downloaded Successfully!');
+      setPdfGeneration({ isGenerating: false, progress: 0, error: null });
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setPdfGeneration({
+        isGenerating: false,
+        progress: 0,
+        error: error.message || 'Failed to generate PDF report. Please try again.'
+      });
+    }
+  };
   
   return (
     <div className="student-progress-container">
-      {/* Progress info section */}
+      {/* Progress info section with PDF download */}
       <div className="student-progress-info">
         <FaInfoCircle className="student-progress-info-icon" />
         <div className="student-progress-info-text">
@@ -463,6 +528,46 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
             completed on <strong>{assessmentDate}</strong>. Current reading level: <strong>{readingLevel}</strong>.
             You can view their performance across the key reading skill categories.
           </p>
+        </div>
+        <div className="student-progress-pdf-actions">
+          <button
+            className="student-progress-pdf-download-btn"
+            onClick={generatePdfReport}
+            disabled={pdfGeneration.isGenerating}
+            title="Download comprehensive PDF report"
+          >
+            {pdfGeneration.isGenerating ? (
+              <>
+                <FaSpinner className="student-progress-pdf-spinner" />
+                Generating PDF...
+              </>
+            ) : (
+              <>
+                <FaFilePdf />
+                <FaDownload className="student-progress-pdf-download-icon" />
+                Download PDF Report
+              </>
+            )}
+          </button>
+          {pdfGeneration.isGenerating && (
+            <div className="student-progress-pdf-progress">
+              <div className="student-progress-pdf-progress-bar">
+                <div 
+                  className="student-progress-pdf-progress-fill" 
+                  style={{ width: `${pdfGeneration.progress}%` }}
+                ></div>
+              </div>
+              <span className="student-progress-pdf-progress-text">
+                {pdfGeneration.progress}%
+              </span>
+            </div>
+          )}
+          {pdfGeneration.error && (
+            <div className="student-progress-pdf-error">
+              <FaExclamationTriangle />
+              {pdfGeneration.error}
+            </div>
+          )}
         </div>
       </div>
       
