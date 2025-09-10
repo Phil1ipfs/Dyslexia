@@ -21,16 +21,36 @@ import {
   FaVolumeUp,
   FaFileAlt,
   FaTools,
-  FaGraduationCap
+  FaGraduationCap,
+  FaExpandArrowsAlt,
+  FaCompressArrowsAlt,
+  FaTimesCircle,
+  FaClock,
+  FaEye,
+  FaImage,
+  FaClipboardList
 } from 'react-icons/fa';
 
 import './css/ProgressReport.css';
+import ProgressApiService from '../../../services/Teachers/ManageProgress/ProgressApiService';
+import MainAssessmentService from '../../../services/Teachers/MainAssessmentService';
+import ImagePreviewModal from './ImagePreviewModal';
 
 const ProgressReport = ({ progressData, onViewRecommendations }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTimeframe, setSelectedTimeframe] = useState('current');
   const [animated, setAnimated] = useState(false);
   const animatedRef = useRef(false);
+  const [expandedCategories, setExpandedCategories] = useState({});
+  const [studentResponses, setStudentResponses] = useState([]);
+  const [assessmentQuestions, setAssessmentQuestions] = useState([]);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [imagePreview, setImagePreview] = useState({
+    isOpen: false,
+    imageUrl: '',
+    title: '',
+    questionText: ''
+  });
   
   useEffect(() => {
     if (animatedRef.current) return;
@@ -65,6 +85,64 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
     
     return () => clearTimeout(timer);
   }, []);
+
+  // Fetch detailed data when component mounts
+  useEffect(() => {
+    if (progressData && progressData.studentId) {
+      fetchDetailedData(progressData.studentId);
+    }
+  }, [progressData]);
+
+  // Fetch student responses and assessment questions
+  const fetchDetailedData = async (studentId) => {
+    try {
+      setLoadingDetails(true);
+      
+      // Fetch student responses
+      const responsesResult = await ProgressApiService.getStudentResponses(studentId);
+      if (responsesResult.success && responsesResult.data) {
+        setStudentResponses(responsesResult.data);
+      }
+      
+      // Fetch assessment questions - we'll get them all since we need them for comparison
+      const assessmentsResult = await MainAssessmentService.getAllAssessments();
+      if (assessmentsResult.success && assessmentsResult.data) {
+        setAssessmentQuestions(assessmentsResult.data);
+      }
+      
+    } catch (error) {
+      console.error('Error fetching detailed data:', error);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  // Toggle category expansion
+  const toggleCategoryExpansion = (categoryName) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryName]: !prev[categoryName]
+    }));
+  };
+
+  // Handle image preview
+  const handleImageClick = (imageUrl, title, questionText) => {
+    setImagePreview({
+      isOpen: true,
+      imageUrl,
+      title: title || 'Question Image',
+      questionText: questionText || ''
+    });
+  };
+
+  const handleCloseImagePreview = () => {
+    setImagePreview({
+      isOpen: false,
+      imageUrl: '',
+      title: '',
+      questionText: ''
+    });
+  };
   
   // Check if we have valid category results data
   const hasCategoryResults = progressData && 
@@ -202,6 +280,176 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
         return 'reading-level-not-assessed';
     }
   };
+
+  // Get detailed questions for a category
+  const getCategoryQuestions = (categoryName) => {
+    console.log('🔍 getCategoryQuestions called for:', categoryName);
+    console.log('studentResponses available:', !!studentResponses, studentResponses?.length);
+    console.log('assessmentQuestions available:', !!assessmentQuestions, assessmentQuestions?.length);
+    
+    if (!studentResponses || !assessmentQuestions) {
+      console.log('❌ Missing data - studentResponses or assessmentQuestions not available');
+      return [];
+    }
+    
+    // Filter student responses for this category
+    const categoryResponses = studentResponses.filter(response => 
+      response.category && response.category.toLowerCase().includes(categoryName.toLowerCase())
+    );
+    
+    console.log('📝 Found category responses:', categoryResponses.length, categoryResponses);
+    
+    // Map responses to questions with details
+    const questionsWithDetails = categoryResponses.map(response => {
+      // Find the assessment question details
+      const assessmentQuestion = findAssessmentQuestion(response.questionId, categoryName);
+      
+      console.log('🔍 Question details for', response.questionId, ':', assessmentQuestion);
+      
+      return {
+        ...response,
+        questionDetails: assessmentQuestion,
+        questionText: assessmentQuestion?.questionText || 'Question text not available',
+        questionImage: assessmentQuestion?.questionImage,
+        correctAnswer: getCorrectAnswer(assessmentQuestion, response.category),
+        studentAnswer: formatStudentResponse(response, assessmentQuestion)
+      };
+    }).sort((a, b) => {
+      // Sort by question ID for consistent ordering
+      const aId = a.questionId || '';
+      const bId = b.questionId || '';
+      return aId.localeCompare(bId);
+    });
+    
+    console.log('✅ Final questions with details:', questionsWithDetails);
+    return questionsWithDetails;
+  };
+
+  // Find assessment question by ID and category
+  const findAssessmentQuestion = (questionId, categoryName) => {
+    if (!assessmentQuestions || !questionId) return null;
+    
+    for (const assessment of assessmentQuestions) {
+      if (assessment.questions && Array.isArray(assessment.questions)) {
+        const question = assessment.questions.find(q => q.questionId === questionId);
+        if (question) {
+          return question;
+        }
+      }
+    }
+    return null;
+  };
+
+  // Get correct answer based on question type
+  const getCorrectAnswer = (questionDetails, category) => {
+    if (!questionDetails) return 'Not available';
+    
+    const categoryLower = category?.toLowerCase() || '';
+    
+    if (categoryLower.includes('alphabet')) {
+      // Multiple choice - find correct option
+      if (questionDetails.choiceOptions) {
+        const correctOption = questionDetails.choiceOptions.find(opt => opt.isCorrect);
+        return correctOption ? correctOption.optionText : 'Correct option';
+      }
+    } else if (categoryLower.includes('phonological')) {
+      // Matching - show correct pairs
+      if (questionDetails.questionSet && questionDetails.questionSet[0] && questionDetails.questionSet[0].correctPairs) {
+        return `${questionDetails.questionSet[0].correctPairs.length} correct pairs`;
+      }
+    } else if (categoryLower.includes('decoding')) {
+      // Drag and drop - show correct sequence
+      if (questionDetails.correctSequence && Array.isArray(questionDetails.correctSequence)) {
+        return questionDetails.correctSequence.join('');
+      }
+    } else if (categoryLower.includes('word')) {
+      // Fill blank - show correct answer
+      if (questionDetails.correctAnswer && Array.isArray(questionDetails.correctAnswer)) {
+        return questionDetails.correctAnswer.join(', ');
+      }
+    } else if (categoryLower.includes('comprehension')) {
+      // Text input - show correct answer
+      return questionDetails.correctAnswer || 'Expected answer';
+    }
+    
+    return 'Answer format not recognized';
+  };
+
+  // Format student response for display
+  const formatStudentResponse = (response, questionDetails) => {
+    if (!response.response) return 'No response';
+    
+    const categoryLower = response.category?.toLowerCase() || '';
+    
+    if (categoryLower.includes('alphabet')) {
+      // Multiple choice - show selected option
+      if (Array.isArray(response.response) && response.response[0]) {
+        const optionId = response.response[0];
+        if (questionDetails && questionDetails.choiceOptions) {
+          const selectedOption = questionDetails.choiceOptions.find(opt => opt.optionId === optionId);
+          return selectedOption ? selectedOption.optionText : `Option ${optionId}`;
+        }
+        return `Option ${optionId}`;
+      }
+    } else if (categoryLower.includes('phonological')) {
+      // Matching - show matches made
+      if (response.correctMatches !== undefined && response.totalMatches !== undefined) {
+        return `${response.correctMatches}/${response.totalMatches} correct matches`;
+      }
+    } else if (categoryLower.includes('decoding')) {
+      // Drag and drop - show sequence
+      if (Array.isArray(response.response)) {
+        return response.response.join('');
+      }
+    } else if (categoryLower.includes('word')) {
+      // Fill blank - show selected options
+      if (Array.isArray(response.response)) {
+        return response.response.join(', ');
+      }
+    } else if (categoryLower.includes('comprehension')) {
+      // Text input - show response
+      if (Array.isArray(response.response)) {
+        return response.response.join(', ');
+      }
+    }
+    
+    return Array.isArray(response.response) ? response.response.join(', ') : String(response.response);
+  };
+
+  // Format time for display
+  const formatTime = (seconds) => {
+    if (!seconds || seconds < 0 || !Number.isFinite(seconds)) return 'Not recorded';
+    const sanitizedSeconds = Math.max(0, Math.round(seconds));
+    const minutes = Math.floor(sanitizedSeconds / 60);
+    const remainingSeconds = sanitizedSeconds % 60;
+    return `${minutes}m ${remainingSeconds}s`;
+  };
+
+  // Get answer status badge
+  const getAnswerStatusBadge = (isCorrect) => {
+    if (isCorrect) {
+      return (
+        <span className="student-progress-status-badge student-progress-status-badge--correct">
+          <FaCheckCircle /> Correct
+        </span>
+      );
+    } else {
+      return (
+        <span className="student-progress-status-badge student-progress-status-badge--incorrect">
+          <FaTimesCircle /> Incorrect
+        </span>
+      );
+    }
+  };
+
+  // Debug function to check data - keep for database troubleshooting
+  const debugData = () => {
+    console.log('🔍 Debug Progress Report Data:');
+    console.log('progressData:', progressData);
+    console.log('studentResponses:', studentResponses);
+    console.log('assessmentQuestions:', assessmentQuestions);
+    console.log('expandedCategories:', expandedCategories);
+  };
   
   return (
     <div className="student-progress-container">
@@ -304,8 +552,8 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
             </div>
           </div>
           
-          {/* Category Cards Grid */}
-          <div className="student-progress-category-grid">
+          {/* Enhanced Category Cards - Individual Row Layout like Pre Assessment */}
+          <div className="student-progress-categories-list">
             {progressData.categories.map((category, index) => {
               const categoryName = category.categoryName || `Category ${index + 1}`;
               const displayName = typeof categoryName === 'string' ?
@@ -317,140 +565,156 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
               const score = Number(category.score) || 0;
               const isPassed = category.isPassed || score >= 75;
               
-              // Check if this category has interventions
-              const hasInterventions = category.interventions && category.interventions.length > 0;
-              
-              // Track intervention progress
-              const interventionProgress = category.interventionProgress || 0;
-              const showInterventionProgress = hasInterventions && interventionProgress > 0;
-              
-              // Simplified status with intervention tracking
-              let status, statusClass;
-              if (score >= 75) {
-                status = "Passed";
-                statusClass = "passed";
-              } else if (hasInterventions && interventionProgress >= 100) {
-                status = "Intervention Complete";
-                statusClass = "intervention-complete";
-              } else if (hasInterventions && interventionProgress > 0) {
-                status = "Intervention In Progress";
-                statusClass = "intervention-progress";
-              } else if (score === 0) {
-                status = "Not Started";
-                statusClass = "not-started";
-              } else if (score < 40) {
-                status = "Needs Attention";
-                statusClass = "needs-attention";
-              } else {
-                status = "Needs Attention";
-                statusClass = "in-progress";
-              }
+              // Get questions for this category
+              const categoryQuestions = getCategoryQuestions(categoryName);
+              const isExpanded = expandedCategories[categoryName];
               
               return (
-                <div key={index} className={`student-progress-category-card ${statusClass}`}>
-                  {/* Category Header */}
-                  <div className="student-progress-category-header">
-                    <div className="student-progress-category-icon">
-                      {getCategoryIcon(categoryName)}
-                    </div>
-                    <div className="student-progress-category-info">
-                      <h4>{displayName}</h4>
-                      <div className="student-progress-category-metrics">
-                        <span className="student-progress-score">{score}%</span>
-                        <span className="student-progress-count">{correctCount}/{totalCount} correct</span>
+                <div key={index} className={`student-progress-category-item ${isPassed ? 'student-progress-category-passed' : 'student-progress-category-needs-attention'}`}>
+                  {/* Category Main Row */}
+                  <div className="student-progress-category-main">
+                    <div className="student-progress-category-left">
+                      <div className="student-progress-category-icon">
+                        {getCategoryIcon(categoryName)}
+                      </div>
+                      <div className="student-progress-category-info">
+                        <h3 className="student-progress-category-name">
+                          {displayName}
+                          {score < 75 && (
+                            <span className="student-progress-needs-attention-badge">NEEDS ATTENTION</span>
+                          )}
+                        </h3>
+                        <div className="student-progress-category-stats">
+                          <span className="student-progress-score-display">{score}%</span>
+                          <span className="student-progress-score-fraction">{correctCount}/{totalCount} correct</span>
+                        </div>
                       </div>
                     </div>
-                    <div className={`student-progress-status ${statusClass}`}>
-                      {status}
+                    
+                    <div className="student-progress-category-right">
+                      {/* Debug button - keep for database troubleshooting */}
+                      <button 
+                        onClick={debugData} 
+                        style={{fontSize: '0.7rem', padding: '0.25rem', margin: '0 0.5rem', backgroundColor: '#f0f0f0'}}
+                      >
+                        Debug Data
+                      </button>
+                      
+                      <button
+                        className="student-progress-expand-toggle"
+                        onClick={() => toggleCategoryExpansion(categoryName)}
+                        aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
+                      >
+                        {isExpanded ? <FaCompressArrowsAlt /> : <FaExpandArrowsAlt />}
+                      </button>
                     </div>
                   </div>
                   
                   {/* Progress Dots */}
-                  <div className="student-progress-dots">
+                  <div className="student-progress-dots-container">
                     {Array.from({ length: totalCount }).map((_, qIndex) => (
                       <div 
                         key={qIndex} 
-                        className={`student-progress-dot ${qIndex < correctCount ? 'correct' : 'empty'}`}
+                        className={`student-progress-dot ${qIndex < correctCount ? 'student-progress-dot-correct' : 'student-progress-dot-empty'}`}
                         title={qIndex < correctCount ? 'Correct' : 'Incorrect/Not Answered'}
                       />
                     ))}
                   </div>
                   
-                  {/* Intervention Progress (if applicable) */}
-                  {showInterventionProgress && (
-                    <div className="student-progress-intervention-status">
-                      <div className="student-progress-intervention-icon">
-                        <FaTools />
-                      </div>
-                      <div className="student-progress-intervention-progress">
-                        <div className="student-progress-intervention-label">
-                          Intervention Progress: {interventionProgress}%
-                        </div>
-                        <div className="student-progress-intervention-bar">
-                          <div 
-                            className="student-progress-intervention-fill"
-                            style={{ width: `${interventionProgress}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Action Section */}
-                  <div className="student-progress-category-action">
-                    {!isPassed ? (
-                      <>
-                        <div className="student-progress-message">
-                          {correctCount === 0 ? (
-                            <span>Category not yet started</span>
-                          ) : hasInterventions ? (
-                            <span>Intervention assigned {interventionProgress > 0 ? `(${interventionProgress}% complete)` : ''}</span>
-                          ) : (
-                            <span>Need {Math.ceil(totalCount * 0.75) - correctCount} more to pass</span>
-                          )}
-                        </div>
-                      </>
-                    ) : (
+                  {/* Status Message */}
+                  <div className="student-progress-status-summary">
+                    {isPassed ? (
                       <div className="student-progress-success-message">
                         <FaCheckCircle /> Category Mastered
                       </div>
+                    ) : (
+                      <div className="student-progress-need-more-message">
+                        Need {Math.ceil(totalCount * 0.75) - correctCount} more to pass
+                      </div>
                     )}
                   </div>
+
+                  {/* Expandable Question Details */}
+                  {isExpanded && (
+                    <div className="student-progress-question-details-section">
+                      <h4 className="student-progress-question-details-title">
+                        <FaClipboardList /> Question Details
+                      </h4>
+                      {loadingDetails ? (
+                        <div className="student-progress-loading-state">
+                          <div className="student-progress-spinner"></div>
+                          <span>Loading question details...</span>
+                        </div>
+                      ) : categoryQuestions.length > 0 ? (
+                        <div className="student-progress-questions-grid">
+                          {categoryQuestions.map((question, qIndex) => (
+                            <div key={question.questionId || qIndex} className="student-progress-question-card">
+                              <div className="student-progress-question-header">
+                                <div className="student-progress-question-number">
+                                  Question {qIndex + 1}
+                                </div>
+                                <div className="student-progress-question-id">
+                                  ID: {question.questionId}
+                                </div>
+                                {getAnswerStatusBadge(question.isCorrect)}
+                              </div>
+
+                              <div className="student-progress-question-body">
+                                <div className="student-progress-question-text">
+                                  <strong>Question:</strong> {question.questionText}
+                                </div>
+
+                                {question.questionImage && (
+                                  <div className="student-progress-question-media">
+                                    <button
+                                      className="student-progress-image-preview-btn"
+                                      onClick={() => handleImageClick(
+                                        question.questionImage,
+                                        `Question ${qIndex + 1} Image`,
+                                        question.questionText
+                                      )}
+                                      title="Click to view image"
+                                    >
+                                      <FaEye /> View Image
+                                    </button>
+                                  </div>
+                                )}
+
+                                <div className="student-progress-answer-comparison">
+                                  <div className="student-progress-answer-row">
+                                    <span className="student-progress-answer-label">Student Answer:</span>
+                                    <span className={`student-progress-answer-value ${question.isCorrect ? 'student-progress-answer-correct' : 'student-progress-answer-incorrect'}`}>
+                                      {question.studentAnswer}
+                                    </span>
+                                  </div>
+                                  <div className="student-progress-answer-row">
+                                    <span className="student-progress-answer-label">Correct Answer:</span>
+                                    <span className="student-progress-answer-value student-progress-answer-correct">
+                                      {question.correctAnswer}
+                                    </span>
+                                  </div>
+                                  <div className="student-progress-answer-row">
+                                    <span className="student-progress-answer-label">Response Time:</span>
+                                    <span className="student-progress-answer-value">
+                                      <FaClock /> {formatTime(question.responseTime)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="student-progress-no-questions">
+                          <FaInfoCircle />
+                          <span>No detailed question data available for this category.</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
-          </div>
-          
-          {/* Unified View Recommendations Button */}
-          {categoriesNeedingAttention.length > 0 && (
-            <div className="student-progress-unified-action">
-              <button 
-                className="student-progress-unified-recommendations-btn"
-                onClick={() => handleViewRecommendations(categoriesNeedingAttention[0])}
-              >
-                <FaGraduationCap /> View Recommendations for All Categories
-                <FaArrowRight style={{ marginLeft: '0.5rem' }} />
-              </button>
-              <div className="student-progress-unified-info">
-                {categoriesNeedingAttention.length} {categoriesNeedingAttention.length === 1 ? 'category' : 'categories'} need attention
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-      
-      {/* Display warning if some categories need attention */}
-      {categoriesNeedingAttention.length > 0 && (
-        <div className="student-progress-categories-attention">
-          <div className="student-progress-attention-icon">
-            <FaExclamationTriangle />
-          </div>
-          <div className="student-progress-attention-message">
-            <h4>Categories Needing Attention</h4>
-            <p>
-              {categoriesNeedingAttention.length} {categoriesNeedingAttention.length === 1 ? 'category is' : 'categories are'} below the 75% threshold. 
-              View recommendations to create targeted interventions.
-            </p>
           </div>
         </div>
       )}
@@ -464,6 +728,15 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
           </p>
         </div>
       </div>
+
+      {/* Image Preview Modal */}
+      <ImagePreviewModal
+        isOpen={imagePreview.isOpen}
+        onClose={handleCloseImagePreview}
+        imageUrl={imagePreview.imageUrl}
+        title={imagePreview.title}
+        questionText={imagePreview.questionText}
+      />
     </div>
   );
 };
