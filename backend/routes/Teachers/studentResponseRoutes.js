@@ -8,13 +8,13 @@ const {
   getStudentResponseStats
 } = require('../../controllers/Teachers/ManageProgress/studentResponseController');
 
+// Get response statistics for a student (must come before parameterized routes)
+router.get('/:studentId/stats', auth, getStudentResponseStats);
+
 // Get all responses for a specific student
 router.get('/:studentId', auth, getStudentResponses);
 
 // Get responses for a specific student and category
 router.get('/:studentId/:categoryName', auth, getStudentResponsesByCategory);
-
-// Get response statistics for a student
-router.get('/:studentId/stats', auth, getStudentResponseStats);
 
 module.exports = router;

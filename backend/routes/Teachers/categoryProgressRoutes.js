@@ -9,12 +9,12 @@ const {
 } = require('../../controllers/Teachers/ManageProgress/categoryProgressController');
 
 // Get all students category progress summary
-router.get('/all', getAllStudentsCategoryProgress);
+router.get('/all', auth, getAllStudentsCategoryProgress);
 
 // Get category progress for a specific student
-router.get('/:studentId', getCategoryProgress);
+router.get('/:studentId', auth, getCategoryProgress);
 
 // Get specific category progress for a student
-router.get('/:studentId/:categoryName', getSpecificCategoryProgress);
+router.get('/:studentId/:categoryName', auth, getSpecificCategoryProgress);
 
 module.exports = router;
