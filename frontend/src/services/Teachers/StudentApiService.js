@@ -813,7 +813,8 @@ const StudentApiService = {
   // Get post-assessment category results specifically
   getPostAssessmentResults: async (id) => {
     try {
-      console.log(`Fetching post-assessment results for student ID: ${id}`);
+      console.log(`🌐 API CALL: Fetching post-assessment results for student ID: ${id}`);
+      console.log(`🌐 Full URL will be: ${API_BASE}/api/student/${id}/category-results?type=post-assessment`);
       
       // Use the api instance with the correct endpoint path and type parameter
       // The api instance already has baseURL set to ${API_BASE}/api/student
@@ -821,12 +822,16 @@ const StudentApiService = {
         params: { type: 'post-assessment' }
       });
       
-      console.log("Post-assessment results raw data:", data);
+      console.log("🌐 Post-assessment API SUCCESS - raw data:", data);
+      
+      // Extract the actual data from the API response wrapper
+      const actualData = data.data || data;
+      console.log("🌐 Extracted actual data:", actualData);
       
       // Check if we have meaningful data
-      if (data && data.categories && data.categories.length > 0) {
+      if (actualData && actualData.categories && actualData.categories.length > 0) {
         // Make sure all category objects have required properties
-        data.categories = data.categories.map(category => ({
+        actualData.categories = actualData.categories.map(category => ({
           categoryName: category.categoryName || 'Unknown Category',
           totalQuestions: category.totalQuestions || 0,
           correctAnswers: category.correctAnswers || 0,
@@ -835,14 +840,16 @@ const StudentApiService = {
           passingThreshold: category.passingThreshold || 75
         }));
         
-        console.log("Valid post-assessment data found with", data.categories.length, "categories");
-        return data;
+        console.log("✅ Valid post-assessment data found with", actualData.categories.length, "categories");
+        console.log("✅ Returning actualData:", actualData);
+        return actualData;
       } else {
         console.log("No valid post-assessment data found in API response");
         return null;
       }
     } catch (error) {
-      console.error(`Error fetching post-assessment results for student ${id}:`, error);
+      console.error(`🌐 POST-ASSESSMENT API ERROR for student ${id}:`, error);
+      console.error(`🌐 Error details:`, error.response?.data || error.message);
       return null;
     }
   },

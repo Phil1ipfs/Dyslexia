@@ -1477,3 +1477,49 @@ test.category_results.json
     "$date": "2025-08-20T05:13:00.100Z"
   }
 }
+
+PreAssessmentDataProcessor.js:890 ✅ DEBUG: Processing answered question RC_001 in Reading Comprehension
+PreAssessmentDataProcessor.js:925 📈 DEBUG: Reading Comprehension final stats: {answered: 1, correct: 1, total: 9, score: 11}
+PreAssessmentDataProcessor.js:940 🎯 DEBUG: Final category result for Alphabet Knowledge: {answered: 3, total: 10, questions: 10}
+PreAssessmentDataProcessor.js:940 🎯 DEBUG: Final category result for Phonological Awareness: {answered: 1, total: 6, questions: 6}
+PreAssessmentDataProcessor.js:940 🎯 DEBUG: Final category result for Decoding: {answered: 1, total: 10, questions: 10}
+PreAssessmentDataProcessor.js:940 🎯 DEBUG: Final category result for Word Recognition: {answered: 1, total: 10, questions: 10}
+PreAssessmentDataProcessor.js:940 🎯 DEBUG: Final category result for Reading Comprehension: {answered: 1, total: 9, questions: 9}
+PreAssessmentResults.jsx:197 Processed data: {hasCompleted: true, studentId: 202533333, overallScore: 100, correctAnswers: 7, totalQuestions: 7, …}
+StudentApiService.js:825 🌐 Post-assessment API SUCCESS - raw data: {success: true, message: 'Category results retrieved successfully', data: {…}}data: allCategoriesPassed: falseassessmentDate: "2025-08-18T12:20:30.500Z"assessmentType: "post-assessment"categories: Array(2)0: {categoryName: 'Alphabet Knowledge', totalQuestions: 15, correctAnswers: 10, score: 67, isPassed: false, …}1: {categoryName: 'Phonological Awareness', totalQuestions: 3, totalPossibleMatches: 13, correctMatches: 8, score: 62, …}length: 2[[Prototype]]: Array(0)completedCategories: 2createdAt: "2025-06-11T14:35:15.200Z"overallScore: 73readingLevel: "High Emerging"readingLevelUpdated: falsestudentId: 202533333totalCategories: 2updatedAt: "2025-06-12T14:25:30.200Z"_id: "683e948a9b13d43b098eb800"[[Prototype]]: Objectmessage: "Category results retrieved successfully"success: true[[Prototype]]: Object
+StudentApiService.js:842 No valid post-assessment data found in API response
+StudentProgressView.jsx:104 🚀 Post-assessment API response: null
+StudentProgressView.jsx:115 ❌ No valid post-assessment data found
+StudentProgressView.jsx:127 📞 fetchProgressData COMPLETED, result: null
+StudentProgressView.jsx:543 🔥 RENDER CHECK - StudentProgressView:
+StudentProgressView.jsx:544 🔥 categoryResults (POST-ASSESSMENT): null
+StudentProgressView.jsx:545 🔥 assessmentData (PRE-ASSESSMENT): {studentId: '683e948a9b13d43b098eb6e3', studentName: 'Philip Pangilinan', studentInfo: {…}, assessmentId: '1', readingLevel: 'High Emerging', …}assessmentId: "1"averageResponseTime: 60categoryScores: {alphabet_knowledge: {…}, phonological_awareness: {…}, decoding: {…}, word_recognition: {…}, reading_comprehension: {…}}completedAt: "2025-08-18T12:03:31.912503"correctAnswers: 23focusAreas: []hasCompleted: trueoverallScore: 50part1Score: 6part1Total: 6readingComprehensionPercentage: 100readingComprehensionScore: 1readingComprehensionTotal: 1readingLevel: "High Emerging"skillDetails: (5) [{…}, {…}, {…}, {…}, {…}]studentId: "683e948a9b13d43b098eb6e3"studentInfo: {firstName: 'Philip', lastName: 'Pangilinan', age: '6', gradeLevel: 'Grade 1', section: 'Patience'}studentName: "Philip Pangilinan"totalQuestions: 45totalResponseTime: 423[[Prototype]]: Object
+StudentProgressView.jsx:546 🔥 student: {id: '683e948a9b13d43b098eb6e3', idNumber: 202533333, name: 'Philip Casingal Pangilinan', firstName: 'Philip', middleName: 'Casingal', …}
+StudentProgressView.jsx:547 🔥 Passing to AssessmentSummaryCard: {studentId: '683e948a9b13d43b098eb6e3', studentName: 'Philip Pangilinan', studentInfo: {…}, assessmentId: '1', readingLevel: 'High Emerging', …}
+StudentProgressView.jsx:543 🔥 RENDER CHECK - StudentProgressView:
+StudentProgressView.jsx:544 🔥 categoryResults (POST-ASSESSMENT): null
+StudentProgressView.jsx:545 🔥 assessmentData (PRE-ASSESSMENT): {studentId: '683e948a9b13d43b098eb6e3', studentName: 'Philip Pangilinan', studentInfo: {…}, assessmentId: '1', readingLevel: 'High Emerging', …}
+StudentProgressView.jsx:546 🔥 student: {id: '683e948a9b13d43b098eb6e3', idNumber: 202533333, name: 'Philip Casingal Pangilinan', firstName: 'Philip', middleName: 'Casingal', …}address: "Mandaluyong"age: "6"firstName: "Philip"gender: "Male"gradeLevel: "Grade 1"id: "683e948a9b13d43b098eb6e3"idNumber: 202533333lastAssessmentDate: "2025-08-18T12:03:31.912503"lastName: "Pangilinan"middleName: "Casingal"name: "Philip Casingal Pangilinan"parent: {id: '683e7186a1338769a9095a7a', name: 'Ivan Josh Matilde', email: 'santiagonikos@gmail.com', contact: '09155933015', address: '123 Maharlika Street Los Baños Laguna', …}parentId: "683e7186a1338769a9095a7a"preAssessmentCompleted: trueprofileImageUrl: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/student-profiles/1748931720760_rfdryb.png"readingLevel: "High Emerging"readingPercentage: 50section: "Patience"[[Prototype]]: Object
+StudentProgressView.jsx:547 🔥 Passing to AssessmentSummaryCard: {studentId: '683e948a9b13d43b098eb6e3', studentName: 'Philip Pangilinan', studentInfo: {…}, assessmentId: '1', readingLevel: 'High Emerging', …}assessmentId: "1"averageResponseTime: 60categoryScores: {alphabet_knowledge: {…}, phonological_awareness: {…}, decoding: {…}, word_recognition: {…}, reading_comprehension: {…}}completedAt: "2025-08-18T12:03:31.912503"correctAnswers: 23focusAreas: []hasCompleted: trueoverallScore: 50part1Score: 6part1Total: 6readingComprehensionPercentage: 100readingComprehensionScore: 1readingComprehensionTotal: 1readingLevel: "High Emerging"skillDetails: (5) [{…}, {…}, {…}, {…}, {…}]studentId: "683e948a9b13d43b098eb6e3"studentInfo: {firstName: 'Philip', lastName: 'Pangilinan', age: '6', gradeLevel: 'Grade 1', section: 'Patience'}studentName: "Philip Pangilinan"totalQuestions: 45totalResponseTime: 423[[Prototype]]: Object
+AssessmentSummaryCard.jsx:10 🔥🔥🔥 AssessmentSummaryCard RENDERED 🔥🔥🔥
+AssessmentSummaryCard.jsx:11 🔥 assessmentData received: {studentId: '683e948a9b13d43b098eb6e3', studentName: 'Philip Pangilinan', studentInfo: {…}, assessmentId: '1', readingLevel: 'High Emerging', …}
+AssessmentSummaryCard.jsx:12 🔥 assessmentData.assessmentType: undefined
+AssessmentSummaryCard.jsx:13 🔥 assessmentData.categories: undefined
+AssessmentSummaryCard.jsx:14 🔥 assessmentData.overallScore: 50
+AssessmentSummaryCard.jsx:15 🔥 student: {id: '683e948a9b13d43b098eb6e3', idNumber: 202533333, name: 'Philip Casingal Pangilinan', firstName: 'Philip', middleName: 'Casingal', …}
+AssessmentSummaryCard.jsx:26 🔥 studentReadingLevel: High Emerging
+AssessmentSummaryCard.jsx:27 🔥 isAssessed: true
+AssessmentSummaryCard.jsx:75 Is Post Assessment: undefined
+AssessmentSummaryCard.jsx:76 Assessment Type: undefined
+AssessmentSummaryCard.jsx:87 Using Pre-Assessment - readingPercentage from users table: 50
+AssessmentSummaryCard.jsx:10 🔥🔥🔥 AssessmentSummaryCard RENDERED 🔥🔥🔥
+AssessmentSummaryCard.jsx:11 🔥 assessmentData received: {studentId: '683e948a9b13d43b098eb6e3', studentName: 'Philip Pangilinan', studentInfo: {…}, assessmentId: '1', readingLevel: 'High Emerging', …}assessmentId: "1"averageResponseTime: 60categoryScores: {alphabet_knowledge: {…}, phonological_awareness: {…}, decoding: {…}, word_recognition: {…}, reading_comprehension: {…}}completedAt: "2025-08-18T12:03:31.912503"correctAnswers: 23focusAreas: []hasCompleted: trueoverallScore: 50part1Score: 6part1Total: 6readingComprehensionPercentage: 100readingComprehensionScore: 1readingComprehensionTotal: 1readingLevel: "High Emerging"skillDetails: (5) [{…}, {…}, {…}, {…}, {…}]studentId: "683e948a9b13d43b098eb6e3"studentInfo: {firstName: 'Philip', lastName: 'Pangilinan', age: '6', gradeLevel: 'Grade 1', section: 'Patience'}studentName: "Philip Pangilinan"totalQuestions: 45totalResponseTime: 423[[Prototype]]: Object
+AssessmentSummaryCard.jsx:12 🔥 assessmentData.assessmentType: undefined
+AssessmentSummaryCard.jsx:13 🔥 assessmentData.categories: undefined
+AssessmentSummaryCard.jsx:14 🔥 assessmentData.overallScore: 50
+AssessmentSummaryCard.jsx:15 🔥 student: {id: '683e948a9b13d43b098eb6e3', idNumber: 202533333, name: 'Philip Casingal Pangilinan', firstName: 'Philip', middleName: 'Casingal', …}address: "Mandaluyong"age: "6"firstName: "Philip"gender: "Male"gradeLevel: "Grade 1"id: "683e948a9b13d43b098eb6e3"idNumber: 202533333lastAssessmentDate: "2025-08-18T12:03:31.912503"lastName: "Pangilinan"middleName: "Casingal"name: "Philip Casingal Pangilinan"parent: {id: '683e7186a1338769a9095a7a', name: 'Ivan Josh Matilde', email: 'santiagonikos@gmail.com', contact: '09155933015', address: '123 Maharlika Street Los Baños Laguna', …}parentId: "683e7186a1338769a9095a7a"preAssessmentCompleted: trueprofileImageUrl: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/student-profiles/1748931720760_rfdryb.png"readingLevel: "High Emerging"readingPercentage: 50section: "Patience"[[Prototype]]: Object
+AssessmentSummaryCard.jsx:26 🔥 studentReadingLevel: High Emerging
+AssessmentSummaryCard.jsx:27 🔥 isAssessed: true
+AssessmentSummaryCard.jsx:75 Is Post Assessment: undefined
+AssessmentSummaryCard.jsx:76 Assessment Type: undefined
+AssessmentSummaryCard.jsx:87 Using Pre-Assessment - readingPercentage from users table: 50

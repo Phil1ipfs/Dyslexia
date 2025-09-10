@@ -5,6 +5,47 @@ const mongoose = require('mongoose');
 const getUsersDb = () => mongoose.connection.useDb('test');
 const getTeachersDb = () => mongoose.connection.useDb('teachers');
 
+// Helper function to map ObjectId to integer studentId
+const resolveStudentId = async (id) => {
+  try {
+    const usersCollection = getUsersDb().collection('users');
+    
+    // If it's already an integer, return it
+    const numericId = parseInt(id);
+    if (!isNaN(numericId) && numericId.toString() === id.toString()) {
+      console.log(`Student ID ${id} is already numeric`);
+      return numericId;
+    }
+    
+    // Try to find student by MongoDB ObjectId
+    let query;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      query = { _id: new mongoose.Types.ObjectId(id) };
+      console.log(`Resolving ObjectId ${id} to student number`);
+    } else {
+      // Fallback: try as string ID or idNumber
+      query = { $or: [{ _id: id }, { idNumber: id }] };
+      console.log(`Resolving string ID ${id} to student number`);
+    }
+    
+    const student = await usersCollection.findOne(query);
+    
+    if (!student) {
+      console.warn(`Student not found for ID: ${id}`);
+      return null;
+    }
+    
+    // Return the idNumber (integer) that matches category_results collection
+    const resolvedId = student.idNumber || student.studentId;
+    console.log(`Resolved student ${id} to numeric ID: ${resolvedId}`);
+    return resolvedId;
+    
+  } catch (error) {
+    console.error(`Error resolving student ID ${id}:`, error);
+    return null;
+  }
+};
+
 // Controller methods for CRUD operations
 exports.getStudents = async (req, res) => {
   try {
@@ -652,16 +693,22 @@ exports.getCategoryResults = async (req, res) => {
     const id = req.params.id;
     const assessmentType = req.query.type; // Get the assessment type from query params
     
-    // Convert studentId to integer to match database format (as per CLAUDE.md)
-    const studentIdInt = parseInt(id);
-    if (isNaN(studentIdInt)) {
-      return res.status(400).json({
+    console.log(`[getCategoryResults] Request for ID: ${id}, type: ${assessmentType || 'any'}`);
+    
+    // Use helper function to resolve ObjectId to integer studentId
+    const studentIdInt = await resolveStudentId(id);
+    
+    if (!studentIdInt) {
+      console.warn(`[getCategoryResults] Could not resolve student ID: ${id}`);
+      return res.status(404).json({
         success: false,
-        message: 'Invalid studentId. Must be a valid integer.'
+        message: 'Student not found. Unable to resolve student ID.',
+        requestedId: id,
+        resolvedId: null
       });
     }
 
-    console.log(`Fetching category results for student ID: ${studentIdInt}, type: ${assessmentType || 'any'}`);
+    console.log(`[getCategoryResults] Resolved ${id} to numeric student ID: ${studentIdInt}`);
     
     // Get the test database
     const testDb = mongoose.connection.useDb('test');
@@ -682,7 +729,7 @@ exports.getCategoryResults = async (req, res) => {
       }
     }
     
-    console.log('Query for category results:', JSON.stringify(query));
+    console.log('[getCategoryResults] Query for category results:', JSON.stringify(query));
     
     // Find the most recent category results for this student
     const categoryResults = await categoryResultsCollection
@@ -692,18 +739,32 @@ exports.getCategoryResults = async (req, res) => {
       .toArray();
     
     if (categoryResults.length === 0) {
-      // No results found, return null for consistency with frontend expectations
+      console.warn(`[getCategoryResults] No category results found for student ${studentIdInt} (original: ${id})`);
       return res.status(404).json({
         success: false,
-        message: 'No category results found for this student',
+        message: `No category results found for student with ID ${studentIdInt}`,
+        requestedId: id,
+        resolvedId: studentIdInt,
+        assessmentType: assessmentType || 'any',
         data: null
       });
     }
     
     // Return the most recent assessment result with proper sanitization
     const latestResult = categoryResults[0];
-    console.log(`Found category result with ID: ${latestResult._id} for student ${studentIdInt}`);
+    console.log(`[getCategoryResults] Found category result with ID: ${latestResult._id} for student ${studentIdInt} (original: ${id})`);
     
+    // Determine assessment type based on query parameter and data characteristics
+    let determinedAssessmentType;
+    if (assessmentType === 'pre-assessment' || latestResult.isPreAssessment === true) {
+      determinedAssessmentType = 'pre-assessment';
+    } else if (assessmentType === 'post-assessment' || latestResult.isPreAssessment === false) {
+      determinedAssessmentType = 'post-assessment';
+    } else {
+      // Default logic: if no explicit type, assume post-assessment for category_results
+      determinedAssessmentType = 'post-assessment';
+    }
+
     // Sanitize and format the response
     const sanitizedResult = {
       _id: latestResult._id,
@@ -717,8 +778,16 @@ exports.getCategoryResults = async (req, res) => {
       readingLevel: latestResult.readingLevel,
       readingLevelUpdated: latestResult.readingLevelUpdated || false,
       createdAt: latestResult.createdAt,
-      updatedAt: latestResult.updatedAt
+      updatedAt: latestResult.updatedAt,
+      assessmentType: determinedAssessmentType // Add this field for frontend logic
     };
+    
+    console.log(`[getCategoryResults] Returning data for student ${studentIdInt}:`, {
+      categories: sanitizedResult.categories.length,
+      overallScore: sanitizedResult.overallScore,
+      readingLevel: sanitizedResult.readingLevel,
+      assessmentType: determinedAssessmentType
+    });
     
     return res.json({
       success: true,
@@ -726,11 +795,12 @@ exports.getCategoryResults = async (req, res) => {
       data: sanitizedResult
     });
   } catch (error) {
-    console.error(`Error fetching category results for student ID ${req.params.id}:`, error);
+    console.error(`[getCategoryResults] Error fetching category results for student ID ${req.params.id}:`, error);
     res.status(500).json({ 
       success: false,
       message: 'Internal server error',
-      error: error.message 
+      error: error.message,
+      requestedId: req.params.id
     });
   }
 };

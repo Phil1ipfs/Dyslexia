@@ -7,8 +7,11 @@ import {
 import '../ManageProgress/css/AssessmentSummaryCard.css'; 
 
 const AssessmentSummaryCard = ({ assessmentData, student }) => {
-  console.log('🔥 AssessmentSummaryCard RENDERED');
-  console.log('🔥 assessmentData:', assessmentData);
+  console.log('🔥🔥🔥 AssessmentSummaryCard RENDERED 🔥🔥🔥');
+  console.log('🔥 assessmentData received:', assessmentData);
+  console.log('🔥 assessmentData.assessmentType:', assessmentData?.assessmentType);
+  console.log('🔥 assessmentData.categories:', assessmentData?.categories);
+  console.log('🔥 assessmentData.overallScore:', assessmentData?.overallScore);
   console.log('🔥 student:', student);
   
   if (!assessmentData) {
