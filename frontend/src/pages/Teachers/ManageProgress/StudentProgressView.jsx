@@ -127,28 +127,9 @@ const StudentProgressView = () => {
             return categoryResults;
           }
           
-          // If no category results, try using pre-assessment data
-          console.log("No category results found, checking pre-assessment data");
-          
-          if (preAssessmentData) {
-            // First check if pre-assessment data already has categories format
-            if (preAssessmentData.categories && preAssessmentData.categories.length > 0) {
-              console.log("Using categories from pre-assessment data");
-              setCategoryResults(preAssessmentData);
-              return preAssessmentData;
-            }
-            
-            // Otherwise try to transform skillDetails
-            if (preAssessmentData.skillDetails && preAssessmentData.skillDetails.length > 0) {
-              console.log("Transforming pre-assessment skillDetails to categories format");
-              const transformedData = CategoryResultsService.transformPreAssessmentData(preAssessmentData);
-              setCategoryResults(transformedData);
-              return transformedData;
-            }
-          }
-          
-          // If we reach here, we have no valid progress data
-          console.log("No valid progress data found");
+          // If no category results found, set to null for Post Assessment Progress
+          // DO NOT fallback to pre-assessment data for post-assessment progress
+          console.log("No category results found - setting categoryResults to null");
           setCategoryResults(null);
           return null;
         };
@@ -508,10 +489,21 @@ const StudentProgressView = () => {
     navigate('/teacher/manage-progress');
   };
 
-  // Handle tab change with pre-assessment check
+  // Handle tab change with pre-assessment check and category results check
   const handleTabChange = (tab) => {
-    if (tab === 'assessment' || preAssessmentCompleted) {
+    if (tab === 'assessment') {
+      // Pre-assessment tab is always accessible
       setActiveTab(tab);
+    } else if (tab === 'progress') {
+      // Post assessment progress tab requires both pre-assessment completion AND category results
+      if (preAssessmentCompleted && categoryResults && categoryResults.categories && categoryResults.categories.length > 0) {
+        setActiveTab(tab);
+      }
+    } else {
+      // Other tabs (prescriptive, iep) require both pre-assessment completion AND category results
+      if (preAssessmentCompleted && categoryResults && categoryResults.categories && categoryResults.categories.length > 0) {
+        setActiveTab(tab);
+      }
     }
   };
 
@@ -587,29 +579,29 @@ const StudentProgressView = () => {
         </button>
 
         <button
-          className={`literexia-tab-button ${activeTab === 'progress' ? 'active' : ''} ${!preAssessmentCompleted ? 'locked' : ''}`}
+          className={`literexia-tab-button ${activeTab === 'progress' ? 'active' : ''} ${(!preAssessmentCompleted || !categoryResults || !categoryResults.categories || categoryResults.categories.length === 0) ? 'locked' : ''}`}
           onClick={() => handleTabChange('progress')}
-          disabled={!preAssessmentCompleted}
+          disabled={!preAssessmentCompleted || !categoryResults || !categoryResults.categories || categoryResults.categories.length === 0}
         >
-          {!preAssessmentCompleted && <FaLock className="lock-icon" />}
+          {(!preAssessmentCompleted || !categoryResults || !categoryResults.categories || categoryResults.categories.length === 0) && <FaLock className="lock-icon" />}
           <FaChartLine /> Post Assessment Progress
         </button>
 
         <button
-          className={`literexia-tab-button ${activeTab === 'prescriptive' ? 'active' : ''} ${!preAssessmentCompleted ? 'locked' : ''}`}
+          className={`literexia-tab-button ${activeTab === 'prescriptive' ? 'active' : ''} ${(!preAssessmentCompleted || !categoryResults || !categoryResults.categories || categoryResults.categories.length === 0) ? 'locked' : ''}`}
           onClick={() => handleTabChange('prescriptive')}
-          disabled={!preAssessmentCompleted}
+          disabled={!preAssessmentCompleted || !categoryResults || !categoryResults.categories || categoryResults.categories.length === 0}
         >
-          {!preAssessmentCompleted && <FaLock className="lock-icon" />}
+          {(!preAssessmentCompleted || !categoryResults || !categoryResults.categories || categoryResults.categories.length === 0) && <FaLock className="lock-icon" />}
           <FaLightbulb /> Prescriptive Analysis
         </button>
 
         <button
-          className={`literexia-tab-button ${activeTab === 'iep' ? 'active' : ''} ${!preAssessmentCompleted ? 'locked' : ''}`}
+          className={`literexia-tab-button ${activeTab === 'iep' ? 'active' : ''} ${(!preAssessmentCompleted || !categoryResults || !categoryResults.categories || categoryResults.categories.length === 0) ? 'locked' : ''}`}
           onClick={() => handleTabChange('iep')}
-          disabled={!preAssessmentCompleted}
+          disabled={!preAssessmentCompleted || !categoryResults || !categoryResults.categories || categoryResults.categories.length === 0}
         >
-          {!preAssessmentCompleted && <FaLock className="lock-icon" />}
+          {(!preAssessmentCompleted || !categoryResults || !categoryResults.categories || categoryResults.categories.length === 0) && <FaLock className="lock-icon" />}
           <FaCheckCircle /> IEP Report
         </button>
       </div>

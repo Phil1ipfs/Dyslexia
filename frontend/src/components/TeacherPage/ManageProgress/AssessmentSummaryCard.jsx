@@ -73,7 +73,7 @@ const AssessmentSummaryCard = ({ assessmentData, student }) => {
   console.log('Assessment Type:', assessmentData.assessmentType);
   
   if (isPostAssessment) {
-    // This is category_results format (Post-Assessment)
+    // This is category_results format (Post-Assessment) - use overallScore
     assessmentType = 'Post-Assessment';
     readingPercentage = assessmentData.overallScore || 0;
     console.log('Using Post-Assessment - overallScore:', assessmentData.overallScore);
@@ -121,8 +121,16 @@ const AssessmentSummaryCard = ({ assessmentData, student }) => {
     }
   };
 
-  // Get the assessment date - check multiple possible properties
-  const assessmentDate = assessmentData.assessmentDate || assessmentData.lastAssessmentDate;
+  // Get the assessment date based on assessment type
+  let assessmentDate;
+  
+  if (isPostAssessment) {
+    // For post-assessment, use assessmentDate from category_results
+    assessmentDate = assessmentData.assessmentDate;
+  } else {
+    // For pre-assessment, use lastAssessmentDate from users table
+    assessmentDate = student?.lastAssessmentDate;
+  }
   
   // Always use reading level from student (users table)
   const displayReadingLevel = studentReadingLevel;
