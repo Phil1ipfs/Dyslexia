@@ -383,8 +383,17 @@ class PdfReportService {
       for (let i = 0; i < responses.length; i++) {
         const response = responses[i];
         
-        // Check space for question with more conservative spacing
-        const requiredSpace = categoryName.toLowerCase().includes('phonological') ? 65 : 50;
+        // Calculate required space based on category type
+        const categoryLower = categoryName.toLowerCase();
+        let requiredSpace = 50; // default
+        if (categoryLower.includes('phonological')) {
+          requiredSpace = 65;
+        } else if (categoryLower.includes('word') || categoryLower.includes('decoding')) {
+          requiredSpace = 58;
+        } else if (categoryLower.includes('comprehension')) {
+          requiredSpace = 62;
+        }
+        
         if (yPos + requiredSpace > pageHeight - bottomMargin) {
           pdf.addPage();
           yPos = margin;
@@ -462,8 +471,17 @@ class PdfReportService {
    * Add individual question card matching pre-assessment format
    */
   static addQuestionCard(pdf, response, questionDetails, questionNumber, categoryName, yPos, pageWidth, margin) {
-    const isPhonological = categoryName.toLowerCase().includes('phonological');
-    const cardHeight = isPhonological ? 55 : 40;
+    const categoryLower = categoryName.toLowerCase();
+    
+    // Determine card height based on category type
+    let cardHeight = 40; // default
+    if (categoryLower.includes('phonological')) {
+      cardHeight = 55;
+    } else if (categoryLower.includes('word') || categoryLower.includes('decoding')) {
+      cardHeight = 48;
+    } else if (categoryLower.includes('comprehension')) {
+      cardHeight = 52;
+    }
     
     // Question card background
     pdf.setFillColor(255, 255, 255);
@@ -516,42 +534,22 @@ class PdfReportService {
     
     contentY += 8;
     
-    // Format answers based on category type
-    if (isPhonological) {
-      // Special handling for phonological awareness
-      pdf.setFontSize(7);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Audio Text: Pakinggan ang audio. Itugma ito sa katumbas na letra sa kabilang hanay.', margin + 6, contentY);
-      
-      contentY += 6;
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`Student's Matches: ${response.correctMatches || 0}/${response.totalMatches || 0} correct matches`, margin + 6, contentY);
-      
-      contentY += 6;
-      pdf.text(`Correct Answer: All ${response.totalMatches || 0} pairs correct`, margin + 6, contentY);
+    // Category-specific formatting
+    if (categoryLower.includes('phonological')) {
+      contentY = this.addPhonologicalAwarenessDetails(pdf, response, questionDetails, margin, contentY);
+    } else if (categoryLower.includes('decoding')) {
+      contentY = this.addDecodingDetails(pdf, response, questionDetails, margin, contentY, isCorrect);
+    } else if (categoryLower.includes('word')) {
+      contentY = this.addWordRecognitionDetails(pdf, response, questionDetails, margin, contentY, isCorrect);
+    } else if (categoryLower.includes('comprehension')) {
+      contentY = this.addReadingComprehensionDetails(pdf, response, questionDetails, margin, contentY, isCorrect);
     } else {
-      // Standard answer format for other categories
-      const studentAnswer = this.formatStudentAnswer(response, questionDetails);
-      const correctAnswer = this.formatCorrectAnswer(response, questionDetails);
-      
-      pdf.setFontSize(7);
-      pdf.setFont('helvetica', 'normal');
-      
-      // Student Answer
-      pdf.text(`Student Answer:`, margin + 6, contentY);
-      pdf.setTextColor(isCorrect ? 76 : 244, isCorrect ? 175 : 67, isCorrect ? 80 : 54);
-      pdf.text(studentAnswer, margin + 40, contentY);
-      
-      // Correct Answer  
-      contentY += 6;
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(`Correct Answer:`, margin + 6, contentY);
-      pdf.setTextColor(76, 175, 80);
-      pdf.text(correctAnswer, margin + 40, contentY);
+      // Default format for Alphabet Knowledge and others
+      contentY = this.addStandardAnswerFormat(pdf, response, questionDetails, margin, contentY, isCorrect);
     }
     
     // Response time
-    contentY += 8;
+    contentY += 6;
     pdf.setFontSize(7);
     pdf.setTextColor(100, 100, 100);
     const responseTime = this.formatResponseTime(response.responseTime);
@@ -560,6 +558,185 @@ class PdfReportService {
     pdf.setTextColor(0, 0, 0); // Reset
     
     return yPos + cardHeight;
+  }
+
+  /**
+   * Add phonological awareness specific details
+   */
+  static addPhonologicalAwarenessDetails(pdf, response, questionDetails, margin, contentY) {
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text('Audio Text: Pakinggan ang audio. Itugma ito sa katumbas na letra sa kabilang hanay.', margin + 6, contentY);
+    
+    contentY += 7;
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Student's Matches: ${response.correctMatches || 0}/${response.totalMatches || 0} correct matches`, margin + 6, contentY);
+    
+    // Show detailed matching if available
+    if (Array.isArray(response.response) && response.response.length > 0) {
+      contentY += 6;
+      pdf.setFontSize(6);
+      const matchingPairs = response.response.slice(0, 3).map(pair => {
+        const key = Object.keys(pair)[0];
+        const value = pair[key];
+        return `${key}→${value}`;
+      }).join(', ');
+      pdf.text(`Matches: ${matchingPairs}`, margin + 6, contentY);
+    }
+    
+    contentY += 6;
+    pdf.setFontSize(7);
+    pdf.text(`Correct Answer: All ${response.totalMatches || 0} pairs correct`, margin + 6, contentY);
+    
+    return contentY;
+  }
+
+  /**
+   * Add decoding specific details
+   */
+  static addDecodingDetails(pdf, response, questionDetails, margin, contentY, isCorrect) {
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text('Task: Arrange letters in correct sequence', margin + 6, contentY);
+    
+    contentY += 7;
+    pdf.setFont('helvetica', 'normal');
+    
+    // Show available letters
+    if (questionDetails?.dragElements) {
+      pdf.text(`Available Letters: ${questionDetails.dragElements.join(', ')}`, margin + 6, contentY);
+      contentY += 6;
+    }
+    
+    // Student Answer
+    const studentAnswer = this.formatStudentAnswer(response, questionDetails);
+    pdf.text(`Student Answer: `, margin + 6, contentY);
+    pdf.setTextColor(isCorrect ? 76 : 244, isCorrect ? 175 : 67, isCorrect ? 80 : 54);
+    pdf.text(studentAnswer, margin + 45, contentY);
+    
+    // Correct Answer  
+    contentY += 6;
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(`Correct Answer: `, margin + 6, contentY);
+    pdf.setTextColor(76, 175, 80);
+    const correctAnswer = this.formatCorrectAnswer(response, questionDetails);
+    pdf.text(correctAnswer, margin + 45, contentY);
+    
+    return contentY;
+  }
+
+  /**
+   * Add word recognition specific details
+   */
+  static addWordRecognitionDetails(pdf, response, questionDetails, margin, contentY, isCorrect) {
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text('Task: Complete the word/sentence', margin + 6, contentY);
+    
+    contentY += 7;
+    pdf.setFont('helvetica', 'normal');
+    
+    // Show word/sentence to complete
+    if (questionDetails?.displayWord) {
+      pdf.text(`Complete: ${questionDetails.displayWord}`, margin + 6, contentY);
+      contentY += 6;
+    }
+    
+    // Show available options
+    if (questionDetails?.blankOptions) {
+      pdf.setFontSize(6);
+      pdf.text(`Options: ${questionDetails.blankOptions.join(', ')}`, margin + 6, contentY);
+      contentY += 6;
+    }
+    
+    pdf.setFontSize(7);
+    // Student Answer
+    const studentAnswer = this.formatStudentAnswer(response, questionDetails);
+    pdf.text(`Student Answer: `, margin + 6, contentY);
+    pdf.setTextColor(isCorrect ? 76 : 244, isCorrect ? 175 : 67, isCorrect ? 80 : 54);
+    pdf.text(studentAnswer, margin + 45, contentY);
+    
+    // Correct Answer  
+    contentY += 6;
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(`Correct Answer: `, margin + 6, contentY);
+    pdf.setTextColor(76, 175, 80);
+    const correctAnswer = this.formatCorrectAnswer(response, questionDetails);
+    pdf.text(correctAnswer, margin + 45, contentY);
+    
+    return contentY;
+  }
+
+  /**
+   * Add reading comprehension specific details
+   */
+  static addReadingComprehensionDetails(pdf, response, questionDetails, margin, contentY, isCorrect) {
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text('Task: Answer based on reading passage', margin + 6, contentY);
+    
+    contentY += 7;
+    pdf.setFont('helvetica', 'normal');
+    
+    // Show story title if available
+    if (questionDetails?.storyTitle) {
+      pdf.text(`Story: ${questionDetails.storyTitle}`, margin + 6, contentY);
+      contentY += 6;
+    }
+    
+    // Student Answer
+    const studentAnswer = this.formatStudentAnswer(response, questionDetails);
+    pdf.text(`Student Answer: `, margin + 6, contentY);
+    pdf.setTextColor(isCorrect ? 76 : 244, isCorrect ? 175 : 67, isCorrect ? 80 : 54);
+    pdf.text(studentAnswer, margin + 45, contentY);
+    
+    // Correct Answer  
+    contentY += 6;
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(`Correct Answer: `, margin + 6, contentY);
+    pdf.setTextColor(76, 175, 80);
+    const correctAnswer = this.formatCorrectAnswer(response, questionDetails);
+    pdf.text(correctAnswer, margin + 45, contentY);
+    
+    // Show acceptable answers if available
+    if (questionDetails?.acceptableAnswers && questionDetails.acceptableAnswers.length > 1) {
+      contentY += 5;
+      pdf.setFontSize(6);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Acceptable: ${questionDetails.acceptableAnswers.join(', ')}`, margin + 6, contentY);
+    }
+    
+    return contentY;
+  }
+
+  /**
+   * Add standard answer format (for Alphabet Knowledge, etc.)
+   */
+  static addStandardAnswerFormat(pdf, response, questionDetails, margin, contentY, isCorrect) {
+    const studentAnswer = this.formatStudentAnswer(response, questionDetails);
+    const correctAnswer = this.formatCorrectAnswer(response, questionDetails);
+    
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    
+    // Student Answer
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(`Student Answer: `, margin + 6, contentY);
+    pdf.setTextColor(isCorrect ? 76 : 244, isCorrect ? 175 : 67, isCorrect ? 80 : 54);
+    pdf.text(studentAnswer, margin + 45, contentY);
+    
+    // Correct Answer  
+    contentY += 6;
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(`Correct Answer: `, margin + 6, contentY);
+    pdf.setTextColor(76, 175, 80);
+    pdf.text(correctAnswer, margin + 45, contentY);
+    
+    return contentY;
   }
 
   /**
@@ -807,20 +984,32 @@ class PdfReportService {
     
     const category = response.category.toLowerCase();
     
-    if (category.includes('alphabet')) {
+    if (category.includes('alphabet') || category.includes('knowledge')) {
+      // Multiple choice questions
       if (Array.isArray(response.response) && response.response[0] && questionDetails?.choiceOptions) {
         const optionId = response.response[0];
         const selectedOption = questionDetails.choiceOptions.find(opt => opt.optionId === optionId);
         return selectedOption ? selectedOption.optionText : `Option ${optionId}`;
       }
+      return Array.isArray(response.response) ? response.response[0] : String(response.response);
+    } else if (category.includes('phonological')) {
+      // Matching questions - already handled in specific method
+      if (response.correctMatches !== undefined && response.totalMatches !== undefined) {
+        return `${response.correctMatches}/${response.totalMatches} matches`;
+      }
+      return 'Matching response';
     } else if (category.includes('decoding')) {
-      return Array.isArray(response.response) ? response.response.join('') : response.response;
-    } else if (category.includes('word')) {
-      return Array.isArray(response.response) ? response.response.join(', ') : response.response;
-    } else if (category.includes('comprehension')) {
-      return Array.isArray(response.response) ? response.response.join(', ') : response.response;
+      // Letter arrangement
+      return Array.isArray(response.response) ? response.response.join('') : String(response.response);
+    } else if (category.includes('word') || category.includes('recognition')) {
+      // Fill in the blanks
+      return Array.isArray(response.response) ? response.response.join(', ') : String(response.response);
+    } else if (category.includes('comprehension') || category.includes('reading')) {
+      // Text input
+      return Array.isArray(response.response) ? response.response.join(', ') : String(response.response);
     }
     
+    // Fallback
     return Array.isArray(response.response) ? response.response.join(', ') : String(response.response);
   }
 
@@ -829,17 +1018,39 @@ class PdfReportService {
     
     const category = response.category.toLowerCase();
     
-    if (category.includes('alphabet') && questionDetails.choiceOptions) {
-      const correctOption = questionDetails.choiceOptions.find(opt => opt.isCorrect);
-      return correctOption ? correctOption.optionText : 'Correct option';
-    } else if (category.includes('decoding') && questionDetails.correctSequence) {
-      return Array.isArray(questionDetails.correctSequence) ? 
-        questionDetails.correctSequence.join('') : questionDetails.correctSequence;
-    } else if (category.includes('word') && questionDetails.correctAnswer) {
-      return Array.isArray(questionDetails.correctAnswer) ? 
-        questionDetails.correctAnswer.join(', ') : questionDetails.correctAnswer;
-    } else if (category.includes('comprehension')) {
-      return questionDetails.correctAnswer || 'Expected answer';
+    if (category.includes('alphabet') || category.includes('knowledge')) {
+      // Multiple choice questions
+      if (questionDetails.choiceOptions) {
+        const correctOption = questionDetails.choiceOptions.find(opt => opt.isCorrect);
+        return correctOption ? correctOption.optionText : 'Correct option';
+      }
+    } else if (category.includes('phonological')) {
+      // Matching questions
+      if (questionDetails.questionSet && questionDetails.questionSet[0] && questionDetails.questionSet[0].correctPairs) {
+        const correctPairs = questionDetails.questionSet[0].correctPairs;
+        return `All ${correctPairs.length} pairs correct`;
+      }
+      return 'All pairs matched correctly';
+    } else if (category.includes('decoding')) {
+      // Letter arrangement
+      if (questionDetails.correctSequence) {
+        return Array.isArray(questionDetails.correctSequence) ? 
+          questionDetails.correctSequence.join('') : String(questionDetails.correctSequence);
+      }
+    } else if (category.includes('word') || category.includes('recognition')) {
+      // Fill in the blanks
+      if (questionDetails.correctAnswer) {
+        return Array.isArray(questionDetails.correctAnswer) ? 
+          questionDetails.correctAnswer.join(', ') : String(questionDetails.correctAnswer);
+      }
+    } else if (category.includes('comprehension') || category.includes('reading')) {
+      // Text input
+      if (questionDetails.correctAnswer) {
+        return String(questionDetails.correctAnswer);
+      }
+      if (questionDetails.acceptableAnswers && questionDetails.acceptableAnswers.length > 0) {
+        return questionDetails.acceptableAnswers[0];
+      }
     }
     
     return 'Answer not available';

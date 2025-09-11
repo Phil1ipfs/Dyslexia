@@ -799,71 +799,77 @@ const PrescriptiveAnalysis = ({
           
           {/* Analysis content */}
           <div className="literexia-analysis-content">
-            {selectedAnalysis ? (
-              <>
-                <div className="literexia-analysis-grid">
-                  <div className="literexia-analysis-column">
-                    <div className="literexia-analysis-section">
-                      <h4><FaCheckCircle /> Strengths</h4>
-                      {/* Check for strengths array or analysis string property */}
-                      {selectedAnalysis.strengths && selectedAnalysis.strengths.length > 0 ? (
-                        <ul className="literexia-strengths-list">
-                          {selectedAnalysis.strengths.map((strength, idx) => (
-                            <li key={idx}>{strength}</li>
-                          ))}
-                        </ul>
-                      ) : selectedAnalysis.analysis ? (
-                        <ul className="literexia-strengths-list">
-                          <li>{selectedAnalysis.analysis}</li>
-                        </ul>
-                      ) : (
-                        <p className="literexia-empty-info">No specific strengths identified yet.</p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="literexia-analysis-column">
-                    <div className="literexia-analysis-section">
-                      <h4><FaExclamationTriangle /> Weaknesses</h4>
-                      {selectedAnalysis.weaknesses && selectedAnalysis.weaknesses.length > 0 ? (
-                        <ul className="literexia-weaknesses-list">
-                          {selectedAnalysis.weaknesses.map((weakness, idx) => (
-                            <li key={idx}>{weakness}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="literexia-empty-info">No specific weaknesses identified yet.</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Recommendations */}
+            {/* Show success banner for passed categories */}
+            {selectedCategoryData?.isPassed && (
+              <div className="literexia-success-banner">
+                <FaCheckCircle style={{color: '#4CAF50'}} />
+                <p>
+                  The student has mastered {formatCategoryName(selectedCategory)} with a score of {selectedCategoryData.score}% (above the 75% threshold). No intervention is needed for this category.
+                </p>
+              </div>
+            )}
+
+            {/* Always show analysis sections for all categories */}
+            <div className="literexia-analysis-grid">
+              <div className="literexia-analysis-column">
                 <div className="literexia-analysis-section">
-                  <h4><FaLightbulb /> Recommendations</h4>
-                  {selectedAnalysis.recommendations && selectedAnalysis.recommendations.length > 0 ? (
-                    <ul className="literexia-recommendations-list">
-                      {selectedAnalysis.recommendations.map((recommendation, idx) => (
-                        <li key={idx}>{recommendation}</li>
+                  <h4><FaCheckCircle /> Strengths</h4>
+                  {/* Check for strengths array or analysis string property */}
+                  {selectedAnalysis?.strengths && selectedAnalysis.strengths.length > 0 ? (
+                    <ul className="literexia-strengths-list">
+                      {selectedAnalysis.strengths.map((strength, idx) => (
+                        <li key={idx}>{strength}</li>
                       ))}
                     </ul>
-                  ) : selectedAnalysis.recommendation ? (
-                    <ul className="literexia-recommendations-list">
-                      <li>{selectedAnalysis.recommendation}</li>
+                  ) : selectedAnalysis?.analysis ? (
+                    <ul className="literexia-strengths-list">
+                      <li>{selectedAnalysis.analysis}</li>
                     </ul>
                   ) : (
-                    <p className="literexia-empty-info">No specific recommendations available yet.</p>
+                    <p className="literexia-empty-info">No specific strengths identified yet.</p>
                   )}
                 </div>
-              </>
-            ) : (
-              <div className={`literexia-empty-analysis ${allCategoriesPassed ? 'passed' : ''}`}>
-                <FaInfoCircle style={allCategoriesPassed ? {color: '#4CAF50'} : {}} />
-                <p>
-                  {allCategoriesPassed 
-                    ? `The student has mastered ${formatCategoryName(selectedCategory)} with a score above the 75% threshold. No intervention is needed at this time.`
-                    : "No detailed analysis is available for this category yet. Create an intervention to address the learning gap."}
-                </p>
+              </div>
+              
+              <div className="literexia-analysis-column">
+                <div className="literexia-analysis-section">
+                  <h4><FaExclamationTriangle /> Weaknesses</h4>
+                  {selectedAnalysis?.weaknesses && selectedAnalysis.weaknesses.length > 0 ? (
+                    <ul className="literexia-weaknesses-list">
+                      {selectedAnalysis.weaknesses.map((weakness, idx) => (
+                        <li key={idx}>{weakness}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="literexia-empty-info">No specific weaknesses identified yet.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Recommendations */}
+            <div className="literexia-analysis-section">
+              <h4><FaLightbulb /> Recommendations</h4>
+              {selectedAnalysis?.recommendations && selectedAnalysis.recommendations.length > 0 ? (
+                <ul className="literexia-recommendations-list">
+                  {selectedAnalysis.recommendations.map((recommendation, idx) => (
+                    <li key={idx}>{recommendation}</li>
+                  ))}
+                </ul>
+              ) : selectedAnalysis?.recommendation ? (
+                <ul className="literexia-recommendations-list">
+                  <li>{selectedAnalysis.recommendation}</li>
+                </ul>
+              ) : (
+                <p className="literexia-empty-info">No specific recommendations available yet.</p>
+              )}
+            </div>
+
+            {/* Show empty analysis message only for failed categories without any analysis data */}
+            {!selectedAnalysis && !selectedCategoryData?.isPassed && (
+              <div className="literexia-empty-analysis">
+                <FaInfoCircle />
+                <p>No detailed analysis is available for this category yet. Create an intervention to address the learning gap.</p>
               </div>
             )}
           </div>
@@ -871,8 +877,8 @@ const PrescriptiveAnalysis = ({
           {/* Teaching guide */}
           {renderTeachingGuide(selectedCategory)}
           
-          {/* Current interventions - only show if not all categories are passed */}
-          {!allCategoriesPassed && (
+          {/* Current interventions - only show if the selected category has not passed */}
+          {selectedCategoryData && !selectedCategoryData.isPassed && (
             <div className="literexia-current-interventions">
               <div className="literexia-interventions-header">
                 <h3>Current Interventions</h3>
