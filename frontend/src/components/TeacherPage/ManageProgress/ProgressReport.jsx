@@ -194,12 +194,55 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
     }
   };
   
+  // Recalculate metrics using actual student responses data
+  const recalculateMetricsFromResponses = () => {
+    if (!studentResponses || studentResponses.length === 0) {
+      // Fallback to category results if no response data
+      return {
+        totalQuestions: hasCategoryResults ? 
+          progressData.categories.reduce((total, category) => total + (Number(category.totalQuestions) || 0), 0) : 0,
+        correctAnswers: hasCategoryResults ? 
+          progressData.categories.reduce((total, category) => total + (Number(category.correctAnswers) || 0), 0) : 0
+      };
+    }
+
+    let totalQuestions = 0;
+    let correctAnswers = 0;
+
+    // Group responses by category
+    const responsesByCategory = studentResponses.reduce((acc, response) => {
+      const category = response.category || 'Unknown';
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(response);
+      return acc;
+    }, {});
+
+    // Calculate totals for each category
+    Object.entries(responsesByCategory).forEach(([category, responses]) => {
+      if (category.toLowerCase().includes('phonological')) {
+        // For Phonological Awareness: aggregate matches
+        const totalMatches = responses.reduce((sum, resp) => sum + (resp.totalMatches || 0), 0);
+        const correctMatches = responses.reduce((sum, resp) => sum + (resp.correctMatches || 0), 0);
+        
+        totalQuestions += totalMatches;
+        correctAnswers += correctMatches;
+        
+        console.log(`📊 PA Calculation: ${correctMatches}/${totalMatches} matches from ${responses.length} questions`);
+      } else {
+        // For other categories: count individual responses
+        totalQuestions += responses.length;
+        correctAnswers += responses.filter(resp => resp.isCorrect).length;
+        
+        console.log(`📊 ${category} Calculation: ${responses.filter(resp => resp.isCorrect).length}/${responses.length} questions`);
+      }
+    });
+
+    return { totalQuestions, correctAnswers };
+  };
+
   // Calculate completion rate and other metrics
   const completionRate = calculateCompletionRate();
-  const totalQuestions = hasCategoryResults ? 
-    progressData.categories.reduce((total, category) => total + (Number(category.totalQuestions) || 0), 0) : 0;
-  const correctAnswers = hasCategoryResults ? 
-    progressData.categories.reduce((total, category) => total + (Number(category.correctAnswers) || 0), 0) : 0;
+  const { totalQuestions, correctAnswers } = recalculateMetricsFromResponses();
   const passedCategories = hasCategoryResults ? 
     progressData.categories.filter(cat => cat.isPassed).length : 0;
   const totalCategories = hasCategoryResults ? 
@@ -287,6 +330,30 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
       
       default:
         return 'reading-level-not-assessed';
+    }
+  };
+
+  // Get actual counts for a category from student responses
+  const getCategoryActualCounts = (categoryName) => {
+    if (!studentResponses || studentResponses.length === 0) {
+      // Fallback to category metadata if no responses
+      return { correct: 0, total: 0 };
+    }
+
+    const categoryResponses = studentResponses.filter(response => 
+      response.category && response.category.toLowerCase().includes(categoryName.toLowerCase())
+    );
+
+    if (categoryName.toLowerCase().includes('phonological')) {
+      // For Phonological Awareness: aggregate matches
+      const totalMatches = categoryResponses.reduce((sum, resp) => sum + (resp.totalMatches || 0), 0);
+      const correctMatches = categoryResponses.reduce((sum, resp) => sum + (resp.correctMatches || 0), 0);
+      return { correct: correctMatches, total: totalMatches };
+    } else {
+      // For other categories: count individual questions
+      const totalQuestions = categoryResponses.length;
+      const correctQuestions = categoryResponses.filter(resp => resp.isCorrect).length;
+      return { correct: correctQuestions, total: totalQuestions };
     }
   };
 
@@ -401,7 +468,11 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
         return `Option ${optionId}`;
       }
     } else if (categoryLower.includes('phonological')) {
-      // Matching - show matches made
+      // Matching - show detailed matching pairs
+      if (Array.isArray(response.response) && response.response.length > 0) {
+        return response.response;
+      }
+      // Fallback to match count
       if (response.correctMatches !== undefined && response.totalMatches !== undefined) {
         return `${response.correctMatches}/${response.totalMatches} correct matches`;
       }
@@ -490,6 +561,7 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
         studentData,
         progressData,
         studentResponses,
+        assessmentQuestions,
         onProgress
       );
 
@@ -518,7 +590,7 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
   
   return (
     <div className="student-progress-container">
-      {/* Progress info section with PDF download */}
+      {/* Progress info section */}
       <div className="student-progress-info">
         <FaInfoCircle className="student-progress-info-icon" />
         <div className="student-progress-info-text">
@@ -528,46 +600,6 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
             completed on <strong>{assessmentDate}</strong>. Current reading level: <strong>{readingLevel}</strong>.
             You can view their performance across the key reading skill categories.
           </p>
-        </div>
-        <div className="student-progress-pdf-actions">
-          <button
-            className="student-progress-pdf-download-btn"
-            onClick={generatePdfReport}
-            disabled={pdfGeneration.isGenerating}
-            title="Download comprehensive PDF report"
-          >
-            {pdfGeneration.isGenerating ? (
-              <>
-                <FaSpinner className="student-progress-pdf-spinner" />
-                Generating PDF...
-              </>
-            ) : (
-              <>
-                <FaFilePdf />
-                <FaDownload className="student-progress-pdf-download-icon" />
-                Download PDF Report
-              </>
-            )}
-          </button>
-          {pdfGeneration.isGenerating && (
-            <div className="student-progress-pdf-progress">
-              <div className="student-progress-pdf-progress-bar">
-                <div 
-                  className="student-progress-pdf-progress-fill" 
-                  style={{ width: `${pdfGeneration.progress}%` }}
-                ></div>
-              </div>
-              <span className="student-progress-pdf-progress-text">
-                {pdfGeneration.progress}%
-              </span>
-            </div>
-          )}
-          {pdfGeneration.error && (
-            <div className="student-progress-pdf-error">
-              <FaExclamationTriangle />
-              {pdfGeneration.error}
-            </div>
-          )}
         </div>
       </div>
       
@@ -627,10 +659,24 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
       {/* Combined Category Progress & Performance Section */}
       {hasCategoryResults && (
         <div className="student-progress-category-section">
-          <h3 className="student-progress-section-title">
-            <FaChartLine className="student-progress-section-icon" /> 
-            Reading Skills Assessment
-          </h3>
+          <div className="student-progress-section-header">
+            <h3 className="student-progress-section-title">
+              <FaChartLine className="student-progress-section-icon" /> 
+              Reading Skills Assessment
+            </h3>
+            <div className="student-progress-section-actions">
+              <button
+                className="student-progress-pdf-button"
+                onClick={generatePdfReport}
+                disabled={pdfGeneration.isGenerating}
+                title={pdfGeneration.isGenerating ? `Generating PDF... ${pdfGeneration.progress}%` : "Download comprehensive PDF report"}
+              >
+                <FaFilePdf />
+                <FaDownload className="student-progress-pdf-icon" />
+                {pdfGeneration.isGenerating ? `Generating... ${pdfGeneration.progress}%` : 'Download PDF Report'}
+              </button>
+            </div>
+          </div>
           
           <div className="student-progress-info" style={{ marginBottom: '1.5rem' }}>
             <FaInfoCircle className="student-progress-info-icon" />
@@ -665,10 +711,14 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
                 formatCategoryName(categoryName) : 
                 `Category ${index + 1}`;
               
-              const correctCount = Number(category.correctAnswers) || 0;
-              const totalCount = Number(category.totalQuestions) || 0;
-              const score = Number(category.score) || 0;
-              const isPassed = category.isPassed || score >= 75;
+              // Get actual counts from student responses data
+              const actualCounts = getCategoryActualCounts(categoryName);
+              const correctCount = actualCounts.correct || Number(category.correctAnswers) || 0;
+              const totalCount = actualCounts.total || Number(category.totalQuestions) || 0;
+              
+              // Recalculate score based on actual data if available
+              const score = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : Number(category.score) || 0;
+              const isPassed = score >= 75;
               
               // Get questions for this category
               const categoryQuestions = getCategoryQuestions(categoryName);
@@ -697,14 +747,6 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
                     </div>
                     
                     <div className="student-progress-category-right">
-                      {/* Debug button - keep for database troubleshooting */}
-                      <button 
-                        onClick={debugData} 
-                        style={{fontSize: '0.7rem', padding: '0.25rem', margin: '0 0.5rem', backgroundColor: '#f0f0f0'}}
-                      >
-                        Debug Data
-                      </button>
-                      
                       <button
                         className="student-progress-expand-toggle"
                         onClick={() => toggleCategoryExpansion(categoryName)}
@@ -752,52 +794,300 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
                         </div>
                       ) : categoryQuestions.length > 0 ? (
                         <div className="student-progress-questions-grid">
-                          {categoryQuestions.map((question, qIndex) => (
-                            <div key={question.questionId || qIndex} className="student-progress-question-card">
-                              <div className="student-progress-question-header">
-                                <div className="student-progress-question-number">
-                                  Question {qIndex + 1}
-                                </div>
-                                <div className="student-progress-question-id">
-                                  ID: {question.questionId}
-                                </div>
-                                {getAnswerStatusBadge(question.isCorrect)}
-                              </div>
-
-                              <div className="student-progress-question-body">
-                                <div className="student-progress-question-text">
-                                  <strong>Question:</strong> {question.questionText}
+                          {categoryQuestions.map((question, qIndex) => {
+                            const isPhonological = categoryName.toLowerCase().includes('phonological');
+                            
+                            return (
+                              <div key={question.questionId || qIndex} className="student-progress-question-card">
+                                <div className="student-progress-question-header">
+                                  <div className="student-progress-question-number">
+                                    Question {qIndex + 1}
+                                  </div>
+                                  <div className="student-progress-question-id">
+                                    ID: {question.questionId}
+                                  </div>
+                                  {getAnswerStatusBadge(question.isCorrect)}
                                 </div>
 
-                                {question.questionImage && (
-                                  <div className="student-progress-question-media">
-                                    <button
-                                      className="student-progress-image-preview-btn"
-                                      onClick={() => handleImageClick(
-                                        question.questionImage,
-                                        `Question ${qIndex + 1} Image`,
-                                        question.questionText
+                                <div className="student-progress-question-body">
+                                  <div className="student-progress-question-text">
+                                    <strong>Question:</strong> {question.questionText}
+                                  </div>
+
+                                  {/* Special handling for different question types */}
+                                  {isPhonological && (
+                                    <div className="student-progress-phonological-details">
+                                      <div className="student-progress-audio-instruction">
+                                        <FaVolumeUp className="student-progress-audio-icon" />
+                                        <span className="student-progress-audio-text">
+                                          Audio Text: Pakinggan ang audio. Itugma ito sa katumbas na letra sa kabilang hanay.
+                                        </span>
+                                      </div>
+                                      
+                                      {question.questionDetails && question.questionDetails.questionSet && question.questionDetails.questionSet[0] && (
+                                        <div className="student-progress-matching-pairs">
+                                          <div className="student-progress-matching-section">
+                                            <h5>Audio Elements:</h5>
+                                            <div className="student-progress-audio-elements">
+                                              {question.questionDetails.questionSet[0].audioTexts?.map((audio, idx) => (
+                                                <span key={idx} className="student-progress-audio-element">
+                                                  <FaVolumeUp /> {audio}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="student-progress-matching-section">
+                                            <h5>Matching Options:</h5>
+                                            <div className="student-progress-matching-options">
+                                              {question.questionDetails.questionSet[0].matchingOptions?.map((option, idx) => (
+                                                <span key={idx} className="student-progress-matching-option">
+                                                  {option}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        </div>
                                       )}
-                                      title="Click to view image"
-                                    >
-                                      <FaEye /> View Image
-                                    </button>
-                                  </div>
-                                )}
 
-                                <div className="student-progress-answer-comparison">
-                                  <div className="student-progress-answer-row">
-                                    <span className="student-progress-answer-label">Student Answer:</span>
-                                    <span className={`student-progress-answer-value ${question.isCorrect ? 'student-progress-answer-correct' : 'student-progress-answer-incorrect'}`}>
-                                      {question.studentAnswer}
-                                    </span>
-                                  </div>
-                                  <div className="student-progress-answer-row">
-                                    <span className="student-progress-answer-label">Correct Answer:</span>
-                                    <span className="student-progress-answer-value student-progress-answer-correct">
-                                      {question.correctAnswer}
-                                    </span>
-                                  </div>
+                                      {/* Student's matching response */}
+                                      {Array.isArray(question.response) && (
+                                        <div className="student-progress-matching-response">
+                                          <h5>Student's Matches:</h5>
+                                          <div className="student-progress-match-pairs">
+                                            {question.response.map((pair, idx) => {
+                                              const pairKey = Object.keys(pair)[0];
+                                              const pairValue = pair[pairKey];
+                                              const isCorrect = question.questionDetails?.questionSet?.[0]?.correctPairs?.some(
+                                                correctPair => correctPair[pairKey] === pairValue
+                                              );
+                                              
+                                              return (
+                                                <div key={idx} className={`student-progress-match-pair ${isCorrect ? 'correct' : 'incorrect'}`}>
+                                                  <span className="student-progress-match-audio">{pairKey}</span>
+                                                  <FaArrowRight className="student-progress-match-arrow" />
+                                                  <span className="student-progress-match-letter">{pairValue}</span>
+                                                  {isCorrect ? (
+                                                    <FaCheck className="student-progress-match-check correct" />
+                                                  ) : (
+                                                    <FaTimesCircle className="student-progress-match-check incorrect" />
+                                                  )}
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                          
+                                          <div className="student-progress-match-summary">
+                                            <span className="student-progress-match-score">
+                                              {question.correctMatches || 0}/{question.totalMatches || 0} correct matches
+                                            </span>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* Special handling for Word Recognition */}
+                                  {categoryName.toLowerCase().includes('word') && (
+                                    <div className="student-progress-word-recognition-details">
+                                      <div className="student-progress-word-instruction">
+                                        <FaBook className="student-progress-word-icon" />
+                                        <span className="student-progress-word-text">
+                                          Fill in the blanks to complete the word
+                                        </span>
+                                      </div>
+                                      
+                                      {question.questionDetails && (
+                                        <div className="student-progress-word-display">
+                                          <div className="student-progress-word-section">
+                                            <h5>Word to Complete:</h5>
+                                            <div className="student-progress-display-word">
+                                              {question.questionDetails.displayWord || 'Word display not available'}
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="student-progress-word-section">
+                                            <h5>Available Options:</h5>
+                                            <div className="student-progress-word-options">
+                                              {question.questionDetails.blankOptions?.map((option, idx) => (
+                                                <span key={idx} className="student-progress-word-option">
+                                                  {option}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="student-progress-word-answer">
+                                            <div className="student-progress-word-section">
+                                              <h5>Student's Answer:</h5>
+                                              <div className="student-progress-word-response">
+                                                {Array.isArray(question.response) ? 
+                                                  question.response.map((part, idx) => (
+                                                    <span key={idx} className={`student-progress-word-part ${question.isCorrect ? 'correct' : 'incorrect'}`}>
+                                                      {part}
+                                                    </span>
+                                                  )) : 
+                                                  <span className={`student-progress-word-part ${question.isCorrect ? 'correct' : 'incorrect'}`}>
+                                                    {question.response || 'No response'}
+                                                  </span>
+                                                }
+                                              </div>
+                                            </div>
+                                            
+                                            <div className="student-progress-word-section">
+                                              <h5>Correct Answer:</h5>
+                                              <div className="student-progress-word-correct">
+                                                {question.questionDetails.correctAnswer?.map((part, idx) => (
+                                                  <span key={idx} className="student-progress-word-part correct">
+                                                    {part}
+                                                  </span>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* Special handling for Decoding */}
+                                  {categoryName.toLowerCase().includes('decoding') && (
+                                    <div className="student-progress-decoding-details">
+                                      <div className="student-progress-decoding-instruction">
+                                        <FaListAlt className="student-progress-decoding-icon" />
+                                        <span className="student-progress-decoding-text">
+                                          Arrange the letters in the correct sequence
+                                        </span>
+                                      </div>
+                                      
+                                      {question.questionDetails && (
+                                        <div className="student-progress-decoding-display">
+                                          <div className="student-progress-decoding-section">
+                                            <h5>Available Letters:</h5>
+                                            <div className="student-progress-decoding-elements">
+                                              {question.questionDetails.dragElements?.map((element, idx) => (
+                                                <span key={idx} className="student-progress-decoding-element">
+                                                  {element}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="student-progress-decoding-answer">
+                                            <div className="student-progress-decoding-section">
+                                              <h5>Student's Sequence:</h5>
+                                              <div className="student-progress-decoding-response">
+                                                {Array.isArray(question.response) ? 
+                                                  question.response.map((letter, idx) => (
+                                                    <span key={idx} className={`student-progress-decoding-letter ${question.isCorrect ? 'correct' : 'incorrect'}`}>
+                                                      {letter}
+                                                    </span>
+                                                  )) : 
+                                                  <span className={`student-progress-decoding-letter ${question.isCorrect ? 'correct' : 'incorrect'}`}>
+                                                    {question.response || 'No response'}
+                                                  </span>
+                                                }
+                                              </div>
+                                            </div>
+                                            
+                                            <div className="student-progress-decoding-section">
+                                              <h5>Correct Sequence:</h5>
+                                              <div className="student-progress-decoding-correct">
+                                                {question.questionDetails.correctSequence?.map((letter, idx) => (
+                                                  <span key={idx} className="student-progress-decoding-letter correct">
+                                                    {letter}
+                                                  </span>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* Special handling for Reading Comprehension */}
+                                  {categoryName.toLowerCase().includes('comprehension') && (
+                                    <div className="student-progress-comprehension-details">
+                                      <div className="student-progress-comprehension-instruction">
+                                        <FaFileAlt className="student-progress-comprehension-icon" />
+                                        <span className="student-progress-comprehension-text">
+                                          Read the story and answer the question
+                                        </span>
+                                      </div>
+                                      
+                                      {question.questionDetails && (
+                                        <div className="student-progress-comprehension-display">
+                                          {question.questionDetails.storyTitle && (
+                                            <div className="student-progress-story-title">
+                                              <h5>Story: {question.questionDetails.storyTitle}</h5>
+                                            </div>
+                                          )}
+                                          
+                                          <div className="student-progress-comprehension-answer">
+                                            <div className="student-progress-comprehension-section">
+                                              <h5>Student's Answer:</h5>
+                                              <div className={`student-progress-comprehension-response ${question.isCorrect ? 'correct' : 'incorrect'}`}>
+                                                {Array.isArray(question.response) ? question.response.join(', ') : question.response || 'No response'}
+                                              </div>
+                                            </div>
+                                            
+                                            <div className="student-progress-comprehension-section">
+                                              <h5>Expected Answer:</h5>
+                                              <div className="student-progress-comprehension-correct">
+                                                {question.questionDetails.correctAnswer}
+                                              </div>
+                                              
+                                              {question.questionDetails.acceptableAnswers && question.questionDetails.acceptableAnswers.length > 1 && (
+                                                <div className="student-progress-acceptable-answers">
+                                                  <small>Acceptable answers: {question.questionDetails.acceptableAnswers.join(', ')}</small>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {question.questionImage && (
+                                    <div className="student-progress-question-media">
+                                      <button
+                                        className="student-progress-image-preview-btn"
+                                        onClick={() => handleImageClick(
+                                          question.questionImage,
+                                          `Question ${qIndex + 1} Image`,
+                                          question.questionText
+                                        )}
+                                        title="Click to view image"
+                                      >
+                                        <FaEye /> View Image
+                                      </button>
+                                    </div>
+                                  )}
+
+                                  {/* Standard answer comparison for simple question types only (Alphabet Knowledge) */}
+                                  {!isPhonological && 
+                                   !categoryName.toLowerCase().includes('word') && 
+                                   !categoryName.toLowerCase().includes('decoding') && 
+                                   !categoryName.toLowerCase().includes('comprehension') && (
+                                    <div className="student-progress-answer-comparison">
+                                      <div className="student-progress-answer-row">
+                                        <span className="student-progress-answer-label">Student Answer:</span>
+                                        <span className={`student-progress-answer-value ${question.isCorrect ? 'student-progress-answer-correct' : 'student-progress-answer-incorrect'}`}>
+                                          {question.studentAnswer}
+                                        </span>
+                                      </div>
+                                      <div className="student-progress-answer-row">
+                                        <span className="student-progress-answer-label">Correct Answer:</span>
+                                        <span className="student-progress-answer-value student-progress-answer-correct">
+                                          {question.correctAnswer}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Response time for all questions */}
                                   <div className="student-progress-answer-row">
                                     <span className="student-progress-answer-label">Response Time:</span>
                                     <span className="student-progress-answer-value">
@@ -806,8 +1096,8 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : (
                         <div className="student-progress-no-questions">

@@ -297,1184 +297,650 @@ The system tracks student progression through:
 This system provides comprehensive tracking and assessment capabilities while maintaining data integrity and supporting progressive learning paths for students at different reading levels.
 
 test.student_responses.json
-[{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb701"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "683a51d3168ffbb611dab96a"
-  },
-  "questionId": "AK_001",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "2"
-  ],
-  "isCorrect": true,
-  "responseTime": 7.4,
-  "answeredAt": {
-    "$date": "2025-08-18T12:15:25.500Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:15:25.500Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb702"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "683a51d3168ffbb611dab96a"
-  },
-  "questionId": "AK_002",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "1"
-  ],
-  "isCorrect": true,
-  "responseTime": 6.8,
-  "answeredAt": {
-    "$date": "2025-08-18T12:15:32.300Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:15:32.300Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb703"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "683a51d3168ffbb611dab96a"
-  },
-  "questionId": "AK_003",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "2"
-  ],
-  "isCorrect": true,
-  "responseTime": 8.1,
-  "answeredAt": {
-    "$date": "2025-08-18T12:15:40.400Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:15:40.400Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb704"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "683cb98951eaae9b315b8c31"
-  },
-  "questionId": "PA_001",
-  "category": "Phonological Awareness",
-  "response": [
-    {
-      "H": "Hh"
-    },
-    {
-      "T": "Tt"
-    },
-    {
-      "N": "Nn"
-    },
-    {
-      "L": "Ll"
-    },
-    {
-      "P": "Pp"
-    }
-  ],
-  "correctMatches": 5,
-  "totalMatches": 5,
-  "isCorrect": true,
-  "responseTime": 42.6,
-  "answeredAt": {
-    "$date": "2025-08-18T12:16:23.000Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:16:23.000Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb705"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "683cb98951eaae9b315b8c31"
-  },
-  "questionId": "PA_002",
-  "category": "Phonological Awareness",
-  "response": [
-    {
-      "L": "Ll"
-    },
-    {
-      "P": "Bb"
-    },
-    {
-      "B": "Pp"
-    }
-  ],
-  "correctMatches": 1,
-  "totalMatches": 3,
-  "isCorrect": false,
-  "responseTime": 38.9,
-  "answeredAt": {
-    "$date": "2025-08-18T12:17:01.900Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:17:01.900Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb706"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "683cbaa951eaae9b315b8c42"
-  },
-  "questionId": "DC_001",
-  "category": "Decoding",
-  "response": [
-    "Y",
-    "E",
-    "L",
-    "O"
-  ],
-  "isCorrect": true,
-  "responseTime": 28.5,
-  "answeredAt": {
-    "$date": "2025-08-18T12:17:30.400Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:17:30.400Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb707"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "683cbaa951eaae9b315b8c42"
-  },
-  "questionId": "DC_002",
-  "category": "Decoding",
-  "response": [
-    "O"
-  ],
-  "isCorrect": true,
-  "responseTime": 22.3,
-  "answeredAt": {
-    "$date": "2025-08-18T12:17:52.700Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:17:52.700Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb708"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "683cbb7451eaae9b315b8c4a"
-  },
-  "questionId": "WR_001",
-  "category": "Word Recognition",
-  "response": [
-    "Bola"
-  ],
-  "isCorrect": true,
-  "responseTime": 16.8,
-  "answeredAt": {
-    "$date": "2025-08-18T12:18:09.500Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:18:09.500Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb709"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "683cbb7451eaae9b315b8c4a"
-  },
-  "questionId": "WR_002",
-  "category": "Word Recognition",
-  "response": [
-    "LIB",
-    "RO"
-  ],
-  "isCorrect": true,
-  "responseTime": 31.2,
-  "answeredAt": {
-    "$date": "2025-08-18T12:18:40.700Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:18:40.700Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb710"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "683e0fc10a6d5b9eb216970c"
-  },
-  "questionId": "RC_001",
-  "category": "Reading Comprehension",
-  "response": [
-    "Juan"
-  ],
-  "isCorrect": true,
-  "responseTime": 45.6,
-  "answeredAt": {
-    "$date": "2025-08-18T12:19:26.300Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:19:26.300Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb711"
-  },
-  "studentId": 202533333,
-  "categoryId": {
-    "$oid": "683e0fc10a6d5b9eb216970c"
-  },
-  "questionId": "RC_002",
-  "category": "Reading Comprehension",
-  "response": [
-    "Parke"
-  ],
-  "isCorrect": true,
-  "responseTime": 38.4,
-  "answeredAt": {
-    "$date": "2025-08-18T12:20:04.700Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-18T12:20:04.700Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "68484489bc8ea7a4e8583601"
-  },
-  "studentId": 202511111,
-  "categoryId": {
-    "$oid": "683a51d3168ffbb611dab96a"
-  },
-  "questionId": "AK_001",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "2"
-  ],
-  "isCorrect": true,
-  "responseTime": 12.8,
-  "answeredAt": {
-    "$date": "2025-06-11T14:30:15.200Z"
-  },
-  "createdAt": {
-    "$date": "2025-06-11T14:30:15.200Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "68484489bc8ea7a4e8583602"
-  },
-  "studentId": 202511111,
-  "categoryId": {
-    "$oid": "683a51d3168ffbb611dab96a"
-  },
-  "questionId": "AK_002",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "2"
-  ],
-  "isCorrect": false,
-  "responseTime": 15.3,
-  "answeredAt": {
-    "$date": "2025-06-11T14:30:30.500Z"
-  },
-  "createdAt": {
-    "$date": "2025-06-11T14:30:30.500Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "68484489bc8ea7a4e8583603"
-  },
-  "studentId": 202511111,
-  "categoryId": {
-    "$oid": "683cb98951eaae9b315b8c31"
-  },
-  "questionId": "PA_001",
-  "category": "Phonological Awareness",
-  "response": [
-    {
-      "H": "Tt"
-    },
-    {
-      "T": "Hh"
-    },
-    {
-      "N": "Nn"
-    },
-    {
-      "L": "Ll"
-    },
-    {
-      "P": "Pp"
-    }
-  ],
-  "correctMatches": 3,
-  "totalMatches": 5,
-  "isCorrect": false,
-  "responseTime": 58.7,
-  "answeredAt": {
-    "$date": "2025-06-11T14:31:29.200Z"
-  },
-  "createdAt": {
-    "$date": "2025-06-11T14:31:29.200Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "68484489bc8ea7a4e8583604"
-  },
-  "studentId": 202511111,
-  "categoryId": {
-    "$oid": "683cbaa951eaae9b315b8c42"
-  },
-  "questionId": "DC_001",
-  "category": "Decoding",
-  "response": [
-    "Y",
-    "A",
-    "L",
-    "O"
-  ],
-  "isCorrect": false,
-  "responseTime": 41.2,
-  "answeredAt": {
-    "$date": "2025-06-11T14:32:10.400Z"
-  },
-  "createdAt": {
-    "$date": "2025-06-11T14:32:10.400Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "68484489bc8ea7a4e8583605"
-  },
-  "studentId": 202511111,
-  "categoryId": {
-    "$oid": "683cbb7451eaae9b315b8c4a"
-  },
-  "questionId": "WR_001",
-  "category": "Word Recognition",
-  "response": [
-    "Kutsara"
-  ],
-  "isCorrect": false,
-  "responseTime": 26.9,
-  "answeredAt": {
-    "$date": "2025-06-11T14:32:37.300Z"
-  },
-  "createdAt": {
-    "$date": "2025-06-11T14:32:37.300Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "68484489bc8ea7a4e8583606"
-  },
-  "studentId": 202511111,
-  "categoryId": {
-    "$oid": "683e0fc10a6d5b9eb216970c"
-  },
-  "questionId": "RC_001",
-  "category": "Reading Comprehension",
-  "response": [
-    "juan"
-  ],
-  "isCorrect": true,
-  "responseTime": 52.8,
-  "answeredAt": {
-    "$date": "2025-06-11T14:33:30.100Z"
-  },
-  "createdAt": {
-    "$date": "2025-06-11T14:33:30.100Z"
-  },
-  "readingLevel": "High Emerging"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308d01"
-  },
-  "studentId": 202522233,
-  "categoryId": {
-    "$oid": "683a51d3168ffbb611dab96a"
-  },
-  "questionId": "AK_001",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "2"
-  ],
-  "isCorrect": true,
-  "responseTime": 4.2,
-  "answeredAt": {
-    "$date": "2025-08-20T05:10:12.300Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T05:10:12.300Z"
-  },
-  "readingLevel": "At Grade Level"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308d02"
-  },
-  "studentId": 202522233,
-  "categoryId": {
-    "$oid": "683a51d3168ffbb611dab96a"
-  },
-  "questionId": "AK_002",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "1"
-  ],
-  "isCorrect": true,
-  "responseTime": 3.8,
-  "answeredAt": {
-    "$date": "2025-08-20T05:10:16.100Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T05:10:16.100Z"
-  },
-  "readingLevel": "At Grade Level"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308d03"
-  },
-  "studentId": 202522233,
-  "categoryId": {
-    "$oid": "683a51d3168ffbb611dab96a"
-  },
-  "questionId": "AK_003",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "2"
-  ],
-  "isCorrect": true,
-  "responseTime": 4.6,
-  "answeredAt": {
-    "$date": "2025-08-20T05:10:20.700Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T05:10:20.700Z"
-  },
-  "readingLevel": "At Grade Level"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308d04"
-  },
-  "studentId": 202522233,
-  "categoryId": {
-    "$oid": "683cb98951eaae9b315b8c31"
-  },
-  "questionId": "PA_001",
-  "category": "Phonological Awareness",
-  "response": [
-    {
-      "H": "Hh"
-    },
-    {
-      "T": "Tt"
-    },
-    {
-      "N": "Nn"
-    },
-    {
-      "L": "Ll"
-    },
-    {
-      "P": "Pp"
-    }
-  ],
-  "correctMatches": 5,
-  "totalMatches": 5,
-  "isCorrect": true,
-  "responseTime": 28.4,
-  "answeredAt": {
-    "$date": "2025-08-20T05:10:49.100Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T05:10:49.100Z"
-  },
-  "readingLevel": "At Grade Level"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308d05"
-  },
-  "studentId": 202522233,
-  "categoryId": {
-    "$oid": "683cb98951eaae9b315b8c31"
-  },
-  "questionId": "PA_002",
-  "category": "Phonological Awareness",
-  "response": [
-    {
-      "L": "Ll"
-    },
-    {
-      "P": "Pp"
-    },
-    {
-      "B": "Bb"
-    }
-  ],
-  "correctMatches": 3,
-  "totalMatches": 3,
-  "isCorrect": true,
-  "responseTime": 24.7,
-  "answeredAt": {
-    "$date": "2025-08-20T05:11:13.800Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T05:11:13.800Z"
-  },
-  "readingLevel": "At Grade Level"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308d06"
-  },
-  "studentId": 202522233,
-  "categoryId": {
-    "$oid": "683cbaa951eaae9b315b8c42"
-  },
-  "questionId": "DC_001",
-  "category": "Decoding",
-  "response": [
-    "Y",
-    "E",
-    "L",
-    "O"
-  ],
-  "isCorrect": true,
-  "responseTime": 15.3,
-  "answeredAt": {
-    "$date": "2025-08-20T05:11:29.100Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T05:11:29.100Z"
-  },
-  "readingLevel": "At Grade Level"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308d07"
-  },
-  "studentId": 202522233,
-  "categoryId": {
-    "$oid": "683cbaa951eaae9b315b8c42"
-  },
-  "questionId": "DC_002",
-  "category": "Decoding",
-  "response": [
-    "O"
-  ],
-  "isCorrect": true,
-  "responseTime": 12.8,
-  "answeredAt": {
-    "$date": "2025-08-20T05:11:41.900Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T05:11:41.900Z"
-  },
-  "readingLevel": "At Grade Level"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308d08"
-  },
-  "studentId": 202522233,
-  "categoryId": {
-    "$oid": "683cbb7451eaae9b315b8c4a"
-  },
-  "questionId": "WR_001",
-  "category": "Word Recognition",
-  "response": [
-    "Bola"
-  ],
-  "isCorrect": true,
-  "responseTime": 11.2,
-  "answeredAt": {
-    "$date": "2025-08-20T05:11:53.100Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T05:11:53.100Z"
-  },
-  "readingLevel": "At Grade Level"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308d09"
-  },
-  "studentId": 202522233,
-  "categoryId": {
-    "$oid": "683cbb7451eaae9b315b8c4a"
-  },
-  "questionId": "WR_002",
-  "category": "Word Recognition",
-  "response": [
-    "LIB",
-    "RO"
-  ],
-  "isCorrect": true,
-  "responseTime": 18.7,
-  "answeredAt": {
-    "$date": "2025-08-20T05:12:11.800Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T05:12:11.800Z"
-  },
-  "readingLevel": "At Grade Level"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308d10"
-  },
-  "studentId": 202522233,
-  "categoryId": {
-    "$oid": "683e0fc10a6d5b9eb216970c"
-  },
-  "questionId": "RC_001",
-  "category": "Reading Comprehension",
-  "response": [
-    "Juan"
-  ],
-  "isCorrect": true,
-  "responseTime": 22.5,
-  "answeredAt": {
-    "$date": "2025-08-20T05:12:34.300Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T05:12:34.300Z"
-  },
-  "readingLevel": "At Grade Level"
-},
-{
-  "_id": {
-    "$oid": "68491110988139e71b308d11"
-  },
-  "studentId": 202522233,
-  "categoryId": {
-    "$oid": "683e0fc10a6d5b9eb216970c"
-  },
-  "questionId": "RC_002",
-  "category": "Reading Comprehension",
-  "response": [
-    "Parke"
-  ],
-  "isCorrect": true,
-  "responseTime": 19.8,
-  "answeredAt": {
-    "$date": "2025-08-20T05:12:54.100Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-20T05:12:54.100Z"
-  },
-  "readingLevel": "At Grade Level"
-},
-{
-  "_id": {
-    "$oid": "68491428988139e71b308e01"
-  },
-  "studentId": 2025121,
-  "categoryId": {
-    "$oid": "683a51d3168ffbb611dab96a"
-  },
-  "questionId": "AK_001",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "2"
-  ],
-  "isCorrect": true,
-  "responseTime": 18.3,
-  "answeredAt": {
-    "$date": "2025-08-19T13:20:22.400Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-19T13:20:22.400Z"
-  },
-  "readingLevel": "Developing"
-},
-{
-  "_id": {
-    "$oid": "68491428988139e71b308e02"
-  },
-  "studentId": 2025121,
-  "categoryId": {
-    "$oid": "683a51d3168ffbb611dab96a"
-  },
-  "questionId": "AK_002",
-  "category": "Alphabet Knowledge",
-  "response": [
-    "2"
-  ],
-  "isCorrect": false,
-  "responseTime": 22.7,
-  "answeredAt": {
-    "$date": "2025-08-19T13:20:45.100Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-19T13:20:45.100Z"
-  },
-  "readingLevel": "Developing"
-},
-{
-  "_id": {
-    "$oid": "68491428988139e71b308e03"
-  },
-  "studentId": 2025121,
-  "categoryId": {
-    "$oid": "683cb98951eaae9b315b8c31"
-  },
-  "questionId": "PA_001",
-  "category": "Phonological Awareness",
-  "response": [
-    {
-      "H": "Hh"
-    },
-    {
-      "T": "Nn"
-    },
-    {
-      "N": "Tt"
-    },
-    {
-      "L": "Ll"
-    },
-    {
-      "P": "Pp"
-    }
-  ],
-  "correctMatches": 3,
-  "totalMatches": 5,
-  "isCorrect": false,
-  "responseTime": 72.8,
-  "answeredAt": {
-    "$date": "2025-08-19T13:21:57.900Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-19T13:21:57.900Z"
-  },
-  "readingLevel": "Developing"
-},
-{
-  "_id": {
-    "$oid": "68491428988139e71b308e04"
-  },
-  "studentId": 2025121,
-  "categoryId": {
-    "$oid": "683cbaa951eaae9b315b8c42"
-  },
-  "questionId": "DC_002",
-  "category": "Decoding",
-  "response": [
-    "A"
-  ],
-  "isCorrect": false,
-  "responseTime": 48.6,
-  "answeredAt": {
-    "$date": "2025-08-19T13:22:46.500Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-19T13:22:46.500Z"
-  },
-  "readingLevel": "Developing"
-},
-{
-  "_id": {
-    "$oid": "68491428988139e71b308e05"
-  },
-  "studentId": 2025121,
-  "categoryId": {
-    "$oid": "683cbb7451eaae9b315b8c4a"
-  },
-  "questionId": "WR_001",
-  "category": "Word Recognition",
-  "response": [
-    "Papel"
-  ],
-  "isCorrect": false,
-  "responseTime": 35.4,
-  "answeredAt": {
-    "$date": "2025-08-19T13:23:21.900Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-19T13:23:21.900Z"
-  },
-  "readingLevel": "Developing"
-},
-{
-  "_id": {
-    "$oid": "68491428988139e71b308e06"
-  },
-  "studentId": 2025121,
-  "categoryId": {
-    "$oid": "683e0fc10a6d5b9eb216970c"
-  },
-  "questionId": "RC_001",
-  "category": "Reading Comprehension",
-  "response": [
-    "si juan"
-  ],
-  "isCorrect": true,
-  "responseTime": 58.7,
-  "answeredAt": {
-    "$date": "2025-08-19T13:24:20.600Z"
-  },
-  "createdAt": {
-    "$date": "2025-08-19T13:24:20.600Z"
-  },
-  "readingLevel": "Developing"
-}]
+
+[
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60001"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "AK_001",
+    "category": "Alphabet Knowledge",
+    "response": ["2"],
+    "isCorrect": true,
+    "responseTime": 4.2,
+    "answeredAt": {"$date": "2025-09-10T08:32:00.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:32:00.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60002"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "AK_002",
+    "category": "Alphabet Knowledge",
+    "response": ["2"],
+    "isCorrect": true,
+    "responseTime": 3.8,
+    "answeredAt": {"$date": "2025-09-10T08:32:15.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:32:15.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60003"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "AK_003",
+    "category": "Alphabet Knowledge",
+    "response": ["1"],
+    "isCorrect": true,
+    "responseTime": 5.1,
+    "answeredAt": {"$date": "2025-09-10T08:32:30.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:32:30.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60004"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "AK_004",
+    "category": "Alphabet Knowledge",
+    "response": ["1"],
+    "isCorrect": true,
+    "responseTime": 3.5,
+    "answeredAt": {"$date": "2025-09-10T08:32:45.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:32:45.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60005"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "AK_005",
+    "category": "Alphabet Knowledge",
+    "response": ["2"],
+    "isCorrect": true,
+    "responseTime": 4.7,
+    "answeredAt": {"$date": "2025-09-10T08:33:00.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:33:00.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60006"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "AK_006",
+    "category": "Alphabet Knowledge",
+    "response": ["2"],
+    "isCorrect": true,
+    "responseTime": 3.2,
+    "answeredAt": {"$date": "2025-09-10T08:33:15.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:33:15.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60007"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "AK_007",
+    "category": "Alphabet Knowledge",
+    "response": ["2"],
+    "isCorrect": true,
+    "responseTime": 4.9,
+    "answeredAt": {"$date": "2025-09-10T08:33:30.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:33:30.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60008"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "AK_008",
+    "category": "Alphabet Knowledge",
+    "response": ["1"],
+    "isCorrect": true,
+    "responseTime": 3.8,
+    "answeredAt": {"$date": "2025-09-10T08:33:45.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:33:45.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60009"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "AK_009",
+    "category": "Alphabet Knowledge",
+    "response": ["3"],
+    "isCorrect": false,
+    "responseTime": 6.2,
+    "answeredAt": {"$date": "2025-09-10T08:34:00.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:34:00.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60010"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "AK_010",
+    "category": "Alphabet Knowledge",
+    "response": ["1"],
+    "isCorrect": true,
+    "responseTime": 3.4,
+    "answeredAt": {"$date": "2025-09-10T08:34:15.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:34:15.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60011"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "AK_011",
+    "category": "Alphabet Knowledge",
+    "response": ["2"],
+    "isCorrect": true,
+    "responseTime": 4.1,
+    "answeredAt": {"$date": "2025-09-10T08:34:30.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:34:30.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60012"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "AK_012",
+    "category": "Alphabet Knowledge",
+    "response": ["3"],
+    "isCorrect": false,
+    "responseTime": 5.8,
+    "answeredAt": {"$date": "2025-09-10T08:34:45.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:34:45.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60013"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "AK_013",
+    "category": "Alphabet Knowledge",
+    "response": ["1"],
+    "isCorrect": true,
+    "responseTime": 4.3,
+    "answeredAt": {"$date": "2025-09-10T08:35:00.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:35:00.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60014"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "AK_014",
+    "category": "Alphabet Knowledge",
+    "response": ["1"],
+    "isCorrect": true,
+    "responseTime": 3.7,
+    "answeredAt": {"$date": "2025-09-10T08:35:15.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:35:15.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60015"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "AK_015",
+    "category": "Alphabet Knowledge",
+    "response": ["3"],
+    "isCorrect": false,
+    "responseTime": 6.1,
+    "answeredAt": {"$date": "2025-09-10T08:35:30.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:35:30.000Z"},
+    "readingLevel": "High Emerging"
+  }
+]
+
+[
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60016"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "PA_001",
+    "category": "Phonological Awareness",
+    "response": [
+      {"H": "Hh"},
+      {"T": "Tt"},
+      {"N": "Ll"}
+    ],
+    "correctMatches": 2,
+    "totalMatches": 3,
+    "isCorrect": false,
+    "responseTime": 35.2,
+    "answeredAt": {"$date": "2025-09-10T08:40:00.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:40:00.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60017"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "PA_002",
+    "category": "Phonological Awareness",
+    "response": [
+      {"L": "Pp"},
+      {"P": "Ll"}
+    ],
+    "correctMatches": 0,
+    "totalMatches": 2,
+    "isCorrect": false,
+    "responseTime": 28.7,
+    "answeredAt": {"$date": "2025-09-10T08:41:00.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:41:00.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60018"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "PA_003",
+    "category": "Phonological Awareness",
+    "response": [
+      {"DAGA": "MATA"},
+      {"ILAW": "DAGA"},
+      {"MATA": "ILAW"}
+    ],
+    "correctMatches": 0,
+    "totalMatches": 3,
+    "isCorrect": false,
+    "responseTime": 42.1,
+    "answeredAt": {"$date": "2025-09-10T08:42:00.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:42:00.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60019"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "PA_004",
+    "category": "Phonological Awareness",
+    "response": [
+      {"PUNO": "PUNO"},
+      {"RELO": "RELO"}
+    ],
+    "correctMatches": 2,
+    "totalMatches": 2,
+    "isCorrect": true,
+    "responseTime": 25.3,
+    "answeredAt": {"$date": "2025-09-10T08:43:00.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:43:00.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60020"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "PA_005",
+    "category": "Phonological Awareness",
+    "response": [
+      {"GA": "LO"},
+      {"LO": "GA"},
+      {"PI": "PI"}
+    ],
+    "correctMatches": 1,
+    "totalMatches": 3,
+    "isCorrect": false,
+    "responseTime": 31.8,
+    "answeredAt": {"$date": "2025-09-10T08:44:00.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:44:00.000Z"},
+    "readingLevel": "High Emerging"
+  },
+  {
+    "_id": {"$oid": "67000002a1b2c3d4e5f60021"},
+    "studentId": 202533333,
+    "categoryId": {"$oid": "67000001a1b2c3d4e5f60001"},
+    "questionId": "PA_006",
+    "category": "Phonological Awareness",
+    "response": [
+      {"NGA": "WU"},
+      {"WU": "NGA"}
+    ],
+    "correctMatches": 0,
+    "totalMatches": 2,
+    "isCorrect": false,
+    "responseTime": 29.4,
+    "answeredAt": {"$date": "2025-09-10T08:45:00.000Z"},
+    "createdAt": {"$date": "2025-09-10T08:45:00.000Z"},
+    "readingLevel": "High Emerging"
+  }
+]
 
 
 test.category_results.json 
-
 {
   "_id": {
-    "$oid": "683e948a9b13d43b098eb800"
+    "$oid": "67000001a1b2c3d4e5f60001"
   },
   "studentId": 202533333,
   "assessmentDate": {
-    "$date": "2025-08-18T12:20:30.500Z"
+    "$date": "2025-09-10T08:30:00.000Z"
   },
   "categories": [
     {
       "categoryName": "Alphabet Knowledge",
       "totalQuestions": 15,
-      "correctAnswers": 10,
-      "score": 67,
-      "isPassed": false,
-      "passingThreshold": 75,
-      "isCompleted": true,
-      "lastQuestionAnswered": "AK_015",
-      "interventionRequired": true,
-      "interventionAttempts": 2,
-      "interventionCompleted": true,
-      "currentInterventionId": {
-        "$oid": "683f948a9b13d43b098eb901"
-      },
-      "interventionHistory": [
-        {
-          "attemptNumber": 1,
-          "interventionId": {
-            "$oid": "683f948a9b13d43b098eb900"
-          },
-          "interventionResultId": {
-            "$oid": "683f948a9b13d43b098eb901"
-          },
-          "score": 65,
-          "isPassed": false,
-          "attemptedAt": {
-            "$date": "2025-06-11T15:20:10.300Z"
-          },
-          "completedAt": {
-            "$date": "2025-06-11T15:35:22.100Z"
-          }
-        },
-        {
-          "attemptNumber": 2,
-          "interventionId": {
-            "$oid": "683f948a9b13d43b098eb901"
-          },
-          "interventionResultId": {
-            "$oid": "683f948a9b13d43b098eb902"
-          },
-          "score": 78,
-          "isPassed": true,
-          "attemptedAt": {
-            "$date": "2025-06-12T09:15:20.500Z"
-          },
-          "completedAt": {
-            "$date": "2025-06-12T09:28:45.800Z"
-          }
-        }
-      ]
-    },
-    {
-      "categoryName": "Phonological Awareness",
-      "totalQuestions": 3,
-      "totalPossibleMatches": 13,
-      "correctMatches": 8,
-      "score": 62,
-      "isPassed": false,
-      "passingThreshold": 75,
-      "isCompleted": false,
-      "lastQuestionAnswered": "PA_010",
-      "interventionRequired": true,
-      "interventionAttempts": 1,
-      "interventionCompleted": false,
-      "currentInterventionId": {
-        "$oid": "683f948a9b13d43b098eb910"
-      },
-      "interventionHistory": [
-        {
-          "attemptNumber": 1,
-          "interventionId": {
-            "$oid": "683f948a9b13d43b098eb910"
-          },
-          "interventionResultId": {
-            "$oid": "683f948a9b13d43b098eb911"
-          },
-          "score": 69,
-          "isPassed": false,
-          "attemptedAt": {
-            "$date": "2025-06-12T14:10:15.400Z"
-          },
-          "completedAt": {
-            "$date": "2025-06-12T14:25:30.200Z"
-          }
-        }
-      ]
-    }
-  ],
-  "overallScore": 73,
-  "completedCategories": 2,
-  "totalCategories": 2,
-  "allCategoriesPassed": false,
-  "readingLevel": "High Emerging",
-  "readingLevelUpdated": false,
-  "createdAt": {
-    "$date": "2025-06-11T14:35:15.200Z"
-  },
-  "updatedAt": {
-    "$date": "2025-06-12T14:25:30.200Z"
-  }
-}
-
-
-
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb801"
-  },
-  "studentId": 202511111,
-  "assessmentDate": {
-    "$date": "2025-06-11T14:35:15.200Z"
-  },
-  "categories": [
-    {
-      "categoryName": "Alphabet Knowledge",
-      "totalQuestions": 15,
-      "correctAnswers": 10,
-      "score": 67,
-      "isPassed": false,
-      "passingThreshold": 75,
-      "isCompleted": true,
-      "lastQuestionAnswered": "AK_015",
-      "interventionRequired": true,
-      "interventionAttempts": 2,
-      "interventionCompleted": true,
-      "currentInterventionId": {
-        "$oid": "683f948a9b13d43b098eb901"
-      },
-      "interventionHistory": [
-        {
-          "attemptNumber": 1,
-          "interventionId": {
-            "$oid": "683f948a9b13d43b098eb900"
-          },
-          "interventionResultId": {
-            "$oid": "683f948a9b13d43b098eb901"
-          },
-          "score": 65,
-          "isPassed": false,
-          "attemptedAt": {
-            "$date": "2025-06-11T15:20:10.300Z"
-          },
-          "completedAt": {
-            "$date": "2025-06-11T15:35:22.100Z"
-          }
-        },
-        {
-          "attemptNumber": 2,
-          "interventionId": {
-            "$oid": "683f948a9b13d43b098eb901"
-          },
-          "interventionResultId": {
-            "$oid": "683f948a9b13d43b098eb902"
-          },
-          "score": 78,
-          "isPassed": true,
-          "attemptedAt": {
-            "$date": "2025-06-12T09:15:20.500Z"
-          },
-          "completedAt": {
-            "$date": "2025-06-12T09:28:45.800Z"
-          }
-        }
-      ]
-    },
-    {
-      "categoryName": "Phonological Awareness",
-      "totalQuestions": 3,
-      "totalPossibleMatches": 13,
-      "correctMatches": 8,
-      "score": 62,
-      "isPassed": false,
-      "passingThreshold": 75,
-      "isCompleted": false,
-      "lastQuestionAnswered": "PA_010",
-      "interventionRequired": true,
-      "interventionAttempts": 1,
-      "interventionCompleted": false,
-      "currentInterventionId": {
-        "$oid": "683f948a9b13d43b098eb910"
-      },
-      "interventionHistory": [
-        {
-          "attemptNumber": 1,
-          "interventionId": {
-            "$oid": "683f948a9b13d43b098eb910"
-          },
-          "interventionResultId": {
-            "$oid": "683f948a9b13d43b098eb911"
-          },
-          "score": 69,
-          "isPassed": false,
-          "attemptedAt": {
-            "$date": "2025-06-12T14:10:15.400Z"
-          },
-          "completedAt": {
-            "$date": "2025-06-12T14:25:30.200Z"
-          }
-        }
-      ]
-    }
-  ],
-  "overallScore": 73,
-  "completedCategories": 2,
-  "totalCategories": 2,
-  "allCategoriesPassed": false,
-  "readingLevel": "High Emerging",
-  "readingLevelUpdated": false,
-  "createdAt": {
-    "$date": "2025-06-11T14:35:15.200Z"
-  },
-  "updatedAt": {
-    "$date": "2025-06-12T14:25:30.200Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "683e948a9b13d43b098eb802"
-  },
-  "studentId": 202522233,
-  "assessmentDate": {
-    "$date": "2025-08-20T05:13:00.100Z"
-  },
-  "categories": [
-    {
-      "categoryName": "Alphabet Knowledge",
-      "totalQuestions": 15,
-      "correctAnswers": 15,
-      "score": 100,
+      "correctAnswers": 12,
+      "score": 80,
       "isPassed": true,
       "passingThreshold": 75,
       "isCompleted": true,
-      "lastQuestionAnswered": "AK_015"
+      "lastQuestionAnswered": "AK_015",
+      "interventionRequired": false,
+      "interventionAttempts": 0,
+      "interventionCompleted": false,
+      "currentInterventionId": null,
+      "interventionHistory": []
     },
     {
       "categoryName": "Phonological Awareness",
-      "totalQuestions": 3,
-      "totalPossibleMatches": 13,
-      "correctMatches": 13,
-      "score": 100,
-      "isPassed": true,
-      "passingThreshold": 75,
-      "isCompleted": true,
-      "lastQuestionAnswered": "PA_003"
-    },
-    {
-      "categoryName": "Decoding",
       "totalQuestions": 6,
-      "correctAnswers": 5,
-      "score": 83,
-      "isPassed": true,
+      "totalPossibleMatches": 15,
+      "correctMatches": 5,
+      "score": 33,
+      "isPassed": false,
       "passingThreshold": 75,
       "isCompleted": true,
-      "lastQuestionAnswered": "DC_006"
-    },
-    {
-      "categoryName": "Word Recognition",
-      "totalQuestions": 5,
-      "correctAnswers": 5,
-      "score": 100,
-      "isPassed": true,
-      "passingThreshold": 75,
-      "isCompleted": true,
-      "lastQuestionAnswered": "WR_005"
-    },
-    {
-      "categoryName": "Reading Comprehension",
-      "totalQuestions": 5,
-      "correctAnswers": 5,
-      "score": 100,
-      "isPassed": true,
-      "passingThreshold": 75,
-      "isCompleted": true,
-      "lastQuestionAnswered": "RC_005"
+      "lastQuestionAnswered": "PA_015",
+      "interventionRequired": false,
+      "interventionAttempts": 0,
+      "interventionCompleted": false,
+      "currentInterventionId": null,
+      "interventionHistory": []
     }
   ],
-  "overallScore": 97,
-  "completedCategories": 5,
-  "totalCategories": 5,
-  "allCategoriesPassed": true,
-  "readingLevel": "At Grade Level",
-  "readingLevelUpdated": true,
+  "overallScore": 63,
+  "completedCategories": 1,
+  "totalCategories": 2,
+  "allCategoriesPassed": false,
+  "readingLevel": "High Emerging",
+  "readingLevelUpdated": false,
   "createdAt": {
-    "$date": "2025-08-20T05:13:00.100Z"
+    "$date": "2025-09-10T08:30:00.000Z"
   },
   "updatedAt": {
-    "$date": "2025-08-20T05:13:00.100Z"
+    "$date": "2025-09-10T09:15:00.000Z"
   }
 }
 
+
+{
+  "_id": {
+    "$oid": "68bba9b3e4c854c11d63162f"
+  },
+  "readingLevel": "Transitioning",
+  "category": "Word Recognition",
+  "questionType": "fill_blank",
+  "questions": [
+    {
+      "questionText": "Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.",
+      "questionImage": null,
+      "questionValue": null,
+      "questionId": "WR_001",
+      "displayWord": "Naglalaro siya ng _____ sa parke",
+      "blankOptions": [
+        "Papel",
+        "Kutsara",
+        "Bola",
+        "Damit"
+      ],
+      "correctAnswer": [
+        "bola"
+      ]
+    },
+    {
+      "questionText": "Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.",
+      "questionImage": null,
+      "questionValue": null,
+      "questionId": "WR_002",
+      "displayWord": "Malaki ang _____ sa zoo.",
+      "blankOptions": [
+        "Elepante",
+        "Lamesa",
+        "Nanay",
+        "Manok"
+      ],
+      "correctAnswer": [
+        "Elepante"
+      ]
+    },
+    {
+      "questionText": "Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.",
+      "questionImage": null,
+      "questionValue": null,
+      "questionId": "WR_003",
+      "displayWord": "Mahilig magluto ang ___ ko",
+      "blankOptions": [
+        "Manok",
+        "Nanay",
+        "Bola",
+        "Elepante"
+      ],
+      "correctAnswer": [
+        "Nanay"
+      ]
+    },
+    {
+      "questionText": "Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.",
+      "questionImage": null,
+      "questionValue": null,
+      "questionId": "WR_004",
+      "displayWord": "Nasa ___ ang mga libro",
+      "blankOptions": [
+        "Papel",
+        "Lamesa",
+        "Manok",
+        "Bola"
+      ],
+      "correctAnswer": [
+        "Lamesa"
+      ]
+    },
+    {
+      "questionType": "fill_blank",
+      "questionText": "Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.",
+      "questionImage": null,
+      "questionValue": null,
+      "questionId": "WR_005",
+      "displayWord": "Kumakain ng mais ang ___",
+      "blankOptions": [
+        "Nanay",
+        "Elepante",
+        "Kutsara",
+        "Manok"
+      ],
+      "correctAnswer": [
+        "Manok"
+      ]
+    },
+    {
+      "questionType": "fill_blank",
+      "questionText": "Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.",
+      "questionImage": null,
+      "questionValue": null,
+      "questionId": "WR_006",
+      "displayWord": "Ginagamit niya ang ___ sa pagkain",
+      "blankOptions": [
+        "Kutsara",
+        "Lamesa",
+        "Elepante",
+        "Damit"
+      ],
+      "correctAnswer": [
+        "Kutsara"
+      ]
+    },
+    {
+      "questionType": "fill_blank",
+      "questionText": "Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.",
+      "questionImage": null,
+      "questionValue": null,
+      "questionId": "WR_007",
+      "displayWord": "Malinis ang ___ ni Ana",
+      "blankOptions": [
+        "Bola",
+        "Papel",
+        "Damit",
+        "Kutsara"
+      ],
+      "correctAnswer": [
+        "Damit"
+      ]
+    },
+    {
+      "questionType": "fill_blank",
+      "questionText": "Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.",
+      "questionImage": null,
+      "questionValue": null,
+      "questionId": "WR_008",
+      "displayWord": "Gumuguhit ako sa ___",
+      "blankOptions": [
+        "Elepante",
+        "Papel",
+        "Manok",
+        "Lamesa"
+      ],
+      "correctAnswer": [
+        "Papel"
+      ]
+    },
+    {
+      "questionType": "fill_blank",
+      "questionText": "Anong kasing tunog ng salitang nakikita?",
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/word-recognition/1757217628205-SUMBRERO.png",
+      "questionValue": null,
+      "questionId": "WR_009",
+      "displayWord": "SUMBRERO",
+      "blankOptions": [
+        "LIB",
+        "RO",
+        "ME",
+        "SA"
+      ],
+      "correctAnswer": [
+        "LIB",
+        "RO"
+      ]
+    },
+    {
+      "questionType": "fill_blank",
+      "questionText": "Anong kasing tunog ng salitang nakikita?",
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/word-recognition/1757217665769-LOBO.png",
+      "questionValue": null,
+      "questionId": "WR_010",
+      "displayWord": "LOBO",
+      "blankOptions": [
+        "ME",
+        "SA",
+        "TU",
+        "BO"
+      ],
+      "correctAnswer": [
+        "TU",
+        "BO"
+      ]
+    },
+    {
+      "questionType": "fill_blank",
+      "questionText": "Anong kasing tunog ng salitang nakikita?",
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/word-recognition/1757217712715-HALAMAN.png",
+      "questionValue": null,
+      "questionId": "WR_011",
+      "displayWord": "HALAMAN",
+      "blankOptions": [
+        "KU",
+        "LU",
+        "NGAN",
+        "ME"
+      ],
+      "correctAnswer": [
+        "KU",
+        "LU",
+        "NGAN"
+      ]
+    },
+    {
+      "questionType": "fill_blank",
+      "questionText": "Anong kasing tunog ng salitang nakikita?",
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/word-recognition/1757217748169-YAYA.png",
+      "questionValue": null,
+      "questionId": "WR_012",
+      "displayWord": "YAYA",
+      "blankOptions": [
+        "TI",
+        "YA",
+        "U",
+        "PO"
+      ],
+      "correctAnswer": [
+        "TI",
+        "YA"
+      ]
+    },
+    {
+      "questionType": "fill_blank",
+      "questionText": "Anong kasing tunog ng salitang nakikita?",
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/word-recognition/1757217794275-TASA.png",
+      "questionValue": null,
+      "questionId": "WR_013",
+      "displayWord": "TASA",
+      "blankOptions": [
+        "ME",
+        "SA",
+        "YA",
+        "HA"
+      ],
+      "correctAnswer": [
+        "ME",
+        "SA"
+      ]
+    },
+    {
+      "questionText": "Anong kasing tunog ng salitang nakikita?",
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/word-recognition/1757217891404-NGITI.png",
+      "questionValue": null,
+      "questionId": "WR_014",
+      "displayWord": "NGITI",
+      "blankOptions": [
+        "SU",
+        "SI",
+        "RO",
+        "SAS"
+      ],
+      "correctAnswer": [
+        "SU",
+        "SI"
+      ]
+    },
+    {
+      "questionType": "fill_blank",
+      "questionText": "Anong kasing tunog ng salitang nakikita?",
+      "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/main-assessment/word-recognition/1757217924027-ISLA.png",
+      "questionValue": null,
+      "questionId": "WR_015",
+      "displayWord": "ISLA",
+      "blankOptions": [
+        "SIL",
+        "YA",
+        "ME",
+        "NA"
+      ],
+      "correctAnswer": [
+        "SIL",
+        "YA"
+      ]
+    }
+  ],
+  "isActive": true,
+  "status": "active",
+  "createdAt": {
+    "$date": "2025-09-06T03:25:39.189Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-07T04:05:38.124Z"
+  }
+}

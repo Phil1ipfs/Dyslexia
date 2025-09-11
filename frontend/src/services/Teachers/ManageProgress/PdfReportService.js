@@ -1,679 +1,888 @@
-// services/Teachers/ManageProgress/PdfReportService.js
+/**
+ * Enhanced Post-Assessment PDF Report Service
+ * Matches pre-assessment PDF structure with professional styling
+ * Includes intervention analysis and prescriptive recommendations
+ */
+
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import CradleLogo from '../../../assets/images/Teachers/cradleLogo.jpg';
 
 class PdfReportService {
-  constructor() {
-    this.pageWidth = 210; // A4 width in mm
-    this.pageHeight = 297; // A4 height in mm
-    this.margin = 20;
-    this.contentWidth = this.pageWidth - (this.margin * 2);
-    this.lineHeight = 6;
-    this.colors = {
-      primary: '#dc2626',
-      secondary: '#6b7280',
-      success: '#059669',
-      warning: '#d97706',
-      danger: '#dc2626',
-      light: '#f3f4f6',
-      dark: '#1f2937'
-    };
-  }
-
   /**
-   * Generate comprehensive PDF report for student's post-assessment progress
-   * @param {Object} studentData - Student information
-   * @param {Object} progressData - Category progress data
-   * @param {Array} responsesData - Student responses data
-   * @param {Function} onProgress - Progress callback function
-   * @returns {Promise<Blob>} Generated PDF blob
+   * Generate comprehensive post-assessment PDF report
    */
-  async generateProgressReport(studentData, progressData, responsesData, onProgress = () => {}) {
+  static async generateProgressReport(studentData, progressData, responsesData, assessmentQuestions = [], onProgress = () => {}) {
     try {
-      onProgress('Initializing PDF document...', 5);
+      onProgress('Initializing PDF document...', 10);
+      console.log('Generating post-assessment PDF with enhanced structure...');
+      
+      // Use proper short bond paper format (8.5" x 11")
+      const pdf = new jsPDF('p', 'mm', [216, 279]); 
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      const bottomMargin = 25;
 
-      const pdf = new jsPDF('portrait', 'mm', 'a4');
-      let currentY = this.margin;
+      let currentY = margin;
 
-      // Page 1: Executive Summary
-      onProgress('Creating executive summary...', 15);
-      currentY = await this.addExecutiveSummary(pdf, studentData, progressData, currentY);
-
-      // Page 2: Category Analysis
-      onProgress('Analyzing category performance...', 35);
-      pdf.addPage();
-      currentY = this.margin;
-      currentY = await this.addCategoryAnalysis(pdf, progressData, currentY);
-
-      // Page 3+: Detailed Question Breakdown
-      onProgress('Processing detailed question analysis...', 55);
-      await this.addQuestionBreakdown(pdf, responsesData, progressData);
-
-      // Page N: Recommendations & Next Steps
-      onProgress('Generating recommendations...', 75);
-      pdf.addPage();
-      currentY = this.margin;
-      currentY = await this.addRecommendations(pdf, progressData, currentY);
-
-      onProgress('Finalizing PDF document...', 90);
-
-      // Add page numbers and footer to all pages
-      this.addPageNumbersAndFooter(pdf);
-
+      onProgress('Adding professional header...', 20);
+      // Add Cradle of Learners header with proper styling
+      currentY = await this.addProfessionalHeader(pdf, pageWidth, margin, currentY);
+      
+      onProgress('Adding student information...', 30);
+      // Add clean student information section
+      currentY = this.addStudentInformationSection(pdf, studentData, progressData, pageWidth, margin, currentY);
+      
+      onProgress('Adding assessment overview...', 40);
+      // Add professional assessment overview
+      currentY = this.addAssessmentOverviewSection(pdf, progressData, responsesData, pageWidth, margin, currentY);
+      
+      onProgress('Processing question analysis...', 60);
+      // Add comprehensive question-by-question analysis
+      currentY = this.addQuestionByQuestionAnalysis(pdf, progressData, responsesData, assessmentQuestions, pageWidth, pageHeight, margin, bottomMargin, currentY);
+      
+      onProgress('Adding intervention analysis...', 80);
+      // Add post-assessment specific sections
+      currentY = this.addInterventionAnalysisSection(pdf, progressData, responsesData, pageWidth, pageHeight, margin, bottomMargin, currentY);
+      
+      onProgress('Adding prescriptive analysis...', 90);
+      // Add prescriptive analysis section
+      currentY = this.addPrescriptiveAnalysisSection(pdf, progressData, responsesData, pageWidth, pageHeight, margin, bottomMargin, currentY);
+      
+      onProgress('Finalizing report...', 95);
+      // Add professional footer
+      this.addProfessionalFooter(pdf, pageWidth, pageHeight, margin);
+      
       onProgress('PDF generation completed!', 100);
-
-      // Return the PDF as a blob
-      const pdfBlob = pdf.output('blob');
-      return pdfBlob;
-
+      
+      return pdf.output('blob');
+      
     } catch (error) {
-      console.error('Error generating PDF report:', error);
-      throw new Error(`Failed to generate PDF report: ${error.message}`);
+      console.error('Error generating post-assessment PDF:', error);
+      throw error;
     }
   }
 
   /**
-   * Add executive summary page
+   * Add professional header matching pre-assessment style
    */
-  async addExecutiveSummary(pdf, studentData, progressData, startY) {
-    let currentY = startY;
-
-    // Header
-    currentY = this.addHeader(pdf, 'Post-Assessment Progress Report', currentY);
-
-    // Student Information Section
-    currentY = this.addStudentInfo(pdf, studentData, currentY);
-
-    // Overall Performance Summary
-    currentY = this.addOverallSummary(pdf, progressData, currentY);
-
-    // Reading Level Progress
-    currentY = this.addReadingLevelProgress(pdf, progressData, currentY);
-
-    // Key Highlights
-    currentY = this.addKeyHighlights(pdf, progressData, currentY);
-
-    return currentY;
-  }
-
-  /**
-   * Add category analysis page
-   */
-  async addCategoryAnalysis(pdf, progressData, startY) {
-    let currentY = startY;
-
-    // Section Header
-    currentY = this.addSectionHeader(pdf, 'Category Performance Analysis', currentY);
-
-    // Category Performance Table
-    const categories = progressData.categories || [];
-    const tableData = categories.map(category => [
-      category.categoryName,
-      `${category.correctAnswers}/${category.totalQuestions}`,
-      `${category.score}%`,
-      category.isPassed ? 'Passed' : 'Needs Improvement',
-      category.interventionRequired ? 'Yes' : 'No'
-    ]);
-
-    pdf.autoTable({
-      startY: currentY,
-      head: [['Category', 'Correct/Total', 'Score', 'Status', 'Intervention']],
-      body: tableData,
-      theme: 'grid',
-      headStyles: { fillColor: [220, 38, 38], textColor: 255 },
-      styles: { fontSize: 10, cellPadding: 5 },
-      columnStyles: {
-        0: { cellWidth: 50 },
-        1: { cellWidth: 30, halign: 'center' },
-        2: { cellWidth: 25, halign: 'center' },
-        3: { cellWidth: 40, halign: 'center' },
-        4: { cellWidth: 25, halign: 'center' }
-      }
-    });
-
-    currentY = pdf.lastAutoTable.finalY + 20;
-
-    // Category Progress Chart (text-based representation)
-    currentY = this.addCategoryProgressChart(pdf, categories, currentY);
-
-    return currentY;
-  }
-
-  /**
-   * Add detailed question breakdown
-   */
-  async addQuestionBreakdown(pdf, responsesData, progressData) {
-    const categories = progressData.categories || [];
-    
-    for (const category of categories) {
-      pdf.addPage();
-      let currentY = this.margin;
-
-      // Category Header
-      currentY = this.addSectionHeader(pdf, `${category.categoryName} - Detailed Analysis`, currentY);
-
-      // Category Summary
-      currentY = this.addCategorySummary(pdf, category, currentY);
-
-      // Question Details
-      const categoryResponses = responsesData.filter(response => 
-        response.category === category.categoryName
-      );
-
-      if (categoryResponses.length > 0) {
-        currentY = this.addQuestionDetails(pdf, categoryResponses, currentY);
-      }
-
-      // Intervention Analysis (if applicable)
-      if (category.interventionRequired) {
-        currentY = this.addInterventionAnalysis(pdf, category, currentY);
-      }
-    }
-  }
-
-  /**
-   * Add recommendations and next steps
-   */
-  async addRecommendations(pdf, progressData, startY) {
-    let currentY = startY;
-
-    // Section Header
-    currentY = this.addSectionHeader(pdf, 'Recommendations & Next Steps', currentY);
-
-    // Generate recommendations based on performance
-    const recommendations = this.generateRecommendations(progressData);
-    
-    for (const recommendation of recommendations) {
-      currentY = this.addRecommendationItem(pdf, recommendation, currentY);
+  static async addProfessionalHeader(pdf, pageWidth, margin, currentY) {
+    try {
+      // Logo - centered at top
+      const logoSize = 25;
+      const logoX = (pageWidth - logoSize) / 2;
       
-      // Check if we need a new page
-      if (currentY > this.pageHeight - 50) {
-        pdf.addPage();
-        currentY = this.margin;
-      }
-    }
-
-    // Next Steps
-    currentY += 10;
-    currentY = this.addSubsectionHeader(pdf, 'Suggested Next Steps', currentY);
-    
-    const nextSteps = this.generateNextSteps(progressData);
-    for (const step of nextSteps) {
-      currentY = this.addBulletPoint(pdf, step, currentY);
-    }
-
-    return currentY;
-  }
-
-  /**
-   * Helper method to add header
-   */
-  addHeader(pdf, title, startY) {
-    // Title
-    pdf.setFontSize(20);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(220, 38, 38);
-    pdf.text(title, this.margin, startY);
-
-    // Date
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-    const currentDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    pdf.text(`Generated on: ${currentDate}`, this.pageWidth - this.margin - 50, startY);
-
-    // Separator line
-    pdf.setDrawColor(220, 38, 38);
-    pdf.setLineWidth(0.5);
-    pdf.line(this.margin, startY + 5, this.pageWidth - this.margin, startY + 5);
-
-    return startY + 15;
-  }
-
-  /**
-   * Helper method to add student information
-   */
-  addStudentInfo(pdf, studentData, startY) {
-    let currentY = startY;
-
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(31, 41, 55);
-    pdf.text('Student Information', this.margin, currentY);
-    currentY += 10;
-
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-
-    const studentInfo = [
-      `Student ID: ${studentData.studentId || 'N/A'}`,
-      `Full Name: ${studentData.fullName || 'N/A'}`,
-      `Grade Level: ${studentData.gradeLevel || 'N/A'}`,
-      `Current Reading Level: ${studentData.readingLevel || 'N/A'}`,
-      `Assessment Date: ${studentData.assessmentDate || 'N/A'}`
-    ];
-
-    studentInfo.forEach(info => {
-      pdf.text(info, this.margin + 5, currentY);
-      currentY += this.lineHeight;
-    });
-
-    return currentY + 10;
-  }
-
-  /**
-   * Helper method to add overall summary
-   */
-  addOverallSummary(pdf, progressData, startY) {
-    let currentY = startY;
-
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(31, 41, 55);
-    pdf.text('Overall Performance Summary', this.margin, currentY);
-    currentY += 10;
-
-    // Summary statistics
-    const overallScore = progressData.overallScore || 0;
-    const completedCategories = progressData.completedCategories || 0;
-    const totalCategories = progressData.totalCategories || 0;
-    const allPassed = progressData.allCategoriesPassed || false;
-
-    // Create summary box
-    pdf.setFillColor(243, 244, 246);
-    pdf.rect(this.margin, currentY, this.contentWidth, 30, 'F');
-
-    pdf.setFontSize(12);
-    pdf.setTextColor(31, 41, 55);
-    pdf.text(`Overall Score: ${overallScore}%`, this.margin + 10, currentY + 10);
-    pdf.text(`Categories Completed: ${completedCategories}/${totalCategories}`, this.margin + 10, currentY + 20);
-
-    // Status indicator
-    const statusColor = allPassed ? [5, 150, 105] : [220, 38, 38];
-    const statusText = allPassed ? 'All Categories Passed' : 'Requires Attention';
-    
-    pdf.setTextColor(...statusColor);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(`Status: ${statusText}`, this.margin + 100, currentY + 15);
-
-    return currentY + 40;
-  }
-
-  /**
-   * Helper method to add reading level progress
-   */
-  addReadingLevelProgress(pdf, progressData, startY) {
-    let currentY = startY;
-
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(31, 41, 55);
-    pdf.text('Reading Level Progress', this.margin, currentY);
-    currentY += 10;
-
-    const currentLevel = progressData.readingLevel || 'Unknown';
-    const levelUpdated = progressData.readingLevelUpdated || false;
-
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-
-    pdf.text(`Current Reading Level: ${currentLevel}`, this.margin + 5, currentY);
-    currentY += this.lineHeight;
-
-    if (levelUpdated) {
-      pdf.setTextColor(5, 150, 105);
-      pdf.text('✓ Reading level has been updated based on assessment results', this.margin + 5, currentY);
-    } else {
-      pdf.setTextColor(220, 38, 38);
-      pdf.text('⚠ Further improvement needed to advance to next reading level', this.margin + 5, currentY);
-    }
-
-    return currentY + 15;
-  }
-
-  /**
-   * Helper method to add key highlights
-   */
-  addKeyHighlights(pdf, progressData, startY) {
-    let currentY = startY;
-
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(31, 41, 55);
-    pdf.text('Key Highlights', this.margin, currentY);
-    currentY += 10;
-
-    const highlights = this.generateKeyHighlights(progressData);
-    
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-
-    highlights.forEach(highlight => {
-      pdf.setTextColor(highlight.color[0], highlight.color[1], highlight.color[2]);
-      pdf.text(`• ${highlight.text}`, this.margin + 5, currentY);
-      currentY += this.lineHeight + 2;
-    });
-
-    return currentY + 10;
-  }
-
-  /**
-   * Generate key highlights based on progress data
-   */
-  generateKeyHighlights(progressData) {
-    const highlights = [];
-    const categories = progressData.categories || [];
-
-    // Highest performing category
-    const topCategory = categories.reduce((max, cat) => 
-      (cat.score > max.score) ? cat : max, categories[0] || { score: 0, categoryName: 'None' });
-    
-    if (topCategory.score > 0) {
-      highlights.push({
-        text: `Strongest performance in ${topCategory.categoryName} (${topCategory.score}%)`,
-        color: [5, 150, 105] // Green
-      });
-    }
-
-    // Categories needing improvement
-    const needsImprovement = categories.filter(cat => !cat.isPassed);
-    if (needsImprovement.length > 0) {
-      highlights.push({
-        text: `${needsImprovement.length} ${needsImprovement.length === 1 ? 'category needs' : 'categories need'} improvement`,
-        color: [220, 38, 38] // Red
-      });
-    }
-
-    // Intervention status
-    const needsIntervention = categories.filter(cat => cat.interventionRequired);
-    if (needsIntervention.length > 0) {
-      highlights.push({
-        text: `${needsIntervention.length} ${needsIntervention.length === 1 ? 'category requires' : 'categories require'} intervention support`,
-        color: [217, 119, 6] // Orange
-      });
-    }
-
-    // Overall progress
-    if (progressData.allCategoriesPassed) {
-      highlights.push({
-        text: 'All categories successfully completed - Ready for next level!',
-        color: [5, 150, 105] // Green
-      });
-    }
-
-    return highlights;
-  }
-
-  /**
-   * Generate recommendations based on performance
-   */
-  generateRecommendations(progressData) {
-    const recommendations = [];
-    const categories = progressData.categories || [];
-
-    categories.forEach(category => {
-      if (!category.isPassed) {
-        recommendations.push({
-          category: category.categoryName,
-          score: category.score,
-          recommendation: this.getCategoryRecommendation(category)
-        });
-      }
-    });
-
-    return recommendations;
-  }
-
-  /**
-   * Get specific recommendation for a category
-   */
-  getCategoryRecommendation(category) {
-    const score = category.score;
-    const categoryName = category.categoryName;
-
-    if (score < 50) {
-      return `Focus on fundamental ${categoryName.toLowerCase()} skills with intensive practice and one-on-one support.`;
-    } else if (score < 65) {
-      return `Continue practicing ${categoryName.toLowerCase()} with guided exercises and regular assessment.`;
-    } else {
-      return `${categoryName} shows good progress. Minor adjustments needed to reach passing threshold.`;
-    }
-  }
-
-  /**
-   * Generate next steps based on overall progress
-   */
-  generateNextSteps(progressData) {
-    const steps = [];
-    const allPassed = progressData.allCategoriesPassed;
-
-    if (allPassed) {
-      steps.push('Proceed to next reading level assessments');
-      steps.push('Continue regular reading practice to maintain skills');
-      steps.push('Introduce more complex reading materials');
-    } else {
-      steps.push('Focus on categories that need improvement');
-      steps.push('Implement recommended intervention strategies');
-      steps.push('Schedule follow-up assessment in 2-4 weeks');
-      steps.push('Provide additional support materials for weak areas');
-    }
-
-    return steps;
-  }
-
-  /**
-   * Add section header
-   */
-  addSectionHeader(pdf, title, startY) {
-    pdf.setFontSize(16);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(220, 38, 38);
-    pdf.text(title, this.margin, startY);
-
-    // Underline
-    pdf.setDrawColor(220, 38, 38);
-    pdf.setLineWidth(0.3);
-    pdf.line(this.margin, startY + 2, this.margin + pdf.getTextWidth(title), startY + 2);
-
-    return startY + 12;
-  }
-
-  /**
-   * Add page numbers and footer
-   */
-  addPageNumbersAndFooter(pdf) {
-    const pageCount = pdf.getNumberOfPages();
-    
-    for (let i = 1; i <= pageCount; i++) {
-      pdf.setPage(i);
+      pdf.addImage(CradleLogo, 'JPEG', logoX, currentY, logoSize, logoSize);
       
-      // Page number
-      pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(107, 114, 128);
-      pdf.text(`Page ${i} of ${pageCount}`, this.pageWidth - this.margin - 20, this.pageHeight - 10);
+      let yPos = currentY + logoSize + 8;
       
-      // Footer text
-      pdf.text('Post-Assessment Progress Report - Dyslexia Reading Assessment System', 
-               this.margin, this.pageHeight - 10);
-    }
-  }
-
-  /**
-   * Add category progress chart (text-based)
-   */
-  addCategoryProgressChart(pdf, categories, startY) {
-    let currentY = startY;
-
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(31, 41, 55);
-    pdf.text('Category Progress Visualization', this.margin, currentY);
-    currentY += 10;
-
-    categories.forEach(category => {
-      const score = category.score;
-      const barWidth = (score / 100) * (this.contentWidth - 50);
+      // School name - large bold
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(0, 0, 0);
+      pdf.text('CRADLE OF LEARNERS', pageWidth / 2, yPos, { align: 'center' });
       
-      // Category name
+      yPos += 6;
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'italic');
+      pdf.setTextColor(60, 60, 60);
+      pdf.text('(Inclusive School for Individualized Education), Inc.', pageWidth / 2, yPos, { align: 'center' });
+      
+      yPos += 6;
       pdf.setFontSize(9);
       pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(31, 41, 55);
-      pdf.text(category.categoryName, this.margin, currentY);
+      pdf.setTextColor(80, 80, 80);
+      pdf.text('3rd Floor TUCP Bldg. Elliptical Road Corner Maharlika St. Quezon City', pageWidth / 2, yPos, { align: 'center' });
       
-      // Progress bar background
-      pdf.setFillColor(243, 244, 246);
-      pdf.rect(this.margin + 50, currentY - 3, this.contentWidth - 50, 5, 'F');
+      yPos += 5;
+      pdf.text('Tel: 8294-7772 | Email: cradle.of.learners@gmail.com', pageWidth / 2, yPos, { align: 'center' });
       
-      // Progress bar fill
-      const barColor = score >= 75 ? [5, 150, 105] : score >= 50 ? [217, 119, 6] : [220, 38, 38];
-      pdf.setFillColor(...barColor);
-      pdf.rect(this.margin + 50, currentY - 3, barWidth, 5, 'F');
+      // Professional divider line
+      yPos += 8;
+      pdf.setLineWidth(0.8);
+      pdf.setDrawColor(74, 84, 148);
+      pdf.line(margin, yPos, pageWidth - margin, yPos);
       
-      // Score text
-      pdf.setTextColor(...barColor);
-      pdf.text(`${score}%`, this.margin + this.contentWidth - 20, currentY);
+      // Title section with blue background
+      yPos += 6;
+      const titleHeight = 12;
+      pdf.setFillColor(74, 84, 148);
+      pdf.rect(margin, yPos, pageWidth - (margin * 2), titleHeight, 'F');
       
-      currentY += 10;
-    });
-
-    return currentY + 10;
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('POST-ASSESSMENT PROGRESS REPORT', pageWidth / 2, yPos + 8, { align: 'center' });
+      
+      // School year
+      yPos += titleHeight + 8;
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('School Year 2024-2025', pageWidth / 2, yPos, { align: 'center' });
+      
+      return yPos + 15;
+    } catch (error) {
+      console.error('Error adding header:', error);
+      return currentY + 80; // Fallback height
+    }
   }
 
   /**
-   * Additional helper methods for detailed sections
+   * Add clean student information section
    */
-  addCategorySummary(pdf, category, startY) {
-    let currentY = startY;
-
-    // Category statistics
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-
-    const stats = [
-      `Total Questions: ${category.totalQuestions}`,
-      `Correct Answers: ${category.correctAnswers}`,
-      `Score: ${category.score}%`,
-      `Status: ${category.isPassed ? 'Passed' : 'Needs Improvement'}`,
-      `Completed: ${category.isCompleted ? 'Yes' : 'No'}`
-    ];
-
-    stats.forEach(stat => {
-      pdf.text(stat, this.margin + 5, currentY);
-      currentY += this.lineHeight;
-    });
-
-    return currentY + 10;
-  }
-
-  addQuestionDetails(pdf, responses, startY) {
-    let currentY = startY;
-
-    pdf.setFontSize(12);
+  static addStudentInformationSection(pdf, studentData, progressData, pageWidth, margin, currentY) {
+    let yPos = currentY + 5;
+    
+    // Create clean information box
+    const boxHeight = 48;
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(150, 150, 150);
+    pdf.setLineWidth(0.5);
+    pdf.rect(margin, yPos, pageWidth - (margin * 2), boxHeight);
+    
+    yPos += 8;
+    
+    // Grid layout for student information
+    const leftCol = margin + 8;
+    const rightCol = pageWidth / 2 + 5;
+    const rowSpacing = 10;
+    
+    // Row 1
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(31, 41, 55);
-    pdf.text('Question Analysis', this.margin, currentY);
-    currentY += 10;
-
-    // Create table for question details
-    const tableData = responses.slice(0, 10).map(response => [
-      response.questionId,
-      response.isCorrect ? 'Correct' : 'Incorrect',
-      `${response.responseTime}s`,
-      new Date(response.answeredAt).toLocaleDateString()
-    ]);
-
-    pdf.autoTable({
-      startY: currentY,
-      head: [['Question ID', 'Result', 'Time', 'Date']],
-      body: tableData,
-      theme: 'striped',
-      headStyles: { fillColor: [220, 38, 38], textColor: 255 },
-      styles: { fontSize: 8, cellPadding: 3 }
+    pdf.setTextColor(74, 84, 148);
+    pdf.text('Student Name:', leftCol, yPos);
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(0, 0, 0);
+    const studentName = studentData.fullName || `Student ${progressData.studentId || 'Unknown'}`;
+    pdf.text(studentName, leftCol + 30, yPos);
+    
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(74, 84, 148);
+    pdf.text('Age:', rightCol, yPos);
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text('6', rightCol + 12, yPos);
+    
+    yPos += rowSpacing;
+    
+    // Row 2
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(74, 84, 148);
+    pdf.text('Grade Level:', leftCol, yPos);
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text('Grade 1', leftCol + 30, yPos);
+    
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(74, 84, 148);
+    pdf.text('Gender:', rightCol, yPos);
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text('Female', rightCol + 18, yPos);
+    
+    yPos += rowSpacing;
+    
+    // Row 3
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(74, 84, 148);
+    pdf.text('Parent/Guardian:', leftCol, yPos);
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text('Parent', leftCol + 40, yPos);
+    
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(74, 84, 148);
+    pdf.text('Report Date:', rightCol, yPos);
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(0, 0, 0);
+    const reportDate = new Date().toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
     });
-
-    return pdf.lastAutoTable.finalY + 10;
+    pdf.text(reportDate, rightCol + 28, yPos);
+    
+    yPos += rowSpacing;
+    
+    // Row 4
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(74, 84, 148);
+    pdf.text('Reading Level:', leftCol, yPos);
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(0, 0, 0);
+    const readingLevel = progressData.readingLevel || 'High Emerging';
+    pdf.text(readingLevel, leftCol + 32, yPos);
+    
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(74, 84, 148);
+    pdf.text('Last Assessment:', rightCol, yPos);
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(0, 0, 0);
+    const lastAssessment = progressData.assessmentDate ? 
+      new Date(progressData.assessmentDate).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      }) : 
+      'September 10, 2025';
+    pdf.text(lastAssessment, rightCol + 35, yPos);
+    
+    return yPos + 20;
   }
 
-  addInterventionAnalysis(pdf, category, startY) {
-    let currentY = startY;
-
-    if (category.interventionHistory && category.interventionHistory.length > 0) {
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(217, 119, 6);
-      pdf.text('Intervention History', this.margin, currentY);
-      currentY += 10;
-
-      category.interventionHistory.forEach((intervention, index) => {
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(107, 114, 128);
-        
-        pdf.text(`Attempt ${intervention.attemptNumber}:`, this.margin + 5, currentY);
-        pdf.text(`Score: ${intervention.score}%`, this.margin + 40, currentY);
-        pdf.text(`Status: ${intervention.isPassed ? 'Passed' : 'Failed'}`, this.margin + 80, currentY);
-        
-        currentY += this.lineHeight;
-      });
-
-      currentY += 5;
+  /**
+   * Add professional assessment overview with cards
+   */
+  static addAssessmentOverviewSection(pdf, progressData, responsesData, pageWidth, margin, currentY) {
+    let yPos = currentY;
+    
+    // Calculate actual performance metrics
+    const totalQuestions = responsesData.length;
+    const correctAnswers = responsesData.filter(r => r.isCorrect).length;
+    const overallPercentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+    const readingLevel = progressData.readingLevel || 'High Emerging';
+    
+    // Determine reading level color
+    let levelColor = [76, 175, 80]; // Green default
+    if (readingLevel.toLowerCase().includes('emerging')) {
+      levelColor = [76, 175, 80]; // Green
     }
-
-    return currentY;
-  }
-
-  addRecommendationItem(pdf, recommendation, startY) {
-    let currentY = startY;
-
+    
+    // Header with reading level badge
+    const headerHeight = 12;
+    const badgeWidth = 35;
+    pdf.setFillColor(74, 84, 148);
+    pdf.rect(margin, yPos, pageWidth - (margin * 2) - badgeWidth - 8, headerHeight, 'F');
+    
+    pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(220, 38, 38);
-    pdf.text(`${recommendation.category} (${recommendation.score}%)`, this.margin, currentY);
-    currentY += 8;
-
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(31, 41, 55);
+    pdf.text('ASSESSMENT OVERVIEW', margin + 8, yPos + 8);
     
-    // Split long text into multiple lines
-    const textLines = pdf.splitTextToSize(recommendation.recommendation, this.contentWidth - 10);
-    textLines.forEach(line => {
-      pdf.text(line, this.margin + 5, currentY);
-      currentY += this.lineHeight;
-    });
-
-    return currentY + 8;
-  }
-
-  addSubsectionHeader(pdf, title, startY) {
-    pdf.setFontSize(12);
+    // Reading level badge
+    pdf.setFillColor(levelColor[0], levelColor[1], levelColor[2]);
+    pdf.rect(pageWidth - margin - badgeWidth - 5, yPos + 1, badgeWidth, headerHeight - 2, 'F');
+    
+    pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(31, 41, 55);
-    pdf.text(title, this.margin, startY);
-    return startY + 8;
+    pdf.setFontSize(8);
+    pdf.text(readingLevel.toUpperCase(), pageWidth - margin - (badgeWidth / 2) - 5, yPos + 7, { align: 'center' });
+    
+    yPos += headerHeight + 10;
+    
+    // Overview cards - more compact design
+    const cardWidth = (pageWidth - margin * 2 - 20) / 3;
+    const cardHeight = 28; // reduced height
+    
+    // Overall Score Card
+    this.addOverviewCard(pdf, margin, yPos, cardWidth, cardHeight,
+      'OVERALL SCORE', `${correctAnswers}/${totalQuestions}`, 'Questions Answered');
+    
+    // Reading Level Card  
+    this.addOverviewCard(pdf, margin + cardWidth + 10, yPos, cardWidth, cardHeight,
+      'READING LEVEL', readingLevel, 'Determined');
+    
+    // Completed Date Card
+    const completedDate = new Date().toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    this.addOverviewCard(pdf, margin + (cardWidth + 10) * 2, yPos, cardWidth, cardHeight,
+      'COMPLETED ON', completedDate, 'Assessment Date');
+    
+    return yPos + cardHeight + 12; // reduced spacing
   }
 
-  addBulletPoint(pdf, text, startY) {
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
+  /**
+   * Add overview card matching pre-assessment style
+   */
+  static addOverviewCard(pdf, x, y, width, height, title, mainValue, subValue) {
+    // Card background
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(x, y, width, height, 'F');
     
-    const textLines = pdf.splitTextToSize(`• ${text}`, this.contentWidth - 10);
-    textLines.forEach(line => {
-      pdf.text(line, this.margin + 5, startY);
-      startY += this.lineHeight;
+    // Card border
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(0.5);
+    pdf.rect(x, y, width, height);
+    
+    // Title
+    pdf.setFontSize(6);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(100, 100, 100);
+    pdf.text(title, x + width / 2, y + 7, { align: 'center' });
+    
+    // Main value
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(74, 84, 148);
+    pdf.text(mainValue, x + width / 2, y + 15, { align: 'center' });
+    
+    // Sub value
+    pdf.setFontSize(6);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(120, 120, 120);
+    pdf.text(subValue, x + width / 2, y + 22, { align: 'center' });
+    
+    pdf.setTextColor(0, 0, 0); // Reset
+  }
+
+  /**
+   * Add comprehensive question-by-question analysis
+   */
+  static addQuestionByQuestionAnalysis(pdf, progressData, responsesData, assessmentQuestions, pageWidth, pageHeight, margin, bottomMargin, currentY) {
+    let yPos = currentY;
+    
+    // Check if we have enough space for the section header and at least one question
+    // If not, start on a new page to avoid cropping
+    if (yPos + 80 > pageHeight - bottomMargin) {
+      pdf.addPage();
+      yPos = margin;
+    }
+    
+    // Section header
+    pdf.setFillColor(74, 84, 148);
+    pdf.rect(margin, yPos, pageWidth - (margin * 2), 12, 'F');
+    
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('QUESTION-BY-QUESTION ANALYSIS', margin + 8, yPos + 8);
+    
+    yPos += 18;
+    pdf.setTextColor(0, 0, 0);
+    
+    // Group responses by category
+    const categorizedResponses = this.groupResponsesByCategory(responsesData);
+    
+    // Process each category
+    for (const [categoryName, responses] of Object.entries(categorizedResponses)) {
+      if (responses.length === 0) continue;
+      
+      // Check for new page before category header
+      if (yPos + 60 > pageHeight - bottomMargin) {
+        pdf.addPage();
+        yPos = margin;
+      }
+      
+      // Add category header
+      yPos = this.addCategoryHeader(pdf, categoryName, responses, yPos, pageWidth, margin);
+      
+      // Add questions for this category  
+      for (let i = 0; i < responses.length; i++) {
+        const response = responses[i];
+        
+        // Check space for question with more conservative spacing
+        const requiredSpace = categoryName.toLowerCase().includes('phonological') ? 65 : 50;
+        if (yPos + requiredSpace > pageHeight - bottomMargin) {
+          pdf.addPage();
+          yPos = margin;
+        }
+        
+        // Find question details
+        const questionDetails = this.findQuestionInAssessments(response.questionId, assessmentQuestions);
+        
+        // Add question card
+        yPos = this.addQuestionCard(pdf, response, questionDetails, i + 1, categoryName, yPos, pageWidth, margin);
+        yPos += 8; // increased spacing between questions
+      }
+      
+      yPos += 15; // increased spacing between categories
+    }
+    
+    return yPos;
+  }
+
+  /**
+   * Group responses by category
+   */
+  static groupResponsesByCategory(responsesData) {
+    return responsesData.reduce((acc, response) => {
+      const category = response.category || 'Unknown Category';
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(response);
+      return acc;
+    }, {});
+  }
+
+  /**
+   * Add category header with performance summary
+   */
+  static addCategoryHeader(pdf, categoryName, responses, yPos, pageWidth, margin) {
+    // Calculate performance
+    let correct = 0;
+    let total = 0;
+    
+    if (categoryName.toLowerCase().includes('phonological')) {
+      // For phonological awareness - sum matches
+      correct = responses.reduce((sum, r) => sum + (r.correctMatches || 0), 0);
+      total = responses.reduce((sum, r) => sum + (r.totalMatches || 0), 0);
+    } else {
+      // For other categories - count correct responses
+      correct = responses.filter(r => r.isCorrect).length;
+      total = responses.length;
+    }
+    
+    const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
+    
+    // Category header background
+    pdf.setFillColor(240, 240, 240);
+    pdf.setDrawColor(180, 180, 180);
+    pdf.setLineWidth(0.5);
+    pdf.rect(margin, yPos, pageWidth - (margin * 2), 12, 'FD');
+    
+    // Category name
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(categoryName, margin + 6, yPos + 8);
+    
+    // Performance summary  
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    const summaryText = `${correct}/${total} correct (${percentage}%)`;
+    const summaryWidth = pdf.getTextWidth(summaryText);
+    pdf.text(summaryText, pageWidth - margin - summaryWidth - 6, yPos + 8);
+    
+    return yPos + 18;
+  }
+
+  /**
+   * Add individual question card matching pre-assessment format
+   */
+  static addQuestionCard(pdf, response, questionDetails, questionNumber, categoryName, yPos, pageWidth, margin) {
+    const isPhonological = categoryName.toLowerCase().includes('phonological');
+    const cardHeight = isPhonological ? 55 : 40;
+    
+    // Question card background
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(180, 180, 180);
+    pdf.setLineWidth(0.5);
+    pdf.rect(margin, yPos, pageWidth - (margin * 2), cardHeight, 'FD');
+    
+    // Question header
+    let headerY = yPos + 8;
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(`Question ${questionNumber}`, margin + 6, headerY);
+    
+    // Question ID
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`ID: ${response.questionId}`, margin + 50, headerY);
+    
+    // Status badge
+    const isCorrect = response.isCorrect;
+    const statusText = isCorrect ? 'CORRECT' : 'INCORRECT';
+    const statusColor = isCorrect ? [76, 175, 80] : [244, 67, 54];
+    const badgeWidth = 22;
+    
+    pdf.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+    pdf.rect(pageWidth - margin - badgeWidth - 6, yPos + 3, badgeWidth, 8, 'F');
+    
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(6);
+    pdf.text(statusText, pageWidth - margin - (badgeWidth / 2) - 6, yPos + 7, { align: 'center' });
+    
+    // Question text
+    let contentY = headerY + 8;
+    pdf.setFontSize(8);
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFont('helvetica', 'normal');
+    
+    const questionText = questionDetails?.questionText || 'Question text not available';
+    const wrappedText = this.wrapText(pdf, questionText, pageWidth - (margin * 2) - 12, 8);
+    
+    if (wrappedText.length > 0) {
+      pdf.text(`Question: ${wrappedText[0]}`, margin + 6, contentY);
+      if (wrappedText.length > 1) {
+        contentY += 5;
+        pdf.text(wrappedText[1], margin + 20, contentY);
+      }
+    }
+    
+    contentY += 8;
+    
+    // Format answers based on category type
+    if (isPhonological) {
+      // Special handling for phonological awareness
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Audio Text: Pakinggan ang audio. Itugma ito sa katumbas na letra sa kabilang hanay.', margin + 6, contentY);
+      
+      contentY += 6;
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Student's Matches: ${response.correctMatches || 0}/${response.totalMatches || 0} correct matches`, margin + 6, contentY);
+      
+      contentY += 6;
+      pdf.text(`Correct Answer: All ${response.totalMatches || 0} pairs correct`, margin + 6, contentY);
+    } else {
+      // Standard answer format for other categories
+      const studentAnswer = this.formatStudentAnswer(response, questionDetails);
+      const correctAnswer = this.formatCorrectAnswer(response, questionDetails);
+      
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      
+      // Student Answer
+      pdf.text(`Student Answer:`, margin + 6, contentY);
+      pdf.setTextColor(isCorrect ? 76 : 244, isCorrect ? 175 : 67, isCorrect ? 80 : 54);
+      pdf.text(studentAnswer, margin + 40, contentY);
+      
+      // Correct Answer  
+      contentY += 6;
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(`Correct Answer:`, margin + 6, contentY);
+      pdf.setTextColor(76, 175, 80);
+      pdf.text(correctAnswer, margin + 40, contentY);
+    }
+    
+    // Response time
+    contentY += 8;
+    pdf.setFontSize(7);
+    pdf.setTextColor(100, 100, 100);
+    const responseTime = this.formatResponseTime(response.responseTime);
+    pdf.text(`Response Time: ${responseTime}`, margin + 6, contentY);
+    
+    pdf.setTextColor(0, 0, 0); // Reset
+    
+    return yPos + cardHeight;
+  }
+
+  /**
+   * Add intervention analysis section
+   */
+  static addInterventionAnalysisSection(pdf, progressData, responsesData, pageWidth, pageHeight, margin, bottomMargin, currentY) {
+    let yPos = currentY;
+    
+    // Check if we need a new page
+    if (yPos + 80 > pageHeight - bottomMargin) {
+      pdf.addPage();
+      yPos = margin;
+    }
+    
+    // Section header
+    pdf.setFillColor(255, 152, 0);
+    pdf.rect(margin, yPos, pageWidth - (margin * 2), 12, 'F');
+    
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('INTERVENTION ANALYSIS', margin + 8, yPos + 8);
+    
+    yPos += 18;
+    pdf.setTextColor(0, 0, 0);
+    
+    // Analyze categories needing intervention
+    const categories = progressData.categories || [];
+    const needsIntervention = categories.filter(cat => (cat.score || 0) < 75);
+    
+    if (needsIntervention.length > 0) {
+      needsIntervention.forEach(category => {
+        yPos = this.addInterventionRecommendation(pdf, category, yPos, pageWidth, margin);
+        yPos += 8;
+      });
+    } else {
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('All categories have been mastered - No immediate intervention required.', margin + 6, yPos);
+      
+      yPos += 10;
+      pdf.text('Continue regular reading practice to maintain skills.', margin + 6, yPos);
+      yPos += 15;
+    }
+    
+    return yPos;
+  }
+
+  /**
+   * Add intervention recommendation for category
+   */
+  static addInterventionRecommendation(pdf, category, yPos, pageWidth, margin) {
+    const score = category.score || 0;
+    const categoryName = category.categoryName || 'Unknown Category';
+    
+    // Recommendation box
+    pdf.setFillColor(255, 248, 240);
+    pdf.setDrawColor(255, 152, 0);
+    pdf.setLineWidth(0.5);
+    pdf.rect(margin, yPos, pageWidth - (margin * 2), 25, 'FD');
+    
+    // Category name and score
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(`${categoryName} (${score}%)`, margin + 6, yPos + 8);
+    
+    // Status badge
+    let statusText = '';
+    let statusColor = [255, 152, 0];
+    
+    if (score < 50) {
+      statusText = 'CRITICAL';
+      statusColor = [244, 67, 54];
+    } else {
+      statusText = 'NEEDS ATTENTION';
+    }
+    
+    const badgeWidth = 25;
+    pdf.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+    pdf.rect(pageWidth - margin - badgeWidth - 6, yPos + 3, badgeWidth, 8, 'F');
+    
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(6);
+    pdf.text(statusText, pageWidth - margin - (badgeWidth / 2) - 6, yPos + 7, { align: 'center' });
+    
+    // Recommendation text
+    let recommendation = '';
+    if (score < 50) {
+      recommendation = `Intensive daily intervention required. Focus on foundational ${categoryName.toLowerCase()} skills with one-on-one instruction.`;
+    } else if (score < 65) {
+      recommendation = `Targeted small group instruction needed. Practice ${categoryName.toLowerCase()} skills 3-4 times weekly.`;
+    } else {
+      recommendation = `Additional practice recommended. Continue guided ${categoryName.toLowerCase()} activities.`;
+    }
+    
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(0, 0, 0);
+    const wrappedText = this.wrapText(pdf, recommendation, pageWidth - (margin * 2) - 20, 8);
+    
+    let textY = yPos + 15;
+    wrappedText.forEach(line => {
+      pdf.text(line, margin + 12, textY);
+      textY += 4;
     });
     
-    return startY + 2;
+    return yPos + 25;
+  }
+
+  /**
+   * Add prescriptive analysis section  
+   */
+  static addPrescriptiveAnalysisSection(pdf, progressData, responsesData, pageWidth, pageHeight, margin, bottomMargin, currentY) {
+    let yPos = currentY;
+    
+    // Check if we need a new page
+    if (yPos + 60 > pageHeight - bottomMargin) {
+      pdf.addPage();
+      yPos = margin;
+    }
+    
+    // Section header
+    pdf.setFillColor(76, 175, 80);
+    pdf.rect(margin, yPos, pageWidth - (margin * 2), 12, 'F');
+    
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('PRESCRIPTIVE ANALYSIS', margin + 8, yPos + 8);
+    
+    yPos += 18;
+    pdf.setTextColor(0, 0, 0);
+    
+    // Calculate overall performance
+    const totalQuestions = responsesData.length;
+    const correctAnswers = responsesData.filter(r => r.isCorrect).length;
+    const overallPercentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+    
+    // Add prescriptive recommendations
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Recommended Learning Strategies:', margin + 6, yPos);
+    
+    yPos += 8;
+    pdf.setFont('helvetica', 'normal');
+    
+    let strategies = [];
+    if (overallPercentage >= 85) {
+      strategies = [
+        '• Continue with grade-level reading materials and challenging texts',
+        '• Introduce advanced comprehension strategies and critical thinking',
+        '• Encourage independent reading and creative writing activities'
+      ];
+    } else if (overallPercentage >= 70) {
+      strategies = [
+        '• Focus on guided reading with teacher support',
+        '• Practice phonics patterns and sight word recognition',
+        '• Use multi-sensory approaches for skill reinforcement'
+      ];
+    } else {
+      strategies = [
+        '• Implement intensive foundational reading instruction',
+        '• Use systematic phonics and decoding interventions',
+        '• Provide frequent practice with high-frequency words'
+      ];
+    }
+    
+    strategies.forEach(strategy => {
+      pdf.text(strategy, margin + 6, yPos);
+      yPos += 6;
+    });
+    
+    yPos += 5;
+    
+    // Next assessment timeline
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Next Assessment:', margin + 6, yPos);
+    
+    yPos += 6;
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Schedule follow-up assessment in 4-6 weeks to monitor progress.', margin + 6, yPos);
+    
+    return yPos + 15;
+  }
+
+  /**
+   * Add professional footer with signatures
+   */
+  static addProfessionalFooter(pdf, pageWidth, pageHeight, margin) {
+    const footerY = pageHeight - 35;
+    
+    // Summary statement
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text('Continuous assessment and targeted intervention will support optimal reading development.', 
+             pageWidth / 2, footerY - 10, { align: 'center' });
+    
+    // Signature lines
+    const leftSigX = margin + 40;
+    const rightSigX = pageWidth - margin - 80;
+    
+    pdf.setLineWidth(0.5);
+    pdf.setDrawColor(0, 0, 0);
+    pdf.line(leftSigX, footerY, leftSigX + 50, footerY);
+    pdf.line(rightSigX, footerY, rightSigX + 50, footerY);
+    
+    // Signature labels
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Teacher\'s Signature', leftSigX + 25, footerY + 6, { align: 'center' });
+    pdf.text('Principal\'s Signature', rightSigX + 25, footerY + 6, { align: 'center' });
+    
+    // Footer info
+    pdf.setFontSize(7);
+    pdf.setTextColor(120, 120, 120);
+    pdf.text('Post-Assessment Progress Report - Cradle of Learners', margin, pageHeight - 8);
+    
+    // Page numbers
+    const pageCount = pdf.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      pdf.setPage(i);
+      pdf.text(`Page ${i} of ${pageCount}`, pageWidth - margin - 30, pageHeight - 8);
+    }
+  }
+
+  // Helper Methods
+  
+  static findQuestionInAssessments(questionId, assessmentQuestions) {
+    if (!assessmentQuestions || !questionId) return null;
+    
+    for (const assessment of assessmentQuestions) {
+      if (assessment.questions && Array.isArray(assessment.questions)) {
+        const question = assessment.questions.find(q => q.questionId === questionId);
+        if (question) return question;
+      }
+    }
+    return null;
+  }
+
+  static formatStudentAnswer(response, questionDetails) {
+    if (!response.response || response.response.length === 0) return 'No response';
+    
+    const category = response.category.toLowerCase();
+    
+    if (category.includes('alphabet')) {
+      if (Array.isArray(response.response) && response.response[0] && questionDetails?.choiceOptions) {
+        const optionId = response.response[0];
+        const selectedOption = questionDetails.choiceOptions.find(opt => opt.optionId === optionId);
+        return selectedOption ? selectedOption.optionText : `Option ${optionId}`;
+      }
+    } else if (category.includes('decoding')) {
+      return Array.isArray(response.response) ? response.response.join('') : response.response;
+    } else if (category.includes('word')) {
+      return Array.isArray(response.response) ? response.response.join(', ') : response.response;
+    } else if (category.includes('comprehension')) {
+      return Array.isArray(response.response) ? response.response.join(', ') : response.response;
+    }
+    
+    return Array.isArray(response.response) ? response.response.join(', ') : String(response.response);
+  }
+
+  static formatCorrectAnswer(response, questionDetails) {
+    if (!questionDetails) return 'Not available';
+    
+    const category = response.category.toLowerCase();
+    
+    if (category.includes('alphabet') && questionDetails.choiceOptions) {
+      const correctOption = questionDetails.choiceOptions.find(opt => opt.isCorrect);
+      return correctOption ? correctOption.optionText : 'Correct option';
+    } else if (category.includes('decoding') && questionDetails.correctSequence) {
+      return Array.isArray(questionDetails.correctSequence) ? 
+        questionDetails.correctSequence.join('') : questionDetails.correctSequence;
+    } else if (category.includes('word') && questionDetails.correctAnswer) {
+      return Array.isArray(questionDetails.correctAnswer) ? 
+        questionDetails.correctAnswer.join(', ') : questionDetails.correctAnswer;
+    } else if (category.includes('comprehension')) {
+      return questionDetails.correctAnswer || 'Expected answer';
+    }
+    
+    return 'Answer not available';
+  }
+
+  static formatResponseTime(seconds) {
+    if (!seconds || seconds < 0) return '0m 0s';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}m ${remainingSeconds}s`;
+  }
+
+  static wrapText(pdf, text, maxWidth, fontSize) {
+    pdf.setFontSize(fontSize);
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = '';
+    
+    words.forEach(word => {
+      const testLine = currentLine ? currentLine + ' ' + word : word;
+      const testWidth = pdf.getTextWidth(testLine);
+      
+      if (testWidth > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    });
+    
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+    
+    return lines;
   }
 }
 
-export default new PdfReportService();
+// Export service instance
+const pdfReportService = {
+  generateProgressReport: (studentData, progressData, responsesData, assessmentQuestions, onProgress) => {
+    return PdfReportService.generateProgressReport(studentData, progressData, responsesData, assessmentQuestions, onProgress);
+  }
+};
+
+export default pdfReportService;

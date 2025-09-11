@@ -52,17 +52,72 @@ const ProgressApiService = {
   },
 
   /**
-   * Get student responses for a specific student
+   * Get student responses for a specific student (post-assessment)
    */
   getStudentResponses: async (studentId) => {
     try {
       const token = AuthService.getToken();
-      const response = await axios.get(`${API_BASE_URL}/api/student-responses/${studentId}`, {
+      
+      console.log(`🔍 Attempting to fetch student responses for: ${studentId}`);
+      
+      // Try the main endpoint that should have the student responses
+      const response = await axios.get(`${API_BASE_URL}api/student-responses/${studentId}?type=post-assessment`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      return response.data;
+      
+      console.log('📊 Post-assessment student responses API response:', response.data);
+      
+      // Handle different response structures
+      if (response.data) {
+        let data = response.data;
+        
+        // Handle nested data structure
+        if (response.data.data) {
+          data = response.data.data;
+        }
+        
+        // Ensure we have an array
+        const responseArray = Array.isArray(data) ? data : [];
+        
+        console.log(`✅ Successfully parsed ${responseArray.length} student responses`);
+        
+        return {
+          success: true,
+          data: responseArray,
+          message: `Found ${responseArray.length} student responses`
+        };
+      }
+      
+      return {
+        success: false,
+        data: [],
+        message: 'No responses found'
+      };
     } catch (error) {
-      console.error(`Error fetching student responses for student ${studentId}:`, error);
+      console.error(`❌ Error fetching student responses for student ${studentId}:`, error);
+      
+      // Fallback: try alternative endpoint structure
+      try {
+        console.log('🔄 Trying fallback endpoint...');
+        const fallbackResponse = await axios.get(`${API_BASE_URL}api/students/${studentId}/responses`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (fallbackResponse.data) {
+          const data = Array.isArray(fallbackResponse.data) ? fallbackResponse.data : 
+                      (fallbackResponse.data.data && Array.isArray(fallbackResponse.data.data)) ? fallbackResponse.data.data : [];
+          
+          console.log(`✅ Fallback successful: ${data.length} responses`);
+          return {
+            success: true,
+            data: data,
+            message: `Found ${data.length} responses via fallback`
+          };
+        }
+      } catch (fallbackError) {
+        console.error('❌ Fallback also failed:', fallbackError);
+      }
+      
       return {
         success: false,
         data: [],
