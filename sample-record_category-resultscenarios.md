@@ -1210,31 +1210,3 @@
   "updatedAt": {"$date": "2025-09-10T09:15:00.000Z"},
   "lastAssessmentDate": {"$date": "2025-09-10T08:30:00.000Z"}
 }
-
-// ============================================================================
-// INSERTION INSTRUCTIONS FOR MONGODB COMPASS
-// ============================================================================
-
-/*
-TO INSERT THESE RECORDS:
-
-1. Copy each collection's records separately
-2. In MongoDB Compass:
-   - Select the appropriate collection (category_results, student_responses, or users)
-   - Click "INSERT DOCUMENT"
-   - Switch to JSON view
-   - Paste the record(s)
-   - Click "INSERT"
-
-3. Insert in this order:
-   - First: users collection record
-   - Second: category_results records (one at a time for each scenario)
-   - Third: student_responses records (in batches per scenario)
-
-SCENARIOS SUMMARY:
-- Scenario 1: High Emerging, incomplete (failed Phonological Awareness, no intervention yet)
-- Scenario 2: High Emerging, completed (ready to advance to Developing level)
-- Scenario 3: Developing level, failed Decoding with 2 intervention attempts
-
-Each scenario provides comprehensive test data for different student progress states.
-*/
