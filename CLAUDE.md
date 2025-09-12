@@ -2809,5 +2809,8 @@ etc
 
 # So the flow is this also !this is important 
 
-
-
+For Low Emerging, they onyl have category of Alphabet Knowledge,
+For High Emerhging they only have category of Alphabet Knowledge and Phonological Awareness
+For Developing they have Alphabet Knowledge and Phonological Awareness, and Decoding
+For Transitioning they have Alphabet Knowledge and Phonological Awareness, and Decoding, and Word Recognition
+For At Grade Level they have Alphabet Knowledge and Phonological Awareness, and Decoding, and Word Recognition and Reading Comprehension 
