@@ -513,20 +513,8 @@ exports.getPrescriptiveRecommendations = async function(req, res) {
       return res.status(200).json({ success: true, data: null });
     }
 
-    // Get all prescriptive analyses for this student
-    const PrescriptiveAnalysisService = require('../../services/Teachers/PrescriptiveAnalysisService');
-    let analyses = await PrescriptiveAnalysisService.getStudentAnalyses(id);
-
-    // If we have category results but no analyses, generate them
-    if (categoryResults && (!analyses || analyses.length === 0)) {
-      // Generate analyses from category results
-      await PrescriptiveAnalysisService.generateAnalysesFromCategoryResults(
-        id,
-        categoryResults
-      );
-      // Fetch the newly generated analyses
-      analyses = await PrescriptiveAnalysisService.getStudentAnalyses(id);
-    }
+    // Get prescriptive analyses (will be handled by separate API endpoint)
+    let analyses = [];
 
     return res.status(200).json({
       success: true,

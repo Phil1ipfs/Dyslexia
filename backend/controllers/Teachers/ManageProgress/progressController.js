@@ -38,8 +38,8 @@ class ProgressController {
 
             console.log(`Found ${students.length} students to initialize progress tracking for.`);
 
-            // Initialize empty shells for each student
-            await this.initializeStudentRecords(students);
+            // Initialize empty shells for each student - DISABLED AUTO-GENERATION
+            // await this.initializeStudentRecords(students);
 
             console.log('✅ ManageProgress module initialized successfully');
             return true;
@@ -253,20 +253,8 @@ class ProgressController {
                 });
             }
 
-            // Get prescriptive analysis
-            const PrescriptiveAnalysisService = require('../../../services/Teachers/PrescriptiveAnalysisService');
-            let prescriptiveAnalyses = await PrescriptiveAnalysisService.getStudentAnalyses(studentId);
-
-            // If we have assessment results but no analyses, generate them
-            if (assessmentResults.length > 0 && prescriptiveAnalyses.length === 0) {
-                // Generate analyses from most recent category results
-                await PrescriptiveAnalysisService.generateAnalysesFromCategoryResults(
-                    studentId,
-                    assessmentResults[0]
-                );
-                // Fetch the newly generated analyses
-                prescriptiveAnalyses = await PrescriptiveAnalysisService.getStudentAnalyses(studentId);
-            }
+            // Get prescriptive analysis (will be handled by separate API endpoint)
+            let prescriptiveAnalyses = [];
 
             return res.status(200).json({
                 success: true,
