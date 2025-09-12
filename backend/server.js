@@ -425,13 +425,13 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load upload file routes:', error.message);
     }
 
-    // Load prescriptive analysis routes
+    // Load prescriptive analytics routes
     try {
-      const prescriptiveAnalysisRoutes = require('./routes/Teachers/ManageProgress/prescriptiveAnalysisRoutes');
-      app.use('/api/prescriptive-analysis', prescriptiveAnalysisRoutes);
-      console.log('✅ Loaded prescriptive analysis routes');
+      const prescriptiveAnalyticsRoutes = require('./routes/Teachers/prescriptiveAnalyticsRoutes');
+      app.use('/api/prescriptive-analytics', prescriptiveAnalyticsRoutes);
+      console.log('✅ Loaded prescriptive analytics routes at /api/prescriptive-analytics/*');
     } catch (error) {
-      console.warn('⚠️ Could not load prescriptive analysis routes:', error.message);
+      console.warn('⚠️ Could not load prescriptive analytics routes:', error.message);
     }
 
     // Load student routes
