@@ -109,6 +109,7 @@ class InterventionService {
   
   /**
    * Check if an intervention exists for a student and category
+   * Enhanced with strict one-time intervention validation
    * @param {string} studentId - The student ID
    * @param {string} category - The category
    * @returns {Promise<Object>} - The existing intervention or null
@@ -139,25 +140,174 @@ class InterventionService {
         ...query,
         category: category
       });
+
+      // Also check prescriptive analysis for intervention history
+      const prescriptiveAnalysis = await PrescriptiveAnalysis.findOne({
+        studentId: studentId,
+        assessmentType: 'main'
+      }).sort({ createdAt: -1 });
+
+      let interventionAttempted = false;
+      let interventionHistory = [];
+      
+      if (prescriptiveAnalysis && prescriptiveAnalysis.interventionHistory) {
+        interventionHistory = prescriptiveAnalysis.interventionHistory.filter(h => h.category === category);
+        interventionAttempted = interventionHistory.length > 0;
+      }
       
       return {
         exists: !!existingIntervention,
-        intervention: existingIntervention
+        intervention: existingIntervention,
+        interventionAttempted,
+        interventionHistory,
+        canCreateNew: !interventionAttempted, // Strict one-time rule
+        reason: interventionAttempted ? 'One-time intervention rule: Category already attempted' : 'Can create new intervention'
       };
     } catch (error) {
       console.error('Error checking existing intervention:', error);
       throw error;
     }
   }
+
+  /**
+   * Validate intervention eligibility with strict one-time enforcement
+   * @param {string} studentId - The student ID
+   * @param {string} category - The category
+   * @returns {Promise<Object>} - Validation result
+   */
+  async validateInterventionEligibility(studentId, category) {
+    try {
+      console.log(`[INTERVENTION VALIDATION] Validating eligibility for student ${studentId}, category: ${category}`);
+
+      // Check existing interventions
+      const existingCheck = await this.checkExistingIntervention(studentId, category);
+      
+      if (!existingCheck.canCreateNew) {
+        return {
+          eligible: false,
+          reason: existingCheck.reason,
+          interventionHistory: existingCheck.interventionHistory,
+          recommendedAction: 'face_to_face_required',
+          details: 'Student has already attempted intervention for this category. One-time intervention rule enforced.'
+        };
+      }
+
+      // Check if category needs intervention (score < 75%)
+      const prescriptiveAnalysis = await PrescriptiveAnalysis.findOne({
+        studentId: studentId,
+        assessmentType: 'main'
+      }).sort({ createdAt: -1 });
+
+      if (!prescriptiveAnalysis) {
+        return {
+          eligible: false,
+          reason: 'No prescriptive analysis found',
+          recommendedAction: 'complete_main_assessment',
+          details: 'Student needs to complete main assessment before intervention can be generated.'
+        };
+      }
+
+      // Check if category failed (< 75%)
+      const categoryMastery = prescriptiveAnalysis.skillMastery.get ? 
+        prescriptiveAnalysis.skillMastery.get(category) : 
+        prescriptiveAnalysis.skillMastery[category];
+
+      if (!categoryMastery) {
+        return {
+          eligible: false,
+          reason: 'Category not assessed',
+          recommendedAction: 'complete_category_assessment',
+          details: `Category "${category}" was not assessed in the main assessment.`
+        };
+      }
+
+      const categoryScore = categoryMastery.score || 0;
+      if (categoryScore >= 75) {
+        return {
+          eligible: false,
+          reason: 'Category already passed',
+          categoryScore,
+          recommendedAction: 'no_intervention_needed',
+          details: `Student scored ${categoryScore}% in "${category}" which meets the 75% pass threshold.`
+        };
+      }
+
+      // All checks passed - eligible for intervention
+      return {
+        eligible: true,
+        reason: 'Intervention needed and allowed',
+        categoryScore,
+        errorSeverity: this.calculateCategoryErrorSeverity(prescriptiveAnalysis.errorPatterns, category),
+        masteryLevel: categoryMastery.masteryProbability || 0.5,
+        recommendedAction: 'create_intervention',
+        details: `Student scored ${categoryScore}% in "${category}" (below 75% threshold) and has not attempted intervention yet.`
+      };
+
+    } catch (error) {
+      console.error('[INTERVENTION VALIDATION] Error validating eligibility:', error);
+      return {
+        eligible: false,
+        reason: 'Validation error',
+        error: error.message,
+        recommendedAction: 'manual_review',
+        details: 'Error occurred during validation. Manual review required.'
+      };
+    }
+  }
+
+  /**
+   * Calculate error severity for a specific category
+   * @param {Map|Object} errorPatterns - Error patterns from prescriptive analysis
+   * @param {string} category - Category to analyze
+   * @returns {Object} Error severity analysis
+   */
+  calculateCategoryErrorSeverity(errorPatterns, category) {
+    const categoryErrors = errorPatterns.get ? errorPatterns.get(category) : errorPatterns[category];
+    
+    if (!categoryErrors) {
+      return { level: 'unknown', score: 0, hasPatterns: false };
+    }
+
+    let totalErrors = 0;
+    let totalQuestions = 0;
+    
+    Object.values(categoryErrors).forEach(errorData => {
+      if (errorData.count && errorData.total) {
+        totalErrors += errorData.count;
+        totalQuestions += errorData.total;
+      }
+    });
+
+    if (totalQuestions === 0) {
+      return { level: 'unknown', score: 0, hasPatterns: false };
+    }
+
+    const errorRate = (totalErrors / totalQuestions) * 100;
+    
+    let level;
+    if (errorRate >= 70) level = 'severe';
+    else if (errorRate >= 50) level = 'high';
+    else if (errorRate >= 30) level = 'moderate';
+    else if (errorRate >= 15) level = 'low';
+    else level = 'minimal';
+
+    return {
+      level,
+      score: Math.round(errorRate),
+      totalErrors,
+      totalQuestions,
+      hasPatterns: true
+    };
+  }
   
   /**
-   * Create a new intervention
+   * Create a new intervention with strict validation
    * @param {Object} interventionData - The intervention data
    * @returns {Promise<Object>} - The created intervention
    */
   async createIntervention(interventionData) {
     try {
-      console.log('Creating intervention with data:', JSON.stringify(interventionData, null, 2));
+      console.log('[INTERVENTION SERVICE] Creating intervention with data:', JSON.stringify(interventionData, null, 2));
       
       // Validate student ID
       if (!interventionData.studentId || !mongoose.Types.ObjectId.isValid(interventionData.studentId)) {
@@ -168,6 +318,17 @@ class InterventionService {
       const student = await User.findById(interventionData.studentId);
       if (!student) {
         throw new Error('Student not found');
+      }
+
+      // Strict validation for one-time intervention rule
+      if (interventionData.category) {
+        const eligibility = await this.validateInterventionEligibility(interventionData.studentId, interventionData.category);
+        
+        if (!eligibility.eligible) {
+          throw new Error(`Intervention creation blocked: ${eligibility.reason}. ${eligibility.details}`);
+        }
+        
+        console.log(`[INTERVENTION SERVICE] Intervention validated: ${eligibility.details}`);
       }
       
       // Add student number from the user record

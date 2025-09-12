@@ -2510,8 +2510,7 @@ intervention_responses in case they have the intervention
   "readingLevel": "At Grade Level"
 }]
 
-intervention_results based from the intervention_assessment and the intervention_responses coming from the mobile answered by the students, 
-
+intervention_results TABLE
 
 [{
   "_id": {

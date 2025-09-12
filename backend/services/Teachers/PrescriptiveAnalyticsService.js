@@ -9,6 +9,8 @@ const User = require('../../models/userModel');
 
 const mathematicalModelsService = require('./PrescriptiveAnalytics/mathematicalModelsService');
 const errorPatternService = require('./PrescriptiveAnalytics/errorPatternService');
+const timePredictionService = require('./PrescriptiveAnalytics/timePredictionService');
+const dynamicQuestionService = require('./PrescriptiveAnalytics/dynamicQuestionService');
 
 class PrescriptiveAnalyticsService {
 
@@ -130,8 +132,17 @@ class PrescriptiveAnalyticsService {
         continue;
       }
 
-      // Process responses chronologically using BKT
-      const bktResult = mathematicalModelsService.processBKTSequence(categoryResponses);
+      // Process responses chronologically using time-aware BKT if possible
+      const hasResponseTimes = categoryResponses.some(r => r.responseTime && r.responseTime > 0);
+      
+      let bktResult;
+      if (hasResponseTimes) {
+        // Use time-aware BKT for more accurate mastery tracking
+        bktResult = mathematicalModelsService.processBKTSequenceWithTime(categoryResponses);
+      } else {
+        // Fallback to standard BKT
+        bktResult = mathematicalModelsService.processBKTSequence(categoryResponses);
+      }
       
       // Calculate basic stats
       let correctCount, totalCount, score;
@@ -191,12 +202,21 @@ class PrescriptiveAnalyticsService {
     for (const category of expectedCategories) {
       const categoryResponses = responsesByCategory[category] || [];
       
-      if (category === 'Phonological Awareness') {
-        abilities[category] = mathematicalModelsService.estimateAbilityPhonologicalAwareness(categoryResponses);
-      } else if (categoryResponses.length > 0) {
-        const correctCount = categoryResponses.filter(r => r.isCorrect).length;
-        const proportionCorrect = correctCount / categoryResponses.length;
-        abilities[category] = mathematicalModelsService.estimateAbilityFromProportion(proportionCorrect);
+      if (categoryResponses.length > 0) {
+        // Check if we have response time data for enhanced ability estimation
+        const hasResponseTimes = categoryResponses.some(r => r.responseTime && r.responseTime > 0);
+        
+        if (hasResponseTimes) {
+          // Use time-aware ability estimation
+          const abilityData = mathematicalModelsService.estimateAbilityWithTime(categoryResponses);
+          abilities[category] = abilityData.ability;
+        } else if (category === 'Phonological Awareness') {
+          abilities[category] = mathematicalModelsService.estimateAbilityPhonologicalAwareness(categoryResponses);
+        } else {
+          const correctCount = categoryResponses.filter(r => r.isCorrect).length;
+          const proportionCorrect = correctCount / categoryResponses.length;
+          abilities[category] = mathematicalModelsService.estimateAbilityFromProportion(proportionCorrect);
+        }
       } else {
         abilities[category] = 0.0; // Neutral ability estimate
       }
@@ -543,6 +563,238 @@ class PrescriptiveAnalyticsService {
   }
 
   /**
+   * Generate dynamic intervention plan (replaces fixed 10-question approach)
+   * Uses error patterns, time predictions, and student ability to optimize question count
+   * 
+   * @param {string} analysisId - Prescriptive analysis ID
+   * @param {string} category - Category for intervention
+   * @param {number} availableMinutes - Available time (optional, defaults to 30)
+   * @param {Object} constraints - Override constraints (optional)
+   * @returns {Object} Dynamic intervention plan
+   */
+  async generateDynamicIntervention(analysisId, category, availableMinutes = 30, constraints = null) {
+    try {
+      console.log(`[PRESCRIPTIVE ANALYTICS] Generating dynamic intervention for analysis ${analysisId}, category: ${category}`);
+
+      // Get the prescriptive analysis
+      const analysis = await PrescriptiveAnalysis.findById(analysisId);
+      if (!analysis) {
+        throw new Error('Prescriptive analysis not found');
+      }
+
+      // Check if intervention already attempted for this category
+      const existingAttempt = analysis.interventionHistory.find(h => h.category === category);
+      if (existingAttempt) {
+        throw new Error(`Intervention already attempted for ${category}. One-time intervention rule enforced.`);
+      }
+
+      // Prepare analysis data for dynamic question service
+      const analysisData = {
+        studentId: analysis.studentId,
+        readingLevel: analysis.readingLevel,
+        errorPatterns: this.convertMapToObject(analysis.errorPatterns),
+        skillMastery: this.convertMapToObject(analysis.skillMastery),
+        abilityEstimates: this.convertMapToObject(analysis.abilityEstimates)
+      };
+
+      // Generate dynamic question plan
+      const questionPlan = await dynamicQuestionService.generateDynamicQuestionPlan(
+        analysisData,
+        category,
+        availableMinutes,
+        constraints
+      );
+
+      // Validate the plan
+      const validatedPlan = dynamicQuestionService.validateQuestionPlan(questionPlan);
+
+      // Add intervention metadata
+      const interventionPlan = {
+        ...validatedPlan,
+        studentId: analysis.studentId,
+        prescriptiveAnalysisId: analysisId,
+        category,
+        readingLevel: analysis.readingLevel,
+        createdAt: new Date(),
+        status: 'generated'
+      };
+
+      console.log(`[PRESCRIPTIVE ANALYTICS] Generated dynamic intervention with ${questionPlan.questionCount} questions (was fixed at 10)`);
+
+      return interventionPlan;
+
+    } catch (error) {
+      console.error('[PRESCRIPTIVE ANALYTICS] Error generating dynamic intervention:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Predict completion time for a specific intervention
+   * 
+   * @param {number} studentId - Student ID
+   * @param {string} category - Category name
+   * @param {number} questionCount - Number of questions
+   * @param {string} readingLevel - Reading level
+   * @returns {Object} Time prediction
+   */
+  async predictInterventionTime(studentId, category, questionCount, readingLevel) {
+    try {
+      return await timePredictionService.predictInterventionTime(
+        studentId, category, questionCount, readingLevel
+      );
+    } catch (error) {
+      console.error('[PRESCRIPTIVE ANALYTICS] Error predicting intervention time:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate optimal question count based on available time
+   * 
+   * @param {number} availableMinutes - Available minutes
+   * @param {number} studentId - Student ID
+   * @param {string} category - Category name
+   * @param {string} readingLevel - Reading level
+   * @returns {Object} Optimal question count calculation
+   */
+  async calculateOptimalQuestionCount(availableMinutes, studentId, category, readingLevel) {
+    try {
+      return await timePredictionService.calculateOptimalQuestionCount(
+        availableMinutes, studentId, category, readingLevel
+      );
+    } catch (error) {
+      console.error('[PRESCRIPTIVE ANALYTICS] Error calculating optimal question count:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update analysis after intervention completion with dynamic results
+   * Enhanced to handle variable question counts and time-based analysis
+   * 
+   * @param {number} studentId - Student ID
+   * @param {string} interventionResultId - Intervention result ID
+   * @returns {Object} Updated analysis
+   */
+  async updateAnalysisAfterIntervention(studentId, interventionResultId) {
+    try {
+      console.log(`[PRESCRIPTIVE ANALYTICS] Updating analysis after intervention for student ${studentId}`);
+
+      // Get the intervention result
+      const InterventionResult = require('../../models/Teachers/ManageAssessment/interventionResultModel');
+      const interventionResult = await InterventionResult.findById(interventionResultId);
+      
+      if (!interventionResult) {
+        throw new Error('Intervention result not found');
+      }
+
+      // Get the latest prescriptive analysis for this student
+      const analysis = await PrescriptiveAnalysis.findOne({ 
+        studentId,
+        assessmentType: 'main'
+      }).sort({ createdAt: -1 });
+
+      if (!analysis) {
+        throw new Error('No prescriptive analysis found for student');
+      }
+
+      // Update intervention history
+      analysis.interventionHistory.push({
+        category: interventionResult.category,
+        interventionId: interventionResult._id,
+        dateTaken: interventionResult.completedAt || new Date(),
+        passed: interventionResult.isPassed,
+        score: interventionResult.score,
+        attempt: 1 // First and only attempt per one-time rule
+      });
+
+      // Update skill mastery for the category based on intervention results
+      const category = interventionResult.category;
+      const categoryMastery = analysis.skillMastery.get(category) || {};
+      
+      // Enhanced BKT update with intervention results
+      if (interventionResult.isPassed) {
+        // Successful intervention increases mastery significantly
+        categoryMastery.masteryProbability = Math.min(0.95, categoryMastery.masteryProbability + 0.25);
+      } else {
+        // Failed intervention indicates persistent difficulty
+        categoryMastery.masteryProbability = Math.max(0.1, categoryMastery.masteryProbability - 0.15);
+      }
+      
+      categoryMastery.lastUpdated = new Date();
+      categoryMastery.score = interventionResult.score;
+      categoryMastery.isPassed = interventionResult.isPassed;
+      
+      analysis.skillMastery.set(category, categoryMastery);
+
+      // Update insights based on intervention outcome
+      if (interventionResult.isPassed) {
+        // Remove from weaknesses, add to strengths if high score
+        analysis.insights.weaknesses = analysis.insights.weaknesses.filter(w => !w.includes(category));
+        
+        if (interventionResult.score >= 85 && !analysis.insights.strengths.includes(category)) {
+          analysis.insights.strengths.push(`${category} - Intervention Success`);
+        }
+        
+        analysis.insights.recommendedAction = 'continue_assessment';
+      } else {
+        // Failed intervention - recommend face-to-face
+        analysis.insights.recommendedAction = 'face_to_face_required';
+        analysis.insights.overallReadiness = 'Requires face-to-face support after intervention failure';
+        
+        // Update weakness with intervention failure note
+        const existingWeakness = analysis.insights.weaknesses.findIndex(w => w.includes(category));
+        if (existingWeakness >= 0) {
+          analysis.insights.weaknesses[existingWeakness] = `${category} - ${interventionResult.score}% (Intervention Failed)`;
+        } else {
+          analysis.insights.weaknesses.push(`${category} - ${interventionResult.score}% (Intervention Failed)`);
+        }
+      }
+
+      // Update intervention plan - remove successful categories
+      if (interventionResult.isPassed && analysis.interventionPlan) {
+        analysis.interventionPlan.priority = analysis.interventionPlan.priority.filter(cat => cat !== category);
+        analysis.interventionPlan.required = analysis.interventionPlan.priority.length > 0;
+        
+        // Remove specific focus for passed category
+        if (analysis.interventionPlan.specificFocus) {
+          analysis.interventionPlan.specificFocus.delete(category);
+        }
+      }
+
+      analysis.updatedAt = new Date();
+      await analysis.save();
+
+      console.log(`[PRESCRIPTIVE ANALYTICS] Updated analysis after ${interventionResult.isPassed ? 'successful' : 'failed'} intervention`);
+
+      return analysis;
+
+    } catch (error) {
+      console.error('[PRESCRIPTIVE ANALYTICS] Error updating analysis after intervention:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Convert Map to plain object for JSON serialization
+   * 
+   * @param {Map} mapObject - Map to convert
+   * @returns {Object} Plain object
+   */
+  convertMapToObject(mapObject) {
+    if (!mapObject) return {};
+    if (mapObject instanceof Map) {
+      const obj = {};
+      for (const [key, value] of mapObject.entries()) {
+        obj[key] = value;
+      }
+      return obj;
+    }
+    return mapObject;
+  }
+
+  /**
    * Health check for prescriptive analytics service
    * @returns {Object} Health status
    */
@@ -566,7 +818,9 @@ class PrescriptiveAnalyticsService {
         services: {
           bkt: testBKT > 0.5 ? 'working' : 'error',
           irt: testIRT > 0 && testIRT < 1 ? 'working' : 'error',
-          database: 'connected'
+          database: 'connected',
+          timePrediction: 'available',
+          dynamicQuestions: 'available'
         }
       };
     } catch (error) {

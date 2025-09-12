@@ -2,6 +2,8 @@
 // Handles API endpoints for prescriptive analysis generation and management
 
 const prescriptiveAnalyticsService = require('../../services/Teachers/PrescriptiveAnalyticsService');
+const timePredictionService = require('../../services/Teachers/PrescriptiveAnalytics/timePredictionService');
+const dynamicQuestionService = require('../../services/Teachers/PrescriptiveAnalytics/dynamicQuestionService');
 const PrescriptiveAnalysis = require('../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
 const CategoryResult = require('../../models/Teachers/ManageProgress/categoryResultModel');
 
@@ -461,6 +463,122 @@ class PrescriptiveAnalyticsController {
     }
 
     return report;
+  }
+
+  /**
+   * Predict intervention time for a student
+   * POST /api/prescriptive-analytics/predict-time
+   */
+  async predictInterventionTime(req, res) {
+    try {
+      const { studentId, category, questionCount, readingLevel, availableMinutes } = req.body;
+
+      console.log(`Predicting intervention time for student ${studentId}, category ${category}`);
+
+      const timePrediction = await timePredictionService.predictInterventionTime(
+        parseInt(studentId),
+        category,
+        questionCount || null,
+        readingLevel,
+        availableMinutes || 30
+      );
+
+      res.json({
+        success: true,
+        data: timePrediction
+      });
+
+    } catch (error) {
+      console.error('Error predicting intervention time:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to predict intervention time',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Generate dynamic question plan based on analysis
+   * POST /api/prescriptive-analytics/dynamic-questions
+   */
+  async generateDynamicQuestions(req, res) {
+    try {
+      const { analysisId, category, availableMinutes, constraints } = req.body;
+
+      console.log(`Generating dynamic question plan for analysis ${analysisId}, category ${category}`);
+
+      // Get the analysis data
+      const analysis = await PrescriptiveAnalysis.findById(analysisId);
+      if (!analysis) {
+        return res.status(404).json({
+          success: false,
+          message: 'Analysis not found'
+        });
+      }
+
+      const analysisData = {
+        studentId: analysis.studentId,
+        readingLevel: analysis.readingLevel,
+        skillMastery: analysis.skillMastery,
+        errorPatterns: analysis.errorPatterns,
+        abilityEstimates: analysis.abilityEstimates
+      };
+
+      const questionPlan = await dynamicQuestionService.generateDynamicQuestionPlan(
+        analysisData,
+        category,
+        availableMinutes || 30,
+        constraints || null
+      );
+
+      res.json({
+        success: true,
+        data: questionPlan
+      });
+
+    } catch (error) {
+      console.error('Error generating dynamic questions:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to generate dynamic questions',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Get student's historical response time patterns
+   * GET /api/prescriptive-analytics/response-time-patterns/:studentId/:category
+   */
+  async getResponseTimePatterns(req, res) {
+    try {
+      const { studentId, category } = req.params;
+
+      console.log(`Getting response time patterns for student ${studentId}, category ${category}`);
+
+      const patterns = await timePredictionService.getHistoricalResponseTimes(
+        parseInt(studentId),
+        category
+      );
+
+      res.json({
+        success: true,
+        data: {
+          studentId: parseInt(studentId),
+          category,
+          patterns
+        }
+      });
+
+    } catch (error) {
+      console.error('Error getting response time patterns:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get response time patterns',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
   }
 
   /**

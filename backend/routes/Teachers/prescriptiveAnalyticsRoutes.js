@@ -110,6 +110,62 @@ const validateOptionalAssessmentType = (req, res, next) => {
   next();
 };
 
+const validateTimePredictionRequest = (req, res, next) => {
+  const { studentId, category, readingLevel } = req.body;
+  const studentIdInt = parseInt(studentId);
+  
+  if (!studentId || isNaN(studentIdInt) || studentIdInt < 1) {
+    return res.status(400).json({
+      success: false,
+      message: 'Student ID must be a positive integer',
+      errors: [{ field: 'studentId', message: 'Student ID must be a positive integer' }]
+    });
+  }
+  
+  const validCategories = ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'];
+  if (!category || !validCategories.includes(category)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid category name',
+      errors: [{ field: 'category', message: 'Category must be one of: ' + validCategories.join(', ') }]
+    });
+  }
+  
+  const validReadingLevels = ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'];
+  if (!readingLevel || !validReadingLevels.includes(readingLevel)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid reading level',
+      errors: [{ field: 'readingLevel', message: 'Reading level must be one of: ' + validReadingLevels.join(', ') }]
+    });
+  }
+  
+  next();
+};
+
+const validateDynamicQuestionsRequest = (req, res, next) => {
+  const { analysisId, category } = req.body;
+  
+  if (!analysisId || !mongoose.Types.ObjectId.isValid(analysisId)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid analysis ID format',
+      errors: [{ field: 'analysisId', message: 'Invalid MongoDB ObjectId format' }]
+    });
+  }
+  
+  const validCategories = ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'];
+  if (!category || !validCategories.includes(category)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid category name',
+      errors: [{ field: 'category', message: 'Category must be one of: ' + validCategories.join(', ') }]
+    });
+  }
+  
+  next();
+};
+
 const validatePagination = (req, res, next) => {
   const { limit, page } = req.query;
   
@@ -216,6 +272,28 @@ router.get('/skill-mastery/:studentId',
 router.get('/error-patterns/:studentId',
   validateStudentId,
   prescriptiveAnalyticsController.getErrorPatternReport
+);
+
+// POST /api/prescriptive-analytics/predict-time
+// Predict intervention time for a student
+router.post('/predict-time',
+  validateTimePredictionRequest,
+  prescriptiveAnalyticsController.predictInterventionTime
+);
+
+// POST /api/prescriptive-analytics/dynamic-questions
+// Generate dynamic question plan based on analysis
+router.post('/dynamic-questions',
+  validateDynamicQuestionsRequest,
+  prescriptiveAnalyticsController.generateDynamicQuestions
+);
+
+// GET /api/prescriptive-analytics/response-time-patterns/:studentId/:category
+// Get student's historical response time patterns
+router.get('/response-time-patterns/:studentId/:category',
+  validateStudentId,
+  validateCategory,
+  prescriptiveAnalyticsController.getResponseTimePatterns
 );
 
 // GET /api/prescriptive-analytics/health
