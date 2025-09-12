@@ -242,7 +242,6 @@ class InterventionAssessmentController {
   async completeIntervention(req, res) {
     try {
       const { interventionId } = req.params;
-      const { interventionResultId } = req.body;
 
       const intervention = await InterventionAssessment.findById(interventionId);
       if (!intervention) {
@@ -252,24 +251,32 @@ class InterventionAssessmentController {
         });
       }
 
-      await intervention.markAsCompleted(interventionResultId);
+      // Process all intervention responses and create final results
+      const processingResult = await InterventionGeneratorService.processInterventionResults(interventionId);
+      
+      if (!processingResult.success) {
+        throw new Error('Failed to process intervention results');
+      }
+
+      // Mark intervention as completed with results ID
+      await intervention.markAsCompleted(processingResult.interventionResultsId);
 
       // Update prescriptive analysis with intervention completion
-      if (interventionResultId) {
-        const prescriptiveAnalyticsService = require('../../services/Teachers/PrescriptiveAnalyticsService');
-        await prescriptiveAnalyticsService.updateAnalysisAfterIntervention(
-          intervention.studentId,
-          interventionResultId
-        );
-      }
+      const prescriptiveAnalyticsService = require('../../services/Teachers/PrescriptiveAnalyticsService');
+      await prescriptiveAnalyticsService.updateAnalysisAfterIntervention(
+        intervention.studentId,
+        processingResult.interventionResultsId
+      );
 
       res.json({
         success: true,
-        message: 'Intervention completed',
+        message: 'Intervention completed and results processed',
         data: {
           interventionId: intervention._id,
+          interventionResultsId: processingResult.interventionResultsId,
           status: intervention.status,
-          completedAt: intervention.completedAt
+          completedAt: intervention.completedAt,
+          results: processingResult.results
         }
       });
 

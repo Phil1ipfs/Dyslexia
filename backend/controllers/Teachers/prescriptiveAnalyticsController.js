@@ -4,6 +4,7 @@
 const prescriptiveAnalyticsService = require('../../services/Teachers/PrescriptiveAnalyticsService');
 const timePredictionService = require('../../services/Teachers/PrescriptiveAnalytics/timePredictionService');
 const dynamicQuestionService = require('../../services/Teachers/PrescriptiveAnalytics/dynamicQuestionService');
+const progressTrackingService = require('../../services/Teachers/ProgressTrackingService');
 const PrescriptiveAnalysis = require('../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
 const CategoryResult = require('../../models/Teachers/ManageProgress/categoryResultModel');
 
@@ -612,6 +613,396 @@ class PrescriptiveAnalyticsController {
       res.status(500).json({
         success: false,
         message: 'Failed to get system health',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  // Additional methods from ManageProgress integration
+
+  /**
+   * Generate comprehensive prescriptive analysis using BKT/IRT mathematical models
+   * POST /api/prescriptive-analytics/comprehensive/:studentId
+   */
+  async generateComprehensiveAnalysis(req, res) {
+    try {
+      const { studentId } = req.params;
+      
+      console.log(`Generating comprehensive BKT/IRT analysis for student ${studentId}`);
+
+      // Get most recent category result for student
+      const CategoryResultsService = require('../../services/Teachers/CategoryResultsService');
+      const categoryResults = await CategoryResultsService.getCategoryResults(studentId);
+      
+      if (categoryResults.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'No category results found for analysis'
+        });
+      }
+
+      // Use comprehensive service to generate analysis
+      const mostRecentResult = categoryResults[0];
+      const analysis = await prescriptiveAnalyticsService.generatePrescriptiveAnalysis(mostRecentResult._id);
+
+      res.status(201).json({
+        success: true,
+        message: 'Comprehensive BKT/IRT analysis generated successfully',
+        data: {
+          analysisId: analysis._id,
+          studentId: analysis.studentId,
+          readingLevel: analysis.readingLevel,
+          assessmentType: analysis.assessmentType,
+          skillMastery: analysis.skillMastery,
+          abilityEstimates: analysis.abilityEstimates,
+          errorPatterns: analysis.errorPatterns,
+          interventionPlan: analysis.interventionPlan,
+          insights: analysis.insights,
+          createdAt: analysis.createdAt
+        }
+      });
+
+    } catch (error) {
+      console.error('Error generating comprehensive analysis:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Server error while generating comprehensive analysis',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Generate prescriptive analysis from intervention results
+   * POST /api/prescriptive-analytics/intervention/:interventionId
+   */
+  async generateAnalysisFromIntervention(req, res) {
+    try {
+      const { interventionId } = req.params;
+
+      console.log(`Generating analysis from intervention ${interventionId}`);
+
+      // Use the intervention service to generate analysis
+      const InterventionService = require('../../services/Teachers/InterventionService');
+      const result = await InterventionService.generateAnalysisFromIntervention(interventionId);
+
+      res.status(201).json({
+        success: true,
+        message: 'Prescriptive analysis generated from intervention results',
+        data: result.data,
+        interventionOutcome: result.interventionOutcome
+      });
+
+    } catch (error) {
+      console.error('Error generating analysis from intervention:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Server error while generating analysis from intervention',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Get intervention history with analytics for a student
+   * GET /api/prescriptive-analytics/intervention-history/:studentId
+   */
+  async getInterventionHistory(req, res) {
+    try {
+      const { studentId } = req.params;
+
+      console.log(`Getting intervention history for student ${studentId}`);
+
+      // Get all prescriptive analyses with intervention history
+      const analyses = await PrescriptiveAnalysis.find({
+        studentId: parseInt(studentId)
+      }).sort({ updatedAt: -1 });
+
+      // Extract intervention history from all analyses
+      const allInterventionHistory = [];
+      let totalCategories = 0;
+      let categoriesRequiringEscalation = 0;
+
+      for (const analysis of analyses) {
+        if (analysis.interventionHistory && analysis.interventionHistory.length > 0) {
+          allInterventionHistory.push(...analysis.interventionHistory);
+          totalCategories++;
+          
+          if (analysis.insights?.recommendedAction === 'face_to_face_required') {
+            categoriesRequiringEscalation++;
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          history: allInterventionHistory,
+          summary: {
+            totalCategories,
+            categoriesRequiringEscalation,
+            totalInterventionAttempts: allInterventionHistory.length
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('Error getting intervention history:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Server error while retrieving intervention history',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Update recommendation template for easy updates
+   * PUT /api/prescriptive-analytics/template
+   */
+  async updateRecommendationTemplate(req, res) {
+    try {
+      const { templateType, templateContent } = req.body;
+
+      console.log(`Updating recommendation template: ${templateType}`);
+
+      // Use service to update template
+      const updatedTemplate = await prescriptiveAnalyticsService.updateRecommendationTemplate(
+        templateType,
+        templateContent
+      );
+
+      res.json({
+        success: true,
+        message: 'Recommendation template updated successfully',
+        data: updatedTemplate
+      });
+
+    } catch (error) {
+      console.error('Error updating recommendation template:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update recommendation template',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Get available templates
+   * GET /api/prescriptive-analytics/templates
+   */
+  async getAvailableTemplates(req, res) {
+    try {
+      console.log('Getting available recommendation templates');
+
+      // Use service to get templates
+      const templates = await prescriptiveAnalyticsService.getAvailableTemplates();
+
+      res.json({
+        success: true,
+        data: templates
+      });
+
+    } catch (error) {
+      console.error('Error getting available templates:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get available templates',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  // Progress Tracking and Analytics Methods
+
+  /**
+   * Get comprehensive progress tracking analytics for a student
+   * GET /api/prescriptive-analytics/progress/:studentId
+   */
+  async getProgressAnalytics(req, res) {
+    try {
+      const { studentId } = req.params;
+      const { dateRange = 'all' } = req.query;
+
+      console.log(`Getting comprehensive progress analytics for student ${studentId}`);
+
+      const progressData = await progressTrackingService.getStudentProgressAnalytics(
+        parseInt(studentId),
+        dateRange
+      );
+
+      res.json({
+        success: true,
+        data: progressData
+      });
+
+    } catch (error) {
+      console.error('Error getting progress analytics:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get progress analytics',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Get before/after intervention comparison analytics
+   * GET /api/prescriptive-analytics/intervention-comparison/:studentId
+   */
+  async getInterventionComparisons(req, res) {
+    try {
+      const { studentId } = req.params;
+      const { category } = req.query;
+
+      console.log(`Getting intervention comparisons for student ${studentId}`);
+
+      // Get full progress analytics and extract intervention comparisons
+      const progressData = await progressTrackingService.getStudentProgressAnalytics(
+        parseInt(studentId)
+      );
+
+      if (!progressData.hasData) {
+        return res.status(404).json({
+          success: false,
+          message: 'No progress data available for comparison'
+        });
+      }
+
+      let comparisons = progressData.interventionComparisons || [];
+
+      // Filter by category if specified
+      if (category) {
+        comparisons = comparisons.filter(comp => comp.category === category);
+      }
+
+      res.json({
+        success: true,
+        data: {
+          studentId: parseInt(studentId),
+          category: category || 'all',
+          totalComparisons: comparisons.length,
+          comparisons,
+          summary: {
+            effectiveInterventions: comparisons.filter(c => c.improvement.effectiveIntervention).length,
+            averageScoreImprovement: comparisons.length > 0 
+              ? Math.round(comparisons.reduce((sum, c) => sum + c.improvement.scoreChange, 0) / comparisons.length)
+              : 0,
+            averageMasteryImprovement: comparisons.length > 0
+              ? Math.round((comparisons.reduce((sum, c) => sum + c.improvement.masteryChange, 0) / comparisons.length) * 100) / 100
+              : 0
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('Error getting intervention comparisons:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get intervention comparisons',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Get category-specific progress trends
+   * GET /api/prescriptive-analytics/category-progress/:studentId/:category
+   */
+  async getCategoryProgress(req, res) {
+    try {
+      const { studentId, category } = req.params;
+      const { dateRange = 'all' } = req.query;
+
+      console.log(`Getting category progress for student ${studentId}, category: ${category}`);
+
+      const progressData = await progressTrackingService.getStudentProgressAnalytics(
+        parseInt(studentId),
+        dateRange
+      );
+
+      if (!progressData.hasData) {
+        return res.status(404).json({
+          success: false,
+          message: 'No progress data available'
+        });
+      }
+
+      const categoryProgress = progressData.categoryProgress[category];
+      const masteryProgression = progressData.masteryProgression[category];
+
+      if (!categoryProgress?.hasData) {
+        return res.status(404).json({
+          success: false,
+          message: `No progress data available for category: ${category}`
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          studentId: parseInt(studentId),
+          category,
+          dateRange,
+          progress: categoryProgress,
+          masteryProgression,
+          interventions: (progressData.interventionComparisons || []).filter(c => c.category === category)
+        }
+      });
+
+    } catch (error) {
+      console.error('Error getting category progress:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get category progress',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Get intervention effectiveness analytics
+   * GET /api/prescriptive-analytics/intervention-effectiveness/:studentId
+   */
+  async getInterventionEffectiveness(req, res) {
+    try {
+      const { studentId } = req.params;
+
+      console.log(`Getting intervention effectiveness for student ${studentId}`);
+
+      const progressData = await progressTrackingService.getStudentProgressAnalytics(
+        parseInt(studentId)
+      );
+
+      if (!progressData.hasData) {
+        return res.status(404).json({
+          success: false,
+          message: 'No progress data available'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          studentId: parseInt(studentId),
+          interventionAnalytics: progressData.interventionAnalytics,
+          interventionComparisons: progressData.interventionComparisons,
+          insights: progressData.insights,
+          summary: {
+            hasInterventions: progressData.interventionAnalytics?.hasInterventions || false,
+            totalInterventions: progressData.interventionAnalytics?.totalInterventions || 0,
+            successRate: progressData.interventionAnalytics?.successRate || 0,
+            effectiveInterventions: (progressData.interventionComparisons || []).filter(c => c.improvement.effectiveIntervention).length
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('Error getting intervention effectiveness:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get intervention effectiveness',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
       });
     }

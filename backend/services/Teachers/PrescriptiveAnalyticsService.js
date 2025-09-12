@@ -23,16 +23,21 @@ class PrescriptiveAnalyticsService {
    */
   async generatePrescriptiveAnalysis(categoryResultId) {
     try {
-      const categoryResult = await CategoryResult.findById(categoryResultId)
-        .populate('studentId');
+      const categoryResult = await CategoryResult.findById(categoryResultId);
       
       if (!categoryResult) {
         throw new Error('Category result not found');
       }
 
-      const student = categoryResult.studentId;
-      const studentId = student.studentId;
-      const readingLevel = student.readingLevel;
+      const studentId = categoryResult.studentId;
+      
+      // Fetch student data separately - User model uses 'idNumber' field
+      const student = await User.findOne({ idNumber: studentId });
+      if (!student) {
+        throw new Error(`Student with ID ${studentId} not found`);
+      }
+      
+      const readingLevel = student.readingLevel || 'Low Emerging';
 
       // Fetch all student responses for main assessment
       const responses = await StudentResponse.find({ studentId })
@@ -341,7 +346,7 @@ class PrescriptiveAnalyticsService {
       recommendedAction = "immediate_intervention";
     } else {
       overallReadiness = "Requires comprehensive support";
-      recommendedAction = "intensive_intervention";
+      recommendedAction = "face_to_face_required";
     }
 
     return {
@@ -363,9 +368,9 @@ class PrescriptiveAnalyticsService {
    */
   async getInterventionHistory(studentId) {
     try {
-      const InterventionResult = require('../../models/Teachers/ManageAssessment/interventionResultModel');
+      const InterventionResults = require('../../models/Teachers/ManageProgress/interventionResultsModel');
       
-      const interventions = await InterventionResult.find({ studentId })
+      const interventions = await InterventionResults.find({ studentId })
         .sort({ completedAt: -1 })
         .limit(10)
         .select('category score isPassed completedAt _id');
@@ -526,10 +531,10 @@ class PrescriptiveAnalyticsService {
    */
   async checkFaceToFaceRecommendation(studentId, category) {
     try {
-      const InterventionResult = require('../../models/Teachers/ManageAssessment/interventionResultModel');
+      const InterventionResults = require('../../models/Teachers/ManageProgress/interventionResultsModel');
       
       // Check how many times student has attempted this category
-      const attempts = await InterventionResult.find({ 
+      const attempts = await InterventionResults.find({ 
         studentId, 
         category 
       }).sort({ completedAt: -1 });
@@ -682,8 +687,8 @@ class PrescriptiveAnalyticsService {
       console.log(`[PRESCRIPTIVE ANALYTICS] Updating analysis after intervention for student ${studentId}`);
 
       // Get the intervention result
-      const InterventionResult = require('../../models/Teachers/ManageAssessment/interventionResultModel');
-      const interventionResult = await InterventionResult.findById(interventionResultId);
+      const InterventionResults = require('../../models/Teachers/ManageProgress/interventionResultsModel');
+      const interventionResult = await InterventionResults.findById(interventionResultId);
       
       if (!interventionResult) {
         throw new Error('Intervention result not found');

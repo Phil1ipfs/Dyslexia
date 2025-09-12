@@ -3,6 +3,8 @@
 
 const prescriptiveAnalyticsService = require('../PrescriptiveAnalyticsService');
 const mongoose = require('mongoose');
+const PrescriptiveAnalysis = require('../../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
+const CategoryResult = require('../../../models/Teachers/ManageProgress/categoryResultModel');
 
 class IntegrationTriggerService {
   
@@ -57,12 +59,9 @@ class IntegrationTriggerService {
    */
   static async checkExistingAnalysis(categoryResultId) {
     try {
-      const testDb = mongoose.connection.useDb('test');
-      const prescriptiveAnalysisCollection = testDb.collection('prescriptive_analysis');
-      
-      const existingAnalysis = await prescriptiveAnalysisCollection.findOne({
+      const existingAnalysis = await PrescriptiveAnalysis.findOne({
         categoryResultId: categoryResultId
-      });
+      }).lean();
       
       return existingAnalysis;
     } catch (error) {
@@ -119,13 +118,10 @@ class IntegrationTriggerService {
    */
   static async getLatestCategoryResult(studentId) {
     try {
-      const testDb = mongoose.connection.useDb('test');
-      const categoryResultsCollection = testDb.collection('category_results');
-      
-      const latestResult = await categoryResultsCollection.findOne(
-        { studentId: parseInt(studentId) },
-        { sort: { assessmentDate: -1, createdAt: -1 } }
-      );
+      const latestResult = await CategoryResult
+        .findOne({ studentId: parseInt(studentId) })
+        .sort({ assessmentDate: -1, createdAt: -1 })
+        .lean();
       
       return latestResult;
     } catch (error) {
@@ -209,13 +205,8 @@ class IntegrationTriggerService {
     try {
       console.log(`[INTEGRATION TRIGGER] Manual trigger for category result ${categoryResultId}`);
       
-      // Get the category result
-      const testDb = mongoose.connection.useDb('test');
-      const categoryResultsCollection = testDb.collection('category_results');
-      
-      const categoryResult = await categoryResultsCollection.findOne({
-        _id: new mongoose.Types.ObjectId(categoryResultId)
-      });
+      // Get the category result using Mongoose
+      const categoryResult = await CategoryResult.findById(categoryResultId).lean();
       
       if (!categoryResult) {
         throw new Error(`Category result ${categoryResultId} not found`);
@@ -229,9 +220,8 @@ class IntegrationTriggerService {
           return existingAnalysis;
         }
       } else {
-        // Delete existing analysis if force regenerate
-        const prescriptiveAnalysisCollection = testDb.collection('prescriptive_analysis');
-        await prescriptiveAnalysisCollection.deleteMany({
+        // Delete existing analysis if force regenerate using Mongoose
+        await PrescriptiveAnalysis.deleteMany({
           categoryResultId: categoryResult._id
         });
         console.log(`[INTEGRATION TRIGGER] Deleted existing analysis for regeneration`);

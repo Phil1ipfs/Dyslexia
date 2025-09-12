@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const User = require('../../models/userModel');
+const CategoryResult = require('../../models/Teachers/ManageProgress/categoryResultModel');
 const IntegrationTriggerService = require('./PrescriptiveAnalytics/integrationTriggerService');
 
 /**
@@ -19,17 +20,11 @@ class CategoryResultsService {
 
       console.log(`Fetching category results for student ID: ${studentIdInt}`);
       
-      // Get collections
-      const testDb = mongoose.connection.useDb('test');
-      const categoryResultsCollection = testDb.collection('category_results');
-      
-      // Find by integer studentId
-      const query = { studentId: studentIdInt };
-        
-      const results = await categoryResultsCollection
-        .find(query)
+      // Use Mongoose model instead of direct collection access
+      const results = await CategoryResult
+        .find({ studentId: studentIdInt })
         .sort({ assessmentDate: -1, createdAt: -1 })
-        .toArray();
+        .lean();
       
       if (results.length === 0) {
         console.log(`No category results found for student: ${studentIdInt}`);
@@ -66,11 +61,7 @@ class CategoryResultsService {
 
       console.log(`Fetching category results for student ID: ${studentIdInt} and category: ${categoryName}`);
       
-      // Get collections
-      const testDb = mongoose.connection.useDb('test');
-      const categoryResultsCollection = testDb.collection('category_results');
-      
-      // Build query
+      // Build query for Mongoose
       const query = {
         studentId: studentIdInt,
         'categories.categoryName': categoryName
@@ -78,11 +69,11 @@ class CategoryResultsService {
       
       console.log('Category result query:', JSON.stringify(query));
       
-      // Find the most recent result
-      const result = await categoryResultsCollection
-        .findOne(query, {
-          sort: { assessmentDate: -1, createdAt: -1 }
-        });
+      // Use Mongoose model instead of direct collection access
+      const result = await CategoryResult
+        .findOne(query)
+        .sort({ assessmentDate: -1, createdAt: -1 })
+        .lean();
       
       if (!result) {
         console.log(`No category results found for category ${categoryName} and student ${studentIdInt}`);
@@ -133,44 +124,33 @@ class CategoryResultsService {
       // Calculate overall performance and intervention needs
       const overallStats = this.calculateOverallStats(normalizedCategories);
 
-      // Create the category result document
-      const categoryResult = {
+      // Create the category result document using Mongoose model
+      const categoryResultDoc = new CategoryResult({
         studentId: studentIdInt,
         assessmentDate: categoryResultData.assessmentDate || new Date(),
-        assessmentType: categoryResultData.assessmentType || 'main',
         readingLevel: categoryResultData.readingLevel || 'Low Emerging',
         categories: normalizedCategories,
         overallScore: overallStats.overallScore,
-        passedCategories: overallStats.passedCategories,
-        failedCategories: overallStats.failedCategories,
-        interventionRequired: overallStats.interventionRequired,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+        completedCategories: normalizedCategories.length,
+        totalCategories: normalizedCategories.length,
+        allCategoriesPassed: overallStats.passedCategories === normalizedCategories.length,
+        readingLevelUpdated: false
+      });
 
-      // Save to database
-      const testDb = mongoose.connection.useDb('test');
-      const categoryResultsCollection = testDb.collection('category_results');
+      // Save using Mongoose model
+      const savedResult = await categoryResultDoc.save();
       
-      const result = await categoryResultsCollection.insertOne(categoryResult);
-      
-      if (!result.insertedId) {
-        throw new Error('Failed to create category result');
-      }
-
-      categoryResult._id = result.insertedId;
-      
-      console.log(`[CATEGORY RESULTS] Successfully created category result ${result.insertedId}`);
+      console.log(`[CATEGORY RESULTS] Successfully created category result ${savedResult._id}`);
 
       // Trigger prescriptive analysis generation
       try {
-        console.log(`[CATEGORY RESULTS] Triggering prescriptive analysis for category result ${result.insertedId}`);
+        console.log(`[CATEGORY RESULTS] Triggering prescriptive analysis for category result ${savedResult._id}`);
         
-        const prescriptiveAnalysis = await IntegrationTriggerService.triggerPrescriptiveAnalysis(categoryResult);
+        const prescriptiveAnalysis = await IntegrationTriggerService.triggerPrescriptiveAnalysis(savedResult.toObject());
         
         if (prescriptiveAnalysis) {
           console.log(`[CATEGORY RESULTS] Successfully generated prescriptive analysis ${prescriptiveAnalysis._id}`);
-          categoryResult.prescriptiveAnalysisId = prescriptiveAnalysis._id;
+          savedResult.prescriptiveAnalysisId = prescriptiveAnalysis._id;
         } else {
           console.warn(`[CATEGORY RESULTS] Prescriptive analysis generation returned null`);
         }
@@ -179,7 +159,7 @@ class CategoryResultsService {
         // Don't fail the category result creation if analytics fails
       }
 
-      return categoryResult;
+      return savedResult.toObject();
 
     } catch (error) {
       console.error('[CATEGORY RESULTS] Error creating category result:', error);
@@ -198,13 +178,8 @@ class CategoryResultsService {
     try {
       console.log(`[CATEGORY RESULTS] Updating category result ${categoryResultId}`);
 
-      const testDb = mongoose.connection.useDb('test');
-      const categoryResultsCollection = testDb.collection('category_results');
-
-      // Get existing category result
-      const existingResult = await categoryResultsCollection.findOne({
-        _id: new mongoose.Types.ObjectId(categoryResultId)
-      });
+      // Get existing category result using Mongoose
+      const existingResult = await CategoryResult.findById(categoryResultId);
 
       if (!existingResult) {
         throw new Error('Category result not found');
@@ -217,34 +192,28 @@ class CategoryResultsService {
         // Recalculate overall stats
         const overallStats = this.calculateOverallStats(updateData.categories);
         updateData.overallScore = overallStats.overallScore;
-        updateData.passedCategories = overallStats.passedCategories;
-        updateData.failedCategories = overallStats.failedCategories;
-        updateData.interventionRequired = overallStats.interventionRequired;
+        updateData.completedCategories = updateData.categories.length;
+        updateData.totalCategories = updateData.categories.length;
+        updateData.allCategoriesPassed = overallStats.passedCategories === updateData.categories.length;
       }
 
-      updateData.updatedAt = new Date();
-
-      // Update the document
-      const updateResult = await categoryResultsCollection.updateOne(
-        { _id: new mongoose.Types.ObjectId(categoryResultId) },
-        { $set: updateData }
+      // Update the document using Mongoose
+      const updatedResult = await CategoryResult.findByIdAndUpdate(
+        categoryResultId,
+        { $set: updateData },
+        { new: true, runValidators: true }
       );
 
-      if (updateResult.matchedCount === 0) {
+      if (!updatedResult) {
         throw new Error('Category result not found for update');
       }
-
-      // Get updated document
-      const updatedResult = await categoryResultsCollection.findOne({
-        _id: new mongoose.Types.ObjectId(categoryResultId)
-      });
 
       console.log(`[CATEGORY RESULTS] Successfully updated category result ${categoryResultId}`);
 
       // Regenerate prescriptive analysis if categories changed
       if (updateData.categories) {
         try {
-          const prescriptiveAnalysis = await IntegrationTriggerService.triggerPrescriptiveAnalysis(updatedResult);
+          const prescriptiveAnalysis = await IntegrationTriggerService.triggerPrescriptiveAnalysis(updatedResult.toObject());
           if (prescriptiveAnalysis) {
             updatedResult.prescriptiveAnalysisId = prescriptiveAnalysis._id;
           }
@@ -253,7 +222,7 @@ class CategoryResultsService {
         }
       }
 
-      return updatedResult;
+      return updatedResult.toObject();
 
     } catch (error) {
       console.error('[CATEGORY RESULTS] Error updating category result:', error);
@@ -271,25 +240,20 @@ class CategoryResultsService {
     try {
       console.log(`[CATEGORY RESULTS] Deleting category result ${categoryResultId}`);
 
-      const testDb = mongoose.connection.useDb('test');
-      const categoryResultsCollection = testDb.collection('category_results');
-      const prescriptiveAnalysisCollection = testDb.collection('prescriptive_analysis');
-
-      // Get existing category result
-      const existingResult = await categoryResultsCollection.findOne({
-        _id: new mongoose.Types.ObjectId(categoryResultId)
-      });
+      // Get existing category result using Mongoose
+      const existingResult = await CategoryResult.findById(categoryResultId);
 
       if (!existingResult) {
         throw new Error('Category result not found');
       }
 
+      // Import PrescriptiveAnalysis model for cleanup
+      const PrescriptiveAnalysis = require('../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
+
       // Delete associated prescriptive analysis if exists
       if (existingResult.prescriptiveAnalysisId) {
         try {
-          await prescriptiveAnalysisCollection.deleteOne({
-            _id: new mongoose.Types.ObjectId(existingResult.prescriptiveAnalysisId)
-          });
+          await PrescriptiveAnalysis.findByIdAndDelete(existingResult.prescriptiveAnalysisId);
           console.log(`[CATEGORY RESULTS] Deleted associated prescriptive analysis ${existingResult.prescriptiveAnalysisId}`);
         } catch (analyticsError) {
           console.warn('[CATEGORY RESULTS] Error deleting prescriptive analysis:', analyticsError);
@@ -299,21 +263,19 @@ class CategoryResultsService {
 
       // Delete prescriptive analysis by student reference if no direct link
       try {
-        await prescriptiveAnalysisCollection.deleteMany({
+        const deletedAnalyses = await PrescriptiveAnalysis.deleteMany({
           studentId: existingResult.studentId,
           assessmentDate: existingResult.assessmentDate
         });
-        console.log(`[CATEGORY RESULTS] Cleaned up prescriptive analyses for student ${existingResult.studentId}`);
+        console.log(`[CATEGORY RESULTS] Cleaned up ${deletedAnalyses.deletedCount} prescriptive analyses for student ${existingResult.studentId}`);
       } catch (cleanupError) {
         console.warn('[CATEGORY RESULTS] Error during prescriptive analysis cleanup:', cleanupError);
       }
 
-      // Delete the category result
-      const deleteResult = await categoryResultsCollection.deleteOne({
-        _id: new mongoose.Types.ObjectId(categoryResultId)
-      });
+      // Delete the category result using Mongoose
+      const deleteResult = await CategoryResult.findByIdAndDelete(categoryResultId);
 
-      if (deleteResult.deletedCount === 0) {
+      if (!deleteResult) {
         throw new Error('Failed to delete category result');
       }
 
@@ -323,7 +285,7 @@ class CategoryResultsService {
         success: true,
         deletedId: categoryResultId,
         studentId: existingResult.studentId,
-        deletedCount: deleteResult.deletedCount
+        deletedCount: 1
       };
 
     } catch (error) {

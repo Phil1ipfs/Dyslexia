@@ -302,6 +302,134 @@ router.get('/health',
   prescriptiveAnalyticsController.getSystemHealth
 );
 
+// Additional endpoints from ManageProgress integration
+// POST /api/prescriptive-analytics/comprehensive/:studentId
+// Generate comprehensive prescriptive analysis using BKT/IRT models
+router.post('/comprehensive/:studentId', 
+  validateStudentId,
+  prescriptiveAnalyticsController.generateComprehensiveAnalysis
+);
+
+// POST /api/prescriptive-analytics/intervention/:interventionId
+// Generate prescriptive analysis from intervention results
+router.post('/intervention/:interventionId',
+  (req, res, next) => {
+    const { interventionId } = req.params;
+    if (!interventionId || !mongoose.Types.ObjectId.isValid(interventionId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid intervention ID format',
+        errors: [{ field: 'interventionId', message: 'Invalid MongoDB ObjectId format' }]
+      });
+    }
+    next();
+  },
+  prescriptiveAnalyticsController.generateAnalysisFromIntervention
+);
+
+// GET /api/prescriptive-analytics/intervention-history/:studentId
+// Get intervention history with analytics for a student
+router.get('/intervention-history/:studentId',
+  validateStudentId,
+  prescriptiveAnalyticsController.getInterventionHistory
+);
+
+// PUT /api/prescriptive-analytics/template
+// Update recommendation template for easy updates
+router.put('/template',
+  (req, res, next) => {
+    const { templateType, templateContent } = req.body;
+    if (!templateType || !templateContent) {
+      return res.status(400).json({
+        success: false,
+        message: 'Template type and content are required',
+        errors: [
+          { field: 'templateType', message: 'Template type is required' },
+          { field: 'templateContent', message: 'Template content is required' }
+        ]
+      });
+    }
+    next();
+  },
+  prescriptiveAnalyticsController.updateRecommendationTemplate
+);
+
+// GET /api/prescriptive-analytics/templates
+// Get available templates
+router.get('/templates',
+  prescriptiveAnalyticsController.getAvailableTemplates
+);
+
+// Progress Tracking and Analytics Routes
+
+// GET /api/prescriptive-analytics/progress/:studentId
+// Get comprehensive progress tracking analytics for a student
+router.get('/progress/:studentId',
+  validateStudentId,
+  (req, res, next) => {
+    const { dateRange } = req.query;
+    const validDateRanges = ['30d', '60d', '90d', 'all'];
+    
+    if (dateRange && !validDateRanges.includes(dateRange)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date range',
+        errors: [{ field: 'dateRange', message: 'Date range must be one of: ' + validDateRanges.join(', ') }]
+      });
+    }
+    next();
+  },
+  prescriptiveAnalyticsController.getProgressAnalytics
+);
+
+// GET /api/prescriptive-analytics/intervention-comparison/:studentId
+// Get before/after intervention comparison analytics
+router.get('/intervention-comparison/:studentId',
+  validateStudentId,
+  (req, res, next) => {
+    const { category } = req.query;
+    const validCategories = ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'];
+    
+    if (category && !validCategories.includes(category)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid category name',
+        errors: [{ field: 'category', message: 'Category must be one of: ' + validCategories.join(', ') }]
+      });
+    }
+    next();
+  },
+  prescriptiveAnalyticsController.getInterventionComparisons
+);
+
+// GET /api/prescriptive-analytics/category-progress/:studentId/:category
+// Get category-specific progress trends
+router.get('/category-progress/:studentId/:category',
+  validateStudentId,
+  validateCategory,
+  (req, res, next) => {
+    const { dateRange } = req.query;
+    const validDateRanges = ['30d', '60d', '90d', 'all'];
+    
+    if (dateRange && !validDateRanges.includes(dateRange)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date range',
+        errors: [{ field: 'dateRange', message: 'Date range must be one of: ' + validDateRanges.join(', ') }]
+      });
+    }
+    next();
+  },
+  prescriptiveAnalyticsController.getCategoryProgress
+);
+
+// GET /api/prescriptive-analytics/intervention-effectiveness/:studentId
+// Get intervention effectiveness analytics
+router.get('/intervention-effectiveness/:studentId',
+  validateStudentId,
+  prescriptiveAnalyticsController.getInterventionEffectiveness
+);
+
 // Error handling middleware
 router.use((error, req, res, next) => {
   console.error('Prescriptive Analytics Route Error:', error);

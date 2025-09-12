@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const PrescriptiveAnalysis = require('../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
 const InterventionAssessment = require('../../models/Teachers/ManageProgress/interventionAssessmentModel');
+const InterventionResponse = require('../../models/Teachers/ManageProgress/interventionResponseModel');
+const InterventionResults = require('../../models/Teachers/ManageProgress/interventionResultsModel');
 const mathematicalModelsService = require('./PrescriptiveAnalytics/mathematicalModelsService');
 
 /**
@@ -733,6 +735,174 @@ class InterventionGeneratorService {
         details: 'Error occurred during eligibility check.'
       };
     }
+  }
+
+  /**
+   * Process all intervention responses and create final results
+   * This method should be called when an intervention is completed
+   * @param {string} interventionId - Intervention assessment ID
+   * @returns {Object} Processing results with final scores and pass/fail status
+   */
+  async processInterventionResults(interventionId) {
+    try {
+      console.log(`[INTERVENTION GENERATOR] Processing results for intervention ${interventionId}`);
+
+      // Get intervention assessment
+      const intervention = await InterventionAssessment.findById(interventionId);
+      if (!intervention) {
+        throw new Error(`Intervention assessment not found: ${interventionId}`);
+      }
+
+      // Get all responses for this intervention
+      const responses = await InterventionResponse.find({
+        interventionAssessmentId: interventionId
+      }).sort({ answeredAt: 1 });
+
+      if (responses.length === 0) {
+        throw new Error(`No responses found for intervention ${interventionId}`);
+      }
+
+      // Calculate final scores
+      const totalQuestions = intervention.totalQuestions || 10;
+      const answeredQuestions = responses.length;
+      const correctAnswers = responses.filter(r => r.isCorrect).length;
+      const finalScore = Math.round((correctAnswers / totalQuestions) * 100);
+      const isPassed = finalScore >= 75; // 75% pass threshold
+
+      // Calculate average response time
+      const responsesWithTime = responses.filter(r => r.responseTime && r.responseTime > 0);
+      const avgResponseTime = responsesWithTime.length > 0 
+        ? Math.round(responsesWithTime.reduce((sum, r) => sum + r.responseTime, 0) / responsesWithTime.length)
+        : null;
+
+      // Analyze error patterns
+      const incorrectResponses = responses.filter(r => !r.isCorrect);
+      const errorPatterns = this.analyzeInterventionErrors(incorrectResponses, intervention.category);
+
+      // Create intervention results record
+      const interventionResults = new InterventionResults({
+        studentId: intervention.studentId,
+        interventionAssessmentId: interventionId,
+        category: intervention.category,
+        readingLevel: intervention.readingLevel,
+        totalQuestions,
+        answeredQuestions,
+        correctAnswers,
+        finalScore,
+        isPassed,
+        passThreshold: 75,
+        avgResponseTime,
+        errorPatterns,
+        startedAt: intervention.startedAt,
+        completedAt: new Date(),
+        responses: responses.map(r => ({
+          questionId: r.questionId,
+          response: r.response,
+          isCorrect: r.isCorrect,
+          responseTime: r.responseTime,
+          answeredAt: r.answeredAt
+        }))
+      });
+
+      await interventionResults.save();
+
+      console.log(`[INTERVENTION GENERATOR] Results processed - Score: ${finalScore}%, Passed: ${isPassed}`);
+
+      return {
+        success: true,
+        interventionResultsId: interventionResults._id,
+        results: {
+          category: intervention.category,
+          totalQuestions,
+          answeredQuestions,
+          correctAnswers,
+          finalScore,
+          isPassed,
+          avgResponseTime,
+          errorPatterns,
+          passThreshold: 75
+        }
+      };
+
+    } catch (error) {
+      console.error('[INTERVENTION GENERATOR] Error processing intervention results:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Analyze error patterns from incorrect intervention responses
+   * @param {Array} incorrectResponses - Array of incorrect responses
+   * @param {string} category - Category being assessed
+   * @returns {Object} Error pattern analysis
+   */
+  analyzeInterventionErrors(incorrectResponses, category) {
+    if (incorrectResponses.length === 0) {
+      return { hasErrors: false, patterns: {} };
+    }
+
+    const patterns = {
+      hasErrors: true,
+      totalErrors: incorrectResponses.length,
+      errorRate: 0,
+      patterns: {}
+    };
+
+    // Category-specific error analysis
+    switch (category) {
+      case 'Alphabet Knowledge':
+        // Analyze letter confusion patterns
+        const letterErrors = incorrectResponses.filter(r => r.questionId.includes('_ak_') || r.questionId.includes('AK_'));
+        patterns.patterns.letterConfusion = {
+          count: letterErrors.length,
+          percentage: Math.round((letterErrors.length / incorrectResponses.length) * 100)
+        };
+        break;
+
+      case 'Phonological Awareness':
+        // Analyze sound matching errors
+        const soundErrors = incorrectResponses.filter(r => r.questionId.includes('_pa_') || r.questionId.includes('PA_'));
+        patterns.patterns.soundDiscrimination = {
+          count: soundErrors.length,
+          percentage: Math.round((soundErrors.length / incorrectResponses.length) * 100)
+        };
+        break;
+
+      case 'Decoding':
+        // Analyze decoding pattern errors
+        const decodingErrors = incorrectResponses.filter(r => r.questionId.includes('_dc_') || r.questionId.includes('DC_'));
+        patterns.patterns.decodingDifficulty = {
+          count: decodingErrors.length,
+          percentage: Math.round((decodingErrors.length / incorrectResponses.length) * 100)
+        };
+        break;
+
+      case 'Word Recognition':
+        // Analyze word recognition errors
+        const wordErrors = incorrectResponses.filter(r => r.questionId.includes('_wr_') || r.questionId.includes('WR_'));
+        patterns.patterns.wordRecognition = {
+          count: wordErrors.length,
+          percentage: Math.round((wordErrors.length / incorrectResponses.length) * 100)
+        };
+        break;
+
+      case 'Reading Comprehension':
+        // Analyze comprehension errors
+        const comprehensionErrors = incorrectResponses.filter(r => r.questionId.includes('_rc_') || r.questionId.includes('RC_'));
+        patterns.patterns.comprehensionDifficulty = {
+          count: comprehensionErrors.length,
+          percentage: Math.round((comprehensionErrors.length / incorrectResponses.length) * 100)
+        };
+        break;
+
+      default:
+        patterns.patterns.general = {
+          count: incorrectResponses.length,
+          percentage: 100
+        };
+    }
+
+    return patterns;
   }
 }
 
