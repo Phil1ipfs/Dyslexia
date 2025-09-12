@@ -434,6 +434,15 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load prescriptive analytics routes:', error.message);
     }
 
+    // Load intervention assessment routes (new one-time intervention system)
+    try {
+      const interventionAssessmentRoutes = require('./routes/Teachers/interventionAssessmentRoutes');
+      app.use('/api/intervention-assessment', interventionAssessmentRoutes);
+      console.log('✅ Loaded intervention assessment routes at /api/intervention-assessment/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load intervention assessment routes:', error.message);
+    }
+
     // Load student routes
     try {
       app.use('/api/student', require('./routes/Teachers/studentRoutes'));

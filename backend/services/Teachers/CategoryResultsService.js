@@ -262,6 +262,77 @@ class CategoryResultsService {
   }
 
   /**
+   * Delete category result and associated prescriptive analysis
+   * 
+   * @param {string} categoryResultId - Category result ID to delete
+   * @returns {Promise<Object>} - Deletion result
+   */
+  static async deleteCategoryResult(categoryResultId) {
+    try {
+      console.log(`[CATEGORY RESULTS] Deleting category result ${categoryResultId}`);
+
+      const testDb = mongoose.connection.useDb('test');
+      const categoryResultsCollection = testDb.collection('category_results');
+      const prescriptiveAnalysisCollection = testDb.collection('prescriptive_analysis');
+
+      // Get existing category result
+      const existingResult = await categoryResultsCollection.findOne({
+        _id: new mongoose.Types.ObjectId(categoryResultId)
+      });
+
+      if (!existingResult) {
+        throw new Error('Category result not found');
+      }
+
+      // Delete associated prescriptive analysis if exists
+      if (existingResult.prescriptiveAnalysisId) {
+        try {
+          await prescriptiveAnalysisCollection.deleteOne({
+            _id: new mongoose.Types.ObjectId(existingResult.prescriptiveAnalysisId)
+          });
+          console.log(`[CATEGORY RESULTS] Deleted associated prescriptive analysis ${existingResult.prescriptiveAnalysisId}`);
+        } catch (analyticsError) {
+          console.warn('[CATEGORY RESULTS] Error deleting prescriptive analysis:', analyticsError);
+          // Continue with category result deletion
+        }
+      }
+
+      // Delete prescriptive analysis by student reference if no direct link
+      try {
+        await prescriptiveAnalysisCollection.deleteMany({
+          studentId: existingResult.studentId,
+          assessmentDate: existingResult.assessmentDate
+        });
+        console.log(`[CATEGORY RESULTS] Cleaned up prescriptive analyses for student ${existingResult.studentId}`);
+      } catch (cleanupError) {
+        console.warn('[CATEGORY RESULTS] Error during prescriptive analysis cleanup:', cleanupError);
+      }
+
+      // Delete the category result
+      const deleteResult = await categoryResultsCollection.deleteOne({
+        _id: new mongoose.Types.ObjectId(categoryResultId)
+      });
+
+      if (deleteResult.deletedCount === 0) {
+        throw new Error('Failed to delete category result');
+      }
+
+      console.log(`[CATEGORY RESULTS] Successfully deleted category result ${categoryResultId}`);
+
+      return {
+        success: true,
+        deletedId: categoryResultId,
+        studentId: existingResult.studentId,
+        deletedCount: deleteResult.deletedCount
+      };
+
+    } catch (error) {
+      console.error('[CATEGORY RESULTS] Error deleting category result:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Calculate overall statistics from categories
    * 
    * @param {Array} categories - Array of category data
