@@ -866,6 +866,253 @@ class InterventionService {
   }
   
   /**
+   * Generate prescriptive analysis from intervention results
+   * @param {string} interventionId - The intervention ID
+   * @returns {Promise<Object>} - Generated analysis
+   */
+  async generateAnalysisFromIntervention(interventionId) {
+    try {
+      // Get intervention and its results
+      const intervention = await InterventionPlan.findById(interventionId);
+      if (!intervention) {
+        throw new Error('Intervention not found');
+      }
+
+      const interventionResult = await InterventionResults.findOne({
+        interventionPlanId: interventionId
+      });
+
+      if (!interventionResult) {
+        throw new Error('Intervention results not found');
+      }
+
+      // Get student info
+      const student = await User.findById(intervention.studentId);
+      if (!student) {
+        throw new Error('Student not found');
+      }
+
+      const readingLevel = student.readingLevel || 'Low Emerging';
+      const categoryName = intervention.category;
+      const isPassed = interventionResult.passedThreshold;
+      const score = interventionResult.percentCorrect || 0;
+      const attempt = await this.getInterventionAttemptNumber(intervention.studentId, categoryName);
+
+      // Create or update prescriptive analysis for this intervention
+      let analysis = await PrescriptiveAnalysis.findOne({
+        studentId: intervention.studentId,
+        categoryId: categoryName,
+        assessmentType: 'intervention'
+      });
+
+      if (!analysis) {
+        analysis = new PrescriptiveAnalysis({
+          studentId: intervention.studentId,
+          categoryId: categoryName,
+          readingLevel: readingLevel,
+          assessmentType: 'intervention',
+          skillMastery: {},
+          abilityEstimates: {},
+          errorPatterns: {},
+          interventionHistory: []
+        });
+      }
+
+      // Add intervention attempt to history
+      analysis.interventionHistory.push({
+        category: categoryName,
+        interventionId: intervention._id,
+        dateTaken: new Date(),
+        passed: isPassed,
+        score: score,
+        attempt: attempt
+      });
+
+      // Update skill mastery for this category
+      if (!analysis.skillMastery) {
+        analysis.skillMastery = new Map();
+      }
+
+      const masteryData = analysis.skillMastery.get(categoryName) || {
+        masteryProbability: 0.5,
+        totalQuestions: 0,
+        correctAnswers: 0,
+        score: 0,
+        isPassed: false,
+        responseHistory: []
+      };
+
+      // Update mastery based on intervention results
+      masteryData.totalQuestions += intervention.questions?.length || 0;
+      masteryData.correctAnswers += interventionResult.correctAnswers || 0;
+      masteryData.score = score;
+      masteryData.isPassed = isPassed;
+      masteryData.lastUpdated = new Date();
+
+      // Simple BKT update (could be more sophisticated)
+      if (isPassed) {
+        masteryData.masteryProbability = Math.min(0.95, masteryData.masteryProbability + 0.2);
+      } else {
+        masteryData.masteryProbability = Math.max(0.1, masteryData.masteryProbability - 0.1);
+      }
+
+      analysis.skillMastery.set(categoryName, masteryData);
+
+      // Update ability estimates
+      if (!analysis.abilityEstimates) {
+        analysis.abilityEstimates = new Map();
+      }
+      
+      const abilityEstimate = (score - 50) / 25; // Convert to -2 to +2 range
+      analysis.abilityEstimates.set(categoryName, Math.max(-3, Math.min(3, abilityEstimate)));
+
+      // Generate insights based on intervention outcome
+      if (!analysis.insights) {
+        analysis.insights = {
+          strengths: [],
+          weaknesses: [],
+          passedCategories: 0,
+          failedCategories: 0,
+          overallScore: score
+        };
+      }
+
+      if (isPassed) {
+        analysis.insights.strengths = analysis.insights.strengths.filter(s => !s.includes(categoryName));
+        analysis.insights.strengths.push(`${categoryName} - Intervention Success`);
+        analysis.insights.recommendedAction = attempt > 1 ? 'continue_assessment' : 'success_ready';
+        analysis.insights.overallReadiness = 'Improvement shown through intervention';
+      } else {
+        analysis.insights.weaknesses = analysis.insights.weaknesses.filter(w => !w.includes(categoryName));
+        analysis.insights.weaknesses.push(`${categoryName} - ${score}% (Attempt ${attempt})`);
+        
+        // Escalate based on attempt number
+        if (attempt >= 3) {
+          analysis.insights.recommendedAction = 'face_to_face_required';
+          analysis.insights.overallReadiness = 'Requires face-to-face support after multiple intervention attempts';
+        } else {
+          analysis.insights.recommendedAction = 'immediate_intervention';
+          analysis.insights.overallReadiness = 'Needs additional intervention support';
+        }
+      }
+
+      // Update intervention plan based on results
+      if (!isPassed) {
+        if (!analysis.interventionPlan) {
+          analysis.interventionPlan = { required: true, priority: [], specificFocus: {} };
+        }
+        
+        if (!analysis.interventionPlan.priority.includes(categoryName)) {
+          analysis.interventionPlan.priority.push(categoryName);
+        }
+
+        // Generate more targeted recommendations for failed attempts
+        const specificFocus = {
+          focus: attempt > 1 ? "remediation_strategies" : "skill_reinforcement",
+          recommendedActivities: this.getEscalatedActivities(categoryName, attempt),
+          questionDistribution: this.getAdaptiveQuestionDistribution(categoryName, attempt)
+        };
+        
+        analysis.interventionPlan.specificFocus.set(categoryName, specificFocus);
+      } else {
+        // Remove from intervention plan if passed
+        if (analysis.interventionPlan && analysis.interventionPlan.priority) {
+          analysis.interventionPlan.priority = analysis.interventionPlan.priority.filter(cat => cat !== categoryName);
+          analysis.interventionPlan.required = analysis.interventionPlan.priority.length > 0;
+        }
+      }
+
+      analysis.updatedAt = new Date();
+      await analysis.save();
+
+      return {
+        success: true,
+        data: analysis,
+        interventionOutcome: {
+          category: categoryName,
+          passed: isPassed,
+          score: score,
+          attempt: attempt,
+          escalationNeeded: !isPassed && attempt >= 3
+        }
+      };
+
+    } catch (error) {
+      console.error('Error generating analysis from intervention:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the current attempt number for a category intervention
+   * @param {string} studentId - Student ID
+   * @param {string} category - Category name
+   * @returns {Promise<number>} - Attempt number
+   */
+  async getInterventionAttemptNumber(studentId, category) {
+    try {
+      const existingAnalysis = await PrescriptiveAnalysis.findOne({
+        studentId: studentId,
+        categoryId: category,
+        assessmentType: 'intervention'
+      });
+
+      if (!existingAnalysis || !existingAnalysis.interventionHistory) {
+        return 1;
+      }
+
+      return existingAnalysis.interventionHistory.length + 1;
+    } catch (error) {
+      console.error('Error getting attempt number:', error);
+      return 1;
+    }
+  }
+
+  /**
+   * Get escalated activities based on attempt number
+   * @param {string} category - Category name
+   * @param {number} attempt - Attempt number
+   * @returns {Array} - Recommended activities
+   */
+  getEscalatedActivities(category, attempt) {
+    const baseActivities = {
+      'Phonological Awareness': ['sound_discrimination', 'minimal_pairs', 'rhyming_practice'],
+      'Decoding': ['syllable_blending', 'word_building', 'pattern_recognition'],
+      'Alphabet Knowledge': ['letter_tracing', 'sound_matching', 'visual_recognition'],
+      'Word Recognition': ['sight_words', 'word_families', 'context_clues'],
+      'Reading Comprehension': ['guided_reading', 'question_answering', 'story_mapping']
+    };
+
+    let activities = baseActivities[category] || ['targeted_practice'];
+
+    if (attempt >= 2) {
+      activities = activities.concat(['multi_sensory_approach', 'one_on_one_instruction']);
+    }
+
+    if (attempt >= 3) {
+      activities = activities.concat(['intensive_remediation', 'alternative_strategies']);
+    }
+
+    return activities;
+  }
+
+  /**
+   * Get adaptive question distribution based on attempt
+   * @param {string} category - Category name  
+   * @param {number} attempt - Attempt number
+   * @returns {Object} - Question distribution
+   */
+  getAdaptiveQuestionDistribution(category, attempt) {
+    const distributions = {
+      1: { easy: 60, medium: 30, hard: 10 },
+      2: { easy: 80, medium: 15, hard: 5 },
+      3: { easy: 90, medium: 10, hard: 0 }
+    };
+
+    return distributions[Math.min(attempt, 3)];
+  }
+
+  /**
    * Update all existing interventions to add descriptions and link to prescriptive analyses
    * @returns {Promise<Object>} - Result of the update operation
    */

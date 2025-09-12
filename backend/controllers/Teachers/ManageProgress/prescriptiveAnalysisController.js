@@ -1,5 +1,278 @@
 const mongoose = require('mongoose');
 const PrescriptiveAnalysis = require('../../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
+const CategoryResultsService = require('../../../services/Teachers/CategoryResultsService');
+const InterventionService = require('../../../services/Teachers/InterventionService');
+
+/**
+ * Mathematical Analytics Engine
+ * Implements BKT (Bayesian Knowledge Tracing) and IRT (Item Response Theory) models
+ */
+class MathematicalAnalyticsEngine {
+  constructor() {
+    // BKT Parameters for each skill
+    this.bktParams = {
+      P_L0: 0.5,  // Initial probability of mastery
+      P_T: 0.1,   // Probability of learning
+      P_G: 0.3,   // Probability of guessing
+      P_S: 0.1    // Probability of slipping
+    };
+
+    // Category weights by reading level
+    this.categoryWeights = {
+      "Low Emerging": {
+        "Alphabet Knowledge": 1.0,
+        "Phonological Awareness": 0.0,
+        "Decoding": 0.0,
+        "Word Recognition": 0.0,
+        "Reading Comprehension": 0.0
+      },
+      "High Emerging": {
+        "Alphabet Knowledge": 0.6,
+        "Phonological Awareness": 0.4,
+        "Decoding": 0.0,
+        "Word Recognition": 0.0,
+        "Reading Comprehension": 0.0
+      },
+      "Developing": {
+        "Alphabet Knowledge": 0.35,
+        "Phonological Awareness": 0.30,
+        "Decoding": 0.35,
+        "Word Recognition": 0.0,
+        "Reading Comprehension": 0.0
+      },
+      "Transitioning": {
+        "Alphabet Knowledge": 0.20,
+        "Phonological Awareness": 0.25,
+        "Decoding": 0.25,
+        "Word Recognition": 0.30,
+        "Reading Comprehension": 0.0
+      },
+      "At Grade Level": {
+        "Alphabet Knowledge": 0.10,
+        "Phonological Awareness": 0.15,
+        "Decoding": 0.15,
+        "Word Recognition": 0.20,
+        "Reading Comprehension": 0.40
+      }
+    };
+
+    // Error patterns for analysis
+    this.errorPatterns = {
+      "phonological": {
+        "sound_substitution": { weight: 0.3 },
+        "phoneme_deletion": { weight: 0.25 },
+        "blending_difficulty": { weight: 0.25 },
+        "sound_symbol_mismatch": { weight: 0.2 }
+      },
+      "orthographic": {
+        "letter_sequence": { weight: 0.3 },
+        "morphological_violation": { weight: 0.2 },
+        "pattern_recognition": { weight: 0.3 },
+        "visual_spatial": { weight: 0.2 }
+      },
+      "semantic": {
+        "context_inappropriate": { weight: 0.35 },
+        "meaning_based_miscue": { weight: 0.3 },
+        "comprehension_error": { weight: 0.2 },
+        "vocabulary_gap": { weight: 0.15 }
+      }
+    };
+  }
+
+  /**
+   * Update mastery probability using BKT
+   * @param {number} P_L_n - Current probability of mastery
+   * @param {boolean} isCorrect - Whether response was correct
+   * @returns {number} - Updated mastery probability
+   */
+  updateMasteryProbability(P_L_n, isCorrect) {
+    const { P_T, P_G, P_S } = this.bktParams;
+    
+    let P_L_n_given_evidence;
+    
+    if (isCorrect) {
+      P_L_n_given_evidence = (P_L_n * (1 - P_S)) / (P_L_n * (1 - P_S) + (1 - P_L_n) * P_G);
+    } else {
+      P_L_n_given_evidence = (P_L_n * P_S) / (P_L_n * P_S + (1 - P_L_n) * (1 - P_G));
+    }
+    
+    return P_L_n_given_evidence + (1 - P_L_n_given_evidence) * P_T;
+  }
+
+  /**
+   * Calculate probability of correct response using IRT 2PL model
+   * @param {number} ability - Student ability level (theta)
+   * @param {number} difficulty - Item difficulty (b)
+   * @param {number} discrimination - Item discrimination (a)
+   * @returns {number} - Probability of correct response
+   */
+  calculateIRTProbability(ability, difficulty, discrimination = 1.0) {
+    return 1 / (1 + Math.exp(-1.702 * discrimination * (ability - difficulty)));
+  }
+
+  /**
+   * Calculate weighted composite score based on reading level
+   * @param {Object} categoryScores - Scores by category
+   * @param {string} readingLevel - Student's reading level
+   * @returns {number} - Weighted composite score
+   */
+  calculateCompositeScore(categoryScores, readingLevel) {
+    const weights = this.categoryWeights[readingLevel] || this.categoryWeights["Low Emerging"];
+    let weightedSum = 0;
+    let totalWeight = 0;
+
+    Object.entries(weights).forEach(([category, weight]) => {
+      if (weight > 0 && categoryScores[category] !== undefined) {
+        weightedSum += categoryScores[category] * weight;
+        totalWeight += weight;
+      }
+    });
+
+    return totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
+  }
+
+  /**
+   * Analyze error patterns from category results
+   * @param {Object} categoryData - Category result data
+   * @param {string} categoryName - Name of the category
+   * @returns {Object} - Error pattern analysis
+   */
+  analyzeErrorPatterns(categoryData, categoryName) {
+    const errorAnalysis = {};
+
+    if (categoryName === 'Alphabet Knowledge') {
+      // Analyze patinig/katinig errors
+      const patinigErrors = this.findPatinigErrors(categoryData);
+      const katinigErrors = this.findKatinigErrors(categoryData);
+      
+      if (patinigErrors.count > 0) {
+        errorAnalysis.patinig_errors = patinigErrors;
+      }
+      if (katinigErrors.count > 0) {
+        errorAnalysis.katinig_errors = katinigErrors;
+      }
+    } else if (categoryName === 'Phonological Awareness') {
+      // Analyze matching errors
+      const matchingErrors = this.findMatchingErrors(categoryData);
+      if (matchingErrors.count > 0) {
+        errorAnalysis.matching_errors = matchingErrors;
+      }
+    } else if (categoryName === 'Decoding') {
+      // Analyze decoding errors
+      const decodingErrors = this.findDecodingErrors(categoryData);
+      if (decodingErrors.count > 0) {
+        errorAnalysis.decoding_errors = decodingErrors;
+      }
+    }
+
+    return errorAnalysis;
+  }
+
+  /**
+   * Find patinig (vowel) errors
+   */
+  findPatinigErrors(categoryData) {
+    // This would analyze specific vowel recognition errors
+    // For now, return a basic structure
+    return {
+      count: 0,
+      total: 0,
+      percentage: 0,
+      specific_letters: [],
+      error_type: "visual_confusion",
+      questionIds: []
+    };
+  }
+
+  /**
+   * Find katinig (consonant) errors
+   */
+  findKatinigErrors(categoryData) {
+    return {
+      count: 0,
+      total: 0,
+      percentage: 0,
+      specific_letters: [],
+      error_type: "sound_discrimination",
+      questionIds: []
+    };
+  }
+
+  /**
+   * Find matching errors in phonological awareness
+   */
+  findMatchingErrors(categoryData) {
+    const totalMatches = categoryData.totalPossibleMatches || 0;
+    const correctMatches = categoryData.correctMatches || 0;
+    const errors = totalMatches - correctMatches;
+
+    return {
+      count: errors,
+      total: totalMatches,
+      percentage: totalMatches > 0 ? Math.round((errors / totalMatches) * 100) : 0,
+      avg_partial_success: totalMatches > 0 ? correctMatches / totalMatches : 0,
+      error_type: "sound_discrimination",
+      questionIds: []
+    };
+  }
+
+  /**
+   * Find decoding pattern errors
+   */
+  findDecodingErrors(categoryData) {
+    const total = categoryData.totalQuestions || 0;
+    const correct = categoryData.correctAnswers || 0;
+    const errors = total - correct;
+
+    return {
+      count: errors,
+      total: total,
+      percentage: total > 0 ? Math.round((errors / total) * 100) : 0,
+      error_type: "specific_pattern",
+      most_error_position: 0, // Beginning of words
+      questionIds: []
+    };
+  }
+
+  /**
+   * Generate intervention plan based on analysis
+   * @param {Object} analysisResults - Complete analysis results
+   * @returns {Object} - Intervention plan
+   */
+  generateInterventionPlan(analysisResults) {
+    const failedCategories = [];
+    const specificFocus = {};
+
+    // Identify failed categories and generate specific recommendations
+    Object.entries(analysisResults.skillMastery || {}).forEach(([category, mastery]) => {
+      if (!mastery.isPassed) {
+        failedCategories.push(category);
+        
+        if (category === 'Phonological Awareness') {
+          specificFocus[category] = {
+            focus: "sound_matching",
+            targetSounds: ["B-P", "M-N", "D-T"],
+            recommendedActivities: ["sound_discrimination", "minimal_pairs", "rhyming_practice"],
+            questionDistribution: { matching: 100 }
+          };
+        } else if (category === 'Decoding') {
+          specificFocus[category] = {
+            focus: "initial_sounds",
+            targetPatterns: ["CVC", "CVCV"],
+            recommendedActivities: ["syllable_blending", "word_building", "pattern_recognition"],
+            questionDistribution: { drag_drop: 100 }
+          };
+        }
+      }
+    });
+
+    return {
+      required: failedCategories.length > 0,
+      priority: failedCategories,
+      specificFocus: specificFocus
+    };
+  }
+}
 
 /**
  * Object-Oriented Recommendation Template System
@@ -504,6 +777,7 @@ class RecommendationTemplateEngine {
 class PrescriptiveAnalysisController {
   constructor() {
     this.recommendationEngine = new RecommendationTemplateEngine();
+    this.analyticsEngine = new MathematicalAnalyticsEngine();
   }
 
   /**
@@ -675,6 +949,300 @@ class PrescriptiveAnalysisController {
   }
 
   /**
+   * Generate comprehensive prescriptive analysis using mathematical models
+   */
+  async generateComprehensiveAnalysis(req, res) {
+    try {
+      const { studentId } = req.params;
+      
+      if (!studentId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Student ID is required'
+        });
+      }
+
+      // Get student info
+      const user = await mongoose.connection.db.collection('users').findOne({
+        $or: [
+          { _id: mongoose.Types.ObjectId.isValid(studentId) ? new mongoose.Types.ObjectId(studentId) : null },
+          { idNumber: parseInt(studentId) }
+        ]
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'Student not found'
+        });
+      }
+
+      const readingLevel = user.readingLevel || 'Low Emerging';
+
+      // Get category results using service
+      const categoryResults = await CategoryResultsService.getCategoryResults(user.idNumber || user._id);
+      
+      if (categoryResults.length === 0) {
+        return res.status(200).json({
+          success: true,
+          data: null,
+          message: 'No category results found for analysis'
+        });
+      }
+
+      // Use the most recent category result
+      const mostRecentResult = categoryResults[0];
+      
+      // Build comprehensive analysis
+      const analysisData = {
+        studentId: user._id,
+        assessmentDate: mostRecentResult.assessmentDate || new Date(),
+        assessmentType: 'main',
+        readingLevel: readingLevel,
+        skillMastery: {},
+        abilityEstimates: {},
+        errorPatterns: {},
+        interventionPlan: {},
+        insights: {
+          strengths: [],
+          weaknesses: [],
+          passedCategories: 0,
+          failedCategories: 0
+        }
+      };
+
+      const categoryScores = {};
+
+      // Process each category with mathematical models
+      for (const category of mostRecentResult.categories || []) {
+        const categoryName = category.categoryName;
+        const score = category.score || 0;
+        const isPassed = category.isPassed || false;
+        
+        categoryScores[categoryName] = score;
+
+        // BKT Analysis
+        const initialMastery = this.analyticsEngine.bktParams.P_L0;
+        let updatedMastery = initialMastery;
+        
+        // Simulate BKT updates based on performance
+        const correctAnswers = category.correctAnswers || 0;
+        const totalQuestions = category.totalQuestions || 1;
+        
+        for (let i = 0; i < totalQuestions; i++) {
+          const isCorrect = i < correctAnswers;
+          updatedMastery = this.analyticsEngine.updateMasteryProbability(updatedMastery, isCorrect);
+        }
+
+        // Store skill mastery data
+        analysisData.skillMastery[categoryName] = {
+          masteryProbability: Math.round(updatedMastery * 100) / 100,
+          lastUpdated: new Date(),
+          totalQuestions: totalQuestions,
+          correctAnswers: correctAnswers,
+          totalPossibleMatches: category.totalPossibleMatches || 0,
+          correctMatches: category.correctMatches || 0,
+          score: score,
+          isPassed: isPassed,
+          responseHistory: []
+        };
+
+        // IRT Ability Estimate (simplified)
+        const abilityEstimate = (score - 50) / 25; // Convert 0-100 score to -2 to +2 range
+        analysisData.abilityEstimates[categoryName] = Math.max(-3, Math.min(3, abilityEstimate));
+
+        // Error Pattern Analysis
+        const errorPatterns = this.analyticsEngine.analyzeErrorPatterns(category, categoryName);
+        if (Object.keys(errorPatterns).length > 0) {
+          analysisData.errorPatterns[categoryName] = errorPatterns;
+        }
+
+        // Update insights
+        if (isPassed) {
+          analysisData.insights.strengths.push(categoryName);
+          analysisData.insights.passedCategories++;
+        } else {
+          analysisData.insights.weaknesses.push(`${categoryName} - ${score}%`);
+          analysisData.insights.failedCategories++;
+        }
+
+        // Generate traditional recommendations for backward compatibility
+        const templateAnalysis = this.recommendationEngine.generateAnalysis(categoryName, score, readingLevel);
+        
+        // Store legacy fields
+        if (!analysisData.strengths) analysisData.strengths = [];
+        if (!analysisData.weaknesses) analysisData.weaknesses = [];
+        if (!analysisData.recommendations) analysisData.recommendations = [];
+        
+        analysisData.strengths = [...new Set([...analysisData.strengths, ...templateAnalysis.strengths])];
+        analysisData.weaknesses = [...new Set([...analysisData.weaknesses, ...templateAnalysis.weaknesses])];
+        analysisData.recommendations = [...new Set([...analysisData.recommendations, ...templateAnalysis.recommendations])];
+      }
+
+      // Calculate composite score
+      analysisData.insights.overallScore = this.analyticsEngine.calculateCompositeScore(categoryScores, readingLevel);
+      
+      // Determine recommended action
+      if (analysisData.insights.failedCategories === 0) {
+        analysisData.insights.overallReadiness = 'Ready for next level';
+        analysisData.insights.recommendedAction = 'success_ready';
+      } else if (analysisData.insights.failedCategories <= 2) {
+        analysisData.insights.overallReadiness = 'Needs targeted intervention';
+        analysisData.insights.recommendedAction = 'immediate_intervention';
+      } else {
+        analysisData.insights.overallReadiness = 'Requires intensive support';
+        analysisData.insights.recommendedAction = 'face_to_face_required';
+      }
+
+      // Generate intervention plan
+      analysisData.interventionPlan = this.analyticsEngine.generateInterventionPlan(analysisData);
+
+      // Create or update the prescriptive analysis record
+      const existingAnalysis = await PrescriptiveAnalysis.findOne({
+        studentId: user._id,
+        assessmentType: 'main'
+      });
+
+      let savedAnalysis;
+      if (existingAnalysis) {
+        Object.assign(existingAnalysis, analysisData);
+        existingAnalysis.updatedAt = new Date();
+        savedAnalysis = await existingAnalysis.save();
+      } else {
+        savedAnalysis = await PrescriptiveAnalysis.create(analysisData);
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: savedAnalysis,
+        message: 'Comprehensive analysis generated successfully'
+      });
+
+    } catch (error) {
+      console.error('Error generating comprehensive analysis:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error while generating comprehensive analysis',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Generate prescriptive analysis from intervention results
+   */
+  async generateAnalysisFromIntervention(req, res) {
+    try {
+      const { interventionId } = req.params;
+
+      if (!interventionId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Intervention ID is required'
+        });
+      }
+
+      // Use the intervention service to generate analysis
+      const result = await InterventionService.generateAnalysisFromIntervention(interventionId);
+
+      return res.status(200).json({
+        success: true,
+        data: result.data,
+        interventionOutcome: result.interventionOutcome,
+        message: 'Prescriptive analysis generated from intervention results'
+      });
+
+    } catch (error) {
+      console.error('Error generating analysis from intervention:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error while generating analysis from intervention',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Get intervention history with analytics for a student
+   */
+  async getInterventionHistory(req, res) {
+    try {
+      const { studentId } = req.params;
+
+      if (!studentId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Student ID is required'
+        });
+      }
+
+      // Get student ObjectId
+      let studentObjectId;
+      try {
+        if (mongoose.Types.ObjectId.isValid(studentId)) {
+          studentObjectId = new mongoose.Types.ObjectId(studentId);
+        } else {
+          const user = await mongoose.connection.db.collection('users').findOne({ 
+            idNumber: parseInt(studentId) 
+          });
+          
+          if (!user) {
+            return res.status(404).json({
+              success: false,
+              message: 'Student not found'
+            });
+          }
+          
+          studentObjectId = user._id;
+        }
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid student ID format'
+        });
+      }
+
+      // Get all intervention analyses for the student
+      const interventionAnalyses = await PrescriptiveAnalysis.find({
+        studentId: studentObjectId,
+        assessmentType: 'intervention'
+      }).sort({ updatedAt: -1 });
+
+      // Get intervention details for context
+      const interventions = await InterventionService.getStudentInterventions(studentId);
+
+      // Combine analysis with intervention details
+      const enrichedHistory = interventionAnalyses.map(analysis => ({
+        ...analysis.toObject(),
+        totalAttempts: analysis.interventionHistory?.length || 0,
+        latestAttempt: analysis.interventionHistory?.[analysis.interventionHistory.length - 1] || null,
+        escalationRequired: analysis.insights?.recommendedAction === 'face_to_face_required'
+      }));
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          analyses: enrichedHistory,
+          interventions: interventions,
+          summary: {
+            totalCategories: enrichedHistory.length,
+            categoriesRequiringEscalation: enrichedHistory.filter(a => a.escalationRequired).length,
+            totalInterventionAttempts: enrichedHistory.reduce((sum, a) => sum + a.totalAttempts, 0)
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('Error getting intervention history:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error while retrieving intervention history',
+        error: error.message
+      });
+    }
+  }
+
+  /**
    * Update template for easy recommendation changes
    */
   async updateRecommendationTemplate(req, res) {
@@ -738,6 +1306,9 @@ const controller = new PrescriptiveAnalysisController();
 module.exports = {
   getStudentAnalyses: controller.getStudentAnalyses.bind(controller),
   generateAnalysesFromResults: controller.generateAnalysesFromResults.bind(controller),
+  generateComprehensiveAnalysis: controller.generateComprehensiveAnalysis.bind(controller),
+  generateAnalysisFromIntervention: controller.generateAnalysisFromIntervention.bind(controller),
+  getInterventionHistory: controller.getInterventionHistory.bind(controller),
   updateRecommendationTemplate: controller.updateRecommendationTemplate.bind(controller),
   getAvailableTemplates: controller.getAvailableTemplates.bind(controller)
 };
