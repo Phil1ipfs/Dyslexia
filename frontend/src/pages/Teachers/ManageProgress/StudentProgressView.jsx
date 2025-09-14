@@ -43,10 +43,14 @@ const StudentProgressView = () => {
   
   // State for prescriptive analysis
   const [prescriptiveRecommendations, setPrescriptiveRecommendations] = useState([]);
-  
+
   // State for IEP report
   const [learningObjectives, setLearningObjectives] = useState([]);
-  
+
+  // State for category access validation
+  const [categoryAccessMap, setCategoryAccessMap] = useState({});
+  const [categoryAccessLoading, setCategoryAccessLoading] = useState(false);
+
   // UI states
   const [activeTab, setActiveTab] = useState('assessment');
   const [editingActivity, setEditingActivity] = useState(null);
@@ -125,9 +129,28 @@ const StudentProgressView = () => {
 
         const progressData = await fetchProgressData();
         console.log("📞 fetchProgressData COMPLETED, result:", progressData);
-        
-        // Initialize learning objectives if we have progress data
+
+        // Fetch category access validation for prerequisite blocking
         if (progressData && progressData.categories && progressData.categories.length > 0) {
+          console.log("🔒 Fetching category access validation...");
+          setCategoryAccessLoading(true);
+
+          try {
+            const categoryNames = progressData.categories.map(cat => cat.categoryName);
+            // Use idNumber from student data (backend uses idNumber, not studentId)
+            const studentIdForAPI = studentData.idNumber || studentData.studentId || id;
+            console.log("🔍 Using student ID for category access validation:", studentIdForAPI);
+            const accessMap = await StudentApiService.checkMultipleCategoryAccess(studentIdForAPI, categoryNames);
+            console.log("🔒 Category access validation completed:", accessMap);
+            setCategoryAccessMap(accessMap);
+          } catch (accessError) {
+            console.error("❌ Error fetching category access validation:", accessError);
+            // Don't use fallback - let the UI show the error or retry
+            setCategoryAccessMap({});
+          } finally {
+            setCategoryAccessLoading(false);
+          }
+
           initializeLearningObjectives(progressData);
           generateRecommendationsFromResults(progressData, studentData);
         } else {
@@ -628,6 +651,8 @@ const StudentProgressView = () => {
               {categoryResults ? (
                 <ProgressReport
                   progressData={categoryResults}
+                  categoryAccessMap={categoryAccessMap}
+                  categoryAccessLoading={categoryAccessLoading}
                   onViewRecommendations={(category) => {
                     setActiveTab('prescriptive');
                     setSelectedCategory(category.categoryName);

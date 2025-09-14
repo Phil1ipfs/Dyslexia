@@ -886,6 +886,41 @@ const StudentApiService = {
     };
   },
 
+  // Check category access with prerequisite validation
+  checkCategoryAccess: async (studentId, category) => {
+    try {
+      console.log(`Checking category access for student ${studentId}, category: ${category}`);
+
+      // Use directApi to call assessment routes
+      const { data } = await directApi.get(`/assessment/category-access/${studentId}/${category}`);
+      console.log("Category access validation received:", data);
+      return data;
+    } catch (error) {
+      console.error(`Error checking category access for student ${studentId}, category ${category}:`, error);
+      throw error; // Let the calling code handle the error
+    }
+  },
+
+  // Batch check category access for multiple categories
+  checkMultipleCategoryAccess: async (studentId, categories) => {
+    try {
+      const accessMap = {};
+
+      // Check access for each category
+      for (const category of categories) {
+        accessMap[category] = await StudentApiService.checkCategoryAccess(studentId, category);
+
+        // Small delay to prevent overwhelming the API
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      return accessMap;
+    } catch (error) {
+      console.error(`Error checking multiple category access for student ${studentId}:`, error);
+      throw error; // Let the calling code handle the error
+    }
+  },
+
   // Score-to-level helper
   getReadingLevelFromScore: (score, maxScore = 5) => {
     const pct = (score / maxScore) * 100;

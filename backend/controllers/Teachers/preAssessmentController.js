@@ -393,16 +393,45 @@ exports.updatePreAssessment = async (req, res) => {
       updateData.scoringRules = calculateScoringRules(updateData.categoryCounts);
     }
     
+    // Add logging to help debug update issues
+    console.log('Update filter:', filter);
+    console.log('Update data keys:', Object.keys(updateData));
+    console.log('Existing assessment ID:', existingAssessment._id);
+    console.log('Update data questions count:', updateData.questions ? updateData.questions.length : 'no questions field');
+    console.log('Existing questions count:', existingAssessment.questions ? existingAssessment.questions.length : 'no questions field');
+
     // Update the assessment
     const result = await preAssessmentCollection.updateOne(filter, { $set: updateData });
-    
+
+    console.log('Update result:', {
+      matched: result.matchedCount,
+      modified: result.modifiedCount,
+      acknowledged: result.acknowledged
+    });
+
     if (result.modifiedCount === 0) {
-      return res.status(400).json({ message: 'No changes made to the pre-assessment' });
+      console.log('No modifications made - possible reasons:');
+      console.log('- Data identical to existing');
+      console.log('- Update filter did not match');
+      console.log('- Invalid update data');
+      return res.status(400).json({
+        message: 'Please make changes before updating the question',
+        details: {
+          matched: result.matchedCount,
+          modified: result.modifiedCount,
+          reason: 'no_changes_detected'
+        }
+      });
     }
     
+    // Fetch the updated document to return
+    const updatedDocument = await preAssessmentCollection.findOne(filter);
+    console.log('Updated document questions count:', updatedDocument.questions ? updatedDocument.questions.length : 'no questions field');
+
     res.json({
       message: 'Pre-assessment updated successfully',
-      modifiedCount: result.modifiedCount
+      modifiedCount: result.modifiedCount,
+      data: updatedDocument
     });
   } catch (error) {
     console.error('Error updating pre-assessment:', error);

@@ -40,7 +40,7 @@ import MainAssessmentService from '../../../services/Teachers/MainAssessmentServ
 import PdfReportService from '../../../services/Teachers/ManageProgress/PdfReportService';
 import ImagePreviewModal from './ImagePreviewModal';
 
-const ProgressReport = ({ progressData, onViewRecommendations }) => {
+const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLoading = false, onViewRecommendations }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTimeframe, setSelectedTimeframe] = useState('current');
   const [animated, setAnimated] = useState(false);
@@ -703,6 +703,14 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
             </div>
           </div>
           
+          {/* Category Access Loading Indicator */}
+          {categoryAccessLoading && (
+            <div className="student-progress-loading-state" style={{ textAlign: 'center', padding: '10px 0', color: '#6c757d' }}>
+              <FaSpinner style={{ animation: 'spin 1s linear infinite', marginRight: '8px' }} />
+              Validating category access permissions...
+            </div>
+          )}
+
           {/* Enhanced Category Cards - Individual Row Layout like Pre Assessment */}
           <div className="student-progress-categories-list">
             {progressData.categories.map((category, index) => {
@@ -719,7 +727,12 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
               // Recalculate score based on actual data if available
               const score = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : Number(category.score) || 0;
               const isPassed = score >= 75;
-              
+
+              // Get prerequisite validation for this category
+              const accessValidation = categoryAccessMap[categoryName];
+              const isBlocked = accessValidation ? !accessValidation.allowed : false; // Default to not blocked if no validation data
+              const prerequisiteInfo = accessValidation?.prerequisites || [];
+
               // Get questions for this category
               const categoryQuestions = getCategoryQuestions(categoryName);
               const isExpanded = expandedCategories[categoryName];
@@ -735,13 +748,29 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
                       <div className="student-progress-category-info">
                         <h3 className="student-progress-category-name">
                           {displayName}
-                          {score < 75 && (
+                          {isBlocked && (
+                            <span className="student-progress-needs-attention-badge" style={{ backgroundColor: '#dc3545', color: 'white' }}>
+                              BLOCKED
+                            </span>
+                          )}
+                          {!isBlocked && score < 75 && (
                             <span className="student-progress-needs-attention-badge">NEEDS ATTENTION</span>
                           )}
                         </h3>
                         <div className="student-progress-category-stats">
-                          <span className="student-progress-score-display">{score}%</span>
-                          <span className="student-progress-score-fraction">{correctCount}/{totalCount} correct</span>
+                          {isBlocked ? (
+                            <>
+                              <span className="student-progress-score-display" style={{ color: '#dc3545' }}>Prerequisites Required</span>
+                              <span className="student-progress-score-fraction" style={{ color: '#6c757d' }}>
+                                Complete {prerequisiteInfo.map(p => p.category).join(', ')} first
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="student-progress-score-display">{score}%</span>
+                              <span className="student-progress-score-fraction">{correctCount}/{totalCount} correct</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -749,10 +778,15 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
                     <div className="student-progress-category-right">
                       <button
                         className="student-progress-expand-toggle"
-                        onClick={() => toggleCategoryExpansion(categoryName)}
-                        aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
+                        onClick={() => !isBlocked && toggleCategoryExpansion(categoryName)}
+                        disabled={isBlocked}
+                        style={{
+                          opacity: isBlocked ? 0.5 : 1,
+                          cursor: isBlocked ? 'not-allowed' : 'pointer'
+                        }}
+                        aria-label={isBlocked ? 'Access restricted - prerequisites required' : (isExpanded ? 'Collapse details' : 'Expand details')}
                       >
-                        {isExpanded ? <FaCompressArrowsAlt /> : <FaExpandArrowsAlt />}
+                        {isBlocked ? <FaLock /> : (isExpanded ? <FaCompressArrowsAlt /> : <FaExpandArrowsAlt />)}
                       </button>
                     </div>
                   </div>
@@ -770,7 +804,11 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
                   
                   {/* Status Message */}
                   <div className="student-progress-status-summary">
-                    {isPassed ? (
+                    {isBlocked ? (
+                      <div className="student-progress-need-more-message" style={{ color: '#dc3545' }}>
+                        <FaLock /> Prerequisites Required - Complete prerequisite categories to unlock access
+                      </div>
+                    ) : isPassed ? (
                       <div className="student-progress-success-message">
                         <FaCheckCircle /> Category Mastered
                       </div>
@@ -782,7 +820,7 @@ const ProgressReport = ({ progressData, onViewRecommendations }) => {
                   </div>
 
                   {/* Expandable Question Details */}
-                  {isExpanded && (
+                  {isExpanded && !isBlocked && (
                     <div className="student-progress-question-details-section">
                       <h4 className="student-progress-question-details-title">
                         <FaClipboardList /> Question Details

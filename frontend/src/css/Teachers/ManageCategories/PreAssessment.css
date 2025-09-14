@@ -4344,7 +4344,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #0ca678;
+  color: white;
   font-size: 12px;
   font-weight: 600;
 }
@@ -5349,6 +5349,14 @@
 .pre-add-sentence-question-btn:hover {
   background-color: #553c9a;
   transform: translateY(-1px);
+}
+
+/* Ensure Add Question button text is always white */
+.pre-add-sentence-question-btn,
+.pre-add-sentence-question-btn:hover,
+.pre-add-sentence-question-btn:focus,
+.pre-add-sentence-question-btn:active {
+  color: white !important;
 }
 
 /* Validation States */

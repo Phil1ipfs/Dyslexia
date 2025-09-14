@@ -462,52 +462,134 @@ const PreAssessment = () => {
   };
 
   // Handle editing existing pre-assessment
-  const handleEditPreAssessment = () => {
-    // Make sure formData has the latest questions from preAssessment
-    if (preAssessment) {
-      console.log('Editing pre-assessment with questions:', 
-        preAssessment.questions ? preAssessment.questions.length : 0);
-      
-      // Calculate actual category counts based on questions
-      const dynamicCategoryCounts = {
-        alphabet_knowledge: 0,
-        phonological_awareness: 0,
-        decoding: 0,
-        word_recognition: 0,
-        reading_comprehension: 0
-      };
-      
-      // Count questions by category
-      if (preAssessment.questions && preAssessment.questions.length > 0) {
-        preAssessment.questions.forEach(question => {
-          const categoryKey = categoryDisplayNameToKey[question.category];
-          if (categoryKey && dynamicCategoryCounts.hasOwnProperty(categoryKey)) {
-            dynamicCategoryCounts[categoryKey]++;
+  const handleEditPreAssessment = async () => {
+    // CRITICAL FIX: Refresh preAssessment data from server before opening edit modal
+    console.log('🔧 EDIT MODAL DEBUG - Starting handleEditPreAssessment');
+
+    if (preAssessment && preAssessment._id) {
+      console.log('🔄 Refreshing preAssessment data from server...');
+
+      try {
+        // Fetch the latest data from server
+        const refreshResponse = await PreAssessmentService.getPreAssessmentById(preAssessment._id);
+
+        if (refreshResponse.success) {
+          const freshPreAssessment = refreshResponse.data;
+          console.log('✅ Fresh data fetched:', {
+            hasQuestions: !!freshPreAssessment.questions,
+            questionCount: freshPreAssessment.questions ? freshPreAssessment.questions.length : 0,
+            title: freshPreAssessment.title
+          });
+
+          // Update preAssessment state with fresh data
+          setPreAssessment(freshPreAssessment);
+
+          // Use the fresh data for formData setup
+          const dataToUse = freshPreAssessment;
+
+          // Calculate actual category counts based on questions
+          const dynamicCategoryCounts = {
+            alphabet_knowledge: 0,
+            phonological_awareness: 0,
+            decoding: 0,
+            word_recognition: 0,
+            reading_comprehension: 0
+          };
+
+          // Count questions by category
+          if (dataToUse.questions && dataToUse.questions.length > 0) {
+            dataToUse.questions.forEach(question => {
+              const categoryKey = categoryDisplayNameToKey[question.category];
+              console.log('📋 Processing question:', {
+                category: question.category,
+                categoryKey: categoryKey,
+                questionId: question.questionId
+              });
+              if (categoryKey && dynamicCategoryCounts.hasOwnProperty(categoryKey)) {
+                dynamicCategoryCounts[categoryKey]++;
+              }
+            });
           }
-        });
+
+          console.log('📊 Final category counts:', dynamicCategoryCounts);
+
+          // Ensure we have valid isActive and updatedAt values
+          const isActive = dataToUse.isActive !== undefined ? dataToUse.isActive : true;
+          const updatedAt = dataToUse.updatedAt || dataToUse.lastUpdated || new Date().toISOString();
+
+          // Deep copy the fresh data to formData
+          const newFormData = {
+            title: dataToUse.title || "",
+            description: dataToUse.description || "",
+            instructions: dataToUse.instructions || "",
+            totalQuestions: dataToUse.questions ? dataToUse.questions.length : 0,
+            categoryCounts: dynamicCategoryCounts,
+            language: dataToUse.language || "FL",
+            questions: dataToUse.questions ? JSON.parse(JSON.stringify(dataToUse.questions)) : [],
+            isActive: isActive,
+            updatedAt: updatedAt
+          };
+
+          console.log('💾 Setting formData with fresh data:', {
+            totalQuestions: newFormData.totalQuestions,
+            categoryCounts: newFormData.categoryCounts,
+            questionsLength: newFormData.questions.length
+          });
+
+          setFormData(newFormData);
+          console.log('✅ Form data set successfully with fresh server data');
+
+        } else {
+          console.error('❌ Failed to refresh data:', refreshResponse.message);
+          // Fallback to existing preAssessment data
+          console.log('⚠️ Using cached preAssessment data as fallback');
+          setFormDataFromExisting(preAssessment);
+        }
+      } catch (error) {
+        console.error('❌ Error refreshing preAssessment:', error);
+        // Fallback to existing preAssessment data
+        console.log('⚠️ Using cached preAssessment data as fallback due to error');
+        setFormDataFromExisting(preAssessment);
       }
-      
-      // Ensure we have valid isActive and updatedAt values
-      const isActive = preAssessment.isActive !== undefined ? preAssessment.isActive : true;
-      const updatedAt = preAssessment.updatedAt || preAssessment.lastUpdated || new Date().toISOString();
-      
-      // Deep copy the preAssessment data to formData to ensure we have all questions
-      setFormData({
-        title: preAssessment.title || "",
-        description: preAssessment.description || "",
-        instructions: preAssessment.instructions || "",
-        totalQuestions: preAssessment.questions ? preAssessment.questions.length : 0,
-        categoryCounts: dynamicCategoryCounts,
-        language: preAssessment.language || "FL",
-        questions: preAssessment.questions ? JSON.parse(JSON.stringify(preAssessment.questions)) : [],
-        isActive: isActive,
-        updatedAt: updatedAt
-      });
-      
-      console.log('Form data set with questions count:', 
-        preAssessment.questions ? preAssessment.questions.length : 0);
+    } else {
+      console.error('❌ No preAssessment data available for editing');
     }
+
     setShowEditModal(true);
+  };
+
+  // Helper function to set form data from existing preAssessment
+  const setFormDataFromExisting = (assessmentData) => {
+    const dynamicCategoryCounts = {
+      alphabet_knowledge: 0,
+      phonological_awareness: 0,
+      decoding: 0,
+      word_recognition: 0,
+      reading_comprehension: 0
+    };
+
+    if (assessmentData.questions && assessmentData.questions.length > 0) {
+      assessmentData.questions.forEach(question => {
+        const categoryKey = categoryDisplayNameToKey[question.category];
+        if (categoryKey && dynamicCategoryCounts.hasOwnProperty(categoryKey)) {
+          dynamicCategoryCounts[categoryKey]++;
+        }
+      });
+    }
+
+    const newFormData = {
+      title: assessmentData.title || "",
+      description: assessmentData.description || "",
+      instructions: assessmentData.instructions || "",
+      totalQuestions: assessmentData.questions ? assessmentData.questions.length : 0,
+      categoryCounts: dynamicCategoryCounts,
+      language: assessmentData.language || "FL",
+      questions: assessmentData.questions ? JSON.parse(JSON.stringify(assessmentData.questions)) : [],
+      isActive: assessmentData.isActive !== undefined ? assessmentData.isActive : true,
+      updatedAt: assessmentData.updatedAt || assessmentData.lastUpdated || new Date().toISOString()
+    };
+
+    setFormData(newFormData);
   };
 
   // Handle deleting pre-assessment
@@ -841,6 +923,11 @@ const PreAssessment = () => {
       
       // Word Recognition - Fill in blanks
       displayWord: question.displayWord || '',
+      completeSentence: question.displayWord || '', // For sentence input field
+      // CRITICAL FIX: For "Anong kasing tunog" questions, map displayWord to questionValue
+      questionValue: question.questionText === 'Anong kasing tunog ng salitang nakikita?'
+        ? (question.displayWord || question.questionValue || '')
+        : (question.questionValue || ''),
       blankOptions: question.blankOptions || [],
       correctAnswer: question.correctAnswer || []
     };
@@ -1248,7 +1335,19 @@ const PreAssessment = () => {
   // Word Recognition handlers
   const handleBlankOptionChange = (index, value) => {
     // Allow letters only, preserve case (no numbers)
-    const sanitizedValue = value.replace(/[^a-zA-Z\s]/g, '');
+    let sanitizedValue = value.replace(/[^a-zA-Z\s]/g, '');
+
+    // For "Anong kasing tunog" questions, enforce complete words and uppercase
+    if (currentQuestionData.questionText === 'Anong kasing tunog ng salitang nakikita?') {
+      // Convert to uppercase and remove extra spaces for consistency
+      sanitizedValue = sanitizedValue.trim().toUpperCase().replace(/\s+/g, ' ');
+
+      // Validate it's a complete word (no short fragments that look like syllables)
+      const words = sanitizedValue.split(' ');
+      const validWords = words.filter(word => word.length >= 3); // Minimum 3 characters for complete words
+      sanitizedValue = validWords.join(' ');
+    }
+
     setCurrentQuestionData(prev => ({
       ...prev,
       blankOptions: prev.blankOptions.map((item, i) => i === index ? sanitizedValue : item)
@@ -1505,10 +1604,31 @@ const PreAssessment = () => {
           toast.error('All answer options must be filled');
           return;
         }
+
+        // Additional validation for "Anong kasing tunog" questions - ensure complete words
+        if (currentQuestionData.questionText === 'Anong kasing tunog ng salitang nakikita?') {
+          const hasSyllableFragments = currentQuestionData.blankOptions.some(option => {
+            const words = option.trim().split(' ');
+            return words.some(word => word.length < 3); // Less than 3 characters likely a syllable fragment
+          });
+          if (hasSyllableFragments) {
+            toast.error('For sound matching questions, please use complete words (not syllables or word fragments)');
+            return;
+          }
+        }
         if (!currentQuestionData.correctAnswer || currentQuestionData.correctAnswer.length === 0) {
           toast.error('At least one correct answer is required');
           return;
         }
+
+        // For "Anong kasing tunog" questions, ensure exactly one correct answer
+        if (currentQuestionData.questionText === 'Anong kasing tunog ng salitang nakikita?') {
+          if (currentQuestionData.correctAnswer.length !== 1) {
+            toast.error('Sound matching questions must have exactly one correct answer');
+            return;
+          }
+        }
+
         const hasEmptyCorrectAnswer = currentQuestionData.correctAnswer.some(answer => !answer.trim());
         if (hasEmptyCorrectAnswer) {
           toast.error('All correct answers must be selected');
@@ -1787,12 +1907,24 @@ const PreAssessment = () => {
           freshAssessment.categoryCounts = recalculateCategoryCounts(freshAssessment.questions || []);
           
           setPreAssessment(freshAssessment);
-          setFormData(prev => ({
-            ...prev,
-            questions: freshAssessment.questions || [],
-            categoryCounts: freshAssessment.categoryCounts,
-            totalQuestions: freshAssessment.totalQuestions
-          }));
+          console.log('🔄 Updating formData after successful save with:', {
+            questionsLength: freshAssessment.questions ? freshAssessment.questions.length : 0,
+            categoryCounts: freshAssessment.categoryCounts
+          });
+
+          setFormData(prev => {
+            const newFormData = {
+              ...prev,
+              questions: freshAssessment.questions || [],
+              categoryCounts: freshAssessment.categoryCounts,
+              totalQuestions: freshAssessment.totalQuestions
+            };
+            console.log('📝 FormData being set to:', {
+              questionsLength: newFormData.questions.length,
+              categoryCounts: newFormData.categoryCounts
+            });
+            return newFormData;
+          });
 
           // Trigger refresh to ensure UI consistency
           setDataChangeCounter(prev => prev + 1);
@@ -1803,15 +1935,46 @@ const PreAssessment = () => {
         }
       } catch (error) {
         console.error('Error saving question to backend:', error);
-        // Revert local changes if backend save failed
-        setPreAssessment(preAssessment);
-        setFormData(prev => ({
-          ...prev,
-          questions: preAssessment.questions || [],
-          categoryCounts: preAssessment.categoryCounts || {},
-          totalQuestions: preAssessment.totalQuestions || 0
-        }));
-        toast.error('Failed to save question to server. Changes reverted.');
+        console.error('Error details:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+
+        // Only revert if we have valid preAssessment data to revert to
+        if (preAssessment && preAssessment.questions && preAssessment.questions.length > 0) {
+          setPreAssessment(preAssessment);
+          setFormData(prev => ({
+            ...prev,
+            questions: preAssessment.questions || [],
+            categoryCounts: preAssessment.categoryCounts || {},
+            totalQuestions: preAssessment.totalQuestions || 0
+          }));
+        } else {
+          // If preAssessment is corrupted/empty, keep current formData state
+          console.warn('preAssessment state is empty or corrupted, preserving current formData');
+          // Revert only the specific question that failed to save
+          if (editingQuestionIndex >= 0) {
+            // For edits, revert just that question to its original state
+            const originalQuestions = [...formData.questions];
+            // Keep the original question unchanged for edits
+            setFormData(prev => ({
+              ...prev,
+              questions: originalQuestions
+            }));
+          } else {
+            // For new questions, just remove the last added question
+            setFormData(prev => ({
+              ...prev,
+              questions: prev.questions.slice(0, -1),
+              totalQuestions: Math.max(0, prev.totalQuestions - 1)
+            }));
+          }
+        }
+
+        // Show more specific error message
+        const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
+        toast.error(`Failed to save question: ${errorMessage}`);
         return;
       }
 
@@ -2477,7 +2640,7 @@ const PreAssessment = () => {
                   </label>
                   <div className="pre-total-questions-display">
                     <span className="pre-total-questions-value">
-                      {showEditModal && preAssessment?.questions ? preAssessment.questions.length : formData.questions.length}
+                      {formData.questions?.length || 0}
                     </span>
                     <span className="pre-total-questions-label">
                       questions
@@ -2504,23 +2667,49 @@ const PreAssessment = () => {
                     'word_recognition': 'Word Recognition',
                     'reading_comprehension': 'Reading Comprehension'
                   }).map(([category, label]) => {
-                      // Count actual questions per category
-                    const questionsArray = showEditModal && preAssessment?.questions ? 
-                      preAssessment.questions : formData.questions;
-                    
-                    const questionsInCategory = questionsArray ? 
-                      questionsArray.filter(q => {
-                        // Use category field directly from backend JSON structure
-                        const categoryNameMap = {
-                          'alphabet_knowledge': 'Alphabet Knowledge',
-                          'phonological_awareness': 'Phonological Awareness',
-                          'decoding': 'Decoding',
-                          'word_recognition': 'Word Recognition', 
-                          'reading_comprehension': 'Reading Comprehension'
-                        };
-                        
-                        return q.category === categoryNameMap[category];
-                      }).length : 0;
+                      // CRITICAL FIX: Use preAssessment.questions as primary source, fallback to formData
+                      const questionsArray = (preAssessment && preAssessment.questions)
+                        ? preAssessment.questions
+                        : (formData.questions || []);
+
+                    // Debug logging for question count display
+                    if (category === 'alphabet_knowledge') {
+                      console.log('🔍 QUESTION COUNT DEBUG:', {
+                        category: category,
+                        label: label,
+                        preAssessmentQuestions: preAssessment?.questions?.length || 0,
+                        formDataQuestions: formData.questions?.length || 0,
+                        usingPreAssessment: !!(preAssessment && preAssessment.questions),
+                        finalQuestionsArray: questionsArray.length,
+                        showEditModal: showEditModal
+                      });
+                    }
+
+                    const questionsInCategory = questionsArray.filter(q => {
+                      // Use category field directly from backend JSON structure
+                      const categoryNameMap = {
+                        'alphabet_knowledge': 'Alphabet Knowledge',
+                        'phonological_awareness': 'Phonological Awareness',
+                        'decoding': 'Decoding',
+                        'word_recognition': 'Word Recognition',
+                        'reading_comprehension': 'Reading Comprehension'
+                      };
+
+                      const matches = q.category === categoryNameMap[category];
+                      if (category === 'alphabet_knowledge' && q.category) {
+                        console.log('📋 Question filtering:', {
+                          questionCategory: q.category,
+                          expectedCategory: categoryNameMap[category],
+                          matches: matches,
+                          questionId: q.questionId
+                        });
+                      }
+                      return matches;
+                    }).length;
+
+                    if (category === 'alphabet_knowledge') {
+                      console.log('📊 Final count for', label, ':', questionsInCategory);
+                    }
                     
                     return (
                         <div key={category} className="pre-category-count-item">
@@ -2532,8 +2721,7 @@ const PreAssessment = () => {
                     <div className="pre-category-count-item pre-category-count-total">
                       <span className="pre-category-count-label">Total Questions:</span>
                       <span className="pre-category-count-value">
-                        {(showEditModal && preAssessment?.questions ? 
-                          preAssessment.questions : formData.questions)?.length || 0}
+                        {formData.questions?.length || 0}
                       </span>
                     </div>
                   </div>
@@ -3572,9 +3760,9 @@ const PreAssessment = () => {
                     <div className="pre-sound-matching-section">
                       <div className="pre-subsection-header">
                         <h6 className="pre-subsection-title">Word and Sound Configuration</h6>
-                        <span className="pre-help-text">Configure word with syllable/sound options</span>
+                        <span className="pre-help-text">Configure word with complete word options</span>
                       </div>
-                      <p className="pre-subsection-description">Set up a word that students will identify matching sounds or syllables for</p>
+                      <p className="pre-subsection-description">Set up a word that students will identify similar sounding complete words for</p>
                       
                       <div className="pre-form-group">
                         <label htmlFor="displayWordInput">
@@ -3587,6 +3775,7 @@ const PreAssessment = () => {
                           value={currentQuestionData.questionValue || ''}
                           onChange={(e) => {
                             const newValue = e.target.value.toUpperCase();
+
                             setCurrentQuestionData(prev => ({
                               ...prev,
                               questionValue: newValue,
@@ -3611,9 +3800,9 @@ const PreAssessment = () => {
                           <span className="pre-help-text">Include correct answers and distractors</span>
                         </div>
                         <p className="pre-subsection-description">
-                          {currentQuestionData.questionText === 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.' 
+                          {currentQuestionData.questionText === 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.'
                             ? 'Add all possible answer choices (correct answers are auto-added from blanks)'
-                            : 'Add syllables or sounds that students can choose from'}
+                            : 'Add complete words that students can choose from (not syllables or word parts)'}
                         </p>
                         
                         <div className="pre-blank-options-container">
@@ -3626,43 +3815,42 @@ const PreAssessment = () => {
                                     type="text"
                                     value={option}
                                     onChange={(e) => handleBlankOptionChange(index, e.target.value)}
-                                    placeholder={currentQuestionData.questionText === 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.' 
-                                      ? `Option ${index + 1}` 
-                                      : `Sound/Syllable ${index + 1}`}
+                                    placeholder={currentQuestionData.questionText === 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.'
+                                      ? `Option ${index + 1}`
+                                      : `Complete word ${index + 1}`}
                                     className="pre-blank-option-input"
                                   />
-                                  {isCorrectAnswer && (
-                                    <div className="pre-correct-indicator">
-                                      <FontAwesomeIcon icon={faCheckCircle} />
-                                      <span>Correct</span>
+
+                                  {/* For sound matching questions, show radio button */}
+                                  {currentQuestionData.questionText === 'Anong kasing tunog ng salitang nakikita?' ? (
+                                    <div className="pre-radio-container">
+                                      <label className="pre-correct-radio">
+                                        <input
+                                          type="radio"
+                                          name="soundMatchingCorrectAnswer"
+                                          checked={isCorrectAnswer}
+                                          onChange={() => {
+                                            // For sound matching questions, only one correct answer is allowed
+                                            setCurrentQuestionData(prev => ({
+                                              ...prev,
+                                              correctAnswer: [option.toUpperCase()] // Single correct answer, always uppercase
+                                            }));
+                                          }}
+                                        />
+                                        <span className="pre-radio-label">
+                                          <FontAwesomeIcon icon={faCheckCircle} />
+                                          Correct
+                                        </span>
+                                      </label>
                                     </div>
-                                  )}
-                                  {currentQuestionData.questionText === 'Anong kasing tunog ng salitang nakikita?' && (
-                                    <label className="pre-correct-checkbox">
-                                      <input
-                                        type="checkbox"
-                                        checked={isCorrectAnswer}
-                                        onChange={(e) => {
-                                          const newCorrectAnswers = [...(currentQuestionData.correctAnswer || [])];
-                                          if (e.target.checked) {
-                                            if (!newCorrectAnswers.includes(option)) {
-                                              newCorrectAnswers.push(option);
-                                            }
-                                          } else {
-                                            const index = newCorrectAnswers.indexOf(option);
-                                            if (index > -1) newCorrectAnswers.splice(index, 1);
-                                          }
-                                          setCurrentQuestionData(prev => ({
-                                            ...prev,
-                                            correctAnswer: newCorrectAnswers
-                                          }));
-                                        }}
-                                      />
-                                      <span className="pre-checkbox-label">
+                                  ) : (
+                                    /* For other question types, show correct indicator */
+                                    isCorrectAnswer && (
+                                      <div className="pre-correct-indicator">
                                         <FontAwesomeIcon icon={faCheckCircle} />
-                                        Correct
-                                      </span>
-                                    </label>
+                                        <span>Correct</span>
+                                      </div>
+                                    )
                                   )}
                                 </div>
                                 <button
@@ -3682,9 +3870,9 @@ const PreAssessment = () => {
                             className="pre-add-btn-primary"
                           >
                             <FontAwesomeIcon icon={faPlus} />
-                            {currentQuestionData.questionText === 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.' 
-                              ? 'Add Answer Option' 
-                              : 'Add Sound Option'}
+                            {currentQuestionData.questionText === 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.'
+                              ? 'Add Answer Option'
+                              : 'Add Complete Word Option'}
                           </button>
                         </div>
                       </div>
@@ -3692,17 +3880,23 @@ const PreAssessment = () => {
                       {/* Correct Answers Management */}
                       <div className="pre-correct-answers-section">
                         <div className="pre-subsection-header">
-                          <h6 className="pre-subsection-title">Correct Answers</h6>
+                          <h6 className="pre-subsection-title">
+                            {currentQuestionData.questionText === 'Anong kasing tunog ng salitang nakikita?'
+                              ? 'Correct Answer'
+                              : 'Correct Answers'}
+                          </h6>
                           <span className="pre-auto-label">
-                            {currentQuestionData.questionText === 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.' 
-                              ? 'Auto-managed from blanks' 
+                            {currentQuestionData.questionText === 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.'
+                              ? 'Auto-managed from blanks'
                               : 'Selected from options'}
                           </span>
                         </div>
                         <p className="pre-subsection-description">
-                          {currentQuestionData.questionText === 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.' 
+                          {currentQuestionData.questionText === 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.'
                             ? 'These are automatically determined from the words you\'ve made into blanks'
-                            : 'Check the correct options above to mark them as correct answers'}
+                            : currentQuestionData.questionText === 'Anong kasing tunog ng salitang nakikita?'
+                            ? 'Select the complete word option above that matches the display word\'s sound'
+                            : 'Check the complete word options above that match the display word\'s sound'}
                         </p>
                         
                         <div className="pre-correct-answers-display">

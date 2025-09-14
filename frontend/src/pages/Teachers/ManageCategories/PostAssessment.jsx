@@ -1168,73 +1168,64 @@ const MainAssessment = ({ templates }) => {
   };
 
   const handleEditQuestion = (question, index) => {
-    console.log('=== EDIT QUESTION DEBUG START ===');
-    console.log('handleEditQuestion called with:');
-    console.log('- question:', JSON.stringify(question, null, 2));
-    console.log('- index:', index);
-    console.log('- formData.category:', formData.category);
-    console.log('- question.passages:', question.passages);
-    
     setShowQuestionForm(true);
     setCurrentQuestion(index);
-    
-    // Create base question data
+
+    // Create base question data with comprehensive field mapping
     const baseQuestionData = {
       ...question,
-      // Ensure questionId exists, if not generate a temporary one
+      // Ensure questionId exists
       questionId: question.questionId || (() => {
         const categoryPrefix = getCategoryPrefix(formData.category);
         const questionNumber = String(index + 1).padStart(3, '0');
         return `${categoryPrefix}_${questionNumber}`;
-      })()
+      })(),
+
+      // Alphabet Knowledge fields
+      choiceOptions: question.choiceOptions || [],
+
+      // Phonological Awareness fields
+      questionSet: question.questionSet || {
+        audioTexts: [],
+        matchingOptions: [],
+        correctPairs: []
+      },
+
+      // Decoding fields
+      displaySequence: question.displaySequence || [],
+      blankPosition: question.blankPosition || null,
+      dragElements: question.dragElements || [],
+      correctSequence: question.correctSequence || [],
+
+      // Word Recognition fields
+      displayWord: question.displayWord || '',
+      blankOptions: question.blankOptions || [],
+      correctAnswer: question.correctAnswer || [],
+
+      // Reading Comprehension fields
+      storyTitle: question.storyTitle || '',
+      passages: question.passages === null ? [] : (question.passages || [
+        { pageNumber: 1, pageText: "", pageImage: null }
+      ]),
+      sentenceQuestions: question.sentenceQuestions || []
     };
-    
-    console.log('baseQuestionData after spread:', JSON.stringify(baseQuestionData, null, 2));
-    
-    // Ensure Reading Comprehension questions have proper structure
+
+    // Category-specific handling
     if (formData.category === "Reading Comprehension") {
-      console.log('Processing Reading Comprehension question');
-      
-      // Ensure storyTitle exists
-      if (!baseQuestionData.storyTitle) {
-        baseQuestionData.storyTitle = "";
-      }
-      
-      // Handle the direct question format from the database
-      baseQuestionData.questionText = baseQuestionData.questionText || "";
-      baseQuestionData.correctAnswer = baseQuestionData.correctAnswer || null;
-      
-      // Handle passages: if null, this question references a previous story's passages
-      if (baseQuestionData.passages === null) {
-        console.log('This question has passages: null (references previous story)');
-        baseQuestionData.passages = []; // Set to empty array for form compatibility
-      } else if (!baseQuestionData.passages || !Array.isArray(baseQuestionData.passages)) {
-        console.log('Creating default passages array');
-        baseQuestionData.passages = [
-          { pageNumber: 1, pageText: "", pageImage: null }
-        ];
-      } else {
-        console.log('Found existing passages:', baseQuestionData.passages.length);
-        // Ensure each passage has required fields and clean temporary fields
+      // Clean up passages if they exist
+      if (Array.isArray(baseQuestionData.passages)) {
         baseQuestionData.passages = baseQuestionData.passages.map((passage, idx) => ({
           pageNumber: passage.pageNumber || idx + 1,
           pageText: passage.pageText || "",
           pageImage: passage.pageImage || null
-          // Remove temporary fields: _imageFile and _imageName are automatically excluded
         }));
       }
-      
-      // Remove acceptableAnswers at question level (should only be in sentenceQuestions)
+
+      // Remove unwanted fields for Reading Comprehension
+      delete baseQuestionData.questionSet;
       delete baseQuestionData.acceptableAnswers;
-      
-      // Clean up unwanted fields for Reading Comprehension
-      delete baseQuestionData.questionSet; // Not used by Reading Comprehension
-    }
-    
-    console.log('Final baseQuestionData:', baseQuestionData);
-    
-    // Ensure all required fields are present for Reading Comprehension
-    if (formData.category === "Reading Comprehension") {
+
+      // Ensure comprehension-specific fields exist
       baseQuestionData.currentComprehensionIndex = baseQuestionData.currentComprehensionIndex || -1;
       baseQuestionData.tempComprehensionQuestion = baseQuestionData.tempComprehensionQuestion || {
         questionText: "",
@@ -1242,7 +1233,7 @@ const MainAssessment = ({ templates }) => {
         acceptableAnswers: []
       };
     }
-    
+
     setQuestionFormData(baseQuestionData);
   };
 
@@ -1391,6 +1382,24 @@ const MainAssessment = ({ templates }) => {
       if (!questionFormData.correctAnswer || questionFormData.correctAnswer.length === 0) {
         toast.error("Please specify the correct answer(s).");
         return;
+      }
+
+      // Additional validation for "Anong kasing tunog" questions - ensure complete words
+      if (questionFormData.questionText === "Anong kasing tunog ng salitang nakikita?") {
+        const hasSyllableFragments = questionFormData.blankOptions.some(option => {
+          const words = option.trim().split(' ');
+          return words.some(word => word.length < 3); // Less than 3 characters likely a syllable fragment
+        });
+        if (hasSyllableFragments) {
+          toast.error('For sound matching questions, please use complete words (not syllables or word fragments)');
+          return;
+        }
+
+        // Ensure exactly one correct answer for sound matching questions
+        if (questionFormData.correctAnswer.length !== 1) {
+          toast.error('Sound matching questions must have exactly one correct answer');
+          return;
+        }
       }
 
       if (questionFormData.questionValue !== null) {
@@ -1944,7 +1953,14 @@ const MainAssessment = ({ templates }) => {
           questionSet: []
         });
 
-        toast.success("Question updated! You can add another or click Back to return to the assessment.");
+        toast.success("Question updated successfully!");
+
+        // For edit mode, automatically return to assessment view
+        setShowQuestionForm(false);
+        setEditingQuestionIndex(-1);
+
+        // Exit early to prevent further processing
+        return;
         } else {
         // Ensure questionValue is at least null if it's empty string or undefined
         finalQuestionData.questionValue = finalQuestionData.questionValue || null;
@@ -4426,7 +4442,7 @@ const MainAssessment = ({ templates }) => {
                                         value={option}
                                         onChange={(e) => {
                                           const updatedOptions = [...(questionFormData.blankOptions || [])];
-                                          // Preserve the original case entered by teacher
+                                          // For "Basahin ang pangungusap" questions, preserve original case
                                           updatedOptions[index] = e.target.value;
                                           setQuestionFormData(prev => ({
                                             ...prev,
@@ -4451,7 +4467,7 @@ const MainAssessment = ({ templates }) => {
                                                 correctAnswer: []
                                               }));
                                             } else {
-                                              // Set this as the only correct answer
+                                              // Set this as the only correct answer (preserve case for sentence questions)
                                               setQuestionFormData(prev => ({
                                                 ...prev,
                                                 correctAnswer: [option]
@@ -4605,7 +4621,7 @@ const MainAssessment = ({ templates }) => {
                             <div className="pa-word-recognition-sound">
                               <div className="pa-section-title">
                                 <h4>Word and Sound Configuration</h4>
-                                <p className="pa-section-description">Set up a word that students will identify matching sounds or syllables</p>
+                                <p className="pa-section-description">Set up a word that students will identify similar sounding complete words</p>
                               </div>
 
                               {/* Display Word Input */}
@@ -4617,6 +4633,7 @@ const MainAssessment = ({ templates }) => {
                                   value={questionFormData.displayWord || ''}
                                   onChange={(e) => {
                                     const sanitizedValue = e.target.value.replace(/[^a-zA-Z\s]/g, '').toUpperCase();
+
                                     setQuestionFormData(prev => ({
                                       ...prev,
                                       displayWord: sanitizedValue
@@ -4632,7 +4649,7 @@ const MainAssessment = ({ templates }) => {
                                   <h5>Answer Options</h5>
                                   <span className="pa-instruction">Include correct answers and distractors</span>
                                 </div>
-                                <p>Add syllables or sounds that students can choose from</p>
+                                <p>Add complete words that students can choose from (not syllables or word parts)</p>
 
                                 <div className="pa-sound-options">
                                   {questionFormData.blankOptions?.map((option, index) => (
@@ -4642,7 +4659,18 @@ const MainAssessment = ({ templates }) => {
                                         value={option}
                                         onChange={(e) => {
                                           const updatedOptions = [...(questionFormData.blankOptions || [])];
-                                          updatedOptions[index] = e.target.value.toUpperCase();
+                                          let sanitizedValue = e.target.value.replace(/[^a-zA-Z\s]/g, '').toUpperCase();
+
+                                          // For "Anong kasing tunog" questions, enforce complete words (no split words)
+                                          // Convert to uppercase and remove extra spaces for consistency
+                                          sanitizedValue = sanitizedValue.trim().replace(/\s+/g, ' ');
+
+                                          // Validate it's a complete word (no short fragments that look like syllables)
+                                          const words = sanitizedValue.split(' ');
+                                          const validWords = words.filter(word => word.length >= 3); // Minimum 3 characters for complete words
+                                          sanitizedValue = validWords.join(' ');
+
+                                          updatedOptions[index] = sanitizedValue;
                                           setQuestionFormData(prev => ({
                                             ...prev,
                                             blankOptions: updatedOptions
@@ -4654,30 +4682,19 @@ const MainAssessment = ({ templates }) => {
                                       <div className="pa-sound-controls">
                                         <label>
                                           <input
-                                            type="checkbox"
+                                            type="radio"
+                                            name="soundMatchingCorrectAnswer"
                                             checked={questionFormData.correctAnswer?.includes(option)}
                                             onChange={() => {
-                                              const correctAnswers = questionFormData.correctAnswer || [];
-                                              const isCorrect = correctAnswers.includes(option);
-                                              
-                                              // This section handles sound/syllable recognition - allow multiple answers
-                                              if (isCorrect) {
-                                                setQuestionFormData(prev => ({
-                                                  ...prev,
-                                                  correctAnswer: correctAnswers.filter(a => a !== option)
-                                                }));
-                                              } else {
-                                                setQuestionFormData(prev => ({
-                                                  ...prev,
-                                                  correctAnswer: [...correctAnswers, option]
-                                                }));
-                                              }
+                                              // For sound matching questions, only one correct answer is allowed
+                                              setQuestionFormData(prev => ({
+                                                ...prev,
+                                                correctAnswer: [option.toUpperCase()] // Single correct answer, always uppercase
+                                              }));
                                             }}
                                           />
                                           <FontAwesomeIcon icon={faCheckCircle} />
-                                          {questionFormData.correctAnswer?.includes(option) ? 
-                                            `${questionFormData.correctAnswer.indexOf(option) + 1}${getOrdinalSuffix(questionFormData.correctAnswer.indexOf(option) + 1)} Correct` : 
-                                            'Mark Correct'}
+                                          {questionFormData.correctAnswer?.includes(option) ? 'Correct' : 'Mark Correct'}
                                         </label>
                                         <button
                                           type="button"
@@ -4765,24 +4782,22 @@ const MainAssessment = ({ templates }) => {
                               </div>
 
                               <div className="pa-correct-answers">
-                                <h5>Correct Answers <span className="pa-selected-options">IN ORDER SELECTED</span></h5>
-                                <p>Check the correct options above to mark them as correct answers (shows order: 1st, 2nd, 3rd...)</p>
+                                <h5>Correct Answer <span className="pa-selected-options">SELECTED OPTION</span></h5>
+                                <p>Select the correct option above that matches the display word's sound</p>
                                 <div className="pa-correct-sounds-display">
                                   {questionFormData.correctAnswer?.map((answer, index) => (
                                     <div key={index} className="pa-correct-sound-item">
-                                      <span className="pa-answer-order">{index + 1}{getOrdinalSuffix(index + 1)}</span>
                                       <span style={{ textTransform: 'uppercase', fontWeight: '600' }}>{answer}</span>
                                       <button
                                         type="button"
                                         className="pa-remove-correct-answer"
                                         onClick={() => {
-                                          const updatedCorrectAnswers = questionFormData.correctAnswer.filter((_, i) => i !== index);
                                           setQuestionFormData(prev => ({
                                             ...prev,
-                                            correctAnswer: updatedCorrectAnswers
+                                            correctAnswer: [] // Clear the single correct answer
                                           }));
                                         }}
-                                        title="Remove from correct answers"
+                                        title="Remove correct answer"
                                         style={{
                                           background: 'none',
                                           border: 'none',

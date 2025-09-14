@@ -179,21 +179,35 @@ class PreAssessmentService {
    */
   updatePreAssessment = async (id, updateData) => {
     try {
+      console.log('🔄 PreAssessmentService.updatePreAssessment called with:', {
+        id: id,
+        questionsCount: updateData.questions ? updateData.questions.length : 'no questions field',
+        updateDataKeys: Object.keys(updateData)
+      });
+
       const response = await axios.put(
         `${this.apiUrl}/assessments/${id}`,
         updateData,
         this.getAuthHeaders()
       );
+
+      console.log('✅ Backend response received:', {
+        success: !!response.data,
+        hasData: !!response.data.data,
+        dataKeys: response.data ? Object.keys(response.data) : 'no response data',
+        questionsInResponse: response.data?.data?.questions ? response.data.data.questions.length : 'no questions in response'
+      });
+
       return {
         success: true,
-        data: response.data
+        data: response.data.data || response.data
       };
     } catch (error) {
       // Log authentication errors but don't expose them to components
       if (error.response && (error.response.status === 401 || error.response.status === 403)) {
         console.warn('Authentication required for pre-assessment API.');
       }
-      
+
       console.error(`Error updating pre-assessment ${id}:`, error);
       return {
         success: false,
