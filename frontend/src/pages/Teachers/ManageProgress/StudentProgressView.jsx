@@ -607,7 +607,7 @@ const StudentProgressView = () => {
           disabled={!preAssessmentCompleted || !categoryResults || !categoryResults.categories || categoryResults.categories.length === 0}
         >
           {(!preAssessmentCompleted || !categoryResults || !categoryResults.categories || categoryResults.categories.length === 0) && <FaLock className="lock-icon" />}
-          <FaLightbulb /> Prescriptive Analysis
+          <FaLightbulb /> Prescriptive Analysis and Intervention
         </button>
 
         <button

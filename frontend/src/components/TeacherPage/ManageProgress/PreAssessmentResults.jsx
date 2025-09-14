@@ -406,7 +406,7 @@ const PreAssessmentResults = ({ assessmentData, userResponses, student, category
                 <>
                   <FaDownload />
                   {categoryResults && categoryResults.categories && categoryResults.categories.length > 0 && !categoryResults.isPreAssessment ? 
-                    'Download Progress Report' : 
+                    'Download PDF Report' : 
                     'Download PDF Report'
                   }
                 </>
