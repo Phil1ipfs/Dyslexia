@@ -33,6 +33,12 @@ router.delete('/main-assessment/:id', auth, authorize('teacher', 'guro'), mainCo
 // Category progress routes
 router.get('/category-progress/:id', auth, categoryController.getCategoryProgress);
 
+// NEW: Sequential assessment flow routes (prerequisite-aware)
+router.get('/category-access/:studentId/:category', auth, categoryController.checkCategoryAccess);
+router.get('/next-category/:studentId', auth, categoryController.getNextCategoryForAssessment);
+router.get('/assessment-flow/:studentId', auth, categoryController.getAssessmentFlowSummary);
+router.post('/category-result-validated', auth, categoryController.createCategoryResultWithPrerequisites);
+
 // Reading level routes
 // router.get('/reading-level/:id', auth, authorize('teacher', 'guro'), readingLevelController.getProgression);
 // router.put('/reading-level/:id', auth, authorize('teacher', 'guro'), readingLevelController.updateReadingLevel);

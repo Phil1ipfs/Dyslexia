@@ -1384,6 +1384,597 @@ class InterventionService {
       throw error;
     }
   }
+
+  /**
+   * Generate intervention assessment with template-only system and dynamic question counts
+   * @param {string} prescriptiveAnalysisId - ID of prescriptive analysis
+   * @param {string} category - Category requiring intervention
+   * @param {Object} options - Generation options
+   * @returns {Promise<Object>} Generated intervention assessment with template analysis
+   */
+  async generateInterventionAssessment(prescriptiveAnalysisId, category, options = {}) {
+    try {
+      console.log(`[INTERVENTION GENERATION] Generating template-based assessment for category: ${category}`);
+
+      // Get prescriptive analysis
+      const analysis = await PrescriptiveAnalysis.findById(prescriptiveAnalysisId);
+      if (!analysis) {
+        throw new Error('Prescriptive analysis not found');
+      }
+
+      const studentId = analysis.studentId;
+      const readingLevel = analysis.readingLevel;
+
+      // Get error patterns for this category to guide question selection
+      const errorPatterns = analysis.errorPatterns?.get ?
+        analysis.errorPatterns.get(category) :
+        analysis.errorPatterns[category];
+
+      // Use template-only system to get available questions and analyze teacher needs
+      const templateResult = await this.getQuestionsFromTemplatesOnly(
+        category,
+        readingLevel,
+        errorPatterns,
+        {
+          ...options,
+          prescriptiveAnalysis: analysis // Pass full analysis for dynamic calculation
+        }
+      );
+
+      // Create intervention assessment document with template-based data
+      const interventionAssessment = {
+        studentId: parseInt(studentId),
+        prescriptiveAnalysisId: prescriptiveAnalysisId,
+        category: category,
+        readingLevel: readingLevel,
+        passThreshold: 75,
+
+        // Prescriptive Analytics "Prescription"
+        prescription: templateResult.prescription,
+
+        // Template Availability Analysis
+        templateAvailability: templateResult.templateAvailability,
+        teacherAction: templateResult.teacherAction,
+
+        questionSelectionStrategy: {
+          method: 'template_only', // No longer using multi-source
+          targetDifficulty: 0.7,
+          focusAreas: templateResult.prescription.focusAreas,
+          errorSeverity: templateResult.prescription.errorSeverity
+        },
+
+        totalQuestions: templateResult.prescription.questionCount, // Target from analytics
+        availableQuestions: templateResult.questions.length, // Actually available from templates
+        questions: templateResult.questions, // Available template questions
+
+        interventionParameters: {
+          fixedQuestions: templateResult.questions.length, // Use available count
+          allowSkip: false,
+          showProgress: true,
+          immediateFeeback: false
+        },
+
+        // Add calculation details for transparency
+        questionCountCalculation: {
+          targetCount: templateResult.prescription.questionCount,
+          availableCount: templateResult.questions.length,
+          rationale: templateResult.prescription.countRationale,
+          calculatedAt: new Date()
+        },
+
+        status: templateResult.templateAvailability.hasShortage ? 'needs_teacher_input' : 'ready',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      console.log(`[INTERVENTION GENERATION] Template-based assessment completed:`);
+      console.log(`- Target questions: ${templateResult.prescription.questionCount}`);
+      console.log(`- Available questions: ${templateResult.questions.length}`);
+      console.log(`- Teacher action: ${templateResult.teacherAction}`);
+      console.log(`- Status: ${interventionAssessment.status}`);
+
+      return interventionAssessment;
+
+    } catch (error) {
+      console.error('[INTERVENTION GENERATION] Error generating intervention assessment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate optimal question count based on prescriptive analytics
+   * @param {Object} analysis - Prescriptive analysis data
+   * @param {string} category - Target category
+   * @returns {Object} Question count calculation with details
+   */
+  calculateOptimalQuestionCount(analysis, category) {
+    try {
+      console.log(`[DYNAMIC COUNT] Calculating optimal question count for ${category}`);
+
+      // Get base values
+      const skillMastery = analysis.skillMastery?.get ?
+        analysis.skillMastery.get(category) :
+        analysis.skillMastery[category];
+
+      const errorPatterns = analysis.errorPatterns?.get ?
+        analysis.errorPatterns.get(category) :
+        analysis.errorPatterns[category];
+
+      const readingLevel = analysis.readingLevel;
+
+      // Base question count ranges by reading level
+      const baseCountByLevel = {
+        'Low Emerging': { min: 5, base: 8, max: 12 },
+        'High Emerging': { min: 6, base: 10, max: 14 },
+        'Developing': { min: 8, base: 12, max: 16 },
+        'Transitioning': { min: 8, base: 12, max: 16 },
+        'At Grade Level': { min: 10, base: 15, max: 18 }
+      };
+
+      const levelConfig = baseCountByLevel[readingLevel] || baseCountByLevel['Low Emerging'];
+      let questionCount = levelConfig.base;
+      let factors = { base: levelConfig.base };
+
+      // Factor 1: Error severity analysis (±40% of base)
+      const errorSeverity = this.calculateCategoryErrorSeverity(errorPatterns, category);
+      let errorAdjustment = 0;
+
+      if (errorSeverity.hasPatterns) {
+        switch (errorSeverity.level) {
+          case 'severe':
+            errorAdjustment = Math.round(levelConfig.base * 0.4); // +40%
+            break;
+          case 'high':
+            errorAdjustment = Math.round(levelConfig.base * 0.25); // +25%
+            break;
+          case 'moderate':
+            errorAdjustment = Math.round(levelConfig.base * 0.1); // +10%
+            break;
+          case 'low':
+            errorAdjustment = Math.round(levelConfig.base * -0.1); // -10%
+            break;
+          case 'minimal':
+            errorAdjustment = Math.round(levelConfig.base * -0.2); // -20%
+            break;
+        }
+      }
+
+      questionCount += errorAdjustment;
+      factors.errorSeverity = {
+        level: errorSeverity.level,
+        adjustment: errorAdjustment,
+        percentage: errorSeverity.score
+      };
+
+      // Factor 2: Mastery level analysis (±25% of base)
+      let masteryAdjustment = 0;
+      if (skillMastery) {
+        const masteryProbability = skillMastery.masteryProbability || 0.5;
+        const score = skillMastery.score || 50;
+
+        if (score < 40) {
+          masteryAdjustment = Math.round(levelConfig.base * 0.25); // +25% for very low scores
+        } else if (score < 55) {
+          masteryAdjustment = Math.round(levelConfig.base * 0.15); // +15% for low scores
+        } else if (score < 65) {
+          masteryAdjustment = Math.round(levelConfig.base * 0.05); // +5% for below average
+        } else if (score >= 75) {
+          masteryAdjustment = Math.round(levelConfig.base * -0.15); // -15% for passing scores
+        }
+      }
+
+      questionCount += masteryAdjustment;
+      factors.masteryLevel = {
+        score: skillMastery?.score || 0,
+        probability: skillMastery?.masteryProbability || 0.5,
+        adjustment: masteryAdjustment
+      };
+
+      // Factor 3: Category complexity multiplier
+      const categoryComplexity = {
+        'Alphabet Knowledge': 0.8,    // Simpler - fewer questions needed
+        'Phonological Awareness': 1.1, // More complex - matching tasks
+        'Decoding': 1.0,              // Standard complexity
+        'Word Recognition': 1.0,       // Standard complexity
+        'Reading Comprehension': 1.2   // Most complex - passages
+      };
+
+      const complexityMultiplier = categoryComplexity[category] || 1.0;
+      const complexityAdjustment = Math.round((questionCount * complexityMultiplier) - questionCount);
+      questionCount = Math.round(questionCount * complexityMultiplier);
+
+      factors.categoryComplexity = {
+        multiplier: complexityMultiplier,
+        adjustment: complexityAdjustment
+      };
+
+      // Factor 4: Intervention history (previous attempts)
+      let historyAdjustment = 0;
+      if (analysis.interventionHistory && Array.isArray(analysis.interventionHistory)) {
+        const categoryHistory = analysis.interventionHistory.filter(h => h.category === category);
+        const attemptCount = categoryHistory.length + 1; // Current attempt
+
+        if (attemptCount > 1) {
+          // Reduce questions for repeat attempts to avoid fatigue
+          historyAdjustment = -Math.min(3, attemptCount - 1);
+        }
+      }
+
+      questionCount += historyAdjustment;
+      factors.interventionHistory = {
+        attemptCount: analysis.interventionHistory ?
+          analysis.interventionHistory.filter(h => h.category === category).length + 1 : 1,
+        adjustment: historyAdjustment
+      };
+
+      // Apply bounds
+      questionCount = Math.max(levelConfig.min, Math.min(levelConfig.max, questionCount));
+
+      // Ensure minimum of 5 questions, maximum of 18
+      questionCount = Math.max(5, Math.min(18, questionCount));
+
+      const result = {
+        questionCount: questionCount,
+        reasoning: {
+          category: category,
+          readingLevel: readingLevel,
+          baseRange: levelConfig,
+          finalCount: questionCount,
+          factors: factors,
+          rationale: this.generateCountRationale(factors, questionCount, levelConfig.base)
+        }
+      };
+
+      console.log(`[DYNAMIC COUNT] Calculated ${questionCount} questions for ${category}:`, result.reasoning.rationale);
+      return result;
+
+    } catch (error) {
+      console.error('[DYNAMIC COUNT] Error calculating question count:', error);
+      // Fallback to safe defaults
+      const fallbackCount = {
+        'Low Emerging': 8,
+        'High Emerging': 10,
+        'Developing': 12,
+        'Transitioning': 12,
+        'At Grade Level': 15
+      };
+
+      return {
+        questionCount: fallbackCount[analysis.readingLevel] || 10,
+        reasoning: {
+          category: category,
+          readingLevel: analysis.readingLevel,
+          finalCount: fallbackCount[analysis.readingLevel] || 10,
+          factors: { error: error.message },
+          rationale: 'Used fallback count due to calculation error'
+        }
+      };
+    }
+  }
+
+  /**
+   * Generate rationale text for question count decision
+   */
+  generateCountRationale(factors, finalCount, baseCount) {
+    const parts = [`Started with base count of ${baseCount} for reading level`];
+
+    if (factors.errorSeverity && factors.errorSeverity.adjustment !== 0) {
+      const direction = factors.errorSeverity.adjustment > 0 ? 'increased' : 'decreased';
+      parts.push(`${direction} by ${Math.abs(factors.errorSeverity.adjustment)} due to ${factors.errorSeverity.level} error severity (${factors.errorSeverity.percentage}% error rate)`);
+    }
+
+    if (factors.masteryLevel && factors.masteryLevel.adjustment !== 0) {
+      const direction = factors.masteryLevel.adjustment > 0 ? 'increased' : 'decreased';
+      parts.push(`${direction} by ${Math.abs(factors.masteryLevel.adjustment)} based on mastery score of ${factors.masteryLevel.score}%`);
+    }
+
+    if (factors.categoryComplexity && factors.categoryComplexity.adjustment !== 0) {
+      const direction = factors.categoryComplexity.adjustment > 0 ? 'increased' : 'decreased';
+      parts.push(`${direction} by ${Math.abs(factors.categoryComplexity.adjustment)} for category complexity (${factors.categoryComplexity.multiplier}x)`);
+    }
+
+    if (factors.interventionHistory && factors.interventionHistory.adjustment !== 0) {
+      parts.push(`reduced by ${Math.abs(factors.interventionHistory.adjustment)} for repeat attempt (attempt #${factors.interventionHistory.attemptCount})`);
+    }
+
+    return `${parts.join(', ')} = ${finalCount} total questions`;
+  }
+
+  /**
+   * Get available questions from templates only - No programmatic generation
+   * Teachers must provide all intervention questions through templates
+   * System acts as "doctor providing prescription" while teachers provide "treatment"
+   */
+  async getQuestionsFromTemplatesOnly(category, readingLevel, errorPatterns, options = {}) {
+    try {
+      // Calculate optimal question count using prescriptive analytics (the "prescription")
+      let targetQuestionCount = 10; // Default fallback
+      let countCalculation = null;
+
+      if (options.prescriptiveAnalysis) {
+        countCalculation = this.calculateOptimalQuestionCount(options.prescriptiveAnalysis, category);
+        targetQuestionCount = countCalculation.questionCount;
+      } else {
+        console.warn('[TEMPLATE-ONLY] No prescriptive analysis provided, using default count of 10');
+      }
+
+      console.log(`[TEMPLATE-ONLY] Starting template retrieval for ${category} at ${readingLevel} level with ${targetQuestionCount} questions needed`);
+
+      // Get all available templates for this category
+      let availableTemplates = [];
+      let templateQuestions = [];
+
+      try {
+        if (category === 'Reading Comprehension') {
+          // Use sentence templates for Reading Comprehension
+          availableTemplates = await this.getSentenceTemplates(readingLevel);
+          templateQuestions = await this.generateQuestionsFromSentenceTemplates(
+            availableTemplates,
+            targetQuestionCount
+          );
+        } else {
+          // Use regular templates for other categories
+          availableTemplates = await this.getTemplateQuestions(category);
+          templateQuestions = await this.generateQuestionsFromTemplates(
+            availableTemplates,
+            category,
+            errorPatterns,
+            targetQuestionCount
+          );
+        }
+
+        console.log(`[TEMPLATE-ONLY] Found ${availableTemplates.length} available templates, generated ${templateQuestions.length} questions`);
+      } catch (error) {
+        console.error('[TEMPLATE-ONLY] Template generation failed:', error.message);
+        templateQuestions = [];
+      }
+
+      // Analyze template availability vs requirement
+      const templateShortage = targetQuestionCount - templateQuestions.length;
+      const hasShortage = templateShortage > 0;
+
+      const result = {
+        questions: templateQuestions,
+        prescription: {
+          category: category,
+          questionCount: targetQuestionCount,
+          focusAreas: this.determineFocusAreas(errorPatterns, category),
+          errorSeverity: this.calculateCategoryErrorSeverity(errorPatterns, category),
+          countRationale: countCalculation ? countCalculation.reasoning.rationale : 'Default count used'
+        },
+        templateAvailability: {
+          availableTemplates: availableTemplates.length,
+          generatedQuestions: templateQuestions.length,
+          requiredQuestions: targetQuestionCount,
+          hasShortage: hasShortage,
+          shortageAmount: hasShortage ? templateShortage : 0,
+          shortageMessage: hasShortage ?
+            `Need ${templateShortage} more questions. Teacher should create additional templates.` :
+            'Sufficient templates available'
+        },
+        teacherAction: hasShortage ? 'create_more_templates' : 'use_available_templates'
+      };
+
+      console.log(`[TEMPLATE-ONLY] Template analysis:`, {
+        available: availableTemplates.length,
+        generated: templateQuestions.length,
+        required: targetQuestionCount,
+        shortage: templateShortage,
+        teacherAction: result.teacherAction
+      });
+
+      return result;
+
+    } catch (error) {
+      console.error('[TEMPLATE-ONLY] Error in template-only question retrieval:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate questions from templates based on error patterns
+   */
+  async generateQuestionsFromTemplates(templates, category, errorPatterns, maxQuestions) {
+    try {
+      const questions = [];
+
+      if (!templates || templates.length === 0) {
+        console.log(`[TEMPLATES] No templates available for ${category}`);
+        return questions;
+      }
+
+      // Filter templates based on error patterns
+      const relevantTemplates = this.filterTemplatesByErrorPatterns(templates, errorPatterns);
+      console.log(`[TEMPLATES] Found ${relevantTemplates.length} relevant templates for ${category}`);
+
+      for (let i = 0; i < Math.min(maxQuestions, relevantTemplates.length); i++) {
+        const template = relevantTemplates[i];
+
+        // Get applicable choices for this template
+        const choices = await this.getTemplateChoices(template.applicableChoiceTypes || []);
+
+        // Build question from template
+        const question = await this.buildQuestionFromTemplate(template, choices, i + 1);
+        if (question) {
+          questions.push(question);
+        }
+      }
+
+      return questions;
+    } catch (error) {
+      console.error('[TEMPLATES] Error generating questions from templates:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Generate questions from sentence templates for Reading Comprehension
+   */
+  async generateQuestionsFromSentenceTemplates(sentenceTemplates, maxQuestions) {
+    try {
+      const questions = [];
+
+      if (!sentenceTemplates || sentenceTemplates.length === 0) {
+        console.log('[SENTENCE_TEMPLATES] No sentence templates available for Reading Comprehension');
+        return questions;
+      }
+
+      console.log(`[SENTENCE_TEMPLATES] Found ${sentenceTemplates.length} sentence templates`);
+
+      for (let i = 0; i < Math.min(maxQuestions, sentenceTemplates.length); i++) {
+        const template = sentenceTemplates[i];
+
+        // Generate questions from each sentence template
+        if (template.sentenceQuestions && template.sentenceQuestions.length > 0) {
+          for (let j = 0; j < template.sentenceQuestions.length && questions.length < maxQuestions; j++) {
+            const sentenceQuestion = template.sentenceQuestions[j];
+
+            const question = {
+              questionId: `q_int_rc_${String(questions.length + 1).padStart(3, '0')}`,
+              source: 'sentence_template',
+              sourceQuestionId: template._id.toString(),
+              questionType: 'multiple_choice',
+              questionText: sentenceQuestion.questionText,
+              questionImage: null,
+              questionValue: null,
+              passageTitle: template.title,
+              passageText: template.sentenceText,
+              choiceOptions: sentenceQuestion.sentenceOptionAnswers?.map((option, index) => ({
+                optionId: `opt_${index + 1}`,
+                optionText: option,
+                isCorrect: option === sentenceQuestion.sentenceCorrectAnswer
+              })) || [],
+              difficulty: 0.0,
+              discrimination: 1.0,
+              targetSkill: 'reading_comprehension',
+              targetElement: 'passage_based'
+            };
+
+            questions.push(question);
+          }
+        }
+      }
+
+      return questions;
+    } catch (error) {
+      console.error('[SENTENCE_TEMPLATES] Error generating questions from sentence templates:', error);
+      return [];
+    }
+  }
+
+
+
+  /**
+   * Helper method to build question from template
+   */
+  async buildQuestionFromTemplate(template, choices, questionNumber) {
+    try {
+      const questionId = `q_int_${template.category.toLowerCase().replace(/\s+/g, '_')}_${String(questionNumber).padStart(3, '0')}`;
+
+      const question = {
+        questionId: questionId,
+        source: 'template_question',
+        sourceQuestionId: template._id.toString(),
+        questionType: template.questionType,
+        questionText: template.templatetext,
+        questionImage: null,
+        questionValue: null,
+        difficulty: 0,
+        discrimination: 1.0,
+        targetSkill: 'error_focused',
+        targetElement: 'template_based'
+      };
+
+      // Add category-specific question data based on question type
+      if (template.questionType === 'malapantig' && template.category === 'Phonological Awareness') {
+        // Build matching question structure
+        const audioTexts = choices.slice(0, template.matchCount || 3).map(c => c.choiceValue);
+        const matchingOptions = choices.slice(0, template.matchCount || 3).map(c => c.correctMatch || c.choiceValue);
+
+        question.questionSet = {
+          audioTexts: audioTexts,
+          matchingOptions: matchingOptions,
+          correctPairs: audioTexts.map(audio => ({
+            audio: audio,
+            match: choices.find(c => c.choiceValue === audio)?.correctMatch || audio
+          }))
+        };
+      } else {
+        // Build choice options for multiple choice questions
+        const selectedChoices = choices.slice(0, 4); // Get up to 4 choices
+        question.choiceOptions = selectedChoices.map((choice, index) => ({
+          optionId: `opt_${index + 1}`,
+          optionText: choice.choiceValue,
+          isCorrect: index === 0 // First option is correct by default
+        }));
+      }
+
+      return question;
+    } catch (error) {
+      console.error('[TEMPLATE_BUILD] Error building question from template:', error);
+      return null;
+    }
+  }
+
+
+
+  /**
+   * Helper methods for strategy determination
+   */
+  determineSelectionMethod(errorPatterns) {
+    if (!errorPatterns || Object.keys(errorPatterns).length === 0) {
+      return 'general_practice';
+    }
+    return 'error_focused';
+  }
+
+  determineFocusAreas(errorPatterns, category) {
+    const focusAreas = {};
+
+    if (!errorPatterns) {
+      focusAreas['general_practice'] = 100;
+      return focusAreas;
+    }
+
+    // Category-specific focus area determination
+    switch (category) {
+      case 'Alphabet Knowledge':
+        if (errorPatterns.patinig_errors) {
+          focusAreas['patinig_practice'] = 60;
+          focusAreas['general_practice'] = 40;
+        } else if (errorPatterns.katinig_errors) {
+          focusAreas['katinig_practice'] = 60;
+          focusAreas['general_practice'] = 40;
+        } else {
+          focusAreas['general_practice'] = 100;
+        }
+        break;
+      case 'Phonological Awareness':
+        if (errorPatterns.matching_errors) {
+          focusAreas['sound_matching'] = 70;
+          focusAreas['general_practice'] = 30;
+        } else {
+          focusAreas['general_practice'] = 100;
+        }
+        break;
+      default:
+        focusAreas['general_practice'] = 100;
+    }
+
+    return focusAreas;
+  }
+
+  /**
+   * Filter templates based on error patterns
+   */
+  filterTemplatesByErrorPatterns(templates, errorPatterns) {
+    if (!errorPatterns || Object.keys(errorPatterns).length === 0) {
+      return templates; // Return all if no specific errors
+    }
+
+    // Simple filtering - can be enhanced based on specific error pattern logic
+    return templates;
+  }
 }
 
 module.exports = new InterventionService(); 

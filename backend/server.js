@@ -443,6 +443,15 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load intervention assessment routes:', error.message);
     }
 
+    // Load templates routes (questions, choices, sentences for intervention generation)
+    try {
+      const templatesRoutes = require('./routes/Teachers/templatesRoutes');
+      app.use('/api/templates', templatesRoutes);
+      console.log('✅ Loaded templates routes at /api/templates/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load templates routes:', error.message);
+    }
+
     // Load student routes
     try {
       app.use('/api/student', require('./routes/Teachers/studentRoutes'));
@@ -1016,6 +1025,11 @@ connectDB().then(async (connected) => {
       const uploadRoutes = require('./routes/uploadRoutes');
       app.use('/api/uploads', uploadRoutes);
       console.log('✅ Loaded upload routes at /api/uploads/*');
+
+      // Test routes for data generation
+      const testDataRoutes = require('./routes/generateTestData');
+      app.use('/api/test', testDataRoutes);
+      console.log('✅ Loaded test data routes at /api/test/*');
     } catch (error) {
       console.warn('⚠️ Could not load upload routes:', error.message);
     }

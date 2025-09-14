@@ -123,7 +123,7 @@ class MathematicalModelsService {
     
     return {
       finalMastery: Math.round(currentMastery * 1000) / 1000,
-      responseHistory: responseHistory.slice(-10) // Keep last 10 responses
+      responseHistory: responseHistory // Keep ALL responses for comprehensive analysis
     };
   }
 
@@ -406,7 +406,7 @@ class MathematicalModelsService {
     
     return {
       finalMastery: Math.round(currentMastery * 1000) / 1000,
-      responseHistory: responseHistory.slice(-10),
+      responseHistory: responseHistory, // Keep ALL responses for comprehensive analysis
       timeAdjusted: true
     };
   }

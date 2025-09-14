@@ -10,7 +10,8 @@ const {
   createCategoryResult,
   updateCategoryResult,
   deleteCategoryResult,
-  getCategoryResultById
+  getCategoryResultById,
+  generateCategoryResultsFromResponses
 } = require('../../controllers/Teachers/ManageProgress/categoryProgressController');
 
 // Validation middleware
@@ -94,6 +95,9 @@ const validateCreateCategoryResult = (req, res, next) => {
 
 // CREATE - Create new category result
 router.post('/', auth, validateCreateCategoryResult, createCategoryResult);
+
+// CREATE - Generate category results from student responses
+router.post('/generate/:studentId', auth, validateStudentId, generateCategoryResultsFromResponses);
 
 // READ - Get all students category progress summary  
 router.get('/all', auth, getAllStudentsCategoryProgress);

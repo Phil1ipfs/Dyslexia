@@ -239,8 +239,7 @@
   "choiceValue": "Sumbrero",
   "choiceImage": "https://literexia-bucket.s3.ap-southeast-2",
   "correctRhyme": [
-    "LIB",
-    "RO"
+    "LIBRO"
   ],
   "isActive": true,
   "createdAt": {

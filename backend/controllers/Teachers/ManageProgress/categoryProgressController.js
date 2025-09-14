@@ -359,6 +359,264 @@ const getCategoryResultById = async (req, res) => {
   }
 };
 
+// Check if student can access a specific category (prerequisite validation)
+const checkCategoryAccess = async (req, res) => {
+  try {
+    const { studentId, category } = req.params;
+
+    // Convert studentId to integer
+    const studentIdInt = parseInt(studentId);
+    if (isNaN(studentIdInt)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid studentId. Must be a valid integer.'
+      });
+    }
+
+    if (!category) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category is required',
+        errors: [{ field: 'category', message: 'Category name is required' }]
+      });
+    }
+
+    console.log(`Checking category access for student ${studentIdInt} to category ${category}`);
+
+    const accessResult = await CategoryResultsService.checkCategoryAccess(studentIdInt, category);
+
+    if (accessResult.success) {
+      res.json({
+        success: true,
+        allowed: accessResult.allowed,
+        category: category,
+        studentId: studentIdInt,
+        reason: accessResult.reason,
+        prerequisites: accessResult.prerequisites,
+        nextRequired: accessResult.nextRequired,
+        blockingFactors: accessResult.blockingFactors,
+        message: accessResult.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        allowed: false,
+        error: accessResult.error,
+        message: 'Error checking category access'
+      });
+    }
+  } catch (error) {
+    console.error('Error checking category access:', error);
+    res.status(500).json({
+      success: false,
+      allowed: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Get next available category for student assessment
+const getNextCategoryForAssessment = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    // Convert studentId to integer
+    const studentIdInt = parseInt(studentId);
+    if (isNaN(studentIdInt)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid studentId. Must be a valid integer.'
+      });
+    }
+
+    console.log(`Getting next available category for student ${studentIdInt}`);
+
+    const nextCategoryResult = await CategoryResultsService.getNextCategoryForAssessment(studentIdInt);
+
+    if (nextCategoryResult.success) {
+      res.json({
+        success: true,
+        studentId: studentIdInt,
+        hasNext: nextCategoryResult.hasNext,
+        nextCategory: nextCategoryResult.nextCategory || null,
+        reason: nextCategoryResult.reason,
+        currentScore: nextCategoryResult.currentScore || null,
+        requiresIntervention: nextCategoryResult.requiresIntervention || false,
+        readyForProgression: nextCategoryResult.readyForProgression || false,
+        currentLevel: nextCategoryResult.currentLevel || null,
+        nextRequired: nextCategoryResult.nextRequired || null,
+        blockingFactors: nextCategoryResult.blockingFactors || []
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        hasNext: false,
+        error: nextCategoryResult.error,
+        message: 'Error getting next category'
+      });
+    }
+  } catch (error) {
+    console.error('Error getting next category for assessment:', error);
+    res.status(500).json({
+      success: false,
+      hasNext: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Get complete assessment flow summary for student
+const getAssessmentFlowSummary = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    // Convert studentId to integer
+    const studentIdInt = parseInt(studentId);
+    if (isNaN(studentIdInt)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid studentId. Must be a valid integer.'
+      });
+    }
+
+    console.log(`Getting assessment flow summary for student ${studentIdInt}`);
+
+    const flowSummary = await CategoryResultsService.getAssessmentFlowSummary(studentIdInt);
+
+    if (flowSummary.success) {
+      res.json({
+        success: true,
+        studentId: flowSummary.studentId,
+        readingLevel: flowSummary.readingLevel,
+        totalCategories: flowSummary.totalCategories,
+        overallProgress: flowSummary.overallProgress,
+        categoryProgress: flowSummary.categoryProgress,
+        nextAvailable: flowSummary.nextAvailable,
+        recommendedAction: flowSummary.recommendedAction
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: flowSummary.error,
+        message: 'Error getting assessment flow summary'
+      });
+    }
+  } catch (error) {
+    console.error('Error getting assessment flow summary:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Create category result with prerequisite validation
+const createCategoryResultWithPrerequisites = async (req, res) => {
+  try {
+    const { studentId, category, ...updateData } = req.body;
+
+    // Validate required fields
+    if (!studentId || !category) {
+      return res.status(400).json({
+        success: false,
+        message: 'studentId and category are required',
+        errors: [
+          { field: 'studentId', message: 'Student ID is required' },
+          { field: 'category', message: 'Category is required' }
+        ]
+      });
+    }
+
+    const studentIdInt = parseInt(studentId);
+    if (isNaN(studentIdInt)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid studentId. Must be a valid integer.'
+      });
+    }
+
+    console.log(`Creating category result with prerequisites for student ${studentIdInt}, category ${category}`);
+
+    const createResult = await CategoryResultsService.updateCategoryResultWithPrerequisites({
+      studentId: studentIdInt,
+      category: category,
+      ...updateData
+    });
+
+    if (createResult.success) {
+      res.status(201).json({
+        success: true,
+        message: 'Category result created successfully with prerequisite validation',
+        data: createResult.data,
+        nextAvailable: createResult.nextAvailable,
+        accessValidated: createResult.accessValidated
+      });
+    } else if (createResult.error === 'Category access denied') {
+      res.status(403).json({
+        success: false,
+        message: 'Category access denied - prerequisites not met',
+        reason: createResult.reason,
+        blockingFactors: createResult.blockingFactors,
+        nextRequired: createResult.nextRequired,
+        details: createResult.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create category result',
+        error: createResult.error,
+        reason: createResult.reason
+      });
+    }
+  } catch (error) {
+    console.error('Error creating category result with prerequisites:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Generate category results from student responses
+const generateCategoryResultsFromResponses = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { category } = req.body; // Optional - if provided, only process this category
+
+    console.log(`Generating category results from responses for student: ${studentId}${category ? ` (category: ${category})` : ''}`);
+
+    const result = await CategoryResultsService.generateCategoryResultsFromResponses(
+      parseInt(studentId),
+      category
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Category results generated successfully from student responses',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error generating category results from responses:', error);
+
+    if (error.message.includes('not found')) {
+      res.status(404).json({
+        success: false,
+        message: error.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: error.message
+      });
+    }
+  }
+};
+
 module.exports = {
   getCategoryProgress,
   getSpecificCategoryProgress,
@@ -366,5 +624,12 @@ module.exports = {
   createCategoryResult,
   updateCategoryResult,
   deleteCategoryResult,
-  getCategoryResultById
+  getCategoryResultById,
+  // New prerequisite-aware endpoints
+  checkCategoryAccess,
+  getNextCategoryForAssessment,
+  getAssessmentFlowSummary,
+  createCategoryResultWithPrerequisites,
+  // Generate from responses
+  generateCategoryResultsFromResponses
 };

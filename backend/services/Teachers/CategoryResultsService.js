@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const User = require('../../models/userModel');
 const CategoryResult = require('../../models/Teachers/ManageProgress/categoryResultModel');
 const IntegrationTriggerService = require('./PrescriptiveAnalytics/integrationTriggerService');
+const AssessmentFlowControlService = require('./AssessmentFlowControlService');
 
 /**
  * Service for handling category results data
@@ -248,6 +249,175 @@ class CategoryResultsService {
   }
 
   /**
+   * Generate category results from student responses
+   * @param {number} studentId - Student ID
+   * @param {string} category - Category name (optional, if not provided processes all categories)
+   * @returns {Promise<Object>} Generated category results
+   */
+  static async generateCategoryResultsFromResponses(studentId, category = null) {
+    try {
+      console.log(`[CATEGORY RESULTS] Generating category results from responses for student ${studentId}`);
+
+      // Get student data to determine reading level
+      let student = await User.findOne({ idNumber: parseInt(studentId) });
+      let readingLevel = 'High Emerging'; // Default based on your data
+
+      if (student) {
+        readingLevel = student.readingLevel || 'High Emerging';
+        console.log(`[CATEGORY RESULTS] Found student ${studentId} with reading level: ${readingLevel}`);
+      } else {
+        // Try to infer reading level from responses
+        console.log(`[CATEGORY RESULTS] Student ${studentId} not found in users collection, checking responses for reading level`);
+
+        const StudentResponse = require('../../models/Teachers/ManageProgress/studentResponseModel');
+        const sampleResponse = await StudentResponse.findOne({ studentId: parseInt(studentId) });
+
+        if (sampleResponse && sampleResponse.readingLevel) {
+          readingLevel = sampleResponse.readingLevel;
+          console.log(`[CATEGORY RESULTS] Inferred reading level from responses: ${readingLevel}`);
+        } else {
+          console.log(`[CATEGORY RESULTS] Using default reading level: ${readingLevel}`);
+        }
+      }
+
+      // Get all student responses
+      const StudentResponse = require('../../models/Teachers/ManageProgress/studentResponseModel');
+      const query = { studentId: parseInt(studentId) };
+      if (category) {
+        query.category = category;
+      }
+
+      const responses = await StudentResponse.find(query)
+        .sort({ answeredAt: 1 })
+        .lean();
+
+      if (responses.length === 0) {
+        throw new Error(`No responses found for student ${studentId}${category ? ` in category ${category}` : ''}`);
+      }
+
+      console.log(`[CATEGORY RESULTS] Found ${responses.length} responses for student ${studentId}`);
+
+      // Group responses by category
+      const responsesByCategory = {};
+      responses.forEach(response => {
+        const cat = response.category;
+        if (!responsesByCategory[cat]) {
+          responsesByCategory[cat] = [];
+        }
+        responsesByCategory[cat].push(response);
+      });
+
+      // Process each category
+      const categories = [];
+
+      for (const [categoryName, categoryResponses] of Object.entries(responsesByCategory)) {
+        console.log(`[CATEGORY RESULTS] Processing ${categoryResponses.length} responses for ${categoryName}`);
+
+        // Calculate scores
+        let totalQuestions = categoryResponses.length;
+        let correctAnswers = 0;
+        let totalMatches = 0;
+        let correctMatches = 0;
+
+        // Handle different question types
+        if (categoryName === 'Phonological Awareness') {
+          // For PA, count total matches and correct matches
+          categoryResponses.forEach(response => {
+            if (response.totalMatches) {
+              totalMatches += response.totalMatches;
+              correctMatches += response.correctMatches || 0;
+            } else {
+              // Fallback for older data structure
+              totalQuestions++;
+              if (response.isCorrect) correctAnswers++;
+            }
+          });
+
+          if (totalMatches > 0) {
+            const score = Math.round((correctMatches / totalMatches) * 100);
+            categories.push({
+              categoryName: categoryName,
+              totalQuestions: categoryResponses.length,
+              totalPossibleMatches: totalMatches,
+              correctMatches: correctMatches,
+              score: score,
+              isPassed: score >= 75,
+              isCompleted: true,
+              interventionRequired: score < 75,
+              responseDetails: categoryResponses.map(r => ({
+                questionId: r.questionId,
+                isCorrect: r.isCorrect,
+                totalMatches: r.totalMatches || 0,
+                correctMatches: r.correctMatches || 0,
+                answeredAt: r.answeredAt
+              }))
+            });
+          } else {
+            // Fallback calculation
+            const score = Math.round((correctAnswers / totalQuestions) * 100);
+            categories.push({
+              categoryName: categoryName,
+              totalQuestions: totalQuestions,
+              correctAnswers: correctAnswers,
+              score: score,
+              isPassed: score >= 75,
+              isCompleted: true,
+              interventionRequired: score < 75,
+              responseDetails: categoryResponses.map(r => ({
+                questionId: r.questionId,
+                isCorrect: r.isCorrect,
+                answeredAt: r.answeredAt
+              }))
+            });
+          }
+        } else {
+          // For other categories, count correct answers
+          categoryResponses.forEach(response => {
+            if (response.isCorrect) {
+              correctAnswers++;
+            }
+          });
+
+          const score = Math.round((correctAnswers / totalQuestions) * 100);
+          categories.push({
+            categoryName: categoryName,
+            totalQuestions: totalQuestions,
+            correctAnswers: correctAnswers,
+            score: score,
+            isPassed: score >= 75,
+            isCompleted: true,
+            interventionRequired: score < 75,
+            responseDetails: categoryResponses.map(r => ({
+              questionId: r.questionId,
+              isCorrect: r.isCorrect,
+              answeredAt: r.answeredAt
+            }))
+          });
+        }
+      }
+
+      // Create category result document
+      const categoryResultData = {
+        studentId: parseInt(studentId),
+        assessmentDate: new Date(),
+        readingLevel: readingLevel,
+        categories: categories
+      };
+
+      // Use existing createCategoryResult method
+      const createdResult = await this.createCategoryResult(categoryResultData);
+
+      console.log(`[CATEGORY RESULTS] Successfully generated category results for student ${studentId}`);
+
+      return createdResult;
+
+    } catch (error) {
+      console.error(`[CATEGORY RESULTS] Error generating category results from responses:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Delete category result and associated prescriptive analysis
    * 
    * @param {string} categoryResultId - Category result ID to delete
@@ -481,26 +651,16 @@ class CategoryResultsService {
         throw new Error(`User with studentId ${studentId} not found`);
       }
 
-      // Calculate new reading percentage based on level progression
-      const readingPercentages = {
-        'High Emerging': 40,
-        'Developing': 60,
-        'Transitioning': 80,
-        'At Grade Level': 100
-      };
-
-      const newReadingPercentage = readingPercentages[nextLevel] || user.readingPercentage;
-
-      // Update user record
+      // Update user record - only readingLevel, NOT readingPercentage
+      // readingPercentage should only be updated during pre-assessment
       await User.findByIdAndUpdate(user._id, {
         $set: {
           readingLevel: nextLevel,
-          readingPercentage: newReadingPercentage,
           updatedAt: new Date()
         }
       });
 
-      console.log(`[READING LEVEL PROGRESSION] Updated user ${studentId}: ${currentReadingLevel} → ${nextLevel} (${newReadingPercentage}%)`);
+      console.log(`[READING LEVEL PROGRESSION] Updated user ${studentId}: ${currentReadingLevel} → ${nextLevel} (readingPercentage preserved: ${user.readingPercentage}%)`);
 
       // Create new category_results record for the next level
       const nextLevelCategories = this.getCategoriesForReadingLevel(nextLevel);
@@ -543,10 +703,10 @@ class CategoryResultsService {
         levelChanged: true,
         currentLevel: currentReadingLevel,
         newLevel: nextLevel,
-        newReadingPercentage: newReadingPercentage,
+        readingPercentagePreserved: user.readingPercentage, // Unchanged from pre-assessment
         newCategoryResultId: createdResult._id,
         requiredCategories: nextLevelCategories,
-        message: `Successfully progressed from ${currentReadingLevel} to ${nextLevel}`
+        message: `Successfully progressed from ${currentReadingLevel} to ${nextLevel} (readingPercentage preserved from pre-assessment)`
       };
 
     } catch (error) {
@@ -663,6 +823,199 @@ class CategoryResultsService {
       currentInterventionId: category.currentInterventionId || null,
       interventionHistory: category.interventionHistory || []
     }));
+  }
+
+  /**
+   * Check if student can access a specific category (with prerequisite validation)
+   * Integrates with AssessmentFlowControlService for sequential access control
+   *
+   * @param {number} studentId - Student ID
+   * @param {string} category - Category to check access for
+   * @returns {Object} Access status and details
+   */
+  static async checkCategoryAccess(studentId, category) {
+    try {
+      console.log(`[CATEGORY ACCESS] Checking access for student ${studentId} to category ${category}`);
+
+      // Use flow control service for prerequisite checking
+      const accessResult = await AssessmentFlowControlService.checkCategoryAccess(studentId, category);
+
+      return {
+        success: true,
+        allowed: accessResult.allowed,
+        category: category,
+        reason: accessResult.reason,
+        prerequisites: accessResult.prerequisites || [],
+        nextRequired: accessResult.nextRequired || null,
+        blockingFactors: accessResult.blockingFactors || [],
+        message: accessResult.message || null
+      };
+
+    } catch (error) {
+      console.error('[CATEGORY ACCESS] Error checking category access:', error);
+      return {
+        success: false,
+        allowed: false,
+        error: error.message,
+        reason: 'System error during access check'
+      };
+    }
+  }
+
+  /**
+   * Get next available category for student assessment
+   * Uses sequential flow control to determine what student should take next
+   *
+   * @param {number} studentId - Student ID
+   * @returns {Object} Next category recommendation
+   */
+  static async getNextCategoryForAssessment(studentId) {
+    try {
+      console.log(`[NEXT CATEGORY] Getting next category for student ${studentId}`);
+
+      const nextAvailable = await AssessmentFlowControlService.getNextAvailableCategory(studentId);
+
+      if (nextAvailable.hasNext) {
+        return {
+          success: true,
+          hasNext: true,
+          nextCategory: nextAvailable.nextCategory,
+          reason: nextAvailable.reason,
+          currentScore: nextAvailable.currentScore || 0,
+          requiresIntervention: nextAvailable.requiresIntervention || false
+        };
+      } else {
+        return {
+          success: true,
+          hasNext: false,
+          reason: nextAvailable.reason,
+          readyForProgression: nextAvailable.readyForProgression || false,
+          currentLevel: nextAvailable.currentLevel,
+          nextRequired: nextAvailable.nextRequired || null,
+          blockingFactors: nextAvailable.blockingFactors || []
+        };
+      }
+
+    } catch (error) {
+      console.error('[NEXT CATEGORY] Error getting next category:', error);
+      return {
+        success: false,
+        hasNext: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Get complete assessment flow summary for student
+   * Shows progress across all categories with prerequisite information
+   *
+   * @param {number} studentId - Student ID
+   * @returns {Object} Complete flow summary
+   */
+  static async getAssessmentFlowSummary(studentId) {
+    try {
+      console.log(`[FLOW SUMMARY] Getting assessment flow summary for student ${studentId}`);
+
+      const flowSummary = await AssessmentFlowControlService.getAssessmentFlowSummary(studentId);
+
+      if (flowSummary.error) {
+        return {
+          success: false,
+          error: flowSummary.error,
+          message: flowSummary.message
+        };
+      }
+
+      return {
+        success: true,
+        studentId: flowSummary.studentId,
+        readingLevel: flowSummary.readingLevel,
+        totalCategories: flowSummary.totalCategories,
+        overallProgress: flowSummary.overallProgress,
+        categoryProgress: flowSummary.categoryProgress,
+        nextAvailable: flowSummary.nextAvailable,
+        recommendedAction: this.determineRecommendedAction(flowSummary)
+      };
+
+    } catch (error) {
+      console.error('[FLOW SUMMARY] Error getting flow summary:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Determine recommended action based on flow summary
+   * Helper method to provide clear guidance on what student should do next
+   *
+   * @param {Object} flowSummary - Flow summary from AssessmentFlowControlService
+   * @returns {string} Recommended action
+   */
+  static determineRecommendedAction(flowSummary) {
+    if (flowSummary.nextAvailable.hasNext) {
+      if (flowSummary.nextAvailable.requiresIntervention) {
+        return 'complete_intervention';
+      } else {
+        return 'take_next_category';
+      }
+    } else if (flowSummary.nextAvailable.readyForProgression) {
+      return 'ready_for_level_progression';
+    } else if (flowSummary.nextAvailable.nextRequired) {
+      return 'complete_prerequisite';
+    } else {
+      return 'assessment_complete';
+    }
+  }
+
+  /**
+   * Validate category result update with prerequisite checking
+   * Enhanced version of updateCategoryResult that enforces sequential access
+   *
+   * @param {Object} updateData - Category result update data
+   * @returns {Object} Update result with prerequisite validation
+   */
+  static async updateCategoryResultWithPrerequisites(updateData) {
+    try {
+      const { studentId, category } = updateData;
+
+      // First check if student can access this category
+      const accessCheck = await this.checkCategoryAccess(studentId, category);
+
+      if (!accessCheck.allowed) {
+        return {
+          success: false,
+          error: 'Category access denied',
+          reason: accessCheck.reason,
+          blockingFactors: accessCheck.blockingFactors,
+          nextRequired: accessCheck.nextRequired,
+          message: `Cannot update results for ${category}: ${accessCheck.reason}`
+        };
+      }
+
+      // If access is allowed, proceed with normal update
+      console.log(`[CATEGORY UPDATE] Prerequisites met for ${category} - proceeding with update`);
+      const updateResult = await this.updateCategoryResult(updateData);
+
+      // Add flow control information to the result
+      if (updateResult.success) {
+        const nextCategory = await this.getNextCategoryForAssessment(studentId);
+        updateResult.nextAvailable = nextCategory;
+        updateResult.accessValidated = true;
+      }
+
+      return updateResult;
+
+    } catch (error) {
+      console.error('[CATEGORY UPDATE] Error updating with prerequisites:', error);
+      return {
+        success: false,
+        error: error.message,
+        reason: 'System error during prerequisite-validated update'
+      };
+    }
   }
 }
 
