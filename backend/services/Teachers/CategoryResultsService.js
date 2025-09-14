@@ -169,7 +169,8 @@ class CategoryResultsService {
 
   /**
    * Update existing category result and regenerate prescriptive analysis if needed
-   * 
+   * Also handles automatic reading level progression when all categories are passed
+   *
    * @param {string} categoryResultId - Category result ID
    * @param {Object} updateData - Data to update
    * @returns {Promise<Object>} - Updated category result
@@ -188,13 +189,29 @@ class CategoryResultsService {
       // Update categories if provided
       if (updateData.categories) {
         updateData.categories = this.normalizeCategories(updateData.categories);
-        
+
         // Recalculate overall stats
         const overallStats = this.calculateOverallStats(updateData.categories);
         updateData.overallScore = overallStats.overallScore;
         updateData.completedCategories = updateData.categories.length;
         updateData.totalCategories = updateData.categories.length;
         updateData.allCategoriesPassed = overallStats.passedCategories === updateData.categories.length;
+
+        // Check for reading level progression if all categories passed
+        if (updateData.allCategoriesPassed && !existingResult.allCategoriesPassed) {
+          console.log(`[CATEGORY RESULTS] Student ${existingResult.studentId} passed all categories for ${existingResult.readingLevel}`);
+
+          try {
+            const progressionResult = await this.processReadingLevelProgression(existingResult.studentId, existingResult.readingLevel);
+            if (progressionResult.levelChanged) {
+              updateData.readingLevelUpdated = true;
+              console.log(`[CATEGORY RESULTS] Reading level progression triggered: ${existingResult.readingLevel} → ${progressionResult.newLevel}`);
+            }
+          } catch (progressionError) {
+            console.error('[CATEGORY RESULTS] Error processing reading level progression:', progressionError);
+            // Don't fail the update if progression fails
+          }
+        }
       }
 
       // Update the document using Mongoose
@@ -423,12 +440,212 @@ class CategoryResultsService {
     }));
   }
 
+  /**
+   * Process reading level progression when student passes all categories
+   * Automatically updates user's reading level and creates new category_results record
+   *
+   * @param {number} studentId - Student ID
+   * @param {string} currentReadingLevel - Current reading level
+   * @returns {Promise<Object>} - Progression result
+   */
+  static async processReadingLevelProgression(studentId, currentReadingLevel) {
+    try {
+      console.log(`[READING LEVEL PROGRESSION] Processing progression for student ${studentId} from ${currentReadingLevel}`);
+
+      // Get next reading level
+      const readingLevelProgression = {
+        'Low Emerging': 'High Emerging',
+        'High Emerging': 'Developing',
+        'Developing': 'Transitioning',
+        'Transitioning': 'At Grade Level',
+        'At Grade Level': null // Already at highest level
+      };
+
+      const nextLevel = readingLevelProgression[currentReadingLevel];
+
+      if (!nextLevel) {
+        console.log(`[READING LEVEL PROGRESSION] Student ${studentId} already at highest level: ${currentReadingLevel}`);
+        return {
+          levelChanged: false,
+          currentLevel: currentReadingLevel,
+          newLevel: null,
+          message: 'Already at highest reading level'
+        };
+      }
+
+      // Update user's reading level and reading percentage
+      const User = require('../../models/userModel');
+      const user = await User.findOne({ studentId: studentId });
+
+      if (!user) {
+        throw new Error(`User with studentId ${studentId} not found`);
+      }
+
+      // Calculate new reading percentage based on level progression
+      const readingPercentages = {
+        'High Emerging': 40,
+        'Developing': 60,
+        'Transitioning': 80,
+        'At Grade Level': 100
+      };
+
+      const newReadingPercentage = readingPercentages[nextLevel] || user.readingPercentage;
+
+      // Update user record
+      await User.findByIdAndUpdate(user._id, {
+        $set: {
+          readingLevel: nextLevel,
+          readingPercentage: newReadingPercentage,
+          updatedAt: new Date()
+        }
+      });
+
+      console.log(`[READING LEVEL PROGRESSION] Updated user ${studentId}: ${currentReadingLevel} → ${nextLevel} (${newReadingPercentage}%)`);
+
+      // Create new category_results record for the next level
+      const nextLevelCategories = this.getCategoriesForReadingLevel(nextLevel);
+      const initialCategoryData = nextLevelCategories.map(categoryName => ({
+        categoryName,
+        totalQuestions: 0,
+        correctAnswers: 0,
+        totalPossibleMatches: 0,
+        correctMatches: 0,
+        score: 0,
+        isPassed: false,
+        passingThreshold: 75,
+        isCompleted: false,
+        lastQuestionAnswered: '',
+        interventionRequired: false,
+        interventionAttempts: 0,
+        interventionCompleted: false,
+        currentInterventionId: null,
+        interventionHistory: []
+      }));
+
+      const newCategoryResult = {
+        studentId: studentId,
+        assessmentDate: new Date(),
+        readingLevel: nextLevel,
+        categories: initialCategoryData,
+        overallScore: 0,
+        completedCategories: 0,
+        totalCategories: nextLevelCategories.length,
+        allCategoriesPassed: false,
+        readingLevelUpdated: false // Will be true when they complete this level
+      };
+
+      // Create the new category_results record
+      const createdResult = await this.createCategoryResult(newCategoryResult);
+
+      console.log(`[READING LEVEL PROGRESSION] Created new category_results ${createdResult._id} for reading level ${nextLevel}`);
+
+      return {
+        levelChanged: true,
+        currentLevel: currentReadingLevel,
+        newLevel: nextLevel,
+        newReadingPercentage: newReadingPercentage,
+        newCategoryResultId: createdResult._id,
+        requiredCategories: nextLevelCategories,
+        message: `Successfully progressed from ${currentReadingLevel} to ${nextLevel}`
+      };
+
+    } catch (error) {
+      console.error('[READING LEVEL PROGRESSION] Error processing progression:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if student is eligible for reading level progression
+   * Used by mobile app to determine if new assessment should be unlocked
+   *
+   * @param {number} studentId - Student ID
+   * @returns {Promise<Object>} - Progression eligibility status
+   */
+  static async checkProgressionEligibility(studentId) {
+    try {
+      // Get student's current reading level
+      const User = require('../../models/userModel');
+      const user = await User.findOne({ studentId: studentId });
+
+      if (!user) {
+        return { eligible: false, reason: 'Student not found' };
+      }
+
+      // Get latest category results for current level
+      const latestResult = await CategoryResult
+        .findOne({
+          studentId: studentId,
+          readingLevel: user.readingLevel
+        })
+        .sort({ assessmentDate: -1 });
+
+      if (!latestResult) {
+        return {
+          eligible: false,
+          reason: 'No assessment completed for current reading level',
+          currentLevel: user.readingLevel,
+          requiredCategories: this.getCategoriesForReadingLevel(user.readingLevel)
+        };
+      }
+
+      if (!latestResult.allCategoriesPassed) {
+        const failedCategories = latestResult.categories
+          .filter(cat => !cat.isPassed)
+          .map(cat => cat.categoryName);
+
+        return {
+          eligible: false,
+          reason: 'Not all categories passed',
+          currentLevel: user.readingLevel,
+          failedCategories,
+          needsIntervention: failedCategories.some(cat =>
+            latestResult.categories.find(c => c.categoryName === cat)?.interventionRequired
+          )
+        };
+      }
+
+      // Check if already at highest level
+      const nextLevel = {
+        'Low Emerging': 'High Emerging',
+        'High Emerging': 'Developing',
+        'Developing': 'Transitioning',
+        'Transitioning': 'At Grade Level',
+        'At Grade Level': null
+      }[user.readingLevel];
+
+      if (!nextLevel) {
+        return {
+          eligible: false,
+          reason: 'Already at highest reading level',
+          currentLevel: user.readingLevel
+        };
+      }
+
+      return {
+        eligible: true,
+        currentLevel: user.readingLevel,
+        nextLevel,
+        message: `Ready to progress from ${user.readingLevel} to ${nextLevel}`,
+        completedAt: latestResult.updatedAt
+      };
+
+    } catch (error) {
+      console.error('[READING LEVEL PROGRESSION] Error checking eligibility:', error);
+      return {
+        eligible: false,
+        reason: 'Error checking progression eligibility',
+        error: error.message
+      };
+    }
+  }
+
   // Helper function to normalize category data format
   static normalizeCategories(categories) {
     if (!categories || !Array.isArray(categories) || categories.length === 0) {
       return [];
     }
-    
+
     return categories.map(category => ({
       categoryName: category.categoryName || 'Unknown Category',
       totalQuestions: category.totalQuestions || 0,
