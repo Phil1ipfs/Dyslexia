@@ -1026,10 +1026,6 @@ connectDB().then(async (connected) => {
       app.use('/api/uploads', uploadRoutes);
       console.log('✅ Loaded upload routes at /api/uploads/*');
 
-      // Test routes for data generation
-      const testDataRoutes = require('./routes/generateTestData');
-      app.use('/api/test', testDataRoutes);
-      console.log('✅ Loaded test data routes at /api/test/*');
     } catch (error) {
       console.warn('⚠️ Could not load upload routes:', error.message);
     }
