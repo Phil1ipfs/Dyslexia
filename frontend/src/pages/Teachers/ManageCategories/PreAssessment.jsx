@@ -1615,6 +1615,12 @@ const PreAssessment = () => {
             toast.error('For sound matching questions, please use complete words (not syllables or word fragments)');
             return;
           }
+
+          // Ensure at least 2 options for sound matching questions
+          if (currentQuestionData.blankOptions.length < 2) {
+            toast.error('Sound matching questions must have at least 2 answer options');
+            return;
+          }
         }
         if (!currentQuestionData.correctAnswer || currentQuestionData.correctAnswer.length === 0) {
           toast.error('At least one correct answer is required');

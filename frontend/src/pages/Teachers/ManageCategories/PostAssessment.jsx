@@ -1395,6 +1395,12 @@ const MainAssessment = ({ templates }) => {
           return;
         }
 
+        // Ensure at least 2 options for sound matching questions
+        if (questionFormData.blankOptions.length < 2) {
+          toast.error('Sound matching questions must have at least 2 answer options');
+          return;
+        }
+
         // Ensure exactly one correct answer for sound matching questions
         if (questionFormData.correctAnswer.length !== 1) {
           toast.error('Sound matching questions must have exactly one correct answer');
@@ -1882,161 +1888,170 @@ const MainAssessment = ({ templates }) => {
       console.log('=== Starting form data update ===');
       
       // Critical operation: Save question to form data
-      try {
-        if (currentQuestion !== null) {
-          console.log('Updating existing question at index:', currentQuestion);
-          setFormData(prev => {
-            const updatedQuestions = [...prev.questions];
-            // Ensure questionValue is at least null if it's empty string or undefined
-            finalQuestionData.questionValue = finalQuestionData.questionValue || null;
-            updatedQuestions[currentQuestion] = finalQuestionData;
-            console.log('Updated questions array:', updatedQuestions);
-            return {
-              ...prev,
-              questions: updatedQuestions
-            };
-          });
-
-          // Reset for a NEW STORY (after updating an existing question)
-          setCurrentQuestion(null);
-          console.log('Question update completed successfully');
-
-        // Generate temporary questionId for the next question
-        const nextQuestionNumber = String(formData.questions.length + 2).padStart(3, '0'); // +2 because we just added one
-        const nextTempQuestionId = `${getCategoryPrefix(formData.category)}_${nextQuestionNumber}`;
-        const nextParentId = formData.category === "Reading Comprehension" ? nextTempQuestionId : null;
-
-        setQuestionFormData({
-          questionType: categoryToQuestionTypeMap[formData.category],
-          questionText: formData.category === "Reading Comprehension" ? "" : "",
-          questionImage: null,
-          imageFile: null,
-          imageName: "",
-          // Ensure it has a default value
-          questionValue: formData.category === "Reading Comprehension" ? "" : null,
-          // Include questionId for all question types
-          questionId: nextTempQuestionId,
-          // Store parent ID temporarily for generating child IDs
-          _parentId: nextParentId,
-          choiceOptions: formData.category === "Alphabet Knowledge" ? [
-            { optionId: "1", optionText: "", isCorrect: true },
-            { optionId: "2", optionText: "", isCorrect: false },
-            { optionId: "3", optionText: "", isCorrect: false }
-          ] : [],
-          passages: formData.category === "Reading Comprehension" ? [
-            { pageNumber: 1, pageText: "", pageImage: null }
-          ] : [],
-          sentenceQuestions: formData.category === "Reading Comprehension" ? [
-            {
-              questionText: "",
-              correctAnswer: "",
-              acceptableAnswers: [],
-              questionId: nextParentId ? `${nextParentId}_SQ01` : null
-            }
-          ] : [],
-          // Reading Comprehension specific fields - RESET FOR NEW STORY
-          storyTitle: "",
-          currentComprehensionIndex: -1,
-          tempComprehensionQuestion: {
-            questionText: "",
-            correctAnswer: "",
-            acceptableAnswers: []
-          },
-          // Other question type fields to ensure clean state
-          displaySequence: null,
-          blankPosition: null,
-          dragElements: [],
-          correctSequence: [],
-          displayWord: "",
-          blankOptions: [],
-          correctAnswer: formData.category === "Reading Comprehension" ? "" : [],
-          questionSet: []
+      if (currentQuestion !== null) {
+        console.log('Updating existing question at index:', currentQuestion);
+        setFormData(prev => {
+          const updatedQuestions = [...prev.questions];
+          // Ensure questionValue is at least null if it's empty string or undefined
+          finalQuestionData.questionValue = finalQuestionData.questionValue || null;
+          updatedQuestions[currentQuestion] = finalQuestionData;
+          console.log('Updated questions array:', updatedQuestions);
+          return {
+            ...prev,
+            questions: updatedQuestions
+          };
         });
 
-        toast.success("Question updated successfully!");
+        // Reset for a NEW STORY (after updating an existing question)
+        setCurrentQuestion(null);
+        console.log('Question update completed successfully');
 
-        // For edit mode, automatically return to assessment view
+        // For edit mode, show success and return to assessment view immediately
+        console.log("✅ EDIT MODE SUCCESS - About to show success message and return");
+        toast.success("Question updated successfully!");
         setShowQuestionForm(false);
         setEditingQuestionIndex(-1);
 
-        // Exit early to prevent further processing
+        // Exit early to prevent form reset and other processing
+        console.log("🚪 EXITING EARLY - This should prevent any further processing");
         return;
-        } else {
-        // Ensure questionValue is at least null if it's empty string or undefined
-        finalQuestionData.questionValue = finalQuestionData.questionValue || null;
+      }
 
-        console.log('Adding new question to form data:', finalQuestionData);
-        setFormData(prev => ({
-          ...prev,
-          questions: [...prev.questions, finalQuestionData]
-        }));
+      // Generate temporary questionId for the next question
+      const nextQuestionNumber = String(formData.questions.length + 2).padStart(3, '0'); // +2 because we just added one
+      const nextTempQuestionId = `${getCategoryPrefix(formData.category)}_${nextQuestionNumber}`;
+      const nextParentId = formData.category === "Reading Comprehension" ? nextTempQuestionId : null;
 
-        // Reset for a NEW STORY (completely fresh form for Reading Comprehension)
-        // Generate temporary questionId for the next question
-        const nextQuestionNumber = String(formData.questions.length + 2).padStart(3, '0'); // +2 because we just added one
-        const nextTempQuestionId = `${getCategoryPrefix(formData.category)}_${nextQuestionNumber}`;
-        const nextParentId = formData.category === "Reading Comprehension" ? nextTempQuestionId : null;
-
-        setQuestionFormData({
-          questionType: categoryToQuestionTypeMap[formData.category],
-          questionText: formData.category === "Reading Comprehension" ? "" : "",
-          questionImage: null,
-          imageFile: null,
-          imageName: "",
-          // Ensure it has a default value
-          questionValue: formData.category === "Reading Comprehension" ? "" : null,
-          // Include questionId for all question types
-          questionId: nextTempQuestionId,
-          // Store parent ID temporarily for generating child IDs
-          _parentId: nextParentId,
-          choiceOptions: formData.category === "Alphabet Knowledge" ? [
-            { optionId: "1", optionText: "", isCorrect: true },
-            { optionId: "2", optionText: "", isCorrect: false },
-            { optionId: "3", optionText: "", isCorrect: false }
-          ] : [],
-          passages: formData.category === "Reading Comprehension" ? [
-            { pageNumber: 1, pageText: "", pageImage: null }
-          ] : [],
-          sentenceQuestions: formData.category === "Reading Comprehension" ? [
-            {
-              questionText: "",
-              correctAnswer: "",
-              acceptableAnswers: [],
-              questionId: nextParentId ? `${nextParentId}_SQ01` : null
-            }
-          ] : [],
-          // Reading Comprehension specific fields - RESET FOR NEW STORY
-          storyTitle: "",
-          currentComprehensionIndex: -1,
-          tempComprehensionQuestion: {
+      setQuestionFormData({
+        questionType: categoryToQuestionTypeMap[formData.category],
+        questionText: formData.category === "Reading Comprehension" ? "" : "",
+        questionImage: null,
+        imageFile: null,
+        imageName: "",
+        // Ensure it has a default value
+        questionValue: formData.category === "Reading Comprehension" ? "" : null,
+        // Include questionId for all question types
+        questionId: nextTempQuestionId,
+        // Store parent ID temporarily for generating child IDs
+        _parentId: nextParentId,
+        choiceOptions: formData.category === "Alphabet Knowledge" ? [
+          { optionId: "1", optionText: "", isCorrect: true },
+          { optionId: "2", optionText: "", isCorrect: false },
+          { optionId: "3", optionText: "", isCorrect: false }
+        ] : [],
+        passages: formData.category === "Reading Comprehension" ? [
+          { pageNumber: 1, pageText: "", pageImage: null }
+        ] : [],
+        sentenceQuestions: formData.category === "Reading Comprehension" ? [
+          {
             questionText: "",
             correctAnswer: "",
-            acceptableAnswers: []
-          },
-          // Other question type fields to ensure clean state
-          displaySequence: null,
-          blankPosition: null,
-          dragElements: [],
-          correctSequence: [],
-          displayWord: "",
-          blankOptions: [],
-          correctAnswer: formData.category === "Reading Comprehension" ? "" : [],
-          questionSet: []
-        });
+            acceptableAnswers: [],
+            questionId: nextParentId ? `${nextParentId}_SQ01` : null
+          }
+        ] : [],
+        // Reading Comprehension specific fields - RESET FOR NEW STORY
+        storyTitle: "",
+        currentComprehensionIndex: -1,
+        tempComprehensionQuestion: {
+          questionText: "",
+          correctAnswer: "",
+          acceptableAnswers: []
+        },
+        // Other question type fields to ensure clean state
+        displaySequence: null,
+        blankPosition: null,
+        dragElements: [],
+        correctSequence: [],
+        displayWord: "",
+        blankOptions: [],
+        correctAnswer: formData.category === "Reading Comprehension" ? "" : [],
+        questionSet: []
+      });
 
-        console.log('Question successfully added to form! Total questions now:', formData.questions.length + 1);
-        toast.success("Question added! You can add another or click Back to return to the assessment.");
-        }
-      
-      } catch (saveError) {
-        // Critical save operation failed
-        console.error('Critical save operation failed:', saveError);
-        throw saveError; // Re-throw to be caught by main catch block
-      }
-      
+      // This success message was moved to the main update path above
+
+      // Ensure questionValue is at least null if it's empty string or undefined
+      finalQuestionData.questionValue = finalQuestionData.questionValue || null;
+
+      console.log('Adding new question to form data:', finalQuestionData);
+      setFormData(prev => ({
+        ...prev,
+        questions: [...prev.questions, finalQuestionData]
+      }));
+
+      // Reset for a NEW STORY (completely fresh form for Reading Comprehension)
+      // Use the same variables that were declared earlier
+
+      setQuestionFormData({
+        questionType: categoryToQuestionTypeMap[formData.category],
+        questionText: formData.category === "Reading Comprehension" ? "" : "",
+        questionImage: null,
+        imageFile: null,
+        imageName: "",
+        // Ensure it has a default value
+        questionValue: formData.category === "Reading Comprehension" ? "" : null,
+        // Include questionId for all question types
+        questionId: nextTempQuestionId,
+        // Store parent ID temporarily for generating child IDs
+        _parentId: nextParentId,
+        choiceOptions: formData.category === "Alphabet Knowledge" ? [
+          { optionId: "1", optionText: "", isCorrect: true },
+          { optionId: "2", optionText: "", isCorrect: false },
+          { optionId: "3", optionText: "", isCorrect: false }
+        ] : [],
+        passages: formData.category === "Reading Comprehension" ? [
+          { pageNumber: 1, pageText: "", pageImage: null }
+        ] : [],
+        sentenceQuestions: formData.category === "Reading Comprehension" ? [
+          {
+            questionText: "",
+            correctAnswer: "",
+            acceptableAnswers: [],
+            questionId: nextParentId ? `${nextParentId}_SQ01` : null
+          }
+        ] : [],
+        // Reading Comprehension specific fields - RESET FOR NEW STORY
+        storyTitle: "",
+        currentComprehensionIndex: -1,
+        tempComprehensionQuestion: {
+          questionText: "",
+          correctAnswer: "",
+          acceptableAnswers: []
+        },
+        // Other question type fields to ensure clean state
+        displaySequence: null,
+        blankPosition: null,
+        dragElements: [],
+        correctSequence: [],
+        displayWord: "",
+        blankOptions: [],
+        correctAnswer: formData.category === "Reading Comprehension" ? "" : [],
+        questionSet: []
+      });
+
+      console.log('Question successfully added to form! Total questions now:', formData.questions.length + 1);
+      toast.success("Question added! You can add another or click Back to return to the assessment.");
+
     } catch (error) {
-      console.error("Error saving question:", error);
-      
+      console.error("🚨 CATCH BLOCK TRIGGERED - Error saving question:", error);
+      console.error("🔍 Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        response: error.response,
+        currentQuestion: currentQuestion,
+        editingQuestionIndex: editingQuestionIndex,
+        showQuestionForm: showQuestionForm
+      });
+      console.trace("📍 Call stack trace for error:");
+
+      // Check if this is happening in edit mode (which should have already returned)
+      if (currentQuestion !== null || editingQuestionIndex >= 0) {
+        console.error("❌ ERROR: This catch block should not execute in edit mode!");
+        console.error("This suggests the early return did not work or there's a race condition");
+      }
+
       // Provide more specific error messages based on the error type
       let errorMessage = "Failed to save question. Please try again.";
       
