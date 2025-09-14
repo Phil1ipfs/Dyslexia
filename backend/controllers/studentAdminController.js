@@ -17,22 +17,25 @@ exports.createStudent = async (req, res) => {
       profileImageUrl = await uploadToS3(req.file, 'student-profiles');
     }
     const {
-      idNumber, firstName, middleName, lastName, age, gender, gradeLevel, section, address, email
+      idNumber, firstName, middleName, lastName, age, gender, gradeLevel, section, address
     } = req.body;
+    
+    // Validate and convert numbers to ensure consistency
+    const idNumberInt = Number.isInteger(Number(idNumber)) ? Number(idNumber) : parseInt(idNumber, 10);
+    const ageInt = Number.isInteger(Number(age)) ? Number(age) : parseInt(age, 10);
+    
     const now = new Date();
     const studentDoc = {
-      idNumber,
+      idNumber: idNumberInt,
       firstName,
       middleName: middleName || '',
       lastName,
-      age,
+      age: ageInt,
       gender,
       gradeLevel,
       section,
       address,
-      email,
       profileImageUrl: profileImageUrl || '',
-      completedLessons: [],
       readingLevel: null,
       readingPercentage: null,
       preAssessmentCompleted: false,
@@ -60,12 +63,17 @@ exports.updateStudent = async (req, res) => {
     const {
       idNumber, firstName, middleName, lastName, age, gender, gradeLevel, section, address
     } = req.body;
+    
+    // Validate and convert numbers to ensure consistency
+    const idNumberInt = Number.isInteger(Number(idNumber)) ? Number(idNumber) : parseInt(idNumber, 10);
+    const ageInt = Number.isInteger(Number(age)) ? Number(age) : parseInt(age, 10);
+    
     const updateData = {
-      idNumber,
+      idNumber: idNumberInt,
       firstName,
       middleName: middleName || '',
       lastName,
-      age,
+      age: ageInt,
       gender,
       gradeLevel,
       section,

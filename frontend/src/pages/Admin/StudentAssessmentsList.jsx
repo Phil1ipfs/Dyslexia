@@ -96,10 +96,6 @@ const StudentAssessmentsList = () => {
       filtered.sort((a, b) => (b.readingPercentage || 0) - (a.readingPercentage || 0));
     } else if (sortBy === 'recent') {
       filtered.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
-    } else if (sortBy === 'grade-asc') {
-      filtered.sort((a, b) => a.gradeLevel.localeCompare(b.gradeLevel));
-    } else if (sortBy === 'grade-desc') {
-      filtered.sort((a, b) => b.gradeLevel.localeCompare(a.gradeLevel));
     }
     
     setFilteredStudents(filtered);
@@ -193,8 +189,6 @@ const StudentAssessmentsList = () => {
           >
             <option value="name-asc">Name (A-Z)</option>
             <option value="name-desc">Name (Z-A)</option>
-            <option value="grade-asc">Grade (Low to High)</option>
-            <option value="grade-desc">Grade (High to Low)</option>
             <option value="level-asc">Reading Level (Low to High)</option>
             <option value="level-desc">Reading Level (High to Low)</option>
             <option value="score-asc">Score (Low to High)</option>

@@ -870,14 +870,6 @@ const ParentListPage = () => {
             <h3>Total Parents</h3>
             <p className="admin-parent-stat-number">-</p>
           </div>
-          <div className="admin-parent-stat-card">
-            <h3>Active Parents</h3>
-            <p className="admin-parent-stat-number">-</p>
-          </div>
-          <div className="admin-parent-stat-card">
-            <h3>Parents with Children</h3>
-            <p className="admin-parent-stat-number">-</p>
-          </div>
         </div>
 
         <div className="admin-parent-controls-container" style={{ backgroundColor: '#ffffff' }}>
@@ -960,16 +952,6 @@ const ParentListPage = () => {
           <h3>Total Parents</h3>
           <p className="admin-parent-stat-number">{parents.length}</p>
         </div>
-        <div className="admin-parent-stat-card">
-          <h3>Active Parents</h3>
-          <p className="admin-parent-stat-number">{parents.filter(p => p.status === 'active').length}</p>
-        </div>
-        <div className="admin-parent-stat-card">
-          <h3>Parents with Children</h3>
-          <p className="admin-parent-stat-number">
-            {parents.filter(p => p.children && p.children.length > 0).length}
-          </p>
-        </div>
       </div>
 
       {/* Controls Section */}
@@ -984,19 +966,6 @@ const ParentListPage = () => {
             />
             <Search size={18} />
           </div>
-          <button className="admin-parent-filter-button" onClick={toggleFilters}>
-            <Filter size={18} />
-            <span>Filter</span>
-          </button>
-          <select 
-            className="admin-parent-sort-dropdown"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-          >
-            <option value="name-asc">Name (A-Z)</option>
-            <option value="name-desc">Name (Z-A)</option>
-            <option value="recent">Recent Activity</option>
-          </select>
           <button 
             className="admin-parent-add-button"
             onClick={() => {
@@ -1010,30 +979,6 @@ const ParentListPage = () => {
         </div>
       </div>
 
-      {showFilters && (
-        <div className="admin-parent-filters-panel">
-          <div className="admin-parent-filter-group">
-            <label>Status:</label>
-            <select 
-              value={selectedStatus} 
-              onChange={(e) => setSelectedStatus(e.target.value)}
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
-          <button 
-            className="admin-parent-clear-filters-button"
-            onClick={() => {
-              setSelectedStatus('all');
-              setSearchTerm('');
-            }}
-          >
-            Clear Filters
-          </button>
-        </div>
-      )}
 
       <div className="admin-parent-table-container">
         <table className="admin-parent-table">

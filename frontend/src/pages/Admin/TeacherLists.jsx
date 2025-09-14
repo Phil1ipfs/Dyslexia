@@ -844,18 +844,6 @@ return (
         <h3>Total Teachers</h3>
         <p className="admin-teacher-stat-number">{teachers.length}</p>
       </div>
-      <div className="admin-teacher-stat-card">
-        <h3>Active Teachers</h3>
-        <p className="admin-teacher-stat-number">{teachers.filter(t => t.status === 'active').length}</p>
-      </div>
-      <div className="admin-teacher-stat-card">
-        <h3>Average Performance</h3>
-        <p className="admin-teacher-stat-number">
-          {teachers.length > 0 
-            ? `${Math.round(teachers.reduce((acc, teacher) => acc + (parseInt(teacher.performance) || 0), 0) / teachers.length)}%` 
-            : '0%'}
-        </p>
-      </div>
     </div>
 
     {/* Controls Section */}
@@ -870,20 +858,6 @@ return (
           />
           <Search size={18} />
         </div>
-        <button className="admin-teacher-filter-button" onClick={toggleFilters}>
-          <Filter size={18} />
-          <span>Filter</span>
-        </button>
-        <select 
-          className="admin-teacher-sort-dropdown"
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-        >
-          <option value="name-asc">Name (A-Z)</option>
-          <option value="name-desc">Name (Z-A)</option>
-          <option value="recent">Recent Activity</option>
-          <option value="position">Position</option>
-        </select>
         <button 
           className="admin-teacher-add-button"
           onClick={() => {
@@ -897,46 +871,6 @@ return (
       </div>
     </div>
 
-    {showFilters && (
-      <div className="admin-teacher-filters-panel">
-        <div className="admin-teacher-filter-group">
-          <label>Position:</label>
-          <select 
-            value={selectedPosition} 
-            onChange={(e) => setSelectedPosition(e.target.value)}
-          >
-            <option value="all">All Positions</option>
-            <option value="Grade 1 Teacher">Grade 1 Teacher</option>
-            <option value="Grade 2 Teacher">Grade 2 Teacher</option>
-            <option value="Grade 3 Teacher">Grade 3 Teacher</option>
-            <option value="Grade 4 Teacher">Grade 4 Teacher</option>
-            <option value="Grade 5 Teacher">Grade 5 Teacher</option>
-            <option value="Grade 6 Teacher">Grade 6 Teacher</option>
-          </select>
-        </div>
-        <div className="admin-teacher-filter-group">
-          <label>Status:</label>
-          <select 
-            value={selectedStatus} 
-            onChange={(e) => setSelectedStatus(e.target.value)}
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
-        <button 
-          className="admin-teacher-clear-filters-button"
-          onClick={() => {
-            setSelectedPosition('all');
-            setSelectedStatus('all');
-            setSearchTerm('');
-          }}
-        >
-          Clear Filters
-        </button>
-      </div>
-    )}
 
     <div className="admin-teacher-table-container">
       <table className="admin-teacher-table">

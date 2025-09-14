@@ -39,7 +39,7 @@ const ValidationErrorModal = ({ message, onClose }) => (
 const AddEditStudentModal = ({ student, onClose, onSave }) => {
   const [formData, setFormData] = useState(
     student ? { ...student } : {
-      idNumber: '2025', // Consider making this generated or handled by backend
+      idNumber: 2025, // Consider making this generated or handled by backend
       firstName: '',
       middleName: '',
       lastName: '',
@@ -85,9 +85,13 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
         stepErrors[field] = `${getFieldLabel(field)} is required`;
         isValid = false;
       }
-      // Add specific validations if needed (e.g., age is a number)
+      // Add specific validations if needed (e.g., age and idNumber are numbers)
       if (field === 'age' && formData.age && isNaN(formData.age)){
         stepErrors[field] = `Age must be a number`;
+        isValid = false;
+      }
+      if (field === 'idNumber' && formData.idNumber && isNaN(formData.idNumber)){
+        stepErrors[field] = `ID Number must be a number`;
         isValid = false;
       }
     });
@@ -123,6 +127,10 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
         }
          if (field === 'age' && formData.age && isNaN(formData.age)){
           allErrors[field] = `Age must be a number`;
+          allStepsValid = false;
+        }
+        if (field === 'idNumber' && formData.idNumber && isNaN(formData.idNumber)){
+          allErrors[field] = `ID Number must be a number`;
           allStepsValid = false;
         }
       });
@@ -165,9 +173,16 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    let processedValue = value;
+    
+    // Convert to number for idNumber and age fields
+    if (name === 'idNumber' || name === 'age') {
+      processedValue = value === '' ? '' : Number(value);
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: processedValue
     }));
      if (errors[name]) {
       setErrors(prev => ({
@@ -294,8 +309,8 @@ const AddEditStudentModal = ({ student, onClose, onSave }) => {
             );
           }
 
-          // Add specific input types for age, gradeLevel, section, address
-          const inputType = field === 'age' ? 'number' : 'text';
+          // Add specific input types for age, idNumber, gradeLevel, section, address
+          const inputType = field === 'age' || field === 'idNumber' ? 'number' : 'text';
 
           return (
             <div key={field} className="studentlist-form-group">
@@ -430,18 +445,25 @@ const StudentListPage = () => {
 
   // Filter and search functionality
   useEffect(() => {
-    if (searchTerm === '') {
-      setFilteredStudents(students);
-    } else {
-      const filtered = students.filter(student => 
+    let filtered = students;
+    
+    // Apply search filter
+    if (searchTerm !== '') {
+      filtered = filtered.filter(student => 
         `${student.firstName} ${student.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.idNumber?.toString().includes(searchTerm.toLowerCase()) ||
         student.section?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.gradeLevel?.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setFilteredStudents(filtered);
     }
-  }, [searchTerm, students]);
+    
+    // Apply sorting (only A-Z for now)
+    if (sortBy === 'name-asc') {
+      filtered.sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`));
+    }
+    
+    setFilteredStudents(filtered);
+  }, [searchTerm, students, sortBy]);
 
   // Pagination
   const indexOfLastStudent = currentPage * studentsPerPage;
@@ -695,14 +717,6 @@ const StudentListPage = () => {
           <h3>Active Students</h3>
           <p className="stat-number">{students.filter(s => s.preAssessmentCompleted === true).length}</p>
         </div>
-        <div className="stat-card">
-          <h3>Average Performance</h3>
-          <p className="stat-number">
-            {students.length > 0 
-              ? `${Math.round(students.reduce((acc, student) => acc + parseInt(student.averageScore), 0) / students.length)}%` 
-              : '0%'}
-          </p>
-        </div>
       </div>
 
       {/* Controls Section */}
@@ -717,22 +731,6 @@ const StudentListPage = () => {
             />
             <Search size={18} />
           </div>
-          <button className="filter-button" onClick={toggleFilters}>
-            <Filter size={18} />
-            <span>Filter</span>
-          </button>
-          <select 
-            className="sort-dropdown"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-          >
-            <option value="name-asc">Name (A-Z)</option>
-            <option value="name-desc">Name (Z-A)</option>
-            <option value="grade-asc">Grade (Low-High)</option>
-            <option value="grade-desc">Grade (High-Low)</option>
-            <option value="recent">Recent Activity</option>
-            <option value="progress">Progress</option>
-          </select>
           <button 
             className="add-student-button"
             onClick={() => {
@@ -746,41 +744,6 @@ const StudentListPage = () => {
         </div>
       </div>
 
-      {showFilters && (
-        <div className="filters-panel">
-          <div className="filter-group">
-            <label>Grade Level:</label>
-            <select 
-              value={selectedGrade} 
-              onChange={(e) => setSelectedGrade(e.target.value)}
-            >
-              <option value="all">All Grades</option>
-              <option value="Grade 1">Grade 1</option>
-            </select>
-          </div>
-          <div className="filter-group">
-            <label>Status:</label>
-            <select 
-              value={selectedStatus} 
-              onChange={(e) => setSelectedStatus(e.target.value)}
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
-          <button 
-            className="clear-filters-button"
-            onClick={() => {
-              setSelectedGrade('all');
-              setSelectedStatus('all');
-              setSearchTerm('');
-            }}
-          >
-            Clear Filters
-          </button>
-        </div>
-      )}
 
       <div className="students-table-container">
         <table className="students-table">

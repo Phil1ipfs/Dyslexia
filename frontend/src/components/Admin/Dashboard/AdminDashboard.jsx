@@ -199,7 +199,6 @@ const AdminDashboard = () => {
           <div className="admin-dashboard-card__content">
             <h3 className="admin-dashboard-card__title">Total Users</h3>
             <p className="admin-dashboard-card__value">{dashboardData.totalUsers}</p>
-            <p className="admin-dashboard-card__subtitle">{dashboardData.students.active} active today</p>
           </div>
         </div>
 
@@ -213,7 +212,6 @@ const AdminDashboard = () => {
           <div className="admin-dashboard-card__content">
             <h3 className="admin-dashboard-card__title">Students</h3>
             <p className="admin-dashboard-card__value">{dashboardData.students.count}</p>
-            <p className="admin-dashboard-card__subtitle">{dashboardData.students.avgReadingLevel.toFixed(1)} avg reading level</p>
             <button className="admin-dashboard-card__view-btn" onClick={handleViewStudents}>
               <Eye size={16} />
               View Students
@@ -231,7 +229,6 @@ const AdminDashboard = () => {
           <div className="admin-dashboard-card__content">
             <h3 className="admin-dashboard-card__title">Teachers</h3>
             <p className="admin-dashboard-card__value">{dashboardData.teachers.count}</p>
-            <p className="admin-dashboard-card__subtitle">{dashboardData.teachers.activities} activities created</p>
             <button className="admin-dashboard-card__view-btn" onClick={handleViewTeachers}>
               <Eye size={16} />
               View Teachers
@@ -249,7 +246,6 @@ const AdminDashboard = () => {
           <div className="admin-dashboard-card__content">
             <h3 className="admin-dashboard-card__title">Parents</h3>
             <p className="admin-dashboard-card__value">{dashboardData.parents.count}</p>
-            <p className="admin-dashboard-card__subtitle">{dashboardData.parents.communications} communications</p>
             <button className="admin-dashboard-card__view-btn" onClick={handleViewParents}>
               <Eye size={16} />
               View Parents
