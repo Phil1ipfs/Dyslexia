@@ -121,6 +121,22 @@ router.delete('/sentences/:id',
   templatesController.deleteSentenceTemplate
 );
 
+// ========== TEMPLATE AVAILABILITY AND MIGRATION ROUTES ==========
+
+// Check template availability for intervention generation
+router.get('/availability',
+  auth,
+  authorize('teacher', 'guro'),
+  templatesController.checkTemplateAvailability
+);
+
+// Migrate old fragmented templates to complete template structure
+router.post('/migrate',
+  auth,
+  authorize('teacher', 'guro'),
+  templatesController.migrateOldTemplates
+);
+
 // ========== INTERVENTION GENERATION ROUTES ==========
 
 // Generate intervention assessment using 3-source system (templates + main_assessment + custom)

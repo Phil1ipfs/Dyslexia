@@ -25,14 +25,11 @@ const questionSelectionStrategySchema = new mongoose.Schema({
   }
 }, { _id: false });
 
-// Question set schema for matching questions (PA)
+// Question set schema for matching questions (Phonological Awareness)
 const questionSetSchema = new mongoose.Schema({
-  audioTexts: [String], // For TTS generation
-  matchingOptions: [String], // Options to match with
-  correctPairs: [{
-    audio: String,
-    match: String
-  }]
+  audioTexts: [String], // Audio elements to be matched ["H", "T", "N"]
+  matchingOptions: [String], // All available matching options ["Hh", "Tt", "Nn", "Ll"]
+  correctPairs: [mongoose.Schema.Types.Mixed] // Correct pairs [{ "H": "Hh" }, { "T": "Tt" }, { "N": "Nn" }]
 }, { _id: false });
 
 // Individual question schema
@@ -53,7 +50,7 @@ const interventionQuestionSchema = new mongoose.Schema({
   questionType: {
     type: String,
     required: true,
-    enum: ['multiple_choice', 'malapantig', 'drag_drop', 'fill_blank', 'text_input']
+    enum: ['multiple_choice', 'malapantig', 'drag_drop', 'fill_blank', 'text_input', 'patinig', 'katinig', 'complete_word_identification', 'fill_missing_letter', 'sentence_completion', 'rhyming_words']
   },
   questionText: {
     type: String,
@@ -87,6 +84,21 @@ const interventionQuestionSchema = new mongoose.Schema({
     optionId: String,
     optionText: String,
     isCorrect: Boolean
+  }],
+
+  // For Reading Comprehension questions
+  storyTitle: String,
+  passages: [{
+    pageNumber: Number,
+    text: String,
+    image: String
+  }],
+  sentenceQuestions: [{
+    questionNumber: Number,
+    questionText: String,
+    sentenceCorrectAnswer: String,
+    sentenceOptionAnswers: [String],
+    sentenceAcceptableAnswer: [String]
   }],
   
   // IRT parameters for adaptive difficulty

@@ -354,14 +354,11 @@
       "questionId": "WR_010",
       "displayWord": "LOBO",
       "blankOptions": [
-        "ME",
-        "SA",
-        "TU",
-        "BO"
+        "MESA",
+        "TUBO"
       ],
       "correctAnswer": [
-        "TU",
-        "BO"
+        "TUBO"
       ]
     },
     {
@@ -4182,14 +4179,11 @@
       "questionId": "WR_010",
       "displayWord": "LOBO",
       "blankOptions": [
-        "ME",
-        "SA",
-        "TU",
-        "BO"
+        "MESA",
+        "TUBO"
       ],
       "correctAnswer": [
-        "TU",
-        "BO"
+        "TUBO"
       ]
     },
     {

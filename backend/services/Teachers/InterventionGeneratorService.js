@@ -3,6 +3,10 @@ const PrescriptiveAnalysis = require('../../models/Teachers/ManageProgress/presc
 const InterventionAssessment = require('../../models/Teachers/ManageProgress/interventionAssessmentModel');
 const InterventionResponse = require('../../models/Teachers/ManageProgress/interventionResponseModel');
 const InterventionResults = require('../../models/Teachers/ManageProgress/interventionResultsModel');
+const TemplateQuestion = require('../../models/Teachers/ManageProgress/templatesQuestionsModel');
+const TemplateChoice = require('../../models/Teachers/ManageProgress/templatesChoicesModel');
+const SentenceTemplate = require('../../models/Teachers/ManageProgress/sentenceTemplateModel');
+const MainAssessment = require('../../models/Teachers/mainAssessmentModel');
 const mathematicalModelsService = require('./PrescriptiveAnalytics/mathematicalModelsService');
 
 /**
@@ -65,14 +69,38 @@ class InterventionGeneratorService {
       // Determine question selection strategy
       const strategy = this.determineQuestionSelectionStrategy(errorPatterns, categoryMastery);
 
-      // Generate exactly 10 questions based on error patterns and focus areas
-      const questions = await this.generateAdaptiveQuestions(
+      // Calculate dynamic question count based on prescriptive analytics (5-18 range)
+      const optimalQuestionCount = await this.calculateOptimalQuestionCount(
+        errorPatterns,
+        categoryMastery,
+        category,
+        analysis.readingLevel,
+        analysis.interventionHistory.filter(h => h.category === category).length
+      );
+
+      console.log('[INTERVENTION GENERATOR] Calculated optimal question count:', optimalQuestionCount);
+
+      // Generate questions using template-based approach
+      console.log('[INTERVENTION GENERATOR] About to call generateTemplateBasedQuestions');
+      console.log('[INTERVENTION GENERATOR] Parameters:', {
+        category,
+        readingLevel: analysis.readingLevel,
+        errorPatterns,
+        interventionPlan,
+        questionCount: optimalQuestionCount,
+        abilityEstimate: analysis.abilityEstimates.get ? analysis.abilityEstimates.get(category) : analysis.abilityEstimates[category] || 0
+      });
+
+      const questionGeneration = await this.generateTemplateBasedQuestions(
         category,
         analysis.readingLevel,
         errorPatterns,
         interventionPlan,
+        optimalQuestionCount,
         analysis.abilityEstimates.get ? analysis.abilityEstimates.get(category) : analysis.abilityEstimates[category] || 0
       );
+
+      console.log('[INTERVENTION GENERATOR] Questions returned:', questionGeneration.questions ? questionGeneration.questions.length : 'null/undefined');
 
       // Create intervention assessment
       const interventionData = {
@@ -82,15 +110,23 @@ class InterventionGeneratorService {
         readingLevel: analysis.readingLevel,
         passThreshold: 75,
         questionSelectionStrategy: strategy,
-        totalQuestions: 10, // Fixed for one-time intervention
-        questions,
+        totalQuestions: optimalQuestionCount, // Dynamic count based on analytics
+        questions: questionGeneration.questions,
         interventionParameters: {
-          fixedQuestions: 10,
+          fixedQuestions: optimalQuestionCount,
           allowSkip: false,
           showProgress: true,
           immediateFeeback: false
         },
         status: 'active',
+        createdBy: questionGeneration.templateAvailability ? questionGeneration.createdBy : null,
+        templateMetadata: {
+          templateCount: questionGeneration.templateAvailability?.availableTemplates || 0,
+          mainAssessmentCount: questionGeneration.templateAvailability?.mainAssessmentCount || 0,
+          customCount: questionGeneration.templateAvailability?.customCount || 0,
+          shortageAmount: questionGeneration.templateAvailability?.shortageAmount || 0,
+          teacherAction: questionGeneration.templateAvailability?.teacherAction || null
+        },
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -98,7 +134,7 @@ class InterventionGeneratorService {
       const intervention = new InterventionAssessment(interventionData);
       await intervention.save();
 
-      console.log(`[INTERVENTION GENERATOR] Generated intervention ${intervention._id} with ${questions.length} questions`);
+      console.log(`[INTERVENTION GENERATOR] Generated intervention ${intervention._id} with ${questionGeneration.questions.length} questions (${questionGeneration.templateAvailability?.availableTemplates || 0} from templates)`);
 
       return intervention;
 
@@ -145,123 +181,860 @@ class InterventionGeneratorService {
   }
 
   /**
-   * Generate exactly 10 adaptive questions for intervention
+   * Calculate optimal question count based on prescriptive analytics (5-18 range)
+   * @param {Object} errorPatterns - Error patterns
+   * @param {Object} categoryMastery - Category mastery data
+   * @param {string} category - Category name
+   * @param {string} readingLevel - Student's reading level
+   * @param {number} attemptCount - Number of previous intervention attempts
+   * @returns {number} Optimal question count between 5-18
+   */
+  async calculateOptimalQuestionCount(errorPatterns, categoryMastery, category, readingLevel, attemptCount = 0) {
+    // Base counts by reading level
+    const baseCountByLevel = {
+      'Low Emerging': { min: 5, base: 8, max: 12 },
+      'High Emerging': { min: 6, base: 10, max: 14 },
+      'Developing': { min: 8, base: 12, max: 16 },
+      'Transitioning': { min: 8, base: 12, max: 16 },
+      'At Grade Level': { min: 10, base: 15, max: 18 }
+    };
+
+    const levelConfig = baseCountByLevel[readingLevel] || baseCountByLevel['High Emerging'];
+    let questionCount = levelConfig.base;
+
+    // Factor 1: Error Severity Analysis (±40% of base)
+    const errorRate = this.calculateErrorRate(errorPatterns);
+    if (errorRate >= 70) questionCount += Math.round(levelConfig.base * 0.4); // Severe
+    else if (errorRate >= 50) questionCount += Math.round(levelConfig.base * 0.25); // High
+    else if (errorRate >= 30) questionCount += Math.round(levelConfig.base * 0.1); // Moderate
+    else if (errorRate >= 15) questionCount -= Math.round(levelConfig.base * 0.1); // Low
+    else questionCount -= Math.round(levelConfig.base * 0.2); // Minimal
+
+    // Factor 2: Mastery Level Analysis (±25% of base)
+    const masteryScore = categoryMastery.score || 0;
+    if (masteryScore < 40) questionCount += Math.round(levelConfig.base * 0.25); // Very low
+    else if (masteryScore < 55) questionCount += Math.round(levelConfig.base * 0.15); // Low
+    else if (masteryScore < 65) questionCount += Math.round(levelConfig.base * 0.05); // Below average
+    else if (masteryScore >= 75) questionCount -= Math.round(levelConfig.base * 0.15); // Passing
+
+    // Factor 3: Category Complexity Multiplier
+    const categoryMultipliers = {
+      'Alphabet Knowledge': 0.8,
+      'Phonological Awareness': 1.1,
+      'Decoding': 1.0,
+      'Word Recognition': 1.0,
+      'Reading Comprehension': 1.2
+    };
+    questionCount = Math.round(questionCount * (categoryMultipliers[category] || 1.0));
+
+    // Factor 4: Intervention History (fatigue prevention)
+    questionCount -= Math.min(3, attemptCount);
+
+    // Bound between min and max for level
+    questionCount = Math.max(levelConfig.min, Math.min(levelConfig.max, questionCount));
+
+    console.log(`[INTERVENTION GENERATOR] Question count calculation:`, {
+      category, readingLevel, errorRate, masteryScore, attemptCount,
+      baseCount: levelConfig.base, finalCount: questionCount
+    });
+
+    return questionCount;
+  }
+
+  /**
+   * Generate questions using template-based approach with 3-source priority system
    * @param {string} category - Category name
    * @param {string} readingLevel - Student's reading level
    * @param {Object} errorPatterns - Error patterns
    * @param {Object} interventionPlan - Intervention plan
+   * @param {number} questionCount - Target question count
    * @param {number} abilityEstimate - Student's ability estimate
-   * @returns {Array} Array of 10 questions
+   * @returns {Object} Question generation result with availability info
    */
-  async generateAdaptiveQuestions(category, readingLevel, errorPatterns, interventionPlan, abilityEstimate) {
-    const questions = [];
+  async generateTemplateBasedQuestions(category, readingLevel, errorPatterns, interventionPlan, questionCount, abilityEstimate) {
+    console.log('[INTERVENTION GENERATOR] generateTemplateBasedQuestions called with:', {
+      category, readingLevel, errorPatterns, interventionPlan, questionCount, abilityEstimate
+    });
 
+    const result = {
+      questions: [],
+      templateAvailability: {
+        targetQuestions: questionCount,
+        availableTemplates: 0,
+        mainAssessmentCount: 0,
+        customCount: 0,
+        shortageAmount: 0,
+        teacherAction: null
+      }
+    };
+
+    try {
+      switch (category) {
+        case 'Alphabet Knowledge':
+          return await this.generateAlphabetKnowledgeFromTemplates(errorPatterns, interventionPlan, questionCount, abilityEstimate);
+
+        case 'Phonological Awareness':
+          return await this.generatePhonologicalAwarenessFromTemplates(errorPatterns, interventionPlan, questionCount, abilityEstimate);
+
+        case 'Decoding':
+          return await this.generateDecodingFromTemplates(errorPatterns, interventionPlan, questionCount, abilityEstimate);
+
+        case 'Word Recognition':
+          return await this.generateWordRecognitionFromTemplates(errorPatterns, interventionPlan, questionCount, abilityEstimate);
+
+        case 'Reading Comprehension':
+          return await this.generateReadingComprehensionFromTemplates(readingLevel, interventionPlan, questionCount, abilityEstimate);
+
+        default:
+          throw new Error(`Unsupported category for intervention: ${category}`);
+      }
+    } catch (error) {
+      console.error(`[INTERVENTION GENERATOR] Error generating ${category} questions:`, error);
+
+      // Fallback: return minimal set with error info
+      result.templateAvailability.shortageAmount = questionCount;
+      result.templateAvailability.teacherAction = 'create_templates_for_category';
+      return result;
+    }
+  }
+
+  /**
+   * Generate Alphabet Knowledge intervention questions from templates
+   * @param {Object} errorPatterns - Error patterns
+   * @param {Object} interventionPlan - Intervention plan
+   * @param {number} questionCount - Target question count
+   * @param {number} abilityEstimate - Ability estimate
+   * @returns {Object} Question generation result
+   */
+  async generateAlphabetKnowledgeFromTemplates(errorPatterns, interventionPlan, questionCount, abilityEstimate) {
+    console.log('[INTERVENTION GENERATOR] Starting Alphabet Knowledge template-based generation');
+
+    const result = {
+      questions: [],
+      templateAvailability: {
+        targetQuestions: questionCount,
+        availableTemplates: 0,
+        mainAssessmentCount: 0,
+        customCount: 0,
+        shortageAmount: 0,
+        teacherAction: null
+      }
+    };
+
+    try {
+      // Priority 1: Get templates from templates_questions
+      const templateQuestions = await TemplateQuestion.findByCategory('Alphabet Knowledge');
+      result.templateAvailability.availableTemplates = templateQuestions.length;
+
+      console.log(`[INTERVENTION GENERATOR] Found ${templateQuestions.length} Alphabet Knowledge templates`);
+
+      // Use available templates first
+      for (let i = 0; i < Math.min(questionCount, templateQuestions.length); i++) {
+        const template = templateQuestions[i];
+        const interventionQuestion = template.toInterventionQuestion();
+
+        // Customize based on error patterns if available
+        if (errorPatterns && this.hasAlphabetErrors(errorPatterns)) {
+          interventionQuestion.targetSkill = this.getAlphabetErrorFocus(errorPatterns);
+        }
+
+        result.questions.push(interventionQuestion);
+      }
+
+      // Priority 2: Fill remaining with main assessment questions if needed
+      if (result.questions.length < questionCount) {
+        const mainAssessmentQuestions = await this.getMainAssessmentQuestions('Alphabet Knowledge');
+        const needed = questionCount - result.questions.length;
+        const fromMainAssessment = Math.min(needed, mainAssessmentQuestions.length);
+
+        for (let i = 0; i < fromMainAssessment; i++) {
+          const mainQuestion = this.convertMainAssessmentToIntervention(mainAssessmentQuestions[i], 'Alphabet Knowledge');
+          result.questions.push(mainQuestion);
+        }
+
+        result.templateAvailability.mainAssessmentCount = fromMainAssessment;
+      }
+
+      // Priority 3: Generate custom questions if still needed
+      if (result.questions.length < questionCount) {
+        const needed = questionCount - result.questions.length;
+        const customQuestions = this.generateCustomAlphabetQuestions(needed, errorPatterns, interventionPlan, abilityEstimate);
+        result.questions.push(...customQuestions);
+        result.templateAvailability.customCount = customQuestions.length;
+      }
+
+      // Calculate shortage
+      if (result.questions.length < questionCount) {
+        result.templateAvailability.shortageAmount = questionCount - result.questions.length;
+        result.templateAvailability.teacherAction = 'create_more_alphabet_templates';
+      }
+
+      console.log(`[INTERVENTION GENERATOR] Generated ${result.questions.length} Alphabet Knowledge questions:`, {
+        templates: result.templateAvailability.availableTemplates,
+        mainAssessment: result.templateAvailability.mainAssessmentCount,
+        custom: result.templateAvailability.customCount,
+        shortage: result.templateAvailability.shortageAmount
+      });
+
+      return result;
+
+    } catch (error) {
+      console.error('[INTERVENTION GENERATOR] Error generating Alphabet Knowledge from templates:', error);
+      result.templateAvailability.shortageAmount = questionCount;
+      result.templateAvailability.teacherAction = 'create_alphabet_templates';
+      return result;
+    }
+  }
+
+  /**
+   * Generate Phonological Awareness intervention questions from templates
+   * @param {Object} errorPatterns - Error patterns
+   * @param {Object} interventionPlan - Intervention plan
+   * @param {number} questionCount - Target question count
+   * @param {number} abilityEstimate - Ability estimate
+   * @returns {Object} Question generation result
+   */
+  async generatePhonologicalAwarenessFromTemplates(errorPatterns, interventionPlan, questionCount, abilityEstimate) {
+    console.log('[INTERVENTION GENERATOR] Starting Phonological Awareness template-based generation');
+
+    const result = {
+      questions: [],
+      templateAvailability: {
+        targetQuestions: questionCount,
+        availableTemplates: 0,
+        mainAssessmentCount: 0,
+        customCount: 0,
+        shortageAmount: 0,
+        teacherAction: null
+      }
+    };
+
+    try {
+      // Priority 1: Get templates from templates_questions
+      const templateQuestions = await TemplateQuestion.findByCategory('Phonological Awareness');
+      result.templateAvailability.availableTemplates = templateQuestions.length;
+
+      console.log(`[INTERVENTION GENERATOR] Found ${templateQuestions.length} Phonological Awareness templates`);
+
+      // Use available templates first
+      for (let i = 0; i < Math.min(questionCount, templateQuestions.length); i++) {
+        const template = templateQuestions[i];
+        const interventionQuestion = template.toInterventionQuestion();
+
+        // Customize based on error patterns if available
+        if (errorPatterns && this.hasPhonologicalErrors(errorPatterns)) {
+          interventionQuestion.targetSkill = this.getPhonologicalErrorFocus(errorPatterns);
+        }
+
+        result.questions.push(interventionQuestion);
+      }
+
+      // Priority 2: Fill remaining with main assessment questions if needed
+      if (result.questions.length < questionCount) {
+        const mainAssessmentQuestions = await this.getMainAssessmentQuestions('Phonological Awareness');
+        const needed = questionCount - result.questions.length;
+        const fromMainAssessment = Math.min(needed, mainAssessmentQuestions.length);
+
+        for (let i = 0; i < fromMainAssessment; i++) {
+          const mainQuestion = this.convertMainAssessmentToIntervention(mainAssessmentQuestions[i], 'Phonological Awareness');
+          result.questions.push(mainQuestion);
+        }
+
+        result.templateAvailability.mainAssessmentCount = fromMainAssessment;
+      }
+
+      // Priority 3: Generate custom questions if still needed
+      if (result.questions.length < questionCount) {
+        const needed = questionCount - result.questions.length;
+        const customQuestions = this.generateCustomPhonologicalQuestions(needed, errorPatterns, interventionPlan, abilityEstimate);
+        result.questions.push(...customQuestions);
+        result.templateAvailability.customCount = customQuestions.length;
+      }
+
+      // Calculate shortage
+      if (result.questions.length < questionCount) {
+        result.templateAvailability.shortageAmount = questionCount - result.questions.length;
+        result.templateAvailability.teacherAction = 'create_more_phonological_templates';
+      }
+
+      console.log(`[INTERVENTION GENERATOR] Generated ${result.questions.length} Phonological Awareness questions:`, {
+        templates: result.templateAvailability.availableTemplates,
+        mainAssessment: result.templateAvailability.mainAssessmentCount,
+        custom: result.templateAvailability.customCount,
+        shortage: result.templateAvailability.shortageAmount
+      });
+
+      return result;
+
+    } catch (error) {
+      console.error('[INTERVENTION GENERATOR] Error generating Phonological Awareness from templates:', error);
+      result.templateAvailability.shortageAmount = questionCount;
+      result.templateAvailability.teacherAction = 'create_phonological_templates';
+      return result;
+    }
+  }
+
+  /**
+   * Generate Decoding intervention questions from templates
+   * @param {Object} errorPatterns - Error patterns
+   * @param {Object} interventionPlan - Intervention plan
+   * @param {number} questionCount - Target question count
+   * @param {number} abilityEstimate - Ability estimate
+   * @returns {Object} Question generation result
+   */
+  async generateDecodingFromTemplates(errorPatterns, interventionPlan, questionCount, abilityEstimate) {
+    console.log('[INTERVENTION GENERATOR] Starting Decoding template-based generation');
+
+    const result = {
+      questions: [],
+      templateAvailability: {
+        targetQuestions: questionCount,
+        availableTemplates: 0,
+        mainAssessmentCount: 0,
+        customCount: 0,
+        shortageAmount: 0,
+        teacherAction: null
+      }
+    };
+
+    try {
+      // Priority 1: Get templates from templates_questions
+      const templateQuestions = await TemplateQuestion.findByCategory('Decoding');
+      result.templateAvailability.availableTemplates = templateQuestions.length;
+
+      console.log(`[INTERVENTION GENERATOR] Found ${templateQuestions.length} Decoding templates`);
+
+      // Use available templates first
+      for (let i = 0; i < Math.min(questionCount, templateQuestions.length); i++) {
+        const template = templateQuestions[i];
+        const interventionQuestion = template.toInterventionQuestion();
+
+        // Customize based on error patterns if available
+        if (errorPatterns && this.hasDecodingErrors(errorPatterns)) {
+          interventionQuestion.targetSkill = this.getDecodingErrorFocus(errorPatterns);
+        }
+
+        result.questions.push(interventionQuestion);
+      }
+
+      // Priority 2: Fill remaining with main assessment questions if needed
+      if (result.questions.length < questionCount) {
+        const mainAssessmentQuestions = await this.getMainAssessmentQuestions('Decoding');
+        const needed = questionCount - result.questions.length;
+        const fromMainAssessment = Math.min(needed, mainAssessmentQuestions.length);
+
+        for (let i = 0; i < fromMainAssessment; i++) {
+          const mainQuestion = this.convertMainAssessmentToIntervention(mainAssessmentQuestions[i], 'Decoding');
+          result.questions.push(mainQuestion);
+        }
+
+        result.templateAvailability.mainAssessmentCount = fromMainAssessment;
+      }
+
+      // Priority 3: Generate custom questions if still needed
+      if (result.questions.length < questionCount) {
+        const needed = questionCount - result.questions.length;
+        const customQuestions = this.generateCustomDecodingQuestions(needed, errorPatterns, interventionPlan, abilityEstimate);
+        result.questions.push(...customQuestions);
+        result.templateAvailability.customCount = customQuestions.length;
+      }
+
+      // Calculate shortage
+      if (result.questions.length < questionCount) {
+        result.templateAvailability.shortageAmount = questionCount - result.questions.length;
+        result.templateAvailability.teacherAction = 'create_more_decoding_templates';
+      }
+
+      console.log(`[INTERVENTION GENERATOR] Generated ${result.questions.length} Decoding questions:`, {
+        templates: result.templateAvailability.availableTemplates,
+        mainAssessment: result.templateAvailability.mainAssessmentCount,
+        custom: result.templateAvailability.customCount,
+        shortage: result.templateAvailability.shortageAmount
+      });
+
+      return result;
+
+    } catch (error) {
+      console.error('[INTERVENTION GENERATOR] Error generating Decoding from templates:', error);
+      result.templateAvailability.shortageAmount = questionCount;
+      result.templateAvailability.teacherAction = 'create_decoding_templates';
+      return result;
+    }
+  }
+
+  /**
+   * Generate Word Recognition intervention questions from templates
+   * @param {Object} errorPatterns - Error patterns
+   * @param {Object} interventionPlan - Intervention plan
+   * @param {number} questionCount - Target question count
+   * @param {number} abilityEstimate - Ability estimate
+   * @returns {Object} Question generation result
+   */
+  async generateWordRecognitionFromTemplates(errorPatterns, interventionPlan, questionCount, abilityEstimate) {
+    console.log('[INTERVENTION GENERATOR] Starting Word Recognition template-based generation');
+
+    const result = {
+      questions: [],
+      templateAvailability: {
+        targetQuestions: questionCount,
+        availableTemplates: 0,
+        mainAssessmentCount: 0,
+        customCount: 0,
+        shortageAmount: 0,
+        teacherAction: null
+      }
+    };
+
+    try {
+      // Priority 1: Get templates from templates_questions
+      const templateQuestions = await TemplateQuestion.findByCategory('Word Recognition');
+      result.templateAvailability.availableTemplates = templateQuestions.length;
+
+      console.log(`[INTERVENTION GENERATOR] Found ${templateQuestions.length} Word Recognition templates`);
+
+      // Use available templates first
+      for (let i = 0; i < Math.min(questionCount, templateQuestions.length); i++) {
+        const template = templateQuestions[i];
+        const interventionQuestion = template.toInterventionQuestion();
+
+        // Customize based on error patterns if available
+        if (errorPatterns && this.hasWordRecognitionErrors(errorPatterns)) {
+          interventionQuestion.targetSkill = this.getWordRecognitionErrorFocus(errorPatterns);
+        }
+
+        result.questions.push(interventionQuestion);
+      }
+
+      // Priority 2: Fill remaining with main assessment questions if needed
+      if (result.questions.length < questionCount) {
+        const mainAssessmentQuestions = await this.getMainAssessmentQuestions('Word Recognition');
+        const needed = questionCount - result.questions.length;
+        const fromMainAssessment = Math.min(needed, mainAssessmentQuestions.length);
+
+        for (let i = 0; i < fromMainAssessment; i++) {
+          const mainQuestion = this.convertMainAssessmentToIntervention(mainAssessmentQuestions[i], 'Word Recognition');
+          result.questions.push(mainQuestion);
+        }
+
+        result.templateAvailability.mainAssessmentCount = fromMainAssessment;
+      }
+
+      // Priority 3: Generate custom questions if still needed
+      if (result.questions.length < questionCount) {
+        const needed = questionCount - result.questions.length;
+        const customQuestions = this.generateCustomWordRecognitionQuestions(needed, errorPatterns, interventionPlan, abilityEstimate);
+        result.questions.push(...customQuestions);
+        result.templateAvailability.customCount = customQuestions.length;
+      }
+
+      // Calculate shortage
+      if (result.questions.length < questionCount) {
+        result.templateAvailability.shortageAmount = questionCount - result.questions.length;
+        result.templateAvailability.teacherAction = 'create_more_word_recognition_templates';
+      }
+
+      console.log(`[INTERVENTION GENERATOR] Generated ${result.questions.length} Word Recognition questions:`, {
+        templates: result.templateAvailability.availableTemplates,
+        mainAssessment: result.templateAvailability.mainAssessmentCount,
+        custom: result.templateAvailability.customCount,
+        shortage: result.templateAvailability.shortageAmount
+      });
+
+      return result;
+
+    } catch (error) {
+      console.error('[INTERVENTION GENERATOR] Error generating Word Recognition from templates:', error);
+      result.templateAvailability.shortageAmount = questionCount;
+      result.templateAvailability.teacherAction = 'create_word_recognition_templates';
+      return result;
+    }
+  }
+
+  /**
+   * Generate Reading Comprehension intervention questions from templates
+   * @param {string} readingLevel - Reading level
+   * @param {Object} interventionPlan - Intervention plan
+   * @param {number} questionCount - Target question count
+   * @param {number} abilityEstimate - Ability estimate
+   * @returns {Object} Question generation result
+   */
+  async generateReadingComprehensionFromTemplates(readingLevel, interventionPlan, questionCount, abilityEstimate) {
+    console.log('[INTERVENTION GENERATOR] Starting Reading Comprehension template-based generation');
+
+    const result = {
+      questions: [],
+      templateAvailability: {
+        targetQuestions: questionCount,
+        availableTemplates: 0,
+        mainAssessmentCount: 0,
+        customCount: 0,
+        shortageAmount: 0,
+        teacherAction: null
+      }
+    };
+
+    try {
+      // Reading Comprehension uses sentence_templates, not templates_questions
+      const sentenceTemplates = await SentenceTemplate.find({
+        readingLevel: readingLevel,
+        isActive: true
+      }).sort({ createdAt: -1 });
+
+      result.templateAvailability.availableTemplates = sentenceTemplates.length;
+
+      console.log(`[INTERVENTION GENERATOR] Found ${sentenceTemplates.length} Reading Comprehension sentence templates for ${readingLevel}`);
+
+      // Use available sentence templates first
+      for (let i = 0; i < Math.min(questionCount, sentenceTemplates.length); i++) {
+        const template = sentenceTemplates[i];
+        const interventionQuestion = this.convertSentenceTemplateToIntervention(template, i + 1);
+
+        // Customize based on error patterns if available
+        if (interventionPlan && interventionPlan.focus) {
+          interventionQuestion.targetSkill = interventionPlan.focus;
+        }
+
+        result.questions.push(interventionQuestion);
+      }
+
+      // Priority 2: Fill remaining with main assessment questions if needed
+      if (result.questions.length < questionCount) {
+        const mainAssessmentQuestions = await this.getMainAssessmentQuestions('Reading Comprehension');
+        const needed = questionCount - result.questions.length;
+        const fromMainAssessment = Math.min(needed, mainAssessmentQuestions.length);
+
+        for (let i = 0; i < fromMainAssessment; i++) {
+          const mainQuestion = this.convertMainAssessmentToIntervention(mainAssessmentQuestions[i], 'Reading Comprehension');
+          result.questions.push(mainQuestion);
+        }
+
+        result.templateAvailability.mainAssessmentCount = fromMainAssessment;
+      }
+
+      // Priority 3: Generate custom questions if still needed
+      if (result.questions.length < questionCount) {
+        const needed = questionCount - result.questions.length;
+        const customQuestions = this.generateCustomReadingComprehensionQuestions(needed, readingLevel, interventionPlan, abilityEstimate);
+        result.questions.push(...customQuestions);
+        result.templateAvailability.customCount = customQuestions.length;
+      }
+
+      // Calculate shortage
+      if (result.questions.length < questionCount) {
+        result.templateAvailability.shortageAmount = questionCount - result.questions.length;
+        result.templateAvailability.teacherAction = 'create_more_reading_comprehension_templates';
+      }
+
+      console.log(`[INTERVENTION GENERATOR] Generated ${result.questions.length} Reading Comprehension questions:`, {
+        templates: result.templateAvailability.availableTemplates,
+        mainAssessment: result.templateAvailability.mainAssessmentCount,
+        custom: result.templateAvailability.customCount,
+        shortage: result.templateAvailability.shortageAmount
+      });
+
+      return result;
+
+    } catch (error) {
+      console.error('[INTERVENTION GENERATOR] Error generating Reading Comprehension from templates:', error);
+      result.templateAvailability.shortageAmount = questionCount;
+      result.templateAvailability.teacherAction = 'create_reading_comprehension_templates';
+      return result;
+    }
+  }
+
+  // Helper methods for template-based generation
+
+  /**
+   * Calculate error rate from error patterns
+   * @param {Object} errorPatterns - Error patterns object
+   * @returns {number} Error rate percentage
+   */
+  calculateErrorRate(errorPatterns) {
+    if (!errorPatterns || Object.keys(errorPatterns).length === 0) {
+      return 0;
+    }
+
+    // Extract error percentage from various error pattern structures
+    let totalErrors = 0;
+    let totalAssessed = 0;
+
+    Object.values(errorPatterns).forEach(pattern => {
+      if (pattern.percentage && pattern.total) {
+        totalErrors += (pattern.percentage / 100) * pattern.total;
+        totalAssessed += pattern.total;
+      } else if (pattern.count && pattern.total) {
+        totalErrors += pattern.count;
+        totalAssessed += pattern.total;
+      }
+    });
+
+    return totalAssessed > 0 ? Math.round((totalErrors / totalAssessed) * 100) : 0;
+  }
+
+  /**
+   * Get main assessment questions for a category
+   * @param {string} category - Category name
+   * @returns {Array} Main assessment questions
+   */
+  async getMainAssessmentQuestions(category) {
+    try {
+      const mainAssessments = await MainAssessment.find({
+        category: category,
+        isActive: true
+      }).limit(10);
+
+      return mainAssessments.flatMap(assessment => assessment.questions || []);
+    } catch (error) {
+      console.error(`[INTERVENTION GENERATOR] Error getting main assessment questions for ${category}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Convert main assessment question to intervention format
+   * @param {Object} mainQuestion - Main assessment question
+   * @param {string} category - Category name
+   * @returns {Object} Intervention question
+   */
+  convertMainAssessmentToIntervention(mainQuestion, category) {
+    const baseQuestion = {
+      questionId: `main_${mainQuestion.questionId || Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      source: 'main_assessment',
+      sourceQuestionId: mainQuestion.questionId,
+      questionType: mainQuestion.questionType || this.getDefaultQuestionType(category),
+      questionText: mainQuestion.questionText,
+      questionImage: mainQuestion.questionImage,
+      questionValue: mainQuestion.questionValue
+    };
+
+    // Add category-specific fields
     switch (category) {
       case 'Alphabet Knowledge':
-        return this.generateAlphabetKnowledgeQuestions(errorPatterns, interventionPlan, abilityEstimate);
-      
+        baseQuestion.choiceOptions = mainQuestion.choiceOptions;
+        break;
       case 'Phonological Awareness':
-        return this.generatePhonologicalAwarenessQuestions(errorPatterns, interventionPlan, abilityEstimate);
-      
+        baseQuestion.questionSet = mainQuestion.questionSet;
+        break;
       case 'Decoding':
-        return this.generateDecodingQuestions(errorPatterns, interventionPlan, abilityEstimate);
-      
+        baseQuestion.displaySequence = mainQuestion.displaySequence;
+        baseQuestion.dragElements = mainQuestion.dragElements;
+        baseQuestion.correctSequence = mainQuestion.correctSequence;
+        baseQuestion.blankPosition = mainQuestion.blankPosition;
+        break;
       case 'Word Recognition':
-        return this.generateWordRecognitionQuestions(errorPatterns, interventionPlan, abilityEstimate);
-      
+        baseQuestion.displayWord = mainQuestion.displayWord;
+        baseQuestion.blankOptions = mainQuestion.blankOptions;
+        baseQuestion.correctAnswer = mainQuestion.correctAnswer;
+        break;
       case 'Reading Comprehension':
-        return this.generateReadingComprehensionQuestions(readingLevel, interventionPlan, abilityEstimate);
-      
-      default:
-        throw new Error(`Unsupported category for intervention: ${category}`);
+        baseQuestion.storyTitle = mainQuestion.storyTitle;
+        baseQuestion.passages = mainQuestion.passages;
+        baseQuestion.sentenceQuestions = mainQuestion.sentenceQuestions;
+        break;
     }
+
+    return baseQuestion;
   }
 
   /**
-   * Generate Alphabet Knowledge intervention questions
+   * Convert sentence template to intervention question format
+   * @param {Object} sentenceTemplate - Sentence template
+   * @param {number} questionIndex - Question index
+   * @returns {Object} Intervention question
+   */
+  convertSentenceTemplateToIntervention(sentenceTemplate, questionIndex) {
+    return {
+      questionId: `sentence_template_${sentenceTemplate._id}_${questionIndex}`,
+      source: 'template_question',
+      sourceQuestionId: sentenceTemplate._id.toString(),
+      questionType: 'text_input',
+      storyTitle: sentenceTemplate.title,
+      passages: sentenceTemplate.sentenceText.map(text => ({
+        pageNumber: text.pageNumber,
+        text: text.text,
+        image: text.image
+      })),
+      sentenceQuestions: sentenceTemplate.sentenceQuestions.map(sq => ({
+        questionNumber: sq.questionNumber,
+        questionText: sq.questionText,
+        sentenceCorrectAnswer: sq.sentenceCorrectAnswer,
+        sentenceOptionAnswers: sq.sentenceOptionAnswers,
+        sentenceAcceptableAnswer: sq.sentenceAcceptableAnswer
+      })),
+      targetSkill: 'reading_comprehension',
+      targetElement: sentenceTemplate.title
+    };
+  }
+
+  /**
+   * Get default question type for category
+   * @param {string} category - Category name
+   * @returns {string} Default question type
+   */
+  getDefaultQuestionType(category) {
+    const defaults = {
+      'Alphabet Knowledge': 'multiple_choice',
+      'Phonological Awareness': 'malapantig',
+      'Decoding': 'drag_drop',
+      'Word Recognition': 'fill_blank',
+      'Reading Comprehension': 'text_input'
+    };
+    return defaults[category] || 'multiple_choice';
+  }
+
+  /**
+   * Check if alphabet errors exist
+   * @param {Object} errorPatterns - Error patterns
+   * @returns {boolean} True if alphabet errors exist
+   */
+  hasAlphabetErrors(errorPatterns) {
+    return errorPatterns && (errorPatterns.patinig_errors || errorPatterns.katinig_errors);
+  }
+
+  /**
+   * Get alphabet error focus
+   * @param {Object} errorPatterns - Error patterns
+   * @returns {string} Error focus
+   */
+  getAlphabetErrorFocus(errorPatterns) {
+    if (errorPatterns.patinig_errors && errorPatterns.patinig_errors.count > 0) {
+      return 'vowel_discrimination';
+    }
+    if (errorPatterns.katinig_errors && errorPatterns.katinig_errors.count > 0) {
+      return 'consonant_discrimination';
+    }
+    return 'letter_recognition';
+  }
+
+  /**
+   * Check if phonological errors exist
+   * @param {Object} errorPatterns - Error patterns
+   * @returns {boolean} True if phonological errors exist
+   */
+  hasPhonologicalErrors(errorPatterns) {
+    return errorPatterns && errorPatterns.matching_errors;
+  }
+
+  /**
+   * Get phonological error focus
+   * @param {Object} errorPatterns - Error patterns
+   * @returns {string} Error focus
+   */
+  getPhonologicalErrorFocus(errorPatterns) {
+    if (errorPatterns.matching_errors && errorPatterns.matching_errors.confusion_pairs) {
+      return 'sound_discrimination';
+    }
+    return 'phonological_awareness';
+  }
+
+  /**
+   * Check if decoding errors exist
+   * @param {Object} errorPatterns - Error patterns
+   * @returns {boolean} True if decoding errors exist
+   */
+  hasDecodingErrors(errorPatterns) {
+    return errorPatterns && errorPatterns.decoding_errors;
+  }
+
+  /**
+   * Get decoding error focus
+   * @param {Object} errorPatterns - Error patterns
+   * @returns {string} Error focus
+   */
+  getDecodingErrorFocus(errorPatterns) {
+    if (errorPatterns.decoding_errors && errorPatterns.decoding_errors.most_error_position === 0) {
+      return 'initial_sound_difficulty';
+    }
+    return 'word_decoding';
+  }
+
+  /**
+   * Check if word recognition errors exist
+   * @param {Object} errorPatterns - Error patterns
+   * @returns {boolean} True if word recognition errors exist
+   */
+  hasWordRecognitionErrors(errorPatterns) {
+    return errorPatterns && errorPatterns.word_errors;
+  }
+
+  /**
+   * Get word recognition error focus
+   * @param {Object} errorPatterns - Error patterns
+   * @returns {string} Error focus
+   */
+  getWordRecognitionErrorFocus(errorPatterns) {
+    if (errorPatterns.word_errors && errorPatterns.word_errors.error_type === 'context_clues') {
+      return 'sentence_completion';
+    }
+    return 'word_recognition';
+  }
+
+  /**
+   * Generate custom alphabet knowledge questions
+   * @param {number} count - Number of questions needed
    * @param {Object} errorPatterns - Error patterns
    * @param {Object} interventionPlan - Intervention plan
    * @param {number} abilityEstimate - Ability estimate
-   * @returns {Array} 10 questions
+   * @returns {Array} Custom questions
    */
-  generateAlphabetKnowledgeQuestions(errorPatterns, interventionPlan, abilityEstimate) {
+  generateCustomAlphabetQuestions(count, errorPatterns, interventionPlan, abilityEstimate) {
     const questions = [];
-    const distribution = interventionPlan.questionDistribution || { patinig: 50, katinig: 50 };
-    
-    // Calculate number of each type
-    const patinigCount = Math.round(10 * (distribution.patinig / 100));
-    const katinigCount = 10 - patinigCount;
+    const patinigLetters = this.getTargetPatinigLetters(errorPatterns, interventionPlan);
+    const katinigLetters = this.getTargetKatinigLetters(errorPatterns, interventionPlan);
 
-    // Get target letters from error patterns or intervention plan
-    const targetPatinig = this.getTargetPatinigLetters(errorPatterns, interventionPlan);
-    const targetKatinig = this.getTargetKatinigLetters(errorPatterns, interventionPlan);
+    for (let i = 0; i < count; i++) {
+      const isPatinig = i % 2 === 0;
+      const targetLetters = isPatinig ? patinigLetters : katinigLetters;
+      const targetLetter = targetLetters[i % targetLetters.length];
+      const questionType = isPatinig ? 'patinig' : 'katinig';
 
-    // Generate patinig questions
-    for (let i = 0; i < patinigCount; i++) {
-      const letter = targetPatinig[i % targetPatinig.length];
+      const choices = this.generateAlphabetChoices(targetLetter, questionType, abilityEstimate);
+
       questions.push({
-        questionId: `q_ak_int_patinig_${i + 1}`,
+        questionId: `custom_ak_${i + 1}_${Date.now()}`,
         source: 'custom',
-        questionType: 'multiple_choice',
-        questionText: 'Anong ang katumbas na maliit na letra?',
-        questionImage: this.generateS3ImageUrl('alphabet-knowledge', `big-${letter}.png`),
-        questionValue: letter,
-        choiceOptions: this.generateAlphabetChoices(letter, 'patinig', abilityEstimate),
-        difficulty: this.calculateQuestionDifficulty(abilityEstimate, i, 10),
-        discrimination: 1.2,
-        targetSkill: 'patinig_recognition',
-        targetElement: letter
+        sourceQuestionId: null,
+        questionType: questionType,
+        questionText: isPatinig ? 'Anong katumbas na maliit na letra?' : 'Anong katumbas na maliit na letra?',
+        questionImage: this.generateS3ImageUrl('alphabet-knowledge', `${targetLetter}.png`),
+        questionValue: targetLetter,
+        choiceOptions: choices,
+        targetSkill: questionType,
+        targetElement: targetLetter
       });
     }
 
-    // Generate katinig questions
-    for (let i = 0; i < katinigCount; i++) {
-      const letter = targetKatinig[i % targetKatinig.length];
-      questions.push({
-        questionId: `q_ak_int_katinig_${i + 1}`,
-        source: 'custom',
-        questionType: 'multiple_choice',
-        questionText: 'Anong ang katumbas na maliit na letra?',
-        questionImage: this.generateS3ImageUrl('alphabet-knowledge', `big-${letter}.png`),
-        questionValue: letter,
-        choiceOptions: this.generateAlphabetChoices(letter, 'katinig', abilityEstimate),
-        difficulty: this.calculateQuestionDifficulty(abilityEstimate, i + patinigCount, 10),
-        discrimination: 1.2,
-        targetSkill: 'katinig_recognition',
-        targetElement: letter
-      });
-    }
-
-    return questions.slice(0, 10); // Ensure exactly 10 questions
+    return questions;
   }
 
   /**
-   * Generate Phonological Awareness intervention questions
+   * Generate custom phonological awareness questions
+   * @param {number} count - Number of questions needed
    * @param {Object} errorPatterns - Error patterns
    * @param {Object} interventionPlan - Intervention plan
    * @param {number} abilityEstimate - Ability estimate
-   * @returns {Array} 10 questions
+   * @returns {Array} Custom questions
    */
-  generatePhonologicalAwarenessQuestions(errorPatterns, interventionPlan, abilityEstimate) {
+  generateCustomPhonologicalQuestions(count, errorPatterns, interventionPlan, abilityEstimate) {
     const questions = [];
     const targetSounds = interventionPlan.targetSounds || ['B-P', 'M-N', 'D-T', 'L-R'];
 
-    // All questions are matching type for PA
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < count; i++) {
       const soundSet = this.getPhonologicalSoundSet(targetSounds, i, abilityEstimate);
-      
+
       questions.push({
-        questionId: `q_pa_int_${i + 1}`,
+        questionId: `custom_pa_${i + 1}_${Date.now()}`,
         source: 'custom',
+        sourceQuestionId: null,
         questionType: 'malapantig',
-        questionText: 'Pakinggan ang letra sa audio. Itugma ito sa katumbas na letra.',
+        questionText: 'Pakinggan ang audio. Itugma ito sa katumbas na letra sa kabilang hanay.',
+        questionImage: null,
+        questionValue: null,
         questionSet: {
           audioTexts: soundSet.audioTexts,
           matchingOptions: soundSet.matchingOptions,
           correctPairs: soundSet.correctPairs
         },
-        difficulty: this.calculateQuestionDifficulty(abilityEstimate, i, 10),
-        discrimination: 1.1,
         targetSkill: 'sound_discrimination',
         targetElement: soundSet.confusionPair
       });
@@ -271,37 +1044,37 @@ class InterventionGeneratorService {
   }
 
   /**
-   * Generate Decoding intervention questions
+   * Generate custom decoding questions
+   * @param {number} count - Number of questions needed
    * @param {Object} errorPatterns - Error patterns
    * @param {Object} interventionPlan - Intervention plan
    * @param {number} abilityEstimate - Ability estimate
-   * @returns {Array} 10 questions
+   * @returns {Array} Custom questions
    */
-  generateDecodingQuestions(errorPatterns, interventionPlan, abilityEstimate) {
+  generateCustomDecodingQuestions(count, errorPatterns, interventionPlan, abilityEstimate) {
     const questions = [];
     const targetPatterns = interventionPlan.targetPatterns || ['CVC', 'CVCV'];
     const focus = interventionPlan.focus || 'initial_sounds';
-
     const wordList = this.getDecodingWords(targetPatterns, focus, abilityEstimate);
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < count; i++) {
       const word = wordList[i % wordList.length];
       const questionData = this.createDecodingQuestion(word, focus, i);
-      
+
       questions.push({
-        questionId: `q_dc_int_${i + 1}`,
+        questionId: `custom_dc_${i + 1}_${Date.now()}`,
         source: 'custom',
-        questionType: 'drag_drop',
+        sourceQuestionId: null,
+        questionType: questionData.displaySequence ? 'fill_missing_letter' : 'complete_word_identification',
         questionText: questionData.questionText,
         questionImage: questionData.questionImage,
+        questionValue: null,
         displaySequence: questionData.displaySequence,
         dragElements: questionData.dragElements,
         correctSequence: questionData.correctSequence,
         blankPosition: questionData.blankPosition,
-        difficulty: this.calculateQuestionDifficulty(abilityEstimate, i, 10),
-        discrimination: 1.0,
-        targetSkill: 'decoding',
-        targetElement: word.toUpperCase()
+        targetSkill: focus,
+        targetElement: word
       });
     }
 
@@ -309,33 +1082,32 @@ class InterventionGeneratorService {
   }
 
   /**
-   * Generate Word Recognition intervention questions
+   * Generate custom word recognition questions
+   * @param {number} count - Number of questions needed
    * @param {Object} errorPatterns - Error patterns
    * @param {Object} interventionPlan - Intervention plan
    * @param {number} abilityEstimate - Ability estimate
-   * @returns {Array} 10 questions
+   * @returns {Array} Custom questions
    */
-  generateWordRecognitionQuestions(errorPatterns, interventionPlan, abilityEstimate) {
+  generateCustomWordRecognitionQuestions(count, errorPatterns, interventionPlan, abilityEstimate) {
     const questions = [];
     const distribution = interventionPlan.questionDistribution || { sentence_completion: 60, rhyming: 40 };
-    
-    const sentenceCount = Math.round(10 * (distribution.sentence_completion / 100));
-    const rhymingCount = 10 - sentenceCount;
+    const sentenceCount = Math.round(count * (distribution.sentence_completion / 100));
+    const rhymingCount = count - sentenceCount;
 
     // Generate sentence completion questions
     for (let i = 0; i < sentenceCount; i++) {
       const sentenceData = this.getSentenceCompletionData(i, abilityEstimate);
-      
+
       questions.push({
-        questionId: `q_wr_int_sentence_${i + 1}`,
+        questionId: `custom_wr_sentence_${i + 1}_${Date.now()}`,
         source: 'custom',
-        questionType: 'fill_blank',
+        sourceQuestionId: null,
+        questionType: 'sentence_completion',
         questionText: 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.',
         displayWord: sentenceData.sentence,
         blankOptions: sentenceData.options,
         correctAnswer: sentenceData.correctAnswer,
-        difficulty: this.calculateQuestionDifficulty(abilityEstimate, i, 10),
-        discrimination: 1.1,
         targetSkill: 'sentence_context',
         targetElement: sentenceData.correctAnswer[0]
       });
@@ -344,18 +1116,17 @@ class InterventionGeneratorService {
     // Generate rhyming questions
     for (let i = 0; i < rhymingCount; i++) {
       const rhymingData = this.getRhymingData(i, abilityEstimate);
-      
+
       questions.push({
-        questionId: `q_wr_int_rhyme_${i + 1}`,
+        questionId: `custom_wr_rhyme_${i + 1}_${Date.now()}`,
         source: 'custom',
-        questionType: 'fill_blank',
+        sourceQuestionId: null,
+        questionType: 'rhyming_words',
         questionText: 'Anong kasing tunog ng salitang nakikita?',
         questionImage: rhymingData.image,
         displayWord: rhymingData.word,
         blankOptions: rhymingData.options,
         correctAnswer: rhymingData.correctAnswer,
-        difficulty: this.calculateQuestionDifficulty(abilityEstimate, i + sentenceCount, 10),
-        discrimination: 1.0,
         targetSkill: 'rhyming_words',
         targetElement: rhymingData.word
       });
@@ -365,65 +1136,36 @@ class InterventionGeneratorService {
   }
 
   /**
-   * Generate Reading Comprehension intervention questions
+   * Generate custom reading comprehension questions
+   * @param {number} count - Number of questions needed
    * @param {string} readingLevel - Reading level
    * @param {Object} interventionPlan - Intervention plan
    * @param {number} abilityEstimate - Ability estimate
-   * @returns {Array} 10 questions (structured as passages with multiple sentence questions each)
+   * @returns {Array} Custom questions
    */
-  generateReadingComprehensionQuestions(readingLevel, interventionPlan, abilityEstimate) {
+  generateCustomReadingComprehensionQuestions(count, readingLevel, interventionPlan, abilityEstimate) {
     const questions = [];
-    
-    // Get reading comprehension passages based on reading level
     const passages = this.getReadingComprehensionPassages(readingLevel, abilityEstimate);
-    
-    let questionIndex = 1;
-    
-    // Each passage becomes one question object with multiple sentence questions
-    for (const passage of passages) {
-      if (questionIndex > 10) break;
-      
+
+    for (let i = 0; i < count; i++) {
+      const passage = passages[i % passages.length];
+
       questions.push({
-        questionId: `q_rc_int_${questionIndex}`,
+        questionId: `custom_rc_${i + 1}_${Date.now()}`,
         source: 'custom',
+        sourceQuestionId: null,
         questionType: 'text_input',
         storyTitle: passage.storyTitle,
         passages: passage.passages,
-        sentenceQuestions: passage.sentenceQuestions, // All sentence questions for this passage
-        questionValue: null,
-        difficulty: this.calculateQuestionDifficulty(abilityEstimate, questionIndex - 1, 10),
-        discrimination: 0.9,
-        targetSkill: 'literal_comprehension',
-        targetElement: passage.storyTitle
-      });
-      
-      questionIndex++;
-    }
-
-    // If we don't have enough passages to make 10 questions, 
-    // we can duplicate some passages with slight variations
-    while (questions.length < 10 && passages.length > 0) {
-      const passage = passages[questions.length % passages.length];
-      
-      questions.push({
-        questionId: `q_rc_int_${questions.length + 1}`,
-        source: 'custom',
-        questionType: 'text_input',
-        storyTitle: `${passage.storyTitle} - Part ${Math.floor(questions.length / passages.length) + 1}`,
-        passages: passage.passages,
         sentenceQuestions: passage.sentenceQuestions,
         questionValue: null,
-        difficulty: this.calculateQuestionDifficulty(abilityEstimate, questions.length, 10),
-        discrimination: 0.9,
         targetSkill: 'literal_comprehension',
         targetElement: passage.storyTitle
       });
     }
 
-    return questions.slice(0, 10);
+    return questions;
   }
-
-  // Helper methods
 
   getTargetPatinigLetters(errorPatterns, interventionPlan) {
     if (interventionPlan.targetLetters && interventionPlan.targetLetters.length > 0) {
@@ -594,19 +1336,34 @@ class InterventionGeneratorService {
         passages: [
           {
             pageNumber: 1,
-            pageText: 'Si Ana ay may maliit na aso na si Brownie.',
-            pageImage: this.generateS3ImageUrl('reading-comprehension', 'Si-Ana-at-ang-Aso-1.png')
+            text: 'Si Ana ay may maliit na aso na si Brownie.',
+            image: this.generateS3ImageUrl('reading-comprehension', 'Si-Ana-at-ang-Aso-1.png')
           },
           {
             pageNumber: 2,
-            pageText: 'Tuwing umaga, naglalaro sila sa hardin.',
-            pageImage: this.generateS3ImageUrl('reading-comprehension', 'Si-Ana-at-ang-Aso-2.png')
+            text: 'Tuwing umaga, naglalaro sila sa hardin.',
+            image: this.generateS3ImageUrl('reading-comprehension', 'Si-Ana-at-ang-Aso-2.png')
           }
         ],
         sentenceQuestions: [
-          { questionText: 'Sino ang may aso?', correctAnswer: 'Ana', acceptableAnswers: ['Ana', 'si Ana'] },
-          { questionText: 'Ano ang pangalan ng aso?', correctAnswer: 'Brownie', acceptableAnswers: ['Brownie'] },
-          { questionText: 'Saan sila naglalaro?', correctAnswer: 'hardin', acceptableAnswers: ['hardin', 'sa hardin'] }
+          {
+            questionNumber: 1,
+            questionText: 'Sino ang may aso?',
+            sentenceCorrectAnswer: 'Ana',
+            sentenceAcceptableAnswer: ['Ana', 'si Ana']
+          },
+          {
+            questionNumber: 2,
+            questionText: 'Ano ang pangalan ng aso?',
+            sentenceCorrectAnswer: 'Brownie',
+            sentenceAcceptableAnswer: ['Brownie']
+          },
+          {
+            questionNumber: 3,
+            questionText: 'Saan sila naglalaro?',
+            sentenceCorrectAnswer: 'hardin',
+            sentenceAcceptableAnswer: ['hardin', 'sa hardin']
+          }
         ]
       },
       {
@@ -614,13 +1371,23 @@ class InterventionGeneratorService {
         passages: [
           {
             pageNumber: 1,
-            pageText: 'May isang langaw na nahulog sa tubig.',
-            pageImage: this.generateS3ImageUrl('reading-comprehension', 'Ang-Matalinong-Langaw-1.png')
+            text: 'May isang langaw na nahulog sa tubig.',
+            image: this.generateS3ImageUrl('reading-comprehension', 'Ang-Matalinong-Langaw-1.png')
           }
         ],
         sentenceQuestions: [
-          { questionText: 'Sino ang nahulog sa tubig?', correctAnswer: 'langaw', acceptableAnswers: ['langaw', 'isang langaw'] },
-          { questionText: 'Saan nahulog ang langaw?', correctAnswer: 'tubig', acceptableAnswers: ['tubig', 'sa tubig'] }
+          {
+            questionNumber: 1,
+            questionText: 'Sino ang nahulog sa tubig?',
+            sentenceCorrectAnswer: 'langaw',
+            sentenceAcceptableAnswer: ['langaw', 'isang langaw']
+          },
+          {
+            questionNumber: 2,
+            questionText: 'Saan nahulog ang langaw?',
+            sentenceCorrectAnswer: 'tubig',
+            sentenceAcceptableAnswer: ['tubig', 'sa tubig']
+          }
         ]
       }
     ];
@@ -752,6 +1519,21 @@ class InterventionGeneratorService {
       if (!intervention) {
         throw new Error(`Intervention assessment not found: ${interventionId}`);
       }
+
+      // CRITICAL: Validate intervention completeness before creating results
+      console.log(`[INTERVENTION GENERATOR] ✅ VALIDATING INTERVENTION COMPLETENESS BEFORE CREATING RESULTS`);
+      const CategoryResultsService = require('./CategoryResultsService');
+      const completenessValidation = await CategoryResultsService.validateInterventionCompleteness(intervention.studentId, interventionId);
+
+      if (!completenessValidation.isComplete) {
+        console.warn(`[INTERVENTION GENERATOR] ❌ INTERVENTION INCOMPLETE - BLOCKING INTERVENTION RESULTS CREATION`);
+        console.warn(`[INTERVENTION GENERATOR] Completeness status:`, JSON.stringify(completenessValidation, null, 2));
+
+        throw new Error(`Intervention incomplete for student ${intervention.studentId}. Cannot create intervention_results until all questions are answered. Required: ${completenessValidation.required}, Answered: ${completenessValidation.answered}, Missing: ${completenessValidation.missing}`);
+      }
+
+      console.log(`[INTERVENTION GENERATOR] ✅ INTERVENTION COMPLETENESS VALIDATED - PROCEEDING WITH RESULTS CREATION`);
+      console.log(`[INTERVENTION GENERATOR] Completeness: ${completenessValidation.answered}/${completenessValidation.required} questions answered`);
 
       // Get all responses for this intervention
       const responses = await InterventionResponse.find({

@@ -452,6 +452,15 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load templates routes:', error.message);
     }
 
+    // Load auto-processing routes (automatic assessment processing)
+    try {
+      const autoProcessingRoutes = require('./routes/Teachers/autoProcessingRoutes');
+      app.use('/api/auto-processing', autoProcessingRoutes);
+      console.log('✅ Loaded auto-processing routes at /api/auto-processing/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load auto-processing routes:', error.message);
+    }
+
     // Load student routes
     try {
       app.use('/api/student', require('./routes/Teachers/studentRoutes'));
@@ -1072,4 +1081,15 @@ app.listen(PORT, () => {
   console.log(`\n✅ Server is running on port ${PORT}`);
   console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`API URL: http://localhost:${PORT}`);
+
+  // Start automatic processing of complete assessments
+  try {
+    const AutoProcessingService = require('./services/Teachers/AutoProcessingService');
+
+    // Start periodic auto-processing every 5 minutes
+    AutoProcessingService.startPeriodicProcessing(5);
+    console.log('🤖 Auto-processing service started - will check for complete assessments every 5 minutes');
+  } catch (error) {
+    console.warn('⚠️ Could not start auto-processing service:', error.message);
+  }
 });

@@ -254,6 +254,148 @@ class CategoryResultsService {
    * @param {string} category - Category name (optional, if not provided processes all categories)
    * @returns {Promise<Object>} Generated category results
    */
+  /**
+   * Validate completeness before creating category results
+   * Ensures student answered ALL questions in the main assessment for each category
+   * @param {number} studentId - Student ID
+   * @param {string} readingLevel - Student's reading level
+   * @param {string} category - Specific category (optional)
+   * @returns {Promise<Object>} Validation result with completeness status
+   */
+  static async validateAssessmentCompleteness(studentId, readingLevel, category = null) {
+    try {
+      console.log(`[COMPLETENESS VALIDATION] Checking completeness for student ${studentId}, level ${readingLevel}`);
+
+      const MainAssessment = require('../../models/Teachers/mainAssessmentModel');
+      const StudentResponse = require('../../models/Teachers/ManageProgress/studentResponseModel');
+
+      // Get main assessments for the reading level
+      const query = { readingLevel, isActive: true };
+      if (category) {
+        query.category = category;
+      }
+
+      const mainAssessments = await MainAssessment.find(query);
+
+      if (mainAssessments.length === 0) {
+        console.warn(`[COMPLETENESS VALIDATION] No main assessments found for ${readingLevel}${category ? ` - ${category}` : ''}`);
+        return {
+          isComplete: false,
+          reason: 'no_assessments_found',
+          details: `No main assessments found for reading level ${readingLevel}${category ? ` in category ${category}` : ''}`
+        };
+      }
+
+      const completenessResults = {};
+      let overallComplete = true;
+
+      for (const assessment of mainAssessments) {
+        const categoryName = assessment.category;
+        const totalQuestionsInAssessment = assessment.questions.length;
+
+        console.log(`[COMPLETENESS VALIDATION] Checking ${categoryName}: ${totalQuestionsInAssessment} questions required`);
+
+        // Get student responses for this category
+        const studentResponses = await StudentResponse.find({
+          studentId: parseInt(studentId),
+          category: categoryName
+        });
+
+        const answeredQuestions = studentResponses.length;
+        const isComplete = answeredQuestions >= totalQuestionsInAssessment;
+
+        completenessResults[categoryName] = {
+          required: totalQuestionsInAssessment,
+          answered: answeredQuestions,
+          isComplete,
+          missing: Math.max(0, totalQuestionsInAssessment - answeredQuestions),
+          assessmentId: assessment._id
+        };
+
+        if (!isComplete) {
+          overallComplete = false;
+          console.log(`[COMPLETENESS VALIDATION] ${categoryName} INCOMPLETE: ${answeredQuestions}/${totalQuestionsInAssessment} questions answered`);
+        } else {
+          console.log(`[COMPLETENESS VALIDATION] ${categoryName} COMPLETE: ${answeredQuestions}/${totalQuestionsInAssessment} questions answered`);
+        }
+      }
+
+      return {
+        isComplete: overallComplete,
+        categoryResults: completenessResults,
+        summary: {
+          totalCategories: Object.keys(completenessResults).length,
+          completeCategories: Object.values(completenessResults).filter(r => r.isComplete).length,
+          incompleteCategories: Object.values(completenessResults).filter(r => !r.isComplete).length
+        }
+      };
+
+    } catch (error) {
+      console.error('[COMPLETENESS VALIDATION] Error validating completeness:', error);
+      return {
+        isComplete: false,
+        reason: 'validation_error',
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Validate intervention assessment completeness
+   * @param {number} studentId - Student ID
+   * @param {string} interventionAssessmentId - Intervention Assessment ID
+   * @returns {Promise<Object>} Validation result
+   */
+  static async validateInterventionCompleteness(studentId, interventionAssessmentId) {
+    try {
+      console.log(`[INTERVENTION COMPLETENESS] Checking completeness for student ${studentId}, intervention ${interventionAssessmentId}`);
+
+      const InterventionAssessment = require('../../models/Teachers/ManageProgress/interventionAssessmentModel');
+      const InterventionResponse = require('../../models/Teachers/ManageProgress/interventionResponseModel');
+
+      // Get intervention assessment
+      const intervention = await InterventionAssessment.findById(interventionAssessmentId);
+
+      if (!intervention) {
+        return {
+          isComplete: false,
+          reason: 'intervention_not_found',
+          details: `Intervention assessment ${interventionAssessmentId} not found`
+        };
+      }
+
+      const totalQuestionsInIntervention = intervention.totalQuestions || intervention.questions.length;
+
+      // Get student responses for this intervention
+      const interventionResponses = await InterventionResponse.find({
+        studentId: parseInt(studentId),
+        interventionAssessmentId: interventionAssessmentId
+      });
+
+      const answeredQuestions = interventionResponses.length;
+      const isComplete = answeredQuestions >= totalQuestionsInIntervention;
+
+      console.log(`[INTERVENTION COMPLETENESS] ${intervention.category}: ${answeredQuestions}/${totalQuestionsInIntervention} questions answered - ${isComplete ? 'COMPLETE' : 'INCOMPLETE'}`);
+
+      return {
+        isComplete,
+        category: intervention.category,
+        required: totalQuestionsInIntervention,
+        answered: answeredQuestions,
+        missing: Math.max(0, totalQuestionsInIntervention - answeredQuestions),
+        interventionId: interventionAssessmentId
+      };
+
+    } catch (error) {
+      console.error('[INTERVENTION COMPLETENESS] Error validating intervention completeness:', error);
+      return {
+        isComplete: false,
+        reason: 'validation_error',
+        error: error.message
+      };
+    }
+  }
+
   static async generateCategoryResultsFromResponses(studentId, category = null) {
     try {
       console.log(`[CATEGORY RESULTS] Generating category results from responses for student ${studentId}`);
@@ -279,6 +421,20 @@ class CategoryResultsService {
           console.log(`[CATEGORY RESULTS] Using default reading level: ${readingLevel}`);
         }
       }
+
+      // CRITICAL: Validate completeness before proceeding
+      console.log(`[CATEGORY RESULTS] ✅ VALIDATING ASSESSMENT COMPLETENESS BEFORE CREATING RECORDS`);
+      const completenessValidation = await this.validateAssessmentCompleteness(studentId, readingLevel, category);
+
+      if (!completenessValidation.isComplete) {
+        console.warn(`[CATEGORY RESULTS] ❌ ASSESSMENT INCOMPLETE - BLOCKING CATEGORY RESULTS CREATION`);
+        console.warn(`[CATEGORY RESULTS] Completeness status:`, JSON.stringify(completenessValidation, null, 2));
+
+        throw new Error(`Assessment incomplete for student ${studentId}. Cannot create category_results or prescriptive_analysis until all questions are answered. Missing questions: ${JSON.stringify(completenessValidation.categoryResults)}`);
+      }
+
+      console.log(`[CATEGORY RESULTS] ✅ ASSESSMENT COMPLETENESS VALIDATED - PROCEEDING WITH RECORD CREATION`);
+      console.log(`[CATEGORY RESULTS] Completeness summary:`, completenessValidation.summary);
 
       // Get all student responses
       const StudentResponse = require('../../models/Teachers/ManageProgress/studentResponseModel');
@@ -404,10 +560,15 @@ class CategoryResultsService {
         categories: categories
       };
 
+      // Final validation before creating record
+      console.log(`[CATEGORY RESULTS] 🔒 FINAL VALIDATION: All categories complete - creating normalized record`);
+
       // Use existing createCategoryResult method
       const createdResult = await this.createCategoryResult(categoryResultData);
 
-      console.log(`[CATEGORY RESULTS] Successfully generated category results for student ${studentId}`);
+      console.log(`[CATEGORY RESULTS] ✅ Successfully generated COMPLETE category results for student ${studentId}`);
+      console.log(`[CATEGORY RESULTS] Record ID: ${createdResult._id}`);
+      console.log(`[CATEGORY RESULTS] Categories: ${createdResult.categories.map(c => `${c.categoryName} (${c.totalQuestions}Q)`).join(', ')}`);
 
       return createdResult;
 
