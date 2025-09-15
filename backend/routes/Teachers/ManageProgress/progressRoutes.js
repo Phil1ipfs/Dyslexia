@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const progressController = require('../../../controllers/Teachers/ManageProgress/progressController');
-const studentController = require('../../studentController');
+const studentController = require('../studentController');
 const { auth, authorize } = require('../../../middleware/auth');
 
 router.use(auth);
@@ -29,6 +29,10 @@ router.put('/prescriptive-analysis/:analysisId', authorize('teacher', 'admin'), 
 // Create a new intervention plan
 // POST /api/progress/interventions
 router.post('/interventions', authorize('teacher', 'admin'), progressController.createInterventionPlan);
+
+// Get category results for a student (missing route fix)
+// GET /api/progress/category-results/:studentId
+router.get('/category-results/:studentId', authorize('teacher', 'admin', 'parent'), studentController.getCategoryResults);
 
 // Get prescriptive analyses for a student
 // GET /api/progress/student/:studentId/prescriptive-analyses
