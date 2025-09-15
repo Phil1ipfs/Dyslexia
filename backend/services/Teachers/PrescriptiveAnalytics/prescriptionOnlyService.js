@@ -985,6 +985,28 @@ class PrescriptionOnlyService {
                 keyIndicators: ['Accuracy improvement', 'Error pattern reduction'],
                 dataCollectionMethod: 'Intervention assessment performance'
               }
+            },
+            escalationProtocol: {
+              triggers: [{
+                trigger: 'No improvement after 2 weeks',
+                approach: 'Increase intervention intensity',
+                researchFoundation: 'Response to Intervention (RTI) model',
+                specificTechniques: [{
+                  technique: 'Intensive one-on-one instruction',
+                  purpose: 'Address persistent learning difficulties',
+                  implementation: 'Daily 20-minute sessions',
+                  materials: ['Teacher-created materials', 'Multisensory aids'],
+                  progression: 'Gradual skill building',
+                  researchBasis: 'Systematic synthetic phonics approach',
+                  researchEvidence: 'Evidence-based intervention research'
+                }],
+                intensityRecommendations: {
+                  duration: '4-6 weeks intensive',
+                  frequency: 'Daily sessions',
+                  totalIntervention: '20-30 hours',
+                  researchSupport: 'RTI framework guidelines'
+                }
+              }]
             }
           };
         }
