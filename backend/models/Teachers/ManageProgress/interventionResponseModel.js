@@ -58,6 +58,18 @@ const interventionResponseSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
+
+  // NEW: Revision tracking fields
+  assessmentRevision: {
+    type: Number,
+    required: true,
+    default: 1 // Which revision of the assessment was answered
+  },
+  isPostRevision: {
+    type: Boolean,
+    default: false // Was this response to a teacher-revised assessment?
+  },
+
   readingLevel: {
     type: String,
     required: true,

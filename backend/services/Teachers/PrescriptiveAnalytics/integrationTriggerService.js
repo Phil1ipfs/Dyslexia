@@ -32,8 +32,10 @@ class IntegrationTriggerService {
         return existingAnalysis;
       }
       
-      // Generate prescriptive analysis using the category result ID
-      const analysis = await prescriptiveAnalyticsService.generatePrescriptiveAnalysis(categoryResult._id);
+      // NEW: Generate prescription-only analysis (Doctor-Teacher-Student Model)
+      // This provides DIAGNOSIS + PRESCRIPTION only, NO question generation
+      console.log(`[DOCTOR-TEACHER-STUDENT] Using prescription-only model for category result ${categoryResult._id}`);
+      const analysis = await prescriptiveAnalyticsService.generatePrescriptionOnly(categoryResult._id);
       
       console.log(`[INTEGRATION TRIGGER] Successfully generated prescriptive analysis ${analysis._id} for student ${categoryResult.studentId}`);
       

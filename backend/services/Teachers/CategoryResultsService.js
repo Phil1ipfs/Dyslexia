@@ -1017,6 +1017,86 @@ class CategoryResultsService {
       };
     }
   }
+
+  /**
+   * Update category_results when intervention succeeds
+   * This is called when intervention_results shows a passing score (≥75%)
+   *
+   * @param {number} studentId - Student ID
+   * @param {string} category - Category name
+   * @param {number} interventionScore - Score from intervention
+   * @param {ObjectId} interventionResultId - ID of intervention result
+   * @returns {Object} Update result
+   */
+  static async updateCategoryFromIntervention(studentId, category, interventionScore, interventionResultId) {
+    try {
+      console.log(`[INTERVENTION UPDATE] Updating category_results for student ${studentId}, category ${category}, score ${interventionScore}`);
+
+      // Find the category result that needs updating
+      const categoryResult = await CategoryResult.findOne({
+        studentId: parseInt(studentId),
+        'categories.categoryName': category
+      });
+
+      if (!categoryResult) {
+        throw new Error(`Category result not found for student ${studentId}, category ${category}`);
+      }
+
+      // Find the specific category within the result
+      const categoryIndex = categoryResult.categories.findIndex(
+        cat => cat.categoryName === category
+      );
+
+      if (categoryIndex === -1) {
+        throw new Error(`Category ${category} not found in results for student ${studentId}`);
+      }
+
+      // Update the category with intervention success
+      categoryResult.categories[categoryIndex].score = interventionScore;
+      categoryResult.categories[categoryIndex].isPassed = true;
+      categoryResult.categories[categoryIndex].interventionRequired = false;
+      categoryResult.categories[categoryIndex].interventionCompleted = true;
+      categoryResult.categories[categoryIndex].interventionResultId = interventionResultId;
+      categoryResult.categories[categoryIndex].lastUpdated = new Date();
+
+      // Update overall category result metadata
+      categoryResult.updatedAt = new Date();
+
+      // Save the updated category result
+      await categoryResult.save();
+
+      console.log(`[INTERVENTION UPDATE] Successfully updated category_results for ${category}`);
+
+      // Check if all categories for this reading level are now passed
+      const student = await User.findOne({ idNumber: studentId });
+      if (student) {
+        const progressionResult = await this.processReadingLevelProgression(
+          studentId,
+          student.readingLevel
+        );
+
+        if (progressionResult.shouldProgress) {
+          console.log(`[INTERVENTION UPDATE] Student ${studentId} progressed from ${student.readingLevel} to ${progressionResult.newLevel}`);
+        }
+      }
+
+      return {
+        success: true,
+        message: `Category ${category} updated to passed status`,
+        score: interventionScore,
+        categoryResult: categoryResult._id,
+        progressionChecked: true
+      };
+
+    } catch (error) {
+      console.error('[INTERVENTION UPDATE] Error updating category from intervention:', error);
+      return {
+        success: false,
+        error: error.message,
+        reason: 'Failed to update category_results from intervention success'
+      };
+    }
+  }
 }
 
 module.exports = CategoryResultsService; 

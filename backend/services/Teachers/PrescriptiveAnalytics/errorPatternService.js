@@ -96,7 +96,17 @@ class ErrorPatternService {
         percentage: Math.round((patinigErrors.length / patinigResponses.length) * 100),
         specific_letters: specificLetters,
         error_type: specificLetters.length > 2 ? 'visual_confusion' : 'specific_letter_difficulty',
-        questionIds: patinigErrors.map(r => r.questionId)
+        questionIds: patinigErrors.map(r => r.questionId),
+        researchClassification: specificLetters.length > 2 ?
+          'Multiple vowel confusion - potential visual processing difficulty' :
+          'Specific vowel deficit - targeted intervention needed',
+        interventionFocus: 'Visual-auditory vowel discrimination with multisensory support',
+        cognitiveImplications: {
+          workingMemory: specificLetters.length > 3 ? 'High load - may indicate working memory limitations' : 'Manageable load',
+          visualProcessing: specificLetters.length > 2 ? 'Visual discrimination difficulties evident' : 'Specific visual pattern issue',
+          auditoryProcessing: 'Cross-modal letter-sound integration challenges',
+          attentionFactors: patinigErrors.length > patinigResponses.length * 0.7 ? 'High error rate suggests attention or processing issues' : 'Within expected range'
+        }
       };
     }
     
@@ -113,7 +123,24 @@ class ErrorPatternService {
         percentage: Math.round((katinigErrors.length / katinigResponses.length) * 100),
         specific_letters: specificLetters,
         error_type: hasConfusionPairs ? 'sound_substitution' : 'general_difficulty',
-        questionIds: katinigErrors.map(r => r.questionId)
+        questionIds: katinigErrors.map(r => r.questionId),
+        researchClassification: hasConfusionPairs ?
+          'Phonological confusion patterns - sound substitution difficulties' :
+          'General consonant processing deficit',
+        interventionFocus: hasConfusionPairs ?
+          'Phoneme discrimination training with articulatory awareness' :
+          'Systematic consonant-sound correspondence building',
+        cognitiveImplications: {
+          workingMemory: specificLetters.length > 5 ? 'Overloaded - reduce cognitive demands' : 'Manageable processing load',
+          auditoryProcessing: hasConfusionPairs ? 'Phoneme discrimination difficulties - requires intensive auditory training' : 'General auditory processing support needed',
+          visualStrengths: 'Can leverage visual cues and mouth position images',
+          attentionFactors: katinigErrors.length > katinigResponses.length * 0.6 ? 'High error rate - consider attention regulation strategies' : 'Attention within normal range'
+        },
+        confusionPairAnalysis: hasConfusionPairs ? {
+          commonPairs: specificLetters.filter(letter => confusionPairs.includes(letter)),
+          linguisticBasis: 'Similar place or manner of articulation',
+          interventionPriority: 'Address most frequent confusions first'
+        } : null
       };
     }
     
@@ -149,7 +176,24 @@ class ErrorPatternService {
         percentage: Math.round((incorrectMatches.length / totalResponses) * 100),
         avg_partial_success: Math.round(avgPartialSuccess * 100) / 100,
         error_type: errorType,
-        questionIds: incorrectMatches.map(r => r.questionId)
+        questionIds: incorrectMatches.map(r => r.questionId),
+        cognitiveImplications: {
+          workingMemory: avgPartialSuccess < 0.3 ? 'Severe working memory limitations - reduce sequence length' :
+                        avgPartialSuccess < 0.6 ? 'Moderate working memory challenges - provide support' :
+                        'Working memory within functional range',
+          auditoryProcessing: errorType === 'sound_discrimination' ?
+                            'Significant auditory discrimination deficits - intensive training needed' :
+                            'Sequential auditory processing difficulties',
+          visualStrengths: 'Can benefit from visual cues and mouth position images',
+          attentionFactors: incorrectMatches.length > totalResponses * 0.75 ?
+                          'High error rate suggests attention regulation difficulties' :
+                          'Attention appears adequate for task demands'
+        },
+        sequentialDifficulty: this.analyzeSequentialProcessing(incorrectMatches),
+        confusionPairs: [], // Will be populated by identifyPhonologicalConfusions
+        researchClassification: errorType === 'sound_discrimination' ?
+          'Phonological processing deficit - core difficulty with sound-symbol mapping' :
+          'Sequential phonological processing challenge - working memory involved'
       };
       
       // Additional analysis: identify specific confusion patterns
@@ -184,13 +228,99 @@ class ErrorPatternService {
     const sortedConfusions = Object.entries(confusions)
       .sort(([,a], [,b]) => b - a)
       .slice(0, 5); // Top 5 confusions
-    
+
     if (sortedConfusions.length > 0) {
       errorAnalysis.matching_errors.common_confusions = sortedConfusions.map(([confusion, count]) => ({
         pattern: confusion,
         frequency: count
       }));
+
+      // Update confusion pairs in the main error analysis
+      errorAnalysis.matching_errors.confusionPairs = sortedConfusions.map(([confusion, count]) => {
+        const [sound1, sound2] = confusion.split('-');
+        return {
+          sounds: [sound1, sound2],
+          confusionRate: Math.round((count / incorrectResponses.length) * 100),
+          articulatoryBasis: this.getArticulatoryBasis(sound1, sound2),
+          interventionFocus: `Focus on ${sound1}-${sound2} discrimination with mouth position awareness`
+        };
+      });
     }
+  }
+
+  /**
+   * Analyze sequential processing difficulties in phonological awareness
+   * Examines how sequence length affects performance
+   */
+  analyzeSequentialProcessing(incorrectResponses) {
+    const sequenceLengthAnalysis = {
+      twoSounds: { total: 0, correct: 0, percentage: 0 },
+      threeSounds: { total: 0, correct: 0, percentage: 0 },
+      fourSounds: { total: 0, correct: 0, percentage: 0 },
+      averageSuccessByLength: {}
+    };
+
+    incorrectResponses.forEach(response => {
+      if (response.totalMatches) {
+        const sequenceLength = response.totalMatches;
+        const successRate = response.correctMatches / response.totalMatches;
+
+        if (sequenceLength === 2) {
+          sequenceLengthAnalysis.twoSounds.total++;
+          sequenceLengthAnalysis.twoSounds.correct += response.correctMatches;
+        } else if (sequenceLength === 3) {
+          sequenceLengthAnalysis.threeSounds.total++;
+          sequenceLengthAnalysis.threeSounds.correct += response.correctMatches;
+        } else if (sequenceLength === 4) {
+          sequenceLengthAnalysis.fourSounds.total++;
+          sequenceLengthAnalysis.fourSounds.correct += response.correctMatches;
+        }
+
+        sequenceLengthAnalysis.averageSuccessByLength[sequenceLength] =
+          sequenceLengthAnalysis.averageSuccessByLength[sequenceLength] || [];
+        sequenceLengthAnalysis.averageSuccessByLength[sequenceLength].push(successRate);
+      }
+    });
+
+    // Calculate percentages
+    if (sequenceLengthAnalysis.twoSounds.total > 0) {
+      sequenceLengthAnalysis.twoSounds.percentage =
+        Math.round((sequenceLengthAnalysis.twoSounds.correct / (sequenceLengthAnalysis.twoSounds.total * 2)) * 100);
+    }
+    if (sequenceLengthAnalysis.threeSounds.total > 0) {
+      sequenceLengthAnalysis.threeSounds.percentage =
+        Math.round((sequenceLengthAnalysis.threeSounds.correct / (sequenceLengthAnalysis.threeSounds.total * 3)) * 100);
+    }
+    if (sequenceLengthAnalysis.fourSounds.total > 0) {
+      sequenceLengthAnalysis.fourSounds.percentage =
+        Math.round((sequenceLengthAnalysis.fourSounds.correct / (sequenceLengthAnalysis.fourSounds.total * 4)) * 100);
+    }
+
+    // Return only percentage numbers as required by schema
+    return {
+      twoSounds: sequenceLengthAnalysis.twoSounds.percentage,
+      threeSounds: sequenceLengthAnalysis.threeSounds.percentage,
+      fourSounds: sequenceLengthAnalysis.fourSounds.percentage,
+      workingMemoryCapacity: sequenceLengthAnalysis.twoSounds.percentage > 80 ? 'adequate' : 'limited'
+    };
+  }
+
+  /**
+   * Get articulatory basis for sound confusions
+   */
+  getArticulatoryBasis(sound1, sound2) {
+    const articularityMap = {
+      'B-P': 'Same place of articulation (bilabial), differ only in voicing',
+      'D-T': 'Same place of articulation (alveolar), differ only in voicing',
+      'M-N': 'Both nasal sounds, differ in place of articulation',
+      'G-K': 'Same place of articulation (velar), differ only in voicing',
+      'F-V': 'Same place of articulation (labiodental), differ only in voicing'
+    };
+
+    const key = `${sound1}-${sound2}`;
+    const reverseKey = `${sound2}-${sound1}`;
+
+    return articularityMap[key] || articularityMap[reverseKey] || 'Similar phonetic characteristics requiring discrimination practice';
   }
 
   /**

@@ -12,12 +12,39 @@ const errorPatternService = require('./PrescriptiveAnalytics/errorPatternService
 const timePredictionService = require('./PrescriptiveAnalytics/timePredictionService');
 const dynamicQuestionService = require('./PrescriptiveAnalytics/dynamicQuestionService');
 
+// NEW: Doctor-Teacher-Student Model Service
+const prescriptionOnlyService = require('./PrescriptiveAnalytics/prescriptionOnlyService');
+
 class PrescriptiveAnalyticsService {
 
   /**
-   * Generate complete prescriptive analysis after category_results is created
+   * NEW: Generate prescription-only analysis (Doctor-Teacher-Student Model)
+   * This provides DIAGNOSIS + PRESCRIPTION only, NO implementation
+   * Teachers create all intervention content based on this prescription
+   *
+   * @param {string} categoryResultId - ID of the category_results record
+   * @returns {Object} Prescription with teacher guidance (NO question generation)
+   */
+  async generatePrescriptionOnly(categoryResultId) {
+    console.log(`[DOCTOR-TEACHER-STUDENT] Generating prescription for category result: ${categoryResultId}`);
+
+    try {
+      const prescription = await prescriptionOnlyService.generatePrescription(categoryResultId);
+
+      console.log(`[DOCTOR] Prescription generated - Type: ${prescription.prescription.type}`);
+      console.log(`[DOCTOR] Teacher guidance provided for implementation`);
+
+      return prescription;
+    } catch (error) {
+      console.error('[DOCTOR] Error generating prescription:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * LEGACY: Generate complete prescriptive analysis after category_results is created
    * This is the main entry point called after assessment completion
-   * 
+   *
    * @param {string} categoryResultId - ID of the category_results record
    * @returns {Object} Complete prescriptive analysis record
    */
@@ -75,6 +102,33 @@ class PrescriptiveAnalyticsService {
       // Get intervention history
       const interventionHistory = await this.getInterventionHistory(studentId);
 
+      // Generate comprehensive research-based prescriptions
+      const researchBasedPrescriptions = await this.generateResearchBasedPrescriptions(
+        categoryResult.categories,
+        skillMastery,
+        errorPatterns,
+        readingLevel,
+        responses
+      );
+
+      // Generate student cognitive profile
+      const studentCognitiveProfile = this.generateCognitiveProfile(
+        responses,
+        skillMastery,
+        errorPatterns,
+        readingLevel
+      );
+
+      // Generate research foundation
+      const researchFoundation = this.generateResearchFoundation(
+        skillMastery,
+        errorPatterns,
+        interventionPlan
+      );
+
+      // Calculate detailed analytics metrics
+      const analyticsMetrics = this.calculateAnalyticsMetrics(responses);
+
       // Create prescriptive analysis record
       const analysisData = {
         studentId,
@@ -88,6 +142,10 @@ class PrescriptiveAnalyticsService {
         interventionPlan,
         insights,
         interventionHistory,
+        researchBasedPrescriptions: new Map(Object.entries(researchBasedPrescriptions)),
+        studentCognitiveProfile,
+        researchFoundation,
+        analyticsMetrics,
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -797,6 +855,1116 @@ class PrescriptiveAnalyticsService {
       return obj;
     }
     return mapObject;
+  }
+
+  /**
+   * Generate comprehensive research-based prescriptions for all categories
+   * Provides detailed recommendations for both passed and failed categories
+   *
+   * @param {Array} categories - Category assessment results
+   * @param {Object} skillMastery - BKT skill mastery data
+   * @param {Object} errorPatterns - Detailed error analysis
+   * @param {string} readingLevel - Student's reading level
+   * @param {Array} responses - All student responses
+   * @returns {Object} Research-based prescriptions by category
+   */
+  async generateResearchBasedPrescriptions(categories, skillMastery, errorPatterns, readingLevel, responses) {
+    const prescriptions = {};
+
+    for (const category of categories) {
+      const categoryName = category.categoryName;
+      const passed = category.isPassed;
+      const score = category.score;
+
+      prescriptions[categoryName] = {
+        categoryStatus: passed ? 'passed' : 'failed'
+      };
+
+      if (passed) {
+        // Generate maintenance and acceleration recommendations for passed categories
+        prescriptions[categoryName].maintenanceRecommendations = await this.generateMaintenanceRecommendations(
+          categoryName, score, readingLevel, skillMastery[categoryName]
+        );
+        prescriptions[categoryName].accelerationRecommendations = await this.generateAccelerationRecommendations(
+          categoryName, score, readingLevel, skillMastery[categoryName]
+        );
+      } else {
+        // Generate intensive intervention prescriptions for failed categories
+        prescriptions[categoryName].deficitAnalysis = this.generateDeficitAnalysis(
+          categoryName, errorPatterns[categoryName], score, responses
+        );
+        prescriptions[categoryName].interventionPrescription = this.generateInterventionPrescription(
+          categoryName, errorPatterns[categoryName], score, readingLevel, skillMastery[categoryName]
+        );
+        prescriptions[categoryName].escalationProtocol = this.generateEscalationProtocol(
+          categoryName, score, errorPatterns[categoryName]
+        );
+      }
+    }
+
+    return prescriptions;
+  }
+
+  /**
+   * Generate maintenance recommendations for passed categories
+   * Research-based strategies to maintain and reinforce mastered skills
+   */
+  async generateMaintenanceRecommendations(categoryName, score, readingLevel, masteryData) {
+    const maintenanceStrategies = {
+      'Alphabet Knowledge': {
+        high_mastery: [
+          {
+            activity: 'Letter-Sound Review Games',
+            purpose: 'Maintain automaticity in letter recognition',
+            target: 'Fluent letter-sound correspondence',
+            frequency: '2-3 times per week, 5-10 minutes',
+            implementation: 'Quick daily warm-up activities',
+            rationale: 'Prevents skill decay and maintains neural pathways',
+            researchEvidence: 'Ehri (2005) - Automatic letter recognition supports reading fluency'
+          },
+          {
+            activity: 'Cross-Modal Letter Practice',
+            purpose: 'Strengthen multimodal letter representations',
+            target: 'Visual-auditory-kinesthetic integration',
+            frequency: 'Weekly reinforcement sessions',
+            implementation: 'Sand tray writing, skywriting, verbal naming',
+            rationale: 'Multi-sensory encoding strengthens memory consolidation',
+            researchEvidence: 'Hulme et al. (2012) - Multimodal learning enhances retention'
+          }
+        ],
+        moderate_mastery: [
+          {
+            activity: 'Systematic Letter Review',
+            purpose: 'Consolidate emerging letter knowledge',
+            target: 'Secure letter-sound correspondences',
+            frequency: 'Daily, 10-15 minutes',
+            implementation: 'Structured review of problematic letters',
+            rationale: 'Distributed practice prevents forgetting',
+            researchEvidence: 'Rohrer & Taylor (2007) - Spaced repetition improves retention'
+          }
+        ]
+      },
+      'Phonological Awareness': {
+        high_mastery: [
+          {
+            activity: 'Advanced Sound Manipulation',
+            purpose: 'Maintain and extend phonological skills',
+            target: 'Complex phoneme manipulation tasks',
+            frequency: '3 times per week, 10-15 minutes',
+            implementation: 'Phoneme deletion, substitution, reversal tasks',
+            rationale: 'Higher-order phonological skills support advanced literacy',
+            researchEvidence: 'Anthony & Francis (2005) - Advanced PA predicts reading comprehension'
+          }
+        ]
+      }
+    };
+
+    const masteryLevel = score >= 90 ? 'high_mastery' : 'moderate_mastery';
+    const categoryStrategies = maintenanceStrategies[categoryName] || {};
+    const activities = categoryStrategies[masteryLevel] || [];
+
+    // Search for current research on maintenance strategies
+    let researchFoundation;
+    try {
+      const maintenanceQuery = `${categoryName} maintenance strategies reading skills 2020-2025 research`;
+      const searchResults = await this.performWebSearch(maintenanceQuery, [
+        'scholar.google.com',
+        'eric.ed.gov',
+        'journals.sagepub.com',
+        'readingrockets.org'
+      ]);
+
+      const currentResearch = this.parseAcademicSources(searchResults, categoryName, 'maintenance');
+
+      researchFoundation = {
+        primaryEvidence: currentResearch.length > 0 ? currentResearch : [
+          {
+            citation: 'National Reading Panel (2000)',
+            relevantFinding: 'Systematic maintenance prevents skill regression',
+            applicationToStudent: `Maintaining ${categoryName} skills through distributed practice`,
+            strengthOfEvidence: 'very_strong',
+            fallback: true
+          }
+        ],
+        theoreticalFramework: 'Distributed Practice Theory',
+        interventionApproach: 'Maintenance-focused skill reinforcement',
+        assessmentBasis: ['Curriculum-based measurement', 'Progress monitoring'],
+        searchMetadata: {
+          searchPerformed: currentResearch.length > 0,
+          searchDate: new Date(),
+          query: maintenanceQuery
+        }
+      };
+    } catch (error) {
+      console.warn('Maintenance research search failed:', error.message);
+      researchFoundation = {
+        primaryEvidence: [
+          {
+            citation: 'National Reading Panel (2000)',
+            relevantFinding: 'Systematic maintenance prevents skill regression',
+            applicationToStudent: `Maintaining ${categoryName} skills through distributed practice`,
+            strengthOfEvidence: 'very_strong',
+            fallback: true
+          }
+        ],
+        theoreticalFramework: 'Distributed Practice Theory',
+        interventionApproach: 'Maintenance-focused skill reinforcement',
+        assessmentBasis: ['Curriculum-based measurement', 'Progress monitoring'],
+        searchMetadata: {
+          searchPerformed: false,
+          searchError: error.message,
+          searchDate: new Date()
+        }
+      };
+    }
+
+    return {
+      activities,
+      researchFoundation,
+      implementationGuidance: {
+        frequency: masteryLevel === 'high_mastery' ? '2-3 times weekly' : 'Daily review',
+        duration: '5-15 minutes per session',
+        integration: 'Embedded in daily literacy routines',
+        monitoringIndicators: ['Fluency maintenance', 'Transfer to new contexts', 'Long-term retention']
+      }
+    };
+  }
+
+  /**
+   * Generate acceleration recommendations for passed categories
+   * Strategies to advance students to higher-level skills
+   */
+  async generateAccelerationRecommendations(categoryName, score, readingLevel, masteryData) {
+    const accelerationMap = {
+      'Alphabet Knowledge': {
+        'Low Emerging': ['Letter pattern recognition', 'Beginning sound awareness'],
+        'High Emerging': ['Advanced letter combinations', 'Print concepts'],
+        'Developing': ['Morphological awareness', 'Word structure patterns'],
+        'Transitioning': ['Etymology exploration', 'Advanced orthographic patterns'],
+        'At Grade Level': ['Vocabulary morphology', 'Academic word analysis']
+      },
+      'Phonological Awareness': {
+        'Low Emerging': ['Syllable manipulation', 'Onset-rime awareness'],
+        'High Emerging': ['Complex phoneme manipulation', 'Phonological working memory'],
+        'Developing': ['Morphophonemic awareness', 'Advanced sound patterns'],
+        'Transitioning': ['Phonological analysis in reading', 'Spelling-sound connections'],
+        'At Grade Level': ['Advanced phonological processing', 'Metalinguistic awareness']
+      }
+    };
+
+    const nextLevelSkills = accelerationMap[categoryName]?.[readingLevel] || [];
+
+    // Search for current research on acceleration strategies
+    let researchEvidence;
+    try {
+      const accelerationQuery = `${categoryName} acceleration enrichment reading skills advanced learners 2020-2025`;
+      const searchResults = await this.performWebSearch(accelerationQuery, [
+        'scholar.google.com',
+        'eric.ed.gov',
+        'journals.sagepub.com',
+        'tandfonline.com'
+      ]);
+
+      const currentResearch = this.parseAcademicSources(searchResults, categoryName, 'acceleration');
+
+      researchEvidence = currentResearch.length > 0 ? currentResearch : [
+        {
+          citation: 'Vygotsky (1978) - Zone of Proximal Development',
+          relevantFinding: 'Learning occurs in the ZPD with appropriate scaffolding',
+          applicationToStudent: 'Systematic progression to next-level skills',
+          strengthOfEvidence: 'strong',
+          fallback: true
+        }
+      ];
+    } catch (error) {
+      console.warn('Acceleration research search failed:', error.message);
+      researchEvidence = [
+        {
+          citation: 'Vygotsky (1978) - Zone of Proximal Development',
+          relevantFinding: 'Learning occurs in the ZPD with appropriate scaffolding',
+          applicationToStudent: 'Systematic progression to next-level skills',
+          strengthOfEvidence: 'strong',
+          fallback: true,
+          searchError: error.message
+        }
+      ];
+    }
+
+    return {
+      nextLevelSkills: nextLevelSkills.map(skill => ({
+        skill,
+        targetMastery: 'Foundation level proficiency',
+        timeframe: '4-6 weeks of focused practice',
+        prerequisiteCheck: `Confirmed mastery of ${categoryName} at current level`,
+        progressIndicators: ['Consistent performance', 'Transfer to novel contexts']
+      })),
+      bridgingActivities: [
+        `Connect ${categoryName} to next-level reading tasks`,
+        'Scaffolded introduction to advanced concepts',
+        'Integrated skill application opportunities'
+      ],
+      enrichmentFocus: 'Challenge-level skill development with support',
+      timelineGuidance: 'Begin acceleration after 2 weeks of maintenance success',
+      researchEvidence,
+      searchMetadata: {
+        searchPerformed: !researchEvidence.some(r => r.fallback),
+        searchDate: new Date(),
+        category: categoryName,
+        focus: 'acceleration'
+      }
+    };
+  }
+
+  /**
+   * Generate deficit analysis for failed categories
+   * Comprehensive analysis of specific skill deficits and their implications
+   */
+  generateDeficitAnalysis(categoryName, errorPattern, score, responses) {
+    const deficitClassifications = {
+      'Phonological Awareness': [
+        {
+          deficit: 'Sound discrimination difficulties',
+          severity: score < 40 ? 'severe' : score < 60 ? 'moderate' : 'mild',
+          manifestation: 'Confusion between similar sounds (b-p, m-n)',
+          errorRate: errorPattern?.matching_errors?.percentage || 'Not specified',
+          cognitiveLoad: 'High working memory demands for sound processing',
+          researchEvidence: 'Tallal (2004) - Temporal processing deficits affect phonological discrimination'
+        },
+        {
+          deficit: 'Sequential sound processing',
+          severity: 'moderate',
+          manifestation: 'Difficulty with multi-sound sequences',
+          errorRate: 'Increases with sequence length',
+          cognitiveLoad: 'Executive function and working memory coordination',
+          researchEvidence: 'Swanson & Jerman (2007) - Working memory impacts phonological processing'
+        }
+      ],
+      'Alphabet Knowledge': [
+        {
+          deficit: 'Visual-auditory integration',
+          severity: score < 50 ? 'severe' : 'moderate',
+          manifestation: 'Letter-sound correspondence difficulties',
+          errorRate: `${100 - score}% error rate`,
+          cognitiveLoad: 'Cross-modal processing demands',
+          researchEvidence: 'Pennington & Lefly (2001) - Letter knowledge predicts reading success'
+        }
+      ]
+    };
+
+    return {
+      specificDeficits: deficitClassifications[categoryName] || [],
+      rootCauseAnalysis: this.analyzeRootCause(categoryName, errorPattern, score),
+      cognitiveFactors: this.identifyCognitiveFactors(categoryName, errorPattern),
+      linguisticFactors: this.identifyLinguisticFactors(categoryName, errorPattern),
+      researchClassification: this.classifyDeficitType(categoryName, errorPattern, score)
+    };
+  }
+
+  /**
+   * Generate intervention prescription for failed categories
+   * Evidence-based intervention strategies with specific implementation details
+   */
+  generateInterventionPrescription(categoryName, errorPattern, score, readingLevel, masteryData) {
+    const interventionMap = {
+      'Phonological Awareness': {
+        primaryApproach: 'multisensory_structured',
+        specificTechniques: [
+          {
+            technique: 'Auditory Discrimination Training',
+            description: 'Systematic practice distinguishing similar sounds',
+            duration: '10-15 minutes daily',
+            materials: 'Minimal pair cards, audio recordings',
+            progressCriteria: '90% accuracy on targeted sound pairs',
+            researchBasis: 'Tallal et al. (1996) - Intensive auditory training improves discrimination'
+          },
+          {
+            technique: 'Multisensory Sound-Symbol Mapping',
+            description: 'Visual-auditory-kinesthetic sound learning',
+            duration: '15-20 minutes daily',
+            materials: 'Letter cards, mirrors, tactile materials',
+            progressCriteria: 'Consistent cross-modal sound identification',
+            researchBasis: 'Gillingham & Stillman (1960) - Multisensory approach for struggling readers'
+          }
+        ],
+        intensityLevel: score < 40 ? 'highly_intensive' : score < 60 ? 'intensive' : 'standard',
+        sessionStructure: {
+          optimalLength: score < 40 ? '20-30 minutes with breaks' : '15-20 minutes',
+          sessionComponents: [
+            'Warm-up review (3-5 min)',
+            'Focused skill practice (10-15 min)',
+            'Application activity (5-10 min)',
+            'Progress check (2-3 min)'
+          ],
+          breakPattern: 'Every 10 minutes for highly intensive'
+        }
+      }
+    };
+
+    const categoryIntervention = interventionMap[categoryName] || this.generateDefaultIntervention(categoryName, score);
+
+    return {
+      ...categoryIntervention,
+      materialRecommendations: this.selectMaterials(categoryName, readingLevel, score),
+      progressMonitoring: {
+        frequency: categoryIntervention.intensityLevel === 'highly_intensive' ? 'Daily' : 'Weekly',
+        keyIndicators: this.defineProgressIndicators(categoryName, errorPattern),
+        dataCollectionMethod: 'Curriculum-based measurement with error pattern tracking'
+      }
+    };
+  }
+
+  /**
+   * Generate escalation protocol for persistent difficulties
+   */
+  generateEscalationProtocol(categoryName, score, errorPattern) {
+    return {
+      triggers: [
+        {
+          trigger: 'No progress after 4 weeks intensive intervention',
+          approach: 'Comprehensive evaluation referral',
+          researchFoundation: 'RTI model - Tier 3 intervention decision point',
+          specificTechniques: [
+            {
+              technique: 'Comprehensive assessment battery',
+              implementation: 'Cognitive, academic, and processing evaluation',
+              timeframe: '2-4 weeks assessment period'
+            }
+          ]
+        }
+      ],
+      referralGuidance: 'Consider learning disability evaluation if progress remains limited',
+      parentCommunication: 'Regular progress updates with specific data and next steps',
+      timelineExpectations: '6-8 weeks intensive intervention before escalation'
+    };
+  }
+
+  /**
+   * Generate student cognitive profile based on response patterns and performance
+   */
+  generateCognitiveProfile(responses, skillMastery, errorPatterns, readingLevel) {
+    const responseAnalysis = this.analyzeResponsePatterns(responses);
+
+    return {
+      cognitiveStrengths: this.identifyCognitiveStrengths(skillMastery, responseAnalysis),
+      cognitiveWeaknesses: this.identifyCognitiveWeaknesses(errorPatterns, responseAnalysis),
+      learningStyleIndicators: {
+        primary: this.determineLearningStyle(responses, errorPatterns),
+        evidenceBasis: 'Based on response patterns and error types',
+        implications: 'Inform intervention modality selection'
+      },
+      motivationalProfile: {
+        respondsToBest: this.identifyMotivationalFactors(responses),
+        avoidancePatterns: this.identifyAvoidancePatterns(responses),
+        optimalSessionLength: this.calculateOptimalSessionLength(responses)
+      },
+      processingProfile: {
+        workingMemoryCapacity: this.assessWorkingMemory(responses, errorPatterns),
+        auditoryProcessingLevel: this.assessAuditoryProcessing(errorPatterns),
+        visualProcessingLevel: this.assessVisualProcessing(errorPatterns),
+        attentionCapacity: this.assessAttention(responses)
+      }
+    };
+  }
+
+  /**
+   * Generate research foundation documentation with dynamic web search
+   */
+  async generateResearchFoundation(skillMastery, errorPatterns, interventionPlan) {
+    try {
+      // Get dynamic research evidence based on specific patterns
+      const researchEvidence = await this.searchRelevantResearch(errorPatterns, interventionPlan);
+
+      return {
+        primaryEvidence: researchEvidence.length > 0 ? researchEvidence : this.getFallbackResearch(),
+        theoreticalFramework: 'Science of Reading - structured literacy approach',
+        interventionApproach: 'Multi-tiered, evidence-based intervention system',
+        assessmentBasis: ['Bayesian Knowledge Tracing', 'Item Response Theory', 'Error pattern analysis'],
+        searchMetadata: {
+          searchPerformed: researchEvidence.length > 0,
+          searchDate: new Date(),
+          searchQueries: this.generateSearchQueries(errorPatterns, interventionPlan)
+        }
+      };
+    } catch (error) {
+      console.warn('Research search failed, using fallback evidence:', error.message);
+      return this.getFallbackResearchFoundation();
+    }
+  }
+
+  /**
+   * Search for relevant research evidence using web search
+   * Focuses on academic and educational sources
+   */
+  async searchRelevantResearch(errorPatterns, interventionPlan) {
+    const researchEvidence = [];
+
+    // Generate targeted search queries based on error patterns
+    const searchQueries = this.generateSearchQueries(errorPatterns, interventionPlan);
+
+    for (const query of searchQueries) {
+      try {
+        console.log(`[RESEARCH SEARCH] Searching: ${query.query}`);
+
+        // Use the WebSearch tool available in the environment
+        const searchResults = await this.performWebSearch(query.query, [
+          'scholar.google.com',
+          'pubmed.ncbi.nlm.nih.gov',
+          'eric.ed.gov',
+          'journals.sagepub.com',
+          'onlinelibrary.wiley.com',
+          'tandfonline.com',
+          'springer.com',
+          'psycnet.apa.org',
+          'readingrockets.org',
+          'ies.ed.gov'
+        ]);
+
+        // Parse search results for academic citations
+        const parsedEvidence = this.parseAcademicSources(searchResults, query.category, query.focus);
+        researchEvidence.push(...parsedEvidence);
+
+        // Limit to avoid overwhelming the system
+        if (researchEvidence.length >= 5) break;
+
+      } catch (error) {
+        console.warn(`Research search failed for query "${query.query}":`, error.message);
+        continue;
+      }
+    }
+
+    return researchEvidence.slice(0, 5); // Return top 5 most relevant
+  }
+
+  /**
+   * Generate targeted search queries based on student error patterns
+   */
+  generateSearchQueries(errorPatterns, interventionPlan) {
+    const queries = [];
+
+    // Generate queries for each category with errors
+    Object.entries(errorPatterns).forEach(([category, patterns]) => {
+      if (category === 'Phonological Awareness' && patterns.matching_errors) {
+        queries.push({
+          query: `phonological awareness intervention research ${patterns.matching_errors.error_type} 2020-2025`,
+          category,
+          focus: patterns.matching_errors.error_type
+        });
+
+        // Add specific confusion pair queries
+        if (patterns.matching_errors.confusionPairs) {
+          patterns.matching_errors.confusionPairs.forEach(pair => {
+            const sounds = pair.sounds.join('-');
+            queries.push({
+              query: `sound discrimination training ${sounds} phonics intervention research`,
+              category,
+              focus: `${sounds}_discrimination`
+            });
+          });
+        }
+      }
+
+      if (category === 'Alphabet Knowledge' && (patterns.patinig_errors || patterns.katinig_errors)) {
+        queries.push({
+          query: `letter recognition intervention research multisensory approach 2020-2025`,
+          category,
+          focus: 'letter_recognition'
+        });
+      }
+
+      if (category === 'Decoding' && patterns.decoding_errors) {
+        queries.push({
+          query: `decoding intervention systematic phonics research evidence 2020-2025`,
+          category,
+          focus: 'decoding_skills'
+        });
+      }
+    });
+
+    // Add general intervention approach queries
+    if (interventionPlan?.specificFocus) {
+      Object.entries(interventionPlan.specificFocus).forEach(([category, focus]) => {
+        queries.push({
+          query: `${focus.focus} reading intervention effectiveness research meta-analysis`,
+          category,
+          focus: focus.focus
+        });
+      });
+    }
+
+    // Ensure we have at least some general queries
+    if (queries.length === 0) {
+      queries.push(
+        {
+          query: 'reading intervention effectiveness research evidence 2020-2025',
+          category: 'general',
+          focus: 'reading_intervention'
+        },
+        {
+          query: 'structured literacy approach research evidence systematic review',
+          category: 'general',
+          focus: 'structured_literacy'
+        }
+      );
+    }
+
+    return queries;
+  }
+
+  /**
+   * Parse academic sources from search results
+   */
+  parseAcademicSources(searchResults, category, focus) {
+    const evidence = [];
+
+    if (!searchResults || !searchResults.results) {
+      return evidence;
+    }
+
+    searchResults.results.forEach(result => {
+      // Look for academic indicators in title and snippet
+      const isAcademic = this.isAcademicSource(result.title, result.snippet, result.url);
+
+      if (isAcademic) {
+        const parsedEvidence = this.extractResearchEvidence(result, category, focus);
+        if (parsedEvidence) {
+          evidence.push(parsedEvidence);
+        }
+      }
+    });
+
+    return evidence;
+  }
+
+  /**
+   * Check if source appears to be academic/research-based
+   */
+  isAcademicSource(title, snippet, url) {
+    const academicIndicators = [
+      'research', 'study', 'meta-analysis', 'systematic review', 'intervention',
+      'effectiveness', 'evidence', 'journal', 'findings', 'results', 'analysis',
+      'randomized controlled trial', 'RCT', 'longitudinal', 'experimental'
+    ];
+
+    const academicDomains = [
+      'scholar.google', 'pubmed', 'eric.ed.gov', 'journals', 'research',
+      'sage', 'wiley', 'springer', 'tandfonline', 'apa.org'
+    ];
+
+    const text = `${title} ${snippet}`.toLowerCase();
+    const hasAcademicTerms = academicIndicators.some(indicator => text.includes(indicator));
+    const isAcademicDomain = academicDomains.some(domain => url.toLowerCase().includes(domain));
+
+    return hasAcademicTerms || isAcademicDomain;
+  }
+
+  /**
+   * Extract structured research evidence from search result
+   */
+  extractResearchEvidence(result, category, focus) {
+    try {
+      // Extract potential citation from title
+      const citation = this.extractCitation(result.title, result.snippet);
+      if (!citation) return null;
+
+      // Extract key finding
+      const finding = this.extractKeyFinding(result.snippet, focus);
+      if (!finding) return null;
+
+      // Generate application to student
+      const application = this.generateApplication(finding, category, focus);
+
+      // Assess evidence strength based on source and content
+      const strengthOfEvidence = this.assessEvidenceStrength(result, finding);
+
+      return {
+        citation,
+        relevantFinding: finding,
+        applicationToStudent: application,
+        strengthOfEvidence,
+        sourceUrl: result.url,
+        searchDate: new Date(),
+        category,
+        focus
+      };
+    } catch (error) {
+      console.warn('Error extracting research evidence:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Extract citation from title and snippet
+   */
+  extractCitation(title, snippet) {
+    // Look for author-year patterns
+    const authorYearPattern = /([A-Z][a-z]+(?:,?\s+[A-Z][a-z]*\.?)*(?:\s+(?:&|and)\s+[A-Z][a-z]+)*)\s*\((\d{4})\)/;
+    const match = `${title} ${snippet}`.match(authorYearPattern);
+
+    if (match) {
+      return `${match[1]} (${match[2]})`;
+    }
+
+    // Fallback: extract year and create generic citation
+    const yearMatch = snippet.match(/\b(20\d{2})\b/);
+    const year = yearMatch ? yearMatch[1] : new Date().getFullYear();
+
+    // Extract potential journal/source name from title
+    const titleWords = title.split(' ').slice(0, 4).join(' ');
+    return `Research Study (${year}) - ${titleWords}`;
+  }
+
+  /**
+   * Extract key finding from snippet
+   */
+  extractKeyFinding(snippet, focus) {
+    if (!snippet) return null;
+
+    // Look for findings/results sentences
+    const findingPatterns = [
+      /findings?\s+(?:show|indicate|suggest|demonstrate|reveal)\s+([^.]+)/i,
+      /results?\s+(?:show|indicate|suggest|demonstrate|reveal)\s+([^.]+)/i,
+      /(?:study|research)\s+(?:shows|indicates|suggests|demonstrates|reveals)\s+([^.]+)/i,
+      /evidence\s+(?:shows|indicates|suggests|demonstrates|supports)\s+([^.]+)/i
+    ];
+
+    for (const pattern of findingPatterns) {
+      const match = snippet.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+
+    // Fallback: extract first meaningful sentence
+    const sentences = snippet.split(/[.!?]/).filter(s => s.length > 20);
+    return sentences[0] ? sentences[0].trim() : snippet.slice(0, 100) + '...';
+  }
+
+  /**
+   * Generate application to specific student context
+   */
+  generateApplication(finding, category, focus) {
+    const applicationMap = {
+      'Phonological Awareness': {
+        'sound_discrimination': `Apply sound discrimination training specifically for student's ${focus} difficulties`,
+        'B-P_discrimination': 'Target B-P sound confusion with intensive discrimination practice',
+        'M-N_discrimination': 'Focus on M-N sound distinction with articulatory awareness',
+        'default': 'Apply phonological awareness intervention strategies to address sound processing difficulties'
+      },
+      'Alphabet Knowledge': {
+        'letter_recognition': 'Implement systematic letter-sound correspondence training',
+        'default': 'Apply evidence-based letter knowledge interventions'
+      },
+      'general': {
+        'reading_intervention': 'Implement comprehensive reading intervention approach',
+        'structured_literacy': 'Apply structured literacy principles to intervention design'
+      }
+    };
+
+    const categoryMap = applicationMap[category] || applicationMap['general'];
+    return categoryMap[focus] || categoryMap['default'] || `Apply research findings to ${category} intervention`;
+  }
+
+  /**
+   * Assess evidence strength based on source and content
+   */
+  assessEvidenceStrength(result, finding) {
+    let strength = 'moderate'; // Default
+
+    const strongIndicators = [
+      'meta-analysis', 'systematic review', 'randomized controlled trial', 'RCT',
+      'longitudinal', 'large-scale', 'multiple studies'
+    ];
+
+    const moderateIndicators = [
+      'experimental', 'controlled', 'research study', 'intervention study'
+    ];
+
+    const text = `${result.title} ${result.snippet} ${finding}`.toLowerCase();
+
+    if (strongIndicators.some(indicator => text.includes(indicator))) {
+      strength = 'very_strong';
+    } else if (moderateIndicators.some(indicator => text.includes(indicator))) {
+      strength = 'strong';
+    } else if (text.includes('study') || text.includes('research')) {
+      strength = 'moderate';
+    } else {
+      strength = 'emerging';
+    }
+
+    return strength;
+  }
+
+  /**
+   * Fallback research evidence when search fails
+   */
+  getFallbackResearch() {
+    return [
+      {
+        citation: 'National Reading Panel (2000)',
+        relevantFinding: 'Systematic phonics instruction significantly improves reading achievement',
+        applicationToStudent: 'Evidence-based approach to reading skill development',
+        strengthOfEvidence: 'very_strong',
+        sourceUrl: 'https://nichd.nih.gov/publications/pubs/nrp/smallbook',
+        searchDate: new Date(),
+        category: 'general',
+        focus: 'reading_intervention',
+        fallback: true
+      },
+      {
+        citation: 'Ehri, L. C. (2005)',
+        relevantFinding: 'Letter knowledge is foundational to reading acquisition',
+        applicationToStudent: 'Prioritize alphabet knowledge for reading development',
+        strengthOfEvidence: 'very_strong',
+        sourceUrl: 'https://doi.org/10.1207/s1532799xssr0904_2',
+        searchDate: new Date(),
+        category: 'Alphabet Knowledge',
+        focus: 'letter_recognition',
+        fallback: true
+      }
+    ];
+  }
+
+  /**
+   * Complete fallback research foundation
+   */
+  getFallbackResearchFoundation() {
+    return {
+      primaryEvidence: this.getFallbackResearch(),
+      theoreticalFramework: 'Science of Reading - structured literacy approach',
+      interventionApproach: 'Multi-tiered, evidence-based intervention system',
+      assessmentBasis: ['Bayesian Knowledge Tracing', 'Item Response Theory', 'Error pattern analysis'],
+      searchMetadata: {
+        searchPerformed: false,
+        searchDate: new Date(),
+        fallbackUsed: true,
+        searchQueries: []
+      }
+    };
+  }
+
+  /**
+   * Perform web search using available WebSearch tool
+   * This method interfaces with the actual web search functionality
+   */
+  async performWebSearch(query, allowedDomains) {
+    try {
+      // This would integrate with the actual WebSearch tool in the environment
+      // For now, we'll simulate the search structure and return fallback data
+
+      console.log(`[WEB SEARCH] Query: "${query}" with domains: ${allowedDomains.join(', ')}`);
+
+      // In a real implementation, this would call the WebSearch tool:
+      // const { WebSearch } = require('../../../tools/webSearch');
+      // return await WebSearch({ query, allowed_domains: allowedDomains });
+
+      // For development, return structured empty result to show the expected format
+      return {
+        results: [],
+        metadata: {
+          query,
+          allowedDomains,
+          searchPerformed: false,
+          fallbackReason: 'WebSearch integration pending - using fallback research'
+        }
+      };
+
+    } catch (error) {
+      console.warn(`Web search failed for query "${query}":`, error.message);
+      return {
+        results: [],
+        metadata: {
+          query,
+          error: error.message,
+          searchPerformed: false
+        }
+      };
+    }
+  }
+
+  /**
+   * Mock web search for demonstration purposes
+   * This shows how the system would work with real search results
+   */
+  async mockWebSearchForDemo(query, allowedDomains) {
+    // Mock search results for demonstration
+    const mockResults = {
+      results: [
+        {
+          title: "Phonological Awareness Intervention Research (2023)",
+          snippet: "Research findings show that systematic phonological awareness training significantly improves reading outcomes for struggling readers. The study demonstrates that targeted sound discrimination training yields substantial gains in phonological processing abilities.",
+          url: "https://journals.sagepub.com/doi/example/phonological-intervention-2023"
+        },
+        {
+          title: "Meta-Analysis: Sound Discrimination Training Effectiveness",
+          snippet: "Results indicate that intensive auditory discrimination training produces measurable improvements in phonological awareness skills. The intervention study reveals that students who received targeted training showed 40% greater improvement compared to control groups.",
+          url: "https://pubmed.ncbi.nlm.nih.gov/example/sound-discrimination-meta-analysis"
+        }
+      ],
+      metadata: {
+        query,
+        allowedDomains,
+        searchPerformed: true,
+        mockData: true
+      }
+    };
+
+    return mockResults;
+  }
+
+  /**
+   * Calculate comprehensive analytics metrics
+   */
+  calculateAnalyticsMetrics(responses) {
+    if (!responses.length) {
+      return {
+        totalQuestions: 0,
+        totalCorrect: 0,
+        averageResponseTime: 0,
+        consistencyIndex: 0,
+        fatigueIndicators: {
+          performanceDecline: false,
+          responseTimeIncrease: false,
+          errorPatternShift: false
+        },
+        confidenceMetrics: {
+          skillMasteryConfidence: 0,
+          interventionSuccessProbability: 0,
+          timeToMasteryEstimate: 'Insufficient data'
+        }
+      };
+    }
+
+    const totalQuestions = responses.length;
+    const totalCorrect = responses.filter(r => r.isCorrect).length;
+    const averageResponseTime = responses
+      .filter(r => r.responseTime > 0)
+      .reduce((sum, r) => sum + r.responseTime, 0) / responses.length || 0;
+
+    return {
+      totalQuestions,
+      totalCorrect,
+      averageResponseTime: Math.round(averageResponseTime * 100) / 100,
+      consistencyIndex: this.calculateConsistencyIndex(responses),
+      fatigueIndicators: this.analyzeFatigueIndicators(responses),
+      confidenceMetrics: this.calculateConfidenceMetrics(responses, totalCorrect, totalQuestions)
+    };
+  }
+
+  // Helper methods for cognitive profile analysis
+  analyzeResponsePatterns(responses) {
+    // Analyze timing, accuracy patterns, and response consistency
+    return {
+      averageTime: responses.reduce((sum, r) => sum + (r.responseTime || 0), 0) / responses.length,
+      accuracyTrend: this.calculateAccuracyTrend(responses),
+      responseVariability: this.calculateResponseVariability(responses)
+    };
+  }
+
+  identifyCognitiveStrengths(skillMastery, responseAnalysis) {
+    const strengths = [];
+
+    Object.entries(skillMastery).forEach(([category, data]) => {
+      if (data.masteryProbability > 0.75) {
+        strengths.push(`Strong ${category} processing`);
+      }
+    });
+
+    if (responseAnalysis.averageTime < 10) {
+      strengths.push('Efficient processing speed');
+    }
+
+    return strengths;
+  }
+
+  identifyCognitiveWeaknesses(errorPatterns, responseAnalysis) {
+    const weaknesses = [];
+
+    Object.entries(errorPatterns).forEach(([category, pattern]) => {
+      if (pattern.matching_errors?.percentage > 70) {
+        weaknesses.push(`${category} processing difficulties`);
+      }
+    });
+
+    return weaknesses;
+  }
+
+  determineLearningStyle(responses, errorPatterns) {
+    // Logic to determine learning style based on error patterns
+    const hasVisualErrors = Object.values(errorPatterns).some(p =>
+      p.error_type === 'visual_confusion'
+    );
+    const hasAuditoryErrors = Object.values(errorPatterns).some(p =>
+      p.error_type === 'sound_discrimination'
+    );
+
+    if (hasAuditoryErrors && !hasVisualErrors) return 'visual';
+    if (hasVisualErrors && !hasAuditoryErrors) return 'auditory';
+    return 'multisensory';
+  }
+
+  // Additional helper methods for analysis components
+  analyzeRootCause(categoryName, errorPattern, score) {
+    if (score < 40) {
+      return 'Fundamental skill gaps requiring intensive intervention';
+    } else if (score < 60) {
+      return 'Specific skill weaknesses with some foundation present';
+    } else {
+      return 'Near-mastery with targeted skill refinement needed';
+    }
+  }
+
+  identifyCognitiveFactors(categoryName, errorPattern) {
+    return ['Working memory', 'Processing speed', 'Attention regulation'];
+  }
+
+  identifyLinguisticFactors(categoryName, errorPattern) {
+    return ['Phonological awareness', 'Morphological knowledge', 'Orthographic patterns'];
+  }
+
+  classifyDeficitType(categoryName, errorPattern, score) {
+    return score < 40 ? 'Severe deficit requiring intensive intervention' : 'Moderate difficulty with targeted support needs';
+  }
+
+  // Additional helper methods would continue here...
+  calculateConsistencyIndex(responses) {
+    if (responses.length < 2) return 0;
+
+    let consistentResponses = 0;
+    for (let i = 1; i < responses.length; i++) {
+      if (responses[i].isCorrect === responses[i-1].isCorrect) {
+        consistentResponses++;
+      }
+    }
+
+    return Math.round((consistentResponses / (responses.length - 1)) * 100) / 100;
+  }
+
+  analyzeFatigueIndicators(responses) {
+    const firstHalf = responses.slice(0, Math.floor(responses.length / 2));
+    const secondHalf = responses.slice(Math.floor(responses.length / 2));
+
+    const firstHalfAccuracy = firstHalf.filter(r => r.isCorrect).length / firstHalf.length;
+    const secondHalfAccuracy = secondHalf.filter(r => r.isCorrect).length / secondHalf.length;
+
+    const firstHalfTime = firstHalf.reduce((sum, r) => sum + (r.responseTime || 0), 0) / firstHalf.length;
+    const secondHalfTime = secondHalf.reduce((sum, r) => sum + (r.responseTime || 0), 0) / secondHalf.length;
+
+    return {
+      performanceDecline: secondHalfAccuracy < firstHalfAccuracy - 0.15,
+      responseTimeIncrease: secondHalfTime > firstHalfTime * 1.5,
+      errorPatternShift: false // Would require more complex analysis
+    };
+  }
+
+  calculateConfidenceMetrics(responses, correct, total) {
+    const accuracy = correct / total;
+    return {
+      skillMasteryConfidence: Math.round(accuracy * 100) / 100,
+      interventionSuccessProbability: accuracy < 0.5 ? 0.7 : 0.85,
+      timeToMasteryEstimate: accuracy < 0.3 ? '8-12 weeks' : accuracy < 0.6 ? '4-8 weeks' : '2-4 weeks'
+    };
+  }
+
+  // More helper methods for completeness
+  identifyMotivationalFactors(responses) {
+    return ['Positive reinforcement', 'Clear progress indicators', 'Choice in activities'];
+  }
+
+  identifyAvoidancePatterns(responses) {
+    return responses.length < 5 ? ['Task avoidance', 'Rushed responses'] : [];
+  }
+
+  calculateOptimalSessionLength(responses) {
+    const avgTime = responses.reduce((sum, r) => sum + (r.responseTime || 0), 0) / responses.length;
+    return avgTime > 15 ? '10-15 minutes' : avgTime > 8 ? '15-20 minutes' : '20-30 minutes';
+  }
+
+  assessWorkingMemory(responses, errorPatterns) {
+    // Complex tasks show working memory capacity
+    return 'average'; // Simplified for now
+  }
+
+  assessAuditoryProcessing(errorPatterns) {
+    const auditoryErrors = Object.values(errorPatterns).some(p =>
+      p.error_type === 'sound_discrimination'
+    );
+    return auditoryErrors ? 'below_average' : 'average';
+  }
+
+  assessVisualProcessing(errorPatterns) {
+    const visualErrors = Object.values(errorPatterns).some(p =>
+      p.error_type === 'visual_confusion'
+    );
+    return visualErrors ? 'below_average' : 'average';
+  }
+
+  assessAttention(responses) {
+    return responses.length > 10 ? 'sustained' : 'moderate';
+  }
+
+  calculateAccuracyTrend(responses) {
+    // Calculate if accuracy improves, declines, or stays stable
+    if (responses.length < 4) return 'stable';
+
+    const first = responses.slice(0, responses.length / 2).filter(r => r.isCorrect).length;
+    const second = responses.slice(responses.length / 2).filter(r => r.isCorrect).length;
+
+    if (second > first) return 'improving';
+    if (second < first) return 'declining';
+    return 'stable';
+  }
+
+  calculateResponseVariability(responses) {
+    const times = responses.map(r => r.responseTime || 0).filter(t => t > 0);
+    if (times.length < 2) return 0;
+
+    const mean = times.reduce((sum, t) => sum + t, 0) / times.length;
+    const variance = times.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / times.length;
+    return Math.sqrt(variance);
+  }
+
+  selectMaterials(categoryName, readingLevel, score) {
+    const materials = {
+      'Phonological Awareness': [
+        'Minimal pair cards for sound discrimination',
+        'Audio recordings with clear sound contrasts',
+        'Mirror for articulatory awareness',
+        'Manipulatives for sound counting'
+      ],
+      'Alphabet Knowledge': [
+        'Magnetic letters for tactile learning',
+        'Letter formation guides',
+        'Picture-letter association cards',
+        'Sandpaper letters for multisensory practice'
+      ]
+    };
+
+    return materials[categoryName] || ['General reading intervention materials'];
+  }
+
+  defineProgressIndicators(categoryName, errorPattern) {
+    return [
+      'Accuracy improvement on targeted skills',
+      'Response time consistency',
+      'Error pattern reduction',
+      'Transfer to novel contexts'
+    ];
+  }
+
+  generateDefaultIntervention(categoryName, score) {
+    return {
+      primaryApproach: 'balanced_literacy',
+      specificTechniques: [
+        {
+          technique: 'Systematic skill practice',
+          description: 'Structured practice with immediate feedback',
+          duration: '15-20 minutes',
+          materials: 'Category-specific materials',
+          progressCriteria: 'Consistent improvement over 2 weeks'
+        }
+      ],
+      intensityLevel: score < 50 ? 'intensive' : 'standard'
+    };
   }
 
   /**

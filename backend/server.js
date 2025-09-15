@@ -1020,6 +1020,15 @@ connectDB().then(async (connected) => {
     // Register new Admin/assessmentResults route
     const assessmentResultsRoutes = require('./routes/Admin/assessmentResults');
     app.use('/api/admin', assessmentResultsRoutes);
+
+    // Register Teacher category result processing routes
+    try {
+      const teacherCategoryResultRoutes = require('./routes/Teachers/categoryResultRoutes');
+      app.use('/api/teachers/category-results', teacherCategoryResultRoutes);
+      console.log('✅ Loaded Teacher category result routes at /api/teachers/category-results/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load Teacher category result routes:', error.message);
+    }
     // Load IEP routes
     try {
       const iepRoutes = require('./routes/Teachers/ManageProgress/iepRoutes');

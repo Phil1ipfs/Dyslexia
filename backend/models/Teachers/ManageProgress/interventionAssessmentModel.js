@@ -174,6 +174,30 @@ const interventionAssessmentSchema = new mongoose.Schema({
     enum: ['draft', 'active', 'completed'],
     default: 'active'
   },
+
+  // NEW: Teacher re-editing tracking
+  revisionNumber: {
+    type: Number,
+    default: 1
+  },
+  revisionHistory: [{
+    version: Number,
+    editedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    editedAt: Date,
+    changes: String
+  }],
+  lastEditedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  lastEditedAt: {
+    type: Date,
+    default: null
+  },
+
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -250,7 +274,47 @@ interventionAssessmentSchema.methods.getQuestionById = function(questionId) {
 
 // Instance method to validate completion
 interventionAssessmentSchema.methods.isReadyForCompletion = function() {
-  return this.questions.length === 10 && this.status === 'active';
+  return this.questions.length > 0 && this.status === 'active';
+};
+
+// NEW: Teacher re-editing methods
+interventionAssessmentSchema.methods.createRevision = function(teacherId, changes, newQuestions) {
+  const newRevision = this.revisionNumber + 1;
+
+  // Add to revision history
+  this.revisionHistory.push({
+    version: this.revisionNumber,
+    editedBy: teacherId,
+    editedAt: new Date(),
+    changes: changes
+  });
+
+  // Update current revision info
+  this.revisionNumber = newRevision;
+  this.lastEditedBy = teacherId;
+  this.lastEditedAt = new Date();
+
+  // Update questions if provided
+  if (newQuestions && newQuestions.length > 0) {
+    this.questions = newQuestions;
+  }
+
+  return this.save();
+};
+
+// Check if assessment has been revised
+interventionAssessmentSchema.methods.hasBeenRevised = function() {
+  return this.revisionNumber > 1;
+};
+
+// Get latest revision info
+interventionAssessmentSchema.methods.getLatestRevisionInfo = function() {
+  return {
+    revisionNumber: this.revisionNumber,
+    lastEditedBy: this.lastEditedBy,
+    lastEditedAt: this.lastEditedAt,
+    hasBeenRevised: this.hasBeenRevised()
+  };
 };
 
 module.exports = mongoose.model('InterventionAssessment', interventionAssessmentSchema);

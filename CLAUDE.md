@@ -22,31 +22,103 @@
 ## System Overview
 
 ### What is Prescriptive Analytics?
-Think of prescriptive analytics like a smart tutor that:
-1. **Watches** how you answer reading questions
-2. **Analyzes** your mistakes and strengths using advanced math
-3. **Prescribes** exactly what you need to study next
-4. **Tracks** your improvement over time
-5. **Decides** when you need human teacher help
+The prescriptive analytics system follows a **"Doctor-Teacher-Student"** model where each role has a specific function:
 
-### The Big Picture Flow
+**🩺 PRESCRIPTIVE ANALYTICS = "DOCTOR"**
+- **Diagnoses** student reading difficulties using advanced mathematical models
+- **Prescribes** specific intervention strategies based on error patterns
+- **DOES NOT** create questions or implement treatments
+- **Provides** data-driven recommendations to teachers
+
+**👩‍🏫 TEACHERS = "TREATMENT PROVIDERS"**
+- **Receive** detailed prescriptions from the analytics system
+- **Create** ALL intervention questions using templates and expertise
+- **Implement** recommended strategies and techniques
+- **Re-edit** interventions when students need customization
+
+**📚 STUDENTS = "PATIENTS"**
+- **Take** teacher-created assessments and interventions
+- **Benefit** from data-driven prescriptions via teacher implementation
+- **Progress** through reading levels with teacher-guided support
+
+### The Complete Sequential Assessment Flow
 ```
-Student Takes Assessment 
+1. Student Takes Main Assessment (Mobile) → student_responses recorded
     ↓
-System Analyzes Performance (Math Magic Happens Here!)
+2. Web generates category_results + prescriptive_analysis (DOCTOR DIAGNOSIS/PRESCRIPTION)
     ↓
-System Creates Personalized Study Plan
+3a. Category PASSED (≥75%) → Access next category OR reading level progression
     ↓
-Student Gets Targeted Practice Questions
+3b. Category FAILED (<75%) → BLOCKS next category access
     ↓
-Still Struggling? → Teacher Re-edits Intervention Questions
-Success? → Move to Next Level!
+4. Teacher receives prescription → Creates intervention_assessment (TEACHER TREATMENT)
+    ↓
+5. Student takes intervention (Mobile) → intervention_responses recorded
+    ↓
+6. Web generates intervention_results + prescriptive_analysis (DOCTOR RE-ANALYSIS)
+    ↓
+7a. Intervention PASSED (≥75%) → Original category_results updated to "passed" → Unblocks next category
+    ↓
+7b. Intervention FAILED (<75%) → Teacher re-edits intervention_assessment (Version 2)
+    ↓
+8. Student retakes revised intervention → Mobile detects new version
+    ↓
+9. Repeat until intervention passes → Category completion → Reading level progression
 ```
 
-### Key Innovation: One-Time Digital Rule
-- Each student gets exactly **ONE** chance at digital intervention per category
-- If they fail the intervention → **Teacher can re-edit intervention questions**
-- This prevents endless digital loops while allowing teacher customization when needed
+### Key Innovation: Prescription-Only Analytics
+- **Prescriptive analytics provides DIAGNOSIS + PRESCRIPTION only**
+- **Teachers create ALL intervention content** based on system prescriptions
+- **Each category requires sequential completion** with prerequisite blocking
+- **Failed interventions trigger teacher revision with versioning** - mobile detects version changes
+- **System prescribes strategies and intensity** - teachers implement all treatments
+
+### Critical Mobile-Web Integration: Intervention Versioning
+**Mobile Version Detection System:**
+```javascript
+// Mobile checks intervention version before student starts
+GET /api/intervention-assessment/{interventionId}/version-info
+Response: {
+  interventionId: "ObjectId(...)",
+  revisionNumber: 2,                    // Version 2 (teacher edited)
+  lastEditedBy: "Teacher ID",
+  lastEditedAt: "2025-01-16T10:30:00Z",
+  hasBeenRevised: true,                 // True = teacher made changes
+  questions: [...],                     // Updated questions for version 2
+  prescriptionBased: true
+}
+
+// Mobile records responses with version tracking
+POST /api/intervention-responses
+Body: {
+  studentId: 202210222,
+  interventionAssessmentId: "ObjectId(...)",
+  revisionNumber: 2,                    // CRITICAL: Which version student took
+  responses: [...],
+  completedAt: "2025-01-16T11:00:00Z"
+}
+
+// Web processes results knowing which version was used
+intervention_results: {
+  interventionVersion: 2,               // Links to intervention_assessment.revisionNumber
+  score: 78,                           // Student passed version 2!
+  passed: true                         // ≥ 75% - SUCCESS!
+}
+
+// Category completion flow
+if (intervention_results.passed) {
+  // Update original category_results to "passed"
+  await CategoryResultsService.updateCategoryResult(categoryResultId, {
+    "categories.$.isPassed": true,
+    "categories.$.interventionCompleted": true,
+    "categories.$.score": Math.max(original_score, intervention_score)
+  });
+
+  // This unblocks access to next category
+  const nextCategory = await AssessmentFlowControlService.getNextAvailableCategory(studentId);
+  // Result: Next category now accessible, or reading level progression triggered
+}
+```
 
 ---
 
@@ -750,55 +822,104 @@ CATEGORY_WEIGHTS = {
 ```
 
 ### 6. Intervention Assessment Collection (`test.intervention_assessment`)
-**Purpose**: Generates targeted practice questions based on prescriptive analysis
+**Purpose**: Teacher-created intervention questions based on system prescriptions with versioning support
 ```javascript
 {
-  "_id": ObjectId("..."),
-  "studentId": 202210222,              // Student who needs intervention
-  "prescriptiveAnalysisId": ObjectId("..."), // Links to the analysis
-  "category": "Phonological Awareness", // Which category needs help
+  "_id": ObjectId("65a8e1234567890123456854"),
+  "studentId": 202301002,              // Juan Dela Cruz who needs intervention
+  "prescriptiveAnalysisId": ObjectId("65a8d2234567890123456853"), // Links to doctor's prescription
+  "category": "Phonological Awareness", // Failed category needing intervention
   "readingLevel": "High Emerging",
   "passThreshold": 75,                 // Must score 75% to pass intervention
-  
-  // QUESTION SELECTION STRATEGY
-  "questionSelectionStrategy": {
-    "method": "error_focused",         // Based on error patterns
-    "targetDifficulty": 0.7,          // 70% success probability target
-    "focusAreas": {
-      "sound_matching": 70,            // 70% of questions focus on sound matching
-      "general_practice": 30           // 30% general reinforcement
+
+  // DOCTOR'S PRESCRIPTION (from prescriptive analytics)
+  "doctorPrescription": {
+    "deficitAnalysis": {
+      "specificDeficits": ["Sound discrimination difficulties", "Sequential sound processing"],
+      "severity": "severe",             // 44% < 40% = severe
+      "errorRate": "83%",
+      "confusionPairs": [{"sounds": ["B", "P"], "confusionRate": 75}]
+    },
+    "interventionPrescription": {
+      "primaryApproach": "multisensory_structured",
+      "recommendedQuestionCount": 12,   // PRESCRIPTION: create 12 questions
+      "intensityLevel": "highly_intensive",
+      "sessionStructure": {
+        "optimalLength": "20-30 minutes with breaks",
+        "breakPattern": "Every 10 minutes"
+      },
+      "specificTechniques": [
+        "Auditory Discrimination Training - 10-15 minutes daily",
+        "Multisensory Sound-Symbol Mapping - 15-20 minutes daily"
+      ]
+    },
+    "materialRecommendations": [
+      "Minimal pair cards for sound discrimination",
+      "Audio recordings with clear sound contrasts",
+      "Mirror for articulatory awareness"
+    ]
+  },
+
+  // TEACHER IMPLEMENTATION (based on prescription)
+  "teacherImplementation": {
+    "implementedBy": ObjectId("teacher_id_123"),
+    "implementationDate": "2025-01-18T10:50:00Z",
+    "prescriptionFollowed": true,
+    "questionDistribution": {
+      "B-P_discrimination": 5,          // Teacher created 5 B-P focused questions
+      "M-N_discrimination": 4,          // Teacher created 4 M-N focused questions
+      "general_practice": 3             // Teacher created 3 general questions
     }
   },
-  "totalQuestions": 12,                // Dynamically calculated based on analytics (5-18 range)
-  
-  // GENERATED QUESTIONS - Tailored to Student's Specific Errors
+  "totalQuestions": 12,                // Teacher followed prescription count
+
+  // TEACHER-CREATED QUESTIONS (implementing doctor's prescription)
   "questions": [
     {
-      "questionId": "int_pa_001",       // Intervention question ID
-      "source": "generated",           // "generated", "template", or "main_assessment"
-      "questionType": "malapantig",    // Matching type (matches category requirement)
+      "questionId": "int_pa_001",
+      "source": "template_question",    // Teacher used template system
+      "sourceTemplateId": "68b8a9bba7ce2bf3dd81002b",
+      "questionType": "malapantig",
       "questionText": "Pakinggan ang letra sa audio. Itugma ito sa katumbas na letra.",
       "questionSet": {
-        "audioTexts": ["B", "P", "M"],  // Focuses on B-P confusion (from error analysis)
-        "matchingOptions": ["Bb", "Pp", "Mm", "Nn"], // Extra option for difficulty
+        "audioTexts": ["B", "P", "M"],  // Teacher implemented B-P focus per prescription
+        "matchingOptions": ["Bb", "Pp", "Mm", "Nn"],
         "correctPairs": [
           {"audio": "B", "match": "Bb"},
           {"audio": "P", "match": "Pp"},
           {"audio": "M", "match": "Mm"}
         ]
       },
-      "difficulty": -0.2,              // Slightly easier than average
-      "discrimination": 1.1,           // How well this question separates abilities
-      "targetSkill": "sound_discrimination",
-      "targetElement": "B-P confusion" // Specific confusion being addressed
+      "prescriptionAlignment": {
+        "targetSkill": "B-P sound discrimination",  // Matches doctor's prescription
+        "technique": "Auditory Discrimination Training",
+        "difficultyLevel": "slightly_easier",      // Per prescription guidance
+        "multisensoryElements": ["audio", "visual"] // Multisensory approach per prescription
+      },
+      "createdBy": ObjectId("teacher_id_123"),
+      "createdAt": "2025-01-18T10:50:00Z"
     }
-    // ... 9 more questions targeting the same error patterns
+    // ... 11 more teacher-created questions implementing prescription
   ],
-  
-  // INTERVENTION PARAMETERS
+
+  // VERSIONING SYSTEM FOR TEACHER RE-EDITING
+  "revisionNumber": 1,                 // Version 1 (original implementation)
+  "revisionHistory": [
+    {
+      "version": 1,
+      "editedBy": ObjectId("teacher_id_123"),
+      "editedAt": "2025-01-18T10:50:00Z",
+      "changes": "Initial implementation of doctor's prescription",
+      "prescriptionCompliance": "full"
+    }
+  ],
+  "lastEditedBy": ObjectId("teacher_id_123"),
+  "lastEditedAt": "2025-01-18T10:50:00Z",
+
+  // INTERVENTION PARAMETERS (teacher-configured per prescription)
   "interventionParameters": {
-    "fixedQuestions": 12,              // Dynamically calculated, no adaptation during intervention
-    "allowSkip": false,                // Must answer all questions
+    "fixedQuestions": 12,              // Teacher set based on prescription
+    "allowSkip": false,                // Per prescription guidance
     "showProgress": true,              // Show "Question 5 of 12" (dynamic)
     "immediateFeeback": false          // Only show results at end
   },
@@ -948,14 +1069,16 @@ CATEGORY_WEIGHTS = {
 ### Phase 1: Pre-Assessment Setup
 ```mermaid
 graph TD
-    A[Student logs into web app] --> B[Takes pre-assessment]
-    B --> C[System determines reading level]
-    C --> D[Updates users.readingLevel]
-    D --> E[Updates users.readingPercentage]
-    E --> F[Sets users.preAssessmentCompleted = true]
+    A[Student logs into mobile app] --> B[Takes pre-assessment]
+    B --> C[Mobile records pre-assessment responses]
+    C --> D[Web determines reading level]
+    D --> E[Updates users.readingLevel]
+    E --> F[Updates users.readingPercentage]
+    F --> G[Sets users.preAssessmentCompleted = true]
+    G --> H[Mobile gets available categories for reading level]
 ```
 
-**What happens**: Student takes a quick test, system figures out their reading level (Low Emerging through At Grade Level), and saves this info.
+**What happens**: Student takes a quick test on mobile, web figures out their reading level (Low Emerging through At Grade Level), mobile gets sequential category access info.
 
 ### Phase 2: Main Assessment Categories Assignment
 **Reading level determines which categories student must complete in their assessment:**
@@ -1104,81 +1227,169 @@ const errorAnalysis = {
 };
 ```
 
-### Phase 7: Intervention Generation
-If any category scored < 75%, system generates targeted intervention:
+### Phase 7: Prescription Generation (Doctor Role)
+If any category scored < 75%, system generates prescription for teachers:
 
 ```javascript
-// System analyzes errors and creates custom questions
-const interventionPlan = {
-  category: "Phonological Awareness",
-  focusArea: "B-P sound discrimination",    // Based on error analysis
-  totalQuestions: 13,                       // Dynamically calculated (5-18 range)
-  questionDistribution: {
-    "B-P_practice": 5,                      // 38% questions practicing B vs P
-    "M-N_practice": 4,                      // 31% questions practicing M vs N
-    "general_reinforcement": 4              // 31% questions general practice
-  },
-  countRationale: "Started with base count of 10 for High Emerging level, increased by 3 due to high error severity (67% error rate), increased by 1 for category complexity (1.1x) = 13 total questions"
-};
-
-// Creates intervention_assessment with 10 custom questions
-// Questions are easier than original to help student succeed
-```
-
-### Phase 8: Intervention Attempt
-Student takes the 10-question intervention:
-
-```javascript
-// Student answers intervention questions
-const interventionPerformance = {
-  question1: {correctMatches: 3, totalMatches: 3}, // Perfect!
-  question2: {correctMatches: 2, totalMatches: 3}, // Good
-  question3: {correctMatches: 1, totalMatches: 3}, // Still struggling
-  // ... 7 more questions
-  
-  // Final tally
-  totalCorrectMatches: 22,
-  totalPossibleMatches: 30,
-  interventionScore: 73,                    // (22/30) * 100 = 73%
-  passed: false                             // 73% < 75% - FAILED
-};
-```
-
-### Phase 9: Teacher Re-editing Decision
-Since intervention failed (73% < 75%):
-
-```javascript
-const teacherRecommendation = {
-  digitalInterventionFailed: true,          // Student scored < 75%
-  previousAttempts: 1,                      // This was their one chance
-  nextAction: "teacher_revision_required",  // Teacher should revise questions
-  revisionGuidance: {
-    student: "Juan Dela Cruz (202210222)",
+// DOCTOR: System analyzes errors and creates PRESCRIPTION (not questions)
+const teacherPrescription = {
+  // DIAGNOSIS
+  diagnosis: {
     category: "Phonological Awareness",
-    originalScore: 44,                      // Main assessment score
-    interventionScore: 73,                  // Intervention score
-    improvement: 29,                        // 29% improvement but not enough
-    specificProblems: ["B-P confusion", "sequential sound processing"],
-    recommendedActions: [
-      "Simplify B-P discrimination questions",
-      "Add more visual cues to matching options",
-      "Reduce number of simultaneous sound pairs",
-      "Include practice with mouth position images"
+    errorPatterns: {
+      "B-P_confusion": { errorRate: 75, severity: "high" },
+      "M-N_discrimination": { errorRate: 60, severity: "moderate" }
+    },
+    masteryProbability: 0.31,             // Very low mastery level
+    rootCause: "Sound discrimination difficulties"
+  },
+
+  // PRESCRIPTION (for teacher to implement)
+  teacherPrescription: {
+    recommendedQuestionCount: 12,         // Teacher should create 12 questions
+    interventionFocus: "Sound discrimination training",
+    targetSkills: ["B-P discrimination", "M-N discrimination"],
+    questionDistribution: {
+      "B-P_focus": 5,                     // Teacher should create 5 B-P questions
+      "M-N_focus": 4,                     // Teacher should create 4 M-N questions
+      "general_practice": 3               // Teacher should create 3 general questions
+    },
+    teachingApproach: [
+      "Visual-tactile multisensory approach",
+      "Systematic, explicit instruction",
+      "Immediate corrective feedback"
     ],
-    currentInterventionId: "ObjectId(...)", // Link to intervention_assessment for editing
+    timeline: "4-6 weeks focused practice"
+  },
+
+  // TEACHER GUIDANCE
+  teacherGuidance: {
+    implementationSteps: [
+      "1. Review the diagnosis and error patterns above",
+      "2. Use the template system to create intervention questions",
+      "3. Focus on B-P and M-N discrimination skills",
+      "4. Create 12 questions following the distribution above",
+      "5. Monitor student progress using 75% success criteria"
+    ]
   }
 };
 
-// System suggests: "Juan's intervention can be revised to focus on simpler B-P discrimination"
+// Result: Teacher receives prescription, creates intervention_assessment questions
+```
+
+### Phase 8: Teacher Implementation & Student Intervention
+Teacher creates intervention based on prescription, student attempts it:
+
+```javascript
+// TEACHER: Creates intervention assessment based on prescription
+const teacherCreatedIntervention = {
+  studentId: 202210222,
+  category: "Phonological Awareness",
+  totalQuestions: 12,                       // Following prescription
+  questions: [
+    // Teacher created these using templates + prescription guidance
+    {
+      questionId: "int_pa_001",
+      source: "template_question",
+      sourceTemplateId: "68b8a9bba7ce2bf3dd81002b",
+      questionText: "Pinagsama ang mga pantig, ano ang mabubuo?",
+      questionSet: {
+        audioTexts: ["B", "P", "M"],       // B-P focus per prescription
+        matchingOptions: ["Bb", "Pp", "Mm", "Nn"],
+        correctPairs: [
+          {"audio": "B", "match": "Bb"},
+          {"audio": "P", "match": "Pp"},
+          {"audio": "M", "match": "Mm"}
+        ]
+      },
+      createdBy: teacherId
+    }
+    // ... 11 more teacher-created questions
+  ],
+  createdBy: teacherId,
+  prescriptionBased: true
+};
+
+// STUDENT: Takes teacher-created intervention
+const interventionPerformance = {
+  totalQuestions: 12,
+  totalCorrectMatches: 26,
+  totalPossibleMatches: 36,                 // 12 questions × 3 matches each
+  interventionScore: 72,                    // (26/36) * 100 = 72%
+  passed: false                             // 72% < 75% - FAILED
+};
+```
+
+### Phase 9: Teacher Re-editing with Versioning System
+Since intervention failed (72% < 75%), teacher can revise with versioning:
+
+```javascript
+// SYSTEM: Provides near-miss revision guidance
+const revisionGuidance = {
+  student: "Juan Dela Cruz (202210222)",
+  category: "Phonological Awareness",
+  originalScore: 44,                        // Main assessment score
+  interventionScore: 72,                    // Intervention score
+  improvement: 28,                          // 28% improvement - significant but not enough
+  gapToPass: 3,                            // Only 3% away from 75%
+
+  revisionRecommendations: {
+    approach: "near_miss_adjustment",       // Small tweaks needed
+    specificChanges: [
+      "Reduce B-P sound pairs from 3 to 2 per question",
+      "Add visual mouth position cues for B-P discrimination",
+      "Simplify matching options from 4 to 3 choices",
+      "Include audio replay functionality"
+    ],
+    estimatedImprovement: "5-8% score increase with modifications"
+  }
+};
+
+// TEACHER: Creates revised intervention using versioning system
+const interventionAssessment = await InterventionAssessment.findById(currentInterventionId);
+const revisedQuestions = [
+  // Teacher modifies existing questions based on guidance
+  {
+    questionId: "int_pa_001_v2",            // Versioned question ID
+    source: "template_question",
+    questionSet: {
+      audioTexts: ["B", "P"],             // Reduced from 3 to 2 sounds
+      matchingOptions: ["Bb", "Pp", "Mm"], // Reduced from 4 to 3 options
+      correctPairs: [
+        {"audio": "B", "match": "Bb"},
+        {"audio": "P", "match": "Pp"}
+      ]
+    },
+    visualCues: "mouth_position_images",    // Added visual support
+    replayEnabled: true                     // Added replay functionality
+  }
+  // ... other revised questions
+];
+
+// Save revision with versioning
+await interventionAssessment.createRevision(
+  teacherId,
+  "Reduced cognitive load per near-miss guidance",
+  revisedQuestions
+);
+
+// Result: intervention_assessment.revisionNumber = 2, student can retry
 ```
 
 ---
 
-## Mathematical Models Explained
+## Mathematical Models for Prescription Generation
+
+**🩺 DOCTOR'S DIAGNOSTIC TOOLS**: These mathematical models are used by the prescriptive analytics system to generate accurate diagnoses and prescriptions for teachers. They do NOT generate questions or treatments - only provide data-driven insights.
 
 ### Bayesian Knowledge Tracing (BKT) - The Learning Tracker
 
-**What BKT Does**: Tracks how much a student knows about a skill as they answer questions. Like a smart meter that goes up when you get things right and down when you get things wrong.
+**What BKT Does (Doctor Role)**: Analyzes how much a student knows about a skill as they answer questions. Like a smart diagnostic meter that tracks learning progress for prescription generation.
+
+**BKT Purpose in Doctor-Teacher-Student Model**:
+- **DIAGNOSIS**: Determines student's true skill mastery level
+- **PRESCRIPTION**: Informs recommended intervention intensity and approach
+- **NOT USED FOR**: Question generation or treatment implementation
 
 **The BKT Formula** (simplified):
 ```
@@ -1223,9 +1434,14 @@ let knowledge = 0.5;
 // Final knowledge = 31% - System is confident Juan needs help
 ```
 
-### Item Response Theory (IRT) - The Ability Measurer
+### Item Response Theory (IRT) - The Diagnostic Ability Measurer
 
-**What IRT Does**: Measures student ability on a scale from -3 (very low) to +3 (very high). Like a thermometer for academic ability.
+**What IRT Does (Doctor Role)**: Measures student ability on a scale from -3 (very low) to +3 (very high) for diagnostic purposes. Like a thermometer for academic ability that informs prescription generation.
+
+**IRT Purpose in Doctor-Teacher-Student Model**:
+- **DIAGNOSIS**: Quantifies student ability levels across reading categories
+- **PRESCRIPTION**: Helps determine intervention intensity and question difficulty recommendations
+- **NOT USED FOR**: Adaptive question selection or automated question generation
 
 **The IRT Formula**:
 ```
@@ -1308,172 +1524,315 @@ const overall = (93 × 0.6) + (44 × 0.4) = 55.8 + 17.6 = 73.4 ≈ 74%
 4. **Student Retry**: Student attempts revised intervention
 5. **Continued Support**: Process can repeat with teacher guidance
 
-### Implementation Architecture
+### Implementation Architecture - Doctor-Teacher-Student Model
 
 ```javascript
-class InterventionGenerator {
-  async generateIntervention(analysisId, category) {
-    // Step 1: Enforce one-time rule
-    const analysis = await PrescriptiveAnalysis.findById(analysisId);
-    const interventionHistory = analysis.interventionHistory || [];
+class PrescriptionOnlyService {
+  /**
+   * Generate PRESCRIPTION ONLY (Doctor's role)
+   * This method provides diagnosis and prescriptions, NOT implementations
+   */
+  async generatePrescription(categoryResultId) {
+    const categoryResult = await CategoryResult.findById(categoryResultId);
+    const student = await User.findOne({ idNumber: categoryResult.studentId });
 
-    const previousAttempt = interventionHistory.find(h => h.category === category);
-    if (previousAttempt) {
-      throw new Error(`Student already tried intervention for ${category}. Teacher revision required.`);
-    }
-    
-    // Step 2: Generate exactly 10 targeted questions based on error analysis
-    const errorPatterns = analysis.errorPatterns[category];
-    const focusPlan = analysis.interventionPlan.specificFocus[category];
-    
-    const questions = await this.createTargetedQuestions(
-      category,
-      errorPatterns,
-      focusPlan,
-      10 // Always exactly 10 questions
+    // Step 1: DOCTOR DIAGNOSIS - Analyze what's wrong
+    const diagnosis = await this.generateDiagnosis(responses, categoryResult, readingLevel);
+
+    // Step 2: DOCTOR PRESCRIPTION - What should the teacher do?
+    const prescription = await this.generateTeacherPrescription(
+      diagnosis, categoryResult.categories, readingLevel, studentId
     );
-    
-    // Step 3: Create intervention assessment
-    const intervention = {
-      studentId: analysis.studentId,
-      category: category,
-      totalQuestions: countCalculation.questionCount,  // Dynamic count (5-18)
-      passThreshold: 75,        // Must score 75% to pass
-      questions: questions,
-      oneTimeAttempt: true,     // This is their only chance
-      questionCountCalculation: countCalculation.reasoning,  // Calculation details
-      createdAt: new Date()
+
+    // Step 3: Save prescription (NOT implementation)
+    const prescriptiveAnalysis = new PrescriptiveAnalysis({
+      studentId,
+      diagnosis: diagnosis,           // What's wrong
+      teacherPrescription: prescription, // What teacher should do
+      researchEvidence: this.getResearchEvidence(diagnosis, prescription),
+      nextSteps: 'Teacher should create intervention questions based on this prescription'
+    });
+
+    console.log(`[DOCTOR] Generated prescription for student ${studentId}`);
+
+    return {
+      type: 'prescription',
+      role: 'doctor',
+      diagnosis: diagnosis,
+      prescription: prescription,
+      teacherGuidance: this.generateTeacherGuidance(diagnosis, prescription),
+      nextSteps: 'Teacher should create intervention questions based on this prescription'
     };
-    
-    return intervention;
+  }
+
+  /**
+   * Calculate optimal question count based on data analytics
+   * This is a PRESCRIPTION, not implementation
+   */
+  async calculateOptimalQuestionCount(diagnosis, categoryName, readingLevel) {
+    const baseCountByLevel = {
+      'Low Emerging': 8, 'High Emerging': 10, 'Developing': 12,
+      'Transitioning': 14, 'At Grade Level': 16
+    };
+
+    let baseCount = baseCountByLevel[readingLevel] || 10;
+
+    // Adjust based on error severity (PRESCRIPTION)
+    const errorPattern = diagnosis.errorPatterns[categoryName];
+    if (errorPattern) {
+      const errorRate = this.getErrorRate(errorPattern);
+      if (errorRate > 70) baseCount += 4; // Severe errors need more practice
+      else if (errorRate > 50) baseCount += 2; // Moderate errors need some extra
+    }
+
+    return {
+      recommendedCount: Math.max(6, Math.min(18, baseCount)),
+      rationale: `Based on ${readingLevel} level and error analysis`,
+      factors: {
+        baseForLevel: baseCountByLevel[readingLevel],
+        errorAdjustment: errorRate > 50 ? 'increased' : 'standard'
+      }
+    };
   }
 }
 ```
 
-### Question Generation Strategy
+### Teacher Intervention Creation Strategy
 
-**How System Creates Custom Questions**:
+**How Teachers Create Custom Questions Based on System Prescriptions**:
 
-1. **Analyze Error Patterns**: What specific mistakes did student make?
-2. **Identify Focus Areas**: Which skills need the most work?
-3. **Generate Targeted Questions**: Create questions that address those specific problems
-4. **Adjust Difficulty**: Make questions slightly easier to build confidence
-5. **Ensure Variety**: Mix question types but focus on problem areas
+1. **Review System Diagnosis**: Understand specific error patterns identified by analytics
+2. **Study Prescription Details**: Focus on recommended question count and target skills
+3. **Use Template System**: Access pre-built question templates for the category
+4. **Customize Based on Errors**: Modify templates to address specific student confusion patterns
+5. **Implement Prescribed Approach**: Follow teaching approach recommendations from system
 
-**Example for Juan's Phonological Awareness Intervention**:
+**Example Prescription for Juan's Phonological Awareness Intervention**:
 ```javascript
-const juanErrorAnalysis = {
-  mainProblem: "B-P sound confusion",      // Primary issue
-  secondaryProblem: "M-N discrimination",   // Secondary issue
-  errorRate: 83,                           // Very high error rate
-  partialSuccess: 44                       // Some partial success
+const juanPrescription = {
+  // DOCTOR DIAGNOSIS
+  diagnosis: {
+    mainProblem: "B-P sound confusion",      // Primary issue identified
+    secondaryProblem: "M-N discrimination",  // Secondary issue identified
+    errorRate: 83,                           // Very high error rate
+    masteryProbability: 0.31                 // Low mastery level
+  },
+
+  // DOCTOR PRESCRIPTION (for teacher to implement)
+  teacherPrescription: {
+    recommendedQuestionCount: 12,            // Prescription: create 12 questions
+    interventionFocus: "Sound discrimination training",
+    targetSkills: ["B-P discrimination", "M-N discrimination"],
+    teachingApproach: [
+      "Visual-tactile multisensory approach",
+      "Systematic, explicit instruction",
+      "Immediate corrective feedback"
+    ],
+    questionDistribution: {
+      "B-P_focus": 5,      // 42% B-P practice (main problem)
+      "M-N_focus": 4,      // 33% M-N practice (secondary)
+      "general": 3         // 25% general reinforcement
+    }
+  },
+
+  // TEACHER GUIDANCE
+  teacherGuidance: {
+    implementationSteps: [
+      "1. Review the diagnosis and error patterns below",
+      "2. Use the template system to create intervention questions",
+      "3. Focus on B-P and M-N discrimination skills",
+      "4. Create 12 questions following the distribution above",
+      "5. Monitor student progress using 75% success criteria"
+    ]
+  }
 };
 
-const interventionQuestions = {
-  // 4 questions focusing on B-P (main problem)
-  "B-P_discrimination": [
-    {audioTexts: ["B", "P", "T"], correctPairs: [{"B":"Bb"}, {"P":"Pp"}, {"T":"Tt"}]},
-    {audioTexts: ["P", "B", "L"], correctPairs: [{"P":"Pp"}, {"B":"Bb"}, {"L":"Ll"}]},
-    // ... 2 more B-P questions
-  ],
-  
-  // 3 questions focusing on M-N (secondary problem)  
-  "M-N_discrimination": [
-    {audioTexts: ["M", "N", "H"], correctPairs: [{"M":"Mm"}, {"N":"Nn"}, {"H":"Hh"}]},
-    // ... 2 more M-N questions
-  ],
-  
-  // 3 questions for general reinforcement
-  "general_practice": [
-    {audioTexts: ["T", "L", "S"], correctPairs: [{"T":"Tt"}, {"L":"Ll"}, {"S":"Ss"}]},
-    // ... 2 more general questions
-  ]
-};
-
-// Total: 10 questions, 70% focused on Juan's specific problems
+// Teacher implements this prescription by creating actual intervention questions
 ```
 
-### 3-Source Intervention Generation System
+### Template-Based Teacher Question Creation System
 
-**Revolutionary Question Selection**: The system uses three sources in priority order to generate intervention questions, ensuring maximum flexibility and effectiveness.
+**Teacher-Controlled Question Creation**: Teachers use the template system to create all intervention questions based on system prescriptions.
 
-#### Source Priority System:
+#### Teacher Question Creation Workflow:
 
 ```javascript
-// 1. TEMPLATES - First Priority (60% target)
-const templateQuestions = await generateQuestionsFromTemplates({
-  category: "Phonological Awareness",
-  errorPatterns: analysis.errorPatterns,
-  targetQuestions: 6 // Try to get 60% from templates
-});
+// Teacher receives prescription from system
+const prescription = {
+  recommendedQuestionCount: 12,
+  interventionFocus: "Sound discrimination training",
+  targetSkills: ["B-P discrimination", "M-N discrimination"],
+  questionDistribution: {
+    "B-P_focus": 5,    // Teacher should create 5 B-P questions
+    "M-N_focus": 4,    // Teacher should create 4 M-N questions
+    "general": 3       // Teacher should create 3 general questions
+  }
+};
 
-// 2. MAIN ASSESSMENT - Second Priority (Fill remaining)
-const mainAssessmentQuestions = await generateQuestionsFromMainAssessment({
-  category: "Phonological Awareness",
-  readingLevel: "High Emerging",
-  remainingQuestions: 10 - templateQuestions.length
-});
+// Teacher implementation process
+const teacherWorkflow = {
+  step1: "Review prescription and error patterns",
+  step2: "Access template library for Phonological Awareness category",
+  step3: "Select/customize templates focusing on B-P and M-N discrimination",
+  step4: "Create 12 intervention questions following prescription distribution",
+  step5: "Save questions to intervention_assessment collection with versioning"
+};
 
-// 3. CUSTOM GENERATION - Fallback (Ensure exactly 10 total)
-const customQuestions = await generateCustomQuestions({
+// Result: Teacher-created intervention questions
+const teacherCreatedIntervention = {
+  studentId: 202210222,
   category: "Phonological Awareness",
-  errorPatterns: analysis.errorPatterns,
-  remainingQuestions: 10 - templateQuestions.length - mainAssessmentQuestions.length
-});
-
-// Final result: Exactly 10 questions from optimal sources
-const interventionQuestions = [
-  ...templateQuestions,      // 6 questions from templates
-  ...mainAssessmentQuestions, // 3 questions from main assessment
-  ...customQuestions         // 1 custom question
-];
+  totalQuestions: 12,                // Following prescription
+  questions: teacherCreatedQuestions, // All questions created by teacher
+  prescriptionBased: true,           // Based on system prescription
+  createdBy: teacherId,              // Teacher created this
+  revisionNumber: 1                  // Version tracking for teacher edits
+};
 ```
 
-#### Database Collections for Templates:
+#### Template System Database Collections:
 
-**templates_questions Collection**:
+**templates_questions Collection** (Available Question Templates):
 ```javascript
 {
-  _id: ObjectId("..."),
+  "_id": "68b8a9bba7ce2bf3dd81002b",  // Template ID that teachers reference
+  "category": "Phonological Awareness", // Category this template serves
+  "questionType": "malapantig",        // Type of question
+  "templatetext": "Pinagsama ang mga pantig, ano ang mabubuo?", // Template text
+  "applicableChoiceTypes": ["malapantigtext"], // Which choices can be used
+  "matchCount": 3,                     // How many matches required
+  "createdBy": ObjectId("..."),        // Teacher who created this template
+  "createdAt": Date,
+  "isActive": true                     // Available for use
+},
+{
+  "_id": "68b8a8b8a7ce2bf3d8101027",
+  "category": "Alphabet Knowledge",
+  "questionType": "patinig",           // Vowel recognition
+  "templatetext": "Anong katumbas ng maliit na letra?",
+  "applicableChoiceTypes": ["patinigBigLetter", "patinigSmallLetter"],
+  "isActive": true
+}
+```
+
+**templates_choices Collection** (Available Answer Choices):
+```javascript
+{
+  "_id": "68b8ad8fa1ce2bf3d810103a",
+  "category": "Phonological Awareness",
+  "choiceType": "malapantigText",      // Matches applicableChoiceTypes
+  "choiceValue": "L",                  // The audio value
+  "correctMatch": "Ll",                // What it should match with
+  "choiceImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/...",
+  "isActive": true
+},
+{
+  "_id": "68b8ad4fa7ce2bf3d810103a",
+  "category": "Alphabet Knowledge",
+  "choiceType": "patinigSmallLetter",  // Small vowel letters
+  "choiceValue": "a",
+  "choiceImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/...",
+  "isActive": true
+}
+```
+
+**sentence_templates Collection** (Reading Comprehension Templates):
+```javascript
+{
+  "_id": "68297c4379a34741f9cd1a00",
+  "title": "Si Maria at ang mga Bulaklak",
+  "category": "Reading Comprehension",
+  "readingLevel": "Low Emerging",      // Level-specific templates
+  "sentenceText": [
+    {
+      "pageNumber": 1,
+      "text": "Si Maria ay pumunta sa parke. Nakita niya ang maraming bulaklak na magaganda. Siya ay natuwa at nag-uwi ng ilang bulaklak para sa kanyang ina.",
+      "image": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/passages/park_flowers.png"
+    }
+  ],
+  "sentenceQuestions": [
+    {
+      "questionNumber": 1,
+      "questionText": "Sino ang pangunahing tauhan sa kwento?",
+      "sentenceCorrectAnswer": "Si Maria",
+      "sentenceOptionAnswers": ["Si Maria", "Si Juan"]
+    }
+  ],
+  "createdBy": ObjectId("..."),
+  "createdAt": Date,
+  "isActive": true
+}
+```
+
+#### Teacher Template Usage Workflow:
+
+**Step 1: Receive System Prescription**
+```javascript
+// Teacher receives this from prescriptive analytics
+const prescription = {
+  studentId: 202210222,
+  category: "Phonological Awareness",
+  recommendedQuestionCount: 12,
+  targetSkills: ["B-P discrimination", "M-N discrimination"],
+  questionDistribution: {
+    "B-P_focus": 5,    // Create 5 questions focusing on B-P sounds
+    "M-N_focus": 4,    // Create 4 questions focusing on M-N sounds
+    "general": 3       // Create 3 general reinforcement questions
+  }
+};
+```
+
+**Step 2: Query Template System**
+```javascript
+// Teacher searches available templates
+const availableTemplates = await TemplateQuestion.find({
   category: "Phonological Awareness",
   questionType: "malapantig",
-  templatetext: "Pakinggan ang letra sa audio. Itugma ito sa katumbas na letra.",
-  applicableChoiceTypes: ["malapantigText"], // Links to templates_choices
-  matchCount: 3,
-  isActive: true,
-  createdAt: Date,
-  createdBy: ObjectId("...")
-}
-```
+  isActive: true
+});
+// Returns templates like "68b8a9bba7ce2bf3dd81002b"
 
-**templates_choices Collection**:
-```javascript
-{
-  _id: ObjectId("..."),
+// Teacher gets matching choices
+const availableChoices = await TemplateChoice.find({
   category: "Phonological Awareness",
   choiceType: "malapantigText",
-  choiceValue: "H",
-  correctMatch: "Hh",
-  choiceImage: "https://...",
+  choiceValue: { $in: ["B", "P", "M", "N"] }, // Focus on prescribed sounds
   isActive: true
-}
+});
 ```
 
-**sentence_templates Collection** (Reading Comprehension):
+**Step 3: Create Intervention Questions**
 ```javascript
-{
-  _id: ObjectId("..."),
-  title: "Si Maria at ang mga Bulaklak",
-  category: "Reading Comprehension",
-  readingLevel: "Low Emerging",
-  sentenceText: [{
-    pageNumber: 1,
-    text: "Si Maria ay pumunta sa parke...",
-    image: "https://..."
-  }],
-  sentenceQuestions: [{
-    questionNumber: 1,
-    questionText: "Sino ang pangunahing tauhan?",
+// Teacher creates intervention assessment
+const interventionAssessment = {
+  studentId: 202210222,
+  category: "Phonological Awareness",
+  totalQuestions: 12,
+  questions: [
+    {
+      questionId: "int_pa_001",
+      source: "template_question",
+      sourceTemplateId: "68b8a9bba7ce2bf3dd81002b", // References template
+      questionText: "Pinagsama ang mga pantig, ano ang mabubuo?",
+      questionSet: {
+        audioTexts: ["B", "P", "M"],     // Teacher customized for B-P focus
+        matchingOptions: ["Bb", "Pp", "Mm", "Nn"],
+        correctPairs: [
+          {"audio": "B", "match": "Bb"},
+          {"audio": "P", "match": "Pp"},
+          {"audio": "M", "match": "Mm"}
+        ]
+      },
+      templateCustomization: "B-P discrimination per prescription",
+      createdBy: teacherId
+    }
+    // ... 11 more questions following prescription distribution
+  ],
+  createdBy: teacherId,
+  revisionNumber: 1,
+  prescriptionBased: true
+};
+```
     sentenceCorrectAnswer: "Si Maria",
     sentenceOptionAnswers: ["Si Maria", "Si Juan"]
   }]
@@ -1921,39 +2280,81 @@ const juanAnalysis = {
 };
 ```
 
-#### Step 3: Intervention Generation
+#### Step 3: Prescription Generation & Teacher Implementation
 ```javascript
-// System creates personalized questions for Juan
-const juanIntervention = {
-  category: "Phonological Awareness",
-  totalQuestions: 11,      // Dynamically calculated for Juan's needs
-  questionFocus: {
-    "B-P_practice": 4,     // ~36% focus on main problem
-    "M-N_practice": 4,     // ~36% focus on secondary problem
-    "general_practice": 3  // ~27% general reinforcement
+// DOCTOR: System creates prescription for Juan (not questions)
+const juanPrescription = {
+  // DIAGNOSIS
+  diagnosis: {
+    category: "Phonological Awareness",
+    masteryProbability: 0.31,
+    errorPatterns: {
+      "B-P_confusion": { errorRate: 75, severity: "high" },
+      "M-N_discrimination": { errorRate: 60, severity: "moderate" }
+    }
   },
-  countRationale: "Started with base count of 10 for High Emerging level, increased by 2 due to high error severity (67% error rate), decreased by 1 based on mastery score of 44% = 11 total questions",
-  difficulty: "slightly_easier", // To build confidence
-  oneTimeAttempt: true
+
+  // PRESCRIPTION for teacher
+  teacherPrescription: {
+    recommendedQuestionCount: 11,         // Teacher should create 11 questions
+    questionDistribution: {
+      "B-P_focus": 4,                     // ~36% focus on main problem
+      "M-N_focus": 4,                     // ~36% focus on secondary problem
+      "general_practice": 3               // ~27% general reinforcement
+    },
+    countRationale: "Based on high error severity (83% error rate) and low mastery (0.31)",
+    interventionFocus: "Sound discrimination training",
+    teachingApproach: ["Multisensory approach", "Immediate feedback"]
+  },
+
+  // TEACHER GUIDANCE
+  teacherGuidance: {
+    implementationSteps: [
+      "Use templates to create 11 questions",
+      "Focus on B-P and M-N discrimination",
+      "Make questions slightly easier than assessment",
+      "Include visual and audio cues"
+    ]
+  }
+};
+
+// TEACHER: Creates intervention based on prescription
+const teacherCreatedIntervention = {
+  studentId: 202210222,
+  category: "Phonological Awareness",
+  totalQuestions: 11,                     // Following prescription
+  questions: [
+    /* Teacher creates 11 questions using templates and prescription guidance */
+  ],
+  createdBy: teacherId,
+  prescriptionBased: true,
+  revisionNumber: 1
 };
 ```
 
-#### Step 4: Intervention Results
+#### Step 4: Teacher-Created Intervention Results (Near-Miss Case)
 ```javascript
-// Juan attempts the intervention
+// Juan attempts the teacher-created intervention
 const juanInterventionResults = {
-  totalQuestions: 11,     // Dynamic count based on his needs
+  totalQuestions: 11,     // Teacher created 11 questions per prescription
   totalMatches: 33,       // 11 questions × 3 matches each
-  correctMatches: 25,
-  score: 76,              // (25/33) * 100 = 75.76% ≈ 76%
-  result: "PASSED",       // 76% ≥ 75% - SUCCESS!
-  improvement: 32,        // Improved from 44% to 76% (+32%)
-  
-  // BKT shows learning occurred
+  correctMatches: 24,     // Good improvement but not quite enough
+  score: 73,              // (24/33) * 100 = 72.73% ≈ 73%
+  result: "FAILED",       // 73% < 75% - FAILED but close!
+  improvement: 29,        // Improved from 44% to 73% (+29% - significant!)
+
+  // BKT shows significant learning occurred
   masteryImprovement: {
     before: 0.31,         // 31% mastery before intervention
     after: 0.58,          // 58% mastery after intervention
-    increase: 0.27        // Significant improvement but not enough
+    increase: 0.27        // Significant improvement indicates learning
+  },
+
+  // NEAR-MISS CASE: Student improved significantly but fell just short
+  nearMiss: {
+    gapToPass: 2,         // Only 2% away from passing
+    improvementRate: 66,  // 66% improvement rate (29/44 * 100)
+    learningEvidence: "Strong BKT mastery increase indicates effective intervention"
   }
 };
 ```
@@ -2108,9 +2509,9 @@ const mariaAssessmentStatus = {
 
 ## Integration Points & Automation
 
-### The Automatic Trigger System
+### The Automatic Prescription Trigger System
 
-**Key Innovation**: The system automatically generates prescriptive analysis without human intervention.
+**Key Innovation**: The system automatically generates prescriptive analysis (diagnosis + prescription) without human intervention. Teachers then implement prescriptions by creating intervention questions.
 
 ```javascript
 // This happens automatically when category_results is saved
@@ -2124,7 +2525,7 @@ class CategoryResultsService {
 
     // 3. AUTOMATIC TRIGGER - The magic happens here!
     try {
-      const prescriptiveAnalysis = await IntegrationTriggerService.triggerPrescriptiveAnalysis(savedResult);
+      const prescriptiveAnalysis = await IntegrationTriggerService.triggerPrescriptionGeneration(savedResult);
 
       // 4. Link analysis back to category result
       if (prescriptiveAnalysis) {
@@ -2272,50 +2673,46 @@ const dependencyChain = {
 
 ```javascript
 class IntegrationTriggerService {
-  static async triggerPrescriptiveAnalysis(categoryResult) {
-    console.log(`Triggering prescriptive analysis for student ${categoryResult.studentId}`);
-    
+  static async triggerPrescriptionGeneration(categoryResult) {
+    console.log(`[DOCTOR] Triggering prescription generation for student ${categoryResult.studentId}`);
+
     // Step 1: Validation
     if (!categoryResult || !categoryResult.studentId) {
       return null;
     }
-    
+
     // Step 2: Check for duplicates
-    const existingAnalysis = await this.checkExistingAnalysis(categoryResult._id);
-    if (existingAnalysis) {
-      console.log('Analysis already exists');
-      return existingAnalysis;
+    const existingPrescription = await this.checkExistingPrescription(categoryResult._id);
+    if (existingPrescription) {
+      console.log('[DOCTOR] Prescription already exists');
+      return existingPrescription;
     }
-    
-    // Step 3: Generate comprehensive analysis
-    const analysis = await PrescriptiveAnalyticsService.generatePrescriptiveAnalysis(categoryResult._id);
-    
-    // Step 4: Post-processing (notifications, alerts, etc.)
-    await this.postAnalysisProcessing(analysis);
-    
-    console.log(`Successfully generated analysis ${analysis._id}`);
-    return analysis;
+
+    // Step 3: Generate prescription using PrescriptionOnlyService
+    const prescription = await PrescriptionOnlyService.generatePrescription(categoryResult._id);
+
+    // Step 4: Notify teachers of new prescription
+    await this.notifyTeachersOfPrescription(prescription);
+
+    console.log(`[DOCTOR] Successfully generated prescription ${prescription.analysisId}`);
+    return prescription;
   }
-  
-  static async postAnalysisProcessing(analysis) {
-    // Check if intervention is required
-    if (analysis.interventionPlan?.required) {
-      console.log(`Student ${analysis.studentId} requires intervention in: ${analysis.interventionPlan.priority.join(', ')}`);
 
-      // Log intervention requirements for teacher dashboard
-      console.log(`[INTERVENTION REQUIRED] Categories: ${analysis.interventionPlan.priority.join(', ')}`);
+  static async notifyTeachersOfPrescription(prescription) {
+    if (prescription.type === 'intervention_required') {
+      console.log(`[DOCTOR] Student ${prescription.diagnosis.studentId} needs intervention in: ${prescription.prescription.interventionCategories.join(', ')}`);
+
+      // Notify teacher dashboard of new prescription
+      console.log(`[PRESCRIPTION READY] Categories: ${prescription.prescription.interventionCategories.join(', ')}`);
+      console.log(`[TEACHER ACTION] Create ${prescription.prescription.teacherActionItems.length} intervention questions`);
     }
 
-    // Check if teacher revision is recommended (near-miss cases)
-    if (analysis.insights?.recommendedAction === 'teacher_revision_required') {
-      console.log(`Student ${analysis.studentId} may benefit from teacher-revised intervention questions`);
+    // Log prescription completion
+    console.log(`[PRESCRIPTION COMPLETE] Student ${prescription.diagnosis.studentId} - Prescription Summary: ${prescription.prescription.summary}`);
+  }
 
-      // Log revision recommendations
-      console.log(`[TEACHER REVISION] Student showed improvement but needs customized intervention`);
-    }
-
-    // Update dashboard statistics and tracking
-    console.log(`[ANALYSIS COMPLETE] Student ${analysis.studentId} - Overall Score: ${analysis.insights.overallScore}%`);
+  static async checkExistingPrescription(categoryResultId) {
+    return await PrescriptiveAnalysis.findOne({ categoryResultId: categoryResultId });
   }
 }
 ```
