@@ -810,19 +810,24 @@ const StudentApiService = {
   getPostAssessmentResults: async (id) => {
     try {
       console.log(`🌐 API CALL: Fetching post-assessment results for student ID: ${id}`);
-      console.log(`🌐 Full URL will be: ${API_BASE}/api/student/${id}/category-results?type=post-assessment`);
-      
+      console.log(`🌐 Full URL will be: ${API_BASE}/api/student/${id}/category-results?type=post-assessment&includeResponses=true`);
+
       // Use the api instance with the correct endpoint path and type parameter
       // The api instance already has baseURL set to ${API_BASE}/api/student
+      // Include individual student responses for question-by-question analysis
       const { data } = await api.get(`${id}/category-results`, {
-        params: { type: 'post-assessment' }
+        params: {
+          type: 'post-assessment',
+          includeResponses: 'true'  // Request individual student responses
+        }
       });
-      
+
       console.log("🌐 Post-assessment API SUCCESS - raw data:", data);
-      
+
       // Extract the actual data from the API response wrapper
       const actualData = data.data || data;
       console.log("🌐 Extracted actual data:", actualData);
+      console.log("🌐 Student responses included:", !!(actualData.studentResponses && actualData.studentResponses.length > 0));
       
       // Check if we have meaningful data
       if (actualData && actualData.categories && actualData.categories.length > 0) {
