@@ -100,8 +100,19 @@ const StudentProgressView = () => {
         // Get data for progress report
         const fetchProgressData = async () => {
           console.log("🚀 Fetching POST-ASSESSMENT data specifically...");
-          
+          console.log("🚀 Student ID from useParams():", id);
+          console.log("🚀 Type of ID:", typeof id);
+
+          if (!id) {
+            console.error("❌ Student ID is undefined! Cannot fetch post-assessment data.");
+            return null;
+          }
+
           try {
+            console.log("🚀 About to call getPostAssessmentResults with ID:", id);
+            console.log("🚀 ID Type:", typeof id);
+            console.log("🚀 ID Value stringified:", JSON.stringify(id));
+
             // Only fetch post-assessment results - no fallbacks
             const postAssessmentResults = await StudentApiService.getPostAssessmentResults(id);
             

@@ -810,7 +810,14 @@ const StudentApiService = {
   getPostAssessmentResults: async (id) => {
     try {
       console.log(`🌐 API CALL: Fetching post-assessment results for student ID: ${id}`);
+      console.log(`🌐 Type of ID: ${typeof id}`);
+      console.log(`🌐 ID is null/undefined:`, id == null);
       console.log(`🌐 Full URL will be: ${API_BASE}/api/student/${id}/category-results?type=post-assessment&includeResponses=true`);
+
+      if (!id || id === 'undefined' || id === null) {
+        console.error(`❌ INVALID ID: Cannot fetch post-assessment results with id: ${id}`);
+        throw new Error(`Invalid student ID: ${id}`);
+      }
 
       // Use the api instance with the correct endpoint path and type parameter
       // The api instance already has baseURL set to ${API_BASE}/api/student

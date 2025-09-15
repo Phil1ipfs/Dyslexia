@@ -678,11 +678,14 @@ exports.getReadingLevels = async (req, res) => {
 
 exports.getCategoryResults = async (req, res) => {
   try {
-    const id = req.params.id;
+    console.log('🎯 [ENHANCED getCategoryResults] Function called! URL:', req.originalUrl);
+
+    // Handle both :id and :studentId parameter names from different routes
+    const id = req.params.id || req.params.studentId;
     const assessmentType = req.query.type; // Get the assessment type from query params
     const includeResponses = req.query.includeResponses === 'true'; // Check if individual responses are requested
 
-    console.log(`[getCategoryResults] Request for ID: ${id}, type: ${assessmentType || 'any'}, includeResponses: ${includeResponses}`);
+    console.log(`🎯 [ENHANCED getCategoryResults] Request for ID: ${id} (from params: ${JSON.stringify(req.params)}), type: ${assessmentType || 'any'}, includeResponses: ${includeResponses}`);
 
     // Use helper function to resolve ObjectId to integer studentId
     const studentIdInt = await resolveStudentId(id);
