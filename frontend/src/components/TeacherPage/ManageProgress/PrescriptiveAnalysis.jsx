@@ -136,6 +136,7 @@ const PrescriptiveAnalysis = ({
   const [liveCategoryResults, setLiveCategoryResults] = useState(categoryResults ?? null);
   const [liveAnalyses, setLiveAnalyses] = useState(prescriptiveAnalyses ?? null);
   const [liveInterventions, setLiveInterventions] = useState(interventions ?? []);
+  const hasDataBeenFetched = useRef(false);
 
   // Merge server-created & local drafts
   const effectiveInterventions = [...liveInterventions, ...localInterventions];
@@ -154,6 +155,13 @@ const PrescriptiveAnalysis = ({
   // ===== EFFECTS =====
   
   /**
+   * Reset fetch flag when student changes
+   */
+  useEffect(() => {
+    setHasDataBeenFetched(false);
+  }, [student?._id, student?.id, studentId]);
+
+  /**
    * Fetch data when studentId is available and parent hasn't provided data
    */
   useEffect(() => {
@@ -165,22 +173,18 @@ const PrescriptiveAnalysis = ({
     // If parent supplied all data except interventions, we only need to fetch interventions
     const needsInterventions = interventions?.length === 0 || interventions === undefined;
     
-    // Skip other fetches if parent already supplied them
-    // Special case: if parent passes null for prescriptiveAnalyses, we ALWAYS need to fetch it
-    const skipBasicData = liveStudent && liveCategoryResults && liveAnalyses && prescriptiveAnalyses !== null;
+    // Skip fetches if parent already supplied data OR we've already fetched for this student
+    const skipBasicData = hasDataBeenFetched || (student && categoryResults && prescriptiveAnalyses !== null);
     console.log('PrescriptiveAnalysis useEffect Debug:');
     console.log('  - student ID:', sid);
-    console.log('  - liveStudent:', !!liveStudent);
-    console.log('  - liveCategoryResults:', !!liveCategoryResults);
-    console.log('  - liveAnalyses:', liveAnalyses);
-    console.log('  - prescriptiveAnalyses prop:', prescriptiveAnalyses);
+    console.log('  - hasDataBeenFetched:', hasDataBeenFetched);
     console.log('  - skipBasicData:', skipBasicData);
 
     (async () => {
       try {
         setLoading(true);
 
-        // Only fetch basic data if not already provided
+        // Only fetch basic data if not already provided or fetched
         if (!skipBasicData) {
           // 2.1 Get student core profile
           const { data: stu } = await api.get(`/api/student/${sid}`);
@@ -242,13 +246,16 @@ const PrescriptiveAnalysis = ({
           // Ensure we set an empty array on error
           setLiveInterventions([]);
         }
+
+        // Mark that we've successfully fetched data for this student
+        setHasDataBeenFetched(true);
       } catch (err) {
         console.error('PrescriptiveAnalysis fetch error:', err);
       } finally {
         setLoading(false);
       }
     })();
-  }, [student?._id, student?.id, studentId, liveStudent, liveCategoryResults, liveAnalyses, interventions]);
+  }, [student?._id, student?.id, studentId, interventions]);
   
   /**
    * Auto-select first category (either one needing intervention or just the first one)
