@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const progressController = require('../../../controllers/Teachers/ManageProgress/progressController');
-const studentController = require('../studentController');
+const studentController = require('../../../controllers/Teachers/studentController');
 const { auth, authorize } = require('../../../middleware/auth');
 
 router.use(auth);
