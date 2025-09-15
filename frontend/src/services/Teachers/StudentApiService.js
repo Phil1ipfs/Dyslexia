@@ -30,9 +30,7 @@ const directApi = axios.create({
 // REQUEST INTERCEPTOR: attach bearer token + log
 api.interceptors.request.use(
   config => {
-    const token =
-      localStorage.getItem('token') ||
-      localStorage.getItem('authToken');
+    const token = localStorage.getItem('authToken');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
@@ -50,9 +48,7 @@ api.interceptors.request.use(
 // Apply same interceptor to directApi
 directApi.interceptors.request.use(
   config => {
-    const token =
-      localStorage.getItem('token') ||
-      localStorage.getItem('authToken');
+    const token = localStorage.getItem('authToken');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
