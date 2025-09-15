@@ -680,12 +680,13 @@ exports.getCategoryResults = async (req, res) => {
   try {
     const id = req.params.id;
     const assessmentType = req.query.type; // Get the assessment type from query params
-    
-    console.log(`[getCategoryResults] Request for ID: ${id}, type: ${assessmentType || 'any'}`);
-    
+    const includeResponses = req.query.includeResponses === 'true'; // Check if individual responses are requested
+
+    console.log(`[getCategoryResults] Request for ID: ${id}, type: ${assessmentType || 'any'}, includeResponses: ${includeResponses}`);
+
     // Use helper function to resolve ObjectId to integer studentId
     const studentIdInt = await resolveStudentId(id);
-    
+
     if (!studentIdInt) {
       console.warn(`[getCategoryResults] Could not resolve student ID: ${id}`);
       return res.status(404).json({
@@ -697,14 +698,14 @@ exports.getCategoryResults = async (req, res) => {
     }
 
     console.log(`[getCategoryResults] Resolved ${id} to numeric student ID: ${studentIdInt}`);
-    
+
     // Get the test database
     const testDb = mongoose.connection.useDb('test');
     const categoryResultsCollection = testDb.collection('category_results');
-    
+
     // Build the query using integer studentId (CLAUDE.md specification)
     const query = { studentId: studentIdInt };
-    
+
     // Add assessment type filter if provided
     if (assessmentType) {
       if (assessmentType === 'post-assessment') {
@@ -716,16 +717,16 @@ exports.getCategoryResults = async (req, res) => {
         query.assessmentType = assessmentType;
       }
     }
-    
+
     console.log('[getCategoryResults] Query for category results:', JSON.stringify(query));
-    
+
     // Find the most recent category results for this student
     const categoryResults = await categoryResultsCollection
       .find(query)
       .sort({ assessmentDate: -1, createdAt: -1 })
       .limit(1)
       .toArray();
-    
+
     if (categoryResults.length === 0) {
       console.warn(`[getCategoryResults] No category results found for student ${studentIdInt} (original: ${id})`);
       return res.status(404).json({
@@ -737,11 +738,11 @@ exports.getCategoryResults = async (req, res) => {
         data: null
       });
     }
-    
+
     // Return the most recent assessment result with proper sanitization
     const latestResult = categoryResults[0];
     console.log(`[getCategoryResults] Found category result with ID: ${latestResult._id} for student ${studentIdInt} (original: ${id})`);
-    
+
     // Determine assessment type based on query parameter and data characteristics
     let determinedAssessmentType;
     if (assessmentType === 'pre-assessment' || latestResult.isPreAssessment === true) {
@@ -769,14 +770,62 @@ exports.getCategoryResults = async (req, res) => {
       updatedAt: latestResult.updatedAt,
       assessmentType: determinedAssessmentType // Add this field for frontend logic
     };
-    
+
+    // If individual responses are requested, fetch them from student_responses collection
+    if (includeResponses) {
+      console.log('[getCategoryResults] Fetching individual student responses...');
+
+      const studentResponsesCollection = testDb.collection('student_responses');
+
+      // Create date range filter to get responses from the same assessment session
+      const assessmentDate = new Date(latestResult.assessmentDate);
+      const startDate = new Date(assessmentDate.getTime() - (24 * 60 * 60 * 1000)); // 24 hours before
+      const endDate = new Date(assessmentDate.getTime() + (24 * 60 * 60 * 1000)); // 24 hours after
+
+      const responsesQuery = {
+        studentId: studentIdInt,
+        answeredAt: {
+          $gte: startDate,
+          $lte: endDate
+        }
+      };
+
+      console.log('[getCategoryResults] Fetching responses with query:', JSON.stringify(responsesQuery));
+
+      const studentResponses = await studentResponsesCollection
+        .find(responsesQuery)
+        .sort({ answeredAt: 1, createdAt: 1 })
+        .toArray();
+
+      console.log(`[getCategoryResults] Found ${studentResponses.length} individual responses`);
+
+      // Add sanitized responses to the result
+      sanitizedResult.studentResponses = studentResponses.map(response => ({
+        _id: response._id,
+        studentId: response.studentId,
+        categoryId: response.categoryId,
+        questionId: response.questionId,
+        category: response.category,
+        response: response.response,
+        correctMatches: response.correctMatches || null,
+        totalMatches: response.totalMatches || null,
+        isCorrect: response.isCorrect,
+        responseTime: response.responseTime || null,
+        answeredAt: response.answeredAt,
+        createdAt: response.createdAt,
+        readingLevel: response.readingLevel
+      }));
+    }
+
     console.log(`[getCategoryResults] Returning data for student ${studentIdInt}:`, {
       categories: sanitizedResult.categories.length,
       overallScore: sanitizedResult.overallScore,
       readingLevel: sanitizedResult.readingLevel,
-      assessmentType: determinedAssessmentType
+      assessmentType: determinedAssessmentType,
+      includesResponses: includeResponses,
+      responseCount: includeResponses ? (sanitizedResult.studentResponses?.length || 0) : 'not requested'
     });
-    
+
     return res.json({
       success: true,
       message: 'Category results retrieved successfully',

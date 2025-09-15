@@ -1,5 +1,5 @@
 // src/components/TeacherPage/ManageProgress/PrescriptiveAnalysis.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import api from '../../../services/Teachers/api';
 import {
@@ -157,9 +157,17 @@ const PrescriptiveAnalysis = ({
   /**
    * Reset fetch flag when student changes
    */
+  // Use ref to track which student we've fetched data for
+  const lastFetchedStudentRef = useRef(null);
+
+  // Reset fetch flag when student changes
   useEffect(() => {
-    setHasDataBeenFetched(false);
-  }, [student?._id, student?.id, studentId]);
+    const currentStudentId = student?.idNumber || student?.id || studentId;
+    if (currentStudentId && currentStudentId !== lastFetchedStudentRef.current) {
+      hasDataBeenFetched.current = false;
+      lastFetchedStudentRef.current = currentStudentId;
+    }
+  }, [student?.idNumber, student?.id, studentId]);
 
   /**
    * Fetch data when studentId is available and parent hasn't provided data
@@ -173,12 +181,15 @@ const PrescriptiveAnalysis = ({
     // If parent supplied all data except interventions, we only need to fetch interventions
     const needsInterventions = interventions?.length === 0 || interventions === undefined;
     
-    // Skip fetches if parent already supplied data OR we've already fetched for this student
-    const skipBasicData = hasDataBeenFetched || (student && categoryResults && prescriptiveAnalyses !== null);
+    // Skip fetches if we've already fetched for this student
+    if (hasDataBeenFetched.current) {
+      console.log('Already fetched data for student:', sid);
+      return;
+    }
+
     console.log('PrescriptiveAnalysis useEffect Debug:');
     console.log('  - student ID:', sid);
-    console.log('  - hasDataBeenFetched:', hasDataBeenFetched);
-    console.log('  - skipBasicData:', skipBasicData);
+    console.log('  - hasDataBeenFetched:', hasDataBeenFetched.current);
 
     (async () => {
       try {
@@ -248,14 +259,14 @@ const PrescriptiveAnalysis = ({
         }
 
         // Mark that we've successfully fetched data for this student
-        setHasDataBeenFetched(true);
+        hasDataBeenFetched.current = true;
       } catch (err) {
         console.error('PrescriptiveAnalysis fetch error:', err);
       } finally {
         setLoading(false);
       }
     })();
-  }, [student?._id, student?.id, studentId, interventions]);
+  }, [student?.idNumber, student?.id, studentId]);
   
   /**
    * Auto-select first category (either one needing intervention or just the first one)

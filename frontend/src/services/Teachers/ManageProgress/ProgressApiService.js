@@ -61,7 +61,7 @@ const ProgressApiService = {
       console.log(`🔍 Attempting to fetch student responses for: ${studentId}`);
       
       // Try the main endpoint that should have the student responses
-      const response = await axios.get(`${API_BASE_URL}api/student-responses/${studentId}?type=post-assessment`, {
+      const response = await axios.get(`${API_BASE_URL}/api/student-responses/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -99,7 +99,7 @@ const ProgressApiService = {
       // Fallback: try alternative endpoint structure
       try {
         console.log('🔄 Trying fallback endpoint...');
-        const fallbackResponse = await axios.get(`${API_BASE_URL}api/students/${studentId}/responses`, {
+        const fallbackResponse = await axios.get(`${API_BASE_URL}/api/students/${studentId}/responses`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         

@@ -495,6 +495,15 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load pre-assessment routes:', error.message);
     }
 
+    // Load assessment routes (category-access, next-category, etc.)
+    try {
+      const assessmentRoutes = require('./routes/Teachers/assessmentRoutes');
+      app.use('/api/assessment', assessmentRoutes);
+      console.log('✅ Loaded assessment routes at /api/assessment/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load assessment routes:', error.message);
+    }
+
     // Add a test route for the students endpoint
     app.get('/api/admin/manage/students/test', (req, res) => {
       res.json({ message: 'Students endpoint is accessible' });
