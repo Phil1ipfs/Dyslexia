@@ -1421,7 +1421,7 @@ const PrescriptiveAnalysis = ({
           <FaBrain />
         </div>
         <div className="literexia-head-content">
-          <h3>Prescriptive Analysis</h3>
+          <h3>Prescriptive Analysis and Intervention</h3>
           <p>
             Based on assessment results, this analysis identifies specific categories where the student
             needs additional support. Each category below the 75% threshold has individualized recommendations
