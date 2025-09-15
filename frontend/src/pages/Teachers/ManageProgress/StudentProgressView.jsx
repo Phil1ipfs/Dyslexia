@@ -633,7 +633,7 @@ const StudentProgressView = () => {
           disabled={!preAssessmentCompleted || !categoryResults || !categoryResults.categories || categoryResults.categories.length === 0}
         >
           {(!preAssessmentCompleted || !categoryResults || !categoryResults.categories || categoryResults.categories.length === 0) && <FaLock className="lock-icon" />}
-          <FaLightbulb /> Prescriptive Analysis and Intervention
+          <FaLightbulb /> Prescriptive Analysis
         </button>
 
         <button
@@ -728,7 +728,7 @@ const StudentProgressView = () => {
         {activeTab === 'prescriptive' && (
           <div className="literexia-tab-panel">
             <div className="literexia-panel-header">
-              <h2>Prescriptive Analysis and Intervention</h2>
+              <h2>Prescriptive Analysis</h2>
             </div>
             <div className="literexia-panel-content">
               {student && student.readingLevel ? (
