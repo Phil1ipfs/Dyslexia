@@ -53,7 +53,7 @@
   font-weight: 400;
 }
 
-/* Category tabs */
+/* Category tabs - Enhanced for CLAUDE.md specifications */
 .literexia-category-tabs {
   background-color: #ffffff;
   border-radius: 12px;
@@ -77,6 +77,17 @@
   color: #4a5494;
   font-size: 1.25rem;
   font-weight: 600;
+  position: relative;
+}
+
+.literexia-tabs-header h3::after {
+  content: '5 Reading Levels: Low Emerging → High Emerging → Developing → Transitioning → At Grade Level';
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 400;
+  margin-top: 0.25rem;
+  font-style: italic;
 }
 
 .literexia-tabs-filter {
@@ -127,6 +138,22 @@
   margin-bottom: 0.1rem;
 }
 
+/* Add prerequisite indicators */
+.literexia-category-tabb[data-prerequisites]::before {
+  content: '🔒';
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
+
+.literexia-category-tabb[data-prerequisites="unlocked"]::before {
+  content: '🔓';
+  color: #22c55e;
+  opacity: 1;
+}
+
 .literexia-tab-scoree {
   font-weight: 700;
   color: #4a5494;
@@ -166,6 +193,34 @@
   font-style: italic;
 }
 
+/* Mastery level indicators based on BKT */
+.literexia-mastery-indicator {
+  position: absolute;
+  bottom: 0.25rem;
+  left: 0.25rem;
+  font-size: 0.6rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.literexia-mastery-indicator.high {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.literexia-mastery-indicator.medium {
+  background-color: #fef3c7;
+  color: #a16207;
+}
+
+.literexia-mastery-indicator.low {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
 .literexia-tab-badge {
   display: inline-flex;
   align-items: center;
@@ -184,6 +239,19 @@
   background-color: #fff1db;
   color: #b45309;
   border: 1px solid #fed7aa;
+  position: relative;
+}
+
+.literexia-tab-badge.needs-attention::before {
+  content: 'BKT: Low Mastery';
+  position: absolute;
+  bottom: -1.5rem;
+  left: 0;
+  right: 0;
+  font-size: 0.5rem;
+  color: #92400e;
+  text-align: center;
+  opacity: 0.8;
 }
 
 .literexia-tab-badge.not-started {
@@ -290,9 +358,12 @@
   font-size: 1rem;
 }
 
-/* Analysis content */
+/* Analysis content - Enhanced with mathematical model integration */
 .literexia-analysis-content {
   margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 /* Success banner for passed categories */
@@ -361,23 +432,33 @@
 
 .literexia-empty-analysis {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
   background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 1.5rem;
   color: #6b7280;
 }
 
 .literexia-empty-analysis svg {
-  color: #9ca3af;
+  color: #64748b;
   font-size: 1.5rem;
   flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.literexia-empty-analysis h4 {
+  color: #374151;
+  margin: 0 0 10px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .literexia-empty-analysis p {
-  margin: 0;
+  margin: 0 0 8px 0;
   line-height: 1.6;
+  color: #6b7280;
 }
 
 /* Teaching guide */
@@ -913,36 +994,85 @@
   .literexia-intervention-details {
     padding: 1rem;
   }
-  
+
   .literexia-tabs-container {
     grid-template-columns: 1fr;
   }
-  
+
   .literexia-category-analysis,
   .literexia-teaching-guide,
   .literexia-current-interventions {
     padding: 1rem;
   }
-  
+
   .literexia-category-tab {
     min-height: 70px;
   }
-  
+
   .literexia-tab-name {
     font-size: 0.85rem;
   }
-  
+
   .literexia-tab-score {
     font-size: 1rem;
   }
-  
+
   .literexia-progress-indicators {
     margin-bottom: 0.2rem;
   }
-  
+
   .literexia-progress-indicator {
     width: 5px;
     height: 5px;
+  }
+
+  /* Mobile responsive styles for new components */
+  .literexia-analysis-indicators {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .literexia-mastery-display {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .literexia-irt-content {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .literexia-ability-thermometer {
+    align-self: center;
+  }
+
+  .literexia-progression-timeline {
+    justify-content: center;
+  }
+
+  .literexia-error-stats {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .literexia-interventions-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .literexia-one-time-rule-indicator {
+    align-items: flex-start;
+  }
+
+  .literexia-history-details {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .literexia-sound-tags {
+    justify-content: center;
   }
 }
 
@@ -2453,4 +2583,653 @@
 @keyframes fadeOut {
   from { opacity: 1; }
   to { opacity: 0; visibility: hidden; }
+}
+
+/* BKT (Bayesian Knowledge Tracing) Analysis Styles */
+.literexia-bkt-analysis {
+  margin-bottom: 2rem;
+  background-color: #f8fafc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border-left: 4px solid #4a5494;
+}
+
+.literexia-bkt-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.literexia-mastery-display {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.literexia-mastery-gauge {
+  flex: 1;
+  height: 24px;
+  background-color: #e5e7eb;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.literexia-mastery-fill {
+  height: 100%;
+  border-radius: 12px;
+  transition: width 1s ease;
+  position: relative;
+}
+
+.literexia-mastery-fill.literexia-confidence-high {
+  background: linear-gradient(90deg, #4ade80, #22c55e);
+}
+
+.literexia-mastery-fill.literexia-confidence-medium {
+  background: linear-gradient(90deg, #f59e0b, #eab308);
+}
+
+.literexia-mastery-fill.literexia-confidence-low {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.literexia-mastery-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 100px;
+}
+
+.literexia-mastery-percentage {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #4a5494;
+}
+
+.literexia-mastery-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+.literexia-learning-progression {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1rem;
+}
+
+.literexia-learning-progression h5 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #374151;
+  font-weight: 600;
+}
+
+.literexia-progression-timeline {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  overflow-x: auto;
+  padding: 0.5rem 0;
+}
+
+.literexia-progression-point {
+  flex-shrink: 0;
+}
+
+.literexia-point {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.literexia-point:hover {
+  transform: scale(1.1);
+}
+
+.literexia-point.correct {
+  background-color: #4ade80;
+  color: white;
+}
+
+.literexia-point.incorrect {
+  background-color: #ef4444;
+  color: white;
+}
+
+.literexia-progression-summary {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* IRT (Item Response Theory) Analysis Styles */
+.literexia-irt-analysis {
+  margin-bottom: 2rem;
+  background-color: #f0f9ff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border-left: 4px solid #3b82f6;
+}
+
+.literexia-irt-content {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.literexia-ability-thermometer {
+  position: relative;
+  width: 60px;
+  height: 200px;
+  display: flex;
+}
+
+.literexia-thermometer-scale {
+  position: absolute;
+  left: -60px;
+  top: 0;
+  height: 100%;
+  width: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+
+.literexia-scale-marker {
+  font-size: 0.7rem;
+  color: #6b7280;
+  text-align: right;
+  position: relative;
+}
+
+.literexia-scale-marker::after {
+  content: '';
+  position: absolute;
+  right: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 1px;
+  background-color: #d1d5db;
+}
+
+.literexia-thermometer-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #ef4444 0%, #f59e0b 25%, #eab308 50%, #22c55e 75%, #16a34a 100%);
+  border-radius: 30px;
+  position: relative;
+}
+
+.literexia-ability-indicator {
+  position: absolute;
+  right: -15px;
+  width: 40px;
+  height: 20px;
+  background-color: #374151;
+  color: white;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transform: translateY(-50%);
+}
+
+.literexia-ability-indicator::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-right: 5px solid #374151;
+}
+
+.literexia-ability-info {
+  flex: 1;
+}
+
+.literexia-ability-level {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #3b82f6;
+  margin-bottom: 0.5rem;
+}
+
+.literexia-ability-description {
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+/* Error Pattern Analysis Styles */
+.literexia-error-analysis {
+  margin-bottom: 2rem;
+  background-color: #fef2f2;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border-left: 4px solid #ef4444;
+}
+
+.literexia-error-content {
+  margin-top: 1rem;
+}
+
+.literexia-error-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.literexia-error-group {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #fecaca;
+}
+
+.literexia-error-group h6 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #991b1b;
+  font-weight: 600;
+}
+
+.literexia-error-stats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.literexia-error-rate {
+  background-color: #fee2e2;
+  color: #991b1b;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.literexia-error-count,
+.literexia-partial-success {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.literexia-confused-letters,
+.literexia-error-type,
+.literexia-error-position {
+  font-size: 0.9rem;
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+}
+
+.literexia-sound-confusions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.literexia-sound-confusions h6 {
+  margin-bottom: 0.75rem;
+  color: #7c2d12;
+}
+
+.literexia-confusion-pairs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.literexia-confusion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: #fef2f2;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.literexia-confusion-rate {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.literexia-confusion-item:nth-child(1) .literexia-confusion-rate {
+  background-color: #fecaca;
+  color: #991b1b;
+}
+
+.literexia-confusion-item:nth-child(2) .literexia-confusion-rate {
+  background-color: #fed7aa;
+  color: #c2410c;
+}
+
+.literexia-confusion-item:nth-child(3) .literexia-confusion-rate {
+  background-color: #fef3c7;
+  color: #a16207;
+}
+
+.literexia-general-errors {
+  background-color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  color: #6b7280;
+}
+
+/* Intervention Analysis Styles */
+.literexia-intervention-analysis {
+  background-color: #f0fdfa;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border-left: 4px solid #14b8a6;
+}
+
+.literexia-interventions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #ccfbf1;
+}
+
+.literexia-one-time-rule-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.literexia-rule-badge {
+  background-color: #14b8a6;
+  color: white;
+  padding: 0.3rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.literexia-rule-description {
+  font-size: 0.8rem;
+  color: #0f766e;
+  margin-top: 0.25rem;
+}
+
+.literexia-intervention-history {
+  margin-bottom: 1.5rem;
+}
+
+.literexia-intervention-history h4 {
+  margin: 0 0 1rem 0;
+  color: #0f766e;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.literexia-history-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.literexia-history-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #ccfbf1;
+}
+
+.literexia-history-item.passed {
+  border-left: 4px solid #22c55e;
+}
+
+.literexia-history-item.failed {
+  border-left: 4px solid #ef4444;
+}
+
+.literexia-history-marker {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.literexia-history-item.passed .literexia-history-marker {
+  background-color: #dcfce7;
+  color: #22c55e;
+}
+
+.literexia-history-item.failed .literexia-history-marker {
+  background-color: #fee2e2;
+  color: #ef4444;
+}
+
+.literexia-history-content {
+  flex: 1;
+}
+
+.literexia-history-title {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.literexia-history-details {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.literexia-revision-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #d97706;
+  background-color: #fffbeb;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+}
+
+.literexia-intervention-recommendations {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #ccfbf1;
+}
+
+.literexia-intervention-recommendations h4 {
+  margin: 0 0 1rem 0;
+  color: #0f766e;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.literexia-recommendation-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.literexia-focus-area,
+.literexia-target-elements,
+.literexia-recommended-activities {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.literexia-sound-tags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.literexia-sound-tag {
+  background-color: #14b8a6;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.literexia-activity-list {
+  margin: 0.5rem 0 0 0;
+  padding-left: 1.5rem;
+}
+
+.literexia-activity-list li {
+  margin-bottom: 0.25rem;
+  color: #4b5563;
+}
+
+/* Enhanced header styles for CLAUDE.md terminology */
+.literexia-analysis-indicators {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.literexia-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: rgba(74, 84, 148, 0.1);
+  color: #3B4F81;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid rgba(74, 84, 148, 0.2);
+}
+
+/* Enhanced intervention sections */
+.literexia-intervention-info {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.literexia-one-time-rule {
+  background-color: #fef3c7;
+  color: #92400e;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.literexia-dynamic-count {
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.literexia-count-rationale {
+  grid-column: 1 / -1;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.literexia-count-rationale .literexia-detail-value {
+  font-style: italic;
+  color: #6b7280;
+  font-weight: normal;
+}
+
+.literexia-notice-content {
+  flex: 1;
+}
+
+.literexia-notice-content strong {
+  color: #d97706;
+}
+
+.literexia-notice-content p {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.literexia-intervention-features {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.literexia-intervention-features li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.literexia-one-time-reminder {
+  background-color: #fef3c7;
+  color: #92400e;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  border: 1px solid #fed7aa;
+}
+
+.literexia-action-recommendation,
+.literexia-readiness-indicator {
+  background-color: #f0f9ff;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin: 0.5rem 0;
+  border-left: 3px solid #3b82f6;
+}
+
+.literexia-action-recommendation strong,
+.literexia-readiness-indicator strong {
+  color: #1e40af;
+}
+
+.literexia-readiness-indicator {
+  margin-top: 0.75rem;
+  background-color: #ecfdf5;
+  border-left-color: #22c55e;
+}
+
+.literexia-readiness-indicator strong {
+  color: #15803d;
 }

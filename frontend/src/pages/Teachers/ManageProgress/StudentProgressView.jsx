@@ -675,11 +675,11 @@ const StudentProgressView = () => {
               <h2>Prescriptive Analysis and Intervention</h2>
             </div>
             <div className="literexia-panel-content">
-              {(prescriptiveRecommendations && prescriptiveRecommendations.length > 0) || (student && student.readingLevel) ? (
+              {student && student.readingLevel ? (
                 <PrescriptiveAnalysis
                   student={student}
                   categoryResults={categoryResults}
-                  prescriptiveAnalyses={prescriptiveRecommendations}
+                  prescriptiveAnalyses={null}
                   studentId={id}
                   onCreateActivity={handleEditActivity}
                 />

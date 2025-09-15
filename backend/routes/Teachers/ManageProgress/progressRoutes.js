@@ -29,6 +29,10 @@ router.put('/prescriptive-analysis/:analysisId', authorize('teacher', 'admin'), 
 // POST /api/progress/interventions
 router.post('/interventions', authorize('teacher', 'admin'), progressController.createInterventionPlan);
 
+// Get prescriptive analyses for a student
+// GET /api/progress/student/:studentId/prescriptive-analyses
+router.get('/student/:studentId/prescriptive-analyses', authorize('teacher', 'admin', 'parent'), progressController.getStudentPrescriptiveAnalyses);
+
 // Get all intervention plans for a student
 // GET /api/progress/student/:studentId/interventions
 router.get('/student/:studentId/interventions', authorize('teacher', 'admin', 'parent'), progressController.getStudentInterventions);

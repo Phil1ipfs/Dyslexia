@@ -424,6 +424,59 @@ class ProgressController {
     }
 
     /**
+     * Get prescriptive analyses for a student
+     */
+    async getStudentPrescriptiveAnalyses(req, res) {
+        try {
+            const { studentId } = req.params;
+
+            // Convert studentId to number if it's a string (CLAUDE.md uses studentId as INT)
+            const studentIdInt = parseInt(studentId);
+            if (isNaN(studentIdInt)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid student ID format'
+                });
+            }
+
+            // Get prescriptive analyses from the database using the correct collection
+            const prescriptiveAnalysisCollection = mongoose.connection.db.collection('prescriptive_analysis');
+
+            // Query for prescriptive analyses for this student that have actual analysis data
+            const analyses = await prescriptiveAnalysisCollection.find({
+                studentId: studentIdInt,  // CLAUDE.md uses INT for studentId
+                // Only return records that have the actual mathematical analysis data
+                skillMastery: { $exists: true, $ne: null },
+                errorPatterns: { $exists: true, $ne: null },
+                interventionPlan: { $exists: true, $ne: null }
+            }).sort({ createdAt: -1 }).toArray();
+
+            if (!analyses || analyses.length === 0) {
+                return res.status(200).json({
+                    success: true,
+                    message: 'No prescriptive analyses found for this student',
+                    data: []
+                });
+            }
+
+            // Return the real CLAUDE.md-compliant prescriptive analysis data
+            console.log(`Found ${analyses.length} real prescriptive analyses for student ${studentIdInt}`);
+
+            return res.status(200).json({
+                success: true,
+                data: analyses
+            });
+        } catch (error) {
+            console.error('Error getting student prescriptive analyses:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to retrieve prescriptive analyses',
+                error: error.message
+            });
+        }
+    }
+
+    /**
      * Create a new intervention plan for a student
      */
     async createInterventionPlan(req, res) {

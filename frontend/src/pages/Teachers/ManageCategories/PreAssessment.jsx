@@ -879,7 +879,10 @@ const PreAssessment = () => {
       questionType: question.questionType || '',
       questionText: question.questionText || '',
       difficultyLevel: question.difficultyLevel || '',
-      questionValue: question.questionValue || '',
+      // CRITICAL FIX: For "Anong kasing tunog" questions, map displayWord to questionValue
+      questionValue: question.questionText === 'Anong kasing tunog ng salitang nakikita?'
+        ? (question.displayWord || question.questionValue || '')
+        : (question.questionValue || ''),
       questionImage: question.questionImage || null,
       
       // Alphabet Knowledge - Multiple choice options
@@ -924,10 +927,6 @@ const PreAssessment = () => {
       // Word Recognition - Fill in blanks
       displayWord: question.displayWord || '',
       completeSentence: question.displayWord || '', // For sentence input field
-      // CRITICAL FIX: For "Anong kasing tunog" questions, map displayWord to questionValue
-      questionValue: question.questionText === 'Anong kasing tunog ng salitang nakikita?'
-        ? (question.displayWord || question.questionValue || '')
-        : (question.questionValue || ''),
       blankOptions: question.blankOptions || [],
       correctAnswer: question.correctAnswer || []
     };
