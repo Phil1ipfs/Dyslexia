@@ -2097,6 +2097,407 @@
   margin: 1rem 0;
   background-color: #f8fafc;
   padding: 1rem;
+
+/* =========================== */
+/* Two-Column Analysis Layout */
+/* =========================== */
+
+/* Header with score metrics */
+.literexia-analysis-header-metrics {
+  margin-bottom: 2rem;
+}
+
+.literexia-score-header {
+  background: linear-gradient(135deg, #3B4F81 0%, #4a5494 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  color: white;
+  box-shadow: 0 8px 25px rgba(59, 79, 129, 0.2);
+}
+
+.literexia-score-header h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: white;
+}
+
+.literexia-score-indicators {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.literexia-score-indicator {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  min-width: 100px;
+  backdrop-filter: blur(10px);
+}
+
+.literexia-score-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.9;
+  margin-bottom: 0.25rem;
+}
+
+.literexia-score-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+}
+
+.literexia-score-arrow {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.25rem;
+}
+
+/* Two-column layout */
+.literexia-analysis-two-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .literexia-analysis-two-column {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Analysis cards */
+.literexia-analysis-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(59, 79, 129, 0.08);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.literexia-analysis-card:hover {
+  box-shadow: 0 8px 25px rgba(59, 79, 129, 0.12);
+  transform: translateY(-2px);
+}
+
+.literexia-analysis-card.literexia-full-width {
+  grid-column: 1 / -1;
+}
+
+/* Card headers */
+.literexia-card-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.literexia-card-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: linear-gradient(135deg, #3B4F81 0%, #4a5494 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.125rem;
+}
+
+.literexia-card-title h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #3B4F81;
+  line-height: 1.2;
+}
+
+/* Card content */
+.literexia-card-content {
+  padding: 1.25rem;
+}
+
+/* BKT specific styling */
+.literexia-mastery-display {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.literexia-mastery-gauge {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.literexia-mastery-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.literexia-mastery-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  margin: 0 auto;
+  position: relative;
+}
+
+.literexia-mastery-percent {
+  font-size: 1.5rem;
+  font-weight: 700;
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.literexia-mastery-percent.high {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.literexia-mastery-percent.medium {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.literexia-mastery-percent.low {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.literexia-bkt-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.literexia-bkt-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.literexia-metric-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.literexia-metric-value {
+  font-size: 0.875rem;
+  color: #374151;
+  line-height: 1.4;
+}
+
+/* IRT specific styling */
+.literexia-irt-display {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.literexia-ability-thermometer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.literexia-ability-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.literexia-ability-value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.literexia-ability-score {
+  font-size: 2rem;
+  font-weight: 700;
+  padding: 1rem 1.5rem;
+  border-radius: 16px;
+  color: white;
+}
+
+.literexia-ability-score.excellent {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.literexia-ability-score.above-average {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.literexia-ability-score.below-average {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.literexia-ability-score.needs-support {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.literexia-scale-range {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+/* Error Pattern Analysis */
+.literexia-error-group {
+  margin-bottom: 1.5rem;
+}
+
+.literexia-error-group:last-child {
+  margin-bottom: 0;
+}
+
+.literexia-error-type h6 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #3B4F81;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+
+.literexia-error-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.literexia-error-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.literexia-error-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.literexia-error-value {
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 600;
+}
+
+.literexia-error-classification,
+.literexia-error-questions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+/* Intervention Recommendations */
+.literexia-intervention-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.literexia-intervention-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.literexia-intervention-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.literexia-intervention-value {
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.literexia-target-sounds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.literexia-sound-tag {
+  background: linear-gradient(135deg, #3B4F81 0%, #4a5494 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.literexia-activity-list {
+  margin: 0.5rem 0 0 1rem;
+  padding: 0;
+}
+
+.literexia-activity-list li {
+  margin-bottom: 0.25rem;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+/* Overall Insights */
+.literexia-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.literexia-insight-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.literexia-insight-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.literexia-insight-value {
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 600;
+}
   border-radius: 8px;
 }
 

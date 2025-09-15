@@ -261,7 +261,7 @@ const decodingErrorSchema = new mongoose.Schema({
 }, { _id: false });
 
 const comprehensionSkillSchema = new mongoose.Schema({
-  errors: { type: Number, default: 0 },
+  errorCount: { type: Number, default: 0 },
   description: { type: String }
 }, { _id: false });
 
@@ -590,7 +590,8 @@ const prescriptiveAnalysisSchema = new mongoose.Schema({
   }
 }, {
   collection: 'prescriptive_analysis',
-  timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' }
+  timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },
+  suppressReservedKeysWarning: true
 });
 
 // Update the 'updatedAt' field on save

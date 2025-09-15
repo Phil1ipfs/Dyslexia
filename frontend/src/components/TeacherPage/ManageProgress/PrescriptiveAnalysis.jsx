@@ -938,243 +938,266 @@ const PrescriptiveAnalysis = ({
 
     return (
       <div className="literexia-mathematical-analysis-section">
-
-        {/* BKT (Bayesian Knowledge Tracing) Section */}
-        {bktData && (
-          <div className="literexia-analysis-section">
-            <h4>
-              <FaBrain style={{ color: '#4a5494' }} />
-              Bayesian Knowledge Tracing (BKT)
-            </h4>
-            <div className="literexia-analysis-card">
-              <div className="literexia-mastery-info">
-                <div className="literexia-mastery-label">Mastery Probability:</div>
-                <div className="literexia-mastery-value">
-                  <span className={`literexia-mastery-percent ${
-                    bktData.masteryProbability >= 0.75 ? 'high' :
-                    bktData.masteryProbability >= 0.5 ? 'medium' : 'low'
-                  }`}>
-                    {(bktData.masteryProbability * 100).toFixed(1)}%
-                  </span>
-                </div>
+        {/* Header with score metrics */}
+        <div className="literexia-analysis-header-metrics">
+          <div className="literexia-score-header">
+            <h3>{formatCategoryName(categoryName)} Analysis</h3>
+            <div className="literexia-score-indicators">
+              <div className="literexia-score-indicator">
+                <div className="literexia-score-label">Current Score</div>
+                <div className="literexia-score-value">{currentScore}%</div>
               </div>
-              <div className="literexia-bkt-details">
-                <div className="literexia-bkt-metric">
-                  <strong>Assessment Score:</strong> {bktData.score}% ({bktData.isPassed ? 'Passed' : 'Needs Intervention'})
-                </div>
-                <div className="literexia-bkt-metric">
-                  <strong>Questions Answered:</strong> {bktData.totalQuestions} total, {bktData.correctAnswers} correct
-                  {bktData.totalPossibleMatches > 0 && (
-                    <span> ({bktData.correctMatches}/{bktData.totalPossibleMatches} matches)</span>
-                  )}
-                </div>
-                <div className="literexia-bkt-interpretation">
-                  <strong>BKT Interpretation:</strong> {
-                    bktData.masteryProbability >= 0.75 ?
-                      `High confidence - student demonstrates mastery of ${formatCategoryName(categoryName)}` :
-                    bktData.masteryProbability >= 0.5 ?
-                      `Moderate confidence - student shows partial mastery of ${formatCategoryName(categoryName)}` :
-                      `Low confidence - student needs targeted intervention for ${formatCategoryName(categoryName)}`
-                  }
-                </div>
+              <div className="literexia-score-arrow">
+                <FaArrowRight />
+              </div>
+              <div className="literexia-score-indicator">
+                <div className="literexia-score-label">Target Score</div>
+                <div className="literexia-score-value">75%</div>
+              </div>
+              <div className="literexia-score-indicator">
+                <div className="literexia-score-label">Gap</div>
+                <div className="literexia-score-value">{gap}%</div>
               </div>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* IRT (Item Response Theory) Section */}
-        {irtAbility !== null && irtAbility !== undefined && (
-          <div className="literexia-analysis-section">
-            <h4>
-              <FaRuler style={{ color: '#4a5494' }} />
-              Item Response Theory (IRT) Ability Estimate
-            </h4>
+        {/* Two-column layout for BKT and IRT */}
+        <div className="literexia-analysis-two-column">
+          {/* Left Column - BKT (Bayesian Knowledge Tracing) */}
+          {bktData && (
             <div className="literexia-analysis-card">
-              <div className="literexia-irt-display">
-                <div className="literexia-ability-label">Ability Level (θ):</div>
-                <div className="literexia-ability-value">
-                  <span className={`literexia-ability-score ${
-                    irtAbility >= 1.0 ? 'excellent' :
-                    irtAbility >= 0.0 ? 'above-average' :
-                    irtAbility >= -1.0 ? 'below-average' : 'needs-support'
-                  }`}>
-                    {irtAbility > 0 ? '+' : ''}{irtAbility.toFixed(2)}
-                  </span>
-                  <span className="literexia-scale-range">(Scale: -3.0 to +3.0)</span>
+              <div className="literexia-card-header">
+                <div className="literexia-card-icon">
+                  <FaBrain />
+                </div>
+                <div className="literexia-card-title">
+                  <h4>Bayesian Knowledge Tracing (BKT)</h4>
                 </div>
               </div>
-              <div className="literexia-irt-interpretation">
-                <strong>IRT Interpretation:</strong> {
-                  irtAbility >= 1.0 ?
-                    `Excellent ability in ${formatCategoryName(categoryName)}` :
-                  irtAbility >= 0.0 ?
-                    `Above average ability in ${formatCategoryName(categoryName)}` :
-                  irtAbility >= -1.0 ?
-                    `Below average ability - needs additional support in ${formatCategoryName(categoryName)}` :
-                    `Significant difficulty - intensive intervention recommended for ${formatCategoryName(categoryName)}`
-                }
+              <div className="literexia-card-content">
+                <div className="literexia-mastery-display">
+                  <div className="literexia-mastery-gauge">
+                    <div className="literexia-mastery-label">Mastery Probability:</div>
+                    <div className="literexia-mastery-circle">
+                      <div className={`literexia-mastery-percent ${
+                        bktData.masteryProbability >= 0.75 ? 'high' :
+                        bktData.masteryProbability >= 0.5 ? 'medium' : 'low'
+                      }`}>
+                        {(bktData.masteryProbability * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                  <div className="literexia-bkt-details">
+                    <div className="literexia-bkt-metric">
+                      <span className="literexia-metric-label">Assessment Score:</span>
+                      <span className="literexia-metric-value">{bktData.score}% ({bktData.isPassed ? 'Needs Intervention' : 'Needs Intervention'})</span>
+                    </div>
+                    <div className="literexia-bkt-metric">
+                      <span className="literexia-metric-label">Questions Answered:</span>
+                      <span className="literexia-metric-value">{bktData.totalQuestions} total, {bktData.correctAnswers} correct
+                      {bktData.totalPossibleMatches > 0 && (
+                        <span> ({bktData.correctMatches}/{bktData.totalPossibleMatches} matches)</span>
+                      )}</span>
+                    </div>
+                    <div className="literexia-bkt-interpretation">
+                      <span className="literexia-metric-label">BKT Interpretation:</span>
+                      <span className="literexia-metric-value">{
+                        bktData.masteryProbability >= 0.75 ?
+                          `High confidence - student demonstrates mastery of ${formatCategoryName(categoryName)}` :
+                        bktData.masteryProbability >= 0.5 ?
+                          `Moderate confidence - student shows partial mastery of ${formatCategoryName(categoryName)}` :
+                          `Low confidence - student needs targeted intervention for ${formatCategoryName(categoryName)}`
+                      }</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Error Pattern Analysis Section */}
+          {/* Right Column - IRT (Item Response Theory) */}
+          {irtAbility !== null && irtAbility !== undefined && (
+            <div className="literexia-analysis-card">
+              <div className="literexia-card-header">
+                <div className="literexia-card-icon">
+                  <FaRuler />
+                </div>
+                <div className="literexia-card-title">
+                  <h4>Item Response Theory (IRT) Ability Estimate</h4>
+                </div>
+              </div>
+              <div className="literexia-card-content">
+                <div className="literexia-irt-display">
+                  <div className="literexia-ability-thermometer">
+                    <div className="literexia-ability-label">Ability Level (θ):</div>
+                    <div className="literexia-ability-value">
+                      <span className={`literexia-ability-score ${
+                        irtAbility >= 1.0 ? 'excellent' :
+                        irtAbility >= 0.0 ? 'above-average' :
+                        irtAbility >= -1.0 ? 'below-average' : 'needs-support'
+                      }`}>
+                        {irtAbility > 0 ? '+' : ''}{irtAbility.toFixed(1)}
+                      </span>
+                      <span className="literexia-scale-range">(Scale: -3.0 to +3.0)</span>
+                    </div>
+                  </div>
+                  <div className="literexia-irt-interpretation">
+                    <span className="literexia-metric-label">IRT Interpretation:</span>
+                    <span className="literexia-metric-value">{
+                      irtAbility >= 1.0 ?
+                        `Significant difficulty - intensive intervention recommended for ${formatCategoryName(categoryName)}` :
+                      irtAbility >= 0.0 ?
+                        `Above average ability in ${formatCategoryName(categoryName)}` :
+                      irtAbility >= -1.0 ?
+                        `Below average ability - needs additional support in ${formatCategoryName(categoryName)}` :
+                        `Significant difficulty - intensive intervention recommended for ${formatCategoryName(categoryName)}`
+                    }</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Error Pattern Analysis - Full Width */}
         {errorPatterns && Object.keys(errorPatterns).length > 0 && (
-          <div className="literexia-analysis-section">
-            <h4>
-              <FaExclamationCircle style={{ color: '#4a5494' }} />
-              Error Pattern Analysis
-            </h4>
-            <div className="literexia-analysis-card">
+          <div className="literexia-analysis-card literexia-full-width">
+            <div className="literexia-card-header">
+              <div className="literexia-card-icon">
+                <FaExclamationCircle />
+              </div>
+              <div className="literexia-card-title">
+                <h4>Error Pattern Analysis</h4>
+              </div>
+            </div>
+            <div className="literexia-card-content">
               {Object.entries(errorPatterns).map(([errorType, errorData]) => (
                 <div key={errorType} className="literexia-error-pattern">
-                  <div className="literexia-error-type">
-                    <strong>{errorType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong>
+                  <div className="literexia-error-group">
+                    <div className="literexia-error-type">
+                      <h6>{errorType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h6>
+                    </div>
+                    {errorData.count && errorData.total && (
+                      <div className="literexia-error-stats">
+                        <div className="literexia-error-metric">
+                          <span className="literexia-error-label">Matching Errors:</span>
+                          <span className="literexia-error-value">
+                            {errorData.count}/{errorData.total} errors ({errorData.percentage}%)
+                          </span>
+                        </div>
+                        {errorData.avg_partial_success && (
+                          <div className="literexia-error-metric">
+                            <span className="literexia-error-label">Average partial success per question:</span>
+                            <span className="literexia-error-value">
+                              {(errorData.avg_partial_success * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {errorData.error_type && (
+                      <div className="literexia-error-classification">
+                        <span className="literexia-error-label">Error Type:</span>
+                        <span className="literexia-error-value">{errorData.error_type.replace(/_/g, ' ')}</span>
+                      </div>
+                    )}
+                    {errorData.questionIds && errorData.questionIds.length > 0 && (
+                      <div className="literexia-error-questions">
+                        <span className="literexia-error-label">Affected Questions:</span>
+                        <span className="literexia-error-value">{errorData.questionIds.join(', ')}</span>
+                      </div>
+                    )}
                   </div>
-                  {errorData.count && errorData.total && (
-                    <div className="literexia-error-stats">
-                      <span className="literexia-error-count">
-                        {errorData.count}/{errorData.total} errors ({errorData.percentage}%)
-                      </span>
-                      {errorData.avg_partial_success && (
-                        <span className="literexia-error-description">
-                          Average {(errorData.avg_partial_success * 100).toFixed(1)}% partial success per question
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {errorData.error_type && (
-                    <div className="literexia-error-classification">
-                      <strong>Error Type:</strong> {errorData.error_type.replace(/_/g, ' ')}
-                    </div>
-                  )}
-                  {errorData.questionIds && errorData.questionIds.length > 0 && (
-                    <div className="literexia-error-questions">
-                      <strong>Affected Questions:</strong> {errorData.questionIds.join(', ')}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Intervention Recommendations */}
+        {/* Intervention Recommendations - Full Width */}
         {interventionPlan && (
-          <div className="literexia-analysis-section">
-            <h4>
-              <FaUserMd style={{ color: '#4a5494' }} />
-              Intervention Recommendations
-            </h4>
-            <div className="literexia-analysis-card">
-              <div className="literexia-intervention-focus">
+          <div className="literexia-analysis-card literexia-full-width">
+            <div className="literexia-card-header">
+              <div className="literexia-card-icon">
+                <FaUserMd />
+              </div>
+              <div className="literexia-card-title">
+                <h4>Intervention Recommendations</h4>
+              </div>
+            </div>
+            <div className="literexia-card-content">
+              <div className="literexia-intervention-details">
                 {interventionPlan.focus && (
-                  <div className="literexia-focus-item">
-                    <strong>Primary Focus:</strong> {interventionPlan.focus.replace(/_/g, ' ')}
+                  <div className="literexia-intervention-item">
+                    <span className="literexia-intervention-label">Primary Focus:</span>
+                    <span className="literexia-intervention-value">{interventionPlan.focus.replace(/_/g, ' ')}</span>
                   </div>
                 )}
                 {interventionPlan.targetSounds && interventionPlan.targetSounds.length > 0 && (
-                  <div className="literexia-focus-item">
-                    <strong>Target Sound Pairs:</strong> {interventionPlan.targetSounds.join(', ')}
+                  <div className="literexia-intervention-item">
+                    <span className="literexia-intervention-label">Target Sound Pairs:</span>
+                    <div className="literexia-target-sounds">
+                      {interventionPlan.targetSounds.map((sound, index) => (
+                        <span key={index} className="literexia-sound-tag">{sound}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {interventionPlan.recommendedActivities && interventionPlan.recommendedActivities.length > 0 && (
+                  <div className="literexia-intervention-item">
+                    <span className="literexia-intervention-label">Recommended Activities:</span>
+                    <ul className="literexia-activity-list">
+                      {interventionPlan.recommendedActivities.map((activity, index) => (
+                        <li key={index}>{activity.replace(/_/g, ' ')}</li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>
-              {interventionPlan.recommendedActivities && interventionPlan.recommendedActivities.length > 0 && (
-                <div className="literexia-recommended-activities">
-                  <strong>Recommended Activities:</strong>
-                  <ul>
-                    {interventionPlan.recommendedActivities.map((activity, index) => (
-                      <li key={index}>{activity.replace(/_/g, ' ')}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
           </div>
         )}
 
-        {/* Overall Insights */}
+        {/* Overall Insights - Full Width */}
         {insights && (
-          <div className="literexia-analysis-section">
-            <h4>
-              <FaLightbulb style={{ color: '#4a5494' }} />
-              Overall Insights
-            </h4>
-            <div className="literexia-analysis-card">
-              <div className="literexia-insights-summary">
+          <div className="literexia-analysis-card literexia-full-width">
+            <div className="literexia-card-header">
+              <div className="literexia-card-icon">
+                <FaLightbulb />
+              </div>
+              <div className="literexia-card-title">
+                <h4>Overall Insights</h4>
+              </div>
+            </div>
+            <div className="literexia-card-content">
+              <div className="literexia-insights-grid">
                 {insights.overallScore && (
                   <div className="literexia-insight-item">
-                    <strong>Overall Reading Score:</strong> {insights.overallScore}%
+                    <span className="literexia-insight-label">Overall Reading Score:</span>
+                    <span className="literexia-insight-value">{insights.overallScore}%</span>
                   </div>
                 )}
                 {insights.recommendedAction && (
                   <div className="literexia-insight-item">
-                    <strong>Recommended Action:</strong> {insights.recommendedAction.replace(/_/g, ' ')}
+                    <span className="literexia-insight-label">Recommended Action:</span>
+                    <span className="literexia-insight-value">{insights.recommendedAction.replace(/_/g, ' ')}</span>
                   </div>
                 )}
                 {insights.weaknesses && insights.weaknesses.length > 0 && (
                   <div className="literexia-insight-item">
-                    <strong>Areas Needing Support:</strong> {insights.weaknesses.join(', ')}
+                    <span className="literexia-insight-label">Areas Needing Support:</span>
+                    <span className="literexia-insight-value">{insights.weaknesses.join(', ')}</span>
                   </div>
                 )}
                 {insights.passedCategories !== undefined && (
                   <div className="literexia-insight-item">
-                    <strong>Categories Passed:</strong> {insights.passedCategories}
-                    {insights.failedCategories !== undefined && ` | Failed: ${insights.failedCategories}`}
+                    <span className="literexia-insight-label">Categories Passed:</span>
+                    <span className="literexia-insight-value">{insights.passedCategories}
+                    {insights.failedCategories !== undefined && ` | Failed: ${insights.failedCategories}`}</span>
                   </div>
                 )}
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Strengths Section */}
-        {analysis.strengths && analysis.strengths.length > 0 && (
-          <div className="literexia-analysis-section">
-            <h4>
-              <FaCheckCircle style={{ color: '#4a5494' }} />
-              Strengths
-            </h4>
-            <div className="literexia-analysis-card">
-              <ul className="literexia-strengths-list">
-                {analysis.strengths.map((strength, idx) => (
-                  <li key={idx}>{strength}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
-
-        {/* Weaknesses Section */}
-        {analysis.weaknesses && analysis.weaknesses.length > 0 && (
-          <div className="literexia-analysis-section">
-            <h4>
-              <FaExclamationTriangle style={{ color: '#4a5494' }} />
-              Weaknesses
-            </h4>
-            <div className="literexia-analysis-card">
-              <ul className="literexia-weaknesses-list">
-                {analysis.weaknesses.map((weakness, idx) => (
-                  <li key={idx}>{weakness}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
-
-        {/* Recommendations Section */}
-        {analysis.recommendations && analysis.recommendations.length > 0 && (
-          <div className="literexia-analysis-section">
-            <h4>
-              <FaLightbulb style={{ color: '#4a5494' }} />
-              Recommendations
-            </h4>
-            <div className="literexia-analysis-card">
-              <ul className="literexia-recommendations-list">
-                {analysis.recommendations.map((recommendation, idx) => (
-                  <li key={idx}>{recommendation}</li>
-                ))}
-              </ul>
             </div>
           </div>
         )}
@@ -1438,105 +1461,29 @@ const PrescriptiveAnalysis = ({
       {/* Selected category analysis */}
       {selectedCategory && selectedCategoryData && (
         <div className="literexia-category-analysis">
-          <div className="literexia-analysis-header">
-            <h3>{formatCategoryName(selectedCategory)} Analysis</h3>
-            <div className="literexia-analysis-metrics">
-              <div className="literexia-metric">
-                <div className="literexia-metric-label">Current Score</div>
-                <div className="literexia-metric-value">{selectedCategoryData.score}%</div>
-              </div>
-              <div className="literexia-metric-arrow">
-                <FaArrowRight />
-              </div>
-              <div className="literexia-metric">
-                <div className="literexia-metric-label">Target Score</div>
-                <div className="literexia-metric-value">75%</div>
-              </div>
-              <div className="literexia-metric">
-                <div className="literexia-metric-label">Gap</div>
-                <div className="literexia-metric-value">{Math.max(0, 75 - selectedCategoryData.score)}%</div>
+          
+          {/* Show success banner for passed categories */}
+          {selectedCategoryData?.isPassed && (
+            <div className="literexia-success-banner">
+              <FaCheckCircle style={{color: '#4CAF50'}} />
+              <p>
+                The student has mastered {formatCategoryName(selectedCategory)} with a score of {selectedCategoryData.score}% (above the 75% threshold). No intervention is needed for this category.
+              </p>
+            </div>
+          )}
+
+          {/* Show processing message when no analysis is available */}
+          {!selectedAnalysis && !selectedCategoryData?.isPassed && (
+            <div className="literexia-empty-analysis">
+              <FaInfoCircle />
+              <div>
+                <h4>Analysis in Progress</h4>
+                <p>Detailed prescriptive analysis for {selectedCategory} is being generated.</p>
+                <p>This comprehensive analysis will include learning insights and personalized recommendations once processing is complete.</p>
               </div>
             </div>
-          </div>
-          
-          {/* Analysis content */}
-          <div className="literexia-analysis-content">
-            {/* Show success banner for passed categories */}
-            {selectedCategoryData?.isPassed && (
-              <div className="literexia-success-banner">
-                <FaCheckCircle style={{color: '#4CAF50'}} />
-                <p>
-                  The student has mastered {formatCategoryName(selectedCategory)} with a score of {selectedCategoryData.score}% (above the 75% threshold). No intervention is needed for this category.
-                </p>
-              </div>
-            )}
+          )}
 
-            {/* Only show sections if they have actual data */}
-            {selectedAnalysis?.strengths && selectedAnalysis.strengths.length > 0 && (
-              <div className="literexia-analysis-section">
-                <h4>
-                  <FaCheckCircle style={{ color: '#4a5494' }} />
-                  Strengths
-                </h4>
-                <div className="literexia-analysis-card">
-                  <ul className="literexia-strengths-list">
-                    {selectedAnalysis.strengths.map((strength, idx) => (
-                      <li key={idx}>{strength}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            {selectedAnalysis?.weaknesses && selectedAnalysis.weaknesses.length > 0 && (
-              <div className="literexia-analysis-section">
-                <h4>
-                  <FaExclamationTriangle style={{ color: '#4a5494' }} />
-                  Weaknesses
-                </h4>
-                <div className="literexia-analysis-card">
-                  <ul className="literexia-weaknesses-list">
-                    {selectedAnalysis.weaknesses.map((weakness, idx) => (
-                      <li key={idx}>{weakness}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            {((selectedAnalysis?.recommendations && selectedAnalysis.recommendations.length > 0) || selectedAnalysis?.recommendation) && (
-              <div className="literexia-analysis-section">
-                <h4>
-                  <FaLightbulb style={{ color: '#4a5494' }} />
-                  Recommendations
-                </h4>
-                <div className="literexia-analysis-card">
-                  <ul className="literexia-recommendations-list">
-                    {selectedAnalysis.recommendations ? (
-                      selectedAnalysis.recommendations.map((recommendation, idx) => (
-                        <li key={idx}>{recommendation}</li>
-                      ))
-                    ) : (
-                      <li>{selectedAnalysis.recommendation}</li>
-                    )}
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            {/* Show processing message when no analysis is available */}
-            {!selectedAnalysis && !selectedCategoryData?.isPassed && (
-              <div className="literexia-empty-analysis">
-                <FaInfoCircle />
-                <div>
-                  <h4>Analysis in Progress</h4>
-                  <p>Detailed prescriptive analysis for {selectedCategory} is being generated.</p>
-                  <p>This comprehensive analysis will include learning insights and personalized recommendations once processing is complete.</p>
-                </div>
-              </div>
-            )}
-          </div>
-          
           {/* Mathematical Analysis from CLAUDE.md Prescriptive Analytics */}
           {renderMathematicalAnalysis(selectedCategory, selectedAnalysis)}
           
