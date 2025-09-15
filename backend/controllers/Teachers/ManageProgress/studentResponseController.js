@@ -10,7 +10,9 @@ const mongoose = require('mongoose');
 const getStudentResponses = async (req, res) => {
   try {
     const { studentId } = req.params;
-    
+    const assessmentType = req.query.type; // Filter by assessment type
+    const dateRange = req.query.dateRange; // Optional date range filter
+
     // Convert studentId to integer to match database format
     const studentIdInt = parseInt(studentId);
     if (isNaN(studentIdInt)) {
@@ -20,14 +22,49 @@ const getStudentResponses = async (req, res) => {
       });
     }
 
-    console.log(`Getting student responses for student: ${studentIdInt}`);
-    
+    console.log(`Getting student responses for student: ${studentIdInt}, type: ${assessmentType || 'all'}, dateRange: ${dateRange || 'all'}`);
+
     // Get student responses from test database
     const testDb = mongoose.connection.useDb('test');
     const studentResponsesCollection = testDb.collection('student_responses');
-    
+
+    // Build query
+    const query = { studentId: studentIdInt };
+
+    // Add assessment type filter if provided
+    if (assessmentType) {
+      if (assessmentType === 'pre-assessment' || assessmentType === 'post-assessment') {
+        // For main assessment types, we don't have a direct field in student_responses
+        // We need to correlate with category_results to determine assessment type
+        // For now, we'll use date-based logic or rely on dateRange parameter
+        console.log(`Filtering for assessment type: ${assessmentType}`);
+      } else if (assessmentType === 'intervention') {
+        // Filter for intervention responses (these have different source collection)
+        query.assessmentType = 'intervention';
+      }
+    }
+
+    // Add date range filter if provided (format: "2025-09-14")
+    if (dateRange) {
+      try {
+        const date = new Date(dateRange);
+        const startDate = new Date(date.getTime());
+        const endDate = new Date(date.getTime() + (24 * 60 * 60 * 1000)); // Add 24 hours
+
+        query.answeredAt = {
+          $gte: startDate,
+          $lt: endDate
+        };
+        console.log(`Applied date filter: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+      } catch (dateError) {
+        console.warn(`Invalid date range format: ${dateRange}, ignoring filter`);
+      }
+    }
+
+    console.log('Student responses query:', JSON.stringify(query));
+
     const responses = await studentResponsesCollection
-      .find({ studentId: studentIdInt })
+      .find(query)
       .sort({ answeredAt: -1, createdAt: -1 })
       .toArray();
     

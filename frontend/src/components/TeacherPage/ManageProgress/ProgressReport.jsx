@@ -106,19 +106,26 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
   const fetchDetailedData = async (studentId) => {
     try {
       setLoadingDetails(true);
-      
-      // Fetch student responses
-      const responsesResult = await ProgressApiService.getStudentResponses(studentId);
-      if (responsesResult.success && responsesResult.data) {
-        setStudentResponses(responsesResult.data);
+
+      // Check if student responses are already included in progressData (for post-assessment)
+      if (progressData.studentResponses && progressData.studentResponses.length > 0) {
+        console.log('📊 Using student responses from progressData:', progressData.studentResponses.length);
+        setStudentResponses(progressData.studentResponses);
+      } else {
+        // Fallback: Fetch student responses separately (for pre-assessment or when not included)
+        console.log('📊 Fetching student responses separately...');
+        const responsesResult = await ProgressApiService.getStudentResponses(studentId);
+        if (responsesResult.success && responsesResult.data) {
+          setStudentResponses(responsesResult.data);
+        }
       }
-      
+
       // Fetch assessment questions - we'll get them all since we need them for comparison
       const assessmentsResult = await MainAssessmentService.getAllAssessments();
       if (assessmentsResult.success && assessmentsResult.data) {
         setAssessmentQuestions(assessmentsResult.data);
       }
-      
+
     } catch (error) {
       console.error('Error fetching detailed data:', error);
     } finally {
