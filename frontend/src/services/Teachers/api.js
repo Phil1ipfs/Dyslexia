@@ -142,7 +142,7 @@ export default {
       api.post('/api/interventions/responses', responseData),
       
     // Get prescriptive analysis for student and category
-    getPrescriptiveAnalysis: (studentId, category) => 
-      api.get(`/api/prescriptive-analysis?studentId=${studentId}&category=${encodeURIComponent(category)}`)
+    getPrescriptiveAnalysis: (studentId, category) =>
+      api.get(`/api/prescriptive-analytics/student/${studentId}/latest`)
   }
 };

@@ -115,25 +115,40 @@ const StudentProgressView = () => {
 
             // Only fetch post-assessment results - no fallbacks
             const postAssessmentResults = await StudentApiService.getPostAssessmentResults(id);
-            
+
             console.log("🚀 Post-assessment API response:", postAssessmentResults);
-            
-            if (postAssessmentResults && 
-                postAssessmentResults.categories && 
+
+            if (postAssessmentResults &&
+                postAssessmentResults.categories &&
                 postAssessmentResults.categories.length > 0) {
               console.log("✅ Found valid post-assessment data with", postAssessmentResults.categories.length, "categories");
               console.log("✅ Assessment type:", postAssessmentResults.assessmentType);
               console.log("✅ Overall score:", postAssessmentResults.overallScore);
+              console.log("✅ Student responses count:", postAssessmentResults.studentResponses?.length || 0);
               setCategoryResults(postAssessmentResults);
               return postAssessmentResults;
             } else {
               console.log("❌ No valid post-assessment data found");
-              setCategoryResults(null);
+              // Only set to null if we don't already have valid data
+              setCategoryResults(prevState => {
+                if (prevState && prevState.categories && prevState.categories.length > 0) {
+                  console.log("🔄 Keeping existing categoryResults to prevent data loss");
+                  return prevState;
+                }
+                return null;
+              });
               return null;
             }
           } catch (err) {
             console.error("❌ Error fetching post-assessment data:", err);
-            setCategoryResults(null);
+            // Only set to null if we don't already have valid data
+            setCategoryResults(prevState => {
+              if (prevState && prevState.categories && prevState.categories.length > 0) {
+                console.log("🔄 Keeping existing categoryResults despite error to prevent data loss");
+                return prevState;
+              }
+              return null;
+            });
             return null;
           }
         };
@@ -659,22 +674,52 @@ const StudentProgressView = () => {
               <h2>Post Assessment Progress Report</h2>
             </div>
             <div className="literexia-panel-content">
-              {categoryResults ? (
-                <ProgressReport
-                  progressData={categoryResults}
-                  categoryAccessMap={categoryAccessMap}
-                  categoryAccessLoading={categoryAccessLoading}
-                  onViewRecommendations={(category) => {
-                    setActiveTab('prescriptive');
-                    setSelectedCategory(category.categoryName);
-                  }}
-                />
-              ) : (
-                <div className="literexia-empty-state">
-                  <FaExclamationTriangle />
-                  <p>No progress data available for this student. They may not have completed any assessments yet.</p>
-                </div>
-              )}
+              {(() => {
+                // Enhanced debugging for Post Assessment Progress tab
+                console.log('🔍 [POST ASSESSMENT TAB] Rendering logic evaluation:');
+                console.log('  - categoryResults exists:', !!categoryResults);
+                console.log('  - categoryResults type:', typeof categoryResults);
+                console.log('  - categoryResults.categories exists:', !!categoryResults?.categories);
+                console.log('  - categoryResults.categories length:', categoryResults?.categories?.length);
+                console.log('  - loading state:', loading);
+                console.log('  - Full categoryResults:', categoryResults);
+
+                const hasValidData = categoryResults && categoryResults.categories && categoryResults.categories.length > 0;
+                console.log('  - hasValidData:', hasValidData);
+
+                if (hasValidData) {
+                  console.log('✅ [POST ASSESSMENT TAB] Rendering ProgressReport component');
+                  console.log('  - progressData prop:', categoryResults);
+                  console.log('  - studentResponses count:', categoryResults.studentResponses?.length || 'undefined');
+                  return (
+                    <ProgressReport
+                      progressData={categoryResults}
+                      categoryAccessMap={categoryAccessMap}
+                      categoryAccessLoading={categoryAccessLoading}
+                      onViewRecommendations={(category) => {
+                        setActiveTab('prescriptive');
+                        setSelectedCategory(category.categoryName);
+                      }}
+                    />
+                  );
+                } else if (loading) {
+                  console.log('⏳ [POST ASSESSMENT TAB] Rendering loading state');
+                  return (
+                    <div className="literexia-loading-state">
+                      <FaSpinner className="literexia-spinner" />
+                      <p>Loading post-assessment progress data...</p>
+                    </div>
+                  );
+                } else {
+                  console.log('❌ [POST ASSESSMENT TAB] Rendering empty state');
+                  return (
+                    <div className="literexia-empty-state">
+                      <FaExclamationTriangle />
+                      <p>No post-assessment progress data available for this student. The student may not have completed a post-assessment yet.</p>
+                    </div>
+                  );
+                }
+              })()}
             </div>
           </div>
         )}

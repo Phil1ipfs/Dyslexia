@@ -777,30 +777,27 @@ exports.getCategoryResults = async (req, res) => {
     // If individual responses are requested, fetch them from student_responses collection
     if (includeResponses) {
       console.log('[getCategoryResults] Fetching individual student responses...');
+      console.log(`[getCategoryResults] Using resolved studentId: ${latestResult.studentId} from category results`);
 
       const studentResponsesCollection = testDb.collection('student_responses');
 
-      // Create date range filter to get responses from the same assessment session
-      const assessmentDate = new Date(latestResult.assessmentDate);
-      const startDate = new Date(assessmentDate.getTime() - (24 * 60 * 60 * 1000)); // 24 hours before
-      const endDate = new Date(assessmentDate.getTime() + (24 * 60 * 60 * 1000)); // 24 hours after
+      // Use the actual studentId from the category results (not the resolved one)
+      // This ensures we get the correct student responses
+      const actualStudentId = latestResult.studentId;
 
       const responsesQuery = {
-        studentId: studentIdInt,
-        answeredAt: {
-          $gte: startDate,
-          $lte: endDate
-        }
+        studentId: actualStudentId  // Use studentId from category results directly
       };
 
       console.log('[getCategoryResults] Fetching responses with query:', JSON.stringify(responsesQuery));
+      console.log(`[getCategoryResults] Looking for responses with studentId: ${actualStudentId}`);
 
       const studentResponses = await studentResponsesCollection
         .find(responsesQuery)
         .sort({ answeredAt: 1, createdAt: 1 })
         .toArray();
 
-      console.log(`[getCategoryResults] Found ${studentResponses.length} individual responses`);
+      console.log(`[getCategoryResults] Found ${studentResponses.length} individual responses for studentId: ${actualStudentId}`);
 
       // Add sanitized responses to the result
       sanitizedResult.studentResponses = studentResponses.map(response => ({

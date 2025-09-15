@@ -1,10 +1,10 @@
 // src/components/TeacherDashboard/StudentProgress/ProgressReport.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  FaInfoCircle, 
-  FaBookOpen, 
-  FaChartLine, 
-  FaCheckCircle, 
+import {
+  FaInfoCircle,
+  FaBookOpen,
+  FaChartLine,
+  FaCheckCircle,
   FaBrain,
   FaCalendarAlt,
   FaFilter,
@@ -31,7 +31,8 @@ import {
   FaClipboardList,
   FaFilePdf,
   FaDownload,
-  FaSpinner
+  FaSpinner,
+  FaLock
 } from 'react-icons/fa';
 
 import './css/ProgressReport.css';
@@ -160,13 +161,28 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     });
   };
   
+  // Enhanced debugging for ProgressReport rendering issues
+  console.log('🔍 [PROGRESS REPORT] Component rendering with data:');
+  console.log('  - progressData exists:', !!progressData);
+  console.log('  - progressData structure:', progressData ? Object.keys(progressData) : 'null');
+  console.log('  - progressData.categories exists:', !!(progressData && progressData.categories));
+  console.log('  - progressData.categories type:', progressData && progressData.categories ? typeof progressData.categories : 'undefined');
+  console.log('  - progressData.categories is array:', !!(progressData && progressData.categories && Array.isArray(progressData.categories)));
+  console.log('  - progressData.categories length:', progressData && progressData.categories ? progressData.categories.length : 0);
+  console.log('  - Full progressData:', progressData);
+
   // Check if we have valid category results data
-  const hasCategoryResults = progressData && 
-    progressData.categories && 
-    Array.isArray(progressData.categories) && 
+  const hasCategoryResults = progressData &&
+    progressData.categories &&
+    Array.isArray(progressData.categories) &&
     progressData.categories.length > 0;
-  
+
+  console.log('🔍 [PROGRESS REPORT] Validation results:');
+  console.log('  - hasCategoryResults:', hasCategoryResults);
+  console.log('  - Will render main content:', hasCategoryResults);
+
   if (!progressData) {
+    console.log('❌ [PROGRESS REPORT] Early return: No progressData');
     return (
       <div className="student-progress-empty-state">
         <FaInfoCircle size={48} />
@@ -175,14 +191,95 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
       </div>
     );
   }
-  
-  // Calculate progress metrics from category results
+
+  // Implement robust conditional rendering with multiple fallbacks
+  console.log('🔍 [PROGRESS REPORT] Implementing robust conditional rendering...');
+
+  // Try to extract categories from different possible structures
+  let categoriesData = null;
+  let fallbackData = {};
+
+  if (progressData) {
+    // Standard structure: progressData.categories
+    if (progressData.categories && Array.isArray(progressData.categories) && progressData.categories.length > 0) {
+      categoriesData = progressData.categories;
+      console.log('✅ Found categories in standard structure:', categoriesData.length);
+    }
+    // Alternative structure: progressData.data.categories (API wrapper)
+    else if (progressData.data && progressData.data.categories && Array.isArray(progressData.data.categories) && progressData.data.categories.length > 0) {
+      categoriesData = progressData.data.categories;
+      console.log('✅ Found categories in data wrapper structure:', categoriesData.length);
+      // Lift other properties to top level
+      fallbackData = { ...progressData.data };
+    }
+    // Alternative structure: direct array (just in case)
+    else if (Array.isArray(progressData) && progressData.length > 0) {
+      categoriesData = progressData;
+      console.log('✅ Found categories as direct array:', categoriesData.length);
+    }
+  }
+
+  // If still no categories found, show detailed diagnostic
+  if (!categoriesData) {
+    console.log('❌ [PROGRESS REPORT] No valid category data found after all attempts');
+    return (
+      <div className="student-progress-empty-state">
+        <FaExclamationTriangle size={48} />
+        <h3>Assessment Data Structure Issue</h3>
+        <p>Unable to locate category results in the expected data structure.</p>
+        <div style={{marginTop: '20px', textAlign: 'left', fontSize: '12px', background: '#f8f9fa', padding: '15px', borderRadius: '5px', fontFamily: 'monospace'}}>
+          <strong>🔍 Data Structure Analysis:</strong><br/>
+          <br/>
+          <strong>progressData exists:</strong> {progressData ? 'Yes ✅' : 'No ❌'}<br/>
+          <strong>progressData type:</strong> {typeof progressData}<br/>
+          <strong>progressData keys:</strong> {progressData ? Object.keys(progressData).join(', ') : 'N/A'}<br/>
+          <br/>
+          <strong>categories property:</strong> {progressData && progressData.categories ? 'Present ✅' : 'Missing ❌'}<br/>
+          <strong>categories type:</strong> {progressData && progressData.categories ? typeof progressData.categories : 'undefined'}<br/>
+          <strong>categories is array:</strong> {progressData && progressData.categories && Array.isArray(progressData.categories) ? 'Yes ✅' : 'No ❌'}<br/>
+          <strong>categories length:</strong> {progressData && progressData.categories && Array.isArray(progressData.categories) ? progressData.categories.length : 'N/A'}<br/>
+          <br/>
+          <strong>data.categories exists:</strong> {progressData && progressData.data && progressData.data.categories ? 'Yes ✅' : 'No ❌'}<br/>
+          <strong>studentResponses count:</strong> {progressData && progressData.studentResponses ? progressData.studentResponses.length : 'N/A'}<br/>
+          <br/>
+          <strong>Full progressData structure:</strong><br/>
+          <pre style={{fontSize: '10px', maxHeight: '200px', overflow: 'auto', background: 'white', padding: '5px', margin: '5px 0'}}>
+            {JSON.stringify(progressData, null, 2)}
+          </pre>
+        </div>
+
+        <div style={{marginTop: '15px', padding: '10px', background: '#e3f2fd', borderRadius: '5px'}}>
+          <strong>💡 Possible Solutions:</strong><br/>
+          • Check if the student has completed their assessment<br/>
+          • Verify the API is returning category results<br/>
+          • Ensure the backend is structured correctly<br/>
+          • Contact support if this issue persists
+        </div>
+      </div>
+    );
+  }
+
+  // Create normalized progressData structure for rendering
+  const normalizedProgressData = {
+    ...progressData,
+    ...fallbackData,
+    categories: categoriesData
+  };
+
+  console.log('✅ [PROGRESS REPORT] Successfully normalized data structure');
+  console.log('  - Categories count:', categoriesData.length);
+  console.log('  - First category:', categoriesData[0]);
+
+  // Update hasCategoryResults based on normalized data
+  const hasValidCategoryData = categoriesData && Array.isArray(categoriesData) && categoriesData.length > 0;
+
+  // Calculate progress metrics from normalized category results
   const calculateCompletionRate = () => {
-    if (!hasCategoryResults) return 0;
-    
+    if (!hasValidCategoryData) return 0;
+
     // Count passed categories
-    const passedCategories = progressData.categories.filter(cat => cat.isPassed).length;
-    return Math.round((passedCategories / progressData.categories.length) * 100);
+    const passedCategories = categoriesData.filter(cat => cat.isPassed).length;
+    return Math.round((passedCategories / categoriesData.length) * 100);
   };
   
   // Format date for display
@@ -247,23 +344,31 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     return { totalQuestions, correctAnswers };
   };
 
-  // Calculate completion rate and other metrics
+  // Calculate completion rate and other metrics using normalized data
   const completionRate = calculateCompletionRate();
   const { totalQuestions, correctAnswers } = recalculateMetricsFromResponses();
-  const passedCategories = hasCategoryResults ? 
-    progressData.categories.filter(cat => cat.isPassed).length : 0;
-  const totalCategories = hasCategoryResults ? 
-    progressData.categories.length : 0;
-  const assessmentDate = formatDate(progressData.assessmentDate || progressData.createdAt);
-  const readingLevel = progressData.readingLevel || "Not Assessed";
-  
+  const passedCategories = hasValidCategoryData ?
+    categoriesData.filter(cat => cat.isPassed).length : 0;
+  const totalCategories = hasValidCategoryData ?
+    categoriesData.length : 0;
+  const assessmentDate = formatDate(normalizedProgressData.assessmentDate || normalizedProgressData.createdAt);
+  const readingLevel = normalizedProgressData.readingLevel || "Not Assessed";
+
   // Calculate overall score - either use the one from the API or calculate
-  const overallScore = progressData.overallScore || (hasCategoryResults ? 
-    Math.round(progressData.categories.reduce((total, category) => total + (Number(category.score) || 0), 0) / totalCategories) : 0);
+  const overallScore = normalizedProgressData.overallScore || (hasValidCategoryData ?
+    Math.round(categoriesData.reduce((total, category) => total + (Number(category.score) || 0), 0) / totalCategories) : 0);
 
   // Determine if any categories need attention (below 75% threshold)
-  const categoriesNeedingAttention = hasCategoryResults ? 
-    progressData.categories.filter(cat => (Number(cat.score) || 0) < 75) : [];
+  const categoriesNeedingAttention = hasValidCategoryData ?
+    categoriesData.filter(cat => (Number(cat.score) || 0) < 75) : [];
+
+  console.log('📊 [PROGRESS REPORT] Calculated metrics:');
+  console.log('  - completionRate:', completionRate);
+  console.log('  - totalQuestions:', totalQuestions);
+  console.log('  - correctAnswers:', correctAnswers);
+  console.log('  - passedCategories:', passedCategories);
+  console.log('  - totalCategories:', totalCategories);
+  console.log('  - overallScore:', overallScore);
   
   // Get status class based on score
   const getStatusClass = (score) => {
@@ -664,7 +769,8 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
       </div>
 
       {/* Combined Category Progress & Performance Section */}
-      {hasCategoryResults && (
+      {console.log('🔍 [PROGRESS REPORT] About to render main content section, hasValidCategoryData:', hasValidCategoryData)}
+      {hasValidCategoryData && (
         <div className="student-progress-category-section">
           <div className="student-progress-section-header">
             <h3 className="student-progress-section-title">
@@ -720,7 +826,8 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
 
           {/* Enhanced Category Cards - Individual Row Layout like Pre Assessment */}
           <div className="student-progress-categories-list">
-            {progressData.categories.map((category, index) => {
+            {console.log('🔍 [PROGRESS REPORT] About to render categories list, categoriesData:', categoriesData)}
+            {categoriesData.map((category, index) => {
               const categoryName = category.categoryName || `Category ${index + 1}`;
               const displayName = typeof categoryName === 'string' ?
                 formatCategoryName(categoryName) : 
@@ -735,10 +842,44 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
               const score = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : Number(category.score) || 0;
               const isPassed = score >= 75;
 
-              // Get prerequisite validation for this category
-              const accessValidation = categoryAccessMap[categoryName];
-              const isBlocked = accessValidation ? !accessValidation.allowed : false; // Default to not blocked if no validation data
-              const prerequisiteInfo = accessValidation?.prerequisites || [];
+              // Enhanced logic for Post Assessment Progress Report
+              // Distinguish between completed/attempted vs not attempted categories
+              console.log(`🔍 [CATEGORY STATUS] Analyzing ${categoryName}:`);
+              console.log(`  - Category object:`, category);
+              console.log(`  - Score:`, score);
+              console.log(`  - isPassed:`, isPassed);
+              console.log(`  - correctCount:`, correctCount);
+              console.log(`  - totalCount:`, totalCount);
+
+              // Check if this category has any assessment data at all
+              const hasAssessmentData = (
+                (totalCount > 0) ||                          // Has question attempts
+                (correctCount > 0) ||                        // Has some correct answers
+                (score > 0) ||                              // Has a recorded score
+                (category.totalQuestions && category.totalQuestions > 0) || // Has questions metadata
+                (category.isCompleted === true)              // Explicitly marked as completed
+              );
+
+              console.log(`  - hasAssessmentData:`, hasAssessmentData);
+
+              // For Post Assessment Progress:
+              // - If category has data = show results (never block)
+              // - If category has no data = show "Not Attempted" (not blocked)
+              const isBlocked = false; // Never block in post-assessment view
+              const prerequisiteInfo = [];
+
+              // Determine category status for display
+              let categoryStatus = '';
+              if (!hasAssessmentData) {
+                categoryStatus = 'not_attempted';
+                console.log(`  - Status: NOT_ATTEMPTED (no assessment data found)`);
+              } else if (isPassed) {
+                categoryStatus = 'passed';
+                console.log(`  - Status: PASSED (${score}% >= 75%)`);
+              } else {
+                categoryStatus = 'needs_attention';
+                console.log(`  - Status: NEEDS_ATTENTION (${score}% < 75%)`);
+              }
 
               // Get questions for this category
               const categoryQuestions = getCategoryQuestions(categoryName);
@@ -755,21 +896,26 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                       <div className="student-progress-category-info">
                         <h3 className="student-progress-category-name">
                           {displayName}
-                          {isBlocked && (
-                            <span className="student-progress-needs-attention-badge" style={{ backgroundColor: '#dc3545', color: 'white' }}>
-                              BLOCKED
+                          {categoryStatus === 'not_attempted' && (
+                            <span className="student-progress-needs-attention-badge" style={{ backgroundColor: '#6c757d', color: 'white' }}>
+                              NOT ATTEMPTED
                             </span>
                           )}
-                          {!isBlocked && score < 75 && (
+                          {categoryStatus === 'needs_attention' && (
                             <span className="student-progress-needs-attention-badge">NEEDS ATTENTION</span>
+                          )}
+                          {categoryStatus === 'passed' && (
+                            <span className="student-progress-needs-attention-badge" style={{ backgroundColor: '#28a745', color: 'white' }}>
+                              PASSED
+                            </span>
                           )}
                         </h3>
                         <div className="student-progress-category-stats">
-                          {isBlocked ? (
+                          {categoryStatus === 'not_attempted' ? (
                             <>
-                              <span className="student-progress-score-display" style={{ color: '#dc3545' }}>Prerequisites Required</span>
+                              <span className="student-progress-score-display" style={{ color: '#6c757d' }}>Not Attempted</span>
                               <span className="student-progress-score-fraction" style={{ color: '#6c757d' }}>
-                                Complete {prerequisiteInfo.map(p => p.category).join(', ')} first
+                                Student has not completed this category yet
                               </span>
                             </>
                           ) : (
@@ -785,15 +931,18 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                     <div className="student-progress-category-right">
                       <button
                         className="student-progress-expand-toggle"
-                        onClick={() => !isBlocked && toggleCategoryExpansion(categoryName)}
-                        disabled={isBlocked}
+                        onClick={() => categoryStatus !== 'not_attempted' && toggleCategoryExpansion(categoryName)}
+                        disabled={categoryStatus === 'not_attempted'}
                         style={{
-                          opacity: isBlocked ? 0.5 : 1,
-                          cursor: isBlocked ? 'not-allowed' : 'pointer'
+                          opacity: categoryStatus === 'not_attempted' ? 0.5 : 1,
+                          cursor: categoryStatus === 'not_attempted' ? 'not-allowed' : 'pointer'
                         }}
-                        aria-label={isBlocked ? 'Access restricted - prerequisites required' : (isExpanded ? 'Collapse details' : 'Expand details')}
+                        aria-label={
+                          categoryStatus === 'not_attempted' ? 'No assessment data available to expand' :
+                          (isExpanded ? 'Collapse details' : 'Expand details')
+                        }
                       >
-                        {isBlocked ? <FaLock /> : (isExpanded ? <FaCompressArrowsAlt /> : <FaExpandArrowsAlt />)}
+                        {categoryStatus === 'not_attempted' ? <FaInfoCircle /> : (isExpanded ? <FaCompressArrowsAlt /> : <FaExpandArrowsAlt />)}
                       </button>
                     </div>
                   </div>
@@ -811,23 +960,23 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                   
                   {/* Status Message */}
                   <div className="student-progress-status-summary">
-                    {isBlocked ? (
-                      <div className="student-progress-need-more-message" style={{ color: '#dc3545' }}>
-                        <FaLock /> Prerequisites Required - Complete prerequisite categories to unlock access
+                    {categoryStatus === 'not_attempted' ? (
+                      <div className="student-progress-need-more-message" style={{ color: '#6c757d' }}>
+                        <FaInfoCircle /> Not Attempted - Student has not completed this category yet
                       </div>
-                    ) : isPassed ? (
+                    ) : categoryStatus === 'passed' ? (
                       <div className="student-progress-success-message">
-                        <FaCheckCircle /> Category Mastered
+                        <FaCheckCircle /> Category Mastered - Score: {score}%
                       </div>
                     ) : (
                       <div className="student-progress-need-more-message">
-                        Need {Math.ceil(totalCount * 0.75) - correctCount} more to pass
+                        <FaExclamationTriangle /> Needs Intervention - Score: {score}% (Need {Math.ceil(totalCount * 0.75) - correctCount} more to pass)
                       </div>
                     )}
                   </div>
 
                   {/* Expandable Question Details */}
-                  {isExpanded && !isBlocked && (
+                  {isExpanded && categoryStatus !== 'not_attempted' && (
                     <div className="student-progress-question-details-section">
                       <h4 className="student-progress-question-details-title">
                         <FaClipboardList /> Question Details
