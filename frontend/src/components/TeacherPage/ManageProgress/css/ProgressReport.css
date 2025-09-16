@@ -2865,3 +2865,208 @@
     justify-content: flex-start;
   }
 }
+
+/* ===== READING COMPREHENSION ALL-OR-NOTHING SCORING STYLES ===== */
+.student-progress-rc-all-or-nothing {
+  background-color: #f8fafc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border-left: 4px solid #4338ca;
+  margin: 1rem 0;
+}
+
+.student-progress-rc-scoring-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.student-progress-rc-scoring-header h5 {
+  color: #374151;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.student-progress-rc-overall-result {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 2px solid;
+}
+
+.student-progress-rc-overall-result.passed {
+  background-color: #d1fae5;
+  color: #065f46;
+  border-color: #10b981;
+}
+
+.student-progress-rc-overall-result.failed {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border-color: #ef4444;
+}
+
+.student-progress-rc-explanation {
+  background-color: #ecfdf5;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #10b981;
+  color: #065f46;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.student-progress-rc-question-pairs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.student-progress-rc-qa-pair {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.student-progress-rc-qa-pair.correct {
+  border-left: 4px solid #10b981;
+  background-color: #f0fdf4;
+}
+
+.student-progress-rc-qa-pair.incorrect {
+  border-left: 4px solid #ef4444;
+  background-color: #fefbf2;
+}
+
+.student-progress-rc-question {
+  margin-bottom: 1rem;
+}
+
+.student-progress-rc-question-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.student-progress-rc-question-num {
+  font-weight: 700;
+  color: #374151;
+  background-color: #f3f4f6;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  min-width: 2rem;
+  text-align: center;
+}
+
+.student-progress-rc-status {
+  font-weight: bold;
+  font-size: 1.125rem;
+  padding: 0.25rem;
+  border-radius: 50%;
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.student-progress-rc-status.correct {
+  color: #10b981;
+  background-color: #d1fae5;
+}
+
+.student-progress-rc-status.incorrect {
+  color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.student-progress-rc-question-text {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.student-progress-rc-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.student-progress-rc-student-answer {
+  padding: 0.75rem;
+  background-color: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.student-progress-rc-correct-answer {
+  padding: 0.75rem;
+  background-color: #f0fdf4;
+  border-radius: 6px;
+  border: 1px solid #bbf7d0;
+  font-size: 0.875rem;
+  color: #166534;
+}
+
+.student-progress-rc-acceptable {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f9fafb;
+  border-radius: 4px;
+  font-style: italic;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Responsive adjustments for Reading Comprehension All-or-Nothing */
+@media (max-width: 768px) {
+  .student-progress-rc-all-or-nothing {
+    padding: 1rem;
+  }
+
+  .student-progress-rc-scoring-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .student-progress-rc-scoring-header h5 {
+    font-size: 1rem;
+  }
+
+  .student-progress-rc-overall-result {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .student-progress-rc-question-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .student-progress-rc-answers {
+    gap: 0.5rem;
+  }
+}

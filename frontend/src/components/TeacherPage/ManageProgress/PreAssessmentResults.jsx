@@ -77,7 +77,33 @@ const renderQuestionComparison = (question, onImageClick) => {
         return question.studentAnswerText || 'Word selection';
         
       case 'sentence':
-        // Reading Comprehension - Text input
+        // Reading Comprehension with all-or-nothing scoring
+        if (question.allOrNothingScoring && question.sentenceQAPairs && question.sentenceQAPairs.length > 0) {
+          const allCorrect = question.allSentenceQuestionsCorrect;
+          const correctCount = question.sentenceQAPairs.filter(pair => pair.isCorrect).length;
+          const totalCount = question.sentenceQAPairs.length;
+
+          return (
+            <div className="pre-assessment-results__rc-answer-summary">
+              <div className="pre-assessment-results__rc-scoring-type">
+                {allCorrect ? '✅ PASSED' : '❌ FAILED'} ({correctCount}/{totalCount} questions correct)
+              </div>
+              <div className="pre-assessment-results__rc-answers">
+                {question.sentenceQAPairs.map(pair => (
+                  <div key={pair.questionNumber} className={`pre-assessment-results__rc-answer-pair ${pair.isCorrect ? 'correct' : 'incorrect'}`}>
+                    <span className="pre-assessment-results__rc-question-num">Q{pair.questionNumber}:</span>
+                    <span className="pre-assessment-results__rc-student-answer">{pair.studentAnswer}</span>
+                    <span className={`pre-assessment-results__rc-status ${pair.isCorrect ? 'correct' : 'incorrect'}`}>
+                      {pair.isCorrect ? '✓' : '✗'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        // Fallback for older data structure
         if (Array.isArray(question.studentResponse)) {
           return question.studentResponse.join(', ');
         }
@@ -126,7 +152,31 @@ const renderQuestionComparison = (question, onImageClick) => {
         return question.correctAnswerText || 'Correct word(s)';
         
       case 'sentence':
-        // Reading Comprehension
+        // Reading Comprehension with all-or-nothing scoring
+        if (question.allOrNothingScoring && question.sentenceQAPairs && question.sentenceQAPairs.length > 0) {
+          return (
+            <div className="pre-assessment-results__rc-correct-answers">
+              <div className="pre-assessment-results__rc-scoring-explanation">
+                All questions must be correct for this question to pass
+              </div>
+              <div className="pre-assessment-results__rc-expected-answers">
+                {question.sentenceQAPairs.map(pair => (
+                  <div key={pair.questionNumber} className="pre-assessment-results__rc-expected-pair">
+                    <span className="pre-assessment-results__rc-question-num">Q{pair.questionNumber}:</span>
+                    <span className="pre-assessment-results__rc-correct-answer">{pair.correctAnswer}</span>
+                    {pair.acceptableAnswers && pair.acceptableAnswers.length > 0 && (
+                      <span className="pre-assessment-results__rc-acceptable">
+                        (Also accepts: {pair.acceptableAnswers.join(', ')})
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        // Fallback for older data structure
         return question.correctAnswer || question.correctAnswerText || 'Expected text response';
         
       default:

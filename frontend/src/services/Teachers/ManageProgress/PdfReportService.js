@@ -391,7 +391,8 @@ class PdfReportService {
         } else if (categoryLower.includes('word') || categoryLower.includes('decoding')) {
           requiredSpace = 58;
         } else if (categoryLower.includes('comprehension')) {
-          requiredSpace = 62;
+          // More generous space for Reading Comprehension all-or-nothing scoring
+          requiredSpace = 70;
         }
         
         if (yPos + requiredSpace > pageHeight - bottomMargin) {
@@ -480,7 +481,8 @@ class PdfReportService {
     } else if (categoryLower.includes('word') || categoryLower.includes('decoding')) {
       cardHeight = 48;
     } else if (categoryLower.includes('comprehension')) {
-      cardHeight = 52;
+      // More generous height for Reading Comprehension all-or-nothing scoring
+      cardHeight = 60;
     }
     
     // Question card background
@@ -1005,7 +1007,26 @@ class PdfReportService {
       // Fill in the blanks
       return Array.isArray(response.response) ? response.response.join(', ') : String(response.response);
     } else if (category.includes('comprehension') || category.includes('reading')) {
-      // Text input
+      // Reading Comprehension: Handle all-or-nothing scoring display
+      if (questionDetails && questionDetails.allOrNothingScoring && questionDetails.sentenceQAPairs && questionDetails.sentenceQAPairs.length > 0) {
+        const correctCount = questionDetails.sentenceQAPairs.filter(pair => pair.isCorrect).length;
+        const totalCount = questionDetails.sentenceQAPairs.length;
+        const allCorrect = questionDetails.allSentenceQuestionsCorrect;
+
+        // Create concise display that fits in PDF
+        let result = `${allCorrect ? 'PASSED' : 'FAILED'} (${correctCount}/${totalCount} correct)`;
+
+        // Show all Q&A pairs in compact format with better formatting
+        questionDetails.sentenceQAPairs.forEach((pair, index) => {
+          const truncatedAnswer = pair.studentAnswer.length > 18 ?
+            pair.studentAnswer.substring(0, 18) + '...' : pair.studentAnswer;
+          result += `\nQ${pair.questionNumber}: ${truncatedAnswer} ${pair.isCorrect ? '✓' : '✗'}`;
+        });
+
+        return result;
+      }
+
+      // Standard text input
       return Array.isArray(response.response) ? response.response.join(', ') : String(response.response);
     }
     
@@ -1044,7 +1065,21 @@ class PdfReportService {
           questionDetails.correctAnswer.join(', ') : String(questionDetails.correctAnswer);
       }
     } else if (category.includes('comprehension') || category.includes('reading')) {
-      // Text input
+      // Reading Comprehension: Handle all-or-nothing scoring display
+      if (questionDetails && questionDetails.allOrNothingScoring && questionDetails.sentenceQAPairs && questionDetails.sentenceQAPairs.length > 0) {
+        let result = 'ALL CORRECT REQUIRED';
+
+        // Show all correct answers in compact format with better formatting
+        questionDetails.sentenceQAPairs.forEach((pair, index) => {
+          const truncatedAnswer = pair.correctAnswer.length > 18 ?
+            pair.correctAnswer.substring(0, 18) + '...' : pair.correctAnswer;
+          result += `\nQ${pair.questionNumber}: ${truncatedAnswer}`;
+        });
+
+        return result;
+      }
+
+      // Standard text input
       if (questionDetails.correctAnswer) {
         return String(questionDetails.correctAnswer);
       }

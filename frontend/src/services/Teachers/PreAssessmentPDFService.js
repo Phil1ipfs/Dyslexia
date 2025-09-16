@@ -400,8 +400,16 @@ class PreAssessmentPDFService {
         // Add questions for this category with smart pagination
         if (skill.questions && skill.questions.length > 0) {
           skill.questions.forEach((question, qIndex) => {
-            // Check if we need a new page for question - account for phonological awareness height
-            const requiredSpace = question.questionType === 'malapantig' ? 48 : 40;
+            // Check if we need a new page for question - account for different question type heights
+            let requiredSpace = 40; // Base requirement
+            if (question.questionType === 'malapantig') {
+              requiredSpace = 48;
+            } else if (question.questionType === 'sentence' && question.allOrNothingScoring && question.sentenceQAPairs && question.sentenceQAPairs.length > 0) {
+              // Dynamic space requirement based on number of sentence questions
+              const questionCount = question.sentenceQAPairs.length;
+              // More generous space calculation to prevent content truncation
+              requiredSpace = Math.max(64, Math.min(96, 48 + 12 + (questionCount * 5))); // Extra space for Reading Comprehension all-or-nothing display
+            }
             if (yPos + requiredSpace > pageHeight - bottomMargin) {
               pdf.addPage();
               yPos = margin;
@@ -557,6 +565,25 @@ class PreAssessmentPDFService {
         return question.studentAnswerText || 'Word selection';
         
       case 'sentence':
+        // Reading Comprehension: Display all-or-nothing scoring details
+        if (question.allOrNothingScoring && question.sentenceQAPairs && question.sentenceQAPairs.length > 0) {
+          const correctCount = question.sentenceQAPairs.filter(pair => pair.isCorrect).length;
+          const totalCount = question.sentenceQAPairs.length;
+          const allCorrect = question.allSentenceQuestionsCorrect;
+
+          // Create concise display that fits in PDF
+          let result = `${allCorrect ? 'PASSED' : 'FAILED'} (${correctCount}/${totalCount} correct)`;
+
+          // Show all Q&A pairs in compact format
+          question.sentenceQAPairs.forEach((pair, index) => {
+            const truncatedAnswer = pair.studentAnswer.length > 15 ?
+              pair.studentAnswer.substring(0, 15) + '...' : pair.studentAnswer;
+            result += `\nQ${pair.questionNumber}: ${truncatedAnswer} ${pair.isCorrect ? '✓' : '✗'}`;
+          });
+
+          return result;
+        }
+
         if (Array.isArray(question.studentResponse)) {
           return question.studentResponse.join(', ');
         }
@@ -591,6 +618,19 @@ class PreAssessmentPDFService {
         return question.correctAnswerText || question.expectedAnswer || 'Expected word';
         
       case 'sentence':
+        // Reading Comprehension: Display correct answers for all sentence questions
+        if (question.allOrNothingScoring && question.sentenceQAPairs && question.sentenceQAPairs.length > 0) {
+          let result = 'ALL CORRECT REQUIRED';
+
+          // Show all correct answers in compact format
+          question.sentenceQAPairs.forEach((pair, index) => {
+            const truncatedAnswer = pair.correctAnswer.length > 15 ?
+              pair.correctAnswer.substring(0, 15) + '...' : pair.correctAnswer;
+            result += `\nQ${pair.questionNumber}: ${truncatedAnswer}`;
+          });
+
+          return result;
+        }
         return question.correctAnswerText || question.expectedAnswer || 'Text answer';
         
       default:
@@ -907,7 +947,17 @@ class PreAssessmentPDFService {
   static addCleanQuestionCard(pdf, question, questionNumber, yPos, pageWidth, margin) {
     // Clean question card with proper spacing - adjust height based on question type
     const baseHeight = 52;
-    const cardHeight = question.questionType === 'malapantig' ? baseHeight + 8 : baseHeight; // More height for phonological awareness
+    let cardHeight = baseHeight;
+
+    // More height for phonological awareness and Reading Comprehension all-or-nothing
+    if (question.questionType === 'malapantig') {
+      cardHeight = baseHeight + 8;
+    } else if (question.questionType === 'sentence' && question.allOrNothingScoring && question.sentenceQAPairs && question.sentenceQAPairs.length > 0) {
+      // Dynamic height based on number of sentence questions
+      const questionCount = question.sentenceQAPairs.length;
+      // More generous height calculation to prevent content truncation
+      cardHeight = baseHeight + Math.max(20, Math.min(36, 14 + (questionCount * 4))); // Extra height for Reading Comprehension Q&A display
+    }
     const cardPadding = 8; // Reduced padding for more content space
     
     // Card background with clean white
@@ -1037,8 +1087,16 @@ class PreAssessmentPDFService {
       studentBgColor = [255, 245, 245]; // Light red for incorrect
     }
     
-    // Adjust answer box height for phonological awareness
-    const answerBoxHeight = question.questionType === 'malapantig' && studentAnswer.includes('→') ? 12 : 7;
+    // Adjust answer box height for different question types
+    let answerBoxHeight = 7; // Base height
+    if (question.questionType === 'malapantig' && studentAnswer.includes('→')) {
+      answerBoxHeight = 12; // Phonological awareness
+    } else if (question.questionType === 'sentence' && (studentAnswer.includes('PASSED') || studentAnswer.includes('FAILED'))) {
+      // Calculate height based on number of lines in Reading Comprehension
+      const lines = studentAnswer.split('\n').length;
+      // More generous height calculation to prevent content truncation
+      answerBoxHeight = Math.max(16, Math.min(28, 8 + (lines * 3.5))); // Dynamic height based on content with increased line spacing
+    }
     
     pdf.setFillColor(studentBgColor[0], studentBgColor[1], studentBgColor[2]);
     pdf.rect(margin + cardPadding, answerY + 2, leftColumnWidth, answerBoxHeight, 'F');
@@ -1050,7 +1108,7 @@ class PreAssessmentPDFService {
     
     pdf.setTextColor(60, 60, 60);
     
-    // Handle special formatting for phonological awareness questions
+    // Handle special formatting for different question types
     if (question.questionType === 'malapantig' && studentAnswer.includes('→')) {
       // For phonological awareness with multiple lines, show first few pairs and count
       const lines = studentAnswer.split('\n');
@@ -1064,11 +1122,20 @@ class PreAssessmentPDFService {
       if (countMatch) {
         displayText += '\n(' + countMatch[1] + ' correct)';
       }
-      
+
       // Display multi-line text for phonological awareness
       const displayLines = displayText.split('\n');
       displayLines.forEach((line, index) => {
         pdf.text(line, margin + cardPadding + 1, answerY + 6 + (index * 3));
+      });
+    } else if (question.questionType === 'sentence' && (studentAnswer.includes('PASSED') || studentAnswer.includes('FAILED'))) {
+      // For Reading Comprehension all-or-nothing display with proper spacing
+      const lines = studentAnswer.split('\n');
+      let lineSpacing = 3.5; // Increased spacing for better readability
+      lines.forEach((line, index) => {
+        // Ensure line fits within box width
+        const truncatedLine = line.length > 32 ? line.substring(0, 32) + '...' : line;
+        pdf.text(truncatedLine, margin + cardPadding + 1, answerY + 6 + (index * lineSpacing));
       });
     } else {
       // Truncate long answers to fit in the box
@@ -1081,9 +1148,17 @@ class PreAssessmentPDFService {
     pdf.setTextColor(46, 204, 113); // Green for correct answer
     pdf.text('Correct Answer:', rightColumnStart, answerY);
     
-    // Correct answer with background - adjust height for phonological awareness
+    // Correct answer with background - adjust height for different question types
     pdf.setFont('helvetica', 'normal');
-    const correctAnswerBoxHeight = question.questionType === 'malapantig' && correctAnswer.includes('→') ? 12 : 7;
+    let correctAnswerBoxHeight = 7; // Base height
+    if (question.questionType === 'malapantig' && correctAnswer.includes('→')) {
+      correctAnswerBoxHeight = 12; // Phonological awareness
+    } else if (question.questionType === 'sentence' && correctAnswer.includes('ALL CORRECT REQUIRED')) {
+      // Calculate height based on number of lines in Reading Comprehension
+      const lines = correctAnswer.split('\n').length;
+      // More generous height calculation to prevent content truncation
+      correctAnswerBoxHeight = Math.max(16, Math.min(28, 8 + (lines * 3.5))); // Dynamic height based on content with increased line spacing
+    }
     
     pdf.setFillColor(240, 255, 240); // Light green background
     pdf.rect(rightColumnStart, answerY + 2, leftColumnWidth, correctAnswerBoxHeight, 'F');
@@ -1095,7 +1170,7 @@ class PreAssessmentPDFService {
     
     pdf.setTextColor(60, 60, 60);
     
-    // Handle special formatting for phonological awareness questions
+    // Handle special formatting for different question types
     if (question.questionType === 'malapantig' && correctAnswer.includes('→')) {
       // For phonological awareness with multiple lines, show first few pairs
       const lines = correctAnswer.split('\n');
@@ -1104,11 +1179,20 @@ class PreAssessmentPDFService {
         displayText += lines[i];
         if (i < Math.min(lines.length, 3) - 1) displayText += '\n';
       }
-      
+
       // Display multi-line text for phonological awareness
       const displayLines = displayText.split('\n');
       displayLines.forEach((line, index) => {
         pdf.text(line, rightColumnStart + 1, answerY + 6 + (index * 3));
+      });
+    } else if (question.questionType === 'sentence' && correctAnswer.includes('ALL CORRECT REQUIRED')) {
+      // For Reading Comprehension all-or-nothing display with proper spacing
+      const lines = correctAnswer.split('\n');
+      let lineSpacing = 3.5; // Increased spacing for better readability
+      lines.forEach((line, index) => {
+        // Ensure line fits within box width
+        const truncatedLine = line.length > 32 ? line.substring(0, 32) + '...' : line;
+        pdf.text(truncatedLine, rightColumnStart + 1, answerY + 6 + (index * lineSpacing));
       });
     } else {
       // Truncate long answers to fit in the box

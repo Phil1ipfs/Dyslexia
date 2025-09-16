@@ -588,7 +588,64 @@ CATEGORY_WEIGHTS = {
 }
 ```
 
-### 2. Main Assessment Collection (`test.main_assessment`)
+### 2. User Responses Collection (`test.user_responses`)
+**Purpose**: Records pre-assessment responses before reading level is determined
+```javascript
+// Standard Pre-Assessment Response (Other Categories)
+{
+  "_id": ObjectId("683e948a9b13d43b098eb6f6"),
+  "studentId": 202533333,
+  "assessmentId": "1",                     // Pre-assessment identifier
+  "questionId": "AK_001",                  // Question identifier
+  "category": "Alphabet Knowledge",
+  "questionType": "patinig",
+  "response": "e",                         // Single answer
+  "isCorrect": true,
+  "responseTime": 8.2,
+  "answeredAt": "2025-08-18T12:03:15.000Z",
+  "createdAt": "2025-08-18T12:03:15.000Z"
+}
+
+// Reading Comprehension Pre-Assessment Response (All-or-Nothing with assessmentId)
+{
+  "_id": ObjectId("683e948a9b13d43b098eb6f7"),
+  "studentId": 202533333,
+  "assessmentId": "1",                     // IMPORTANT: Pre-assessment identifier for Reading Comprehension
+  "questionId": "RC_001",                  // One questionId with multiple sentence questions
+  "category": "Reading Comprehension",
+  "questionType": "sentence",
+  "response": [                            // Array of answers to multiple sentence questions
+    "Mansanas",                            // Answer to sentence question 1
+    "Parke",                               // Answer to sentence question 2
+    "Bola"                                 // Answer to sentence question 3
+  ],
+  "isCorrect": true,                       // ALL-OR-NOTHING: true only if ALL sentence questions correct
+  "responseTime": 35.6,                    // Time to read passage and answer all questions
+  "answeredAt": "2025-08-18T12:05:47.000Z",
+  "createdAt": "2025-08-18T12:05:47.000Z"
+}
+
+// FAILED Reading Comprehension Pre-Assessment (Partial Success = Failure)
+{
+  "_id": ObjectId("683e948a9b13d43b098eb6f8"),
+  "studentId": 202533334,
+  "assessmentId": "1",                     // Pre-assessment identifier
+  "questionId": "RC_002",
+  "category": "Reading Comprehension",
+  "questionType": "sentence",
+  "response": [
+    "Maria",                               // Correct answer to Q1
+    "Eskwelahan",                          // Wrong answer to Q2 (should be "Palengke")
+    "Prutas"                               // Correct answer to Q3
+  ],
+  "isCorrect": false,                      // ALL-OR-NOTHING: 2/3 correct = FALSE (no partial credit)
+  "responseTime": 42.1,
+  "answeredAt": "2025-08-18T12:07:22.000Z",
+  "createdAt": "2025-08-18T12:07:22.000Z"
+}
+```
+
+### 3. Main Assessment Collection (`test.main_assessment`)
 **Purpose**: Stores the questions for each reading level and category (accessed via Mongoose models)
 ```javascript
 {
@@ -621,8 +678,10 @@ CATEGORY_WEIGHTS = {
 }
 ```
 
-### 3. Student Responses Collection (`test.student_responses`)
+### 4. Student Responses Collection (`test.student_responses`)
 **Purpose**: Records every individual answer a student gives during assessment
+
+#### Standard Example (Phonological Awareness)
 ```javascript
 {
   "_id": ObjectId("..."),
@@ -630,7 +689,7 @@ CATEGORY_WEIGHTS = {
   "categoryId": ObjectId("..."),       // Links to main_assessment._id
   "questionId": "PA_001",              // Specific question answered
   "category": "Phonological Awareness", // Category name for easy filtering
-  
+
   // RESPONSE DATA
   "response": [                        // Student's actual answer
     {"audio": "H", "match": "Tt"},     // Wrong! Should be "Hh"
@@ -640,15 +699,47 @@ CATEGORY_WEIGHTS = {
   "isCorrect": false,                  // Overall question result
   "correctMatches": 1,                 // For Phonological: matches gotten right
   "totalMatches": 3,                   // For Phonological: total possible matches
-  
+
   // TIMING DATA (for advanced BKT)
   "responseTime": 12.5,                // Seconds to answer (12.5 seconds)
   "answeredAt": "2025-01-15T14:30:22Z", // Exact timestamp (important for BKT)
-  
+
   // METADATA
   "readingLevel": "High Emerging",     // Student's level when answering
   "createdAt": Date
 }
+```
+
+#### Reading Comprehension Example (All-or-Nothing Scoring)
+```javascript
+{
+  "_id": ObjectId("68491110988139e71b308d10"),
+  "studentId": 202522233,              // Links to users.idNumber
+  "categoryId": ObjectId("683e0fc10a6d5b9eb216970c"),
+  "questionId": "RC_001",              // One questionId with multiple sentence questions
+  "category": "Reading Comprehension",
+
+  // ALL-OR-NOTHING RESPONSE DATA
+  "response": [
+    "Juan",        // Answer to Q1: "Sino ang may aso?"
+    "Parke",       // Answer to Q2: "Saan naglaro si Juan at Max?"
+    "Naglalaro"    // Answer to Q3: "Ano ang ginagawa ni Juan at Max?"
+  ],
+  "isCorrect": true,                   // TRUE only if ALL sentence questions are correct
+
+  // TIMING DATA
+  "responseTime": 22.5,                // Total time for all sentence questions
+  "answeredAt": "2025-08-20T05:12:34.300Z",
+
+  // METADATA
+  "readingLevel": "At Grade Level",
+  "createdAt": "2025-08-20T05:12:34.300Z"
+}
+
+// CRITICAL RULE: Reading Comprehension All-or-Nothing Scoring
+// - If student answers 2 out of 3 sentence questions correctly → RC_001 FAILS (isCorrect: false)
+// - If student answers 3 out of 3 sentence questions correctly → RC_001 PASSES (isCorrect: true)
+// - No partial credit - complete story comprehension required
 ```
 
 ### 4. Category Results Collection (`test.category_results`)
@@ -686,6 +777,25 @@ CATEGORY_WEIGHTS = {
       "interventionCompleted": false,
       "currentInterventionId": null,
       "interventionHistory": []
+    },
+    {
+      "categoryName": "Reading Comprehension",
+      "totalQuestions": 3,              // 3 RC questionIds total (RC_001, RC_002, RC_003)
+      "correctAnswers": 2,              // Only 2 questionIds had ALL sentence questions correct
+      "score": 67,                      // (2/3) * 100 = 66.67% ≈ 67%
+      "isPassed": false,                // 67% < 75%
+      "passingThreshold": 75,
+      "isCompleted": true,
+      "lastQuestionAnswered": "RC_003",
+      "interventionRequired": true,     // Needs intervention!
+      "interventionAttempts": 0,
+      "interventionCompleted": false,
+      "currentInterventionId": null,
+      "interventionHistory": [],
+      "errorQuestions": ["RC_001"],     // RC_001 failed (not all sentence questions correct)
+      // Reading Comprehension specific fields
+      "allOrNothingScoring": true,      // Special scoring method used
+      "scoringNote": "Each question requires ALL sentence questions correct - no partial credit"
     }
   ],
   "readingLevel": "High Emerging",
@@ -966,6 +1076,8 @@ CATEGORY_WEIGHTS = {
 
 ### 7. Intervention Responses Collection (`test.intervention_responses`)
 **Purpose**: Records student answers during intervention (same structure as student_responses)
+
+#### Phonological Awareness Intervention Response:
 ```javascript
 {
   "_id": ObjectId("..."),
@@ -983,7 +1095,99 @@ CATEGORY_WEIGHTS = {
   "totalMatches": 3,                   // 3 total matches possible
   "responseTime": 8.7,                 // Faster response (improvement!)
   "answeredAt": "2025-01-16T10:15:30Z",
-  "readingLevel": "High Emerging",
+  "readingLevel": "At Grade Level",
+  "createdAt": Date
+}
+```
+
+#### Reading Comprehension Intervention Response (All-or-Nothing Scoring):
+```javascript
+{
+  "_id": ObjectId("..."),
+  "studentId": 202210222,
+  "interventionAssessmentId": ObjectId("..."), // Links to intervention_assessment
+  "questionId": "int_rc_001",          // Intervention Reading Comprehension question
+  "category": "Reading Comprehension",
+  "response": [                        // Student's answers to multiple sentence questions
+    "Juan",                            // Answer to sentence question 1: "Sino ang pangunahing tauhan?"
+    "Parke",                           // Answer to sentence question 2: "Saan pumunta si Juan?"
+    "Bulaklak"                         // Answer to sentence question 3: "Ano ang nakita niya?"
+  ],
+  "isCorrect": true,                   // ALL-OR-NOTHING: ALL sentence questions correct = TRUE
+  "sentenceResults": [                 // Individual sentence question results
+    {
+      "questionNumber": 1,
+      "questionText": "Sino ang pangunahing tauhan sa kwento?",
+      "studentAnswer": "Juan",
+      "correctAnswer": "Juan",
+      "isCorrect": true
+    },
+    {
+      "questionNumber": 2,
+      "questionText": "Saan pumunta si Juan?",
+      "studentAnswer": "Parke",
+      "correctAnswer": "Parke",
+      "isCorrect": true
+    },
+    {
+      "questionNumber": 3,
+      "questionText": "Ano ang nakita niya sa parke?",
+      "studentAnswer": "Bulaklak",
+      "correctAnswer": "Bulaklak",
+      "isCorrect": true
+    }
+  ],
+  "correctSentenceQuestions": 3,       // All 3 sentence questions correct
+  "totalSentenceQuestions": 3,         // Total sentence questions for this questionId
+  "allOrNothingScoring": true,         // Reading Comprehension uses all-or-nothing
+  "responseTime": 45.2,                // Time to read and answer all questions
+  "answeredAt": "2025-01-16T10:15:30Z",
+  "readingLevel": "At Grade Level",
+  "createdAt": Date
+}
+
+// FAILED Reading Comprehension Intervention Response (Partial Success = Failure):
+{
+  "_id": ObjectId("..."),
+  "studentId": 202210223,
+  "interventionAssessmentId": ObjectId("..."),
+  "questionId": "int_rc_002",
+  "category": "Reading Comprehension",
+  "response": [                        // Student's answers to multiple sentence questions
+    "Maria",                           // Answer to sentence question 1: "Sino ang pangunahing tauhan?"
+    "Eskwelahan",                      // Answer to sentence question 2: "Saan pumunta si Maria?" (WRONG - should be "Palengke")
+    "Prutas"                           // Answer to sentence question 3: "Ano ang binili niya?"
+  ],
+  "isCorrect": false,                  // ALL-OR-NOTHING: 2/3 correct = FALSE (no partial credit)
+  "sentenceResults": [
+    {
+      "questionNumber": 1,
+      "questionText": "Sino ang pangunahing tauhan sa kwento?",
+      "studentAnswer": "Maria",
+      "correctAnswer": "Maria",
+      "isCorrect": true                // ✓ Correct
+    },
+    {
+      "questionNumber": 2,
+      "questionText": "Saan pumunta si Maria?",
+      "studentAnswer": "Eskwelahan",
+      "correctAnswer": "Palengke",
+      "isCorrect": false               // ✗ Wrong answer
+    },
+    {
+      "questionNumber": 3,
+      "questionText": "Ano ang binili niya?",
+      "studentAnswer": "Prutas",
+      "correctAnswer": "Prutas",
+      "isCorrect": true                // ✓ Correct
+    }
+  ],
+  "correctSentenceQuestions": 2,       // Only 2 of 3 sentence questions correct
+  "totalSentenceQuestions": 3,         // Total sentence questions for this questionId
+  "allOrNothingScoring": true,         // ALL-OR-NOTHING: 2/3 = FAIL (no partial credit)
+  "responseTime": 52.1,
+  "answeredAt": "2025-01-16T10:18:45Z",
+  "readingLevel": "At Grade Level",
   "createdAt": Date
 }
 ```
@@ -3104,32 +3308,59 @@ const wordRecognitionErrorAnalysis = {
 };
 ```
 
-#### 5. Reading Comprehension Errors
+#### 5. Reading Comprehension Errors (All-or-Nothing Scoring)
 ```javascript
 const comprehensionErrorAnalysis = {
   comprehension_errors: {
-    count: 2,                    // 2 questions had errors
-    total: 5,                    // 5 total questions
-    percentage: 40,              // 40% error rate
-    
-    // Comprehension skill breakdown
+    count: 1,                    // 1 questionId failed (RC_001)
+    total: 3,                    // 3 total questionIds (RC_001, RC_002, RC_003)
+    percentage: 33,              // 33% questionId failure rate
+
+    // ALL-OR-NOTHING BREAKDOWN
+    question_breakdown: {
+      "RC_001": {
+        sentence_questions_total: 3,        // 3 sentence questions under RC_001
+        sentence_questions_correct: 2,      // Student got 2 out of 3 correct
+        result: "FAILED",                   // ❌ Not all correct = questionId fails
+        partial_success_rate: 67            // 67% correct but still fails
+      },
+      "RC_002": {
+        sentence_questions_total: 2,        // 2 sentence questions under RC_002
+        sentence_questions_correct: 2,      // Student got 2 out of 2 correct
+        result: "PASSED",                   // ✅ All correct = questionId passes
+        partial_success_rate: 100           // 100% perfect
+      },
+      "RC_003": {
+        sentence_questions_total: 4,        // 4 sentence questions under RC_003
+        sentence_questions_correct: 4,      // Student got 4 out of 4 correct
+        result: "PASSED",                   // ✅ All correct = questionId passes
+        partial_success_rate: 100           // 100% perfect
+      }
+    },
+
+    // SCORING RULES
+    scoring_methodology: "all_or_nothing", // Critical scoring rule
+    scoring_rule: "Each questionId requires ALL sentence questions correct - no partial credit",
+
+    // Comprehension skill breakdown for failed questions only
     literal_comprehension: {
-      errors: 1,
-      description: "difficulty finding stated facts"
+      errors: 1,                       // RC_001 had literal comprehension issues
+      description: "difficulty finding stated facts in story context"
     },
-    inferential_comprehension: {
-      errors: 1, 
-      description: "difficulty making connections"
-    },
-    critical_analysis: {
-      errors: 0,
-      description: "no errors in analysis tasks"
-    },
-    
-    error_type: "literal_comprehension", // Primary difficulty
-    questionIds: ["RC_002", "RC_004"]
+
+    error_type: "partial_story_comprehension", // Primary difficulty
+    failed_questionIds: ["RC_001"],     // Only RC_001 failed due to all-or-nothing rule
+    diagnostic_note: "Student shows partial understanding but fails all-or-nothing requirement"
   }
 };
+
+// CRITICAL IMPLEMENTATION RULES FOR READING COMPREHENSION:
+// 1. Each questionId (RC_001, RC_002, etc.) contains multiple sentence questions
+// 2. Student must answer ALL sentence questions correctly for questionId to count as passed
+// 3. If student answers 2/3 sentence questions correctly → questionId FAILS
+// 4. If student answers 3/3 sentence questions correctly → questionId PASSES
+// 5. Category score = (passed questionIds / total questionIds) × 100
+// 6. No partial credit within questionIds - complete story comprehension required
 ```
 
 ### Advanced Error Pattern Recognition

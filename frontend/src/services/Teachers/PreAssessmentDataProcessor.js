@@ -1021,11 +1021,14 @@ class PreAssessmentDataProcessor {
         break;
 
       case 'sentence':
-        // Reading comprehension questions
-        processedQuestion.studentAnswerText = Array.isArray(response.response) ?
-          response.response[0] : (response.response || 'No answer');
-        // For RC questions, we need to match with specific sentence questions
-        processedQuestion.correctAnswerText = this.getReadingComprehensionAnswer(question, response);
+        // Reading comprehension questions with all-or-nothing scoring
+        const rcAnswers = this.getReadingComprehensionAnswers(question, response);
+        processedQuestion.studentAnswerText = rcAnswers.studentAnswerText;
+        processedQuestion.correctAnswerText = rcAnswers.correctAnswerText;
+        processedQuestion.allOrNothingScoring = true;
+        processedQuestion.sentenceQAPairs = rcAnswers.sentenceQAPairs;
+        processedQuestion.allSentenceQuestionsCorrect = rcAnswers.allCorrect;
+        processedQuestion.sentenceQuestionCount = question.sentenceQuestions?.length || 0;
         break;
 
       default:
@@ -1070,7 +1073,11 @@ class PreAssessmentDataProcessor {
     
     if (question.questionType === 'sentence') {
       if (question.sentenceQuestions && question.sentenceQuestions.length > 0) {
-        return question.sentenceQuestions[0].correctAnswer;
+        // Show all sentence questions for Reading Comprehension all-or-nothing scoring
+        const allAnswers = question.sentenceQuestions
+          .map((sq, index) => `Q${index + 1}: ${sq.correctAnswer}`)
+          .join(' | ');
+        return `All-or-nothing: ${allAnswers}`;
       }
       return 'Text answer expected';
     }
@@ -1111,26 +1118,105 @@ class PreAssessmentDataProcessor {
   }
 
   /**
-   * Get reading comprehension answer
+   * Get reading comprehension answers with all-or-nothing scoring support
+   * Maps response arrays to individual sentence questions and evaluates complete correctness
    */
-  static getReadingComprehensionAnswer(question, response) {
-    // For RC questions, we need to determine which specific question was asked
-    // This is a simplified approach - in a real system, you'd track which specific question was answered
-    if (question.sentenceQuestions && question.sentenceQuestions.length > 0) {
-      // Try to match the response with acceptable answers to determine which question was answered
-      const studentAnswer = Array.isArray(response.response) ? response.response[0] : response.response;
-      
-      for (const sentenceQ of question.sentenceQuestions) {
-        if (sentenceQ.correctAnswer.toLowerCase() === studentAnswer?.toLowerCase() || 
-            sentenceQ.acceptableAnswers?.some(ans => ans.toLowerCase() === studentAnswer?.toLowerCase())) {
-          return sentenceQ.correctAnswer;
-        }
-      }
-      
-      // If no match found, return the first question's answer as fallback
-      return question.sentenceQuestions[0].correctAnswer;
+  static getReadingComprehensionAnswers(question, response) {
+    console.log(`🔍 Processing RC Question ${question.questionId} with all-or-nothing scoring`);
+
+    if (!question.sentenceQuestions || question.sentenceQuestions.length === 0) {
+      return {
+        studentAnswerText: 'No sentence questions defined',
+        correctAnswerText: 'Text answer expected',
+        sentenceQAPairs: [],
+        allCorrect: false
+      };
     }
-    return 'Text answer expected';
+
+    const studentResponses = Array.isArray(response.response) ? response.response : [response.response];
+    const sentenceQuestions = question.sentenceQuestions;
+    const sentenceQAPairs = [];
+    let allCorrect = true;
+
+    console.log(`📊 RC Question ${question.questionId}: ${sentenceQuestions.length} sentence questions, ${studentResponses.length} student responses`);
+
+    // Map each sentence question to its corresponding student response
+    for (let i = 0; i < sentenceQuestions.length; i++) {
+      const sentenceQuestion = sentenceQuestions[i];
+      const studentAnswer = studentResponses[i] || 'No answer';
+
+      // Check if this specific sentence question is correct
+      const isCorrect = this.isReadingComprehensionAnswerCorrect(
+        studentAnswer,
+        sentenceQuestion.correctAnswer,
+        sentenceQuestion.acceptableAnswers || []
+      );
+
+      console.log(`📝 Sentence Q${i + 1}: "${sentenceQuestion.questionText}" | Student: "${studentAnswer}" | Correct: "${sentenceQuestion.correctAnswer}" | Match: ${isCorrect}`);
+
+      const qaPair = {
+        questionNumber: i + 1,
+        questionText: sentenceQuestion.questionText,
+        studentAnswer: studentAnswer,
+        correctAnswer: sentenceQuestion.correctAnswer,
+        acceptableAnswers: sentenceQuestion.acceptableAnswers || [],
+        isCorrect: isCorrect
+      };
+
+      sentenceQAPairs.push(qaPair);
+
+      // All-or-nothing: if any sentence question is wrong, entire questionId fails
+      if (!isCorrect) {
+        allCorrect = false;
+      }
+    }
+
+    // Generate display text that shows all sentence Q&A pairs
+    const studentAnswerText = sentenceQAPairs
+      .map(pair => `Q${pair.questionNumber}: ${pair.studentAnswer}`)
+      .join(' | ');
+
+    const correctAnswerText = sentenceQAPairs
+      .map(pair => `Q${pair.questionNumber}: ${pair.correctAnswer}`)
+      .join(' | ');
+
+    const result = {
+      studentAnswerText: studentAnswerText || 'No responses recorded',
+      correctAnswerText: correctAnswerText || 'No correct answers defined',
+      sentenceQAPairs: sentenceQAPairs,
+      allCorrect: allCorrect
+    };
+
+    console.log(`✅ RC Question ${question.questionId} Result: All Correct = ${allCorrect}, Backend isCorrect = ${response.isCorrect}`);
+    console.log(`📋 Generated QA Pairs:`, sentenceQAPairs.map(p => `Q${p.questionNumber}: ${p.isCorrect ? '✓' : '✗'}`).join(', '));
+
+    return result;
+  }
+
+  /**
+   * Check if a Reading Comprehension answer is correct (case-insensitive with acceptable answers)
+   */
+  static isReadingComprehensionAnswerCorrect(studentAnswer, correctAnswer, acceptableAnswers = []) {
+    if (!studentAnswer || typeof studentAnswer !== 'string') {
+      return false;
+    }
+
+    const normalizedStudent = studentAnswer.trim().toLowerCase();
+    const normalizedCorrect = correctAnswer?.toLowerCase();
+
+    // Check exact match with correct answer
+    if (normalizedStudent === normalizedCorrect) {
+      return true;
+    }
+
+    // Check acceptable answers
+    for (const acceptable of acceptableAnswers) {
+      if (normalizedStudent === acceptable?.toLowerCase()) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**

@@ -1219,25 +1219,75 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                                           )}
                                           
                                           <div className="student-progress-comprehension-answer">
-                                            <div className="student-progress-comprehension-section">
-                                              <h5>Student's Answer:</h5>
-                                              <div className={`student-progress-comprehension-response ${question.isCorrect ? 'correct' : 'incorrect'}`}>
-                                                {Array.isArray(question.response) ? question.response.join(', ') : question.response || 'No response'}
-                                              </div>
-                                            </div>
-                                            
-                                            <div className="student-progress-comprehension-section">
-                                              <h5>Expected Answer:</h5>
-                                              <div className="student-progress-comprehension-correct">
-                                                {question.questionDetails.correctAnswer}
-                                              </div>
-                                              
-                                              {question.questionDetails.acceptableAnswers && question.questionDetails.acceptableAnswers.length > 1 && (
-                                                <div className="student-progress-acceptable-answers">
-                                                  <small>Acceptable answers: {question.questionDetails.acceptableAnswers.join(', ')}</small>
+                                            {/* All-or-Nothing Scoring Display */}
+                                            {question.allOrNothingScoring && question.sentenceQAPairs && question.sentenceQAPairs.length > 0 ? (
+                                              <div className="student-progress-rc-all-or-nothing">
+                                                <div className="student-progress-rc-scoring-header">
+                                                  <h5>Question Status:</h5>
+                                                  <div className={`student-progress-rc-overall-result ${question.allSentenceQuestionsCorrect ? 'passed' : 'failed'}`}>
+                                                    {question.allSentenceQuestionsCorrect ? '✅ PASSED' : '❌ FAILED'}
+                                                    ({question.sentenceQAPairs.filter(pair => pair.isCorrect).length}/{question.sentenceQAPairs.length} questions correct)
+                                                  </div>
                                                 </div>
-                                              )}
-                                            </div>
+
+                                                <div className="student-progress-rc-explanation">
+                                                  <small>All questions must be correct to pass</small>
+                                                </div>
+
+                                                <div className="student-progress-rc-question-pairs">
+                                                  {question.sentenceQAPairs.map(pair => (
+                                                    <div key={pair.questionNumber} className={`student-progress-rc-qa-pair ${pair.isCorrect ? 'correct' : 'incorrect'}`}>
+                                                      <div className="student-progress-rc-question">
+                                                        <div className="student-progress-rc-question-header">
+                                                          <span className="student-progress-rc-question-num">Q{pair.questionNumber}:</span>
+                                                          <span className={`student-progress-rc-status ${pair.isCorrect ? 'correct' : 'incorrect'}`}>
+                                                            {pair.isCorrect ? '✓' : '✗'}
+                                                          </span>
+                                                        </div>
+                                                        <div className="student-progress-rc-question-text">{pair.questionText}</div>
+                                                      </div>
+
+                                                      <div className="student-progress-rc-answers">
+                                                        <div className="student-progress-rc-student-answer">
+                                                          <strong>Student Answer:</strong> "{pair.studentAnswer}"
+                                                        </div>
+                                                        <div className="student-progress-rc-correct-answer">
+                                                          <strong>Expected Answer:</strong> "{pair.correctAnswer}"
+                                                          {pair.acceptableAnswers && pair.acceptableAnswers.length > 0 && (
+                                                            <div className="student-progress-rc-acceptable">
+                                                              <small>Also accepts: {pair.acceptableAnswers.join(', ')}</small>
+                                                            </div>
+                                                          )}
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              /* Fallback to original structure for older data */
+                                              <>
+                                                <div className="student-progress-comprehension-section">
+                                                  <h5>Student's Answer:</h5>
+                                                  <div className={`student-progress-comprehension-response ${question.isCorrect ? 'correct' : 'incorrect'}`}>
+                                                    {Array.isArray(question.response) ? question.response.join(', ') : question.response || 'No response'}
+                                                  </div>
+                                                </div>
+
+                                                <div className="student-progress-comprehension-section">
+                                                  <h5>Expected Answer:</h5>
+                                                  <div className="student-progress-comprehension-correct">
+                                                    {question.questionDetails.correctAnswer}
+                                                  </div>
+
+                                                  {question.questionDetails.acceptableAnswers && question.questionDetails.acceptableAnswers.length > 1 && (
+                                                    <div className="student-progress-acceptable-answers">
+                                                      <small>Acceptable answers: {question.questionDetails.acceptableAnswers.join(', ')}</small>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </>
+                                            )}
                                           </div>
                                         </div>
                                       )}

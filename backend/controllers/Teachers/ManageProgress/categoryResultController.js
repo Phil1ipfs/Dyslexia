@@ -100,6 +100,9 @@ const generateCategoryResults = async (req, res) => {
       if (categoryName === 'Phonological Awareness') {
         // Special handling for matching questions
         categoryResult = processPhonologicalAwareness(categoryName, categoryResponses);
+      } else if (categoryName === 'Reading Comprehension') {
+        // Special handling for all-or-nothing sentence questions
+        categoryResult = processReadingComprehension(categoryName, categoryResponses);
       } else {
         // Standard processing for other categories
         categoryResult = processStandardCategory(categoryName, categoryResponses);
@@ -314,6 +317,54 @@ function processPhonologicalAwareness(categoryName, responses) {
     currentInterventionId: null,
     interventionHistory: [],
     errorQuestions: questionsWithErrors
+  };
+}
+
+/**
+ * Process Reading Comprehension (all-or-nothing sentence questions)
+ * Each response contains multiple sentence question answers in an array
+ * ALL sentence questions must be correct for the questionId to pass
+ */
+function processReadingComprehension(categoryName, responses) {
+  let totalQuestions = 0;
+  let passedQuestions = 0;
+  let questionsWithErrors = [];
+
+  responses.forEach(response => {
+    totalQuestions++;
+
+    // For Reading Comprehension, isCorrect should be true only if ALL sentence questions are correct
+    // This means the mobile/response creation logic should already implement all-or-nothing
+    if (response.isCorrect === true) {
+      passedQuestions++;
+    } else {
+      questionsWithErrors.push(response.questionId);
+    }
+  });
+
+  const score = totalQuestions > 0 ? Math.round((passedQuestions / totalQuestions) * 100) : 0;
+
+  console.log(`[READING COMPREHENSION] Processing complete: ${passedQuestions}/${totalQuestions} questions passed (${score}%)`);
+  console.log(`[READING COMPREHENSION] All-or-nothing rule: Each questionId requires ALL sentence questions correct`);
+
+  return {
+    categoryName: categoryName,
+    totalQuestions: totalQuestions,
+    correctAnswers: passedQuestions,  // Number of questionIds where ALL sentence questions were correct
+    score: score,
+    isPassed: score >= 75,
+    passingThreshold: 75,
+    isCompleted: true,
+    lastQuestionAnswered: responses[responses.length - 1]?.questionId,
+    interventionRequired: score < 75,
+    interventionAttempts: 0,
+    interventionCompleted: false,
+    currentInterventionId: null,
+    interventionHistory: [],
+    errorQuestions: questionsWithErrors,
+    // Reading Comprehension specific fields
+    allOrNothingScoring: true,  // Flag to indicate special scoring used
+    scoringNote: "Each question requires ALL sentence questions correct - no partial credit"
   };
 }
 
