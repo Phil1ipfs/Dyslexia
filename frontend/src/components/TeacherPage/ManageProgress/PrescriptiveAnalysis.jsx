@@ -122,16 +122,126 @@ const PrescriptiveAnalysis = ({
   const [editingActivity, setEditingActivity] = useState(null);
   const [localInterventions, setLocalInterventions] = useState([]);
   const [loading, setLoading] = useState(false);
-  
+
   // Dialog and notification states
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
   const [pendingIntervention, setPendingIntervention] = useState(null);
+
+  // Intervention results states for dynamic UI
+  const [interventionResults, setInterventionResults] = useState({});
+  const [interventionStatus, setInterventionStatus] = useState({}); // 'initial', 'success', 'revision_needed'
+  const isLoadingInterventionsRef = useRef(false);
   const [notificationMessage, setNotificationMessage] = useState({
     title: 'Success!',
     message: 'Intervention successfully pushed to mobile device!'
   });
-  
+
+  // Helper function to get intervention status for a category
+  const getInterventionStatus = (categoryName) => {
+    const results = interventionResults[categoryName];
+    if (!results) return 'initial';
+
+    if (results.passed && results.score >= 75) {
+      return 'success';
+    } else if (results.passed === false && results.score < 75) {
+      return 'revision_needed';
+    }
+    return 'initial';
+  };
+
+  // Helper function to determine UI theme based on intervention status
+  const getUITheme = (categoryName) => {
+    const status = getInterventionStatus(categoryName);
+    switch (status) {
+      case 'success':
+        return 'success'; // Green theme
+      case 'revision_needed':
+        return 'revision'; // Yellow/Orange theme
+      default:
+        return 'initial'; // Blue diagnostic theme
+    }
+  };
+
+  // Helper function to render status-specific content
+  const renderStatusContent = (categoryName, defaultContent) => {
+    const status = getInterventionStatus(categoryName);
+    const results = interventionResults[categoryName];
+
+    switch (status) {
+      case 'success':
+        return (
+          <div className="epa-success-content">
+            <div className="epa-success-header">
+              <FaCheckCircle className="epa-success-icon" />
+              <div>
+                <h5 className="epa-success-title">Intervention Successful!</h5>
+                <p className="epa-success-subtitle">
+                  Student scored {results?.score}% (improved from {results?.previousScore || 'N/A'}%)
+                </p>
+              </div>
+            </div>
+            <div className="epa-success-metrics">
+              <div className="epa-metric">
+                <span className="epa-metric-label">Current Score:</span>
+                <span className="epa-metric-value">{results?.score}%</span>
+              </div>
+              <div className="epa-metric">
+                <span className="epa-metric-label">Improvement:</span>
+                <span className="epa-metric-value">+{results?.improvement || 0}%</span>
+              </div>
+              <div className="epa-metric">
+                <span className="epa-metric-label">Status:</span>
+                <span className="epa-metric-value success">Passed</span>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'revision_needed':
+        return (
+          <div className="epa-revision-content">
+            <div className="epa-revision-header">
+              <FaEdit className="epa-revision-icon" />
+              <div>
+                <h5 className="epa-revision-title">Intervention Needs Revision</h5>
+                <p className="epa-revision-subtitle">
+                  Student scored {results?.score}% - close to passing! Consider revision.
+                </p>
+              </div>
+            </div>
+            <div className="epa-revision-guidance">
+              <h6 className="epa-revision-guidance-title">Revision Recommendations:</h6>
+              <ul className="epa-revision-suggestions">
+                <li>Reduce complexity of questions slightly</li>
+                <li>Add more visual cues or audio support</li>
+                <li>Focus on specific error patterns identified</li>
+                <li>Consider breaking into smaller practice sessions</li>
+              </ul>
+            </div>
+            {defaultContent}
+          </div>
+        );
+
+      default:
+        return defaultContent;
+    }
+  };
+
+  // Function to fetch intervention results (this would connect to your API)
+  const fetchInterventionResults = async (studentId, categoryName) => {
+    try {
+      // This would be an actual API call to fetch intervention results
+      // For now, returning null to prevent infinite loading loops
+      // TODO: Replace with actual API call when intervention results endpoint is ready
+      console.log(`[DEBUG] Would fetch intervention results for student ${studentId}, category ${categoryName}`);
+      return null; // Return null to prevent API errors from causing infinite loops
+    } catch (error) {
+      console.error('Error fetching intervention results:', error);
+      return null;
+    }
+  };
+
   // ===== STATE (fetched if not injected by parent) =====
   const [liveStudent, setLiveStudent] = useState(student ?? null);
   const [liveCategoryResults, setLiveCategoryResults] = useState(categoryResults ?? null);
@@ -142,10 +252,12 @@ const PrescriptiveAnalysis = ({
   // Merge server-created & local drafts
   const effectiveInterventions = [...liveInterventions, ...localInterventions];
 
-  // Filter categories that need intervention (score < 75%)
-  const categoriesNeedingIntervention = liveCategoryResults && liveCategoryResults.categories && Array.isArray(liveCategoryResults.categories)
-    ? liveCategoryResults.categories.filter(cat => (Number(cat.score) || 0) < 75)
-    : [];
+  // Filter categories that need intervention (score < 75%) - memoized to prevent infinite loops
+  const categoriesNeedingIntervention = React.useMemo(() => {
+    return liveCategoryResults && liveCategoryResults.categories && Array.isArray(liveCategoryResults.categories)
+      ? liveCategoryResults.categories.filter(cat => (Number(cat.score) || 0) < 75)
+      : [];
+  }, [liveCategoryResults]);
     
   // Define allCategoriesPassed BEFORE it's used in getAnalysisForCategory
   const allCategoriesPassed = React.useMemo(
@@ -329,6 +441,52 @@ const PrescriptiveAnalysis = ({
       }
     }
   }, [selectedCategory, liveAnalyses, liveCategoryResults]);
+
+  // Effect to load intervention results when component mounts or student changes
+  useEffect(() => {
+    const loadInterventionResults = async () => {
+      const currentStudentId = liveStudent?.idNumber || liveStudent?.id || studentId;
+
+      // Skip if no student ID or already loading
+      if (!currentStudentId || isLoadingInterventionsRef.current) {
+        return;
+      }
+
+      // Skip if no categories need intervention
+      if (categoriesNeedingIntervention.length === 0) {
+        setInterventionResults({});
+        return;
+      }
+
+      console.log('Loading intervention results for categories:', categoriesNeedingIntervention.map(cat => cat.categoryName));
+
+      isLoadingInterventionsRef.current = true;
+
+      try {
+        const results = {};
+        for (const category of categoriesNeedingIntervention) {
+          try {
+            const categoryResults = await fetchInterventionResults(currentStudentId, category.categoryName);
+            if (categoryResults) {
+              results[category.categoryName] = categoryResults;
+            }
+          } catch (error) {
+            console.error(`Error loading intervention results for ${category.categoryName}:`, error);
+            // Continue with other categories even if one fails
+          }
+        }
+
+        setInterventionResults(results);
+      } finally {
+        isLoadingInterventionsRef.current = false;
+      }
+    };
+
+    // Only run if we have the necessary data
+    if (liveStudent || studentId) {
+      loadInterventionResults();
+    }
+  }, [liveStudent?.idNumber, liveStudent?.id, studentId, categoriesNeedingIntervention.length]);
 
   // ===== HELPER FUNCTIONS =====
 
@@ -1448,7 +1606,7 @@ const PrescriptiveAnalysis = ({
         {errorPatterns && Object.keys(errorPatterns).length > 0 && (
           <div className="literexia-analysis-card literexia-full-width">
             <div className="literexia-card-content">
-              <div className="epa-container">
+              <div className={`epa-container theme-${getUITheme(selectedCategory)}`}>
                 {Object.entries(errorPatterns).map(([errorType, errorData]) => (
                   <div key={errorType} className="epa-section">
                     <div className="epa-header">
@@ -1857,95 +2015,97 @@ const PrescriptiveAnalysis = ({
           {selectedAnalysis?.interventionPlan && (
             <div className="literexia-analysis-card literexia-full-width">
               <div className="literexia-card-content">
-                <div className="epa-intervention-container">
+                <div className={`epa-intervention-container theme-${getUITheme(selectedCategory)}`}>
                   <div className="epa-intervention-header">
                     <FaUserMd className="epa-intervention-icon" />
                     <div>
-                      <h4 className="epa-intervention-title">Comprehensive Intervention Plan</h4>
+                      <h4 className="epa-intervention-title">Intervention Plan</h4>
                       <p className="epa-intervention-subtitle">Detailed intervention requirements and implementation guidance</p>
                     </div>
                   </div>
 
-                  <div className="epa-intervention-content">
-                    {/* Primary Focus */}
-                    {selectedAnalysis.interventionPlan.focus && (
-                      <div className="epa-focus-section">
-                        <div className="epa-focus-header">
-                          <FaUserMd className="epa-focus-icon" />
-                          <span className="epa-focus-label">Primary Focus Area</span>
-                        </div>
-                        <div className="epa-focus-value">
-                          {selectedAnalysis.interventionPlan.focus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Target Sounds */}
-                    {selectedAnalysis.interventionPlan.targetSounds && selectedAnalysis.interventionPlan.targetSounds.length > 0 && (
-                      <div className="epa-target-sounds">
-                        <div className="epa-target-sounds-header">
-                          <FaBook className="epa-focus-icon" />
-                          <span className="epa-target-sounds-label">Target Sound Pairs</span>
-                        </div>
-                        <div className="epa-sound-tags">
-                          {selectedAnalysis.interventionPlan.targetSounds.map((sound, index) => (
-                            <span key={index} className="epa-sound-tag">{sound} discrimination</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Recommended Activities */}
-                    {selectedAnalysis.interventionPlan.recommendedActivities && selectedAnalysis.interventionPlan.recommendedActivities.length > 0 && (
-                      <div className="epa-activities-section">
-                        <div className="epa-activities-header">
-                          <FaEdit className="epa-focus-icon" />
-                          <span className="epa-activities-label">Recommended Activities</span>
-                        </div>
-                        <div className="epa-activities-list">
-                          {selectedAnalysis.interventionPlan.recommendedActivities.map((activity, index) => (
-                            <div key={index} className="epa-activity-item">
-                              <div className="epa-activity-number">{index + 1}</div>
-                              <div>{activity.replace(/_/g, ' ')}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Question Distribution */}
-                    {selectedAnalysis.interventionPlan.questionDistribution && Object.keys(selectedAnalysis.interventionPlan.questionDistribution).length > 0 && (
-                      <div className="epa-distribution-section">
-                        <div className="epa-distribution-header">
-                          <FaChartLine className="epa-focus-icon" />
-                          <span className="epa-distribution-label">Question Distribution Plan</span>
-                        </div>
-                        <div className="epa-distribution-total">
-                          total: {selectedAnalysis.interventionPlan.recommendedQuestionCount || Object.values(selectedAnalysis.interventionPlan.questionDistribution).reduce((sum, count) => sum + (typeof count === 'number' ? count : 0), 0)} questions
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Question Requirements */}
-                    {selectedAnalysis.interventionPlan.recommendedQuestionCount && (
-                      <div className="epa-requirements-section">
-                        <div className="epa-requirements-header">
-                          <FaEdit className="epa-focus-icon" />
-                          <span className="epa-requirements-label">Intervention Question Requirements</span>
-                        </div>
-                        <div className="epa-requirements-content">
-                          <div className="epa-requirements-count">
-                            {selectedAnalysis.interventionPlan.recommendedQuestionCount} Questions Recommended
+                  {renderStatusContent(selectedCategory, (
+                    <div className="epa-intervention-content">
+                      {/* Primary Focus */}
+                      {selectedAnalysis.interventionPlan.focus && (
+                        <div className="epa-focus-section">
+                          <div className="epa-focus-header">
+                            <FaUserMd className="epa-focus-icon" />
+                            <span className="epa-focus-label">Primary Focus Area</span>
                           </div>
-                          {selectedAnalysis.interventionPlan.questionCountRationale && (
-                            <div className="epa-requirements-rationale">
-                              <span className="epa-requirements-rationale-label">Rationale:</span> {selectedAnalysis.interventionPlan.questionCountRationale}
-                            </div>
-                          )}
+                          <div className="epa-focus-value">
+                            {selectedAnalysis.interventionPlan.focus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+
+                      {/* Target Sounds */}
+                      {selectedAnalysis.interventionPlan.targetSounds && selectedAnalysis.interventionPlan.targetSounds.length > 0 && (
+                        <div className="epa-target-sounds">
+                          <div className="epa-target-sounds-header">
+                            <FaBook className="epa-focus-icon" />
+                            <span className="epa-target-sounds-label">Target Sound Pairs</span>
+                          </div>
+                          <div className="epa-sound-tags">
+                            {selectedAnalysis.interventionPlan.targetSounds.map((sound, index) => (
+                              <span key={index} className="epa-sound-tag">{sound} discrimination</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Recommended Activities */}
+                      {selectedAnalysis.interventionPlan.recommendedActivities && selectedAnalysis.interventionPlan.recommendedActivities.length > 0 && (
+                        <div className="epa-activities-section">
+                          <div className="epa-activities-header">
+                            <FaEdit className="epa-focus-icon" />
+                            <span className="epa-activities-label">Recommended Activities</span>
+                          </div>
+                          <div className="epa-activities-list">
+                            {selectedAnalysis.interventionPlan.recommendedActivities.map((activity, index) => (
+                              <div key={index} className="epa-activity-item">
+                                <div className="epa-activity-number">{index + 1}</div>
+                                <div>{activity.replace(/_/g, ' ')}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Question Distribution */}
+                      {selectedAnalysis.interventionPlan.questionDistribution && Object.keys(selectedAnalysis.interventionPlan.questionDistribution).length > 0 && (
+                        <div className="epa-distribution-section">
+                          <div className="epa-distribution-header">
+                            <FaChartLine className="epa-focus-icon" />
+                            <span className="epa-distribution-label">Question Distribution Plan</span>
+                          </div>
+                          <div className="epa-distribution-total">
+                            total: {selectedAnalysis.interventionPlan.recommendedQuestionCount || Object.values(selectedAnalysis.interventionPlan.questionDistribution).reduce((sum, count) => sum + (typeof count === 'number' ? count : 0), 0)} questions
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Question Requirements */}
+                      {selectedAnalysis.interventionPlan.recommendedQuestionCount && (
+                        <div className="epa-requirements-section">
+                          <div className="epa-requirements-header">
+                            <FaEdit className="epa-focus-icon" />
+                            <span className="epa-requirements-label">Intervention Question Requirements</span>
+                          </div>
+                          <div className="epa-requirements-content">
+                            <div className="epa-requirements-count">
+                              {selectedAnalysis.interventionPlan.recommendedQuestionCount} Questions Recommended
+                            </div>
+                            {selectedAnalysis.interventionPlan.questionCountRationale && (
+                              <div className="epa-requirements-rationale">
+                                <span className="epa-requirements-rationale-label">Rationale:</span> {selectedAnalysis.interventionPlan.questionCountRationale}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -1955,7 +2115,7 @@ const PrescriptiveAnalysis = ({
           {selectedAnalysis?.researchBasedPrescriptions && (
             <div className="literexia-analysis-card literexia-full-width">
               <div className="literexia-card-content">
-                <div className="epa-research-container">
+                <div className={`epa-research-container theme-${getUITheme(selectedCategory)}`}>
                   <div className="epa-research-header">
                     <FaBook className="epa-research-icon" />
                     <div>
@@ -2029,6 +2189,7 @@ const PrescriptiveAnalysis = ({
               </div>
             </div>
           )}
+          <br></br> <br></br>
 
           {/* Current interventions - only show if the selected category has not passed */}
           {selectedCategoryData && !selectedCategoryData.isPassed && (
