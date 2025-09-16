@@ -26,6 +26,7 @@ import ActivityEditModal from './ActivityEditModal';
 import ConfirmationDialog from './ConfirmationDialog';
 import SuccessNotification from './SuccessNotification';
 import './css/PrescriptiveAnalysis.css';
+import './css/ErrorPatternAnalysis.css';
 
 // Add inline styles for elements that might not be in the CSS file
 const inlineStyles = {
@@ -421,28 +422,250 @@ const PrescriptiveAnalysis = ({
     console.log(`- errorPatterns["${categoryName}"] exists:`, Boolean(studentAnalysis.errorPatterns?.[categoryName]));
     console.log(`- errorPatterns["${normalizedCategory}"] exists:`, Boolean(studentAnalysis.errorPatterns?.[normalizedCategory]));
 
+    // Extract complete BKT data with response history
+    const skillMasteryData = studentAnalysis.skillMastery?.[categoryName] || studentAnalysis.skillMastery?.[normalizedCategory];
+    const bktData = skillMasteryData ? {
+      ...skillMasteryData,
+      // Ensure we have all BKT fields from the database
+      masteryProbability: skillMasteryData.masteryProbability || 0,
+      score: skillMasteryData.score || 0,
+      isPassed: skillMasteryData.isPassed || false,
+      totalQuestions: skillMasteryData.totalQuestions || 0,
+      correctAnswers: skillMasteryData.correctAnswers || 0,
+      totalPossibleMatches: skillMasteryData.totalPossibleMatches || 0,
+      correctMatches: skillMasteryData.correctMatches || 0,
+      responseHistory: skillMasteryData.responseHistory || [],
+      lastUpdated: skillMasteryData.lastUpdated
+    } : null;
+
+    // Extract complete error patterns with all confusion pairs
+    const errorPatternsData = studentAnalysis.errorPatterns?.[categoryName] || studentAnalysis.errorPatterns?.[normalizedCategory];
+
+    console.log('🔍 [DEBUG] Error patterns for', categoryName, ':', errorPatternsData);
+
+    const enhancedErrorPatterns = errorPatternsData ? {
+      ...errorPatternsData,
+      // Enhanced processing of error patterns from database
+      ...Object.keys(errorPatternsData).reduce((acc, key) => {
+        const patternData = errorPatternsData[key];
+        console.log(`🔍 [DEBUG] Processing error pattern '${key}':`, patternData);
+
+        if (patternData && typeof patternData === 'object') {
+          acc[key] = {
+            ...patternData,
+
+            // Extract confusion pairs with intervention focus from database
+            confusionPairs: patternData.confusionPairs?.map(pair => ({
+              ...pair,
+              // Ensure we have the intervention focus from database
+              intervention: pair.interventionFocus || pair.intervention
+            })) || [],
+
+            // Extract cognitive implications from database structure
+            cognitiveImplications: (() => {
+              const implications = patternData.cognitiveImplications;
+              console.log(`🔍 [DEBUG] Cognitive implications for ${key}:`, implications);
+
+              if (!implications) return [];
+
+              if (Array.isArray(implications)) {
+                return implications;
+              }
+
+              if (typeof implications === 'object') {
+                // Convert object values to array with detailed descriptions
+                return Object.entries(implications).map(([factor, description]) => {
+                  return `${factor.replace(/([A-Z])/g, ' $1').toLowerCase()}: ${description}`;
+                });
+              }
+
+              return [implications];
+            })(),
+
+            // Extract additional pattern details from database
+            errorType: patternData.error_type || patternData.errorType,
+            percentage: patternData.percentage,
+            count: patternData.count,
+            total: patternData.total,
+            avgPartialSuccess: patternData.avg_partial_success,
+            questionIds: patternData.questionIds || [],
+            sequentialDifficulty: patternData.sequentialDifficulty
+          };
+        }
+        return acc;
+      }, {})
+    } : null;
+
+    // Extract complete research-based prescriptions
+    const researchPrescriptions = studentAnalysis.researchBasedPrescriptions?.[categoryName] ||
+                                  studentAnalysis.researchBasedPrescriptions?.[normalizedCategory];
+
+    console.log('🔍 [DEBUG] Research prescriptions for', categoryName, ':', researchPrescriptions);
+
+    const enhancedResearchPrescriptions = researchPrescriptions ? {
+      ...researchPrescriptions,
+
+      // Extract maintenance strategies with complete details from database
+      maintenanceStrategies: (() => {
+        const activities = researchPrescriptions.maintenanceRecommendations?.activities || [];
+        console.log('🔍 [DEBUG] Maintenance activities found:', activities);
+
+        return activities.map(activity => {
+          if (typeof activity === 'string') return activity;
+
+          // Extract full activity details from database structure
+          const fullDescription = [
+            activity.activity || '',
+            activity.purpose ? `(${activity.purpose})` : '',
+            activity.frequency ? `Frequency: ${activity.frequency}` : '',
+            activity.implementation || '',
+            activity.rationale || ''
+          ].filter(Boolean).join(' - ');
+
+          return fullDescription || activity.activity || activity.description || 'Maintenance activity';
+        });
+      })(),
+
+      // Extract intervention strategies with complete technique details from database
+      interventionStrategies: (() => {
+        const techniques = researchPrescriptions.interventionPrescription?.specificTechniques || [];
+        console.log('🔍 [DEBUG] Intervention techniques found:', techniques);
+
+        return techniques.map(technique => {
+          if (typeof technique === 'string') return technique;
+
+          // Extract full technique details from database structure
+          const fullDescription = [
+            technique.technique || '',
+            technique.description || '',
+            technique.duration ? `Duration: ${technique.duration}` : '',
+            technique.materials ? `Materials: ${technique.materials}` : '',
+            technique.progressCriteria ? `Success: ${technique.progressCriteria}` : '',
+            technique.researchBasis ? `Research: ${technique.researchBasis}` : ''
+          ].filter(Boolean).join(' | ');
+
+          return fullDescription || technique.technique || technique.description || 'Intervention technique';
+        });
+      })(),
+
+      // Extract escalation protocols with complete trigger and approach details from database
+      escalationProtocols: (() => {
+        const triggers = researchPrescriptions.escalationProtocol?.triggers || [];
+        console.log('🔍 [DEBUG] Escalation triggers found:', triggers);
+
+        return triggers.map(trigger => {
+          if (typeof trigger === 'string') return trigger;
+
+          // Extract full escalation details from database structure
+          const approaches = trigger.specificTechniques?.map(tech => {
+            return [
+              tech.technique || '',
+              tech.purpose || '',
+              tech.implementation || '',
+              tech.researchBasis || ''
+            ].filter(Boolean).join(' - ');
+          }) || [];
+
+          const fullDescription = [
+            trigger.trigger ? `Trigger: ${trigger.trigger}` : '',
+            trigger.approach ? `Approach: ${trigger.approach}` : '',
+            trigger.researchFoundation ? `Research: ${trigger.researchFoundation}` : '',
+            ...approaches
+          ].filter(Boolean).join(' | ');
+
+          return fullDescription || trigger.approach || trigger.description || 'Escalation protocol';
+        });
+      })(),
+
+      // Extract additional prescription details from database
+      categoryStatus: researchPrescriptions.categoryStatus,
+      deficitAnalysis: researchPrescriptions.deficitAnalysis,
+      intensityLevel: researchPrescriptions.interventionPrescription?.intensityLevel,
+      sessionStructure: researchPrescriptions.interventionPrescription?.sessionStructure,
+      materialRecommendations: researchPrescriptions.interventionPrescription?.materialRecommendations || []
+    } : null;
+
+    // Extract complete intervention plan data
+    const interventionPlanData = studentAnalysis.interventionPlan?.specificFocus?.[categoryName] ||
+                                studentAnalysis.interventionPlan?.specificFocus?.[normalizedCategory] ||
+                                studentAnalysis.interventionPlan;
+    console.log('🔍 [DEBUG] Intervention plan data for', categoryName, ':', interventionPlanData);
+
+    const enhancedInterventionPlan = interventionPlanData ? {
+      ...interventionPlanData,
+      // Extract all intervention details from database
+      focus: interventionPlanData.focus,
+
+      // Extract complete target sounds list from database
+      targetSounds: (() => {
+        const sounds = interventionPlanData.targetSounds || [];
+        console.log('🔍 [DEBUG] Target sounds found:', sounds);
+
+        // Handle different formats: array of strings or detailed objects
+        return sounds.map(sound => {
+          if (typeof sound === 'string') return sound;
+          if (sound.discrimination) return sound.discrimination;
+          if (sound.sounds) return sound.sounds.join('-');
+          return sound;
+        });
+      })(),
+
+      // Extract all recommended activities from database
+      recommendedActivities: (() => {
+        const activities = interventionPlanData.recommendedActivities || [];
+        console.log('🔍 [DEBUG] Recommended activities found:', activities);
+        return activities;
+      })(),
+
+      // Extract complete question distribution from database
+      questionDistribution: (() => {
+        const distribution = interventionPlanData.questionDistribution || {};
+        console.log('🔍 [DEBUG] Question distribution found:', distribution);
+        return distribution;
+      })(),
+
+      // Extract target patterns from database
+      targetPatterns: interventionPlanData.targetPatterns || [],
+
+      // Extract dynamic question count from the database
+      recommendedQuestionCount: extractQuestionCount(studentAnalysis, categoryName),
+      questionCountRationale: extractQuestionCountRationale(studentAnalysis, categoryName)
+    } : null;
+
     const categoryAnalysis = {
       // Basic info
       category: categoryName,
       readingLevel: studentAnalysis.readingLevel,
+      assessmentDate: studentAnalysis.assessmentDate,
+      assessmentType: studentAnalysis.assessmentType,
       overallScore: studentAnalysis.insights?.overallScore,
 
-      // REAL BKT Data from skillMastery object (not Map)
-      bktData: studentAnalysis.skillMastery?.[categoryName] || studentAnalysis.skillMastery?.[normalizedCategory],
+      // Enhanced BKT Data with complete response history
+      bktData: bktData,
 
-      // REAL IRT Data from abilityEstimates object (not Map)
+      // REAL IRT Data from abilityEstimates object
       irtAbility: studentAnalysis.abilityEstimates?.[categoryName] || studentAnalysis.abilityEstimates?.[normalizedCategory],
 
-      // REAL Error Patterns from errorPatterns object (not Map)
-      errorPatterns: studentAnalysis.errorPatterns?.[categoryName] || studentAnalysis.errorPatterns?.[normalizedCategory],
+      // Enhanced Error Patterns with all confusion pairs and cognitive implications
+      errorPatterns: enhancedErrorPatterns,
 
-      // REAL Intervention Plan specific to this category
-      interventionPlan: studentAnalysis.interventionPlan?.specificFocus?.[categoryName] ||
-                       studentAnalysis.interventionPlan?.specificFocus?.[normalizedCategory] ||
-                       studentAnalysis.interventionPlan,
+      // Enhanced Intervention Plan with dynamic question count
+      interventionPlan: enhancedInterventionPlan,
 
-      // Overall insights from REAL analysis
-      insights: studentAnalysis.insights,
+      // Enhanced Research-based prescriptions with all strategy types
+      researchBasedPrescriptions: enhancedResearchPrescriptions,
+
+      // Complete insights from REAL analysis
+      insights: {
+        ...studentAnalysis.insights,
+        // Extract additional insights
+        strengths: studentAnalysis.insights?.strengths || [],
+        weaknesses: studentAnalysis.insights?.weaknesses || [],
+        overallReadiness: studentAnalysis.insights?.overallReadiness,
+        recommendedAction: studentAnalysis.insights?.recommendedAction,
+        passedCategories: studentAnalysis.insights?.passedCategories,
+        failedCategories: studentAnalysis.insights?.failedCategories
+      },
 
       // REAL Intervention History for this category
       interventionHistory: studentAnalysis.interventionHistory?.filter(h =>
@@ -455,6 +678,122 @@ const PrescriptiveAnalysis = ({
 
     console.log('Extracted REAL category analysis for', normalizedCategory, ':', categoryAnalysis);
     return categoryAnalysis;
+  };
+
+  // Helper function to extract dynamic question count from database
+  const extractQuestionCount = (studentAnalysis, categoryName) => {
+    console.log('🔍 [DEBUG] Extracting question count for', categoryName);
+    console.log('🔍 [DEBUG] Full intervention plan:', studentAnalysis.interventionPlan);
+
+    // Try different possible locations for question count in the database
+    const interventionPlan = studentAnalysis.interventionPlan;
+    if (!interventionPlan) {
+      console.log('❌ No intervention plan found');
+      return 10; // Default fallback
+    }
+
+    // Check specific focus for this category
+    const categorySpecific = interventionPlan.specificFocus?.[categoryName];
+    console.log('🔍 [DEBUG] Category specific data:', categorySpecific);
+
+    if (categorySpecific?.recommendedQuestionCount) {
+      console.log('✅ Found recommendedQuestionCount:', categorySpecific.recommendedQuestionCount);
+      return categorySpecific.recommendedQuestionCount;
+    }
+
+    // Check question distribution for total count
+    if (categorySpecific?.questionDistribution) {
+      console.log('🔍 [DEBUG] Question distribution:', categorySpecific.questionDistribution);
+
+      if (categorySpecific.questionDistribution.total) {
+        console.log('✅ Found total in questionDistribution:', categorySpecific.questionDistribution.total);
+        return categorySpecific.questionDistribution.total;
+      }
+
+      const total = Object.values(categorySpecific.questionDistribution).reduce((sum, count) => {
+        return sum + (typeof count === 'number' ? count : 0);
+      }, 0);
+      if (total > 0) {
+        console.log('✅ Calculated total from questionDistribution:', total);
+        return total;
+      }
+    }
+
+    // Check overall intervention plan
+    if (interventionPlan.recommendedQuestionCount) {
+      console.log('✅ Found overall recommendedQuestionCount:', interventionPlan.recommendedQuestionCount);
+      return interventionPlan.recommendedQuestionCount;
+    }
+
+    // Extract from question count calculation if available
+    if (studentAnalysis.questionCountCalculation?.finalCount) {
+      console.log('✅ Found finalCount:', studentAnalysis.questionCountCalculation.finalCount);
+      return studentAnalysis.questionCountCalculation.finalCount;
+    }
+
+    console.log('❌ No dynamic question count found in database, using default');
+    return 10; // Default fallback
+  };
+
+  // Helper function to extract question count rationale from database
+  const extractQuestionCountRationale = (studentAnalysis, categoryName) => {
+    const interventionPlan = studentAnalysis.interventionPlan;
+    const categorySpecific = interventionPlan?.specificFocus?.[categoryName];
+
+    // Try to get rationale from question count calculation
+    if (studentAnalysis.questionCountCalculation?.rationale) {
+      return studentAnalysis.questionCountCalculation.rationale;
+    }
+
+    // Try to get from category-specific plan
+    if (categorySpecific?.rationale) {
+      return categorySpecific.rationale;
+    }
+
+    // Generate based on available data
+    const errorRate = studentAnalysis.errorPatterns?.[categoryName]?.matching_errors?.percentage;
+    const masteryLevel = studentAnalysis.skillMastery?.[categoryName]?.masteryProbability;
+
+    if (errorRate && masteryLevel) {
+      return `Based on ${errorRate}% error rate and ${Math.round(masteryLevel * 100)}% mastery level`;
+    }
+
+    return 'Based on assessment performance and error analysis';
+  };
+
+  // Helper function to get ability level classification
+  const getAbilityLevel = (estimate) => {
+    if (estimate >= 2.0) return 'Very High';
+    if (estimate >= 1.0) return 'Above Average';
+    if (estimate >= -1.0) return 'Average';
+    if (estimate >= -2.0) return 'Below Average';
+    return 'Very Low';
+  };
+
+  // Helper function to get IRT explanation
+  const getIRTExplanation = (estimate) => {
+    if (estimate >= 2.0) return 'Student demonstrates exceptional ability in this reading skill area.';
+    if (estimate >= 1.0) return 'Student shows above-average ability and typically succeeds on most tasks.';
+    if (estimate >= -1.0) return 'Student has average ability and succeeds on appropriately leveled tasks.';
+    if (estimate >= -2.0) return 'Student has below-average ability and needs additional support to succeed.';
+    return 'Student has significant difficulty and requires intensive intervention support.';
+  };
+
+  // Helper function to get mastery level classification
+  const getMasteryLevel = (probability) => {
+    if (probability >= 0.9) return 'Very High Mastery';
+    if (probability >= 0.75) return 'High Mastery';
+    if (probability >= 0.5) return 'Moderate Mastery';
+    if (probability >= 0.25) return 'Low Mastery';
+    return 'Very Low Mastery';
+  };
+
+  // Helper function to get mastery progression class
+  const getMasteryProgressionClass = (probability) => {
+    if (probability >= 0.75) return 'high-mastery';
+    if (probability >= 0.5) return 'moderate-mastery';
+    if (probability >= 0.25) return 'low-mastery';
+    return 'very-low-mastery';
   };
 
   /**
@@ -933,30 +1272,39 @@ const PrescriptiveAnalysis = ({
       irtAbility,        // Item Response Theory ability estimate
       errorPatterns,     // Error pattern analysis
       insights,          // Overall insights
-      interventionPlan   // Intervention recommendations
+      interventionPlan,  // Intervention recommendations
+      researchBasedPrescriptions // Research-based prescriptions from database
     } = analysis;
+
+    console.log('🎯 [RENDER DEBUG] Analysis data for', categoryName, ':', {
+      bktData,
+      irtAbility,
+      errorPatterns,
+      interventionPlan,
+      researchBasedPrescriptions
+    });
 
     return (
       <div className="literexia-mathematical-analysis-section">
-        {/* Header with score metrics */}
-        <div className="literexia-analysis-header-metrics">
-          <div className="literexia-score-header">
-            <h3>{formatCategoryName(categoryName)} Analysis</h3>
-            <div className="literexia-score-indicators">
-              <div className="literexia-score-indicator">
-                <div className="literexia-score-label">Current Score</div>
-                <div className="literexia-score-value">{currentScore}%</div>
+        {/* Header with score metrics on the right */}
+        <div className="literexia-math-analysis-header-container">
+          <div className="literexia-math-analysis-header-layout">
+            <div className="literexia-math-analysis-header-title">
+              <h3>{formatCategoryName(categoryName)} Analysis</h3>
+            </div>
+            <div className="literexia-math-analysis-header-scores">
+              <div className="literexia-math-analysis-score-item">
+                <span className="literexia-math-analysis-score-label">CURRENT SCORE</span>
+                <span className="literexia-math-analysis-score-value">{currentScore}%</span>
               </div>
-              <div className="literexia-score-arrow">
-                <FaArrowRight />
+              <FaArrowRight className="literexia-math-analysis-score-arrow" />
+              <div className="literexia-math-analysis-score-item">
+                <span className="literexia-math-analysis-score-label">TARGET SCORE</span>
+                <span className="literexia-math-analysis-score-value">75%</span>
               </div>
-              <div className="literexia-score-indicator">
-                <div className="literexia-score-label">Target Score</div>
-                <div className="literexia-score-value">75%</div>
-              </div>
-              <div className="literexia-score-indicator">
-                <div className="literexia-score-label">Gap</div>
-                <div className="literexia-score-value">{gap}%</div>
+              <div className="literexia-math-analysis-score-item">
+                <span className="literexia-math-analysis-score-label">GAP</span>
+                <span className="literexia-math-analysis-score-value">{gap}%</span>
               </div>
             </div>
           </div>
@@ -967,20 +1315,14 @@ const PrescriptiveAnalysis = ({
           {/* Left Column - BKT (Bayesian Knowledge Tracing) */}
           {bktData && (
             <div className="literexia-analysis-card">
-              <div className="literexia-card-header">
-                <div className="literexia-card-icon">
-                  <FaBrain />
-                </div>
-                <div className="literexia-card-title">
-                  <h4>Bayesian Knowledge Tracing (BKT)</h4>
-                </div>
+              <div className="literexia-prescriptive-analysis-header-container">
               </div>
               <div className="literexia-card-content">
-                <div className="literexia-mastery-display">
-                  <div className="literexia-mastery-gauge">
+                <div className="literexia-math-analysis-bkt-container">
+                  <div className="literexia-math-analysis-bkt-gauge">
                     <div className="literexia-mastery-label">Mastery Probability:</div>
-                    <div className="literexia-mastery-circle">
-                      <div className={`literexia-mastery-percent ${
+                    <div className="literexia-math-analysis-bkt-circle">
+                      <div className={`literexia-math-analysis-bkt-percent ${
                         bktData.masteryProbability >= 0.75 ? 'high' :
                         bktData.masteryProbability >= 0.5 ? 'medium' : 'low'
                       }`}>
@@ -988,21 +1330,21 @@ const PrescriptiveAnalysis = ({
                       </div>
                     </div>
                   </div>
-                  <div className="literexia-bkt-details">
-                    <div className="literexia-bkt-metric">
-                      <span className="literexia-metric-label">Assessment Score:</span>
-                      <span className="literexia-metric-value">{bktData.score}% ({bktData.isPassed ? 'Needs Intervention' : 'Needs Intervention'})</span>
+                  <div className="literexia-math-analysis-bkt-details">
+                    <div className="literexia-math-analysis-bkt-metric">
+                      <span className="literexia-math-analysis-bkt-label">Assessment Score:</span>
+                      <span className="literexia-math-analysis-bkt-value">{bktData.score}% ({bktData.isPassed ? 'Passed' : 'Needs Intervention'})</span>
                     </div>
-                    <div className="literexia-bkt-metric">
-                      <span className="literexia-metric-label">Questions Answered:</span>
-                      <span className="literexia-metric-value">{bktData.totalQuestions} total, {bktData.correctAnswers} correct
+                    <div className="literexia-math-analysis-bkt-metric">
+                      <span className="literexia-math-analysis-bkt-label">Questions Answered:</span>
+                      <span className="literexia-math-analysis-bkt-value">{bktData.totalQuestions} total, {bktData.correctAnswers} correct
                       {bktData.totalPossibleMatches > 0 && (
                         <span> ({bktData.correctMatches}/{bktData.totalPossibleMatches} matches)</span>
                       )}</span>
                     </div>
-                    <div className="literexia-bkt-interpretation">
-                      <span className="literexia-metric-label">BKT Interpretation:</span>
-                      <span className="literexia-metric-value">{
+                    <div className="literexia-math-analysis-bkt-metric">
+                      <span className="literexia-math-analysis-bkt-label">BKT Interpretation:</span>
+                      <span className="literexia-math-analysis-bkt-value">{
                         bktData.masteryProbability >= 0.75 ?
                           `High confidence - student demonstrates mastery of ${formatCategoryName(categoryName)}` :
                         bktData.masteryProbability >= 0.5 ?
@@ -1010,193 +1352,221 @@ const PrescriptiveAnalysis = ({
                           `Low confidence - student needs targeted intervention for ${formatCategoryName(categoryName)}`
                       }</span>
                     </div>
+
+                    {/* BKT Response History Evolution */}
+                    {bktData.responseHistory && bktData.responseHistory.length > 0 && (
+                      <div className="literexia-math-analysis-bkt-evolution">
+                        <div className="literexia-math-analysis-bkt-evolution-header">
+                          <h6><FaChartLine className="literexia-section-icon" /> Learning Progression (BKT Evolution)</h6>
+                          <p>Real-time mastery probability changes as student answers each question</p>
+                        </div>
+                        <div className="literexia-math-analysis-bkt-timeline">
+                          {bktData.responseHistory.slice(-10).map((response, index) => (
+                            <div key={index} className="literexia-math-analysis-bkt-point">
+                              <div
+                                className={`literexia-math-analysis-bkt-indicator ${response.correct ? 'correct' : 'incorrect'}`}
+                                title={`Question ${response.questionId}: ${response.correct ? 'Correct' : 'Incorrect'} → ${Math.round(response.masteryAfter * 100)}% mastery`}
+                              >
+                                {response.correct ? '✓' : '✗'}
+                              </div>
+                              <div className="literexia-math-analysis-bkt-progression">
+                                <small>{Math.round(response.masteryAfter * 100)}%</small>
+                                <div className="literexia-math-analysis-bkt-question-info">{response.questionId}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="literexia-math-analysis-bkt-summary">
+                          <small>Showing last {Math.min(10, bktData.responseHistory.length)} responses with mastery evolution</small>
+                          <div className="literexia-math-analysis-bkt-trend">
+                            <span>Trend: </span>
+                            {bktData.responseHistory.length >= 2 && (
+                              <span className={
+                                bktData.responseHistory[bktData.responseHistory.length - 1].masteryAfter >
+                                bktData.responseHistory[0].masteryAfter ? 'improving' : 'declining'
+                              }>
+                                {bktData.responseHistory[bktData.responseHistory.length - 1].masteryAfter >
+                                 bktData.responseHistory[0].masteryAfter ? (
+                                   <><FaChartLine /> Improving</>
+                                 ) : (
+                                   <><FaExclamationTriangle /> Needs Support</>
+                                 )}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+<br></br> <br></br>
+   
+                        
+                      </div>)}
+                      {irtAbility !== null && irtAbility !== undefined && (
+              <div className="literexia-card-content">
+                <div className="epa-irt-container">
+                  <div className="epa-irt-header">
+                    <FaRuler className="epa-irt-icon" />
+                    <h4 className="epa-irt-title">Item Response Theory (IRT) Ability Estimate</h4>
+                  </div>
+                  <div className="epa-irt-content">
+                    <div className="epa-irt-ability">
+                      <span className="epa-irt-ability-label">Ability Level (θ):</span>
+                      <span className={`epa-irt-ability-value ${
+                        irtAbility >= 1.0 ? 'epa-irt-ability-value--positive' :
+                        irtAbility >= -0.5 ? 'epa-irt-ability-value--neutral' : ''
+                      }`}>
+                        {irtAbility > 0 ? '+' : ''}{irtAbility.toFixed(1)}
+                      </span>
+                      <span className="epa-irt-scale">(Scale: -3.0 to +3.0)</span>
+                    </div>
+                    <div className="epa-irt-interpretation">
+                      <span className="epa-irt-interpretation-label">IRT INTERPRETATION:</span>
+                      <p className={`epa-irt-interpretation-text ${
+                        irtAbility >= -0.5 ? 'epa-irt-interpretation-text--mild' :
+                        irtAbility >= -1.5 ? 'epa-irt-interpretation-text--moderate' : 'epa-irt-interpretation-text--severe'
+                      }`}>
+                        {irtAbility >= 1.0 ?
+                          `Excellent ability in ${formatCategoryName(categoryName)}` :
+                        irtAbility >= 0.0 ?
+                          `Above average ability in ${formatCategoryName(categoryName)}` :
+                        irtAbility >= -1.0 ?
+                          `Below average ability - needs additional support in ${formatCategoryName(categoryName)}` :
+                          `Significant difficulty - intensive intervention recommended for ${formatCategoryName(categoryName)}`
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+          )}
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Right Column - IRT (Item Response Theory) */}
-          {irtAbility !== null && irtAbility !== undefined && (
-            <div className="literexia-analysis-card">
-              <div className="literexia-card-header">
-                <div className="literexia-card-icon">
-                  <FaRuler />
-                </div>
-                <div className="literexia-card-title">
-                  <h4>Item Response Theory (IRT) Ability Estimate</h4>
-                </div>
-              </div>
-              <div className="literexia-card-content">
-                <div className="literexia-irt-display">
-                  <div className="literexia-ability-thermometer">
-                    <div className="literexia-ability-label">Ability Level (θ):</div>
-                    <div className="literexia-ability-value">
-                      <span className={`literexia-ability-score ${
-                        irtAbility >= 1.0 ? 'excellent' :
-                        irtAbility >= 0.0 ? 'above-average' :
-                        irtAbility >= -1.0 ? 'below-average' : 'needs-support'
-                      }`}>
-                        {irtAbility > 0 ? '+' : ''}{irtAbility.toFixed(1)}
-                      </span>
-                      <span className="literexia-scale-range">(Scale: -3.0 to +3.0)</span>
-                    </div>
-                  </div>
-                  <div className="literexia-irt-interpretation">
-                    <span className="literexia-metric-label">IRT Interpretation:</span>
-                    <span className="literexia-metric-value">{
-                      irtAbility >= 1.0 ?
-                        `Significant difficulty - intensive intervention recommended for ${formatCategoryName(categoryName)}` :
-                      irtAbility >= 0.0 ?
-                        `Above average ability in ${formatCategoryName(categoryName)}` :
-                      irtAbility >= -1.0 ?
-                        `Below average ability - needs additional support in ${formatCategoryName(categoryName)}` :
-                        `Significant difficulty - intensive intervention recommended for ${formatCategoryName(categoryName)}`
-                    }</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+       
         </div>
 
         {/* Error Pattern Analysis - Full Width */}
         {errorPatterns && Object.keys(errorPatterns).length > 0 && (
           <div className="literexia-analysis-card literexia-full-width">
-            <div className="literexia-card-header">
-              <div className="literexia-card-icon">
-                <FaExclamationCircle />
-              </div>
-              <div className="literexia-card-title">
-                <h4>Error Pattern Analysis</h4>
-              </div>
+            <div className="literexia-prescriptive-analysis-header-container">
             </div>
             <div className="literexia-card-content">
-              {Object.entries(errorPatterns).map(([errorType, errorData]) => (
-                <div key={errorType} className="literexia-error-pattern">
-                  <div className="literexia-error-group">
-                    <div className="literexia-error-type">
-                      <h6>{errorType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h6>
-                    </div>
-                    {errorData.count && errorData.total && (
-                      <div className="literexia-error-stats">
-                        <div className="literexia-error-metric">
-                          <span className="literexia-error-label">Matching Errors:</span>
-                          <span className="literexia-error-value">
-                            {errorData.count}/{errorData.total} errors ({errorData.percentage}%)
+              <div className="epa-container">
+                {Object.entries(errorPatterns).map(([errorType, errorData]) => (
+                  <div key={errorType} className="epa-section">
+                    <div className="epa-header">
+                        <h6 className="epa-title">{errorType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h6>
+                      {errorData.percentage && (
+                        <div className="epa-severity">
+                          <span className="epa-percentage">{errorData.percentage}% error rate</span>
+                          <span className={`epa-badge epa-badge--${
+                            errorData.percentage >= 70 ? 'severe' :
+                            errorData.percentage >= 50 ? 'high' :
+                            errorData.percentage >= 30 ? 'moderate' : 'low'
+                          }`}>
+                            {errorData.percentage >= 70 ? 'Severe' :
+                             errorData.percentage >= 50 ? 'High' :
+                             errorData.percentage >= 30 ? 'Moderate' : 'Low'} Severity
                           </span>
                         </div>
-                        {errorData.avg_partial_success && (
-                          <div className="literexia-error-metric">
-                            <span className="literexia-error-label">Average partial success per question:</span>
-                            <span className="literexia-error-value">
-                              {(errorData.avg_partial_success * 100).toFixed(0)}%
-                            </span>
+                      )}
+                    </div>
+
+                    <div className="epa-content">
+                      {/* Basic Error Metrics */}
+                      <div className="epa-metrics">
+                        {errorData.count !== undefined && errorData.total !== undefined && (
+                          <div className="epa-metric-card">
+                            <span className="epa-metric-label">Error Count:</span>
+                            <span className="epa-metric-value">{errorData.count}/{errorData.total} questions</span>
+                          </div>
+                        )}
+                        {errorData.avg_partial_success !== undefined && (
+                          <div className="epa-metric-card">
+                            <span className="epa-metric-label">Partial Success Rate:</span>
+                            <span className="epa-metric-value">{Math.round(errorData.avg_partial_success * 100)}%</span>
+                          </div>
+                        )}
+                        {errorData.error_type && (
+                          <div className="epa-metric-card">
+                            <span className="epa-metric-label">Primary Error Type:</span>
+                            <span className="epa-metric-value">{errorData.error_type.replace(/_/g, ' ')}</span>
                           </div>
                         )}
                       </div>
-                    )}
-                    {errorData.error_type && (
-                      <div className="literexia-error-classification">
-                        <span className="literexia-error-label">Error Type:</span>
-                        <span className="literexia-error-value">{errorData.error_type.replace(/_/g, ' ')}</span>
-                      </div>
-                    )}
-                    {errorData.questionIds && errorData.questionIds.length > 0 && (
-                      <div className="literexia-error-questions">
-                        <span className="literexia-error-label">Affected Questions:</span>
-                        <span className="literexia-error-value">{errorData.questionIds.join(', ')}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* Intervention Recommendations - Full Width */}
-        {interventionPlan && (
-          <div className="literexia-analysis-card literexia-full-width">
-            <div className="literexia-card-header">
-              <div className="literexia-card-icon">
-                <FaUserMd />
-              </div>
-              <div className="literexia-card-title">
-                <h4>Intervention Recommendations</h4>
-              </div>
-            </div>
-            <div className="literexia-card-content">
-              <div className="literexia-intervention-details">
-                {interventionPlan.focus && (
-                  <div className="literexia-intervention-item">
-                    <span className="literexia-intervention-label">Primary Focus:</span>
-                    <span className="literexia-intervention-value">{interventionPlan.focus.replace(/_/g, ' ')}</span>
-                  </div>
-                )}
-                {interventionPlan.targetSounds && interventionPlan.targetSounds.length > 0 && (
-                  <div className="literexia-intervention-item">
-                    <span className="literexia-intervention-label">Target Sound Pairs:</span>
-                    <div className="literexia-target-sounds">
-                      {interventionPlan.targetSounds.map((sound, index) => (
-                        <span key={index} className="literexia-sound-tag">{sound}</span>
-                      ))}
+                      {/* Confusion Pairs - Dynamic from Database */}
+                      {errorData.confusionPairs && errorData.confusionPairs.length > 0 && (
+                        <div className="epa-confusion-section">
+                          <h6 className="epa-confusion-title">
+                            Specific Confusion Patterns
+                          </h6>
+                          <div className="epa-confusion-grid">
+                            {errorData.confusionPairs.map((pair, index) => (
+                              <div key={index} className="epa-confusion-item">
+                                <div className="epa-confusion-pair">
+                                  {pair.sounds ? (
+                                    <span>{pair.sounds.join(' ↔ ')}</span>
+                                  ) : (
+                                    <span>{pair.original} ↔ {pair.confused}</span>
+                                  )}
+                                </div>
+                                <div className="epa-confusion-rate">
+                                  <span className={`epa-confusion-percentage epa-confusion-percentage--${
+                                    (pair.confusionRate || pair.frequency) >= 75 ? 'high' :
+                                    (pair.confusionRate || pair.frequency) >= 50 ? 'medium' : 'low'
+                                  }`}>
+                                    {pair.confusionRate || pair.frequency}% confusion
+                                  </span>
+                                </div>
+                                {pair.intervention && (
+                                  <div className="epa-intervention-text">
+                                    {pair.intervention}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Cognitive Implications - Dynamic from Database */}
+                      {errorData.cognitiveImplications && errorData.cognitiveImplications.length > 0 && (
+                        <div className="epa-implications">
+                          <h6 className="epa-implications-title">
+                            Cognitive Implications
+                          </h6>
+                          <div className="epa-implications-list">
+                            {errorData.cognitiveImplications.map((implication, index) => (
+                              <div key={index} className="epa-implication-item">
+                                <div className="epa-implication-category">
+
+                                </div>
+                                <div className="epa-implication-text">{implication}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Affected Questions */}
+                      {errorData.questionIds && errorData.questionIds.length > 0 && (
+                        <div className="epa-questions">
+                          <div className="epa-questions-header">
+                            <span className="epa-questions-label">Questions with Errors:</span>
+                            <span className="epa-questions-count">({errorData.questionIds.length} questions)</span>
+                          </div>
+                          <div className="epa-question-tags">
+                            {errorData.questionIds.map((questionId, index) => (
+                              <span key={index} className="epa-question-tag">Q{questionId}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
-                {interventionPlan.recommendedActivities && interventionPlan.recommendedActivities.length > 0 && (
-                  <div className="literexia-intervention-item">
-                    <span className="literexia-intervention-label">Recommended Activities:</span>
-                    <ul className="literexia-activity-list">
-                      {interventionPlan.recommendedActivities.map((activity, index) => (
-                        <li key={index}>{activity.replace(/_/g, ' ')}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Overall Insights - Full Width */}
-        {insights && (
-          <div className="literexia-analysis-card literexia-full-width">
-            <div className="literexia-card-header">
-              <div className="literexia-card-icon">
-                <FaLightbulb />
-              </div>
-              <div className="literexia-card-title">
-                <h4>Overall Insights</h4>
-              </div>
-            </div>
-            <div className="literexia-card-content">
-              <div className="literexia-insights-grid">
-                {insights.overallScore && (
-                  <div className="literexia-insight-item">
-                    <span className="literexia-insight-label">Overall Reading Score:</span>
-                    <span className="literexia-insight-value">{insights.overallScore}%</span>
-                  </div>
-                )}
-                {insights.recommendedAction && (
-                  <div className="literexia-insight-item">
-                    <span className="literexia-insight-label">Recommended Action:</span>
-                    <span className="literexia-insight-value">{insights.recommendedAction.replace(/_/g, ' ')}</span>
-                  </div>
-                )}
-                {insights.weaknesses && insights.weaknesses.length > 0 && (
-                  <div className="literexia-insight-item">
-                    <span className="literexia-insight-label">Areas Needing Support:</span>
-                    <span className="literexia-insight-value">{insights.weaknesses.join(', ')}</span>
-                  </div>
-                )}
-                {insights.passedCategories !== undefined && (
-                  <div className="literexia-insight-item">
-                    <span className="literexia-insight-label">Categories Passed:</span>
-                    <span className="literexia-insight-value">{insights.passedCategories}
-                    {insights.failedCategories !== undefined && ` | Failed: ${insights.failedCategories}`}</span>
-                  </div>
-                )}
+                ))}
               </div>
             </div>
           </div>
@@ -1486,7 +1856,184 @@ const PrescriptiveAnalysis = ({
 
           {/* Mathematical Analysis from CLAUDE.md Prescriptive Analytics */}
           {renderMathematicalAnalysis(selectedCategory, selectedAnalysis)}
-          
+
+          {/* Comprehensive Intervention Plan - Full Width */}
+          {selectedAnalysis?.interventionPlan && (
+            <div className="literexia-analysis-card literexia-full-width">
+              <div className="literexia-card-content">
+                <div className="epa-intervention-container">
+                  <div className="epa-intervention-header">
+                    <FaUserMd className="epa-intervention-icon" />
+                    <div>
+                      <h4 className="epa-intervention-title">Comprehensive Intervention Plan</h4>
+                      <p className="epa-intervention-subtitle">Detailed intervention requirements and implementation guidance</p>
+                    </div>
+                  </div>
+
+                  <div className="epa-intervention-content">
+                    {/* Primary Focus */}
+                    {selectedAnalysis.interventionPlan.focus && (
+                      <div className="epa-focus-section">
+                        <div className="epa-focus-header">
+                          <FaUserMd className="epa-focus-icon" />
+                          <span className="epa-focus-label">Primary Focus Area</span>
+                        </div>
+                        <div className="epa-focus-value">
+                          {selectedAnalysis.interventionPlan.focus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Target Sounds */}
+                    {selectedAnalysis.interventionPlan.targetSounds && selectedAnalysis.interventionPlan.targetSounds.length > 0 && (
+                      <div className="epa-target-sounds">
+                        <div className="epa-target-sounds-header">
+                          <FaBook className="epa-focus-icon" />
+                          <span className="epa-target-sounds-label">Target Sound Pairs</span>
+                        </div>
+                        <div className="epa-sound-tags">
+                          {selectedAnalysis.interventionPlan.targetSounds.map((sound, index) => (
+                            <span key={index} className="epa-sound-tag">{sound} discrimination</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recommended Activities */}
+                    {selectedAnalysis.interventionPlan.recommendedActivities && selectedAnalysis.interventionPlan.recommendedActivities.length > 0 && (
+                      <div className="epa-activities-section">
+                        <div className="epa-activities-header">
+                          <FaEdit className="epa-focus-icon" />
+                          <span className="epa-activities-label">Recommended Activities</span>
+                        </div>
+                        <div className="epa-activities-list">
+                          {selectedAnalysis.interventionPlan.recommendedActivities.map((activity, index) => (
+                            <div key={index} className="epa-activity-item">
+                              <div className="epa-activity-number">{index + 1}</div>
+                              <div>{activity.replace(/_/g, ' ')}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Question Distribution */}
+                    {selectedAnalysis.interventionPlan.questionDistribution && Object.keys(selectedAnalysis.interventionPlan.questionDistribution).length > 0 && (
+                      <div className="epa-distribution-section">
+                        <div className="epa-distribution-header">
+                          <FaChartLine className="epa-focus-icon" />
+                          <span className="epa-distribution-label">Question Distribution Plan</span>
+                        </div>
+                        <div className="epa-distribution-total">
+                          total: {selectedAnalysis.interventionPlan.recommendedQuestionCount || Object.values(selectedAnalysis.interventionPlan.questionDistribution).reduce((sum, count) => sum + (typeof count === 'number' ? count : 0), 0)} questions
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Question Requirements */}
+                    {selectedAnalysis.interventionPlan.recommendedQuestionCount && (
+                      <div className="epa-requirements-section">
+                        <div className="epa-requirements-header">
+                          <FaEdit className="epa-focus-icon" />
+                          <span className="epa-requirements-label">Intervention Question Requirements</span>
+                        </div>
+                        <div className="epa-requirements-content">
+                          <div className="epa-requirements-count">
+                            {selectedAnalysis.interventionPlan.recommendedQuestionCount} Questions Recommended
+                          </div>
+                          {selectedAnalysis.interventionPlan.questionCountRationale && (
+                            <div className="epa-requirements-rationale">
+                              <span className="epa-requirements-rationale-label">Rationale:</span> {selectedAnalysis.interventionPlan.questionCountRationale}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Research-Based Prescriptions - Full Width */}
+          {selectedAnalysis?.researchBasedPrescriptions && (
+            <div className="literexia-analysis-card literexia-full-width">
+              <div className="literexia-card-content">
+                <div className="epa-research-container">
+                  <div className="epa-research-header">
+                    <FaBook className="epa-research-icon" />
+                    <div>
+                      <h4 className="epa-research-title">Intervention Strategies</h4>
+                      <p className="epa-research-subtitle">Evidence-based intervention strategies with maintenance and escalation protocols</p>
+                    </div>
+                  </div>
+
+                  <div className="epa-research-content">
+                    {/* Intervention Strategies */}
+                    {selectedAnalysis.researchBasedPrescriptions.interventionStrategies && selectedAnalysis.researchBasedPrescriptions.interventionStrategies.length > 0 && (
+                      <div className="epa-strategies-section">
+                        <div className="epa-strategies-header">
+                          <FaUserMd className="epa-focus-icon" />
+                          <span className="epa-strategies-label">Intervention Strategies</span>
+                        </div>
+                        <div className="epa-strategies-subtitle">
+                          Targeted interventions to address specific skill deficits
+                        </div>
+                        {selectedAnalysis.researchBasedPrescriptions.interventionStrategies.map((strategy, index) => (
+                          <div key={index} className="epa-strategy-card">
+                            <div className="epa-strategy-title">
+                              Intervention #{index + 1}
+                            </div>
+                            <div className="epa-strategy-content">
+                              {strategy.description || strategy}
+                            </div>
+                            {strategy.details && (
+                              <div className="epa-strategy-details">
+                                {strategy.details.map((detail, idx) => (
+                                  <span key={idx} className="epa-strategy-detail">{detail}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Escalation Protocols */}
+                    {selectedAnalysis.researchBasedPrescriptions.escalationProtocols && selectedAnalysis.researchBasedPrescriptions.escalationProtocols.length > 0 && (
+                      <div className="epa-escalation-section">
+                        <div className="epa-escalation-header">
+                          <FaExclamationTriangle className="epa-focus-icon" />
+                          <span className="epa-escalation-label">Escalation Protocols</span>
+                        </div>
+                        <div className="epa-escalation-subtitle">
+                          Intensive interventions for persistent difficulties
+                        </div>
+                        {selectedAnalysis.researchBasedPrescriptions.escalationProtocols.map((protocol, index) => (
+                          <div key={index} className="epa-escalation-card">
+                            <div className="epa-escalation-title">
+                              Escalation #{index + 1}
+                            </div>
+                            <div className="epa-escalation-content">
+                              {protocol.description || protocol}
+                            </div>
+                            {protocol.steps && (
+                              <div className="epa-escalation-steps">
+                                {protocol.steps.map((step, idx) => (
+                                  <span key={idx} className="epa-escalation-step">{step}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Current interventions - only show if the selected category has not passed */}
           {selectedCategoryData && !selectedCategoryData.isPassed && (
             <div className="literexia-current-interventions">

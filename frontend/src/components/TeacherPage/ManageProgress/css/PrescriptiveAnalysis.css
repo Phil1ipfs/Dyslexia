@@ -2165,9 +2165,49 @@
   margin-bottom: 1.5rem;
 }
 
+/* Enhanced two-column layout for mathematical analysis section */
+.literexia-mathematical-analysis-section .literexia-analysis-two-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin: 2rem 0;
+  align-items: start;
+}
+
 @media (max-width: 768px) {
   .literexia-analysis-two-column {
     grid-template-columns: 1fr;
+  }
+
+  /* Enhanced mobile responsiveness for mathematical analysis section */
+  .literexia-mathematical-analysis-section {
+    padding: 1rem;
+    margin: 1rem 0;
+  }
+
+  .literexia-mathematical-analysis-section .literexia-analysis-two-column {
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+
+  .literexia-mathematical-analysis-section .literexia-analysis-card {
+    padding: 1rem;
+  }
+
+  .literexia-mathematical-analysis-section .literexia-card-header {
+    padding: 1rem;
+    margin: -1rem -1rem 1rem -1rem;
+  }
+
+  .literexia-mathematical-analysis-section .literexia-mastery-circle {
+    width: 120px;
+    height: 120px;
+  }
+
+  .literexia-mathematical-analysis-section .literexia-mastery-percent {
+    width: 100px;
+    height: 100px;
+    font-size: 1.5rem;
   }
 }
 
@@ -2181,6 +2221,17 @@
   transition: all 0.3s ease;
 }
 
+/* Enhanced cards within mathematical analysis section */
+.literexia-mathematical-analysis-section .literexia-analysis-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 12px rgba(59, 79, 129, 0.06);
+  border: 1px solid rgba(59, 79, 129, 0.08);
+  transition: all 0.3s ease;
+}
+
 .literexia-analysis-card:hover {
   box-shadow: 0 8px 25px rgba(59, 79, 129, 0.12);
   transform: translateY(-2px);
@@ -2190,13 +2241,1584 @@
   grid-column: 1 / -1;
 }
 
-/* Card headers */
-.literexia-card-header {
+/* Card headers with completely unique naming - Blue Background with White Icons */
+.literexia-prescriptive-analysis-header-container {
+  background: linear-gradient(135deg, #4a5494 0%, #3B4F81 100%) !important;
+  padding: 1.25rem 1.5rem !important;
+  border-bottom: none !important;
+  border-radius: 12px 12px 0 0 !important;
+  margin: -1.5rem -1.5rem 1.5rem -1.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-direction: row !important;
+  gap: 1rem !important;
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.15) !important;
+}
+
+.literexia-prescriptive-analysis-header-icon {
+  background: white !important;
+  border-radius: 8px !important;
+  padding: 0.75rem !important;
+  font-size: 1.5rem !important;
+  color: #3B4F81 !important;
+  flex-shrink: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  min-height: 48px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.literexia-prescriptive-analysis-header-title {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+
+.literexia-prescriptive-analysis-header-title h4 {
+  margin: 0 0 0.25rem 0 !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: white !important;
+  line-height: 1.3 !important;
+}
+
+.literexia-prescriptive-analysis-header-title p {
+  margin: 0 !important;
+  font-size: 0.875rem !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  line-height: 1.4 !important;
+  font-weight: 500 !important;
+}
+
+/* Completely Redesigned IRT Section - Professional Blue and White Layout */
+.literexia-irt-unique-display-container {
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.9) 0%, rgba(255, 255, 255, 1) 100%) !important;
+  border-radius: 16px !important;
+  padding: 0 !important;
+  border: 1px solid rgba(59, 79, 129, 0.12) !important;
+  box-shadow: 0 4px 20px rgba(59, 79, 129, 0.08) !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+}
+
+.literexia-irt-unique-ability-thermometer {
+  background: white !important;
+  padding: 3rem 2.5rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+  gap: 2.5rem !important;
+  border-bottom: 1px solid rgba(59, 79, 129, 0.08) !important;
+}
+
+.literexia-irt-unique-ability-label {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  color: #3B4F81 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  margin-bottom: 0 !important;
+  background: linear-gradient(135deg, rgba(59, 79, 129, 0.04) 0%, rgba(74, 84, 148, 0.02) 100%) !important;
+  padding: 0.75rem 1.5rem !important;
+  border-radius: 25px !important;
+  border: 1px solid rgba(59, 79, 129, 0.1) !important;
+}
+
+.literexia-irt-unique-ability-value {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 2rem !important;
+  width: 100% !important;
+}
+
+.literexia-irt-unique-ability-score {
+  font-size: 3.5rem !important;
+  font-weight: 900 !important;
+  padding: 2rem 3rem !important;
+  border-radius: 20px !important;
+  color: white !important;
+  min-width: 180px !important;
+  min-height: 120px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 8px 32px rgba(59, 79, 129, 0.25) !important;
+  border: 4px solid rgba(255, 255, 255, 0.4) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.literexia-irt-unique-ability-score::before {
+  content: '' !important;
+  position: absolute !important;
+  top: -50% !important;
+  left: -50% !important;
+  width: 200% !important;
+  height: 200% !important;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent) !important;
+  animation: shimmer 3s infinite !important;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+.literexia-irt-unique-ability-score.excellent {
+  background: linear-gradient(135deg, #4a5494 0%, #3B4F81 100%) !important;
+  box-shadow: 0 8px 32px rgba(74, 84, 148, 0.4) !important;
+}
+
+.literexia-irt-unique-ability-score.above-average {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4) !important;
+}
+
+.literexia-irt-unique-ability-score.below-average {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4) !important;
+}
+
+.literexia-irt-unique-ability-score.needs-support {
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%) !important;
+  box-shadow: 0 8px 32px rgba(168, 85, 247, 0.4) !important;
+}
+
+.literexia-irt-unique-scale-range {
+  font-size: 1rem !important;
+  color: #3B4F81 !important;
+  font-weight: 600 !important;
+  background: linear-gradient(135deg, rgba(59, 79, 129, 0.06) 0%, rgba(248, 250, 252, 0.8) 100%) !important;
+  padding: 1rem 2rem !important;
+  border-radius: 30px !important;
+  border: 1px solid rgba(59, 79, 129, 0.12) !important;
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.06) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.literexia-irt-unique-interpretation {
+  background: linear-gradient(135deg, rgba(59, 79, 129, 0.06) 0%, rgba(248, 250, 252, 0.9) 100%) !important;
+  padding: 2.5rem !important;
+  border: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1.5rem !important;
+  position: relative !important;
+}
+
+.literexia-irt-unique-interpretation::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 5px !important;
+  background: linear-gradient(180deg, #4a5494 0%, #3B4F81 50%, #4a5494 100%) !important;
+  border-radius: 0 3px 3px 0 !important;
+}
+
+.literexia-irt-unique-metric-label {
+  font-size: 0.9rem !important;
+  font-weight: 800 !important;
+  color: #3B4F81 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1.2px !important;
+  margin-bottom: 0 !important;
+  display: inline-block !important;
+  background: white !important;
+  padding: 0.6rem 1.2rem !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(59, 79, 129, 0.15) !important;
+  box-shadow: 0 2px 6px rgba(59, 79, 129, 0.08) !important;
+}
+
+.literexia-irt-unique-metric-value {
+  font-size: 1.1rem !important;
+  color: #2d3748 !important;
+  font-weight: 600 !important;
+  line-height: 1.7 !important;
+  padding: 1.5rem 2rem !important;
+  background: white !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(59, 79, 129, 0.08) !important;
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.06) !important;
+  margin-top: 1rem !important;
+}
+
+/* ========== ERROR PATTERN ANALYSIS - MODERN VISUAL DESIGN ========== */
+.literexia-error-analysis-unique-container {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%) !important;
+  border-radius: 24px !important;
+  padding: 2.5rem !important;
+  margin: 2rem 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2.5rem !important;
+  border: 2px solid rgba(59, 79, 129, 0.12) !important;
+  box-shadow:
+    0 20px 60px rgba(59, 79, 129, 0.08),
+    0 8px 24px rgba(59, 79, 129, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.literexia-error-analysis-unique-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, #4a5494 0%, #3B4F81 30%, #2563eb 70%, #1d4ed8 100%);
+  z-index: 1;
+}
+
+.literexia-error-analysis-unique-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(59, 79, 129, 0.03) 0%, transparent 70%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.literexia-error-analysis-unique-section {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(10px) !important;
+  border-radius: 20px !important;
+  border: 2px solid rgba(59, 79, 129, 0.1) !important;
+  overflow: hidden !important;
+  box-shadow:
+    0 8px 32px rgba(59, 79, 129, 0.06),
+    0 2px 8px rgba(59, 79, 129, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+  margin: 0 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.literexia-error-analysis-unique-section:hover {
+  transform: translateY(-4px) scale(1.01) !important;
+  box-shadow:
+    0 16px 48px rgba(59, 79, 129, 0.12),
+    0 4px 16px rgba(59, 79, 129, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+  border-color: rgba(59, 79, 129, 0.2) !important;
+}
+
+.literexia-error-analysis-unique-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(59, 79, 129, 0.01) 0%, rgba(248, 250, 252, 0.02) 100%);
+  z-index: -1;
+}
+
+.literexia-error-analysis-unique-header {
+  background:
+    linear-gradient(135deg, #4a5494 0%, #3B4F81 50%, #2563eb 100%),
+    linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0%, transparent 50%) !important;
+  background-blend-mode: overlay !important;
+  padding: 2rem 2.5rem !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 1.5rem !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.literexia-error-analysis-unique-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.03) 50%, transparent 70%);
+  animation: shimmer 3s infinite linear;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.literexia-error-analysis-unique-title h6 {
+  color: white !important;
+  font-size: 1.4rem !important;
+  font-weight: 800 !important;
+  margin: 0 !important;
+  text-transform: capitalize !important;
+  letter-spacing: 0.5px !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.literexia-error-analysis-unique-severity {
+  display: flex !important;
+  align-items: center !important;
+  gap: 1.5rem !important;
+  flex-wrap: wrap !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.literexia-error-analysis-unique-percentage {
+  color: white !important;
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  padding: 0.75rem 1.5rem !important;
+  border-radius: 25px !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  backdrop-filter: blur(15px) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.2s ease !important;
+}
+
+.literexia-error-analysis-unique-percentage:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  transform: translateY(-1px) !important;
+}
+
+.literexia-error-analysis-unique-badge {
+  padding: 0.6rem 1.2rem !important;
+  border-radius: 20px !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.literexia-error-analysis-unique-badge.severe {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3) !important;
+}
+
+.literexia-error-analysis-unique-badge.high {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%) !important;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.3) !important;
+}
+
+.literexia-error-analysis-unique-badge.moderate {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.3) !important;
+}
+
+.literexia-error-analysis-unique-badge.low {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3) !important;
+}
+
+.literexia-error-analysis-unique-content {
+  padding: 2rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2rem !important;
+}
+
+.literexia-error-analysis-unique-metrics {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+  gap: 1.5rem !important;
+  margin-bottom: 2rem !important;
+}
+
+.literexia-error-analysis-unique-metric-card {
+  background: linear-gradient(135deg, rgba(59, 79, 129, 0.04) 0%, rgba(248, 250, 252, 0.8) 100%) !important;
+  border: 1px solid rgba(59, 79, 129, 0.08) !important;
+  border-radius: 12px !important;
+  padding: 1.5rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.75rem !important;
+  transition: transform 0.2s ease !important;
+}
+
+.literexia-error-analysis-unique-metric-card:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(59, 79, 129, 0.15) !important;
+}
+
+.literexia-error-analysis-unique-metric-label {
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  color: #3B4F81 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.literexia-error-analysis-unique-metric-value {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  color: #2d3748 !important;
+  background: white !important;
+  padding: 0.75rem 1rem !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(59, 79, 129, 0.06) !important;
+  box-shadow: 0 1px 4px rgba(59, 79, 129, 0.04) !important;
+}
+
+.literexia-error-analysis-unique-confusion-section {
+  background: linear-gradient(135deg, rgba(59, 79, 129, 0.02) 0%, rgba(255, 255, 255, 0.9) 100%) !important;
+  border: 1px solid rgba(59, 79, 129, 0.06) !important;
+  border-radius: 12px !important;
+  padding: 2rem !important;
+  margin-top: 1.5rem !important;
+}
+
+.literexia-error-analysis-unique-confusion-title {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  color: #3B4F81 !important;
+  margin-bottom: 1.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+}
+
+.literexia-error-analysis-unique-confusion-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+  gap: 1.5rem !important;
+}
+
+.literexia-error-analysis-unique-confusion-item {
+  background: white !important;
+  border: 1px solid rgba(59, 79, 129, 0.08) !important;
+  border-radius: 10px !important;
+  padding: 1.5rem !important;
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.04) !important;
+  position: relative !important;
+}
+
+.literexia-error-analysis-unique-confusion-pair {
+  font-size: 1.2rem !important;
+  font-weight: 800 !important;
+  color: #3B4F81 !important;
+  margin-bottom: 0.75rem !important;
+  text-align: center !important;
+  background: linear-gradient(135deg, rgba(59, 79, 129, 0.06) 0%, rgba(248, 250, 252, 0.8) 100%) !important;
+  padding: 0.75rem !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(59, 79, 129, 0.1) !important;
+}
+
+.literexia-error-analysis-unique-confusion-rate {
+  font-size: 0.9rem !important;
+  color: #6b7280 !important;
+  font-weight: 500 !important;
+  text-align: center !important;
+}
+
+.literexia-error-analysis-unique-implications {
+  background: linear-gradient(135deg, rgba(59, 79, 129, 0.04) 0%, rgba(248, 250, 252, 0.9) 100%) !important;
+  border: 1px solid rgba(59, 79, 129, 0.08) !important;
+  border-radius: 12px !important;
+  padding: 2rem !important;
+  margin-top: 2rem !important;
+}
+
+.literexia-error-analysis-unique-implications-title {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  color: #3B4F81 !important;
+  margin-bottom: 1.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+}
+
+.literexia-error-analysis-unique-implications-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+}
+
+.literexia-error-analysis-unique-implication-item {
+  background: white !important;
+  border: 1px solid rgba(59, 79, 129, 0.06) !important;
+  border-radius: 8px !important;
+  padding: 1.25rem !important;
+  border-left: 4px solid #4a5494 !important;
+  box-shadow: 0 1px 6px rgba(59, 79, 129, 0.04) !important;
+}
+
+.literexia-error-analysis-unique-implication-category {
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  color: #3B4F81 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.literexia-error-analysis-unique-implication-text {
+  font-size: 1rem !important;
+  color: #2d3748 !important;
+  font-weight: 500 !important;
+  line-height: 1.6 !important;
+  margin: 0 !important;
+}
+
+/* Enhanced BKT Response Evolution */
+.literexia-response-evolution {
+  margin-top: 1rem;
+  padding: 1rem;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.literexia-evolution-header h6 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.literexia-evolution-header p {
+  margin: 0 0 1rem 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.literexia-evolution-timeline {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.literexia-evolution-point {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 50px;
+}
+
+.literexia-response-indicator {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 0.25rem;
+}
+
+.literexia-response-indicator.literexia-correct {
+  background: #10b981;
+}
+
+.literexia-response-indicator.literexia-incorrect {
+  background: #ef4444;
+}
+
+.literexia-mastery-progression {
+  text-align: center;
+}
+
+.literexia-mastery-progression small {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.literexia-question-info {
+  font-size: 0.625rem;
+  color: #9ca3af;
+  margin-top: 0.125rem;
+}
+
+.literexia-evolution-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.literexia-mastery-trend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.literexia-trend.improving {
+  color: #059669;
+  font-weight: 500;
+}
+
+.literexia-trend.declining {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+/* Enhanced IRT Analysis */
+.literexia-irt-analysis-item {
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.literexia-irt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.literexia-irt-header h5 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.literexia-irt-score {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #4a5494;
+  background: #f3f4f6;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+}
+
+.literexia-irt-scale-container {
+  margin-bottom: 1rem;
+}
+
+.literexia-irt-scale {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.literexia-irt-track {
+  height: 8px;
+  background: linear-gradient(to right, #dc2626 0%, #f59e0b 25%, #eab308 50%, #22c55e 75%, #059669 100%);
+  border-radius: 4px;
+  position: relative;
+}
+
+.literexia-irt-markers {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+}
+
+.literexia-marker {
+  font-size: 0.75rem;
+  color: #6b7280;
+  position: relative;
+}
+
+.literexia-irt-indicator {
+  position: absolute;
+  top: -2px;
+  width: 12px;
+  height: 12px;
+  background: white;
+  border: 2px solid #1f2937;
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+
+.literexia-irt-interpretation {
+  text-align: center;
+}
+
+.literexia-ability-level {
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.literexia-ability-level.very-high {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.literexia-ability-level.above-average {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.literexia-ability-level.average {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.literexia-ability-level.below-average {
+  background: #fed7aa;
+  color: #c2410c;
+}
+
+.literexia-ability-level.very-low {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.literexia-irt-explanation {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+.literexia-irt-reference {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.literexia-irt-reference h6 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.literexia-scale-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.literexia-legend-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+}
+
+.literexia-scale-range {
+  font-weight: 500;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+}
+
+.literexia-scale-range.high {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.literexia-scale-range.above-average {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.literexia-scale-range.average {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.literexia-scale-range.below-average {
+  background: #fed7aa;
+  color: #c2410c;
+}
+
+.literexia-scale-range.low {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Enhanced Error Pattern Analysis */
+.literexia-error-pattern-detailed {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: white;
+}
+
+/* Enhanced error pattern for mathematical analysis section */
+.literexia-mathematical-analysis-section .literexia-error-pattern-detailed {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.02) 0%, rgba(255, 255, 255, 0.95) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.04);
+}
+
+/* Visual separators for mathematical analysis section */
+.literexia-mathematical-analysis-section .literexia-section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(59, 79, 129, 0.2) 50%, transparent 100%);
+  margin: 2rem 0;
+  position: relative;
+}
+
+.literexia-mathematical-analysis-section .literexia-section-divider::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: linear-gradient(90deg, #3B4F81 0%, #4a5494 100%);
+  border-radius: 2px;
+}
+
+/* Enhanced full-width cards */
+.literexia-mathematical-analysis-section .literexia-analysis-card.literexia-full-width {
+  grid-column: 1 / -1;
+  margin: 1.5rem 0;
+}
+
+/* Teacher-friendly list styling for mathematical analysis section */
+.literexia-mathematical-analysis-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.literexia-mathematical-analysis-section ul li {
+  position: relative;
+  padding: 0.75rem 0 0.75rem 2rem;
+  margin-bottom: 0.5rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  border-left: 3px solid #3B4F81;
+  font-weight: 500;
+  color: #1f2937;
+  line-height: 1.5;
+}
+
+.literexia-mathematical-analysis-section ul li::before {
+  content: '→';
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  color: #3B4F81;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+/* Enhanced text content for mathematical analysis section */
+.literexia-mathematical-analysis-section p {
+  line-height: 1.6;
+  color: #374151;
+  margin-bottom: 1rem;
+}
+
+.literexia-mathematical-analysis-section strong {
+  color: #3B4F81;
+  font-weight: 600;
+}
+
+/* Priority indicators for mathematical analysis section */
+.literexia-mathematical-analysis-section .literexia-priority-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.literexia-mathematical-analysis-section .literexia-priority-indicator.high {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(255, 255, 255, 0.8) 100%);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.literexia-mathematical-analysis-section .literexia-priority-indicator.medium {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(255, 255, 255, 0.8) 100%);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.literexia-mathematical-analysis-section .literexia-priority-indicator.low {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(255, 255, 255, 0.8) 100%);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.literexia-error-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.literexia-error-header h6 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.literexia-error-severity {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.literexia-error-percentage {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+.literexia-severity-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.literexia-severity-badge.severe {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.literexia-severity-badge.high {
+  background: #fed7aa;
+  color: #ea580c;
+}
+
+.literexia-severity-badge.moderate {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.literexia-severity-badge.low {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.literexia-error-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.literexia-metric-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.literexia-metric-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.literexia-metric-value {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.literexia-confusion-analysis {
+  margin-bottom: 1.5rem;
+}
+
+.literexia-confusion-analysis h6 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.literexia-confusion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.literexia-confusion-pair {
+  padding: 1rem;
+  background: #fef7ff;
+  border: 1px solid #e879f9;
+  border-radius: 8px;
+}
+
+.literexia-confusion-sounds {
+  margin-bottom: 0.5rem;
+}
+
+.literexia-sound-pair {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #a21caf;
+}
+
+.literexia-confusion-rate {
+  margin-bottom: 0.5rem;
+}
+
+.literexia-confusion-percentage {
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.literexia-confusion-percentage.high {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.literexia-confusion-percentage.medium {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.literexia-confusion-percentage.low {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.literexia-pair-intervention {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.literexia-cognitive-analysis {
+  margin-bottom: 1.5rem;
+}
+
+.literexia-cognitive-analysis h6 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.literexia-implications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.literexia-implication-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+}
+
+.literexia-implication-icon {
+  font-size: 1rem;
+  color: #3b82f6;
+}
+
+.literexia-implication-text {
+  font-size: 0.875rem;
+  color: #1e40af;
+  line-height: 1.5;
+}
+
+.literexia-affected-questions {
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.literexia-questions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.literexia-questions-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.literexia-questions-count {
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.literexia-question-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.literexia-question-tag {
+  padding: 0.25rem 0.5rem;
+  background: #4a5494;
+  color: white;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Research-Based Prescriptions */
+.literexia-prescriptions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.literexia-prescription-section {
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fefefe;
+}
+
+.literexia-prescription-section h6 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.literexia-section-description {
+  margin: 0 0 1.5rem 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.literexia-strategies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.literexia-strategy-card {
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid;
+  background: white;
+}
+
+/* Enhanced strategy cards for mathematical analysis section */
+.literexia-mathematical-analysis-section .literexia-strategy-card {
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 2px solid;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+}
+
+.literexia-mathematical-analysis-section .literexia-strategy-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.literexia-strategy-card.maintenance {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+}
+
+.literexia-mathematical-analysis-section .literexia-strategy-card.maintenance {
+  border-color: #10b981;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(240, 253, 244, 0.95) 100%);
+}
+
+.literexia-strategy-card.intervention {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+}
+
+.literexia-mathematical-analysis-section .literexia-strategy-card.intervention {
+  border-color: #3B4F81;
+  background: linear-gradient(135deg, rgba(59, 79, 129, 0.08) 0%, rgba(239, 246, 255, 0.95) 100%);
+}
+
+.literexia-strategy-card.escalation {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.literexia-mathematical-analysis-section .literexia-strategy-card.escalation {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(255, 251, 235, 0.95) 100%);
+}
+
+.literexia-strategy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.literexia-strategy-type {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.literexia-strategy-card.maintenance .literexia-strategy-type {
+  background: #10b981;
+  color: white;
+}
+
+.literexia-strategy-card.intervention .literexia-strategy-type {
+  background: #3b82f6;
+  color: white;
+}
+
+.literexia-strategy-card.escalation .literexia-strategy-type {
+  background: #f59e0b;
+  color: white;
+}
+
+.literexia-strategy-number {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.literexia-strategy-content p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: #374151;
+}
+
+/* Intervention Plan */
+.literexia-intervention-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.literexia-intervention-focus h6 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.literexia-focus-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #4a5494 0%, #3b4374 100%);
+  color: white;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.literexia-intervention-targets h6 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.literexia-sound-pairs-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.literexia-sound-pair-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.literexia-sound-tag {
+  padding: 0.5rem 0.75rem;
+  background: #fef7ff;
+  border: 1px solid #e879f9;
+  color: #a21caf;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.literexia-intervention-activities h6 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.literexia-activities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.literexia-activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.literexia-activity-number {
+  width: 24px;
+  height: 24px;
+  background: #4a5494;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.literexia-activity-text {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.literexia-question-distribution h6 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.literexia-distribution-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.literexia-distribution-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.literexia-distribution-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  min-width: 120px;
+}
+
+.literexia-distribution-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.literexia-distribution-count {
+  padding: 0.25rem 0.75rem;
+  background: #4a5494;
+  color: white;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.literexia-question-recommendation {
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+  border: 1px solid #93c5fd;
+  border-radius: 12px;
+}
+
+.literexia-question-recommendation h6 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.literexia-question-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.literexia-question-count-badge {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+}
+
+.literexia-count-number {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #1e40af;
+  line-height: 1;
+}
+
+.literexia-count-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #3730a3;
+}
+
+.literexia-count-rationale {
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  border: 1px solid rgba(147, 197, 253, 0.5);
+}
+
+.literexia-count-rationale p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #1e40af;
+}
+
+.literexia-count-rationale strong {
+  color: #1e3a8a;
+}
+
+/* Score indicators positioned on the right */
+.literexia-score-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 1.5rem;
+  min-height: 60px;
+}
+
+.literexia-score-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.literexia-score-indicators-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.literexia-score-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.literexia-score-metric-horizontal {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.literexia-score-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  margin-bottom: 0.25rem;
+}
+
+.literexia-score-metric-horizontal .literexia-score-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  margin-bottom: 0;
+}
+
+.literexia-score-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.literexia-score-metric-horizontal .literexia-score-value {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #3B4F81;
+}
+
+.literexia-score-arrow {
+  color: #9ca3af;
+  font-size: 1rem;
+  margin: 0 0.375rem;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Section icons */
+.literexia-section-icon {
+  margin-right: 0.5rem;
+  color: #4a5494;
+  font-size: 1rem;
+}
   gap: 0.75rem;
 }
 
@@ -2221,9 +3843,6 @@
 }
 
 /* Card content */
-.literexia-card-content {
-  padding: 1.25rem;
-}
 
 /* BKT specific styling */
 .literexia-mastery-display {
@@ -2232,17 +3851,50 @@
   gap: 1rem;
 }
 
+/* Enhanced mastery display for mathematical analysis section */
+.literexia-mathematical-analysis-section .literexia-mastery-display {
+  background: linear-gradient(135deg, rgba(59, 79, 129, 0.02) 0%, rgba(255, 255, 255, 0.8) 100%) !important;
+  border-radius: 12px !important;
+  padding: 1.5rem !important;
+  border: 1px solid rgba(59, 79, 129, 0.06) !important;
+}
+
+/* Unique BKT container styling to avoid conflicts */
+.literexia-math-analysis-bkt-container {
+  background: linear-gradient(135deg, rgba(59, 79, 129, 0.02) 0%, rgba(255, 255, 255, 0.8) 100%) !important;
+  border-radius: 12px !important;
+  padding: 1.5rem !important;
+  border: 1px solid rgba(59, 79, 129, 0.06) !important;
+  margin: 0 !important;
+}
+
 .literexia-mastery-gauge {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
+.literexia-mathematical-analysis-section .literexia-mastery-gauge {
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+}
+
+/* Unique BKT mastery gauge styling */
+.literexia-math-analysis-bkt-gauge {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+  gap: 1rem !important;
+  padding: 0 !important;
+}
+
 .literexia-mastery-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #6b7280;
-  margin-bottom: 0.5rem;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  color: #3B4F81 !important;
+  margin-bottom: 0.5rem !important;
 }
 
 .literexia-mastery-circle {
@@ -2257,6 +3909,30 @@
   position: relative;
 }
 
+/* Enhanced mastery circle for mathematical analysis section */
+.literexia-mathematical-analysis-section .literexia-mastery-circle {
+  width: 140px;
+  height: 140px;
+  background: linear-gradient(135deg, rgba(59, 79, 129, 0.08) 0%, rgba(74, 84, 148, 0.04) 100%);
+  border: 3px solid rgba(59, 79, 129, 0.1);
+  box-shadow: 0 4px 16px rgba(59, 79, 129, 0.08);
+}
+
+/* Unique BKT mastery circle styling */
+.literexia-math-analysis-bkt-circle {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 140px !important;
+  height: 140px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, rgba(59, 79, 129, 0.08) 0%, rgba(74, 84, 148, 0.04) 100%) !important;
+  border: 3px solid rgba(59, 79, 129, 0.1) !important;
+  box-shadow: 0 4px 16px rgba(59, 79, 129, 0.08) !important;
+  margin: 0 auto !important;
+  position: relative !important;
+}
+
 .literexia-mastery-percent {
   font-size: 1.5rem;
   font-weight: 700;
@@ -2267,6 +3943,41 @@
   align-items: center;
   justify-content: center;
   color: white;
+}
+
+/* Enhanced mastery percent for mathematical analysis section */
+.literexia-mathematical-analysis-section .literexia-mastery-percent {
+  width: 120px;
+  height: 120px;
+  font-size: 1.75rem;
+  font-weight: 800;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Unique BKT mastery percentage styling */
+.literexia-math-analysis-bkt-percent {
+  font-size: 1.75rem !important;
+  font-weight: 800 !important;
+  border-radius: 50% !important;
+  width: 120px !important;
+  height: 120px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: white !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.literexia-math-analysis-bkt-percent.low {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+}
+
+.literexia-math-analysis-bkt-percent.medium {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+}
+
+.literexia-math-analysis-bkt-percent.high {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
 }
 
 .literexia-mastery-percent.high {
@@ -2287,10 +3998,277 @@
   gap: 0.75rem;
 }
 
+/* Enhanced BKT details for mathematical analysis section */
+.literexia-mathematical-analysis-section .literexia-bkt-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+/* Unique BKT details styling */
+.literexia-math-analysis-bkt-details {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1.25rem !important;
+  margin-top: 1.5rem !important;
+}
+
+.literexia-math-analysis-bkt-metric {
+  background: rgba(255, 255, 255, 0.5) !important;
+  border-radius: 8px !important;
+  padding: 1rem !important;
+  border-left: 4px solid #3B4F81 !important;
+  gap: 0.5rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.literexia-math-analysis-bkt-label {
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  color: #3B4F81 !important;
+  margin-bottom: 0.25rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.literexia-math-analysis-bkt-value {
+  font-size: 0.9rem !important;
+  color: #3B4F81 !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+}
+
+/* Unique BKT Response Evolution styling */
+.literexia-math-analysis-bkt-evolution {
+  margin-top: 1.5rem !important;
+  padding: 1.25rem !important;
+  background: linear-gradient(135deg, rgba(59, 79, 129, 0.03) 0%, rgba(255, 255, 255, 0.9) 100%) !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(59, 79, 129, 0.08) !important;
+}
+
+.literexia-math-analysis-bkt-evolution-header {
+  margin-bottom: 1rem !important;
+}
+
+.literexia-math-analysis-bkt-evolution-header h6 {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  color: #3B4F81 !important;
+  margin: 0 0 0.5rem 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.literexia-math-analysis-bkt-evolution-header p {
+  font-size: 0.875rem !important;
+  color: #3B4F81 !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.literexia-math-analysis-bkt-timeline {
+  display: flex !important;
+  gap: 0.75rem !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-start !important;
+  margin: 1rem 0 !important;
+}
+
+.literexia-math-analysis-bkt-point {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+  min-width: 50px !important;
+}
+
+.literexia-math-analysis-bkt-indicator {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: bold !important;
+  font-size: 0.875rem !important;
+  color: white !important;
+  cursor: pointer !important;
+  transition: transform 0.2s ease !important;
+}
+
+.literexia-math-analysis-bkt-indicator:hover {
+  transform: scale(1.1) !important;
+}
+
+.literexia-math-analysis-bkt-indicator.correct {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
+}
+
+.literexia-math-analysis-bkt-indicator.incorrect {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3) !important;
+}
+
+.literexia-math-analysis-bkt-progression {
+  text-align: center !important;
+  font-size: 0.75rem !important;
+  color: #374151 !important;
+}
+
+.literexia-math-analysis-bkt-progression small {
+  font-weight: 600 !important;
+  color: #3B4F81 !important;
+  display: block !important;
+  margin-bottom: 0.125rem !important;
+}
+
+.literexia-math-analysis-bkt-question-info {
+  font-size: 0.7rem !important;
+  color: #3B4F81 !important;
+  font-weight: 500 !important;
+}
+
+.literexia-math-analysis-bkt-summary {
+  margin-top: 1rem !important;
+  padding-top: 1rem !important;
+  border-top: 1px solid rgba(59, 79, 129, 0.1) !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 0.5rem !important;
+}
+
+.literexia-math-analysis-bkt-summary small {
+  color: #3B4F81 !important;
+  font-size: 0.8rem !important;
+}
+
+.literexia-math-analysis-bkt-trend {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+}
+
+.literexia-math-analysis-bkt-trend .improving {
+  color: #059669 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+}
+
+.literexia-math-analysis-bkt-trend .declining {
+  color: #dc2626 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+}
+
+/* Unique Mathematical Analysis Header styling */
+.literexia-math-analysis-header-container {
+  background: white !important;
+  border-radius: 12px !important;
+  padding: 1.5rem !important;
+  margin-bottom: 2rem !important;
+  border: 1px solid rgba(59, 79, 129, 0.1) !important;
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.06) !important;
+}
+
+.literexia-math-analysis-header-layout {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+  gap: 2rem !important;
+}
+
+.literexia-math-analysis-header-title {
+  flex: 1 !important;
+}
+
+.literexia-math-analysis-header-title h3 {
+  margin: 0 !important;
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  color: #3B4F81 !important;
+  line-height: 1.3 !important;
+}
+
+.literexia-math-analysis-header-scores {
+  display: flex !important;
+  align-items: center !important;
+  gap: 1.5rem !important;
+  flex-shrink: 0 !important;
+}
+
+.literexia-math-analysis-score-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  white-space: nowrap !important;
+}
+
+.literexia-math-analysis-score-label {
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  color: #6b7280 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.025em !important;
+}
+
+.literexia-math-analysis-score-value {
+  font-size: 1.25rem !important;
+  font-weight: bold !important;
+  color: #3B4F81 !important;
+}
+
+.literexia-math-analysis-score-arrow {
+  color: #9ca3af !important;
+  font-size: 1rem !important;
+  margin: 0 0.5rem !important;
+  flex-shrink: 0 !important;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .literexia-math-analysis-header-layout {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1rem !important;
+  }
+
+  .literexia-math-analysis-header-scores {
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+  }
+
+  .literexia-math-analysis-score-item {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 0.25rem !important;
+  }
+}
+
 .literexia-bkt-metric {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+/* Enhanced BKT metric for mathematical analysis section */
+.literexia-mathematical-analysis-section .literexia-bkt-metric {
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  padding: 1rem;
+  border-left: 4px solid #3B4F81;
+  gap: 0.5rem;
 }
 
 .literexia-metric-label {
@@ -2301,10 +4279,26 @@
   letter-spacing: 0.05em;
 }
 
+/* Enhanced metric label for mathematical analysis section */
+.literexia-mathematical-analysis-section .literexia-metric-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #3B4F81;
+  margin-bottom: 0.25rem;
+}
+
 .literexia-metric-value {
   font-size: 0.875rem;
   color: #374151;
   line-height: 1.4;
+}
+
+/* Enhanced metric value for mathematical analysis section */
+.literexia-mathematical-analysis-section .literexia-metric-value {
+  font-size: 0.9rem;
+  color: #1f2937;
+  font-weight: 500;
+  line-height: 1.5;
 }
 
 /* IRT specific styling */
@@ -2314,6 +4308,14 @@
   gap: 1rem;
 }
 
+/* Enhanced IRT display for mathematical analysis section */
+.literexia-mathematical-analysis-section .literexia-irt-display {
+  background: linear-gradient(135deg, rgba(59, 79, 129, 0.02) 0%, rgba(255, 255, 255, 0.8) 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(59, 79, 129, 0.06);
+}
+
 .literexia-ability-thermometer {
   display: flex;
   flex-direction: column;
@@ -2321,10 +4323,15 @@
   align-items: center;
 }
 
+.literexia-mathematical-analysis-section .literexia-ability-thermometer {
+  gap: 1.25rem;
+  padding: 1rem 0;
+}
+
 .literexia-ability-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #6b7280;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  color: #3B4F81 !important;
 }
 
 .literexia-ability-value {
@@ -2343,25 +4350,25 @@
 }
 
 .literexia-ability-score.excellent {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #4a5494 0%, #3B4F81 100%) !important;
 }
 
 .literexia-ability-score.above-average {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
 }
 
 .literexia-ability-score.below-average {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
 }
 
 .literexia-ability-score.needs-support {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%) !important;
 }
 
 .literexia-scale-range {
-  font-size: 0.75rem;
-  color: #6b7280;
-  font-weight: 400;
+  font-size: 0.75rem !important;
+  color: #3B4F81 !important;
+  font-weight: 500 !important;
 }
 
 /* Error Pattern Analysis */
@@ -2497,9 +4504,9 @@
   font-size: 0.875rem;
   color: #374151;
   font-weight: 600;
+    border-radius: 8px;
 }
-  border-radius: 8px;
-}
+
 
 .literexia-score-item {
   display: flex;
@@ -3707,7 +5714,7 @@
 
 .literexia-readiness-indicator strong {
   color: #15803d;
-}}
+}
 
 /* Score Summary Section - for Mathematical Analysis redesign */
 .literexia-score-summary {
@@ -3762,6 +5769,16 @@
   font-size: 1.5rem;
   color: #6b7280;
   font-weight: 600;
+}
+
+/* Mathematical Analysis Section - Main Container */
+.literexia-mathematical-analysis-section {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(59, 79, 129, 0.02) 100%);
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 1.5rem 0;
+  box-shadow: 0 4px 20px rgba(59, 79, 129, 0.08);
+  border: 1px solid rgba(59, 79, 129, 0.1);
 }
 
 /* Mathematical Analysis Section Header */

@@ -1,6 +1,6 @@
 // src/pages/Teachers/ManageCategories/PostAssessment.jsx
 // This file has been renamed functionally to MainAssessment but kept the same filename for compatibility
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
@@ -11,6 +11,7 @@ import {
   faExclamationTriangle,
   faSearch,
   faCheckCircle,
+  faLock,
   faUpload,
   faBook,
   faFont,
@@ -34,16 +35,18 @@ import {
   faGraduationCap,
   faQuestion,
   faCloudUploadAlt,
+  faClock,
+  faTimesCircle,
   faListUl,
   faVolumeUp,
   faLink
 } from "@fortawesome/free-solid-svg-icons";
 import "../../../css/Teachers/ManageCategories/PostAssessment.css";
-import "../../../css/Teachers/ManageCategories/PostAssessment-enhanced.css";
 import MainAssessmentService from '../../../services/Teachers/MainAssessmentService';
 import { toast } from 'react-toastify';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import UnifiedTemplatePreview from "./UnifiedTemplatePreview.jsx";
 
 // Add import for file helpers
 import { dataURLtoFile, validateFileForUpload } from '../../../utils/fileHelpers';
@@ -55,13 +58,6 @@ const Tooltip = ({ text }) => (
     <span className="pa-tooltip-text">{text}</span>
   </div>
 );
-
-// Helper function for ordinal suffixes
-const getOrdinalSuffix = (num) => {
-  const suffixes = ['th', 'st', 'nd', 'rd'];
-  const value = num % 100;
-  return suffixes[(value - 20) % 10] || suffixes[value] || suffixes[0];
-};
 
 // Helper function to handle API errors and display user-friendly messages
 const handleApiError = (error, defaultMessage = "An error occurred. Please try again.") => {
@@ -120,6 +116,7 @@ const MainAssessment = ({ templates }) => {
     questionSet: [],
     // Reading Comprehension specific fields for multiple questions
     storyTitle: "",
+    comprehensionQuestions: [],
     currentComprehensionIndex: -1, // -1 means adding new, >=0 means editing existing
     tempComprehensionQuestion: {
       questionText: "",
@@ -130,17 +127,15 @@ const MainAssessment = ({ templates }) => {
   const [previewPage, setPreviewPage] = useState(0);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [submitSuccessDialog, setSubmitSuccessDialog] = useState(false);
-  const [showDistractorInput, setShowDistractorInput] = useState(false);
-  const [distractorValue, setDistractorValue] = useState("");
   const [deleteSuccessDialog, setDeleteSuccessDialog] = useState(false);
   const [submitConfirmDialog, setSubmitConfirmDialog] = useState(false);
   const [duplicateRestrictionDialog, setDuplicateRestrictionDialog] = useState(false);
   const [restrictionReason, setRestrictionReason] = useState("");
   const [apiMessage, setApiMessage] = useState(null);
-  
-  // Add refs to track component stability and prevent race conditions
-  const componentMounted = useRef(false);
-  const questionFormInitializing = useRef(false);
+  // Preview All state variables
+  const [isPreviewAllDialogOpen, setIsPreviewAllDialogOpen] = useState(false);
+  const [previewAllTemplates, setPreviewAllTemplates] = useState([]);
+  const [previewAllCurrentIndex, setPreviewAllCurrentIndex] = useState(0);
   
   // State for add option inputs
   const [showAddAnswerInput, setShowAddAnswerInput] = useState(false);
@@ -224,7 +219,7 @@ const MainAssessment = ({ templates }) => {
             ...baseStructure,
             storyTitle: "",
             passages: [],
-            sentenceQuestions: []
+            acceptableAnswers: []
           };
 
         default:
@@ -257,25 +252,20 @@ const MainAssessment = ({ templates }) => {
           break;
 
         case "Decoding":
-          // Different formatting based on question type
-          const isWordIdentification = question.questionText === "Tukuyin ang nasa larawan?";
-          
           sanitized.displaySequence = Array.isArray(question.displaySequence) ? 
             question.displaySequence.map(item => {
               if (typeof item === 'string') {
                 const cleaned = item.replace(/[^a-zA-Z]/g, '');
-                return isWordIdentification ? cleaned.toUpperCase() : 
-                       (cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase());
+                return cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase();
               }
               return item;
-            }) : (isWordIdentification ? null : []);
+            }) : [];
           sanitized.blankPosition = typeof question.blankPosition === 'number' ? question.blankPosition : null;
           sanitized.dragElements = Array.isArray(question.dragElements) ? 
             question.dragElements.map(item => {
               if (typeof item === 'string') {
                 const cleaned = item.replace(/[^a-zA-Z]/g, '');
-                return isWordIdentification ? cleaned.toUpperCase() : 
-                       (cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase());
+                return cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase();
               }
               return item;
             }) : [];
@@ -283,8 +273,7 @@ const MainAssessment = ({ templates }) => {
             question.correctSequence.map(item => {
               if (typeof item === 'string') {
                 const cleaned = item.replace(/[^a-zA-Z]/g, '');
-                return isWordIdentification ? cleaned.toUpperCase() : 
-                       (cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase());
+                return cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase();
               }
               return item;
             }) : [];
@@ -299,14 +288,7 @@ const MainAssessment = ({ templates }) => {
         case "Reading Comprehension":
           sanitized.storyTitle = (question.storyTitle || "").toString().trim();
           sanitized.passages = DataSanitizer.sanitizePassages(question.passages);
-          sanitized.sentenceQuestions = Array.isArray(question.sentenceQuestions) 
-            ? question.sentenceQuestions.map(sq => ({
-                questionText: sq.questionText || "",
-                correctAnswer: sq.correctAnswer || "",
-                acceptableAnswers: Array.isArray(sq.acceptableAnswers) ? sq.acceptableAnswers : []
-              }))
-            : [];
-          // Note: acceptableAnswers should only exist within sentenceQuestions, not at question level
+          sanitized.acceptableAnswers = Array.isArray(question.acceptableAnswers) ? question.acceptableAnswers : [];
           break;
 
         default:
@@ -443,8 +425,8 @@ const MainAssessment = ({ templates }) => {
           if (!question.storyTitle || question.storyTitle.trim() === "") {
             errors.push("Reading Comprehension must have story title");
           }
-          if (!Array.isArray(question.sentenceQuestions) || question.sentenceQuestions.length === 0) {
-            errors.push("Reading Comprehension must have sentence questions");
+          if (!Array.isArray(question.acceptableAnswers) || question.acceptableAnswers.length === 0) {
+            errors.push("Reading Comprehension must have acceptable answers");
           }
           break;
       }
@@ -518,114 +500,78 @@ const MainAssessment = ({ templates }) => {
     return { canCreate: true };
   };
 
-  // Component stability tracking
   useEffect(() => {
-    componentMounted.current = true;
-    
-    return () => {
-      componentMounted.current = false;
-      questionFormInitializing.current = false;
-    };
-  }, []);
+    // Fetch assessments data from the backend
+    const fetchAssessments = async () => {
+      try {
+        setLoading(true);
+        console.log("Attempting to fetch assessments...");
 
-  // Function to refresh assessments data
-  const refreshAssessments = async () => {
-    try {
-      setLoading(true);
-      setError(null); // Clear any previous errors
-      console.log("Refreshing assessments...");
+        // Add retry mechanism
+        let attempts = 0;
+        const maxAttempts = 3;
+        let response = null;
+        let lastError = null;
 
-      // Add retry mechanism
-      let attempts = 0;
-      const maxAttempts = 3;
-      let response = null;
-      let lastError = null;
-
-      while (attempts < maxAttempts) {
-        try {
-          console.log(`Refresh attempt ${attempts + 1} of ${maxAttempts}`);
-          response = await MainAssessmentService.getAllAssessments();
-          // If successful, break out of the retry loop
-          break;
-        } catch (err) {
-          lastError = err;
-          console.error(`Refresh attempt ${attempts + 1} failed:`, err);
-          attempts++;
-          if (attempts < maxAttempts) {
-            // Wait 1 second before retrying
-            await new Promise(resolve => setTimeout(resolve, 1000));
+        while (attempts < maxAttempts) {
+          try {
+            console.log(`Fetch attempt ${attempts + 1} of ${maxAttempts}`);
+            response = await MainAssessmentService.getAllAssessments();
+            // If successful, break out of the retry loop
+            break;
+          } catch (err) {
+            lastError = err;
+            console.error(`Attempt ${attempts + 1} failed:`, err);
+            attempts++;
+            if (attempts < maxAttempts) {
+              // Wait 1 second before retrying
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
           }
         }
-      }
 
-      if (!response && lastError) {
-        throw lastError;
-      }
-
-      console.log("Refresh API Response:", response); // Debug log
-
-      if (response && response.success) {
-        const assessmentData = response.data || [];
-        console.log("Refreshing assessments:", assessmentData.length, "items"); // Debug log
-
-        if (assessmentData.length === 0) {
-          console.log("No assessments found in the refresh response");
-          setApiMessage("No assessment templates found. This could be because templates haven't been created yet, or there might be an issue with the database connection.");
+        if (!response && lastError) {
+          throw lastError;
         }
 
-        setAssessments(assessmentData);
+        console.log("API Response:", response); // Debug log
 
-        // If there's a message from the API, store it
-        if (response.message) {
-          setApiMessage(response.message);
+        if (response && response.success) {
+          const assessmentData = response.data || [];
+          console.log("Setting assessments:", assessmentData.length, "items"); // Debug log
+
+          if (assessmentData.length === 0) {
+            console.log("No assessments found in the response");
+            setApiMessage("No assessment templates found. This could be because templates haven't been created yet, or there might be an issue with the database connection.");
+          }
+
+          setAssessments(assessmentData);
+
+          // If there's a message from the API, store it
+          if (response.message) {
+            setApiMessage(response.message);
+          }
+        } else if (response && !response.success) {
+          console.error("API request was not successful:", response.message || "Unknown error");
+          setError(response.message || "Failed to load assessments due to an unknown error.");
+          setApiMessage(response.message || "There was an error loading assessment templates. Please try again later.");
+        } else {
+          console.log("No data or unsuccessful response");
+          setAssessments([]);
+          setApiMessage("No assessment templates found. This could be because templates haven't been created yet.");
         }
-      } else if (response && !response.success) {
-        console.error("Refresh API request was not successful:", response.message || "Unknown error");
-        setError(response.message || "Failed to load assessments due to an unknown error.");
-        setApiMessage(response.message || "There was an error loading assessment templates. Please try again later.");
-      } else {
-        console.log("No data or unsuccessful refresh response");
-        setAssessments([]);
-        setApiMessage("No assessment templates found. This could be because templates haven't been created yet.");
+
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching assessments:', err);
+        const errorMessage = handleApiError(err, "Failed to load assessments. Please try again later.");
+        setError(errorMessage);
+        setApiMessage("There was an error connecting to the assessment service. Please check your connection and try again.");
+        setLoading(false);
       }
+    };
 
-      setLoading(false);
-    } catch (err) {
-      console.error('Error refreshing assessments:', err);
-      const errorMessage = handleApiError(err, "Failed to refresh assessments. Please try again later.");
-      setError(errorMessage);
-      setApiMessage("There was an error connecting to the assessment service. Please check your connection and try again.");
-      setLoading(false);
-    }
-  };
-
-  // Force refresh function for critical operations
-  const forceRefreshAssessments = async () => {
-    try {
-      console.log("Force refreshing assessments with cache bypass...");
-      setLoading(true);
-      setError(null);
-      
-      // Clear any cached data
-      setAssessments([]);
-      setApiMessage(null);
-      
-      // Wait a moment to ensure state clears
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
-      // Call refresh with explicit cache bypass
-      await refreshAssessments();
-      
-      console.log("Force refresh completed");
-    } catch (error) {
-      console.error("Force refresh failed:", error);
-      throw error;
-    }
-  };
-
-  useEffect(() => {
-    // Initial fetch on component mount
-    refreshAssessments();
+    fetchAssessments();
   }, []);
 
   // Add debug logging to see what assessments are loaded
@@ -739,27 +685,17 @@ const MainAssessment = ({ templates }) => {
 
   // Helper functions for managing comprehension questions
   const addComprehensionQuestion = () => {
-    // Validate required fields
-    if (!questionFormData.tempComprehensionQuestion.questionText.trim()) {
-      alert("Please enter a question text for the comprehension question.");
-      return;
-    }
-    if (!questionFormData.tempComprehensionQuestion.correctAnswer.trim()) {
-      alert("Please enter a correct answer for the comprehension question.");
-      return;
-    }
-
     const newQuestion = {
-      questionText: questionFormData.tempComprehensionQuestion.questionText.trim(),
-      correctAnswer: questionFormData.tempComprehensionQuestion.correctAnswer.trim(),
-      acceptableAnswers: questionFormData.tempComprehensionQuestion.acceptableAnswers.map(ans => ans.trim()).filter(ans => ans)
+      questionText: questionFormData.tempComprehensionQuestion.questionText,
+      correctAnswer: questionFormData.tempComprehensionQuestion.correctAnswer,
+      acceptableAnswers: [...questionFormData.tempComprehensionQuestion.acceptableAnswers]
     };
 
-    const updatedQuestions = [...questionFormData.sentenceQuestions, newQuestion];
+    const updatedQuestions = [...questionFormData.comprehensionQuestions, newQuestion];
     
     setQuestionFormData(prev => ({
       ...prev,
-      sentenceQuestions: updatedQuestions,
+      comprehensionQuestions: updatedQuestions,
       tempComprehensionQuestion: {
         questionText: "",
         correctAnswer: "",
@@ -770,7 +706,7 @@ const MainAssessment = ({ templates }) => {
   };
 
   const editComprehensionQuestion = (index) => {
-    const questionToEdit = questionFormData.sentenceQuestions[index];
+    const questionToEdit = questionFormData.comprehensionQuestions[index];
     setQuestionFormData(prev => ({
       ...prev,
       currentComprehensionIndex: index,
@@ -783,26 +719,16 @@ const MainAssessment = ({ templates }) => {
   };
 
   const saveComprehensionQuestion = () => {
-    // Validate required fields
-    if (!questionFormData.tempComprehensionQuestion.questionText.trim()) {
-      alert("Please enter a question text for the comprehension question.");
-      return;
-    }
-    if (!questionFormData.tempComprehensionQuestion.correctAnswer.trim()) {
-      alert("Please enter a correct answer for the comprehension question.");
-      return;
-    }
-
-    const updatedQuestions = [...questionFormData.sentenceQuestions];
+    const updatedQuestions = [...questionFormData.comprehensionQuestions];
     updatedQuestions[questionFormData.currentComprehensionIndex] = {
-      questionText: questionFormData.tempComprehensionQuestion.questionText.trim(),
-      correctAnswer: questionFormData.tempComprehensionQuestion.correctAnswer.trim(),
-      acceptableAnswers: questionFormData.tempComprehensionQuestion.acceptableAnswers.map(ans => ans.trim()).filter(ans => ans)
+      questionText: questionFormData.tempComprehensionQuestion.questionText,
+      correctAnswer: questionFormData.tempComprehensionQuestion.correctAnswer,
+      acceptableAnswers: [...questionFormData.tempComprehensionQuestion.acceptableAnswers]
     };
     
     setQuestionFormData(prev => ({
       ...prev,
-      sentenceQuestions: updatedQuestions,
+      comprehensionQuestions: updatedQuestions,
       tempComprehensionQuestion: {
         questionText: "",
         correctAnswer: "",
@@ -813,10 +739,10 @@ const MainAssessment = ({ templates }) => {
   };
 
   const deleteComprehensionQuestion = (index) => {
-    const updatedQuestions = questionFormData.sentenceQuestions.filter((_, i) => i !== index);
+    const updatedQuestions = questionFormData.comprehensionQuestions.filter((_, i) => i !== index);
     setQuestionFormData(prev => ({
       ...prev,
-      sentenceQuestions: updatedQuestions,
+      comprehensionQuestions: updatedQuestions,
       currentComprehensionIndex: -1,
       tempComprehensionQuestion: {
         questionText: "",
@@ -927,6 +853,12 @@ const MainAssessment = ({ templates }) => {
     setShowModal(true);
   };
 
+  const handlePreviewAllAssessments = () => {
+    // Use filtered assessments for preview all
+    setPreviewAllTemplates(filteredAssessments);
+    setPreviewAllCurrentIndex(0);
+    setIsPreviewAllDialogOpen(true);
+  };
 
   const handleDeleteConfirm = (assessment) => {
     setModalType("delete");
@@ -941,12 +873,8 @@ const MainAssessment = ({ templates }) => {
       const response = await MainAssessmentService.deleteAssessment(selectedAssessment._id);
 
       if (response && response.success) {
-        // Refresh assessments data from server to ensure consistency
-        await refreshAssessments();
-        
-        // Add a small delay to ensure state updates are processed
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+        // Remove from local state
+        setAssessments(prev => prev.filter(a => a._id !== selectedAssessment._id));
         setShowModal(false);
         setSelectedAssessment(null);
 
@@ -1045,29 +973,8 @@ const MainAssessment = ({ templates }) => {
   };
 
   const handleAddQuestion = () => {
-    // Prevent multiple rapid calls and race conditions
-    if (questionFormInitializing.current === true) {
-      return;
-    }
-    
-    if (showQuestionForm === true) {
-      return;
-    }
-    
-    // Set flag to prevent race conditions
-    questionFormInitializing.current = true;
-    
-    // Validate that category is set
-    if (!formData.category) {
-      questionFormInitializing.current = false;
-      toast.error("Please select a category before adding questions.");
-      return;
-    }
-    
     setShowQuestionForm(true);
     setCurrentQuestion(null);
-    
-    questionFormInitializing.current = false;
 
     const initialQuestionType =
       formData.category === "Alphabet Knowledge" ? "multiple_choice" :
@@ -1128,7 +1035,7 @@ const MainAssessment = ({ templates }) => {
     const initialFields = getInitialFieldValues();
 
     setQuestionFormData({
-      questionText: formData.category === "Reading Comprehension" ? null : "",
+      questionText: "",
       questionImage: initialFields.questionImage,
       questionValue: initialFields.questionValue,
       // Add questionId for all question types
@@ -1153,87 +1060,71 @@ const MainAssessment = ({ templates }) => {
       passages: initialQuestionType === "text_input" ? [
         { pageNumber: 1, pageText: "", pageImage: null }
       ] : [],
-      sentenceQuestions: initialQuestionType === "text_input" ? [] : [],
-      correctAnswer: initialQuestionType === "text_input" ? null : [],
-      // Reading Comprehension specific fields for multiple questions
-      currentComprehensionIndex: -1,
-      tempComprehensionQuestion: {
-        questionText: "",
-        correctAnswer: "",
-        acceptableAnswers: []
-      },
-      // Phonological Awareness specific fields
-      questionSet: initialFields.questionSet || []
+      correctAnswer: initialQuestionType === "text_input" ? "" : [],
+      acceptableAnswers: []
     });
   };
 
   const handleEditQuestion = (question, index) => {
+    console.log('=== EDIT QUESTION DEBUG START ===');
+    console.log('handleEditQuestion called with:');
+    console.log('- question:', JSON.stringify(question, null, 2));
+    console.log('- index:', index);
+    console.log('- formData.category:', formData.category);
+    console.log('- question.passages:', question.passages);
+    
     setShowQuestionForm(true);
     setCurrentQuestion(index);
-
-    // Create base question data with comprehensive field mapping
+    
+    // Create base question data
     const baseQuestionData = {
       ...question,
-      // Ensure questionId exists
+      // Ensure questionId exists, if not generate a temporary one
       questionId: question.questionId || (() => {
         const categoryPrefix = getCategoryPrefix(formData.category);
         const questionNumber = String(index + 1).padStart(3, '0');
         return `${categoryPrefix}_${questionNumber}`;
-      })(),
-
-      // Alphabet Knowledge fields
-      choiceOptions: question.choiceOptions || [],
-
-      // Phonological Awareness fields
-      questionSet: question.questionSet || {
-        audioTexts: [],
-        matchingOptions: [],
-        correctPairs: []
-      },
-
-      // Decoding fields
-      displaySequence: question.displaySequence || [],
-      blankPosition: question.blankPosition || null,
-      dragElements: question.dragElements || [],
-      correctSequence: question.correctSequence || [],
-
-      // Word Recognition fields
-      displayWord: question.displayWord || '',
-      blankOptions: question.blankOptions || [],
-      correctAnswer: question.correctAnswer || [],
-
-      // Reading Comprehension fields
-      storyTitle: question.storyTitle || '',
-      passages: question.passages === null ? [] : (question.passages || [
-        { pageNumber: 1, pageText: "", pageImage: null }
-      ]),
-      sentenceQuestions: question.sentenceQuestions || []
+      })()
     };
-
-    // Category-specific handling
+    
+    console.log('baseQuestionData after spread:', JSON.stringify(baseQuestionData, null, 2));
+    
+    // Ensure Reading Comprehension questions have proper structure
     if (formData.category === "Reading Comprehension") {
-      // Clean up passages if they exist
-      if (Array.isArray(baseQuestionData.passages)) {
+      console.log('Processing Reading Comprehension question');
+      
+      // Ensure storyTitle exists
+      if (!baseQuestionData.storyTitle) {
+        baseQuestionData.storyTitle = "";
+      }
+      
+      // Handle the direct question format from the database
+      baseQuestionData.questionText = baseQuestionData.questionText || "";
+      baseQuestionData.correctAnswer = baseQuestionData.correctAnswer || "";
+      baseQuestionData.acceptableAnswers = baseQuestionData.acceptableAnswers || [];
+      
+      // Handle passages: if null, this question references a previous story's passages
+      if (baseQuestionData.passages === null) {
+        console.log('This question has passages: null (references previous story)');
+        baseQuestionData.passages = []; // Set to empty array for form compatibility
+      } else if (!baseQuestionData.passages || !Array.isArray(baseQuestionData.passages)) {
+        console.log('Creating default passages array');
+        baseQuestionData.passages = [
+          { pageNumber: 1, pageText: "", pageImage: null }
+        ];
+      } else {
+        console.log('Found existing passages:', baseQuestionData.passages.length);
+        // Ensure each passage has required fields
         baseQuestionData.passages = baseQuestionData.passages.map((passage, idx) => ({
           pageNumber: passage.pageNumber || idx + 1,
           pageText: passage.pageText || "",
           pageImage: passage.pageImage || null
         }));
       }
-
-      // Remove unwanted fields for Reading Comprehension
-      delete baseQuestionData.questionSet;
-      delete baseQuestionData.acceptableAnswers;
-
-      // Ensure comprehension-specific fields exist
-      baseQuestionData.currentComprehensionIndex = baseQuestionData.currentComprehensionIndex || -1;
-      baseQuestionData.tempComprehensionQuestion = baseQuestionData.tempComprehensionQuestion || {
-        questionText: "",
-        correctAnswer: "",
-        acceptableAnswers: []
-      };
     }
-
+    
+    console.log('Final baseQuestionData:', baseQuestionData);
+    
     setQuestionFormData(baseQuestionData);
   };
 
@@ -1266,13 +1157,29 @@ const MainAssessment = ({ templates }) => {
     });
   };
 
+  const handleAddChoice = () => {
+    setQuestionFormData(prev => ({
+      ...prev,
+      choiceOptions: [
+        ...prev.choiceOptions,
+        { optionId: (prev.choiceOptions.length + 1).toString(), optionText: "", isCorrect: false }
+      ]
+    }));
+  };
+
+  const handleRemoveChoice = (index) => {
+    setQuestionFormData(prev => ({
+      ...prev,
+      choiceOptions: prev.choiceOptions.filter((_, i) => i !== index)
+    }));
+  };
 
 
   const handleQuestionFormSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate required fields (questionText not required for Reading Comprehension)
-    if (formData.category !== "Reading Comprehension" && !questionFormData.questionText) {
+    // Validate required fields
+    if (!questionFormData.questionText) {
       toast.error("Please enter a question text.");
       return;
     }
@@ -1384,30 +1291,6 @@ const MainAssessment = ({ templates }) => {
         return;
       }
 
-      // Additional validation for "Anong kasing tunog" questions - ensure complete words
-      if (questionFormData.questionText === "Anong kasing tunog ng salitang nakikita?") {
-        const hasSyllableFragments = questionFormData.blankOptions.some(option => {
-          const words = option.trim().split(' ');
-          return words.some(word => word.length < 3); // Less than 3 characters likely a syllable fragment
-        });
-        if (hasSyllableFragments) {
-          toast.error('For sound matching questions, please use complete words (not syllables or word fragments)');
-          return;
-        }
-
-        // Ensure at least 2 options for sound matching questions
-        if (questionFormData.blankOptions.length < 2) {
-          toast.error('Sound matching questions must have at least 2 answer options');
-          return;
-        }
-
-        // Ensure exactly one correct answer for sound matching questions
-        if (questionFormData.correctAnswer.length !== 1) {
-          toast.error('Sound matching questions must have exactly one correct answer');
-          return;
-        }
-      }
-
       if (questionFormData.questionValue !== null) {
         toast.error("Question value should be null for Word Recognition.");
         return;
@@ -1422,23 +1305,15 @@ const MainAssessment = ({ templates }) => {
         return;
       }
 
-      // Validate sentence questions
-      if (questionFormData.sentenceQuestions.length === 0) {
-        toast.error("Please add at least one sentence question for the story.");
+      // Check question content
+      if (!questionFormData.questionText || !questionFormData.questionText.trim()) {
+        toast.error("Please enter a question text.");
         return;
       }
-
-      // Validate that all sentence questions have required fields
-      for (let i = 0; i < questionFormData.sentenceQuestions.length; i++) {
-        const question = questionFormData.sentenceQuestions[i];
-        if (!question.questionText || !question.questionText.trim()) {
-          toast.error(`Question ${i + 1} is missing question text. Please add question text for all sentence questions.`);
-          return;
-        }
-        if (!question.correctAnswer || !question.correctAnswer.trim()) {
-          toast.error(`Question ${i + 1} is missing correct answer. Please add correct answer for all sentence questions.`);
-          return;
-        }
+      
+      if (!questionFormData.correctAnswer || !questionFormData.correctAnswer.trim()) {
+        toast.error("Please enter a correct answer.");
+        return;
       }
 
       // For new stories (no existing passages), require passage content
@@ -1535,12 +1410,8 @@ const MainAssessment = ({ templates }) => {
           case "Decoding":
             // Auto-null required fields
             sanitized.questionValue = null;
-            // Set displaySequence based on question type
-            if (sanitized.questionText === "Tukuyin ang nasa larawan?") {
-              sanitized.displaySequence = null;
-            } else {
-              sanitized.displaySequence = sanitized.displaySequence || [];
-            }
+            // Ensure arrays exist
+            sanitized.displaySequence = sanitized.displaySequence || [];
             sanitized.dragElements = sanitized.dragElements || [];
             sanitized.correctSequence = sanitized.correctSequence || [];
             // Set blankPosition based on question text
@@ -1562,25 +1433,13 @@ const MainAssessment = ({ templates }) => {
           case "Word Recognition":
             // Auto-null required fields
             sanitized.questionValue = null;
-            // Ensure arrays exist and properly capitalize
-            sanitized.blankOptions = (sanitized.blankOptions || []).map(option => 
-              typeof option === 'string' && option.length > 0 
-                ? option.charAt(0).toUpperCase() + option.slice(1).toLowerCase() 
-                : option
-            );
-            sanitized.correctAnswer = (sanitized.correctAnswer || []).map(answer => 
-              typeof answer === 'string' && answer.length > 0 
-                ? answer.charAt(0).toUpperCase() + answer.slice(1).toLowerCase() 
-                : answer
-            );
-            // Normalize displayWord formatting - convert __word__ to dynamic blanks for database storage
+            // Ensure arrays exist
+            sanitized.blankOptions = sanitized.blankOptions || [];
+            sanitized.correctAnswer = sanitized.correctAnswer || [];
+            // Normalize displayWord formatting - convert __word__ to ___ for database storage
             if (sanitized.displayWord) {
               sanitized.displayWord = sanitized.displayWord
-                .replace(/__([^_]+)__/g, (_, word) => {
-                  // Create dynamic blanks based on word length
-                  const blankLength = word.length;
-                  return ` ${'_'.repeat(blankLength)} `;
-                }) // Convert __word__ to dynamic length blanks
+                .replace(/__([^_]+)__/g, ' ___ ') // Convert __word__ to simple ___
                 .replace(/\s+/g, ' ') // Normalize multiple spaces to single spaces
                 .trim(); // Remove leading/trailing spaces
             }
@@ -1604,9 +1463,24 @@ const MainAssessment = ({ templates }) => {
             
             // Ensure required fields exist
             sanitized.questionText = sanitized.questionText || "";
-            sanitized.correctAnswer = sanitized.correctAnswer || null;
+            sanitized.correctAnswer = sanitized.correctAnswer || "";
             
-            // Note: acceptableAnswers only exist within sentenceQuestions, not at question level
+            // Clean and normalize acceptableAnswers array
+            sanitized.acceptableAnswers = sanitized.acceptableAnswers || [];
+            // Filter out empty strings and normalize whitespace
+            sanitized.acceptableAnswers = sanitized.acceptableAnswers
+              .map(answer => answer ? answer.toString().trim() : '')
+              .filter(answer => answer.length > 0);
+            
+            // Ensure primary answer is included in acceptableAnswers if not already present
+            if (sanitized.correctAnswer && !sanitized.acceptableAnswers.includes(sanitized.correctAnswer)) {
+              sanitized.acceptableAnswers.unshift(sanitized.correctAnswer);
+            }
+            
+            // If no acceptable answers provided, use the correct answer
+            if (sanitized.acceptableAnswers.length === 0 && sanitized.correctAnswer) {
+              sanitized.acceptableAnswers = [sanitized.correctAnswer];
+            }
             
             sanitized.storyTitle = sanitized.storyTitle || "";
             
@@ -1631,6 +1505,7 @@ const MainAssessment = ({ templates }) => {
             delete sanitized.correctSequence;
             delete sanitized.displayWord;
             delete sanitized.blankOptions;
+            delete sanitized.sentenceQuestions;
             break;
 
           default:
@@ -1650,47 +1525,7 @@ const MainAssessment = ({ templates }) => {
           delete sanitized.storyTitle;
           delete sanitized.acceptableAnswers;
           delete sanitized.passages;
-          delete sanitized.sentenceQuestions;
-          delete sanitized.currentComprehensionIndex;
-          delete sanitized.tempComprehensionQuestion;
-        } else {
-          // For Reading Comprehension, ensure required fields are properly structured
-          // Keep storyTitle, passages, and sentenceQuestions as required by backend model
-          
-          // Ensure storyTitle exists
-          if (!sanitized.storyTitle) {
-            sanitized.storyTitle = questionFormData.storyTitle || "";
-          }
-          
-          // Ensure passages exists (array or null)
-          if (!sanitized.passages) {
-            sanitized.passages = questionFormData.passages || [];
-          }
-          
-          // Ensure sentenceQuestions array is properly structured
-          if (!sanitized.sentenceQuestions || !Array.isArray(sanitized.sentenceQuestions)) {
-            sanitized.sentenceQuestions = questionFormData.sentenceQuestions || [];
-          }
-          
-          // Validate each sentence question has required fields
-          sanitized.sentenceQuestions = sanitized.sentenceQuestions.map(sq => ({
-            questionText: sq.questionText || "",
-            correctAnswer: sq.correctAnswer || "",
-            acceptableAnswers: Array.isArray(sq.acceptableAnswers) ? sq.acceptableAnswers : []
-          }));
-          
-          // Remove acceptableAnswers at question level (should only be in sentenceQuestions)
-          delete sanitized.acceptableAnswers;
-          
-          // Remove fields not needed at document level for Reading Comprehension
-          delete sanitized.questionText; // This should be in sentenceQuestions, not at question level
-          delete sanitized.correctAnswer; // This should be in sentenceQuestions, not at question level
-          delete sanitized.questionSet; // Not used by Reading Comprehension
-          
-          // Ensure questionImage is always null for Reading Comprehension
-          sanitized.questionImage = null;
-          
-          // Also remove temporary form fields for Reading Comprehension
+          delete sanitized.comprehensionQuestions;
           delete sanitized.currentComprehensionIndex;
           delete sanitized.tempComprehensionQuestion;
         }
@@ -1706,12 +1541,22 @@ const MainAssessment = ({ templates }) => {
 
       // No additional processing needed for sentenceQuestions
 
+      // Construct S3 path with category folder using existing helper
+      const categoryFolderMap = {
+        'Alphabet Knowledge': 'alphabet-knowledge',
+        'Phonological Awareness': 'phonological-awareness',
+        'Decoding': 'decoding',
+        'Word Recognition': 'word-recognition',
+        'Reading Comprehension': 'reading-comprehension'
+      };
+      const categoryFolder = categoryFolderMap[formData.category] || '';
+      const s3Path = categoryFolder ? `main-assessment/${categoryFolder}` : 'main-assessment';
 
       // If there's an image file pending upload, upload it to S3 first
       if (questionFormData.imageFile) {
         try {
           console.log('Starting image upload for file:', questionFormData.imageFile.name);
-          const result = await MainAssessmentService.uploadImageToS3(questionFormData.imageFile);
+          const result = await MainAssessmentService.uploadImageToS3(questionFormData.imageFile, s3Path);
           console.log('Upload result:', result);
 
           if (result && result.success && result.url) {
@@ -1745,106 +1590,32 @@ const MainAssessment = ({ templates }) => {
         for (const passage of finalQuestionData.passages) {
           let updatedPassage = { ...passage };
 
-          // Validate passage data before processing
-          if (!passage.pageNumber) {
-            console.warn('Passage missing pageNumber, skipping image processing');
-            updatedPassage.pageImage = null;
-            // Remove temporary fields
-            delete updatedPassage._imageFile;
-            delete updatedPassage._imageName;
-            updatedPassages.push(updatedPassage);
-            continue;
-          }
-
           // Check if this passage has a blob URL that needs uploading
-          if (passage.pageImage && passage.pageImage instanceof File) {
+          if (passage.pageImage && typeof passage.pageImage === 'string' && passage.pageImage.startsWith('blob:')) {
             try {
-              console.log(`Processing image upload for page ${passage.pageNumber}`);
-              const imageFile = passage.pageImage;
+              // Convert blob URL back to File object
+              const response = await fetch(passage.pageImage);
+              const blob = await response.blob();
+              const fileName = `page_${passage.pageNumber}_${Date.now()}.jpg`;
+              const imageFile = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
 
+              // Upload to S3
+              const uploadResult = await MainAssessmentService.uploadImageToS3(imageFile, s3Path);
 
-              // Validate file size (limit to 10MB)
-              const maxSizeBytes = 10 * 1024 * 1024;
-              if (imageFile.size > maxSizeBytes) {
-                const sizeMB = (imageFile.size / 1024 / 1024).toFixed(1);
-                console.error(`Image too large for page ${passage.pageNumber}: ${sizeMB}MB`);
-                toast.error(`Image for page ${passage.pageNumber} is too large (${sizeMB}MB). Please use an image smaller than 10MB.`);
-                throw new Error(`Image too large for page ${passage.pageNumber}: ${sizeMB}MB`);
-              }
-
-
-              // Upload to S3 with improved retry mechanism
-              let uploadResult;
-              let retryCount = 0;
-              const maxRetries = 3;
-
-              while (retryCount < maxRetries) {
-                try {
-                  console.log(`Uploading image for page ${passage.pageNumber} (attempt ${retryCount + 1}/${maxRetries})`);
-                  uploadResult = await MainAssessmentService.uploadImageToS3(imageFile);
-                  
-                  if (uploadResult && uploadResult.success && uploadResult.url) {
-                    console.log(`Upload successful for page ${passage.pageNumber}:`, uploadResult.url);
-                    break; // Success, exit retry loop
-                  } else {
-                    throw new Error(uploadResult?.error || 'Upload service returned no URL');
-                  }
-                } catch (uploadError) {
-                  retryCount++;
-                  console.warn(`Upload attempt ${retryCount} failed for page ${passage.pageNumber}:`, uploadError.message);
-                  
-                  if (retryCount >= maxRetries) {
-                    console.error(`All upload attempts failed for page ${passage.pageNumber}:`, uploadError);
-                    
-                    // Provide specific, actionable error messages
-                    let userMessage = `Failed to upload image for page ${passage.pageNumber}.`;
-                    
-                    if (uploadError.message.includes('Authentication failed') || 
-                        uploadError.message.includes('401') || 
-                        uploadError.message.includes('403')) {
-                      userMessage += ' Authentication error. Please refresh the page and try again.';
-                    } else if (uploadError.message.includes('Network') || 
-                               uploadError.message.includes('timeout')) {
-                      userMessage += ' Network error. Please check your internet connection and try again.';
-                    } else if (uploadError.message.includes('413') || 
-                               uploadError.message.includes('too large') ||
-                               uploadError.message.includes('size exceeds')) {
-                      userMessage += ' The image file is too large. Please use a smaller image.';
-                    } else if (uploadError.message.includes('500')) {
-                      userMessage += ' Server error. Please try again in a few moments.';
-                    } else {
-                      userMessage += ' Please try again or use a different image. If the problem persists, try refreshing the page.';
-                    }
-                    
-                    toast.error(userMessage);
-                    const passageError = new Error(`Upload failed for page ${passage.pageNumber} after ${maxRetries} attempts: ${uploadError.message}`);
-                    passageError.userNotified = true;
-                    throw passageError;
-                  } else {
-                    // Wait before retrying with exponential backoff
-                    const delay = Math.pow(2, retryCount - 1) * 1000; // 1s, 2s, 4s
-                    console.log(`Waiting ${delay}ms before retry ${retryCount + 1} for page ${passage.pageNumber}`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                  }
-                }
-              }
-
-              if (uploadResult && uploadResult.success && uploadResult.url) {
+              if (uploadResult.success) {
                 updatedPassage.pageImage = uploadResult.url;
                 console.log(`Successfully uploaded page ${passage.pageNumber} image:`, uploadResult.url);
-                toast.success(`Image uploaded successfully for page ${passage.pageNumber}`, { autoClose: 2000 });
               } else {
-                console.error(`Upload result missing for page ${passage.pageNumber}:`, uploadResult);
-                toast.error(`Upload completed but no URL received for page ${passage.pageNumber}. Please try again.`);
-                throw new Error(`Upload result invalid for page ${passage.pageNumber}`);
+                console.error(`Failed to upload image for page ${passage.pageNumber}:`, uploadResult.error);
+                const passageError = new Error(`Failed to upload image for page ${passage.pageNumber}`);
+                passageError.userNotified = true;
+                toast.error(`Failed to upload image for page ${passage.pageNumber}`);
+                throw passageError;
               }
-
             } catch (error) {
               console.error(`Error processing image for page ${passage.pageNumber}:`, error);
-              
-              // Only show generic error if we haven't shown a specific one
               if (!error.userNotified) {
-                toast.error(`Unable to process image for page ${passage.pageNumber}. Please remove and re-add the image.`);
+                toast.error(`Error processing image for page ${passage.pageNumber}`);
                 error.userNotified = true;
               }
               throw error;
@@ -1859,9 +1630,6 @@ const MainAssessment = ({ templates }) => {
             updatedPassage.pageImage = passage.pageImage;
           }
 
-          // Remove temporary fields before finalizing
-          delete updatedPassage._imageFile;
-          delete updatedPassage._imageName;
           updatedPassages.push(updatedPassage);
         }
 
@@ -1888,170 +1656,122 @@ const MainAssessment = ({ templates }) => {
       console.log('=== Starting form data update ===');
       
       // Critical operation: Save question to form data
-      if (currentQuestion !== null) {
-        console.log('Updating existing question at index:', currentQuestion);
-        setFormData(prev => {
-          const updatedQuestions = [...prev.questions];
-          // Ensure questionValue is at least null if it's empty string or undefined
-          finalQuestionData.questionValue = finalQuestionData.questionValue || null;
-          updatedQuestions[currentQuestion] = finalQuestionData;
-          console.log('Updated questions array:', updatedQuestions);
-          return {
-            ...prev,
-            questions: updatedQuestions
-          };
+      try {
+        if (currentQuestion !== null) {
+          console.log('Updating existing question at index:', currentQuestion);
+          setFormData(prev => {
+            const updatedQuestions = [...prev.questions];
+            // Ensure questionValue is at least null if it's empty string or undefined
+            finalQuestionData.questionValue = finalQuestionData.questionValue || null;
+            updatedQuestions[currentQuestion] = finalQuestionData;
+            console.log('Updated questions array:', updatedQuestions);
+            return {
+              ...prev,
+              questions: updatedQuestions
+            };
+          });
+
+          // Reset for a new question and keep the form open
+          setCurrentQuestion(null);
+          console.log('Question update completed successfully');
+
+        // Generate temporary questionId for the next question
+        const nextQuestionNumber = String(formData.questions.length + 2).padStart(3, '0'); // +2 because we just added one
+        const nextTempQuestionId = `${getCategoryPrefix(formData.category)}_${nextQuestionNumber}`;
+        const nextParentId = formData.category === "Reading Comprehension" ? nextTempQuestionId : null;
+
+        setQuestionFormData({
+          questionType: categoryToQuestionTypeMap[formData.category],
+          questionText: "",
+          questionImage: null,
+          // Ensure it has a default value
+          questionValue: formData.category === "Reading Comprehension" ? "" : null,
+          // Include questionId for all question types
+          questionId: nextTempQuestionId,
+          // Store parent ID temporarily for generating child IDs
+          _parentId: nextParentId,
+          choiceOptions: formData.category === "Alphabet Knowledge" ? [
+            { optionId: "1", optionText: "", isCorrect: true },
+            { optionId: "2", optionText: "", isCorrect: false },
+            { optionId: "3", optionText: "", isCorrect: false }
+          ] : [],
+          passages: formData.category === "Reading Comprehension" ? [
+            { pageNumber: 1, pageText: "", pageImage: null }
+          ] : [],
+          sentenceQuestions: formData.category === "Reading Comprehension" ? [
+            {
+              questionText: "",
+              correctAnswer: "",
+              incorrectAnswer: "",
+              correctDescription: "",
+              incorrectDescription: "",
+              questionId: nextParentId ? `${nextParentId}_SQ01` : null
+            }
+          ] : [],
+          // Question added successfully
         });
 
-        // Reset for a NEW STORY (after updating an existing question)
-        setCurrentQuestion(null);
-        console.log('Question update completed successfully');
+        toast.success("Question updated! You can add another or click Back to return to the assessment.");
+        } else {
+        // Ensure questionValue is at least null if it's empty string or undefined
+        finalQuestionData.questionValue = finalQuestionData.questionValue || null;
 
-        // For edit mode, show success and return to assessment view immediately
-        console.log("✅ EDIT MODE SUCCESS - About to show success message and return");
-        toast.success("Question updated successfully!");
-        setShowQuestionForm(false);
-        setEditingQuestionIndex(-1);
+        console.log('Adding new question to form data:', finalQuestionData);
+        setFormData(prev => ({
+          ...prev,
+          questions: [...prev.questions, finalQuestionData]
+        }));
 
-        // Exit early to prevent form reset and other processing
-        console.log("🚪 EXITING EARLY - This should prevent any further processing");
-        return;
+        // Reset for a new question and keep the form open
+        // Generate temporary questionId for the next question
+        const nextQuestionNumber = String(formData.questions.length + 2).padStart(3, '0'); // +2 because we just added one
+        const nextTempQuestionId = `${getCategoryPrefix(formData.category)}_${nextQuestionNumber}`;
+        const nextParentId = formData.category === "Reading Comprehension" ? nextTempQuestionId : null;
+
+        setQuestionFormData({
+          questionType: categoryToQuestionTypeMap[formData.category],
+          questionText: "",
+          questionImage: null,
+          // Ensure it has a default value
+          questionValue: formData.category === "Reading Comprehension" ? "" : null,
+          // Include questionId for all question types
+          questionId: nextTempQuestionId,
+          // Store parent ID temporarily for generating child IDs
+          _parentId: nextParentId,
+          choiceOptions: formData.category === "Alphabet Knowledge" ? [
+            { optionId: "1", optionText: "", isCorrect: true },
+            { optionId: "2", optionText: "", isCorrect: false },
+            { optionId: "3", optionText: "", isCorrect: false }
+          ] : [],
+          passages: formData.category === "Reading Comprehension" ? [
+            { pageNumber: 1, pageText: "", pageImage: null }
+          ] : [],
+          sentenceQuestions: formData.category === "Reading Comprehension" ? [
+            {
+              questionText: "",
+              correctAnswer: "",
+              incorrectAnswer: "",
+              correctDescription: "",
+              incorrectDescription: "",
+              questionId: nextParentId ? `${nextParentId}_SQ01` : null
+            }
+          ] : [],
+          // Question added successfully
+        });
+
+        console.log('Question successfully added to form! Total questions now:', formData.questions.length + 1);
+        toast.success("Question added! You can add another or click Back to return to the assessment.");
+        }
+      
+      } catch (saveError) {
+        // Critical save operation failed
+        console.error('Critical save operation failed:', saveError);
+        throw saveError; // Re-throw to be caught by main catch block
       }
-
-      // Generate temporary questionId for the next question
-      const nextQuestionNumber = String(formData.questions.length + 2).padStart(3, '0'); // +2 because we just added one
-      const nextTempQuestionId = `${getCategoryPrefix(formData.category)}_${nextQuestionNumber}`;
-      const nextParentId = formData.category === "Reading Comprehension" ? nextTempQuestionId : null;
-
-      setQuestionFormData({
-        questionType: categoryToQuestionTypeMap[formData.category],
-        questionText: formData.category === "Reading Comprehension" ? "" : "",
-        questionImage: null,
-        imageFile: null,
-        imageName: "",
-        // Ensure it has a default value
-        questionValue: formData.category === "Reading Comprehension" ? "" : null,
-        // Include questionId for all question types
-        questionId: nextTempQuestionId,
-        // Store parent ID temporarily for generating child IDs
-        _parentId: nextParentId,
-        choiceOptions: formData.category === "Alphabet Knowledge" ? [
-          { optionId: "1", optionText: "", isCorrect: true },
-          { optionId: "2", optionText: "", isCorrect: false },
-          { optionId: "3", optionText: "", isCorrect: false }
-        ] : [],
-        passages: formData.category === "Reading Comprehension" ? [
-          { pageNumber: 1, pageText: "", pageImage: null }
-        ] : [],
-        sentenceQuestions: formData.category === "Reading Comprehension" ? [
-          {
-            questionText: "",
-            correctAnswer: "",
-            acceptableAnswers: [],
-            questionId: nextParentId ? `${nextParentId}_SQ01` : null
-          }
-        ] : [],
-        // Reading Comprehension specific fields - RESET FOR NEW STORY
-        storyTitle: "",
-        currentComprehensionIndex: -1,
-        tempComprehensionQuestion: {
-          questionText: "",
-          correctAnswer: "",
-          acceptableAnswers: []
-        },
-        // Other question type fields to ensure clean state
-        displaySequence: null,
-        blankPosition: null,
-        dragElements: [],
-        correctSequence: [],
-        displayWord: "",
-        blankOptions: [],
-        correctAnswer: formData.category === "Reading Comprehension" ? "" : [],
-        questionSet: []
-      });
-
-      // This success message was moved to the main update path above
-
-      // Ensure questionValue is at least null if it's empty string or undefined
-      finalQuestionData.questionValue = finalQuestionData.questionValue || null;
-
-      console.log('Adding new question to form data:', finalQuestionData);
-      setFormData(prev => ({
-        ...prev,
-        questions: [...prev.questions, finalQuestionData]
-      }));
-
-      // Reset for a NEW STORY (completely fresh form for Reading Comprehension)
-      // Use the same variables that were declared earlier
-
-      setQuestionFormData({
-        questionType: categoryToQuestionTypeMap[formData.category],
-        questionText: formData.category === "Reading Comprehension" ? "" : "",
-        questionImage: null,
-        imageFile: null,
-        imageName: "",
-        // Ensure it has a default value
-        questionValue: formData.category === "Reading Comprehension" ? "" : null,
-        // Include questionId for all question types
-        questionId: nextTempQuestionId,
-        // Store parent ID temporarily for generating child IDs
-        _parentId: nextParentId,
-        choiceOptions: formData.category === "Alphabet Knowledge" ? [
-          { optionId: "1", optionText: "", isCorrect: true },
-          { optionId: "2", optionText: "", isCorrect: false },
-          { optionId: "3", optionText: "", isCorrect: false }
-        ] : [],
-        passages: formData.category === "Reading Comprehension" ? [
-          { pageNumber: 1, pageText: "", pageImage: null }
-        ] : [],
-        sentenceQuestions: formData.category === "Reading Comprehension" ? [
-          {
-            questionText: "",
-            correctAnswer: "",
-            acceptableAnswers: [],
-            questionId: nextParentId ? `${nextParentId}_SQ01` : null
-          }
-        ] : [],
-        // Reading Comprehension specific fields - RESET FOR NEW STORY
-        storyTitle: "",
-        currentComprehensionIndex: -1,
-        tempComprehensionQuestion: {
-          questionText: "",
-          correctAnswer: "",
-          acceptableAnswers: []
-        },
-        // Other question type fields to ensure clean state
-        displaySequence: null,
-        blankPosition: null,
-        dragElements: [],
-        correctSequence: [],
-        displayWord: "",
-        blankOptions: [],
-        correctAnswer: formData.category === "Reading Comprehension" ? "" : [],
-        questionSet: []
-      });
-
-      console.log('Question successfully added to form! Total questions now:', formData.questions.length + 1);
-      toast.success("Question added! You can add another or click Back to return to the assessment.");
-
+      
     } catch (error) {
-      console.error("🚨 CATCH BLOCK TRIGGERED - Error saving question:", error);
-      console.error("🔍 Error details:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-        response: error.response,
-        currentQuestion: currentQuestion,
-        editingQuestionIndex: editingQuestionIndex,
-        showQuestionForm: showQuestionForm
-      });
-      console.trace("📍 Call stack trace for error:");
-
-      // Check if this is happening in edit mode (which should have already returned)
-      if (currentQuestion !== null || editingQuestionIndex >= 0) {
-        console.error("❌ ERROR: This catch block should not execute in edit mode!");
-        console.error("This suggests the early return did not work or there's a race condition");
-      }
-
+      console.error("Error saving question:", error);
+      
       // Provide more specific error messages based on the error type
       let errorMessage = "Failed to save question. Please try again.";
       
@@ -2093,12 +1813,15 @@ const MainAssessment = ({ templates }) => {
       return;
     }
 
-    // Store the file directly instead of using blob URLs
+    // Create a temporary URL for preview
+    const previewUrl = URL.createObjectURL(file);
+
+    // Store the file for later upload when the question is submitted
     if (field === 'questionImage') {
       setQuestionFormData(prev => ({
         ...prev,
-        questionImage: file, // Store the file directly
-        imageFile: file, // Keep for backwards compatibility
+        questionImage: previewUrl,
+        imageFile: file, // Store the file for later S3 upload with proper category folder
         imageName: file.name
       }));
     } else if (field.includes('pageImage')) {
@@ -2107,8 +1830,8 @@ const MainAssessment = ({ templates }) => {
         const updatedPassages = [...prev.passages];
         updatedPassages[pageIndex] = {
           ...updatedPassages[pageIndex],
-          pageImage: file, // Store File object directly instead of blob URL
-          _imageFile: file, // Keep for backwards compatibility
+          pageImage: previewUrl, // Store blob URL for preview
+          _imageFile: file, // Store the actual file for later upload
           _imageName: file.name
         };
         return {
@@ -2125,14 +1848,22 @@ const MainAssessment = ({ templates }) => {
       return;
     }
 
-    // Check if we have any questions regardless of category
-    const hasQuestions = formData.category === "Reading Comprehension" 
-      ? questionFormData.sentenceQuestions.length > 0
-      : formData.questions.length > 0;
-      
-    if (!hasQuestions) {
-      alert("Please add at least one question.");
-      return;
+    // Special validation for Reading Comprehension
+    if (formData.category === "Reading Comprehension") {
+      if (questionFormData.comprehensionQuestions.length === 0) {
+        alert("Please add at least one comprehension question for the story.");
+        return;
+      }
+      if (!questionFormData.storyTitle || !questionFormData.storyTitle.trim()) {
+        alert("Please enter a story title.");
+        return;
+      }
+    } else {
+      // For other categories, check regular questions array
+      if (formData.questions.length === 0) {
+        alert("Please add at least one question.");
+        return;
+      }
     }
 
     // Check restrictions for new assessments
@@ -2153,6 +1884,9 @@ const MainAssessment = ({ templates }) => {
     try {
       setSubmitConfirmDialog(false);
 
+      // Construct S3 path with category folder
+      const categoryFolder = getCategoryFolder(modalType === 'edit' ? selectedAssessment.category : formData.category);
+      const s3Path = categoryFolder ? `main-assessment/${categoryFolder}` : 'main-assessment';
 
       // Ensure each question has proper format
       const formattedQuestions = formData.questions.map((question, index) => {
@@ -2179,11 +1913,26 @@ const MainAssessment = ({ templates }) => {
         // Prepare sentenceQuestions with proper field names for backend
         let formattedSentenceQuestions;
         if (isSentenceType && question.sentenceQuestions) {
-          formattedSentenceQuestions = question.sentenceQuestions.map((sq) => ({
-            questionText: sq.questionText,
-            correctAnswer: sq.correctAnswer,
-            acceptableAnswers: sq.acceptableAnswers || []
-          }));
+          formattedSentenceQuestions = question.sentenceQuestions.map((sq, sqIndex) => {
+            // If there's no questionId, generate one
+            const subQuestionNumber = String(sqIndex + 1).padStart(2, '0');
+            // Get a base ID for generating subQuestionIds if needed
+            const categoryPrefix = getCategoryPrefix(modalType === 'edit' ? selectedAssessment.category : formData.category);
+            const questionNumber = String(index + 1).padStart(3, '0');
+            const baseId = `${categoryPrefix}_${questionNumber}`;
+            // Use existing questionId, or generate a new one based on baseId
+            const subQuestionId = sq.questionId || `${baseId}_SQ${subQuestionNumber}`;
+
+            return {
+              questionText: sq.questionText,
+              correctAnswer: sq.correctAnswer,
+              incorrectAnswer: sq.incorrectAnswer,
+              correctDescription: sq.correctDescription || "",
+              incorrectDescription: sq.incorrectDescription || "",
+              questionImage: sq.questionImage || null,
+              questionId: subQuestionId
+            };
+          });
         }
 
         return {
@@ -2230,39 +1979,70 @@ const MainAssessment = ({ templates }) => {
         // Create new assessment - include all fields
         // Get the questionType based on category (using global mapping)
 
-        // Create assessment data - Reading Comprehension uses single assessment with sentenceQuestions
-        const assessmentData = {
-          readingLevel: formData.readingLevel,
-          category: formData.category,
-          questionType: categoryToQuestionTypeMap[formData.category],
-          isActive: formData.isActive,
-          status: formData.status
-        };
-
-        if (formData.category === "Reading Comprehension") {
-          // For Reading Comprehension, create single question with sentenceQuestions array
-          const questionId = `RC_001`;
-          const singleQuestionData = {
-            questionId: questionId,
-            storyTitle: questionFormData.storyTitle,
-            passages: questionFormData.passages.filter(p => p.pageText && p.pageText.trim()),
-            sentenceQuestions: questionFormData.sentenceQuestions
-          };
+        // Special handling for Reading Comprehension with multiple questions
+        if (formData.category === "Reading Comprehension" && questionFormData.comprehensionQuestions.length > 0) {
+          // Create multiple assessments, one for each comprehension question
+          const responses = [];
+          const storyTitle = questionFormData.storyTitle;
+          const passages = questionFormData.passages;
           
-          assessmentData.questions = [singleQuestionData];
+          for (let i = 0; i < questionFormData.comprehensionQuestions.length; i++) {
+            const comprQuestion = questionFormData.comprehensionQuestions[i];
+            const questionId = `RC_${String(i + 1).padStart(3, '0')}`;
+            
+            const singleQuestionData = {
+              questionId: questionId,
+              category: formData.category,
+              questionText: comprQuestion.questionText,
+              questionImage: null,
+              questionValue: null,
+              storyTitle: storyTitle,
+              passages: i === 0 ? passages : null, // First question gets passages, others get null
+              correctAnswer: comprQuestion.correctAnswer,
+              acceptableAnswers: comprQuestion.acceptableAnswers
+            };
+
+            const assessmentData = {
+              readingLevel: formData.readingLevel,
+              category: formData.category,
+              questionType: categoryToQuestionTypeMap[formData.category],
+              questions: [singleQuestionData], // Single question per assessment
+              isActive: formData.isActive,
+              status: formData.status
+            };
+
+            console.log(`Creating Reading Comprehension assessment ${i + 1}:`, JSON.stringify(assessmentData, null, 2));
+            
+            try {
+              const singleResponse = await MainAssessmentService.createAssessment(assessmentData);
+              responses.push(singleResponse);
+            } catch (error) {
+              console.error(`Error creating assessment ${i + 1}:`, error);
+              throw error;
+            }
+          }
+          
+          response = responses[0]; // Use first response for success checking
         } else {
-          // For other categories, use finalQuestions
-          assessmentData.questions = finalQuestions.map(question => ({
-            ...question,
-            category: formData.category // Required by backend model for validation
-          }));
+          // Original logic for other categories
+          const assessmentData = {
+            readingLevel: formData.readingLevel,
+            category: formData.category,
+            questionType: categoryToQuestionTypeMap[formData.category],
+            questions: finalQuestions.map(question => ({
+              ...question,
+              category: formData.category // Required by backend model for validation
+            })),
+            isActive: formData.isActive,
+            status: formData.status
+          };
+
+          // For debugging - log the data being sent
+          console.log("Submitting assessment data:", JSON.stringify(assessmentData, null, 2));
+
+          // Create new assessment
+          response = await MainAssessmentService.createAssessment(assessmentData);
         }
-
-        // For debugging - log the data being sent
-        console.log("Submitting assessment data:", JSON.stringify(assessmentData, null, 2));
-
-        // Create new assessment
-        response = await MainAssessmentService.createAssessment(assessmentData);
       }
 
       // Check if response indicates success - handle different response formats
@@ -2274,11 +2054,15 @@ const MainAssessment = ({ templates }) => {
         // Get the assessment data from the response
         const assessmentResponse = response.data || (response.success ? response : null);
 
-        // Refresh assessments data from server to ensure consistency
-        await refreshAssessments();
-
-        // Add a small delay to ensure state updates are processed
-        await new Promise(resolve => setTimeout(resolve, 100));
+        if (modalType === 'edit' && selectedAssessment) {
+          // Update local state for edit
+          setAssessments(prev =>
+            prev.map(a => a._id === selectedAssessment._id ? assessmentResponse : a)
+          );
+        } else {
+          // Add to local state for create
+          setAssessments(prev => [...prev, assessmentResponse]);
+        }
 
         // Reset form and close modal
         setShowModal(false);
@@ -2356,112 +2140,6 @@ const MainAssessment = ({ templates }) => {
     }
   };
 
-  // Helper function to get meaningful metadata for each question type
-  const getQuestionMetadata = (question) => {
-    const metadata = [];
-    
-    switch (question.questionType) {
-      case "multiple_choice":
-        if (question.choiceOptions && question.choiceOptions.length > 0) {
-          const correctOption = question.choiceOptions.find(opt => opt.isCorrect);
-          metadata.push({
-            icon: faCheckCircle,
-            text: correctOption ? `Answer: "${correctOption.optionText}"` : `${question.choiceOptions.length} choices`
-          });
-        }
-        break;
-        
-      case "matching":
-        if (question.questionSet && question.questionSet[0]) {
-          const audioCount = question.questionSet[0].audioTexts?.length || 0;
-          const matchCount = question.questionSet[0].matchingOptions?.length || 0;
-          metadata.push({
-            icon: faClipboardList,
-            text: `${audioCount} audio → ${matchCount} matches`
-          });
-        }
-        break;
-        
-      case "drag_drop":
-        if (question.correctSequence && question.correctSequence.length > 0) {
-          metadata.push({
-            icon: faPuzzlePiece,
-            text: `Answer: "${question.correctSequence.join('')}"`
-          });
-        }
-        if (question.dragElements && question.dragElements.length > 0) {
-          metadata.push({
-            icon: faLayerGroup,
-            text: `${question.dragElements.length} letters available`
-          });
-        }
-        break;
-        
-      case "fill_blank":
-        if (question.correctAnswer && question.correctAnswer.length > 0) {
-          metadata.push({
-            icon: faCheckCircle,
-            text: `Answer: "${question.correctAnswer.join(', ')}"`
-          });
-        }
-        if (question.blankOptions && question.blankOptions.length > 0) {
-          metadata.push({
-            icon: faClipboardList,
-            text: `${question.blankOptions.length} options`
-          });
-        }
-        break;
-        
-      case "text_input":
-        if (question.storyTitle) {
-          metadata.push({
-            icon: faBook,
-            text: `Story: "${question.storyTitle}"`
-          });
-        }
-        if (question.passages && question.passages.length > 0) {
-          metadata.push({
-            icon: faFileAlt,
-            text: `${question.passages.length} pages`
-          });
-        }
-        if (question.correctAnswer) {
-          metadata.push({
-            icon: faCheckCircle,
-            text: `Answer: "${question.correctAnswer}"`
-          });
-        }
-        break;
-        
-      // Legacy support for old question types
-      case "sentence":
-        if (question.passages && question.passages.length > 0) {
-          metadata.push({
-            icon: faBook,
-            text: `${question.passages.length} pages`
-          });
-        }
-        if (question.sentenceQuestions && question.sentenceQuestions.length > 0) {
-          metadata.push({
-            icon: faQuestion,
-            text: `${question.sentenceQuestions.length} questions`
-          });
-        }
-        break;
-        
-      default:
-        // For unknown types, show generic info if available
-        if (question.choiceOptions && question.choiceOptions.length > 0) {
-          metadata.push({
-            icon: faCheckCircle,
-            text: `${question.choiceOptions.length} options`
-          });
-        }
-    }
-    
-    return metadata;
-  };
-
   // Helper function to get question type for category
   const getQuestionTypeForCategory = (category) => {
     switch (category) {
@@ -2474,17 +2152,37 @@ const MainAssessment = ({ templates }) => {
     }
   };
 
+  // Helper function to get icon for question type
+  const getQuestionTypeIcon = (type) => {
+    switch (type) {
+      case 'multiple_choice': return faCheckCircle;
+      case 'matching': return faArrowRight;
+      case 'drag_drop': return faPuzzlePiece;
+      case 'fill_blank': return faEdit;
+      case 'text_input': return faFileAlt;
+      default: return faQuestion;
+    }
+  };
 
+  // Handle status toggle
+  const handleToggleStatus = async (assessment) => {
+    try {
+      const newStatus = assessment.status === 'active' ? 'inactive' : 'active';
+      const newIsActive = newStatus === 'active';
 
-  // Helper function to clean up object URLs
-  const cleanupImageObjectURL = (imageValue) => {
-    if (imageValue instanceof File) {
-      try {
-        const objectUrl = URL.createObjectURL(imageValue);
-        URL.revokeObjectURL(objectUrl);
-      } catch (error) {
-        console.warn('Error cleaning up object URL:', error);
+      const response = await MainAssessmentService.toggleAssessmentStatus(assessment._id, newStatus);
+
+      if (response && response.success) {
+        // Update local state
+        setAssessments(prev =>
+          prev.map(a => a._id === assessment._id ?
+            { ...a, status: newStatus, isActive: newIsActive } : a
+          )
+        );
       }
+    } catch (error) {
+      console.error('Error toggling assessment status:', error);
+      alert(handleApiError(error, "Failed to update status. Please try again."));
     }
   };
 
@@ -2521,6 +2219,17 @@ const MainAssessment = ({ templates }) => {
     }
   };
 
+  // Helper function to get category-specific folder for S3 uploads
+  const getCategoryFolder = (category) => {
+    const folderMap = {
+      'Alphabet Knowledge': 'alphabet-knowledge',
+      'Phonological Awareness': 'phonological-awareness',
+      'Decoding': 'decoding',
+      'Word Recognition': 'word-recognition',
+      'Reading Comprehension': 'reading-comprehension'
+    };
+    return folderMap[category] || '';
+  };
 
   if (loading) {
     return (
@@ -2580,6 +2289,7 @@ const MainAssessment = ({ templates }) => {
     <div className="post-assessment-container">
       <div className="pa-header">
         <h2>
+          <FontAwesomeIcon icon={faClipboardList} />
           Main Assessment Management
         </h2>
         <p>Create and manage targeted assessments for specific reading levels and categories based on student performance and learning progress.</p>
@@ -2610,6 +2320,15 @@ const MainAssessment = ({ templates }) => {
             </div>
           </div>
 
+          <div className="pa-stat-card inactive">
+            <div className="pa-stat-icon">
+              <FontAwesomeIcon icon={faExclamationTriangle} />
+            </div>
+            <div className="pa-stat-content">
+              <div className="pa-stat-number">{stats.inactive}</div>
+              <div className="pa-stat-label">Inactive</div>
+            </div>
+          </div>
         </div>
 
         <div className="pa-reading-level-overview">
@@ -2853,6 +2572,15 @@ const MainAssessment = ({ templates }) => {
           </select>
         </div>
 
+        {filteredAssessments.length > 0 && (
+          <button
+            className="pa-preview-all-btn"
+            onClick={handlePreviewAllAssessments}
+            title="Preview all assessments"
+          >
+            <FontAwesomeIcon icon={faEye} /> Preview All
+          </button>
+        )}
       </div>
 
       {apiMessage && (
@@ -2968,9 +2696,15 @@ const MainAssessment = ({ templates }) => {
                 </div>
                 <div className="pa-cell">{assessment.questions.length}</div>
                 <div className="pa-cell">
-                  <span className="pa-status pa-active">
-                    <FontAwesomeIcon icon={faCheckCircle} /> Active
-                  </span>
+                  {assessment.isActive ? (
+                    <span className="pa-status pa-active">
+                      <FontAwesomeIcon icon={faCheckCircle} /> Active
+                    </span>
+                  ) : (
+                    <span className="pa-status pa-inactive">
+                      <FontAwesomeIcon icon={faExclamationTriangle} /> Inactive
+                    </span>
+                  )}
                 </div>
                 <div className="pa-cell pa-actions">
                   <button
@@ -2989,6 +2723,13 @@ const MainAssessment = ({ templates }) => {
                     <FontAwesomeIcon icon={faEye} />
                   </button>
 
+                  <button
+                    className={`pa-status-toggle-btn ${assessment.isActive ? 'active' : 'inactive'}`}
+                    onClick={() => handleToggleStatus(assessment)}
+                    title={assessment.isActive ? "Deactivate assessment" : "Activate assessment"}
+                  >
+                    <FontAwesomeIcon icon={assessment.isActive ? faLock : faCheckCircle} />
+                  </button>
 
                   <button
                     className="pa-delete-btn"
@@ -3042,414 +2783,187 @@ const MainAssessment = ({ templates }) => {
                   </div>
                 </div>
               ) : modalType === 'preview' ? (
-                <div className="pa-assessment-preview-enhanced">
-                  <div className="pa-preview-header-enhanced">
-                    <div className="pa-preview-summary-card" style={{ color: '#ffffff' }}>
-                      <div className="pa-summary-row">
-                        <div className="pa-summary-item">
-                          <FontAwesomeIcon icon={faGraduationCap} className="pa-summary-icon" />
-                          <div className="pa-summary-content">
-                            <span className="pa-summary-label" style={{ color: '#ffffff' }}>Reading Level</span>
-                            <span className="pa-summary-value" style={{ color: '#ffffff' }}>{selectedAssessment.readingLevel}</span>
-                          </div>
-                        </div>
-                        <div className="pa-summary-item">
-                          <FontAwesomeIcon icon={
-                            selectedAssessment.category === "Reading Comprehension" ? faBook :
-                            selectedAssessment.category === "Alphabet Knowledge" ? faFont :
-                            selectedAssessment.category === "Phonological Awareness" ? faVolumeUp :
-                            selectedAssessment.category === "Decoding" ? faPuzzlePiece :
-                            faImages
-                          } className="pa-summary-icon" />
-                          <div className="pa-summary-content">
-                            <span className="pa-summary-label" style={{ color: '#ffffff' }}>Category</span>
-                            <span className="pa-summary-value" style={{ color: '#ffffff' }}>{selectedAssessment.category}</span>
-                          </div>
-                        </div>
-                        <div className="pa-summary-item">
-                          <FontAwesomeIcon icon={faClipboardList} className="pa-summary-icon" />
-                          <div className="pa-summary-content">
-                            <span className="pa-summary-label" style={{ color: '#ffffff' }}>Questions</span>
-                            <span className="pa-summary-value" style={{ color: '#ffffff' }}>{selectedAssessment.questions.length}</span>
-                          </div>
-                        </div>
-                        <div className="pa-summary-item">
-                          <FontAwesomeIcon icon={faCheckCircle} className="pa-summary-icon" />
-                          <div className="pa-summary-content">
-                            <span className="pa-summary-label" style={{ color: '#ffffff' }}>Status</span>
-                            <span className="pa-summary-status active" style={{ color: '#ffffff' }}>
-                              Active
+                <div className="pa-assessment-preview">
+                  <div className="pa-preview-header">
+                    <div className="pa-preview-info">
+                      <div className="pa-preview-section">
+                        <span className="pa-preview-label">Reading Level:</span>
+                        <span className="pa-preview-value">{selectedAssessment.readingLevel}</span>
+                      </div>
+
+                      <div className="pa-preview-section">
+                        <span className="pa-preview-label">Category:</span>
+                        <span className="pa-preview-value">{selectedAssessment.category}</span>
+                      </div>
+
+                      <div className="pa-preview-section">
+                        <span className="pa-preview-label">Total Questions:</span>
+                        <span className="pa-preview-value">{selectedAssessment.questions.length}</span>
+                      </div>
+
+                      <div className="pa-preview-section">
+                        <span className="pa-preview-label">Status:</span>
+                        <span className="pa-preview-value">
+                          {selectedAssessment.isActive ? (
+                            <span className="pa-status-tag active">
+                              <FontAwesomeIcon icon={faCheckCircle} /> Active
                             </span>
-                          </div>
-                        </div>
+                          ) : (
+                            <span className="pa-status-tag inactive">
+                              <FontAwesomeIcon icon={faExclamationTriangle} /> Inactive
+                            </span>
+                          )}
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="pa-preview-questions-section">
-                    <div className="pa-questions-header-enhanced">
-                      <h3><FontAwesomeIcon icon={faClipboardList} /> Assessment Questions</h3>
-                      <div className="pa-question-type-badge">
-                        <FontAwesomeIcon icon={
-                          selectedAssessment.category === "Reading Comprehension" ? faBook :
-                          selectedAssessment.category === "Alphabet Knowledge" ? faFont :
-                          selectedAssessment.category === "Phonological Awareness" ? faVolumeUp :
-                          selectedAssessment.category === "Decoding" ? faPuzzlePiece :
-                          faImages
-                        } />
-                        {selectedAssessment.questionType}
-                      </div>
-                    </div>
+                  <div className="pa-preview-content">
+                    <h4>
+                      <FontAwesomeIcon icon={faClipboardList} className="pa-preview-icon" />
+                      Assessment Questions
+                    </h4>
 
-                    <div className="pa-questions-container-enhanced">
-                      {selectedAssessment.questions.map((question, index) => (
-                        <div key={index} className="pa-question-card-enhanced">
-                          <div className="pa-question-header-enhanced">
-                            <div className="pa-question-number-badge">
-                              <FontAwesomeIcon icon={faQuestion} />
-                              <span>Question {index + 1}</span>
-                            </div>
-                            <div className="pa-question-id-badge">
-                              ID: {question.questionId || `${getCategoryPrefix(selectedAssessment.category)}_${String(index + 1).padStart(3, '0')}`}
-                            </div>
-                          </div>
-
-                          <div className="pa-question-body-enhanced">
-                            <div className="pa-question-prompt-enhanced">
-                              {question.questionImage && (
-                                <div className="pa-question-image-wrapper">
-                                  <img
-                                    src={question.questionImage}
-                                    alt="Question visual"
-                                    className="pa-question-image-enhanced"
-                                  />
-                                </div>
-                              )}
-                              
-                              <div className="pa-question-text-enhanced">
-                                <h4 className="pa-question-instruction">{question.questionText}</h4>
-                                {question.questionValue && (
-                                  <div className="pa-question-value-display">
-                                    <span className="pa-value-label">Display Text:</span>
-                                    <span className="pa-value-content">{question.questionValue}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Render category-specific content */}
-                            {selectedAssessment.category === "Alphabet Knowledge" && (
-                              <div className="pa-alphabet-knowledge-content">
-                                <h5 className="pa-answer-section-title">
-                                  <FontAwesomeIcon icon={faCheckDouble} /> Multiple Choice Options
-                                </h5>
-                                <div className="pa-choice-options-enhanced">
-                                  {question.choiceOptions && question.choiceOptions.map((option, optIndex) => (
-                                    <div
-                                      key={optIndex}
-                                      className={`pa-choice-option ${option.isCorrect ? 'correct' : 'incorrect'}`}
-                                    >
-                                      <div className="pa-option-indicator">
-                                        {option.isCorrect ? (
-                                          <FontAwesomeIcon icon={faCheckCircle} className="correct-icon" />
-                                        ) : (
-                                          <span className="option-letter">{String.fromCharCode(65 + optIndex)}</span>
-                                        )}
-                                      </div>
-                                      <div className="pa-option-content">
-                                        <span className="pa-option-text">{option.optionText}</span>
-                                        {option.isCorrect && <span className="pa-correct-label">Correct Answer</span>}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {selectedAssessment.category === "Phonological Awareness" && (
-                              <div className="pa-phonological-awareness-content">
-                                <h5 className="pa-answer-section-title">
-                                  <FontAwesomeIcon icon={faVolumeUp} /> Audio Matching Pairs
-                                </h5>
-                                {question.questionSet && question.questionSet[0] && (
-                                  <div className="pa-matching-content">
-                                    <div className="pa-audio-section">
-                                      <h6><FontAwesomeIcon icon={faVolumeUp} /> Audio Elements</h6>
-                                      <div className="pa-audio-items">
-                                        {question.questionSet[0].audioTexts && question.questionSet[0].audioTexts.map((audio, audioIndex) => (
-                                          <div key={audioIndex} className="pa-audio-item">
-                                            <FontAwesomeIcon icon={faVolumeUp} />
-                                            <span>{audio}</span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                    <div className="pa-matching-arrow">
-                                      <FontAwesomeIcon icon={faArrowRight} />
-                                    </div>
-                                    <div className="pa-visual-section">
-                                      <h6><FontAwesomeIcon icon={faImages} /> Visual Options</h6>
-                                      <div className="pa-visual-items">
-                                        {question.questionSet[0].matchingOptions && question.questionSet[0].matchingOptions.map((visual, visualIndex) => (
-                                          <div key={visualIndex} className="pa-visual-item">
-                                            <FontAwesomeIcon icon={faImages} />
-                                            <span>{visual}</span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                    <div className="pa-correct-pairs-section">
-                                      <h6><FontAwesomeIcon icon={faCheckCircle} /> Correct Pairs</h6>
-                                      <div className="pa-pairs-list">
-                                        {question.questionSet[0].correctPairs && question.questionSet[0].correctPairs.map((pair, pairIndex) => (
-                                          <div key={pairIndex} className="pa-correct-pair">
-                                            {Object.entries(pair).map(([audio, visual]) => (
-                                              <div key={audio} className="pa-pair-connection">
-                                                <span className="pa-pair-audio">{audio}</span>
-                                                <FontAwesomeIcon icon={faArrowRight} className="pa-pair-arrow" />
-                                                <span className="pa-pair-visual">{visual}</span>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {selectedAssessment.category === "Decoding" && (
-                              <div className="pa-decoding-content">
-                                <h5 className="pa-answer-section-title">
-                                  <FontAwesomeIcon icon={faPuzzlePiece} /> Drag & Drop Elements
-                                </h5>
-                                <div className="pa-decoding-layout">
-                                  <div className="pa-decoding-question-type">
-                                    <span className={`pa-decoding-type ${question.questionText === 'Tukuyin ang nasa larawan?' ? 'identification' : 'completion'}`}>
-                                      {question.questionText === 'Tukuyin ang nasa larawan?' ? 'Word Identification' : 'Word Completion'}
-                                    </span>
-                                  </div>
-                                  
-                                  {question.displaySequence && question.displaySequence.length > 0 && (
-                                    <div className="pa-display-sequence">
-                                      <h6><FontAwesomeIcon icon={faListUl} /> Display Pattern</h6>
-                                      <div className="pa-sequence-items">
-                                        {question.displaySequence.map((item, seqIndex) => (
-                                          <div key={seqIndex} className={`pa-sequence-item ${item === '_' ? 'blank' : 'filled'}`}>
-                                            {item === '_' ? (
-                                              <div className="pa-blank-space">
-                                                <FontAwesomeIcon icon={faQuestion} />
-                                              </div>
-                                            ) : (
-                                              <span>{item}</span>
-                                            )}
-                                          </div>
-                                        ))}
-                                      </div>
-                                      {question.blankPosition !== null && (
-                                        <div className="pa-blank-info">
-                                          <span>Blank Position: {question.blankPosition + 1}</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-
-                                  <div className="pa-drag-elements">
-                                    <h6><FontAwesomeIcon icon={faPuzzlePiece} /> Available Elements</h6>
-                                    <div className="pa-drag-items">
-                                      {question.dragElements && question.dragElements.map((element, dragIndex) => (
-                                        <div key={dragIndex} className="pa-drag-item">
-                                          {element}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-
-                                  <div className="pa-correct-sequence">
-                                    <h6><FontAwesomeIcon icon={faCheckCircle} /> Correct Answer</h6>
-                                    <div className="pa-correct-items">
-                                      {question.correctSequence && question.correctSequence.map((correct, corrIndex) => (
-                                        <div key={corrIndex} className="pa-correct-item">
-                                          {correct}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {selectedAssessment.category === "Word Recognition" && (
-                              <div className="pa-word-recognition-content">
-                                <h5 className="pa-answer-section-title">
-                                  <FontAwesomeIcon icon={faFileAlt} /> Fill in the Blank
-                                </h5>
-                                <div className="pa-word-recognition-layout">
-                                  <div className="pa-display-word-section">
-                                    <h6><FontAwesomeIcon icon={faBook} /> Sentence/Word Display</h6>
-                                    <div className="pa-display-word">
-                                      {question.displayWord}
-                                    </div>
-                                  </div>
-
-                                  <div className="pa-blank-options-section">
-                                    <h6><FontAwesomeIcon icon={faListUl} /> Answer Options</h6>
-                                    <div className="pa-blank-options">
-                                      {question.blankOptions && question.blankOptions.map((option, optIndex) => (
-                                        <div key={optIndex} className={`pa-blank-option ${question.correctAnswer && question.correctAnswer.includes(option) ? 'correct' : 'incorrect'}`}>
-                                          <div className="pa-option-indicator">
-                                            {question.correctAnswer && question.correctAnswer.includes(option) ? (
-                                              <FontAwesomeIcon icon={faCheckCircle} className="correct-icon" />
-                                            ) : (
-                                              <span className="option-letter">{String.fromCharCode(65 + optIndex)}</span>
-                                            )}
-                                          </div>
-                                          <div className="pa-option-content">
-                                            <span className="pa-option-text">{option}</span>
-                                            {question.correctAnswer && question.correctAnswer.includes(option) && (
-                                              <span className="pa-correct-label">Correct</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-
-                                  <div className="pa-correct-answers-section">
-                                    <h6><FontAwesomeIcon icon={faCheckCircle} /> Correct Answer(s)</h6>
-                                    <div className="pa-correct-answers">
-                                      {question.correctAnswer && question.correctAnswer.map((answer, ansIndex) => (
-                                        <div key={ansIndex} className="pa-correct-answer-item">
-                                          <FontAwesomeIcon icon={faCheckCircle} />
-                                          <span>{answer}</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {selectedAssessment.category === "Reading Comprehension" && (
-                              <div className="pa-reading-comprehension-content">
-                                <h5 className="pa-answer-section-title">
-                                  <FontAwesomeIcon icon={faBook} /> Story & Comprehension
-                                </h5>
-                                
-                                <div className="pa-story-info">
-                                  <div className="pa-story-title-section">
-                                    <h6><FontAwesomeIcon icon={faBook} /> Story Title</h6>
-                                    <div className="pa-story-title">{question.storyTitle}</div>
-                                  </div>
-                                </div>
-
-                                {question.passages && question.passages.length > 0 ? (
-                                  <div className="pa-passages-section">
-                                    <h6><FontAwesomeIcon icon={faImages} /> Story Passages</h6>
-                                    <div className="pa-passages-container">
-                                      {question.passages.map((passage, passageIndex) => (
-                                        <div key={passageIndex} className="pa-passage-card">
-                                          <div className="pa-passage-header">
-                                            <span className="pa-page-number">Page {passage.pageNumber}</span>
-                                          </div>
-                                          <div className="pa-passage-content">
-                                            {passage.pageImage && (
-                                              <div className="pa-passage-image-container">
-                                                <img
-                                                  src={passage.pageImage}
-                                                  alt={`Page ${passage.pageNumber} illustration`}
-                                                  className="pa-passage-image"
-                                                />
-                                              </div>
-                                            )}
-                                            <div className="pa-passage-text">
-                                              {passage.pageText}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="pa-no-passages">
-                                    <FontAwesomeIcon icon={faLink} />
-                                    <span>References existing story passages</span>
-                                  </div>
-                                )}
-
-                                <div className="pa-comprehension-question-section">
-                                  <h6><FontAwesomeIcon icon={faQuestion} /> Question & Answer</h6>
-                                  
-                                  {/* Handle the new structure with sentenceQuestions array */}
-                                  {question.sentenceQuestions && question.sentenceQuestions.length > 0 ? (
-                                    <div className="pa-sentence-questions-list">
-                                      {question.sentenceQuestions.map((sentenceQ, sqIndex) => (
-                                        <div key={sqIndex} className="pa-sentence-question-item">
-                                          <div className="pa-comprehension-question-text">
-                                            <strong>Q{sqIndex + 1}:</strong> {sentenceQ.questionText}
-                                          </div>
-                                          <div className="pa-comprehension-answers">
-                                            <div className="pa-primary-answer">
-                                              <FontAwesomeIcon icon={faCheckCircle} className="correct-icon" />
-                                              <span><strong>Primary Answer:</strong> {sentenceQ.correctAnswer}</span>
-                                            </div>
-                                            {sentenceQ.acceptableAnswers && sentenceQ.acceptableAnswers.length > 0 && (
-                                              <div className="pa-acceptable-answers">
-                                                <h6 className="pa-acceptable-answers-title">
-                                                  <FontAwesomeIcon icon={faCheckDouble} /> 
-                                                  Acceptable Answers
-                                                </h6>
-                                                <div className="pa-acceptable-list">
-                                                  {sentenceQ.acceptableAnswers.map((answer, ansIndex) => (
-                                                    <div key={ansIndex} className="pa-acceptable-answer">
-                                                      <FontAwesomeIcon icon={faCheckCircle} className="acceptable-icon" />
-                                                      <span>{answer}</span>
-                                                    </div>
-                                                  ))}
-                                                </div>
-                                              </div>
-                                            )}
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    /* Fallback for old structure - if questionText exists at question level */
-                                    question.questionText && (
-                                      <div className="pa-question-answer-pair">
-                                        <div className="pa-comprehension-question-text">
-                                          <strong>Q:</strong> {question.questionText}
-                                        </div>
-                                        <div className="pa-comprehension-answers">
-                                          <div className="pa-primary-answer">
-                                            <FontAwesomeIcon icon={faCheckCircle} className="correct-icon" />
-                                            <span><strong>Primary Answer:</strong> {question.correctAnswer}</span>
-                                          </div>
-                                          {question.acceptableAnswers && question.acceptableAnswers.length > 1 && (
-                                            <div className="pa-acceptable-answers">
-                                              <h6><FontAwesomeIcon icon={faCheckDouble} /> Acceptable Answers</h6>
-                                              <div className="pa-acceptable-list">
-                                                {question.acceptableAnswers.map((answer, ansIndex) => (
-                                                  <div key={ansIndex} className="pa-acceptable-answer">
-                                                    <FontAwesomeIcon icon={faCheckCircle} className="acceptable-icon" />
-                                                    <span>{answer}</span>
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    )
-                                  )}
-                                </div>
-                              </div>
-                            )}
+                    {selectedAssessment.questions.map((question, index) => (
+                      <div key={index} className="pa-preview-question-card">
+                        <div className="pa-question-header">
+                          <div className="pa-question-metadata">
+                            <span className="pa-question-num">Question {index + 1}</span>
+                            <span className="pa-question-type">
+                              <FontAwesomeIcon
+                                icon={
+                                  question.questionType === "patinig" || question.questionType === "katinig"
+                                    ? faFont
+                                    : question.questionType === "malapantig"
+                                      ? faPuzzlePiece
+                                      : question.questionType === "sentence"
+                                        ? faBook
+                                        : faFileAlt
+                                }
+                                className="pa-question-type-icon"
+                              />
+                              {getQuestionTypeDisplay(question.questionType, question.questionSubtype)}
+                            </span>
                           </div>
                         </div>
-                      ))}
-                    </div>
+
+                        <div className="pa-question-content">
+                          <div className="pa-question-prompt">
+                            {question.questionImage && (
+                              <div className="pa-question-image-container">
+                                <img
+                                  src={question.questionImage}
+                                  alt="Question visual"
+                                  className="pa-question-image"
+                                />
+                              </div>
+                            )}
+
+                            <div className="pa-question-text-container">
+                              <p className="pa-question-text">{question.questionText}</p>
+                              {question.questionValue && (
+                                <div className="pa-question-value">
+                                  <strong>Value:</strong> {question.questionValue}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {question.questionType === 'sentence' && question.passages ? (
+                            <div className="pa-passage-preview">
+                              <h5><FontAwesomeIcon icon={faBook} /> Reading Passage</h5>
+
+                              <div className="pa-passage-navigation">
+                                <button
+                                  className="pa-page-nav-btn"
+                                  onClick={() => handlePreviewPageChange('prev')}
+                                  disabled={previewPage === 0}
+                                >
+                                  <FontAwesomeIcon icon={faArrowLeft} /> Previous
+                                </button>
+
+                                <span className="pa-page-indicator">
+                                  Page {previewPage + 1} of {question.passages.length}
+                                </span>
+
+                                <button
+                                  className="pa-page-nav-btn"
+                                  onClick={() => handlePreviewPageChange('next')}
+                                  disabled={previewPage >= question.passages.length - 1}
+                                >
+                                  Next <FontAwesomeIcon icon={faArrowRight} />
+                                </button>
+                              </div>
+
+                              <div className="pa-passage-container">
+                                {question.passages[previewPage]?.pageImage && (
+                                  <div className="pa-passage-image-container">
+                                    <img
+                                      src={question.passages[previewPage].pageImage}
+                                      alt={`Page ${previewPage + 1} illustration`}
+                                      className="pa-passage-image"
+                                    />
+                                  </div>
+                                )}
+
+                                <div className="pa-passage-text-container">
+                                  <p className="pa-passage-text">{question.passages[previewPage]?.pageText}</p>
+                                </div>
+                              </div>
+
+                              <div className="pa-comprehension-questions">
+                                <h5><FontAwesomeIcon icon={faQuestion} /> Comprehension Questions</h5>
+                                {question.sentenceQuestions && question.sentenceQuestions.length > 0 ? (
+                                  question.sentenceQuestions.map((sq, sqIndex) => (
+                                    <div key={sqIndex} className="pa-comprehension-question">
+                                      <div className="pa-comprehension-q-header">
+                                        <span className="pa-comprehension-q-number">Q{sqIndex + 1}:</span>
+                                        <span className="pa-comprehension-q-text">{sq.questionText}</span>
+                                      </div>
+
+                                      <div className="pa-comprehension-options">
+                                        <div className="pa-option pa-option-correct">
+                                          <FontAwesomeIcon icon={faCheckCircle} className="pa-option-icon" />
+                                          {sq.correctAnswer}
+                                        </div>
+                                        <div className="pa-option">
+                                          {sq.incorrectAnswer}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="pa-no-questions">
+                                    <p>No comprehension questions added yet.</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="pa-choice-options">
+                              <h5><FontAwesomeIcon icon={faCheckDouble} /> Answer Options</h5>
+
+                              <div className="pa-options-list">
+                                {question.choiceOptions && question.choiceOptions.map((option, optIndex) => (
+                                  <div
+                                    key={optIndex}
+                                    className={`pa-option ${option.isCorrect ? 'pa-option-correct' : ''}`}
+                                  >
+                                    <div className="pa-option-header">
+                                      {option.isCorrect && (
+                                        <FontAwesomeIcon icon={faCheckCircle} className="pa-option-icon" />
+                                      )}
+                                      {option.optionText}
+                                    </div>
+
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ) : showQuestionForm ? (
@@ -3506,66 +3020,63 @@ const MainAssessment = ({ templates }) => {
                             />
                           </div>
 
-                          {/* Hide Question Text field for Reading Comprehension - it has its own question text inputs */}
-                          {formData.category !== "Reading Comprehension" && (
-                            <div className="pa-form-group">
-                              <label className="pa-form-label" htmlFor="questionText">
-                                <FontAwesomeIcon icon={faFileAlt} className="pa-label-icon" />
-                                Question Text
-                                <span className="pa-required-field">*</span>
-                                <Tooltip text="The main instruction or question that will be displayed to students. Make it clear and age-appropriate." />
-                              </label>
-                              {formData.category === "Decoding" ? (
-                                <select
-                                  id="questionText"
-                                  name="questionText"
-                                  value={questionFormData.questionText}
-                                  onChange={(e) => {
-                                    const selectedText = e.target.value;
-                                    setQuestionFormData(prev => ({
-                                      ...prev,
-                                      questionText: selectedText,
-                                      // Reset related fields when changing question type
-                                      displaySequence: selectedText === 'Tukuyin ang nasa larawan?' ? null : [],
-                                      dragElements: [],
-                                      correctSequence: [],
-                                      blankPosition: selectedText === 'Buoin ang salita' ? 0 : null
-                                    }));
-                                  }}
-                                  className="pa-select-input"
-                                  required
-                                >
-                                  <option value="">Select question text</option>
-                                  <option value="Tukuyin ang nasa larawan?">Tukuyin ang nasa larawan?</option>
-                                  <option value="Buoin ang salita">Buoin ang salita</option>
-                                </select>
-                              ) : formData.category === "Word Recognition" ? (
-                                <select
-                                  id="questionText"
-                                  name="questionText"
-                                  value={questionFormData.questionText}
-                                  onChange={handleQuestionFormChange}
-                                  className="pa-select-input"
-                                  required
-                                >
-                                  <option value="">Select question text</option>
-                                  <option value="Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.">Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.</option>
-                                  <option value="Anong kasing tunog ng salitang nakikita?">Anong kasing tunog ng salitang nakikita?</option>
-                                </select>
-                              ) : (
-                                <input
-                                  type="text"
-                                  id="questionText"
-                                  name="questionText"
-                                  value={questionFormData.questionText}
-                                  onChange={handleQuestionFormChange}
-                                  placeholder="Enter the question text (e.g., 'Anong katumbas na maliit na letra?')"
-                                  required
-                                  className="pa-text-input"
-                                />
-                              )}
-                            </div>
-                          )}
+                          <div className="pa-form-group">
+                            <label className="pa-form-label" htmlFor="questionText">
+                              <FontAwesomeIcon icon={faFileAlt} className="pa-label-icon" />
+                              Question Text
+                              <span className="pa-required-field">*</span>
+                              <Tooltip text="The main instruction or question that will be displayed to students. Make it clear and age-appropriate." />
+                            </label>
+                            {formData.category === "Decoding" ? (
+                              <select
+                                id="questionText"
+                                name="questionText"
+                                value={questionFormData.questionText}
+                                onChange={(e) => {
+                                  const selectedText = e.target.value;
+                                  setQuestionFormData(prev => ({
+                                    ...prev,
+                                    questionText: selectedText,
+                                    // Reset related fields when changing question type
+                                    displaySequence: [],
+                                    dragElements: [],
+                                    correctSequence: [],
+                                    blankPosition: selectedText === 'Buoin ang salita' ? 0 : null
+                                  }));
+                                }}
+                                className="pa-select-input"
+                                required
+                              >
+                                <option value="">Select question text</option>
+                                <option value="Tukuyin ang nasa larawan?">Tukuyin ang nasa larawan?</option>
+                                <option value="Buoin ang salita">Buoin ang salita</option>
+                              </select>
+                            ) : formData.category === "Word Recognition" ? (
+                              <select
+                                id="questionText"
+                                name="questionText"
+                                value={questionFormData.questionText}
+                                onChange={handleQuestionFormChange}
+                                className="pa-select-input"
+                                required
+                              >
+                                <option value="">Select question text</option>
+                                <option value="Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.">Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.</option>
+                                <option value="Anong kasing tunog ng salitang nakikita?">Anong kasing tunog ng salitang nakikita?</option>
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                id="questionText"
+                                name="questionText"
+                                value={questionFormData.questionText}
+                                onChange={handleQuestionFormChange}
+                                placeholder="Enter the question text (e.g., 'Anong katumbas na maliit na letra?')"
+                                required
+                                className="pa-text-input"
+                              />
+                            )}
+                          </div>
 
                           {/* Show questionValue only for Alphabet Knowledge */}
                           {formData.category === "Alphabet Knowledge" && (
@@ -3587,8 +3098,8 @@ const MainAssessment = ({ templates }) => {
                           )}
                         </div>
 
-                        {/* Right Column - Image Upload (Hidden for Phonological Awareness and Reading Comprehension) */}
-                        {formData.category !== "Phonological Awareness" && formData.category !== "Reading Comprehension" && (
+                        {/* Right Column - Image Upload (Hidden for Phonological Awareness) */}
+                        {formData.category !== "Phonological Awareness" && (
                           <div className="pa-question-right-column">
                           {/* Show questionImage only for Alphabet Knowledge, Decoding, and Word Recognition */}
                           {(formData.category === "Alphabet Knowledge" ||
@@ -3618,12 +3129,10 @@ const MainAssessment = ({ templates }) => {
                                     <div className="pa-image-preview">
                                       <img
                                         src={
-                                          questionFormData.questionImage instanceof File
-                                            ? URL.createObjectURL(questionFormData.questionImage) // Create object URL for File objects
-                                            : typeof questionFormData.questionImage === 'string' &&
-                                              questionFormData.questionImage.startsWith('data:')
+                                          typeof questionFormData.questionImage === 'string' &&
+                                            questionFormData.questionImage.startsWith('data:')
                                             ? questionFormData.questionImage // Show data URL for preview
-                                            : questionFormData.questionImage // Show existing URL string
+                                            : questionFormData.questionImage // Show existing URL
                                         }
                                         alt="Question"
                                         className="pa-preview-image"
@@ -3634,10 +3143,6 @@ const MainAssessment = ({ templates }) => {
                                           borderRadius: '8px',
                                           border: '2px solid #e2e8f0'
                                         }}
-                                        onError={(e) => {
-                                          console.error('Image failed to load:', questionFormData.questionImage);
-                                          e.target.style.display = 'none';
-                                        }}
                                       />
 
                                       <div className="pa-file-name" style={{
@@ -3646,15 +3151,12 @@ const MainAssessment = ({ templates }) => {
                                         color: '#6b7280',
                                         textAlign: 'center'
                                       }}>
-                                        {questionFormData.questionImage instanceof File 
-                                          ? `File: ${questionFormData.questionImage.name}` 
-                                          : "Question image uploaded"}
+                                        {questionFormData.questionImage ? "Question image uploaded" : "Image Preview"}
                                       </div>
 
                                       <button
                                         type="button"
                                         onClick={() => {
-                                          cleanupImageObjectURL(questionFormData.questionImage);
                                           setQuestionFormData({
                                             ...questionFormData,
                                             questionImage: null,
@@ -3804,7 +3306,6 @@ const MainAssessment = ({ templates }) => {
                               <p className="pa-section-description">
                                 Enter letters (e.g., H, T) or words (e.g., DAGA, MATA) that will be read aloud by text-to-speech
                               </p>
-                              <br></br>
 
                               <div className="pa-audio-cards">
                                 {questionFormData.questionSet?.[0]?.audioTexts?.map((audioText, index) => (
@@ -3977,26 +3478,16 @@ const MainAssessment = ({ templates }) => {
                                 <label>Complete Word (will be scrambled for students):</label>
                                 <input
                                   type="text"
-                                  placeholder={questionFormData.questionText === "Tukuyin ang nasa larawan?" ? 
-                                    "Enter complete word (e.g., YELO)" : 
-                                    "Enter complete word (e.g., Yelo)"}
+                                  placeholder="Enter complete word (e.g., Yelo)"
                                   value={questionFormData.correctSequence?.join('') || ''}
                                   onChange={(e) => {
                                     const cleanWord = e.target.value.replace(/[^a-zA-Z]/g, '').replace(/\s+/g, ''); // Remove numbers, symbols, and spaces
-                                    // Format based on question type: uppercase for "Tukuyin ang nasa larawan?", mixed case for others
-                                    const isWordIdentification = questionFormData.questionText === "Tukuyin ang nasa larawan?";
-                                    const formattedWord = isWordIdentification ? 
-                                      cleanWord.toUpperCase() : 
-                                      (cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1).toLowerCase());
+                                    // Auto-capitalize first letter, make rest lowercase
+                                    const formattedWord = cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1).toLowerCase();
                                     const letters = formattedWord.split('');
-                                    // Add distractors matching the case style
-                                    const distractors = isWordIdentification ? 
-                                      ['A', 'E', 'I', 'O', 'U', 'B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'] : 
-                                      ['a', 'e', 'i', 'o', 'u', 'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z'];
-                                    // Randomize distractor selection - filter out letters already in the word
-                                    const availableDistractors = distractors.filter(d => !letters.includes(d));
-                                    const shuffled = availableDistractors.sort(() => Math.random() - 0.5);
-                                    const selectedDistractors = shuffled.slice(0, 2); // Take 2 random distractors
+                                    // Add mixed case distractors instead of all capitals
+                                    const distractors = ['a', 'E', 'i', 'O', 'u', 'n', 't', 'r'];
+                                    const selectedDistractors = distractors.slice(0, 2); // Take 2 distractors
                                     setQuestionFormData(prev => ({
                                       ...prev,
                                       correctSequence: letters,
@@ -4044,55 +3535,18 @@ const MainAssessment = ({ templates }) => {
                                   <button
                                     type="button"
                                     className="pa-add-letter"
-                                    onClick={() => setShowDistractorInput(true)}
+                                    onClick={() => {
+                                      const letter = prompt('Add distractor letter:');
+                                      if (letter && letter.trim()) {
+                                        setQuestionFormData(prev => ({
+                                          ...prev,
+                                          dragElements: [...(prev.dragElements || []), letter.toUpperCase().trim()]
+                                        }));
+                                      }
+                                    }}
                                   >
                                     <FontAwesomeIcon icon={faPlus} /> Add Option
                                   </button>
-                                  
-                                  {showDistractorInput && (
-                                    <div className="pa-distractor-input-modal">
-                                      <div className="pa-distractor-input-content">
-                                        <label>Add distractor letter:</label>
-                                        <input
-                                          type="text"
-                                          maxLength="1"
-                                          value={distractorValue}
-                                          onChange={(e) => setDistractorValue(e.target.value.toUpperCase())}
-                                          className="pa-distractor-input"
-                                          placeholder="Enter single letter"
-                                          autoFocus
-                                        />
-                                        <div className="pa-distractor-buttons">
-                                          <button
-                                            type="button"
-                                            className="pa-cancel-btn"
-                                            onClick={() => {
-                                              setShowDistractorInput(false);
-                                              setDistractorValue("");
-                                            }}
-                                          >
-                                            Cancel
-                                          </button>
-                                          <button
-                                            type="button"
-                                            className="pa-add-btn"
-                                            onClick={() => {
-                                              if (distractorValue && distractorValue.trim()) {
-                                                setQuestionFormData(prev => ({
-                                                  ...prev,
-                                                  dragElements: [...(prev.dragElements || []), distractorValue.trim()]
-                                                }));
-                                                setShowDistractorInput(false);
-                                                setDistractorValue("");
-                                              }
-                                            }}
-                                          >
-                                            OK
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
                                 </div>
                               </div>
 
@@ -4125,7 +3579,7 @@ const MainAssessment = ({ templates }) => {
                                   value={questionFormData.displaySequence?.join('').replace('_', (questionFormData.correctSequence?.[0] || '')) || ''}
                                   onChange={(e) => {
                                     const cleanWord = e.target.value.replace(/[^a-zA-Z]/g, '').replace(/\s+/g, ''); // Remove numbers, symbols, and spaces
-                                    // For "Buoin ang salita", use mixed case (first letter uppercase, rest lowercase)
+                                    // Auto-capitalize first letter, make rest lowercase
                                     const formattedWord = cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1).toLowerCase();
                                     setQuestionFormData(prev => ({
                                       ...prev,
@@ -4210,17 +3664,8 @@ const MainAssessment = ({ templates }) => {
                                   className="pa-auto-populate-btn"
                                   onClick={() => {
                                     const correctLetter = questionFormData.correctSequence?.[0] || '';
-                                    // Match case of correct letter - if lowercase, use lowercase distractors
-                                    const isLowercase = correctLetter === correctLetter.toLowerCase();
-                                    const baseDistractors = ['A', 'E', 'I', 'O', 'U', 'B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'];
-                                    const distractors = isLowercase ? 
-                                      baseDistractors.map(d => d.toLowerCase()) : 
-                                      baseDistractors;
-                                    // Randomize distractor selection
-                                    const availableDistractors = distractors.filter(d => d !== correctLetter);
-                                    const shuffled = availableDistractors.sort(() => Math.random() - 0.5);
-                                    const selectedDistractors = shuffled.slice(0, 3); // Take 3 random distractors
-                                    const availableLetters = [correctLetter, ...selectedDistractors];
+                                    const distractors = ['A', 'E', 'I', 'O'];
+                                    const availableLetters = [correctLetter, ...distractors.filter(d => d !== correctLetter)].slice(0, 4);
                                     setQuestionFormData(prev => ({
                                       ...prev,
                                       dragElements: availableLetters
@@ -4295,7 +3740,7 @@ const MainAssessment = ({ templates }) => {
                               <div className="pa-form-group">
                                 <label className="pa-form-label">COMPLETE SENTENCE:</label>
                                 <textarea
-                                  placeholder=""
+                                  placeholder="Naglalaro siya ng bola sa parke"
                                   value={questionFormData.displayWord || ''}
                                   onChange={(e) => {
                                     setQuestionFormData(prev => ({
@@ -4361,12 +3806,8 @@ const MainAssessment = ({ templates }) => {
                               {/* Preview Section */}
                               <div className="pa-form-group pa-preview-section">
                                 <label className="pa-form-label">PREVIEW (WHAT STUDENTS WILL SEE):</label>
-                                <div className="pa-sentence-preview pa-enhanced-preview">
-                                  {questionFormData.displayWord?.replace(/__([^_]+)__/g, (_, word) => {
-                                    // Create dynamic blanks based on word length
-                                    const blankLength = word.length;
-                                    return ` ${'_'.repeat(blankLength)} `;
-                                  }) || 'Enter a sentence above to see preview...'}
+                                <div className="pa-sentence-preview">
+                                  {questionFormData.displayWord?.replace(/__([^_]+)__/g, ' ___ ') || ''}
                                 </div>
                               </div>
 
@@ -4402,30 +3843,25 @@ const MainAssessment = ({ templates }) => {
                                         const correctAnswer = blankMatch ? blankMatch[1].trim() : '';
                                         
                                         if (correctAnswer) {
-                                          // Create distractors - common words for sentence completion with proper capitalization
+                                          // Create distractors - common words for sentence completion
                                           const commonWords = ['bola', 'papel', 'kutsara', 'damit', 'libro', 'laruan', 'sapatos', 'tubig', 'mesa', 'silla', 'pusa', 'aso', 'bahay', 'kotse', 'payong', 'lapis', 'upuan', 'aklat', 'plato', 'baso'];
-                                          
-                                          // Capitalize first letter of correct answer
-                                          const capitalizedCorrectAnswer = correctAnswer.charAt(0).toUpperCase() + correctAnswer.slice(1).toLowerCase();
-                                          
                                           const distractors = commonWords
                                             .filter(word => word.toLowerCase() !== correctAnswer.toLowerCase())
-                                            .slice(0, 3)
-                                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()); // Capitalize distractors too
-                                          
-                                          const availableOptions = [capitalizedCorrectAnswer, ...distractors];
+                                            .slice(0, 3);
+                                          // Preserve the original case of the correct answer, lowercase distractors
+                                          const availableOptions = [correctAnswer, ...distractors];
                                           
                                           setQuestionFormData(prev => ({
                                             ...prev,
                                             blankOptions: availableOptions,
-                                            correctAnswer: [capitalizedCorrectAnswer]
+                                            correctAnswer: [correctAnswer]
                                           }));
                                           
                                           // Success feedback with toast instead of alert
-                                          toast.success(`Generated ${availableOptions.length} options with "${capitalizedCorrectAnswer}" as the correct answer!`);
+                                          toast.success(`Generated ${availableOptions.length} options with "${correctAnswer}" as the correct answer!`);
                                         } else {
-                                          // Fallback: if no blank selected, show generic options with proper capitalization
-                                          const genericWords = ['Bola', 'Papel', 'Kutsara', 'Damit'];
+                                          // Fallback: if no blank selected, show generic options
+                                          const genericWords = ['bola', 'papel', 'kutsara', 'damit'];
                                           setQuestionFormData(prev => ({
                                             ...prev,
                                             blankOptions: genericWords,
@@ -4457,7 +3893,7 @@ const MainAssessment = ({ templates }) => {
                                         value={option}
                                         onChange={(e) => {
                                           const updatedOptions = [...(questionFormData.blankOptions || [])];
-                                          // For "Basahin ang pangungusap" questions, preserve original case
+                                          // Preserve the original case entered by teacher
                                           updatedOptions[index] = e.target.value;
                                           setQuestionFormData(prev => ({
                                             ...prev,
@@ -4482,7 +3918,7 @@ const MainAssessment = ({ templates }) => {
                                                 correctAnswer: []
                                               }));
                                             } else {
-                                              // Set this as the only correct answer (preserve case for sentence questions)
+                                              // Set this as the only correct answer
                                               setQuestionFormData(prev => ({
                                                 ...prev,
                                                 correctAnswer: [option]
@@ -4636,7 +4072,7 @@ const MainAssessment = ({ templates }) => {
                             <div className="pa-word-recognition-sound">
                               <div className="pa-section-title">
                                 <h4>Word and Sound Configuration</h4>
-                                <p className="pa-section-description">Set up a word that students will identify similar sounding complete words</p>
+                                <p className="pa-section-description">Set up a word that students will identify matching sounds or syllables for</p>
                               </div>
 
                               {/* Display Word Input */}
@@ -4648,7 +4084,6 @@ const MainAssessment = ({ templates }) => {
                                   value={questionFormData.displayWord || ''}
                                   onChange={(e) => {
                                     const sanitizedValue = e.target.value.replace(/[^a-zA-Z\s]/g, '').toUpperCase();
-
                                     setQuestionFormData(prev => ({
                                       ...prev,
                                       displayWord: sanitizedValue
@@ -4664,7 +4099,7 @@ const MainAssessment = ({ templates }) => {
                                   <h5>Answer Options</h5>
                                   <span className="pa-instruction">Include correct answers and distractors</span>
                                 </div>
-                                <p>Add complete words that students can choose from (not syllables or word parts)</p>
+                                <p>Add syllables or sounds that students can choose from</p>
 
                                 <div className="pa-sound-options">
                                   {questionFormData.blankOptions?.map((option, index) => (
@@ -4674,18 +4109,7 @@ const MainAssessment = ({ templates }) => {
                                         value={option}
                                         onChange={(e) => {
                                           const updatedOptions = [...(questionFormData.blankOptions || [])];
-                                          let sanitizedValue = e.target.value.replace(/[^a-zA-Z\s]/g, '').toUpperCase();
-
-                                          // For "Anong kasing tunog" questions, enforce complete words (no split words)
-                                          // Convert to uppercase and remove extra spaces for consistency
-                                          sanitizedValue = sanitizedValue.trim().replace(/\s+/g, ' ');
-
-                                          // Validate it's a complete word (no short fragments that look like syllables)
-                                          const words = sanitizedValue.split(' ');
-                                          const validWords = words.filter(word => word.length >= 3); // Minimum 3 characters for complete words
-                                          sanitizedValue = validWords.join(' ');
-
-                                          updatedOptions[index] = sanitizedValue;
+                                          updatedOptions[index] = e.target.value.toUpperCase();
                                           setQuestionFormData(prev => ({
                                             ...prev,
                                             blankOptions: updatedOptions
@@ -4697,19 +4121,28 @@ const MainAssessment = ({ templates }) => {
                                       <div className="pa-sound-controls">
                                         <label>
                                           <input
-                                            type="radio"
-                                            name="soundMatchingCorrectAnswer"
+                                            type="checkbox"
                                             checked={questionFormData.correctAnswer?.includes(option)}
                                             onChange={() => {
-                                              // For sound matching questions, only one correct answer is allowed
-                                              setQuestionFormData(prev => ({
-                                                ...prev,
-                                                correctAnswer: [option.toUpperCase()] // Single correct answer, always uppercase
-                                              }));
+                                              const correctAnswers = questionFormData.correctAnswer || [];
+                                              const isCorrect = correctAnswers.includes(option);
+                                              
+                                              // This section handles sound/syllable recognition - allow multiple answers
+                                              if (isCorrect) {
+                                                setQuestionFormData(prev => ({
+                                                  ...prev,
+                                                  correctAnswer: correctAnswers.filter(a => a !== option)
+                                                }));
+                                              } else {
+                                                setQuestionFormData(prev => ({
+                                                  ...prev,
+                                                  correctAnswer: [...correctAnswers, option]
+                                                }));
+                                              }
                                             }}
                                           />
                                           <FontAwesomeIcon icon={faCheckCircle} />
-                                          {questionFormData.correctAnswer?.includes(option) ? 'Correct' : 'Mark Correct'}
+                                          Correct
                                         </label>
                                         <button
                                           type="button"
@@ -4797,8 +4230,8 @@ const MainAssessment = ({ templates }) => {
                               </div>
 
                               <div className="pa-correct-answers">
-                                <h5>Correct Answer <span className="pa-selected-options">SELECTED OPTION</span></h5>
-                                <p>Select the correct option above that matches the display word's sound</p>
+                                <h5>Correct Answers <span className="pa-selected-options">SELECTED FROM OPTIONS</span></h5>
+                                <p>Check the correct options above to mark them as correct answers</p>
                                 <div className="pa-correct-sounds-display">
                                   {questionFormData.correctAnswer?.map((answer, index) => (
                                     <div key={index} className="pa-correct-sound-item">
@@ -4807,12 +4240,13 @@ const MainAssessment = ({ templates }) => {
                                         type="button"
                                         className="pa-remove-correct-answer"
                                         onClick={() => {
+                                          const updatedCorrectAnswers = questionFormData.correctAnswer.filter((_, i) => i !== index);
                                           setQuestionFormData(prev => ({
                                             ...prev,
-                                            correctAnswer: [] // Clear the single correct answer
+                                            correctAnswer: updatedCorrectAnswers
                                           }));
                                         }}
-                                        title="Remove correct answer"
+                                        title="Remove from correct answers"
                                         style={{
                                           background: 'none',
                                           border: 'none',
@@ -4856,18 +4290,9 @@ const MainAssessment = ({ templates }) => {
                         </div>
                       )}
 
-                      {/* Reading Comprehension - Enhanced Design */}
+                      {/* Reading Comprehension - Simplified Text Input */}
                       {formData.category === "Reading Comprehension" && (
-                        <div className="pa-reading-comprehension-form" style={{ 
-                          background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', 
-                          border: '2px solid #e2e8f0', 
-                          borderRadius: '16px', 
-                          padding: '40px', 
-                          marginTop: '32px',
-                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                          position: 'relative',
-                          backdropFilter: 'blur(10px)'
-                        }}>
+                        <div className="pa-passage-form pa-full-width" style={{ backgroundColor: '#f8fafe', border: '1px solid #e1effe', borderRadius: '8px', padding: '24px' }}>
                           {/* Show story context for subsequent questions */}
                           {questionFormData.passages === null && questionFormData.storyTitle && (
                             <div style={{
@@ -4889,42 +4314,15 @@ const MainAssessment = ({ templates }) => {
 
                           {/* Story Title Section - Hide if adding subsequent question with passages: null */}
                           {questionFormData.passages !== null && (
-                            <div className="pa-form-section" style={{ 
-                              marginBottom: '32px', 
-                              padding: '24px',
-                              background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-                              border: '2px solid #bfdbfe',
-                              borderRadius: '12px',
-                              boxShadow: '0 2px 8px rgba(59, 130, 246, 0.1)'
-                            }}>
-                            <h5 style={{ 
-                              color: '#1e40af', 
-                              marginBottom: '20px', 
-                              fontSize: '18px', 
-                              fontWeight: '700',
-                              display: 'flex',
-                              alignItems: 'center',
-                              textShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                            }}>
-                              <FontAwesomeIcon icon={faBook} style={{ 
-                                marginRight: '12px', 
-                                color: '#3b82f6',
-                                fontSize: '20px'
-                              }} /> 
+                            <div className="pa-form-section" style={{ marginBottom: '24px' }}>
+                            <h5 style={{ color: '#1e40af', marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>
+                              <FontAwesomeIcon icon={faBook} style={{ marginRight: '8px', color: '#3b82f6' }} /> 
                               Story Information
                             </h5>
                             
                             <div className="pa-form-group">
-                              <label style={{ 
-                                display: 'block', 
-                                marginBottom: '12px', 
-                                fontSize: '16px', 
-                                fontWeight: '600', 
-                                color: '#1e40af',
-                                letterSpacing: '0.5px'
-                              }}>
+                              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
                                 Story Title:
-                                <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>
                                 <Tooltip text="Enter the story title. The system will automatically detect if this story already exists." />
                               </label>
                               
@@ -4963,26 +4361,7 @@ const MainAssessment = ({ templates }) => {
                                     }}
                                     placeholder="Type story title (e.g., Si Juan at ang Aso)"
                                     className="pa-text-input"
-                                    style={{ 
-                                      width: '100%', 
-                                      padding: '14px 16px', 
-                                      border: '2px solid #bfdbfe', 
-                                      borderRadius: '10px',
-                                      fontSize: '16px',
-                                      fontWeight: '500',
-                                      background: 'white',
-                                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                                      transition: 'all 0.2s ease',
-                                      outline: 'none'
-                                    }}
-                                    onFocus={(e) => {
-                                      e.target.style.borderColor = '#3b82f6';
-                                      e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                                    }}
-                                    onBlur={(e) => {
-                                      e.target.style.borderColor = '#bfdbfe';
-                                      e.target.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-                                    }}
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px' }}
                                     required
                                   />
                                 );
@@ -5008,28 +4387,9 @@ const MainAssessment = ({ templates }) => {
 
                           {/* Story Pages Section - Hide if adding subsequent question with passages: null */}
                           {questionFormData.storyTitle && questionFormData.passages !== null && (
-                            <div className="pa-form-section" style={{ 
-                              marginBottom: '32px',
-                              padding: '24px',
-                              background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-                              border: '2px solid #bbf7d0',
-                              borderRadius: '12px',
-                              boxShadow: '0 2px 8px rgba(34, 197, 94, 0.1)'
-                            }}>
-                              <h5 style={{ 
-                                color: '#15803d', 
-                                marginBottom: '20px', 
-                                fontSize: '18px', 
-                                fontWeight: '700',
-                                display: 'flex',
-                                alignItems: 'center',
-                                textShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                              }}>
-                                <FontAwesomeIcon icon={faBook} style={{ 
-                                  marginRight: '12px', 
-                                  color: '#22c55e',
-                                  fontSize: '20px'
-                                }} /> 
+                            <div className="pa-form-section" style={{ marginBottom: '24px' }}>
+                              <h5 style={{ color: '#1e40af', marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>
+                                <FontAwesomeIcon icon={faBook} style={{ marginRight: '8px', color: '#3b82f6' }} /> 
                                 Story Pages
                               </h5>
                               
@@ -5053,33 +4413,14 @@ const MainAssessment = ({ templates }) => {
                                 : [{ pageNumber: 1, pageText: "", pageImage: null }]
                               ).map((page, index) => (
                                 <div key={index} style={{ 
-                                  border: '2px solid #e2e8f0', 
-                                  borderRadius: '12px', 
-                                  padding: '24px', 
-                                  marginBottom: '20px',
-                                  backgroundColor: 'white',
-                                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
-                                  transition: 'all 0.2s ease'
+                                  border: '1px solid #e5e7eb', 
+                                  borderRadius: '6px', 
+                                  padding: '16px', 
+                                  marginBottom: '16px',
+                                  backgroundColor: 'white'
                                 }}>
-                                  <div style={{ 
-                                    display: 'flex', 
-                                    justifyContent: 'space-between', 
-                                    alignItems: 'center', 
-                                    marginBottom: '20px',
-                                    paddingBottom: '12px',
-                                    borderBottom: '2px solid #f1f5f9'
-                                  }}>
-                                    <h6 style={{ 
-                                      margin: 0, 
-                                      color: '#1e40af', 
-                                      fontSize: '18px', 
-                                      fontWeight: '700',
-                                      display: 'flex',
-                                      alignItems: 'center'
-                                    }}>
-                                      <FontAwesomeIcon icon={faBook} style={{ marginRight: '8px', color: '#3b82f6' }} />
-                                      Page {index + 1}
-                                    </h6>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                    <h6 style={{ margin: 0, color: '#374151', fontSize: '14px', fontWeight: '600' }}>Page {index + 1}</h6>
                                     {index > 0 && (
                                       <button
                                         type="button"
@@ -5105,18 +4446,9 @@ const MainAssessment = ({ templates }) => {
                                     )}
                                   </div>
 
-                                  <div className="pa-form-group" style={{ marginBottom: '24px' }}>
-                                    <label style={{ 
-                                      marginBottom: '12px', 
-                                      fontSize: '16px', 
-                                      fontWeight: '600', 
-                                      color: '#374151',
-                                      display: 'flex',
-                                      alignItems: 'center'
-                                    }}>
-                                      <FontAwesomeIcon icon={faFileAlt} style={{ marginRight: '8px', color: '#10b981' }} />
+                                  <div className="pa-form-group">
+                                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '500', color: '#374151' }}>
                                       Page Text:
-                                      <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>
                                     </label>
                                     <textarea
                                       value={page?.pageText || ""}
@@ -5131,57 +4463,34 @@ const MainAssessment = ({ templates }) => {
                                           passages: updatedPassages
                                         }));
                                       }}
-                                      placeholder="Enter the text for this page of the story (e.g., 'Tuwing umaga, si Juan at ang kaniyang aso na si Max ay naglalaro sa parke.')"
-                                      rows={4}
+                                      placeholder="Enter the text for this page of the story"
+                                      rows={3}
                                       style={{
                                         width: '100%',
-                                        padding: '14px 16px',
-                                        border: '2px solid #d1d5db',
-                                        borderRadius: '10px',
-                                        fontSize: '15px',
-                                        fontFamily: 'inherit',
-                                        lineHeight: '1.6',
-                                        resize: 'none',
-                                        outline: 'none',
-                                        transition: 'border-color 0.2s ease',
-                                        backgroundColor: '#fafafa'
+                                        padding: '8px',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '4px',
+                                        fontSize: '14px',
+                                        resize: 'vertical'
                                       }}
-                                      onFocus={(e) => e.target.style.borderColor = '#10b981'}
-                                      onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                                     ></textarea>
                                   </div>
 
                                   <div className="pa-form-group">
-                                    <label style={{ 
-                                      display: 'flex', 
-                                      alignItems: 'center',
-                                      marginBottom: '12px', 
-                                      fontSize: '16px', 
-                                      fontWeight: '600', 
-                                      color: '#374151'
-                                    }}>
-                                      <FontAwesomeIcon icon={faImages} style={{ marginRight: '8px', color: '#f59e0b' }} />
+                                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '500', color: '#374151' }}>
                                       Page Image (Optional):
                                     </label>
-                                    <div className="pa-file-upload" style={{
-                                      padding: '16px',
-                                      border: '2px dashed #e5e7eb',
-                                      borderRadius: '10px',
-                                      textAlign: 'center',
-                                      backgroundColor: '#fafafa'
-                                    }}>
+                                    <div className="pa-file-upload">
                                       <label style={{
                                         display: 'inline-block',
-                                        padding: '12px 24px',
+                                        padding: '8px 16px',
                                         backgroundColor: '#3b82f6',
                                         color: 'white',
-                                        borderRadius: '8px',
+                                        borderRadius: '4px',
                                         cursor: 'pointer',
-                                        fontSize: '14px',
-                                        fontWeight: '500',
-                                        transition: 'all 0.2s ease'
+                                        fontSize: '13px'
                                       }}>
-                                        <FontAwesomeIcon icon={faUpload} style={{ marginRight: '8px' }} /> Choose Image
+                                        <FontAwesomeIcon icon={faUpload} style={{ marginRight: '6px' }} /> Choose Image
                                         <input
                                           type="file"
                                           accept="image/*"
@@ -5189,90 +4498,19 @@ const MainAssessment = ({ templates }) => {
                                           style={{ display: 'none' }}
                                         />
                                       </label>
-                                      <div style={{ marginTop: '12px', fontSize: '14px', color: '#6b7280' }}>
+                                      <span style={{ marginLeft: '12px', fontSize: '13px', color: '#6b7280' }}>
                                         {page?.pageImage
-                                          ? `Page ${index + 1} image uploaded successfully`
-                                          : "No image selected"}
-                                      </div>
+                                          ? `Page ${index + 1} image uploaded`
+                                          : "No file chosen"}
+                                      </span>
 
                                       {page?.pageImage && (
-                                        <div style={{ 
-                                          marginTop: '16px',
-                                          padding: '12px',
-                                          backgroundColor: 'white',
-                                          borderRadius: '8px',
-                                          border: '1px solid #e5e7eb',
-                                          position: 'relative'
-                                        }}>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const currentPage = questionFormData.passages[index];
-                                              cleanupImageObjectURL(currentPage.pageImage);
-                                              const updatedPassages = [...questionFormData.passages];
-                                              updatedPassages[index] = {
-                                                ...updatedPassages[index],
-                                                pageImage: null
-                                              };
-                                              setQuestionFormData(prev => ({
-                                                ...prev,
-                                                passages: updatedPassages
-                                              }));
-                                            }}
-                                            style={{
-                                              position: 'absolute',
-                                              top: '8px',
-                                              right: '8px',
-                                              background: '#ef4444',
-                                              color: 'white',
-                                              border: 'none',
-                                              borderRadius: '50%',
-                                              width: '32px',
-                                              height: '32px',
-                                              cursor: 'pointer',
-                                              fontSize: '14px',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              justifyContent: 'center',
-                                              boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                                              transition: 'all 0.2s ease',
-                                              zIndex: 10
-                                            }}
-                                            onMouseEnter={(e) => {
-                                              e.target.style.backgroundColor = '#dc2626';
-                                              e.target.style.transform = 'scale(1.1)';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                              e.target.style.backgroundColor = '#ef4444';
-                                              e.target.style.transform = 'scale(1)';
-                                            }}
-                                            title="Remove image"
-                                          >
-                                            <FontAwesomeIcon icon={faTimes} />
-                                          </button>
+                                        <div style={{ marginTop: '8px' }}>
                                           <img
-                                            src={page?.pageImage instanceof File ? URL.createObjectURL(page.pageImage) : page?.pageImage}
+                                            src={page?.pageImage}
                                             alt={`Page ${index + 1} preview`}
-                                            style={{ 
-                                              maxWidth: '100%', 
-                                              maxHeight: '200px', 
-                                              borderRadius: '8px', 
-                                              border: '2px solid #e5e7eb',
-                                              objectFit: 'contain'
-                                            }}
-                                            onError={(e) => {
-                                              console.error('Page image failed to load:', page?.pageImage);
-                                              e.target.style.display = 'none';
-                                            }}
+                                            style={{ maxWidth: '200px', maxHeight: '150px', borderRadius: '4px', border: '1px solid #e5e7eb' }}
                                           />
-                                          <div style={{
-                                            marginTop: '8px',
-                                            fontSize: '12px',
-                                            color: '#6b7280',
-                                            textAlign: 'center'
-                                          }}>
-                                            Page {index + 1} preview - Click X to remove
-                                          </div>
                                         </div>
                                       )}
                                     </div>
@@ -5311,33 +4549,21 @@ const MainAssessment = ({ templates }) => {
                           )}
 
                           {/* Comprehension Questions Management */}
-                          <div className="pa-form-section" style={{ 
-                            marginBottom: '40px',
-                            padding: '32px',
-                            background: 'linear-gradient(135deg, #fefce8 0%, #fef3c7 100%)',
-                            border: '2px solid #fbbf24',
-                            borderRadius: '16px',
-                            boxShadow: '0 4px 12px rgba(245, 158, 11, 0.15)'
-                          }}>
+                          <div className="pa-form-section" style={{ marginBottom: '32px' }}>
                             <h5 style={{ 
-                              color: '#92400e', 
-                              marginBottom: '28px', 
-                              fontSize: '20px', 
-                              fontWeight: '700',
+                              color: '#1e40af', 
+                              marginBottom: '24px', 
+                              fontSize: '16px', 
+                              fontWeight: '600',
                               display: 'flex',
-                              alignItems: 'center',
-                              textShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                              alignItems: 'center'
                             }}>
-                              <FontAwesomeIcon icon={faQuestion} style={{ 
-                                marginRight: '12px', 
-                                color: '#d97706',
-                                fontSize: '22px'
-                              }} /> 
+                              <FontAwesomeIcon icon={faQuestion} style={{ marginRight: '8px', color: '#3b82f6' }} /> 
                               Comprehension Questions
                             </h5>
 
-                            {/* Show existing sentence questions */}
-                            {questionFormData.sentenceQuestions.length > 0 && (
+                            {/* Show existing comprehension questions */}
+                            {questionFormData.comprehensionQuestions.length > 0 && (
                               <div style={{ marginBottom: '24px' }}>
                                 <div style={{
                                   fontSize: '14px',
@@ -5345,10 +4571,10 @@ const MainAssessment = ({ templates }) => {
                                   color: '#374151',
                                   marginBottom: '12px'
                                 }}>
-                                  Questions for this story ({questionFormData.sentenceQuestions.length}):
+                                  Questions for this story ({questionFormData.comprehensionQuestions.length}):
                                 </div>
                                 
-                                {questionFormData.sentenceQuestions.map((question, index) => (
+                                {questionFormData.comprehensionQuestions.map((question, index) => (
                                   <div key={index} style={{
                                     border: '2px solid #e5e7eb',
                                     borderRadius: '8px',
@@ -5436,24 +4662,20 @@ const MainAssessment = ({ templates }) => {
 
                             <div style={{ 
                               border: '2px solid #e1effe', 
-                              borderRadius: '16px', 
-                              padding: '40px', 
+                              borderRadius: '12px', 
+                              padding: '32px', 
                               backgroundColor: 'white',
-                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-                              margin: '0 auto',
-                              maxWidth: '800px'
+                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
                             }}>
                               {/* Question Text */}
-                              <div className="pa-form-group" style={{ marginBottom: '40px' }}>
+                              <div className="pa-form-group" style={{ marginBottom: '28px' }}>
                                 <label style={{ 
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  marginBottom: '12px', 
-                                  fontSize: '16px', 
-                                  fontWeight: '600', 
+                                  display: 'block', 
+                                  marginBottom: '8px', 
+                                  fontSize: '14px', 
+                                  fontWeight: '500', 
                                   color: '#374151'
                                 }}>
-                                  <FontAwesomeIcon icon={faQuestion} style={{ marginRight: '8px', color: '#3b82f6' }} />
                                   Question Text:
                                   <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>
                                 </label>
@@ -5461,52 +4683,39 @@ const MainAssessment = ({ templates }) => {
                                   type="text"
                                   value={questionFormData.tempComprehensionQuestion.questionText}
                                   onChange={(e) => {
-                                    // Allow only letters, spaces, and common punctuation for reading comprehension
-                                    const value = e.target.value.replace(/[0-9]/g, '');
                                     setQuestionFormData(prev => ({
                                       ...prev,
                                       tempComprehensionQuestion: {
                                         ...prev.tempComprehensionQuestion,
-                                        questionText: value
+                                        questionText: e.target.value
                                       }
                                     }));
                                   }}
                                   placeholder="Enter your question (e.g., 'Sino ang pangunahing tauhan?')"
                                   style={{
                                     width: '100%',
-                                    padding: '14px 16px',
+                                    padding: '12px 14px',
                                     border: '2px solid #d1d5db',
-                                    borderRadius: '10px',
-                                    fontSize: '15px',
-                                    fontFamily: 'inherit',
-                                    lineHeight: '1.6',
+                                    borderRadius: '8px',
+                                    fontSize: '14px',
                                     backgroundColor: '#fafafa',
-                                    transition: 'all 0.2s ease',
-                                    outline: 'none',
-                                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                                    transition: 'border-color 0.2s ease',
+                                    outline: 'none'
                                   }}
-                                  onFocus={(e) => {
-                                    e.target.style.borderColor = '#3b82f6';
-                                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                                  }}
-                                  onBlur={(e) => {
-                                    e.target.style.borderColor = '#d1d5db';
-                                    e.target.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
-                                  }}
+                                  onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                                 />
                               </div>
 
                               {/* Primary Answer */}
-                              <div className="pa-form-group" style={{ marginBottom: '40px' }}>
+                              <div className="pa-form-group" style={{ marginBottom: '32px' }}>
                                 <label style={{ 
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  marginBottom: '12px', 
-                                  fontSize: '16px', 
-                                  fontWeight: '600', 
+                                  display: 'block', 
+                                  marginBottom: '8px', 
+                                  fontSize: '14px', 
+                                  fontWeight: '500', 
                                   color: '#374151'
                                 }}>
-                                  <FontAwesomeIcon icon={faCheckCircle} style={{ marginRight: '8px', color: '#10b981' }} />
                                   Primary Correct Answer:
                                   <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>
                                 </label>
@@ -5514,62 +4723,45 @@ const MainAssessment = ({ templates }) => {
                                   type="text"
                                   value={questionFormData.tempComprehensionQuestion.correctAnswer}
                                   onChange={(e) => {
-                                    // Allow only letters, spaces, and common punctuation - no numbers for reading comprehension answers
-                                    const value = e.target.value.replace(/[0-9]/g, '');
                                     setQuestionFormData(prev => ({
                                       ...prev,
                                       tempComprehensionQuestion: {
                                         ...prev.tempComprehensionQuestion,
-                                        correctAnswer: value
+                                        correctAnswer: e.target.value
                                       }
                                     }));
                                   }}
                                   placeholder="Enter the main correct answer (e.g., 'Juan')"
                                   style={{
                                     width: '100%',
-                                    padding: '14px 16px',
+                                    padding: '12px 14px',
                                     border: '2px solid #10b981',
-                                    borderRadius: '10px',
-                                    fontSize: '15px',
-                                    fontFamily: 'inherit',
-                                    lineHeight: '1.6',
+                                    borderRadius: '8px',
+                                    fontSize: '14px',
                                     backgroundColor: '#f0fdf4',
-                                    transition: 'all 0.2s ease',
-                                    outline: 'none',
-                                    boxShadow: '0 1px 3px rgba(16, 185, 129, 0.2)'
+                                    transition: 'border-color 0.2s ease',
+                                    outline: 'none'
                                   }}
-                                  onFocus={(e) => {
-                                    e.target.style.borderColor = '#059669';
-                                    e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
-                                  }}
-                                  onBlur={(e) => {
-                                    e.target.style.borderColor = '#10b981';
-                                    e.target.style.boxShadow = '0 1px 3px rgba(16, 185, 129, 0.2)';
-                                  }}
+                                  onFocus={(e) => e.target.style.borderColor = '#059669'}
+                                  onBlur={(e) => e.target.style.borderColor = '#10b981'}
                                 />
                               </div>
 
                               {/* Answer Variations Section */}
                               <div className="pa-form-group">
                                 <label style={{ 
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  marginBottom: '12px', 
-                                  fontSize: '16px', 
-                                  fontWeight: '600', 
+                                  display: 'block', 
+                                  marginBottom: '8px', 
+                                  fontSize: '14px', 
+                                  fontWeight: '500', 
                                   color: '#374151'
                                 }}>
-                                  <FontAwesomeIcon icon={faListUl} style={{ marginRight: '8px', color: '#f59e0b' }} />
                                   Acceptable Answer Variations (Optional):
                                 </label>
                                 <div style={{ 
-                                  fontSize: '14px', 
+                                  fontSize: '12px', 
                                   color: '#6b7280', 
-                                  marginBottom: '16px',
-                                  padding: '12px 16px',
-                                  backgroundColor: '#f9fafb',
-                                  borderRadius: '8px',
-                                  border: '1px solid #e5e7eb'
+                                  marginBottom: '12px'
                                 }}>
                                   Add different ways students might answer correctly (different cases, with/without titles, etc.)
                                 </div>
@@ -5585,10 +4777,8 @@ const MainAssessment = ({ templates }) => {
                                       type="text"
                                       value={answer}
                                       onChange={(e) => {
-                                        // Remove numbers from acceptable answers
-                                        const value = e.target.value.replace(/[0-9]/g, '');
                                         const updatedAnswers = [...questionFormData.tempComprehensionQuestion.acceptableAnswers];
-                                        updatedAnswers[index] = value;
+                                        updatedAnswers[index] = e.target.value;
                                         setQuestionFormData(prev => ({
                                           ...prev,
                                           tempComprehensionQuestion: {
@@ -5597,21 +4787,15 @@ const MainAssessment = ({ templates }) => {
                                           }
                                         }));
                                       }}
-                                      placeholder="Enter answer variation (e.g., 'juan', 'si juan')"
+                                      placeholder={`Variation ${index + 1}`}
                                       style={{
                                         flex: 1,
-                                        padding: '12px 14px',
-                                        border: '2px solid #d1d5db',
-                                        borderRadius: '8px',
-                                        fontSize: '15px',
-                                        fontFamily: 'inherit',
-                                        lineHeight: '1.6',
-                                        marginRight: '12px',
-                                        outline: 'none',
-                                        transition: 'border-color 0.2s ease'
+                                        padding: '8px 12px',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '6px',
+                                        fontSize: '14px',
+                                        marginRight: '8px'
                                       }}
-                                      onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-                                      onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                                     />
                                     <button
                                       type="button"
@@ -5633,15 +4817,7 @@ const MainAssessment = ({ templates }) => {
                                 {/* Add new acceptable answer button */}
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    setQuestionFormData(prev => ({
-                                      ...prev,
-                                      tempComprehensionQuestion: {
-                                        ...prev.tempComprehensionQuestion,
-                                        acceptableAnswers: [...prev.tempComprehensionQuestion.acceptableAnswers, '']
-                                      }
-                                    }));
-                                  }}
+                                  onClick={() => addAcceptableAnswer('')}
                                   style={{
                                     display: 'flex',
                                     alignItems: 'center',
@@ -5839,8 +5015,8 @@ const MainAssessment = ({ templates }) => {
                           value={formData.category}
                           onChange={handleFormChange}
                           required
-                          disabled={modalType === 'edit' || formData.questions.length > 0}
-                          className={`pa-select-input ${(modalType === 'edit' || formData.questions.length > 0) ? 'pa-disabled-input' : ''} ${modalType === 'create' && formData.readingLevel && formData.category && !canCreateAssessment(formData.readingLevel, formData.category).canCreate ? 'pa-select-error' : ''}`}
+                          disabled={modalType === 'edit'}
+                          className={`pa-select-input ${modalType === 'edit' ? 'pa-disabled-input' : ''} ${modalType === 'create' && formData.readingLevel && formData.category && !canCreateAssessment(formData.readingLevel, formData.category).canCreate ? 'pa-select-error' : ''}`}
                         >
                           <option value="">Choose a category...</option>
                           <option value="Alphabet Knowledge">Alphabet Knowledge</option>
@@ -5853,13 +5029,6 @@ const MainAssessment = ({ templates }) => {
                           <div className="pa-help-text">
                             <FontAwesomeIcon icon={faInfoCircle} />
                             Category cannot be changed during editing to maintain question type consistency.
-                          </div>
-                        )}
-                        
-                        {modalType === 'create' && formData.questions.length > 0 && (
-                          <div className="pa-help-text">
-                            <FontAwesomeIcon icon={faInfoCircle} />
-                            Category cannot be changed after questions have been created to maintain uniformity and prevent errors.
                           </div>
                         )}
 
@@ -5891,9 +5060,9 @@ const MainAssessment = ({ templates }) => {
                       <div className="pa-assessment-status-display">
                         <div className="pa-status-item">
                           <span className="pa-status-label">Current Status:</span>
-                          <span className="pa-status-badge pa-status-active">
-                            <FontAwesomeIcon icon={faCheckCircle} />
-                            Active
+                          <span className={`pa-status-badge ${selectedAssessment.status === 'active' ? 'pa-status-active' : selectedAssessment.status === 'inactive' ? 'pa-status-inactive' : 'pa-status-draft'}`}>
+                            <FontAwesomeIcon icon={selectedAssessment.status === 'active' ? faCheckCircle : selectedAssessment.status === 'inactive' ? faTimesCircle : faClock} />
+                            {selectedAssessment.status === 'active' ? 'Active' : selectedAssessment.status === 'inactive' ? 'Inactive' : 'Draft'}
                           </span>
                         </div>
                         <div className="pa-status-item">
@@ -5951,9 +5120,7 @@ const MainAssessment = ({ templates }) => {
                                       {getQuestionTypeDisplay(question.questionType, question.questionSubtype)}
                                     </span>
                                     <span className="pa-question-text-preview">
-                                      {formData.category === "Reading Comprehension" 
-                                        ? `Story: ${question.storyTitle || 'Untitled'} (${question.sentenceQuestions?.length || 0} questions)`
-                                        : question.questionText}
+                                      {question.questionText}
                                     </span>
                                   </div>
                                 </div>
@@ -5983,11 +5150,20 @@ const MainAssessment = ({ templates }) => {
                                       <FontAwesomeIcon icon={faImages} /> Has Image
                                     </span>
                                   )}
-                                  {getQuestionMetadata(question).map((meta, metaIndex) => (
-                                    <span key={metaIndex} className="pa-meta-tag">
-                                      <FontAwesomeIcon icon={meta.icon} /> {meta.text}
+                                  {question.questionType === "sentence" ? (
+                                    <>
+                                      <span className="pa-meta-tag">
+                                        <FontAwesomeIcon icon={faBook} /> {question.passages?.length || 0} Pages
+                                      </span>
+                                      <span className="pa-meta-tag">
+                                        <FontAwesomeIcon icon={faQuestion} /> {question.sentenceQuestions?.length || 0} Questions
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <span className="pa-meta-tag">
+                                      <FontAwesomeIcon icon={faCheckCircle} /> {question.choiceOptions?.length || 0} Options
                                     </span>
-                                  ))}
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -6040,11 +5216,7 @@ const MainAssessment = ({ templates }) => {
                   <button
                     className="pa-modal-save"
                     onClick={handleSaveAssessment}
-                    disabled={!formData.readingLevel || !formData.category || 
-                      (formData.category === "Reading Comprehension" 
-                        ? formData.questions.length === 0 || !formData.questions.some(q => q.sentenceQuestions?.length > 0) 
-                        : formData.questions.length === 0) ||
-                      (modalType === 'create' && !canCreateAssessment(formData.readingLevel, formData.category).canCreate)}
+                    disabled={!formData.readingLevel || !formData.category || formData.questions.length === 0 || (modalType === 'create' && !canCreateAssessment(formData.readingLevel, formData.category).canCreate)}
                   >
                     <FontAwesomeIcon icon={modalType === 'create' ? faPlus : faEdit} />
                     {modalType === 'create' ? ' Create Assessment' : ' Save Changes'}
@@ -6188,9 +5360,9 @@ const MainAssessment = ({ templates }) => {
                           <h5>Existing Assessment Details:</h5>
                           <div className="pa-existing-detail">
                             <span className="pa-existing-label">Status:</span>
-                            <span className="pa-existing-value active">
-                              <FontAwesomeIcon icon={faCheckCircle} />
-                              Active
+                            <span className={`pa-existing-value ${existing.isActive ? 'active' : 'inactive'}`}>
+                              <FontAwesomeIcon icon={existing.isActive ? faCheckCircle : faExclamationTriangle} />
+                              {existing.isActive ? 'Active' : 'Inactive'}
                             </span>
                           </div>
                           <div className="pa-existing-detail">
@@ -6212,7 +5384,7 @@ const MainAssessment = ({ templates }) => {
                   <ul className="pa-restriction-list">
                     <li>Edit the existing assessment instead of creating a new one</li>
                     <li>Choose a different reading level or category combination</li>
-                    <li>Delete the existing assessment first</li>
+                    <li>Deactivate or delete the existing assessment first</li>
                     <li>Contact an administrator if you need special assistance</li>
                   </ul>
                 </div>
@@ -6231,6 +5403,17 @@ const MainAssessment = ({ templates }) => {
         </div>
       )}
 
+      {/* Unified Template Preview for Preview All functionality */}
+      <UnifiedTemplatePreview
+        isOpen={isPreviewAllDialogOpen}
+        onClose={() => setIsPreviewAllDialogOpen(false)}
+        templates={previewAllTemplates}
+        templateType="assessment"
+        onEditTemplate={(assessment) => {
+          setIsPreviewAllDialogOpen(false);
+          handleEditAssessment(assessment);
+        }}
+      />
 
       <ToastContainer position="top-center" />
     </div>
