@@ -1315,8 +1315,6 @@ const PrescriptiveAnalysis = ({
           {/* Left Column - BKT (Bayesian Knowledge Tracing) */}
           {bktData && (
             <div className="literexia-analysis-card">
-              <div className="literexia-prescriptive-analysis-header-container">
-              </div>
               <div className="literexia-card-content">
                 <div className="literexia-math-analysis-bkt-container">
                   <div className="literexia-math-analysis-bkt-gauge">
@@ -1449,8 +1447,6 @@ const PrescriptiveAnalysis = ({
         {/* Error Pattern Analysis - Full Width */}
         {errorPatterns && Object.keys(errorPatterns).length > 0 && (
           <div className="literexia-analysis-card literexia-full-width">
-            <div className="literexia-prescriptive-analysis-header-container">
-            </div>
             <div className="literexia-card-content">
               <div className="epa-container">
                 {Object.entries(errorPatterns).map(([errorType, errorData]) => (

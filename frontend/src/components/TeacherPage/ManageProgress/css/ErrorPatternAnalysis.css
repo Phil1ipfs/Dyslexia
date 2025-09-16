@@ -932,11 +932,103 @@
   font-weight: 500;
 }
 
+/* ========== OVERALL INSIGHTS ========== */
+.epa-insight-icon {
+  font-size: 0.9rem;
+  color: #3B4F81;
+  margin-right: 0.5rem;
+}
+
+.epa-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.epa-insight-item {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.epa-insight-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #3B4F81;
+  text-transform: uppercase;
+}
+
+.epa-insight-value {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #2d3748;
+  background: #f8fafc;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+/* Make sections more compact */
+.epa-intervention-container,
+.epa-research-container {
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.epa-intervention-content,
+.epa-research-content {
+  gap: 0.75rem;
+}
+
+.epa-focus-section,
+.epa-target-sounds,
+.epa-activities-section,
+.epa-distribution-section,
+.epa-requirements-section,
+.epa-strategies-section,
+.epa-escalation-section {
+  padding: 0.5rem;
+}
+
+.epa-intervention-title,
+.epa-research-title {
+  font-size: 0.95rem;
+}
+
+.epa-intervention-subtitle,
+.epa-research-subtitle {
+  font-size: 0.75rem;
+}
+
+.epa-strategy-card,
+.epa-escalation-card {
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.epa-requirements-content {
+  padding: 0.75rem;
+}
+
+.epa-requirements-count {
+  font-size: 1rem;
+}
+
 /* Responsive Design for Intervention & Research sections */
 @media (max-width: 768px) {
   .epa-intervention-container,
   .epa-research-container {
-    padding: 0.75rem;
+    padding: 0.5rem;
+  }
+
+  .epa-insights-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
   }
 
   .epa-sound-tags,
