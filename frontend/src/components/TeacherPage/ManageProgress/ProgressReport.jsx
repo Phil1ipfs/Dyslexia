@@ -842,8 +842,8 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
               const score = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : Number(category.score) || 0;
               const isPassed = score >= 75;
 
-              // Enhanced logic for Post Assessment Progress Report
-              // Distinguish between completed/attempted vs not attempted categories
+              // Enhanced logic for Post Assessment Progress Report with Prerequisite Blocking
+              // Distinguish between completed/attempted vs blocked vs not attempted categories
               console.log(`🔍 [CATEGORY STATUS] Analyzing ${categoryName}:`);
               console.log(`  - Category object:`, category);
               console.log(`  - Score:`, score);
@@ -862,15 +862,48 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
 
               console.log(`  - hasAssessmentData:`, hasAssessmentData);
 
-              // For Post Assessment Progress:
-              // - If category has data = show results (never block)
-              // - If category has no data = show "Not Attempted" (not blocked)
-              const isBlocked = false; // Never block in post-assessment view
+              // PREREQUISITE BLOCKING LOGIC - Check if this category should be blocked
+              // Define prerequisite order for "At Grade Level" reading level
+              const categoryOrder = [
+                "Alphabet Knowledge",     // Position 0 - foundational (no prerequisites)
+                "Phonological Awareness", // Position 1 - requires Alphabet Knowledge
+                "Decoding",               // Position 2 - requires Alphabet + Phonological
+                "Word Recognition",       // Position 3 - requires Alphabet + Phonological + Decoding
+                "Reading Comprehension"   // Position 4 - requires all previous categories
+              ];
+
+              const currentCategoryIndex = categoryOrder.indexOf(categoryName);
+              let isBlocked = false;
+              let blockingCategory = null;
               const prerequisiteInfo = [];
+
+              // Check prerequisites for this category
+              if (currentCategoryIndex > 0) {
+                const prerequisiteCategories = categoryOrder.slice(0, currentCategoryIndex);
+
+                for (const prereqCategory of prerequisiteCategories) {
+                  const prereqCategoryData = categoriesData.find(cat => cat.categoryName === prereqCategory);
+
+                  if (!prereqCategoryData || !prereqCategoryData.isPassed) {
+                    isBlocked = true;
+                    blockingCategory = prereqCategory;
+                    console.log(`  - BLOCKED by prerequisite: ${prereqCategory}`);
+                    break;
+                  } else {
+                    console.log(`  - Prerequisite satisfied: ${prereqCategory} (passed: ${prereqCategoryData.isPassed})`);
+                  }
+                }
+              }
+
+              console.log(`  - isBlocked:`, isBlocked);
+              console.log(`  - blockingCategory:`, blockingCategory);
 
               // Determine category status for display
               let categoryStatus = '';
-              if (!hasAssessmentData) {
+              if (isBlocked) {
+                categoryStatus = 'blocked';
+                console.log(`  - Status: BLOCKED (prerequisite not met: ${blockingCategory})`);
+              } else if (!hasAssessmentData) {
                 categoryStatus = 'not_attempted';
                 console.log(`  - Status: NOT_ATTEMPTED (no assessment data found)`);
               } else if (isPassed) {
@@ -886,7 +919,11 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
               const isExpanded = expandedCategories[categoryName];
               
               return (
-                <div key={index} className={`student-progress-category-item ${isPassed ? 'student-progress-category-passed' : 'student-progress-category-needs-attention'}`}>
+                <div key={index} className={`student-progress-category-item ${
+                  categoryStatus === 'passed' ? 'student-progress-category-passed' :
+                  categoryStatus === 'blocked' ? 'student-progress-category-blocked' :
+                  'student-progress-category-needs-attention'
+                }`}>
                   {/* Category Main Row */}
                   <div className="student-progress-category-main">
                     <div className="student-progress-category-left">
@@ -896,6 +933,11 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                       <div className="student-progress-category-info">
                         <h3 className="student-progress-category-name">
                           {displayName}
+                          {categoryStatus === 'blocked' && (
+                            <span className="student-progress-needs-attention-badge" style={{ backgroundColor: '#dc3545', color: 'white' }}>
+                              BLOCKED
+                            </span>
+                          )}
                           {categoryStatus === 'not_attempted' && (
                             <span className="student-progress-needs-attention-badge" style={{ backgroundColor: '#6c757d', color: 'white' }}>
                               NOT ATTEMPTED
@@ -911,7 +953,14 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                           )}
                         </h3>
                         <div className="student-progress-category-stats">
-                          {categoryStatus === 'not_attempted' ? (
+                          {categoryStatus === 'blocked' ? (
+                            <>
+                              <span className="student-progress-score-display" style={{ color: '#dc3545' }}>Blocked</span>
+                              <span className="student-progress-score-fraction" style={{ color: '#dc3545' }}>
+                                Must complete: {blockingCategory}
+                              </span>
+                            </>
+                          ) : categoryStatus === 'not_attempted' ? (
                             <>
                               <span className="student-progress-score-display" style={{ color: '#6c757d' }}>Not Attempted</span>
                               <span className="student-progress-score-fraction" style={{ color: '#6c757d' }}>
@@ -931,13 +980,14 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                     <div className="student-progress-category-right">
                       <button
                         className="student-progress-expand-toggle"
-                        onClick={() => categoryStatus !== 'not_attempted' && toggleCategoryExpansion(categoryName)}
-                        disabled={categoryStatus === 'not_attempted'}
+                        onClick={() => (categoryStatus !== 'not_attempted' && categoryStatus !== 'blocked') && toggleCategoryExpansion(categoryName)}
+                        disabled={categoryStatus === 'not_attempted' || categoryStatus === 'blocked'}
                         style={{
-                          opacity: categoryStatus === 'not_attempted' ? 0.5 : 1,
-                          cursor: categoryStatus === 'not_attempted' ? 'not-allowed' : 'pointer'
+                          opacity: (categoryStatus === 'not_attempted' || categoryStatus === 'blocked') ? 0.5 : 1,
+                          cursor: (categoryStatus === 'not_attempted' || categoryStatus === 'blocked') ? 'not-allowed' : 'pointer'
                         }}
                         aria-label={
+                          categoryStatus === 'blocked' ? 'Category is blocked - prerequisites not met' :
                           categoryStatus === 'not_attempted' ? 'No assessment data available to expand' :
                           (isExpanded ? 'Collapse details' : 'Expand details')
                         }

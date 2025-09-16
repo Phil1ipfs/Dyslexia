@@ -64,70 +64,175 @@ class AutoProcessingService {
   }
 
   /**
-   * Process a single student if their assessment is complete
+   * Process a single student using CATEGORY-BY-CATEGORY approach (CLAUDE.md sequential flow)
+   * This follows the prerequisite-based sequential assessment system
    */
   static async processStudentIfComplete(studentId, readingLevel, firstName = '', lastName = '') {
     try {
       console.log(`[AUTO PROCESSOR] 📋 Checking student: ${firstName} ${lastName} (${studentId}) - ${readingLevel}`);
 
-      // Check if category_results already exist
-      const CategoryResult = require('../../models/Teachers/ManageProgress/categoryResultModel');
-      const existingResults = await CategoryResult.findOne({
-        studentId: parseInt(studentId)
-      });
+      // Get categories for this reading level in prerequisite order
+      const categoriesForLevel = this.getCategoriesForReadingLevel(readingLevel);
+      console.log(`[AUTO PROCESSOR]    📚 Categories for ${readingLevel}: [${categoriesForLevel.join(', ')}]`);
 
-      if (existingResults) {
-        console.log(`[AUTO PROCESSOR]    ⏭️  Category results already exist - skipping`);
-        return { action: 'skipped', reason: 'already_processed' };
-      }
+      let processedCount = 0;
+      let blockedCount = 0;
+      let results = [];
 
-      // Validate assessment completeness
-      console.log(`[AUTO PROCESSOR]    🔍 Checking assessment completeness...`);
-      const completenessValidation = await CategoryResultsService.validateAssessmentCompleteness(
-        studentId,
-        readingLevel
-      );
+      // Process each category sequentially (prerequisite order)
+      for (let i = 0; i < categoriesForLevel.length; i++) {
+        const category = categoriesForLevel[i];
+        console.log(`[AUTO PROCESSOR]    🔍 Processing category ${i + 1}/${categoriesForLevel.length}: ${category}`);
 
-      if (completenessValidation.isComplete) {
-        console.log(`[AUTO PROCESSOR]    ✅ Assessment COMPLETE - auto-generating category results...`);
+        try {
+          const result = await this.processIndividualCategory(studentId, category, readingLevel, categoriesForLevel.slice(0, i));
+          results.push(result);
 
-        // Generate category results automatically
-        const categoryResults = await CategoryResultsService.generateCategoryResultsFromResponses(
-          studentId
-        );
-
-        console.log(`[AUTO PROCESSOR]    🎉 SUCCESS - Category results created: ${categoryResults._id}`);
-
-        if (categoryResults.prescriptiveAnalysisId) {
-          console.log(`[AUTO PROCESSOR]    🧠 Prescriptive analysis created: ${categoryResults.prescriptiveAnalysisId}`);
-        }
-
-        return {
-          action: 'processed',
-          categoryResultId: categoryResults._id,
-          prescriptiveAnalysisId: categoryResults.prescriptiveAnalysisId
-        };
-
-      } else {
-        console.log(`[AUTO PROCESSOR]    ⚠️  Assessment INCOMPLETE - not processing yet`);
-
-        // Log incomplete details
-        for (const [category, status] of Object.entries(completenessValidation.categoryResults)) {
-          if (!status.isComplete) {
-            console.log(`[AUTO PROCESSOR]       ${category}: ${status.answered}/${status.required} questions (${status.missing} missing)`);
+          if (result.action === 'processed') {
+            processedCount++;
+            console.log(`[AUTO PROCESSOR]    ✅ ${category}: PROCESSED`);
+          } else if (result.action === 'blocked') {
+            blockedCount++;
+            console.log(`[AUTO PROCESSOR]    🚫 ${category}: BLOCKED (prerequisite failed)`);
+            // Stop processing subsequent categories if this one is blocked
+            break;
+          } else if (result.action === 'incomplete') {
+            console.log(`[AUTO PROCESSOR]    ⏳ ${category}: INCOMPLETE (waiting for responses)`);
+            // Stop processing if current category is incomplete
+            break;
+          } else if (result.action === 'skipped') {
+            console.log(`[AUTO PROCESSOR]    ⏭️  ${category}: SKIPPED (already processed)`);
           }
-        }
 
-        return {
-          action: 'incomplete',
-          missing: completenessValidation.categoryResults
-        };
+        } catch (error) {
+          console.error(`[AUTO PROCESSOR]    ❌ Error processing ${category}: ${error.message}`);
+          break;
+        }
       }
+
+      console.log(`[AUTO PROCESSOR]    📊 Summary: ${processedCount} processed, ${blockedCount} blocked`);
+
+      return {
+        action: processedCount > 0 ? 'processed' : (blockedCount > 0 ? 'blocked' : 'incomplete'),
+        processedCategories: processedCount,
+        blockedCategories: blockedCount,
+        results: results
+      };
 
     } catch (error) {
       console.error(`[AUTO PROCESSOR] ❌ Error processing student ${studentId}: ${error.message}`);
       throw error;
     }
+  }
+
+  /**
+   * Process an individual category for a student (CLAUDE.md sequential approach)
+   */
+  static async processIndividualCategory(studentId, category, readingLevel, prerequisiteCategories) {
+    try {
+      const CategoryResult = require('../../models/Teachers/ManageProgress/categoryResultModel');
+
+      // Check if this category already has results
+      const existingCategoryResult = await CategoryResult.findOne({
+        studentId: parseInt(studentId),
+        'categories.categoryName': category
+      });
+
+      if (existingCategoryResult) {
+        const categoryData = existingCategoryResult.categories.find(cat => cat.categoryName === category);
+        if (categoryData && categoryData.isCompleted) {
+          return {
+            action: 'skipped',
+            category: category,
+            reason: 'already_processed',
+            score: categoryData.score,
+            passed: categoryData.isPassed
+          };
+        }
+      }
+
+      // Check prerequisites (CLAUDE.md prerequisite blocking)
+      if (prerequisiteCategories.length > 0) {
+        for (const prereq of prerequisiteCategories) {
+          const prereqResult = await CategoryResult.findOne({
+            studentId: parseInt(studentId),
+            'categories.categoryName': prereq
+          });
+
+          if (!prereqResult) {
+            return {
+              action: 'blocked',
+              category: category,
+              reason: 'prerequisite_not_completed',
+              blockingCategory: prereq
+            };
+          }
+
+          const prereqData = prereqResult.categories.find(cat => cat.categoryName === prereq);
+          if (!prereqData || !prereqData.isPassed) {
+            return {
+              action: 'blocked',
+              category: category,
+              reason: 'prerequisite_failed',
+              blockingCategory: prereq,
+              prereqScore: prereqData ? prereqData.score : 0
+            };
+          }
+        }
+      }
+
+      // Check if this category has complete responses
+      const categoryCompleteness = await CategoryResultsService.validateAssessmentCompleteness(
+        studentId,
+        readingLevel,
+        category  // Check only this specific category
+      );
+
+      const categoryStatus = categoryCompleteness.categoryResults[category];
+      if (!categoryStatus || !categoryStatus.isComplete) {
+        return {
+          action: 'incomplete',
+          category: category,
+          answered: categoryStatus ? categoryStatus.answered : 0,
+          required: categoryStatus ? categoryStatus.required : 0,
+          missing: categoryStatus ? categoryStatus.missing : 'unknown'
+        };
+      }
+
+      // Category is complete and prerequisites are met - process it!
+      console.log(`[AUTO PROCESSOR]        ✅ ${category} is complete - generating category result...`);
+
+      const categoryResults = await CategoryResultsService.generateCategoryResultsFromResponses(
+        studentId,
+        category  // Process only this category
+      );
+
+      return {
+        action: 'processed',
+        category: category,
+        categoryResultId: categoryResults._id,
+        prescriptiveAnalysisId: categoryResults.prescriptiveAnalysisId
+      };
+
+    } catch (error) {
+      console.error(`[AUTO PROCESSOR] Error processing category ${category}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get categories for reading level in prerequisite order (CLAUDE.md)
+   */
+  static getCategoriesForReadingLevel(readingLevel) {
+    const categoryAssignment = {
+      "Low Emerging": ["Alphabet Knowledge"],
+      "High Emerging": ["Alphabet Knowledge", "Phonological Awareness"],
+      "Developing": ["Alphabet Knowledge", "Phonological Awareness", "Decoding"],
+      "Transitioning": ["Alphabet Knowledge", "Phonological Awareness", "Decoding", "Word Recognition"],
+      "At Grade Level": ["Alphabet Knowledge", "Phonological Awareness", "Decoding", "Word Recognition", "Reading Comprehension"]
+    };
+
+    return categoryAssignment[readingLevel] || [];
   }
 
   /**

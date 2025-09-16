@@ -183,8 +183,13 @@ class PrescriptionOnlyService {
    * @returns {Object} Teacher prescription
    */
   async generateTeacherPrescription(diagnosis, categoryResults, readingLevel, studentId) {
-    // Identify categories needing intervention
-    const failedCategories = categoryResults.filter(cat => !cat.isPassed);
+    // Identify categories needing intervention (CLAUDE.md: only completed AND failed categories)
+    const failedCategories = categoryResults.filter(cat =>
+      !cat.isPassed && cat.isCompleted === true && cat.score > 0
+    );
+
+    console.log(`[PRESCRIPTION] Failed categories (completed & failed): [${failedCategories.map(c => c.categoryName).join(', ')}]`);
+    console.log(`[PRESCRIPTION] Placeholder categories (not completed): [${categoryResults.filter(c => !c.isCompleted).map(c => c.categoryName).join(', ')}]`);
 
     if (failedCategories.length === 0) {
       return this.generateMaintenancePrescription(diagnosis, categoryResults, readingLevel);
@@ -827,9 +832,12 @@ class PrescriptionOnlyService {
    * Map to insights schema
    */
   mapToInsights(diagnosis, prescription, categories) {
-    const passedCategories = categories.filter(cat => cat.isPassed).length;
-    const failedCategories = categories.filter(cat => !cat.isPassed).length;
-    const overallScore = categories.reduce((sum, cat) => sum + cat.score, 0) / categories.length;
+    // Only count completed categories for insights (CLAUDE.md sequential flow)
+    const completedCategories = categories.filter(cat => cat.isCompleted === true);
+    const passedCategories = completedCategories.filter(cat => cat.isPassed).length;
+    const failedCategories = completedCategories.filter(cat => !cat.isPassed).length;
+    const overallScore = completedCategories.length > 0 ?
+      completedCategories.reduce((sum, cat) => sum + cat.score, 0) / completedCategories.length : 0;
 
     let recommendedAction;
     if (prescription.type === 'intervention_required') {

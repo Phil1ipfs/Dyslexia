@@ -422,19 +422,22 @@ class CategoryResultsService {
         }
       }
 
-      // CRITICAL: Validate completeness before proceeding
-      console.log(`[CATEGORY RESULTS] ✅ VALIDATING ASSESSMENT COMPLETENESS BEFORE CREATING RECORDS`);
-      const completenessValidation = await this.validateAssessmentCompleteness(studentId, readingLevel, category);
+      // CATEGORY-BY-CATEGORY APPROACH (CLAUDE.md): Process only complete categories, create placeholders for others
+      console.log(`[CATEGORY RESULTS] ✅ USING CATEGORY-BY-CATEGORY PROCESSING (CLAUDE.md APPROACH)`);
 
-      if (!completenessValidation.isComplete) {
-        console.warn(`[CATEGORY RESULTS] ❌ ASSESSMENT INCOMPLETE - BLOCKING CATEGORY RESULTS CREATION`);
-        console.warn(`[CATEGORY RESULTS] Completeness status:`, JSON.stringify(completenessValidation, null, 2));
+      // Get all categories for this reading level
+      const allCategoriesForLevel = this.getCategoriesForReadingLevel(readingLevel);
+      console.log(`[CATEGORY RESULTS] Required categories for ${readingLevel}: [${allCategoriesForLevel.join(', ')}]`);
 
-        throw new Error(`Assessment incomplete for student ${studentId}. Cannot create category_results or prescriptive_analysis until all questions are answered. Missing questions: ${JSON.stringify(completenessValidation.categoryResults)}`);
+      // Check completeness for each category individually
+      const categoryCompleteness = {};
+      for (const cat of allCategoriesForLevel) {
+        const catValidation = await this.validateAssessmentCompleteness(studentId, readingLevel, cat);
+        categoryCompleteness[cat] = catValidation.categoryResults[cat] || { isComplete: false, answered: 0, required: 0 };
+        console.log(`[CATEGORY RESULTS] ${cat}: ${categoryCompleteness[cat].isComplete ? 'COMPLETE' : 'INCOMPLETE'} (${categoryCompleteness[cat].answered}/${categoryCompleteness[cat].required})`);
       }
 
-      console.log(`[CATEGORY RESULTS] ✅ ASSESSMENT COMPLETENESS VALIDATED - PROCEEDING WITH RECORD CREATION`);
-      console.log(`[CATEGORY RESULTS] Completeness summary:`, completenessValidation.summary);
+      console.log(`[CATEGORY RESULTS] ✅ PROCEEDING WITH CATEGORY-BY-CATEGORY RECORD CREATION`);
 
       // Get all student responses
       const StudentResponse = require('../../models/Teachers/ManageProgress/studentResponseModel');
@@ -446,10 +449,6 @@ class CategoryResultsService {
       const responses = await StudentResponse.find(query)
         .sort({ answeredAt: 1 })
         .lean();
-
-      if (responses.length === 0) {
-        throw new Error(`No responses found for student ${studentId}${category ? ` in category ${category}` : ''}`);
-      }
 
       console.log(`[CATEGORY RESULTS] Found ${responses.length} responses for student ${studentId}`);
 
@@ -463,10 +462,35 @@ class CategoryResultsService {
         responsesByCategory[cat].push(response);
       });
 
-      // Process each category
+      // Process each category using completeness validation (CLAUDE.md: category-by-category)
       const categories = [];
 
-      for (const [categoryName, categoryResponses] of Object.entries(responsesByCategory)) {
+      for (const categoryName of allCategoriesForLevel) {
+        const categoryResponses = responsesByCategory[categoryName] || [];
+        const isComplete = categoryCompleteness[categoryName]?.isComplete || false;
+
+        if (!isComplete || categoryResponses.length === 0) {
+          // Category is incomplete or has no responses - create placeholder entry
+          console.log(`[CATEGORY RESULTS] Creating placeholder for ${categoryName} (${isComplete ? 'has responses but incomplete' : 'no responses yet'})`);
+          categories.push({
+            categoryName: categoryName,
+            totalQuestions: categoryCompleteness[categoryName]?.required || 0,
+            correctAnswers: 0,
+            totalPossibleMatches: 0,
+            correctMatches: 0,
+            score: 0,
+            isPassed: false,
+            passingThreshold: 75,
+            isCompleted: false,
+            lastQuestionAnswered: '',
+            interventionRequired: false,
+            interventionAttempts: 0,
+            interventionCompleted: false,
+            currentInterventionId: null,
+            interventionHistory: []
+          });
+          continue;
+        }
         console.log(`[CATEGORY RESULTS] Processing ${categoryResponses.length} responses for ${categoryName}`);
 
         // Calculate scores
@@ -560,10 +584,29 @@ class CategoryResultsService {
         categories: categories
       };
 
-      // Final validation before creating record
-      console.log(`[CATEGORY RESULTS] 🔒 FINAL VALIDATION: All categories complete - creating normalized record`);
+      // Check for existing category results to prevent duplicates
+      console.log(`[CATEGORY RESULTS] 🔍 CHECKING FOR EXISTING RECORDS`);
+      const existingResults = await this.getCategoryResults(parseInt(studentId));
 
-      // Use existing createCategoryResult method
+      if (existingResults && existingResults.length > 0) {
+        console.log(`[CATEGORY RESULTS] ⚠️  EXISTING RECORD FOUND - UPDATING INSTEAD OF CREATING NEW`);
+
+        // Update the existing record instead of creating a new one
+        const existingResult = existingResults[0]; // Get the first (most recent) record
+        const updatedResult = await this.updateCategoryResult(existingResult._id, {
+          categories: categories,
+          assessmentDate: new Date()
+        });
+
+        console.log(`[CATEGORY RESULTS] ✅ Successfully UPDATED existing category results for student ${studentId}`);
+        console.log(`[CATEGORY RESULTS] Record ID: ${updatedResult._id}`);
+        console.log(`[CATEGORY RESULTS] Categories: ${updatedResult.categories.map(c => `${c.categoryName} (${c.totalQuestions}Q)`).join(', ')}`);
+
+        return updatedResult;
+      }
+
+      // No existing record found - create new one
+      console.log(`[CATEGORY RESULTS] 🔒 NO EXISTING RECORD - CREATING NEW NORMALIZED RECORD`);
       const createdResult = await this.createCategoryResult(categoryResultData);
 
       console.log(`[CATEGORY RESULTS] ✅ Successfully generated COMPLETE category results for student ${studentId}`);
@@ -984,6 +1027,22 @@ class CategoryResultsService {
       currentInterventionId: category.currentInterventionId || null,
       interventionHistory: category.interventionHistory || []
     }));
+  }
+
+  /**
+   * Get categories for reading level in prerequisite order (CLAUDE.md)
+   * This matches the AutoProcessingService method for consistency
+   */
+  static getCategoriesForReadingLevel(readingLevel) {
+    const categoryAssignment = {
+      "Low Emerging": ["Alphabet Knowledge"],
+      "High Emerging": ["Alphabet Knowledge", "Phonological Awareness"],
+      "Developing": ["Alphabet Knowledge", "Phonological Awareness", "Decoding"],
+      "Transitioning": ["Alphabet Knowledge", "Phonological Awareness", "Decoding", "Word Recognition"],
+      "At Grade Level": ["Alphabet Knowledge", "Phonological Awareness", "Decoding", "Word Recognition", "Reading Comprehension"]
+    };
+
+    return categoryAssignment[readingLevel] || [];
   }
 
   /**

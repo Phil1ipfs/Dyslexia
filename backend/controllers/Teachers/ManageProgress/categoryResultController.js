@@ -77,58 +77,13 @@ const generateCategoryResults = async (req, res) => {
 
     console.log(`[CATEGORY RESULTS] Found ${responses.length} responses`);
 
-    // Group responses by category
-    const categorizedResponses = {};
-    responses.forEach(response => {
-      if (!categorizedResponses[response.category]) {
-        categorizedResponses[response.category] = [];
-      }
-      categorizedResponses[response.category].push(response);
-    });
+    console.log(`[CATEGORY RESULTS] Using CategoryResultsService.generateCategoryResultsFromResponses() to process ALL categories for reading level...`);
 
-    const categories = Object.keys(categorizedResponses);
-    console.log(`[CATEGORY RESULTS] Categories found: ${categories.join(', ')}`);
+    // Use the updated service method that creates ALL categories for the reading level
+    const savedCategoryResult = await CategoryResultsService.generateCategoryResultsFromResponses(studentIdInt, readingLevel);
 
-    // Process each category
-    const categoryResults = [];
-
-    for (const [categoryName, categoryResponses] of Object.entries(categorizedResponses)) {
-      console.log(`[CATEGORY RESULTS] Processing ${categoryName}...`);
-
-      let categoryResult;
-
-      if (categoryName === 'Phonological Awareness') {
-        // Special handling for matching questions
-        categoryResult = processPhonologicalAwareness(categoryName, categoryResponses);
-      } else if (categoryName === 'Reading Comprehension') {
-        // Special handling for all-or-nothing sentence questions
-        categoryResult = processReadingComprehension(categoryName, categoryResponses);
-      } else {
-        // Standard processing for other categories
-        categoryResult = processStandardCategory(categoryName, categoryResponses);
-      }
-
-      categoryResults.push(categoryResult);
-
-      const status = categoryResult.isPassed ? 'PASSED' : 'FAILED';
-      console.log(`[CATEGORY RESULTS] ${categoryName}: ${categoryResult.score}% (${status})`);
-    }
-
-    // Create category_results document
-    const categoryResultData = {
-      studentId: studentIdInt,
-      assessmentDate: new Date(responses[responses.length - 1].answeredAt),
-      readingLevel: readingLevel,
-      categories: categoryResults
-    };
-
-    console.log(`[CATEGORY RESULTS] Creating category results and triggering prescriptive analysis...`);
-
-    // Use the service to create category_results (this will auto-trigger prescriptive analysis)
-    const savedCategoryResult = await CategoryResultsService.createCategoryResult(categoryResultData);
-
-    // Calculate weighted overall score
-    const overallScore = calculateWeightedScore(categoryResults, readingLevel);
+    // Calculate weighted overall score from the saved result
+    const overallScore = calculateWeightedScore(savedCategoryResult.categories, readingLevel);
 
     console.log(`[CATEGORY RESULTS] Successfully created category results!`);
     console.log(`[CATEGORY RESULTS] Category Results ID: ${savedCategoryResult._id}`);
@@ -150,15 +105,15 @@ const generateCategoryResults = async (req, res) => {
         },
         summary: {
           totalResponses: responses.length,
-          categoriesProcessed: categories.length,
+          categoriesProcessed: savedCategoryResult.categories.length,
           overallScore: overallScore,
-          categoryScores: categoryResults.map(cat => ({
+          categoryScores: savedCategoryResult.categories.map(cat => ({
             category: cat.categoryName,
             score: cat.score,
             passed: cat.isPassed
           }))
         },
-        interventionRequired: categoryResults.some(cat => cat.interventionRequired)
+        interventionRequired: savedCategoryResult.categories.some(cat => cat.interventionRequired)
       }
     });
 

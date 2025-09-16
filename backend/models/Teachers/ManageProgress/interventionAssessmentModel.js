@@ -238,7 +238,7 @@ const interventionAssessmentSchema = new mongoose.Schema({
     default: null
   }
 }, {
-  collection: 'intervention_assessment_new',
+  collection: 'intervention_assessment',
   timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' }
 });
 
