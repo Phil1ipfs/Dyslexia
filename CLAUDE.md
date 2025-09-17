@@ -2008,24 +2008,6 @@ const teacherCreatedIntervention = {
 }
 ```
 
-**Enhanced templates_choices Collection** (Choice Library for Template Creation):
-```javascript
-{
-  "_id": "68b8ad8fa1ce2bf3d810103a",
-  "category": "Phonological Awareness",
-  "choiceType": "malapantigText",
-  "choiceValue": "L",                          // Audio value
-  "correctMatch": "Ll",                        // Matching letter
-  "choiceImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/...",
-  "soundText": "L sound",                      // Audio description
-  "targetSkills": ["L-sound_discrimination"], // Error pattern focus
-  "difficultyLevel": "medium",
-  "usageCount": 15,                           // Track popularity
-  "isActive": true,
-  "createdBy": ObjectId("..."),
-  "createdAt": Date
-}
-```
 
 #### Key Benefits of Complete Template System:
 
@@ -2477,8 +2459,7 @@ const teacherWorkflow = {
 ### Template Collections Structure
 
 **For Categories:** Alphabet Knowledge, Phonological Awareness, Decoding, Word Recognition
-- **templates_questions** - Question templates with applicableChoiceTypes
-- **templates_choices** - Answer choices linked to question templates
+- **templates_questions** - Complete self-contained question templates with embedded choices
 
 **For Reading Comprehension:**
 - **sentence_templates** - Complete passages with embedded questions
@@ -2546,7 +2527,6 @@ const customQuestionWorkflow = {
 
   systemSaves: {
     collection: "templates_questions",
-    autoLink: "templates_choices",
     availability: "future_interventions"
   },
 

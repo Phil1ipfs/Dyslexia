@@ -1,32 +1,30 @@
 /**
- * ActivityEditModal Component
- * 
- * BACKEND INTEGRATION NOTES:
- * 
+ * ActivityEditModal Component - Template-Only Intervention System
+ *
+ * TEMPLATE-ONLY APPROACH:
+ * This component implements the template-only intervention system as defined in CLAUDE.md.
+ * Teachers create intervention questions using templates, and all created questions automatically
+ * become reusable templates for future interventions.
+ *
  * API ENDPOINTS NEEDED:
- * 1. GET /api/main-assessment/questions?category={category}&readingLevel={level}
- * 2. GET /api/templates/questions?category={category}
- * 3. GET /api/templates/choices?choiceTypes={types}
- * 4. GET /api/templates/sentences?readingLevel={level}
- * 5. POST /api/templates/questions (for inline creation)
- * 6. POST /api/templates/choices (for inline creation)
- * 7. POST /api/upload/question-image (for S3 image uploads)
- * 8. GET /api/interventions/check?studentId={id}&category={category} (to check for duplicates)
- * 9. POST /api/interventions (to save intervention)
- * 10. PUT /api/interventions/{id} (to update intervention)
- * 
+ * 1. GET /api/templates/questions?category={category}
+ * 2. GET /api/templates/sentences?readingLevel={level}
+ * 3. POST /api/templates/questions (for inline creation)
+ * 4. POST /api/upload/question-image (for S3 image uploads)
+ * 5. GET /api/interventions/check?studentId={id}&category={category} (to check for duplicates)
+ * 6. POST /api/interventions (to save intervention)
+ * 7. PUT /api/interventions/{id} (to update intervention)
+ *
  * DATA FLOW:
- * 1. Load main assessment questions based on category + reading level
- * 2. Load available templates for question creation (restricted by category)
- * 3. Allow inline creation of new templates and choices (except for Reading Comprehension)
- * 4. Enforce exactly 2 choices per question
- * 5. Check for existing interventions before saving to prevent duplicates
- * 6. Save final intervention to intervention_assessment collection
- * 
+ * 1. Load available templates for question creation (restricted by category)
+ * 2. Allow teachers to create custom questions using category-specific forms
+ * 3. Alphabet Knowledge enforces exactly 3 choices per question (non-editable)
+ * 4. Check for existing interventions before saving to prevent duplicates
+ * 5. Save final intervention to intervention_assessment collection
+ * 6. Auto-save created questions as templates for future reuse
+ *
  * JSON COLLECTIONS REFERENCED:
- * - main_assessment: Source questions for the category/level
- * - templates_questions: Reusable question templates
- * - templates_choices: Available answer choices
+ * - templates_questions: Reusable question templates (single collection approach)
  * - sentence_templates: Reading comprehension passages
  * - intervention_assessment: Final saved interventions
  * - prescriptive_analysis: Analysis and recommendations for specific categories
@@ -67,6 +65,7 @@ import {
 import api from '../../../services/Teachers/api';
 
 import './css/ActivityEditModal.css';
+import './css/AlphabetKnowledgeActivityEdit.css';
 
 // Utility function to safely handle arrays that might be undefined
 const safe = (arr) => Array.isArray(arr) ? arr : [];
@@ -159,7 +158,6 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   const [contentType, setContentType] = useState('');
   
   // API Data States
-  const [mainAssessmentQuestions, setMainAssessmentQuestions] = useState([]);
   const [questionTemplates, setQuestionTemplates] = useState([]);
   const [choiceTemplates, setChoiceTemplates] = useState([]);
   const [sentenceTemplates, setSentenceTemplates] = useState([]);
@@ -696,17 +694,11 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         // For Reading Comprehension, load sentence templates
         await loadSentenceTemplates();
       } else {
-        // For other categories, load data in sequence to ensure proper dependency handling
-        // First load main assessment questions (which will create question-choice pairs)
-        await loadMainAssessmentQuestions();
-        
-        // Then load question templates
+        // For template-only categories, load templates and start with clean form
         await loadQuestionTemplates();
-        
-        // Finally load choice templates (which will match choices to the main assessment questions)
         await loadChoiceTemplates();
-        
-        // If no question-choice pairs were created (no main assessment questions), create a default one
+
+        // Always create initial question-choice pair for clean start
         if (safe(questionChoicePairs).length === 0 && !activity) {
           addQuestionChoicePair();
         }
@@ -719,68 +711,6 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     }
   };
  
-  /**
-   * Load main assessment questions for this category and reading level
-   * API: GET /api/interventions/questions/main?category={category}&readingLevel={level}
-   */
-  const loadMainAssessmentQuestions = async () => {
-    try {
-      // Make the API call with proper authentication
-      console.log('Loading main assessment questions:', `/api/interventions/questions/main?category=${category}&readingLevel=${readingLevel}`);
-      
-      const response = await api.interventions.getMainAssessmentQuestions(category, readingLevel);
-      console.log('Main assessment questions response:', response.data);
-      
-      // Update state with the fetched questions
-      const questions = response.data.data || [];
-      setMainAssessmentQuestions(questions);
-      
-      // If we're not editing an existing activity, create question-choice pairs from the main assessment questions
-      if (!activity && questions.length > 0) {
-        // Convert main assessment questions to question-choice pairs
-        const pairs = questions.map(question => {
-          // Find correct choice option
-          const correctOption = question.choiceOptions?.find(option => option.isCorrect);
-          
-          return {
-            id: Date.now() + Math.random(),
-            sourceType: 'main_assessment',
-            sourceId: question._id,
-            questionType: question.questionType || '',
-            questionText: question.questionText || '',
-            questionImage: question.questionImage || null,
-            questionValue: question.questionValue || '',
-            choiceIds: [], // Will be populated when choice templates are loaded
-            correctChoiceId: null // Will be populated when choice templates are loaded
-          };
-        });
-        
-        // Add these pairs to the state
-        setQuestionChoicePairs(pairs);
-      }
-    } catch (error) {
-      console.error('Error loading main assessment questions:', error);
-      
-      // Use mock data as fallback when API fails
-      console.log('Using mock main assessment questions data');
-      const mockQuestions = [
-        {
-          _id: 'mock-question-1',
-          questionText: 'Mock Question 1',
-          category: category,
-          readingLevel: readingLevel
-        },
-        {
-          _id: 'mock-question-2',
-          questionText: 'Mock Question 2',
-          category: category,
-          readingLevel: readingLevel
-        }
-      ];
-      
-      setMainAssessmentQuestions(mockQuestions);
-    }
-  };
  
   /**
    * Load question templates for this category
@@ -838,45 +768,6 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       const choices = response.data.data || [];
       setChoiceTemplates(choices);
       
-      // After loading choices, match them with any main assessment questions
-      if (!activity && safe(questionChoicePairs).length > 0 && safe(mainAssessmentQuestions).length > 0) {
-        setQuestionChoicePairs(prev => 
-          prev.map(pair => {
-            // Only process main assessment questions
-            if (pair.sourceType !== 'main_assessment') return pair;
-            
-            // Find the corresponding main assessment question
-            const mainQuestion = mainAssessmentQuestions.find(q => q._id === pair.sourceId);
-            if (!mainQuestion || !mainQuestion.choiceOptions) return pair;
-            
-            // Try to find matching choices in the choice templates
-            const matchedChoiceIds = [];
-            let correctChoiceId = null;
-            
-            mainQuestion.choiceOptions.forEach(option => {
-              // Find a matching choice template
-              const matchedChoice = choices.find(c => 
-                (c.choiceValue && c.choiceValue.toLowerCase() === option.optionText.toLowerCase()) ||
-                (c.soundText && c.soundText.toLowerCase() === option.optionText.toLowerCase())
-              );
-              
-              if (matchedChoice) {
-                matchedChoiceIds.push(matchedChoice._id);
-                if (option.isCorrect) {
-                  correctChoiceId = matchedChoice._id;
-                }
-              }
-            });
-            
-            // Update the pair with matched choices
-            return {
-              ...pair,
-              choiceIds: matchedChoiceIds.length > 0 ? matchedChoiceIds : pair.choiceIds,
-              correctChoiceId: correctChoiceId || pair.correctChoiceId
-            };
-          })
-        );
-      }
     } catch (error) {
       console.error('Error loading choice templates:', error);
       
@@ -1186,102 +1077,6 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   // ===== MOCK API FUNCTIONS =====
   // TODO: Remove these when connecting to real backend
  
-  const mockFetchMainAssessmentQuestions = async (category, readingLevel) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Convert reading level from UI format to database format
-    const dbReadingLevel = readingLevel.replace(/ /g, '_').toLowerCase();
-    
-    // Normalize category
-    const normCategory = normalizeCategory(category);
-    
-    // Mock data based on test.main_assessment.json structure
-    const allQuestions = [
-      // Low Emerging - Alphabet Knowledge
-      {
-        _id: "68298fb179a34741f9cd1a01-1",
-        questionType: "patinig",
-        questionText: "Anong katumbas na maliit na letra?",
-        questionImage: null,
-        questionValue: "A",
-        choiceOptions: [
-          { optionText: "a", isCorrect: true },
-          { optionText: "e", isCorrect: false }
-        ],
-        order: 1,
-        category: "alphabet_knowledge",
-        readingLevel: "low_emerging"
-      },
-      {
-        _id: "68298fb179a34741f9cd1a01-2",
-        questionType: "patinig",
-        questionText: "Anong katumbas na maliit na letra?",
-        questionImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/E_big.png",
-        questionValue: null,
-        choiceOptions: [
-          { optionText: "e", isCorrect: true },
-          { optionText: "a", isCorrect: false }
-        ],
-        order: 2,
-        category: "alphabet_knowledge",
-        readingLevel: "low_emerging"
-      },
-      
-      // Phonological Awareness
-      {
-        _id: "68298fb179a34741f9cd1a02-1",
-        questionType: "malapantig",
-        questionText: "Kapag pinagsama ang mga pantig, ano ang mabubuo?",
-        questionImage: null,
-        questionValue: "BO + LA",
-        choiceOptions: [
-          { optionText: "BOLA", isCorrect: true },
-          { optionText: "LABO", isCorrect: false }
-        ],
-        order: 1,
-        category: "phonological_awareness",
-        readingLevel: "low_emerging"
-      },
-      
-      // Word Recognition
-      {
-        _id: "68298fb179a34741f9cd1a03-1",
-        questionType: "word",
-        questionText: "Tukuyin ang angkop na salita sa larawan",
-        questionImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/words/ball.png",
-        questionValue: null,
-        choiceOptions: [
-          { optionText: "BOLA", isCorrect: true },
-          { optionText: "LABO", isCorrect: false }
-        ],
-        order: 1,
-        category: "word_recognition",
-        readingLevel: "low_emerging"
-      },
-      
-      // Decoding
-      {
-        _id: "68298fb179a34741f9cd1a04-1",
-        questionType: "word",
-        questionText: "Paano babaybayin ang salitang ito?",
-        questionImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/words/dog.png",
-        questionValue: null,
-        choiceOptions: [
-          { optionText: "A-S-O", isCorrect: true },
-          { optionText: "A-S-A", isCorrect: false }
-        ],
-        order: 1,
-        category: "decoding",
-        readingLevel: "low_emerging"
-      }
-    ];
-    
-    // Filter by category and reading level
-    return allQuestions.filter(
-      q => q.category === normCategory && q.readingLevel === dbReadingLevel
-    );
-  };
  
   const mockFetchQuestionTemplates = async (category) => {
     // Simulate API delay
@@ -2220,6 +2015,13 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
              Math.random().toString(36).substring(2, 15);
     };
     
+    // Create choices array for Alphabet Knowledge (exactly 3 choices)
+    const defaultChoices = normCategory === 'alphabet_knowledge' ? [
+      { optionText: '', isCorrect: false },
+      { optionText: '', isCorrect: false },
+      { optionText: '', isCorrect: false }
+    ] : [];
+
     const newPair = {
       id: generateUniqueId(),
       sourceType: 'custom',
@@ -2229,9 +2031,10 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       questionImage: null,
       questionValue: null,
       choiceIds: [],
-      correctChoiceId: null
+      correctChoiceId: null,
+      choices: defaultChoices  // Add choices array for Alphabet Knowledge
     };
-    
+
     setQuestionChoicePairs(prev => [...prev, newPair]);
   };
  
@@ -2240,21 +2043,32 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     setQuestionChoicePairs(prev => prev.filter(pair => pair.id !== id));
   };
  
-  const updateQuestionChoicePair = (id, field, value) => {
+  const updateQuestionChoicePair = (id, fieldOrUpdates, value) => {
+    // Handle both old style (field, value) and new style (object updates)
+    let updates;
+
+    if (typeof fieldOrUpdates === 'string') {
+      // Old style: updateQuestionChoicePair(id, 'questionText', 'new text')
+      updates = { [fieldOrUpdates]: value };
+    } else {
+      // New style: updateQuestionChoicePair(id, { questionText: 'new text', choices: [...] })
+      updates = fieldOrUpdates;
+    }
+
     // If removing an image, clean up any pending uploads and object URLs
-    if (field === 'questionImage' && value === null) {
+    if (updates.questionImage === null) {
       // Revoke the object URL if it exists
       if (fileUploads[id]?.localUrl) {
         URL.revokeObjectURL(fileUploads[id].localUrl);
       }
-      
+
       // Remove from pending uploads
       setPendingUploads(prev => {
         const newPendingUploads = { ...prev };
         delete newPendingUploads[id];
         return newPendingUploads;
       });
-      
+
       // Clear file upload status
       setFileUploads(prev => {
         const newFileUploads = { ...prev };
@@ -2262,11 +2076,11 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         return newFileUploads;
       });
     }
-    
+
     // Update the question-choice pair
-    setQuestionChoicePairs(prev => 
-      prev.map(pair => 
-        pair.id === id ? { ...pair, [field]: value } : pair
+    setQuestionChoicePairs(prev =>
+      prev.map(pair =>
+        pair.id === id ? { ...pair, ...updates } : pair
       )
     );
   };
@@ -2772,9 +2586,13 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       case 1:
         return renderBasicInfoStep();
       case 2:
-        return contentType === 'sentence'
-          ? renderSentenceSelectionStep()
-          : renderQuestionChoicesStepWithTemplates();
+        if (contentType === 'sentence') {
+          return renderSentenceSelectionStep();
+        } else if (category === 'Alphabet Knowledge') {
+          return renderAlphabetKnowledgeStep();
+        } else {
+          return renderQuestionChoicesStepWithTemplates();
+        }
       case 3:
         return renderReviewStep();
       default:
@@ -2876,71 +2694,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     if (contentType === 'sentence') {
       return renderSentenceTemplateSelection();
     }
-    
+
     return (
       <div className="literexia-form-section">
-        <h3>Questions from Assessment</h3>
-        
-        <div className="literexia-info-banner">
-          <FaInfoCircle />
-          <p>
-            These questions are from the main assessment for {formatCategoryName(category)}. 
-            You can use these questions or create new ones using templates.
-          </p>
-        </div>
-        
-        {/* Main Assessment Questions */}
-        <div className="literexia-main-assessment-questions">
-          {safe(mainAssessmentQuestions).length > 0 ? (
-            safe(mainAssessmentQuestions).map((question, index) => (
-              <div key={question._id} className="literexia-main-question-item">
-                <div className="literexia-main-question-header">
-                  <h4>Question {index + 1}</h4>
-                  <div className="literexia-main-question-type">
-                    {question.questionType}
-                  </div>
-                </div>
-                
-                <div className="literexia-main-question-content">
-                  <div className="literexia-main-question-text">
-                    <p>{question.questionText}</p>
-                    {question.questionValue && (
-                      <div className="literexia-main-question-value">
-                        <strong>Value:</strong> {question.questionValue}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {question.questionImage && (
-                    <div className="literexia-main-question-image">
-                      <img src={question.questionImage} alt="Question" />
-                    </div>
-                  )}
-                </div>
-                
-                <div className="literexia-main-question-choices">
-                  <h5>Original Choices:</h5>
-                  <ul>
-                    {safe(question.choiceOptions).map((option, optionIndex) => (
-                      <li key={optionIndex} className={option.isCorrect ? 'correct-option' : ''}>
-                        {option.optionText} {option.isCorrect && '(Correct)'}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="literexia-empty-state">
-              <FaExclamationTriangle className="literexia-empty-icon" />
-              <h3>No Assessment Questions Available</h3>
-              <p>No questions were found for this category and reading level.</p>
-            </div>
-          )}
-        </div>
-        
-        <hr className="literexia-section-divider" />
-        
         {/* Available Question Templates */}
         <div className="literexia-template-selection">
           <div className="literexia-template-header">
@@ -3183,6 +2939,138 @@ const renderSentenceSelectionStep = () => {
  * Step 2: Question-Choice Pairs with Templates (combined step)
  * Integrates template functionality from the old step 2 with question creation
  */
+/**
+ * Alphabet Knowledge Specific Form (3 choices default, clean interface)
+ */
+const renderAlphabetKnowledgeStep = () => {
+  return (
+    <div className="alphabet-knowledge-container">
+      {/* Info Banner */}
+      <div className="alphabet-knowledge-info-banner">
+        <FaInfoCircle className="info-icon" />
+        <p className="alphabet-knowledge-info-text">
+          Create intervention questions for {student?.firstName || 'the student'}'s Alphabet Knowledge needs.
+          Each question has exactly 3 choices with one correct answer. All new questions automatically become reusable templates.
+        </p>
+      </div>
+
+      {/* Questions Section */}
+      <div className="alphabet-knowledge-questions-section">
+        <div className="alphabet-knowledge-section-header">
+          <h3 className="alphabet-knowledge-section-title">Questions</h3>
+          <button
+            type="button"
+            className="alphabet-knowledge-add-question-btn"
+            onClick={addQuestionChoicePair}
+          >
+            <FaPlus /> Add Question
+          </button>
+        </div>
+
+        {/* Question List */}
+        {safe(questionChoicePairs).map((pair, index) => (
+          <div key={pair.id} className="alphabet-knowledge-question-card">
+            <div className="alphabet-knowledge-question-header">
+              <h4 className="alphabet-knowledge-question-number">Question {index + 1}</h4>
+              <button
+                type="button"
+                className="alphabet-knowledge-remove-btn"
+                onClick={() => removeQuestionChoicePair(pair.id)}
+                disabled={safe(questionChoicePairs).length <= 1}
+              >
+                <FaTrash /> Remove
+              </button>
+            </div>
+
+            {/* Question Text */}
+            <div className="alphabet-knowledge-form-group">
+              <label className="alphabet-knowledge-form-label">Question Text</label>
+              <input
+                type="text"
+                className="alphabet-knowledge-question-input"
+                value={pair.questionText || ''}
+                onChange={(e) => updateQuestionChoicePair(pair.id, { questionText: e.target.value })}
+                placeholder="Anong ang katumbas na maliit na letra?"
+              />
+            </div>
+
+            {/* Question Image */}
+            <div className="alphabet-knowledge-form-group">
+              <label className="alphabet-knowledge-form-label">Question Image (Optional)</label>
+              <div className="alphabet-knowledge-image-section">
+                {pair.questionImage && (
+                  <img
+                    src={pair.questionImage}
+                    alt="Question visual"
+                    className="alphabet-knowledge-image-preview"
+                  />
+                )}
+                <button
+                  type="button"
+                  className="alphabet-knowledge-change-image-btn"
+                >
+                  <FaImage /> Change Image
+                </button>
+              </div>
+            </div>
+
+            {/* Choices Section */}
+            <div className="alphabet-knowledge-choices-section">
+              <div className="alphabet-knowledge-choices-header">
+                <h4 className="alphabet-knowledge-choices-title">Question Choices</h4>
+                <span className="alphabet-knowledge-choices-info">Exactly 3 choices</span>
+              </div>
+
+              {/* Render exactly 3 choices */}
+              {[0, 1, 2].map((choiceIndex) => {
+                const choice = pair.choices?.[choiceIndex] || { optionText: '', isCorrect: false };
+                return (
+                  <div key={choiceIndex} className="alphabet-knowledge-choice-item">
+                    <input
+                      type="radio"
+                      name={`correct-${pair.id}`}
+                      className="alphabet-knowledge-choice-radio"
+                      checked={choice.isCorrect}
+                      onChange={() => {
+                        // Set this choice as correct and others as incorrect
+                        const newChoices = [...(pair.choices || [])];
+                        newChoices[0] = newChoices[0] || { optionText: '', isCorrect: false };
+                        newChoices[1] = newChoices[1] || { optionText: '', isCorrect: false };
+                        newChoices[2] = newChoices[2] || { optionText: '', isCorrect: false };
+
+                        newChoices[0].isCorrect = choiceIndex === 0;
+                        newChoices[1].isCorrect = choiceIndex === 1;
+                        newChoices[2].isCorrect = choiceIndex === 2;
+
+                        updateQuestionChoicePair(pair.id, { choices: newChoices });
+                      }}
+                    />
+                    <input
+                      type="text"
+                      className="alphabet-knowledge-choice-input"
+                      value={choice.optionText || ''}
+                      onChange={(e) => {
+                        const newChoices = [...(pair.choices || [])];
+                        newChoices[0] = newChoices[0] || { optionText: '', isCorrect: false };
+                        newChoices[1] = newChoices[1] || { optionText: '', isCorrect: false };
+                        newChoices[2] = newChoices[2] || { optionText: '', isCorrect: false };
+
+                        newChoices[choiceIndex].optionText = e.target.value;
+                        updateQuestionChoicePair(pair.id, { choices: newChoices });
+                      }}
+                      placeholder={`Choice ${choiceIndex + 1}`}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const renderQuestionChoicesStepWithTemplates = () => {
   return (
     <div className="literexia-form-section">
@@ -3196,100 +3084,7 @@ const renderQuestionChoicesStepWithTemplates = () => {
         </p>
       </div>
 
-      {/* Main Assessment Questions Reference */}
-      <div className="literexia-main-assessment-section">
-        <h4>Reference: Assessment Questions</h4>
-        <div className="literexia-info-banner" style={{backgroundColor: '#f0f9ff', borderColor: '#0ea5e9'}}>
-          <FaInfoCircle />
-          <p>
-            These questions are from the main assessment for {formatCategoryName(category)}.
-            You can use these as reference or inspiration for your intervention questions.
-          </p>
-        </div>
 
-        <div className="literexia-main-assessment-questions">
-          {safe(mainAssessmentQuestions).length > 0 ? (
-            safe(mainAssessmentQuestions).slice(0, 3).map((question, index) => (
-              <div key={question._id} className="literexia-main-question-item">
-                <div className="literexia-main-question-header">
-                  <strong>Assessment Question {index + 1}</strong>
-                </div>
-                <div className="literexia-main-question-content">
-                  <p>{question.questionText}</p>
-                  {question.questionImage && (
-                    <img
-                      src={sanitizeImageUrl(question.questionImage)}
-                      alt="Question visual"
-                      className="literexia-question-image-small"
-                    />
-                  )}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="literexia-empty-state">
-              <p>No assessment questions found for this category.</p>
-            </div>
-          )}
-          {safe(mainAssessmentQuestions).length > 3 && (
-            <p className="literexia-more-indicator">
-              +{safe(mainAssessmentQuestions).length - 3} more questions available for reference
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Inline Template Creation */}
-      {isInlineCreationAllowed() && (
-        <div className="literexia-template-creation-section">
-          <h4>Available Templates</h4>
-          <div className="literexia-template-actions">
-            <button
-              type="button"
-              className="literexia-create-template-btn"
-              onClick={() => setShowNewTemplateForm(!showNewTemplateForm)}
-            >
-              <FaPlus /> {showNewTemplateForm ? 'Hide' : 'Create'} Template
-            </button>
-          </div>
-
-          {/* Inline New Template Form */}
-          {showNewTemplateForm && (
-            <div className="literexia-inline-form">
-              <h5>Create New Question Template</h5>
-              <div className="literexia-form-group">
-                <label>Template Text</label>
-                <input
-                  type="text"
-                  value={newTemplateData.templateText}
-                  onChange={(e) => setNewTemplateData(prev => ({
-                    ...prev, templateText: e.target.value
-                  }))}
-                  placeholder="Enter question template text..."
-                />
-              </div>
-              <div className="literexia-template-actions">
-                <button
-                  type="button"
-                  className="literexia-primary-btn"
-                  onClick={handleCreateNewTemplate}
-                  disabled={!newTemplateData.templateText.trim() || creatingTemplate}
-                >
-                  {creatingTemplate ? <FaSpinner className="fa-spin" /> : <FaPlus />}
-                  {creatingTemplate ? 'Creating...' : 'Create Template'}
-                </button>
-                <button
-                  type="button"
-                  className="literexia-secondary-btn"
-                  onClick={() => setShowNewTemplateForm(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Questions and Choices Creation */}
       <div className="literexia-info-banner">
@@ -3311,10 +3106,6 @@ const renderQuestionChoicesStepWithTemplates = () => {
         <div key={pair.id} className="literexia-question-pair">
           <div className="literexia-question-pair-header">
             <h4>Question {index + 1}</h4>
-            <div className="literexia-question-source-label">
-              Source: {pair.sourceType === 'main_assessment' ? 'Assessment' :
-                      pair.sourceType === 'template_question' ? 'Template' : 'Custom'}
-            </div>
             <button
               type="button"
               className="literexia-remove-pair-btn"
@@ -3326,22 +3117,20 @@ const renderQuestionChoicesStepWithTemplates = () => {
           </div>
 
           {/* Template Selection */}
-          {pair.sourceType !== 'main_assessment' && (
-            <div className="literexia-question-template-selection">
-              <label>Question Template</label>
-              <select
-                value={pair.sourceId || ''}
-                onChange={(e) => setTemplateForPair(pair.id, e.target.value)}
-              >
-                <option value="">-- Select Template --</option>
-                {safe(questionTemplates).map(template => (
-                  <option key={template._id} value={template._id}>
-                    {template.templateText} ({template.questionType})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          <div className="literexia-question-template-selection">
+            <label>Question Template</label>
+            <select
+              value={pair.sourceId || ''}
+              onChange={(e) => setTemplateForPair(pair.id, e.target.value)}
+            >
+              <option value="">-- Select Template --</option>
+              {safe(questionTemplates).map(template => (
+                <option key={template._id} value={template._id}>
+                  {template.templateText} ({template.questionType})
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* Question Details */}
           <div className="literexia-question-details">
@@ -3501,10 +3290,6 @@ const renderQuestionChoicesStep = () => {
         <div key={pair.id} className="literexia-question-pair">
           <div className="literexia-question-pair-header">
                     <h4>Question {index + 1}</h4>
-            <div className="literexia-question-source-label">
-              Source: {pair.sourceType === 'main_assessment' ? 'Assessment' : 
-                      pair.sourceType === 'template_question' ? 'Template' : 'Custom'}
-            </div>
                     <button
                       type="button"
               className="literexia-remove-pair-btn"
@@ -3516,22 +3301,20 @@ const renderQuestionChoicesStep = () => {
                   </div>
                   
           {/* Template Selection */}
-          {pair.sourceType !== 'main_assessment' && (
-            <div className="literexia-question-template-selection">
-                    <label>Question Template</label>
-                    <select
-                value={pair.sourceId || ''}
-                onChange={(e) => setTemplateForPair(pair.id, e.target.value)}
-              >
-                <option value="">-- Select Template --</option>
-                {safe(questionTemplates).map(template => (
-                  <option key={template._id} value={template._id}>
-                    {template.templateText} ({template.questionType})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-          )}
+          <div className="literexia-question-template-selection">
+            <label>Question Template</label>
+            <select
+              value={pair.sourceId || ''}
+              onChange={(e) => setTemplateForPair(pair.id, e.target.value)}
+            >
+              <option value="">-- Select Template --</option>
+              {safe(questionTemplates).map(template => (
+                <option key={template._id} value={template._id}>
+                  {template.templateText} ({template.questionType})
+                </option>
+              ))}
+            </select>
+          </div>
           
           {/* Question Details */}
           <div className="literexia-question-details">
@@ -3553,30 +3336,7 @@ const renderQuestionChoicesStep = () => {
               <div className="literexia-help-text">
                 You can set both Question Value and Question Image if needed.
               </div>
-              {(pair.sourceType === 'main_assessment') ? (
-                // For assessment questions, show an editable dropdown
-                <select
-                  value={pair.questionValue || ''}
-                  onChange={(e) => updateQuestionChoicePair(pair.id, 'questionValue', e.target.value)}
-                  className="literexia-dropdown"
-                >
-                  <option value="">-- Select Value --</option>
-                  {safe(choiceTemplates)
-                    .filter(c => {
-                      if (!c) return false;
-                      // Filter by applicable choice types for current question
-                      return getApplicableChoiceTypes(pair.questionType).includes(c.choiceType);
-                    })
-                    .map(c => (
-                      <option 
-                        key={c._id} 
-                        value={c.choiceValue || c.soundText || ''}
-                      >
-                        {c.choiceValue || c.soundText || '(No text)'} ({formatChoiceType(c.choiceType)})
-                      </option>
-                    ))}
-                </select>
-              ) : pair.sourceType === 'template_question' ? (
+              {pair.sourceType === 'template_question' ? (
                 // Dropdown for template questions
                 <select
                   value={pair.questionValue || ''}
@@ -3595,8 +3355,8 @@ const renderQuestionChoicesStep = () => {
                       return getApplicableChoiceTypes(pair.questionType).includes(c.choiceType);
                     })
                     .map(c => (
-                      <option 
-                        key={c._id} 
+                      <option
+                        key={c._id}
                         value={c.choiceValue || c.soundText || ''}
                       >
                         {c.choiceValue || c.soundText || '(No text)'} ({formatChoiceType(c.choiceType)})
@@ -4283,9 +4043,8 @@ return (
        <div className="literexia-modal-info-banner">
          <FaInfoCircle />
          <p>
-           This intervention activity will help address {student?.firstName || 'the student'}'s 
-           specific needs in {formatCategoryName(category)}. Questions can be sourced from assessments, 
-           templates, or created custom. All choices are editable from the template library.
+           This intervention activity will help address {student?.firstName || 'the student'}'s
+           specific needs in {formatCategoryName(category)}. Create intervention questions using templates or custom content. All new questions automatically become reusable templates.
          </p>
        </div>
        
