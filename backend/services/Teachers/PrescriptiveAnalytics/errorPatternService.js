@@ -2,6 +2,7 @@
 // Analyzes student_responses to identify specific error patterns by category
 
 const StudentResponse = require('../../../models/Teachers/ManageProgress/studentResponseModel');
+const MainAssessment = require('../../../models/Teachers/mainAssessmentModel');
 
 class ErrorPatternService {
   
@@ -14,13 +15,16 @@ class ErrorPatternService {
    */
   async analyzeErrorPatterns(studentId, categoryResultId = null) {
     try {
+      console.log(`[ERROR PATTERN ANALYSIS] Starting analysis for student ${studentId}, categoryResultId: ${categoryResultId}`);
+
       // Fetch student responses for analysis
       const query = { studentId };
       if (categoryResultId) {
         query.categoryId = categoryResultId;
       }
-      
+
       const responses = await StudentResponse.find(query).sort({ answeredAt: 1 });
+      console.log(`[ERROR PATTERN ANALYSIS] Found ${responses.length} responses for student ${studentId}`);
       
       // Group responses by category
       const responsesByCategory = this.groupResponsesByCategory(responses);
@@ -31,7 +35,7 @@ class ErrorPatternService {
       for (const [category, categoryResponses] of Object.entries(responsesByCategory)) {
         switch (category) {
           case 'Alphabet Knowledge':
-            errorPatterns[category] = this.analyzeAlphabetKnowledgeErrors(categoryResponses);
+            errorPatterns[category] = await this.analyzeAlphabetKnowledgeErrors(categoryResponses);
             break;
           case 'Phonological Awareness':
             errorPatterns[category] = this.analyzePhonologicalAwarenessErrors(categoryResponses);
@@ -73,15 +77,38 @@ class ErrorPatternService {
    * Analyze Alphabet Knowledge errors
    * Identifies patinig (vowel) and katinig (consonant) error patterns
    */
-  analyzeAlphabetKnowledgeErrors(responses) {
+  async analyzeAlphabetKnowledgeErrors(responses) {
     const errorAnalysis = {};
-    
+
+    // Get question details from main_assessment to map questionId to questionValue
+    const questionIds = responses.map(r => r.questionId);
+    const assessmentQuestions = await MainAssessment.find({
+      category: 'Alphabet Knowledge',
+      'questions.questionId': { $in: questionIds }
+    });
+
+    // Create mapping from questionId to questionValue
+    const questionValueMap = {};
+    assessmentQuestions.forEach(assessment => {
+      assessment.questions.forEach(question => {
+        if (questionIds.includes(question.questionId)) {
+          questionValueMap[question.questionId] = question.questionValue;
+        }
+      });
+    });
+
+    // Add questionValue to responses for analysis
+    const enhancedResponses = responses.map(r => ({
+      ...r.toObject(),
+      questionValue: questionValueMap[r.questionId]
+    }));
+
     // Separate patinig and katinig responses based on questionValue
     const patinigLetters = ['A', 'E', 'I', 'O', 'U'];
-    const patinigResponses = responses.filter(r => 
+    const patinigResponses = enhancedResponses.filter(r =>
       r.questionValue && patinigLetters.includes(r.questionValue.toUpperCase())
     );
-    const katinigResponses = responses.filter(r => 
+    const katinigResponses = enhancedResponses.filter(r =>
       r.questionValue && !patinigLetters.includes(r.questionValue.toUpperCase()) && r.questionValue
     );
     
@@ -143,7 +170,36 @@ class ErrorPatternService {
         } : null
       };
     }
-    
+
+    // Create detailed error analysis array
+    const detailedErrorAnalysis = [];
+
+    // Add detailed analysis for each wrong question
+    const allErrors = [...(patinigErrors || []), ...(katinigErrors || [])];
+    allErrors.forEach(errorResponse => {
+      const isVowel = patinigLetters.includes(errorResponse.questionValue?.toUpperCase());
+      detailedErrorAnalysis.push({
+        questionId: errorResponse.questionId,
+        letter: errorResponse.questionValue,
+        letterType: isVowel ? 'vowel' : 'consonant',
+        errorType: isVowel ? 'vowel_recognition_error' : 'consonant_recognition_error',
+        specificError: `Failed to recognize letter "${errorResponse.questionValue}"`,
+        interventionTarget: errorResponse.questionValue,
+        cognitiveImplication: isVowel ?
+          'Visual-auditory vowel processing difficulty' :
+          'Consonant-sound correspondence weakness',
+        // Required fields for validation
+        errorPattern: isVowel ?
+          `Vowel recognition difficulty with ${errorResponse.questionValue}` :
+          `Consonant recognition difficulty with ${errorResponse.questionValue}`,
+        interventionFocus: isVowel ?
+          `Vowel discrimination training for ${errorResponse.questionValue}` :
+          `Consonant-sound correspondence practice for ${errorResponse.questionValue}`
+      });
+    });
+
+    errorAnalysis.detailedErrorAnalysis = detailedErrorAnalysis;
+
     return errorAnalysis;
   }
 

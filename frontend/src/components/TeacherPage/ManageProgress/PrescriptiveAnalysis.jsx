@@ -660,6 +660,16 @@ const PrescriptiveAnalysis = ({
 
     console.log('🔍 [DEBUG] Research prescriptions for', categoryName, ':', researchPrescriptions);
 
+    // Extract detailed error analysis - individual letter/question level analysis
+    // It's nested in errorPatterns.[categoryName].detailedErrorAnalysis
+    const categoryErrorPatterns = studentAnalysis.errorPatterns?.[categoryName] || studentAnalysis.errorPatterns?.[normalizedCategory];
+    const detailedErrorAnalysis = categoryErrorPatterns?.detailedErrorAnalysis || [];
+
+    console.log('🔍 [DEBUG] Detailed error analysis extraction for', categoryName, ':');
+    console.log('🔍 [DEBUG] Category error patterns:', categoryErrorPatterns);
+    console.log('🔍 [DEBUG] Detailed error analysis found:', detailedErrorAnalysis);
+    console.log('🔍 [DEBUG] Full errorPatterns structure:', studentAnalysis.errorPatterns);
+
     const enhancedResearchPrescriptions = researchPrescriptions ? {
       ...researchPrescriptions,
 
@@ -806,6 +816,9 @@ const PrescriptiveAnalysis = ({
 
       // Enhanced Error Patterns with all confusion pairs and cognitive implications
       errorPatterns: enhancedErrorPatterns,
+
+      // Detailed Error Analysis - letter/question level breakdown
+      detailedErrorAnalysis: detailedErrorAnalysis,
 
       // Enhanced Intervention Plan with dynamic question count
       interventionPlan: enhancedInterventionPlan,
@@ -1108,6 +1121,583 @@ const PrescriptiveAnalysis = ({
   };
 
   // ===== RENDER HELPERS =====
+
+  /**
+   * Render comprehensive research-based analysis - ALL database content dynamically
+   * @param {Object} researchBasedPrescriptions - Research prescriptions from database
+   * @param {string} categoryName - Category name for dynamic content
+   * @return {JSX.Element} Comprehensive research analysis display
+   */
+  const renderComprehensiveResearchAnalysis = (researchBasedPrescriptions, categoryName) => {
+    if (!researchBasedPrescriptions || !categoryName) {
+      return null;
+    }
+
+    console.log('🔍 [COMPREHENSIVE] Rendering comprehensive analysis for', categoryName, ':', researchBasedPrescriptions);
+
+    const {
+      categoryStatus,
+      deficitAnalysis,
+      interventionPrescription,
+      escalationProtocol,
+      maintenanceRecommendations,
+      accelerationRecommendations
+    } = researchBasedPrescriptions;
+
+    if (!deficitAnalysis && !interventionPrescription) {
+      return null; // No research data available for this category
+    }
+
+    return (
+      <div className="literexia-analysis-card literexia-full-width">
+        <div className="literexia-card-content">
+          <div className={`epa-container theme-${getUITheme(categoryName)}`}>
+            <div className="epa-header">
+              <FaExclamationTriangle className="epa-icon" />
+              <div>
+                <h4 className="epa-title">Comprehensive {categoryName} Analysis</h4>
+                <p className="epa-subtitle epa-subtitle--white">Evidence-based deficit analysis, intervention prescriptions, and escalation protocols</p>
+              </div>
+              <div className="epa-summary">
+                <span className={`epa-status-badge epa-status-badge--${categoryStatus}`}>
+                  {categoryStatus?.toUpperCase() || 'ANALYSIS'}
+                </span>
+              </div>
+            </div>
+
+            <div className="epa-content">
+              {/* Deficit Analysis Section */}
+              {deficitAnalysis && (
+                <div className="epa-research-section">
+                  <div className="epa-research-header">
+                    <h5 className="epa-research-title">Deficit Analysis</h5>
+                    <span className="epa-research-classification">{deficitAnalysis.researchClassification}</span>
+                  </div>
+
+                  {/* Specific Deficits */}
+                  {deficitAnalysis.specificDeficits && deficitAnalysis.specificDeficits.length > 0 && (
+                    <div className="epa-deficit-grid">
+                      {deficitAnalysis.specificDeficits.map((deficit, index) => (
+                        <div key={index} className="epa-deficit-card">
+                          <div className="epa-deficit-header">
+                            <span className={`epa-severity-badge epa-severity-badge--${deficit.severity}`}>
+                              {deficit.severity?.toUpperCase()}
+                            </span>
+                            <div className="epa-deficit-title">{deficit.deficit}</div>
+                          </div>
+                          <div className="epa-deficit-details">
+                            <div className="epa-deficit-manifestation">
+                              <strong>Manifestation:</strong> {deficit.manifestation}
+                            </div>
+                            <div className="epa-deficit-error-rate">
+                              <strong>Error Rate:</strong> {deficit.errorRate}
+                            </div>
+                            {deficit.researchEvidence && (
+                              <div className="epa-deficit-evidence">
+                                <strong>Evidence:</strong> {deficit.researchEvidence}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Root Cause Analysis */}
+                  {deficitAnalysis.rootCauseAnalysis && (
+                    <div className="epa-root-cause">
+                      <h6>Root Cause Analysis</h6>
+                      <p>{deficitAnalysis.rootCauseAnalysis}</p>
+                    </div>
+                  )}
+
+                  {/* Cognitive Factors */}
+                  {deficitAnalysis.cognitiveFactors && deficitAnalysis.cognitiveFactors.length > 0 && (
+                    <div className="epa-cognitive-factors">
+                      <h6>Cognitive Factors</h6>
+                      <div className="epa-factor-tags">
+                        {deficitAnalysis.cognitiveFactors.map((factor, index) => (
+                          <span key={index} className="epa-factor-tag">{factor}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Intervention Prescription Section */}
+              {interventionPrescription && (
+                <div className="epa-research-section">
+                  <div className="epa-research-header">
+                    <h5 className="epa-research-title">Intervention Prescription</h5>
+                    <span className="epa-intensity-badge epa-intensity-badge--{interventionPrescription.intensityLevel}">
+                      {interventionPrescription.intensityLevel?.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
+
+                  {/* Primary Approach */}
+                  {interventionPrescription.primaryApproach && (
+                    <div className="epa-primary-approach">
+                      <h6>Primary Approach</h6>
+                      <p className="epa-approach-name">{interventionPrescription.primaryApproach?.replace('_', ' ')}</p>
+                    </div>
+                  )}
+
+                  {/* Specific Techniques */}
+                  {interventionPrescription.specificTechniques && interventionPrescription.specificTechniques.length > 0 && (
+                    <div className="epa-techniques-grid">
+                      <h6>Specific Techniques</h6>
+                      <div className="epa-techniques-container">
+                        {interventionPrescription.specificTechniques.map((technique, index) => (
+                          <div key={index} className="epa-technique-card">
+                            <div className="epa-technique-header">
+                              <h7 className="epa-technique-name">{technique.technique || technique}</h7>
+                            </div>
+                            {technique.description && (
+                              <div className="epa-technique-description">{technique.description}</div>
+                            )}
+                            <div className="epa-technique-details">
+                              {technique.duration && (
+                                <div className="epa-technique-duration">
+                                  <strong>Duration:</strong> {technique.duration}
+                                </div>
+                              )}
+                              {technique.materials && (
+                                <div className="epa-technique-materials">
+                                  <strong>Materials:</strong> {technique.materials}
+                                </div>
+                              )}
+                              {technique.progressCriteria && (
+                                <div className="epa-technique-criteria">
+                                  <strong>Success Criteria:</strong> {technique.progressCriteria}
+                                </div>
+                              )}
+                              {technique.researchBasis && (
+                                <div className="epa-technique-research">
+                                  <strong>Research Basis:</strong> {technique.researchBasis}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Session Structure */}
+                  {interventionPrescription.sessionStructure && (
+                    <div className="epa-session-structure">
+                      <h6>Session Structure</h6>
+                      <div className="epa-session-details">
+                        {interventionPrescription.sessionStructure.optimalLength && (
+                          <div className="epa-session-length">
+                            <strong>Optimal Length:</strong> {interventionPrescription.sessionStructure.optimalLength}
+                          </div>
+                        )}
+                        {interventionPrescription.sessionStructure.breakPattern && (
+                          <div className="epa-break-pattern">
+                            <strong>Break Pattern:</strong> {interventionPrescription.sessionStructure.breakPattern}
+                          </div>
+                        )}
+                        {interventionPrescription.sessionStructure.sessionComponents && (
+                          <div className="epa-session-components">
+                            <strong>Components:</strong>
+                            <ul>
+                              {interventionPrescription.sessionStructure.sessionComponents.map((component, index) => (
+                                <li key={index}>{component}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Material Recommendations */}
+                  {interventionPrescription.materialRecommendations && interventionPrescription.materialRecommendations.length > 0 && (
+                    <div className="epa-materials">
+                      <h6>Material Recommendations</h6>
+                      <ul className="epa-materials-list">
+                        {interventionPrescription.materialRecommendations.map((material, index) => (
+                          <li key={index}>{material}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Progress Monitoring */}
+                  {interventionPrescription.progressMonitoring && (
+                    <div className="epa-progress-monitoring">
+                      <h6>Progress Monitoring</h6>
+                      <div className="epa-monitoring-details">
+                        {interventionPrescription.progressMonitoring.frequency && (
+                          <div className="epa-monitoring-frequency">
+                            <strong>Frequency:</strong> {interventionPrescription.progressMonitoring.frequency}
+                          </div>
+                        )}
+                        {interventionPrescription.progressMonitoring.keyIndicators && (
+                          <div className="epa-monitoring-indicators">
+                            <strong>Key Indicators:</strong>
+                            <ul>
+                              {interventionPrescription.progressMonitoring.keyIndicators.map((indicator, index) => (
+                                <li key={index}>{indicator}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {interventionPrescription.progressMonitoring.dataCollectionMethod && (
+                          <div className="epa-monitoring-method">
+                            <strong>Data Collection:</strong> {interventionPrescription.progressMonitoring.dataCollectionMethod}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Escalation Protocol Section */}
+              {escalationProtocol && escalationProtocol.triggers && escalationProtocol.triggers.length > 0 && (
+                <div className="epa-research-section">
+                  <div className="epa-research-header">
+                    <h5 className="epa-research-title">Escalation Protocol</h5>
+                  </div>
+
+                  <div className="epa-escalation-triggers">
+                    {escalationProtocol.triggers.map((trigger, index) => (
+                      <div key={index} className="epa-escalation-card">
+                        <div className="epa-escalation-header">
+                          <h6 className="epa-escalation-trigger">{trigger.trigger}</h6>
+                          <span className="epa-escalation-approach">{trigger.approach}</span>
+                        </div>
+
+                        {trigger.specificTechniques && trigger.specificTechniques.length > 0 && (
+                          <div className="epa-escalation-techniques">
+                            <strong>Escalation Techniques:</strong>
+                            {trigger.specificTechniques.map((technique, techIndex) => (
+                              <div key={techIndex} className="epa-escalation-technique">
+                                <div className="epa-escalation-technique-name">{technique.technique}</div>
+                                <div className="epa-escalation-technique-purpose">{technique.purpose}</div>
+                                <div className="epa-escalation-technique-implementation">{technique.implementation}</div>
+                                {technique.researchBasis && (
+                                  <div className="epa-escalation-research">
+                                    <strong>Research Basis:</strong> {technique.researchBasis}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {trigger.intensityRecommendations && (
+                          <div className="epa-intensity-recommendations">
+                            <strong>Intensity Recommendations:</strong>
+                            <div className="epa-intensity-details">
+                              {trigger.intensityRecommendations.duration && (
+                                <div><strong>Duration:</strong> {trigger.intensityRecommendations.duration}</div>
+                              )}
+                              {trigger.intensityRecommendations.frequency && (
+                                <div><strong>Frequency:</strong> {trigger.intensityRecommendations.frequency}</div>
+                              )}
+                              {trigger.intensityRecommendations.totalIntervention && (
+                                <div><strong>Total Hours:</strong> {trigger.intensityRecommendations.totalIntervention}</div>
+                              )}
+                              {trigger.intensityRecommendations.researchSupport && (
+                                <div><strong>Research Support:</strong> {trigger.intensityRecommendations.researchSupport}</div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {trigger.researchFoundation && (
+                          <div className="epa-escalation-foundation">
+                            <strong>Research Foundation:</strong> {trigger.researchFoundation}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Maintenance Recommendations */}
+              {maintenanceRecommendations && maintenanceRecommendations.activities && maintenanceRecommendations.activities.length > 0 && (
+                <div className="epa-research-section">
+                  <div className="epa-research-header">
+                    <h5 className="epa-research-title">Maintenance Recommendations</h5>
+                  </div>
+
+                  <div className="epa-maintenance-activities">
+                    {maintenanceRecommendations.activities.map((activity, index) => (
+                      <div key={index} className="epa-maintenance-activity">
+                        {typeof activity === 'string' ? activity : (
+                          <div>
+                            <div className="epa-activity-name">{activity.activity}</div>
+                            {activity.frequency && <div className="epa-activity-frequency">Frequency: {activity.frequency}</div>}
+                            {activity.implementation && <div className="epa-activity-implementation">{activity.implementation}</div>}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Acceleration Recommendations */}
+              {accelerationRecommendations && (accelerationRecommendations.bridgingActivities?.length > 0 || accelerationRecommendations.nextLevelSkills?.length > 0) && (
+                <div className="epa-research-section">
+                  <div className="epa-research-header">
+                    <h5 className="epa-research-title">Acceleration Recommendations</h5>
+                  </div>
+
+                  {accelerationRecommendations.bridgingActivities && accelerationRecommendations.bridgingActivities.length > 0 && (
+                    <div className="epa-bridging-activities">
+                      <h6>Bridging Activities</h6>
+                      <ul>
+                        {accelerationRecommendations.bridgingActivities.map((activity, index) => (
+                          <li key={index}>{activity}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {accelerationRecommendations.nextLevelSkills && accelerationRecommendations.nextLevelSkills.length > 0 && (
+                    <div className="epa-next-level-skills">
+                      <h6>Next Level Skills</h6>
+                      <ul>
+                        {accelerationRecommendations.nextLevelSkills.map((skill, index) => (
+                          <li key={index}>{skill}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  /**
+   * Render detailed error analysis from database - letter/question level breakdown
+   * @param {Array} detailedErrorAnalysis - Array of detailed error items from database
+   * @param {string} categoryName - Category name for context
+   * @return {JSX.Element} Detailed error analysis display
+   */
+  const renderDetailedErrorAnalysis = (detailedErrorAnalysis, categoryName) => {
+    console.log('🔍 [RENDER] renderDetailedErrorAnalysis called with:', {
+      detailedErrorAnalysis,
+      categoryName,
+      hasData: detailedErrorAnalysis && detailedErrorAnalysis.length > 0,
+      length: detailedErrorAnalysis ? detailedErrorAnalysis.length : 0
+    });
+
+    if (!detailedErrorAnalysis || detailedErrorAnalysis.length === 0) {
+      console.log('🔍 [RENDER] No detailed error analysis data, returning fallback display');
+      // Return a placeholder to show this function is being called
+      return (
+        <div className="literexia-analysis-card literexia-full-width">
+          <div className="literexia-card-content">
+            <div className={`epa-container theme-${getUITheme(categoryName)}`}>
+              <div className="epa-header">
+                <FaExclamationTriangle className="epa-icon" />
+                <div>
+                  <h4 className="epa-title">Individual Letter Analysis</h4>
+                  <p className="epa-subtitle">No detailed letter-level analysis available from database</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    console.log('🔍 [RENDER] Rendering detailed error analysis with data:', detailedErrorAnalysis);
+
+    // Transform database structure to match our display needs
+    const transformedErrors = detailedErrorAnalysis.map(error => {
+      // Extract letter from errorPattern (e.g., "Vowel recognition difficulty with E" -> "E")
+      const letterMatch = error.errorPattern?.match(/with (.+)$/);
+      const letter = letterMatch ? letterMatch[1] : 'Unknown';
+
+      // Determine if it's vowel or consonant based on errorPattern
+      const isVowel = error.errorPattern?.toLowerCase().includes('vowel');
+      const isConsonant = error.errorPattern?.toLowerCase().includes('consonant');
+
+      return {
+        ...error,
+        letter: letter,
+        letterType: isVowel ? 'vowel' : (isConsonant ? 'consonant' : 'other'),
+        specificError: error.errorPattern,
+        cognitiveImplication: isVowel ?
+          'Visual-auditory vowel processing difficulty' :
+          'Consonant-sound correspondence weakness',
+        questionId: `Pattern Analysis` // Since we don't have specific questionId in this structure
+      };
+    });
+
+    console.log('🔍 [RENDER] Transformed errors:', transformedErrors);
+
+    // Group errors by letter type for better organization
+    const vowelErrors = transformedErrors.filter(error => error.letterType === 'vowel');
+    const consonantErrors = transformedErrors.filter(error => error.letterType === 'consonant');
+    const otherErrors = transformedErrors.filter(error => error.letterType === 'other');
+
+    return (
+      <div className="literexia-analysis-card literexia-full-width">
+        <div className="literexia-card-content">
+          <div className={`epa-container theme-${getUITheme(categoryName)}`}>
+            <div className="epa-header">
+              <FaExclamationTriangle className="epa-icon" />
+              <div>
+                <h4 className="epa-title">Detailed Error Analysis</h4>
+                <p className="epa-subtitle epa-subtitle--white">Individual letter and question-level breakdown with specific intervention targets</p>
+              </div>
+              <div className="epa-summary">
+                <span className="epa-error-count">{detailedErrorAnalysis.length} specific errors identified</span>
+              </div>
+            </div>
+
+            <div className="epa-content">
+              {/* Vowel Errors Section */}
+              {vowelErrors.length > 0 && (
+                <div className="epa-error-group">
+                  <div className="epa-error-group-header">
+                    <h5 className="epa-error-group-title">
+                      <span className="epa-error-type-badge epa-error-type-badge--vowel">Vowel Errors</span>
+                      Vowel Recognition Difficulties ({vowelErrors.length} errors)
+                    </h5>
+                  </div>
+                  <div className="epa-error-items">
+                    {vowelErrors.map((error, index) => (
+                      <div key={index} className="epa-error-item">
+                        <div className="epa-error-header">
+                          <span className="epa-error-letter-badge epa-error-letter-badge--vowel">{error.letter}</span>
+                          <div className="epa-error-title">{error.letter} Recognition Issue</div>
+                        </div>
+                        <div className="epa-error-compact-details">
+                          <div className="epa-error-pattern-compact">
+                            <strong>Pattern:</strong> {error.errorPattern?.replace('Vowel recognition difficulty with ' + error.letter, 'Vowel confusion')}
+                          </div>
+                          <div className="epa-error-intervention-compact">
+                            <strong>Focus:</strong> {error.interventionFocus?.replace('Vowel discrimination training for ' + error.letter, 'Vowel training')}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Consonant Errors Section */}
+              {consonantErrors.length > 0 && (
+                <div className="epa-error-group">
+                  <div className="epa-error-group-header">
+                    <h5 className="epa-error-group-title">
+                      <span className="epa-error-type-badge epa-error-type-badge--consonant">Consonant Errors</span>
+                      Consonant Recognition Difficulties ({consonantErrors.length} errors)
+                    </h5>
+                  </div>
+                  <div className="epa-error-items">
+                    {consonantErrors.map((error, index) => (
+                      <div key={index} className="epa-error-item">
+                        <div className="epa-error-header">
+                          <span className="epa-error-letter-badge epa-error-letter-badge--consonant">{error.letter}</span>
+                          <div className="epa-error-title">{error.letter} Recognition Issue</div>
+                        </div>
+                        <div className="epa-error-compact-details">
+                          <div className="epa-error-pattern-compact">
+                            <strong>Pattern:</strong> {error.errorPattern?.replace('Consonant recognition difficulty with ' + error.letter, 'Consonant confusion')}
+                          </div>
+                          <div className="epa-error-intervention-compact">
+                            <strong>Focus:</strong> {error.interventionFocus?.replace('Consonant-sound correspondence practice for ' + error.letter, 'Consonant training')}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Other Errors Section */}
+              {otherErrors.length > 0 && (
+                <div className="epa-error-group">
+                  <div className="epa-error-group-header">
+                    <h5 className="epa-error-group-title">
+                      <span className="epa-error-type-badge epa-error-type-badge--other">Other Errors</span>
+                      Additional Error Patterns ({otherErrors.length} errors)
+                    </h5>
+                  </div>
+                  <div className="epa-error-items">
+                    {otherErrors.map((error, index) => (
+                      <div key={index} className="epa-error-item">
+                        <div className="epa-error-letter">
+                          <span className="epa-error-letter-badge epa-error-letter-badge--other">
+                            {error.letter || error.questionId}
+                          </span>
+                        </div>
+                        <div className="epa-error-details">
+                          <div className="epa-error-primary">
+                            <span className="epa-error-description">{error.specificError}</span>
+                            <span className="epa-error-question">Question: {error.questionId}</span>
+                          </div>
+                          <div className="epa-error-secondary">
+                            {error.errorPattern && (
+                              <div className="epa-error-pattern">
+                                <strong>Pattern:</strong> {error.errorPattern}
+                              </div>
+                            )}
+                            {error.cognitiveImplication && (
+                              <div className="epa-error-cognitive">
+                                <strong>Cognitive Issue:</strong> {error.cognitiveImplication}
+                              </div>
+                            )}
+                          </div>
+                          {error.interventionFocus && (
+                            <div className="epa-error-intervention">
+                              <strong>Intervention Focus:</strong> {error.interventionFocus}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Summary Section */}
+              <div className="epa-error-summary">
+                <h6 className="epa-error-summary-title">Error Analysis Summary</h6>
+                <div className="epa-error-summary-stats">
+                  <div className="epa-error-summary-stat">
+                    <span className="epa-error-summary-label">Total Errors:</span>
+                    <span className="epa-error-summary-value">{detailedErrorAnalysis.length}</span>
+                  </div>
+                  {vowelErrors.length > 0 && (
+                    <div className="epa-error-summary-stat">
+                      <span className="epa-error-summary-label">Vowel Errors:</span>
+                      <span className="epa-error-summary-value">{vowelErrors.length}</span>
+                    </div>
+                  )}
+                  {consonantErrors.length > 0 && (
+                    <div className="epa-error-summary-stat">
+                      <span className="epa-error-summary-label">Consonant Errors:</span>
+                      <span className="epa-error-summary-value">{consonantErrors.length}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="epa-error-summary-note">
+                  This detailed analysis provides specific intervention targets for each identified error pattern.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   /**
    * Render teaching guide for specific category
@@ -1429,6 +2019,7 @@ const PrescriptiveAnalysis = ({
       bktData,           // Bayesian Knowledge Tracing data
       irtAbility,        // Item Response Theory ability estimate
       errorPatterns,     // Error pattern analysis
+      detailedErrorAnalysis, // Individual letter/question level analysis from database
       insights,          // Overall insights
       interventionPlan,  // Intervention recommendations
       researchBasedPrescriptions // Research-based prescriptions from database
@@ -1438,6 +2029,7 @@ const PrescriptiveAnalysis = ({
       bktData,
       irtAbility,
       errorPatterns,
+      detailedErrorAnalysis,
       interventionPlan,
       researchBasedPrescriptions
     });
@@ -1725,6 +2317,12 @@ const PrescriptiveAnalysis = ({
             </div>
           </div>
         )}
+
+        {/* Detailed Error Analysis - Individual Letter/Question Level from Database */}
+        {renderDetailedErrorAnalysis(detailedErrorAnalysis, categoryName)}
+
+        {/* Comprehensive Research-Based Analysis - All Database Content */}
+        {renderComprehensiveResearchAnalysis(researchBasedPrescriptions, categoryName)}
       </div>
     );
   };

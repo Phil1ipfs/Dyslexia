@@ -1312,3 +1312,828 @@
     align-self: flex-start;
   }
 }
+
+/* ========== DETAILED ERROR ANALYSIS - LETTER/QUESTION LEVEL ========== */
+
+/* Error Groups */
+.epa-error-group {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.epa-error-group:last-child {
+  margin-bottom: 0;
+}
+
+.epa-error-group-header {
+  background: #e2e8f0;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.epa-error-group-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #3B4F81;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Error Type Badges */
+.epa-error-type-badge {
+  padding: 0.25rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: white;
+  margin-right: 0.5rem;
+}
+
+.epa-error-type-badge--vowel {
+  background: #dc2626;
+}
+
+.epa-error-type-badge--consonant {
+  background: #ea580c;
+}
+
+.epa-error-type-badge--other {
+  background: #6366f1;
+}
+
+/* Error Items Container - 3 Cards per Row */
+.epa-error-items {
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.75rem;
+}
+
+/* Individual Error Item - Compact Card */
+.epa-error-item {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s ease;
+  min-height: 120px;
+}
+
+.epa-error-item:hover {
+  border-color: #3B4F81;
+}
+
+/* Compact Error Item Layout */
+.epa-error-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.epa-error-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.epa-error-compact-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.epa-error-pattern-compact,
+.epa-error-intervention-compact {
+  font-size: 0.75rem;
+  color: #6B7280;
+  line-height: 1.4;
+}
+
+.epa-error-pattern-compact strong,
+.epa-error-intervention-compact strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+/* ===== COMPREHENSIVE RESEARCH ANALYSIS STYLES ===== */
+
+/* Research Section */
+.epa-research-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.epa-research-header {
+  background: #3B4F81;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.epa-research-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.epa-research-classification,
+.epa-intensity-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #3B4F81;
+  background: white;
+}
+
+/* Status Badges */
+.epa-status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: white;
+}
+
+.epa-status-badge--failed {
+  background: #6b7280;
+  color: white;
+}
+
+.epa-status-badge--passed {
+  background: #3B4F81;
+  color: white;
+}
+
+.epa-status-badge--analysis {
+  background: #3B4F81;
+}
+
+/* Deficit Analysis */
+.epa-deficit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.epa-deficit-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.epa-deficit-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.epa-severity-badge {
+  padding: 0.25rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: white;
+}
+
+.epa-severity-badge--severe {
+  background: #dc2626;
+}
+
+.epa-severity-badge--moderate {
+  background: #ea580c;
+}
+
+.epa-severity-badge--mild {
+  background: #facc15;
+  color: #374151;
+}
+
+.epa-deficit-title {
+  font-weight: 600;
+  color: #374151;
+  flex: 1;
+}
+
+.epa-deficit-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.epa-deficit-manifestation,
+.epa-deficit-error-rate,
+.epa-deficit-evidence {
+  font-size: 0.875rem;
+  color: #6B7280;
+}
+
+.epa-deficit-manifestation strong,
+.epa-deficit-error-rate strong,
+.epa-deficit-evidence strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+/* Root Cause Analysis */
+.epa-root-cause {
+  padding: 1.5rem;
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  margin: 1.5rem;
+}
+
+.epa-root-cause h6 {
+  font-weight: 600;
+  color: #92400e;
+  margin: 0 0 0.5rem 0;
+}
+
+.epa-root-cause p {
+  color: #92400e;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Cognitive Factors */
+.epa-cognitive-factors {
+  padding: 1.5rem;
+}
+
+.epa-cognitive-factors h6 {
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.75rem 0;
+}
+
+.epa-factor-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.epa-factor-tag {
+  padding: 0.25rem 0.75rem;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Intervention Prescription */
+.epa-primary-approach {
+  padding: 1.5rem;
+  background: #ecfdf5;
+  border-left: 4px solid #10b981;
+  margin: 1.5rem;
+}
+
+.epa-primary-approach h6 {
+  font-weight: 600;
+  color: #047857;
+  margin: 0 0 0.5rem 0;
+}
+
+.epa-approach-name {
+  color: #047857;
+  font-weight: 500;
+  text-transform: capitalize;
+  margin: 0;
+}
+
+/* Techniques Grid */
+.epa-techniques-grid {
+  padding: 1.5rem;
+}
+
+.epa-techniques-grid h6 {
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 1rem 0;
+}
+
+.epa-techniques-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.epa-technique-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.epa-technique-header {
+  margin-bottom: 0.75rem;
+}
+
+.epa-technique-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+.epa-technique-description {
+  font-size: 0.875rem;
+  color: #6B7280;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.epa-technique-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.epa-technique-duration,
+.epa-technique-materials,
+.epa-technique-criteria,
+.epa-technique-research {
+  font-size: 0.8rem;
+  color: #6B7280;
+}
+
+.epa-technique-duration strong,
+.epa-technique-materials strong,
+.epa-technique-criteria strong,
+.epa-technique-research strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+/* Session Structure */
+.epa-session-structure {
+  padding: 1.5rem;
+}
+
+.epa-session-structure h6 {
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 1rem 0;
+}
+
+.epa-session-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.epa-session-length,
+.epa-break-pattern,
+.epa-session-components {
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.epa-session-length strong,
+.epa-break-pattern strong,
+.epa-session-components strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+.epa-session-components ul {
+  margin: 0.5rem 0 0 0;
+  padding-left: 1.5rem;
+}
+
+.epa-session-components li {
+  font-size: 0.875rem;
+  color: #6B7280;
+  margin-bottom: 0.25rem;
+}
+
+/* Materials */
+.epa-materials {
+  padding: 1.5rem;
+}
+
+.epa-materials h6 {
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.75rem 0;
+}
+
+.epa-materials-list {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.epa-materials-list li {
+  font-size: 0.875rem;
+  color: #6B7280;
+  margin-bottom: 0.5rem;
+}
+
+/* Progress Monitoring */
+.epa-progress-monitoring {
+  padding: 1.5rem;
+  background: #f0f9ff;
+  border-left: 4px solid #0ea5e9;
+  margin: 1.5rem;
+}
+
+.epa-progress-monitoring h6 {
+  font-weight: 600;
+  color: #0c4a6e;
+  margin: 0 0 1rem 0;
+}
+
+.epa-monitoring-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.epa-monitoring-frequency,
+.epa-monitoring-indicators,
+.epa-monitoring-method {
+  font-size: 0.875rem;
+  color: #0c4a6e;
+}
+
+.epa-monitoring-frequency strong,
+.epa-monitoring-indicators strong,
+.epa-monitoring-method strong {
+  font-weight: 600;
+}
+
+.epa-monitoring-indicators ul {
+  margin: 0.5rem 0 0 0;
+  padding-left: 1.5rem;
+}
+
+.epa-monitoring-indicators li {
+  margin-bottom: 0.25rem;
+}
+
+/* Escalation Protocol */
+.epa-escalation-triggers {
+  padding: 1.5rem;
+}
+
+.epa-escalation-card {
+  background: white;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.1);
+}
+
+.epa-escalation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.epa-escalation-trigger {
+  font-weight: 600;
+  color: #dc2626;
+  margin: 0;
+}
+
+.epa-escalation-approach {
+  padding: 0.25rem 0.75rem;
+  background: #fef2f2;
+  color: #dc2626;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.epa-escalation-techniques {
+  margin-bottom: 0.75rem;
+}
+
+.epa-escalation-technique {
+  padding: 0.75rem;
+  background: #fef9f9;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.epa-escalation-technique-name {
+  font-weight: 600;
+  color: #991b1b;
+  margin-bottom: 0.25rem;
+}
+
+.epa-escalation-technique-purpose,
+.epa-escalation-technique-implementation {
+  font-size: 0.875rem;
+  color: #7f1d1d;
+  margin-bottom: 0.25rem;
+}
+
+.epa-escalation-research {
+  font-size: 0.8rem;
+  color: #7f1d1d;
+}
+
+.epa-escalation-research strong {
+  font-weight: 600;
+}
+
+/* Intensity Recommendations */
+.epa-intensity-recommendations {
+  padding: 0.75rem;
+  background: #fef3c7;
+  border-radius: 4px;
+}
+
+.epa-intensity-details {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.epa-intensity-details div {
+  font-size: 0.875rem;
+  color: #92400e;
+}
+
+.epa-intensity-details strong {
+  font-weight: 600;
+}
+
+.epa-escalation-foundation {
+  font-size: 0.875rem;
+  color: #7f1d1d;
+  font-style: italic;
+}
+
+.epa-escalation-foundation strong {
+  font-weight: 600;
+}
+
+/* Maintenance Recommendations */
+.epa-maintenance-activities {
+  padding: 1.5rem;
+}
+
+.epa-maintenance-activity {
+  padding: 0.75rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+}
+
+.epa-activity-name {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+.epa-activity-frequency,
+.epa-activity-implementation {
+  font-size: 0.875rem;
+  color: #6B7280;
+}
+
+/* Acceleration Recommendations */
+.epa-bridging-activities,
+.epa-next-level-skills {
+  padding: 1.5rem;
+}
+
+.epa-bridging-activities h6,
+.epa-next-level-skills h6 {
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.75rem 0;
+}
+
+.epa-bridging-activities ul,
+.epa-next-level-skills ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.epa-bridging-activities li,
+.epa-next-level-skills li {
+  font-size: 0.875rem;
+  color: #6B7280;
+  margin-bottom: 0.5rem;
+}
+
+/* Error Letter Badge */
+.epa-error-letter {
+  flex-shrink: 0;
+}
+
+.epa-error-letter-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.epa-error-letter-badge--vowel {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.epa-error-letter-badge--consonant {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+}
+
+.epa-error-letter-badge--other {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+}
+
+/* Error Details */
+.epa-error-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.epa-error-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.epa-error-description {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.epa-error-question {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+  background: #f3f4f6;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.epa-error-secondary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.epa-error-pattern,
+.epa-error-cognitive {
+  font-size: 0.875rem;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.epa-error-pattern strong,
+.epa-error-cognitive strong {
+  color: #3B4F81;
+  font-weight: 600;
+}
+
+.epa-error-intervention {
+  padding: 0.75rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #1e40af;
+  line-height: 1.5;
+}
+
+.epa-error-intervention strong {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+/* Error Summary */
+.epa-error-summary {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.epa-error-summary-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #3B4F81;
+  margin: 0 0 1rem 0;
+}
+
+.epa-error-summary-stats {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.epa-error-summary-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.epa-error-summary-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.epa-error-summary-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #3B4F81;
+}
+
+.epa-error-summary-note {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.epa-error-count {
+  background: #3B4F81;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Responsive Design for Detailed Error Analysis */
+@media (max-width: 768px) {
+  .epa-error-item {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .epa-error-letter-badge {
+    align-self: center;
+  }
+
+  .epa-error-summary-stats {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .epa-error-secondary {
+    text-align: left;
+  }
+}
