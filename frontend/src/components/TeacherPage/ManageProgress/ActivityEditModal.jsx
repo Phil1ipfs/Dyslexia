@@ -341,7 +341,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   useEffect(() => {
     // Only run this when we have both activity data and choice templates loaded
     // And only if we haven't processed this activity before
-    if (activity?.questions && choiceTemplates.length > 0 && !processedActivityRef.current) {
+    if (activity?.questions && safe(choiceTemplates).length > 0 && !processedActivityRef.current) {
       console.log("Applying descriptions from activity choices to choice templates");
       processedActivityRef.current = true; // Mark as processed to prevent infinite loop
       
@@ -408,14 +408,14 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         console.log("No descriptions found to apply to choice templates");
       }
     }
-  }, [activity, choiceTemplates.length]); // Only depend on the length, not the entire array
+  }, [activity, safe(choiceTemplates).length]); // Only depend on the length, not the entire array
   
   // Initialize from existing activity when component mounts and data is available
   useEffect(() => {
-    if (activity && choiceTemplates.length > 0) {
+    if (activity && safe(choiceTemplates).length > 0) {
       initializeFromExistingActivity();
     }
-  }, [activity, choiceTemplates.length]);
+  }, [activity, safe(choiceTemplates).length]);
   
   // Helper function to toggle choice form for a specific pair
   const toggleChoiceForm = (pairId, open) =>
@@ -453,7 +453,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         if (!question.choices || !Array.isArray(question.choices)) {
           throw new Error(`Question ${index} has invalid choices`);
         }
-        console.log(`Question ${index} has ${question.choices.length} choices`);
+        console.log(`Question ${index} has ${safe(question.choices).length} choices`);
       });
       
       // Make the API call
@@ -571,7 +571,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       // Update the choice templates with descriptions from the activity's choices
       // This ensures the feedback text is preserved when editing
       // Only do this once to prevent infinite loops
-      if (activity.questions && choiceTemplates.length > 0 && !processedActivityChoicesRef.current) {
+      if (activity.questions && safe(choiceTemplates).length > 0 && !processedActivityChoicesRef.current) {
         processedActivityChoicesRef.current = true; // Mark as processed to prevent infinite loop
         
         // Create a map of choice IDs to descriptions
@@ -707,7 +707,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         await loadChoiceTemplates();
         
         // If no question-choice pairs were created (no main assessment questions), create a default one
-        if (questionChoicePairs.length === 0 && !activity) {
+        if (safe(questionChoicePairs).length === 0 && !activity) {
           addQuestionChoicePair();
         }
       }
@@ -839,7 +839,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       setChoiceTemplates(choices);
       
       // After loading choices, match them with any main assessment questions
-      if (!activity && questionChoicePairs.length > 0 && mainAssessmentQuestions.length > 0) {
+      if (!activity && safe(questionChoicePairs).length > 0 && safe(mainAssessmentQuestions).length > 0) {
         setQuestionChoicePairs(prev => 
           prev.map(pair => {
             // Only process main assessment questions
@@ -1527,7 +1527,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    * Get choices by IDs from available choices
    */
   const getChoicesByIds = (choiceIds) => {
-    if (!choiceIds || !choiceIds.length || !choiceTemplates) return [];
+    if (!choiceIds || !safe(choiceIds).length || !choiceTemplates) return [];
     return choiceTemplates.filter(choice => choice && choiceIds.includes(choice._id));
   };
 
@@ -1785,7 +1785,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (currentStep < 4) {
+    if (currentStep < 3) {
       nextStep();
       return;
     }
@@ -2236,7 +2236,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   };
  
   const removeQuestionChoicePair = (id) => {
-    if (questionChoicePairs.length <= 1) return;
+    if (safe(questionChoicePairs).length <= 1) return;
     setQuestionChoicePairs(prev => prev.filter(pair => pair.id !== id));
   };
  
@@ -2311,14 +2311,14 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       prev.map(pair => {
         if (pair.id === pairId) {
           // Enforce exactly 2 choices
-          if (pair.choiceIds.length >= 2) {
+          if (safe(pair.choiceIds).length >= 2) {
             // Don't silently discard, show a warning instead
             console.warn('Each question can only have two answer choices');
             return pair;
           }
           
           // Don't add if already present
-          if (pair.choiceIds.includes(choiceId)) {
+          if (safe(pair.choiceIds).includes(choiceId)) {
             return pair;
           }
           
@@ -2475,7 +2475,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       // If no description is provided, create a default one based on the question type and correctness
       if (!newChoiceData.description || newChoiceData.description.trim() === '') {
         const pair = questionChoicePairs.find(p => p.id === pairId);
-        const isFirstChoice = pair && pair.choiceIds.length === 0;
+        const isFirstChoice = pair && safe(pair.choiceIds).length === 0;
         
         // Set default description based on question type
         let defaultDescription = '';
@@ -2591,18 +2591,17 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       }
     }
     else if (currentStep === 2) {
-      if (contentType === 'sentence' && !selectedSentenceTemplate) {
-        newErrors.sentenceTemplate = "A reading passage must be selected";
-      }
-    }
-    else if (currentStep === 3) {
-      if (contentType !== 'sentence') {
-        if (questionChoicePairs.length === 0) {
+      if (contentType === 'sentence') {
+        if (!selectedSentenceTemplate) {
+          newErrors.sentenceTemplate = "A reading passage must be selected";
+        }
+      } else {
+        if (safe(questionChoicePairs).length === 0) {
           newErrors.pairs = "At least one question must be added";
         }
         
         const invalidPairs = questionChoicePairs.filter(pair => 
-          pair.choiceIds.length !== 2 || !pair.correctChoiceId
+          safe(pair.choiceIds).length !== 2 || !pair.correctChoiceId
         );
         
         if (invalidPairs.length > 0) {
@@ -2642,7 +2641,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     
     // Questions validation
     if (contentType !== 'sentence') {
-      if (questionChoicePairs.length === 0) {
+      if (safe(questionChoicePairs).length === 0) {
         allErrors.pairs = "At least one question must be added";
       }
       
@@ -2773,12 +2772,10 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       case 1:
         return renderBasicInfoStep();
       case 2:
-        return renderTemplateSelectionStep();
+        return contentType === 'sentence'
+          ? renderSentenceSelectionStep()
+          : renderQuestionChoicesStepWithTemplates();
       case 3:
-        return contentType === 'sentence' 
-          ? renderSentencePreviewStep() 
-          : renderQuestionChoicesStep();
-      case 4:
         return renderReviewStep();
       default:
         return renderBasicInfoStep();
@@ -3175,7 +3172,310 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 };
 
 /**
- * Step 3: Question-Choice Pairs
+ * Step 2: Sentence Selection (for Reading Comprehension)
+ * Alias for renderSentenceTemplateSelection to maintain the 3-step flow
+ */
+const renderSentenceSelectionStep = () => {
+  return renderSentenceTemplateSelection();
+};
+
+/**
+ * Step 2: Question-Choice Pairs with Templates (combined step)
+ * Integrates template functionality from the old step 2 with question creation
+ */
+const renderQuestionChoicesStepWithTemplates = () => {
+  return (
+    <div className="literexia-form-section">
+      <h3>Create Questions and Choices</h3>
+
+      <div className="literexia-info-banner">
+        <FaInfoCircle />
+        <p>
+          You can select from existing templates or create new questions.
+          Templates help you create consistent questions for {formatCategoryName(category)}.
+        </p>
+      </div>
+
+      {/* Main Assessment Questions Reference */}
+      <div className="literexia-main-assessment-section">
+        <h4>Reference: Assessment Questions</h4>
+        <div className="literexia-info-banner" style={{backgroundColor: '#f0f9ff', borderColor: '#0ea5e9'}}>
+          <FaInfoCircle />
+          <p>
+            These questions are from the main assessment for {formatCategoryName(category)}.
+            You can use these as reference or inspiration for your intervention questions.
+          </p>
+        </div>
+
+        <div className="literexia-main-assessment-questions">
+          {safe(mainAssessmentQuestions).length > 0 ? (
+            safe(mainAssessmentQuestions).slice(0, 3).map((question, index) => (
+              <div key={question._id} className="literexia-main-question-item">
+                <div className="literexia-main-question-header">
+                  <strong>Assessment Question {index + 1}</strong>
+                </div>
+                <div className="literexia-main-question-content">
+                  <p>{question.questionText}</p>
+                  {question.questionImage && (
+                    <img
+                      src={sanitizeImageUrl(question.questionImage)}
+                      alt="Question visual"
+                      className="literexia-question-image-small"
+                    />
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="literexia-empty-state">
+              <p>No assessment questions found for this category.</p>
+            </div>
+          )}
+          {safe(mainAssessmentQuestions).length > 3 && (
+            <p className="literexia-more-indicator">
+              +{safe(mainAssessmentQuestions).length - 3} more questions available for reference
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Inline Template Creation */}
+      {isInlineCreationAllowed() && (
+        <div className="literexia-template-creation-section">
+          <h4>Available Templates</h4>
+          <div className="literexia-template-actions">
+            <button
+              type="button"
+              className="literexia-create-template-btn"
+              onClick={() => setShowNewTemplateForm(!showNewTemplateForm)}
+            >
+              <FaPlus /> {showNewTemplateForm ? 'Hide' : 'Create'} Template
+            </button>
+          </div>
+
+          {/* Inline New Template Form */}
+          {showNewTemplateForm && (
+            <div className="literexia-inline-form">
+              <h5>Create New Question Template</h5>
+              <div className="literexia-form-group">
+                <label>Template Text</label>
+                <input
+                  type="text"
+                  value={newTemplateData.templateText}
+                  onChange={(e) => setNewTemplateData(prev => ({
+                    ...prev, templateText: e.target.value
+                  }))}
+                  placeholder="Enter question template text..."
+                />
+              </div>
+              <div className="literexia-template-actions">
+                <button
+                  type="button"
+                  className="literexia-primary-btn"
+                  onClick={handleCreateNewTemplate}
+                  disabled={!newTemplateData.templateText.trim() || creatingTemplate}
+                >
+                  {creatingTemplate ? <FaSpinner className="fa-spin" /> : <FaPlus />}
+                  {creatingTemplate ? 'Creating...' : 'Create Template'}
+                </button>
+                <button
+                  type="button"
+                  className="literexia-secondary-btn"
+                  onClick={() => setShowNewTemplateForm(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Questions and Choices Creation */}
+      <div className="literexia-info-banner">
+        <FaInfoCircle />
+        <p>
+          For each question, select exactly 2 choices and mark one as correct.
+          You can add choices from the template library or create new ones inline.
+        </p>
+      </div>
+
+      {errors.pairs && (
+        <div className="literexia-error-banner">
+          <FaExclamationTriangle />
+          <p>{errors.pairs}</p>
+        </div>
+      )}
+
+      {safe(questionChoicePairs).map((pair, index) => (
+        <div key={pair.id} className="literexia-question-pair">
+          <div className="literexia-question-pair-header">
+            <h4>Question {index + 1}</h4>
+            <div className="literexia-question-source-label">
+              Source: {pair.sourceType === 'main_assessment' ? 'Assessment' :
+                      pair.sourceType === 'template_question' ? 'Template' : 'Custom'}
+            </div>
+            <button
+              type="button"
+              className="literexia-remove-pair-btn"
+              onClick={() => removeQuestionChoicePair(pair.id)}
+              disabled={safe(questionChoicePairs).length <= 1}
+            >
+              <FaTrash /> Remove
+            </button>
+          </div>
+
+          {/* Template Selection */}
+          {pair.sourceType !== 'main_assessment' && (
+            <div className="literexia-question-template-selection">
+              <label>Question Template</label>
+              <select
+                value={pair.sourceId || ''}
+                onChange={(e) => setTemplateForPair(pair.id, e.target.value)}
+              >
+                <option value="">-- Select Template --</option>
+                {safe(questionTemplates).map(template => (
+                  <option key={template._id} value={template._id}>
+                    {template.templateText} ({template.questionType})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Question Details */}
+          <div className="literexia-question-details">
+            <div className="literexia-form-group">
+              <label>Question Text</label>
+              <input
+                type="text"
+                value={pair.questionText || ''}
+                onChange={(e) => updateQuestionText(pair.id, e.target.value)}
+                placeholder="Enter question text..."
+              />
+            </div>
+
+            {/* Question Image */}
+            <div className="literexia-form-group">
+              <label>Question Image (Optional)</label>
+              <div className="literexia-image-upload-section">
+                {pair.questionImage && (
+                  <div className="literexia-current-image">
+                    <img
+                      src={pair.questionImage}
+                      alt="Question image"
+                      className="literexia-question-image-preview"
+                    />
+                    <button
+                      type="button"
+                      className="literexia-remove-image-btn"
+                      onClick={() => removeQuestionImage(pair.id)}
+                    >
+                      <FaTimes /> Remove Image
+                    </button>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className="literexia-upload-btn"
+                  onClick={() => triggerImageUpload(pair.id)}
+                  disabled={uploadingImage}
+                >
+                  <FaUpload /> {pair.questionImage ? 'Change Image' : 'Upload Image'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Choice Selection */}
+          <div className="literexia-choices-section">
+            <h5>Question Choices</h5>
+            {safe(pair.choices).map((choice, choiceIndex) => (
+              <div key={choiceIndex} className="literexia-choice-item">
+                <div className="literexia-choice-content">
+                  <div className="literexia-choice-selector">
+                    <select
+                      value={choice.choiceId || ''}
+                      onChange={(e) => setChoiceForPair(pair.id, choiceIndex, e.target.value)}
+                    >
+                      <option value="">-- Select Choice --</option>
+                      {safe(choiceTemplates).map(choiceTemplate => (
+                        <option key={choiceTemplate._id} value={choiceTemplate._id}>
+                          {choiceTemplate.choiceValue} ({choiceTemplate.choiceType})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="literexia-choice-preview">
+                    {choice.choiceValue && (
+                      <>
+                        <span className="literexia-choice-value">{choice.choiceValue}</span>
+                        {choice.choiceImage && (
+                          <img
+                            src={choice.choiceImage}
+                            alt="Choice visual"
+                            className="literexia-choice-image"
+                          />
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  <div className="literexia-choice-correct">
+                    <label>
+                      <input
+                        type="radio"
+                        name={`correct_${pair.id}`}
+                        checked={choice.isCorrect === true}
+                        onChange={() => setCorrectChoice(pair.id, choiceIndex)}
+                      />
+                      Correct
+                    </label>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="literexia-remove-choice-btn"
+                    onClick={() => removeChoiceFromPair(pair.id, choiceIndex)}
+                    disabled={safe(pair.choices).length <= 1}
+                  >
+                    <FaTimes />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Add Choice */}
+            {safe(pair.choices).length < 2 && (
+              <button
+                type="button"
+                className="literexia-add-choice-btn"
+                onClick={() => addChoiceToPair(pair.id)}
+              >
+                <FaPlus /> Add Choice
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+
+      {/* Add Question Pair */}
+      <div className="literexia-add-pair-section">
+        <button
+          type="button"
+          className="literexia-add-pair-btn"
+          onClick={() => addQuestionChoicePair()}
+        >
+          <FaPlus /> Add Question
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Step 2: Question-Choice Pairs (Original)
  */
 const renderQuestionChoicesStep = () => {
   return (
@@ -3209,7 +3509,7 @@ const renderQuestionChoicesStep = () => {
                       type="button"
               className="literexia-remove-pair-btn"
               onClick={() => removeQuestionChoicePair(pair.id)}
-                      disabled={questionChoicePairs.length <= 1}
+                      disabled={safe(questionChoicePairs).length <= 1}
                     >
                       <FaTrash /> Remove
                     </button>
@@ -3391,7 +3691,7 @@ const renderQuestionChoicesStep = () => {
                   type="button"
                   className="literexia-create-choice-btn"
                   onClick={() => toggleChoiceForm(pair.id, !showNewChoiceFormByPair[pair.id])}
-                  disabled={pair.choiceIds.length >= 2}
+                  disabled={safe(pair.choiceIds).length >= 2}
                 >
                   <FaPlus /> Add New Choice
                 </button>
@@ -3546,7 +3846,7 @@ const renderQuestionChoicesStep = () => {
            {/* Selected Choices */}
            <div className="literexia-selected-choices">
              <h5>Selected Choices ({safe(pair.choiceIds).length}/2)</h5>
-             {!pair.choiceIds || pair.choiceIds.length === 0 ? (
+             {!pair.choiceIds || safe(pair.choiceIds).length === 0 ? (
                <div className="literexia-empty-choices">
                           <p>No choices selected. Click on available choices above to add them.</p>
                         </div>
@@ -3602,7 +3902,7 @@ const renderQuestionChoicesStep = () => {
                       )}
              
              {/* Choice requirement warning */}
-             {(!pair.choiceIds || pair.choiceIds.length !== 2) && (
+             {(!pair.choiceIds || safe(pair.choiceIds).length !== 2) && (
                <div className="literexia-choice-warning">
                  <FaExclamationTriangle />
                  <span>Exactly 2 choices are required for each question.</span>
@@ -3958,34 +4258,23 @@ return (
          <div className="literexia-step-label">Basic Info</div>
        </div>
        <div className="literexia-step-connector"></div>
-       
-       <div 
-         className={`literexia-step ${currentStep >= 2 ? 'active' : ''}`} 
+
+       <div
+         className={`literexia-step ${currentStep >= 2 ? 'active' : ''}`}
          onClick={() => currentStep > 1 && setCurrentStep(2)}
        >
          <div className="literexia-step-number">2</div>
          <div className="literexia-step-label">
-           {contentType === 'sentence' ? 'Select Passage' : 'Templates'}
+           {contentType === 'sentence' ? 'Select Passage' : 'Questions & Choices'}
          </div>
        </div>
        <div className="literexia-step-connector"></div>
-       
-       <div 
-           className={`literexia-step ${currentStep >= 3 ? 'active' : ''}`} 
+
+         <div
+           className={`literexia-step ${currentStep >= 3 ? 'active' : ''}`}
            onClick={() => currentStep > 2 && setCurrentStep(3)}
          >
            <div className="literexia-step-number">3</div>
-           <div className="literexia-step-label">
-             {contentType === 'sentence' ? 'Preview' : 'Questions & Choices'}
-           </div>
-         </div>
-         <div className="literexia-step-connector"></div>
-         
-         <div 
-           className={`literexia-step ${currentStep >= 4 ? 'active' : ''}`} 
-           onClick={() => currentStep > 3 && setCurrentStep(4)}
-         >
-           <div className="literexia-step-number">4</div>
            <div className="literexia-step-label">Review</div>
          </div>
        </div>
@@ -4021,7 +4310,7 @@ return (
                 <>
                  <FaSpinner className="literexia-spinner fa-spin" /> Processing...
                 </>
-              ) : currentStep < 4 ? (
+              ) : currentStep < 3 ? (
                 'Continue'
               ) : (
                 <>

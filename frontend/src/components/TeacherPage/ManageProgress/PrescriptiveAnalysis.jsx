@@ -250,7 +250,7 @@ const PrescriptiveAnalysis = ({
   const hasDataBeenFetched = useRef(false);
 
   // Merge server-created & local drafts
-  const effectiveInterventions = [...liveInterventions, ...localInterventions];
+  const effectiveInterventions = [...(liveInterventions || []), ...(localInterventions || [])];
 
   // Filter categories that need intervention (score < 75%) - memoized to prevent infinite loops
   const categoriesNeedingIntervention = React.useMemo(() => {
@@ -261,7 +261,7 @@ const PrescriptiveAnalysis = ({
     
   // Define allCategoriesPassed BEFORE it's used in getAnalysisForCategory
   const allCategoriesPassed = React.useMemo(
-    () => liveCategoryResults?.categories?.length > 0 && categoriesNeedingIntervention.length === 0,
+    () => liveCategoryResults?.categories?.length > 0 && (categoriesNeedingIntervention?.length === 0 || false),
     [categoriesNeedingIntervention, liveCategoryResults]
   );
 
@@ -412,7 +412,7 @@ const PrescriptiveAnalysis = ({
    */
   useEffect(() => {
     if (!selectedCategory) {
-      if (categoriesNeedingIntervention.length > 0) {
+      if (categoriesNeedingIntervention?.length > 0) {
         // If there are categories needing intervention, select the first one
         setSelectedCategory(categoriesNeedingIntervention[0].categoryName);
       } else if (liveCategoryResults?.categories?.length > 0) {
@@ -453,7 +453,7 @@ const PrescriptiveAnalysis = ({
       }
 
       // Skip if no categories need intervention
-      if (categoriesNeedingIntervention.length === 0) {
+      if (!categoriesNeedingIntervention || categoriesNeedingIntervention.length === 0) {
         setInterventionResults({});
         return;
       }
@@ -486,7 +486,7 @@ const PrescriptiveAnalysis = ({
     if (liveStudent || studentId) {
       loadInterventionResults();
     }
-  }, [liveStudent?.idNumber, liveStudent?.id, studentId, categoriesNeedingIntervention.length]);
+  }, [liveStudent?.idNumber, liveStudent?.id, studentId, categoriesNeedingIntervention?.length]);
 
   // ===== HELPER FUNCTIONS =====
 
@@ -973,6 +973,9 @@ const PrescriptiveAnalysis = ({
    * @return {Array} Array of interventions
    */
   const getInterventionsForCategory = (categoryName) => {
+    if (!effectiveInterventions || !Array.isArray(effectiveInterventions)) {
+      return [];
+    }
     return effectiveInterventions.filter(
       intervention => intervention.category === categoryName
     );
