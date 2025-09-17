@@ -728,27 +728,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       setQuestionTemplates(response.data.data || []);
     } catch (error) {
       console.error('Error loading question templates:', error);
-      
-      // Use the JSON data we have as fallback
-      console.log('Using mock question templates data');
-      setQuestionTemplates([
-        {
-          _id: "mock-template-1",
-          category: category,
-          questionType: "patinig",
-          templateText: "Anong katumbas na maliit na letra?",
-          applicableChoiceTypes: ["patinigBigLetter", "patinigSmallLetter"],
-          correctChoiceType: "patinigBigLetter"
-        },
-        {
-          _id: "mock-template-2",
-          category: category,
-          questionType: "katinig",
-          templateText: "Anong tunog ng letra?",
-          applicableChoiceTypes: ["katinigBigLetter", "katinigSound"],
-          correctChoiceType: "katinigSound"
-        }
-      ]);
+      setQuestionTemplates([]);
     }
   };
  
@@ -770,25 +750,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       
     } catch (error) {
       console.error('Error loading choice templates:', error);
-      
-      // Use mock data as fallback when API fails
-      console.log('Using mock choice templates data');
-      const mockChoices = [
-        {
-          _id: "mock-choice-1",
-          choiceType: "patinigBigLetter",
-          choiceValue: "A",
-          soundText: "/ah/"
-        },
-        {
-          _id: "mock-choice-2",
-          choiceType: "patinigSmallLetter",
-          choiceValue: "a",
-          soundText: "/ah/"
-        }
-      ];
-      
-      setChoiceTemplates(mockChoices);
+      setChoiceTemplates([]);
     }
   };
  
@@ -829,33 +791,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       setSentenceTemplates(sanitizedTemplates);
     } catch (error) {
       console.error('Error loading sentence templates:', error);
-      
-      // Use mock data as fallback when API fails
-      console.log('Using mock sentence templates data');
-      const mockTemplates = await mockFetchSentenceTemplates(readingLevel);
-      
-      // Sanitize the mock templates as well
-      const sanitizedMockTemplates = mockTemplates.map(template => {
-        // Create a sanitized copy of the template
-        const sanitizedTemplate = { ...template };
-        
-        // Fix image URLs in sentence templates
-        if (sanitizedTemplate.sentenceText && sanitizedTemplate.sentenceText.length > 0) {
-          sanitizedTemplate.sentenceText = sanitizedTemplate.sentenceText.map(page => ({
-            ...page,
-            image: sanitizeImageUrl(page.image)
-          }));
-        }
-        
-        // Fix standalone imageUrl property if present
-        if (sanitizedTemplate.imageUrl) {
-          sanitizedTemplate.imageUrl = sanitizeImageUrl(sanitizedTemplate.imageUrl);
-        }
-        
-        return sanitizedTemplate;
-      });
-      
-      setSentenceTemplates(sanitizedMockTemplates);
+      setSentenceTemplates([]);
     }
   };
  
@@ -1021,251 +957,34 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         return fileUrl;
       } catch (fetchError) {
         console.error('[S3 UPLOAD] Error during file upload:', fetchError);
-        
-        // ALWAYS use a mock URL as fallback when S3 upload fails
-        // This ensures the application can continue even if S3 is unavailable
-        const timestamp = Date.now();
-        const sanitizedFileName = file.name.replace(/\s+/g, '_');
-        const mockUrl = `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mobile/${timestamp}_${sanitizedFileName}`;
-        
-        console.log(`[S3 UPLOAD] ⚠️ Using fallback image URL: ${mockUrl}`);
-        console.log(`[S3 UPLOAD] ⚠️ This is a MOCK URL. The actual file was not uploaded to S3.`);
-        console.log(`[S3 UPLOAD] ⚠️ Original error: ${fetchError.message}`);
-        
-        // Log additional information about the file
-        console.log(`[S3 UPLOAD] File details:`, {
-          name: file.name,
-          type: file.type,
-          size: Math.round(file.size / 1024) + ' KB'
-        });
-        
-        // Simulate a delay to make it clear this is a fallback solution
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        // In production, you might want to handle this differently
-        // For now, we'll use the mock URL in all environments to ensure the app works
-        return mockUrl;
+
+        // Show error in UI and reject upload
+        setErrors(prev => ({
+          ...prev,
+          upload: `Failed to upload image: ${fetchError.message}`
+        }));
+
+        throw new Error(`Image upload failed: ${fetchError.message}`);
       }
     } catch (error) {
       console.error('[S3 UPLOAD] Error in uploadImageToS3:', error);
-      
-      // Always provide a fallback URL, regardless of environment
-      // This ensures the app can function even if S3 uploads fail
-      const timestamp = Date.now();
-      const sanitizedFileName = file.name.replace(/\s+/g, '_');
-      const mockUrl = `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mobile/${timestamp}_${sanitizedFileName}`;
-      
-      console.log(`[S3 UPLOAD] ⚠️ Using fallback image URL: ${mockUrl}`);
-      console.log(`[S3 UPLOAD] ⚠️ Note: This is a mock URL and the file was not actually uploaded.`);
-      console.log(`[S3 UPLOAD] ⚠️ This allows the application to continue functioning.`);
-      
-      // Show a warning in the UI
+
+      // Show error in UI and reject upload
       setErrors(prev => ({
         ...prev,
-        upload: `Warning: Using fallback URL for ${file.name}. Image may not be available on the server.`
+        upload: `Image upload failed: ${error.message}`
       }));
-      
-      // Simulate delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      return mockUrl;
+
+      throw error;
     } finally {
       setUploading(false);
     }
   };
  
-  // ===== MOCK API FUNCTIONS =====
-  // TODO: Remove these when connecting to real backend
  
  
-  const mockFetchQuestionTemplates = async (category) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Normalize category
-    const normCategory = normalizeCategory(category);
-    
-    // Mock data based on test.templates_questions.json structure
-    const allTemplates = [
-      {
-        _id: "6829799079a34741f9cd19ef",
-        category: "alphabet_knowledge",
-        questionType: "patinig",
-        templateText: "Anong katumbas na maliit na letra?",
-        applicableChoiceTypes: ["patinigBigLetter", "patinigSmallLetter"]
-      },
-      {
-        _id: "6829799079a34741f9cd19f0",
-        category: "alphabet_knowledge",
-        questionType: "patinig",
-        templateText: "Anong katumbas na malaking letra?",
-        applicableChoiceTypes: ["patinigBigLetter", "patinigSmallLetter"]
-      },
-      {
-        _id: "6829799079a34741f9cd19f2",
-        category: "alphabet_knowledge",
-        questionType: "katinig",
-        templateText: "Anong katumbas na maliit na letra?",
-        applicableChoiceTypes: ["katinigBigLetter", "katinigSmallLetter"]
-      },
-      {
-        _id: "6829799079a34741f9cd19f5",
-        category: "phonological_awareness",
-        questionType: "malapantig",
-        templateText: "Kapag pinagsama ang mga pantig, ano ang mabubuo?",
-        applicableChoiceTypes: ["malapatinigText", "wordText"]
-      },
-      {
-        _id: "6829799079a34741f9cd19f8",
-        category: "word_recognition",
-        questionType: "word",
-        templateText: "Piliin ang tamang larawan para sa salitang:",
-        applicableChoiceTypes: ["wordText"]
-      },
-      {
-        _id: "6829799079a34741f9cd19fa",
-        category: "decoding",
-        questionType: "word",
-        templateText: "Paano babaybayin ang salitang ito?",
-        applicableChoiceTypes: ["wordText"]
-      }
-    ];
-    
-    return allTemplates.filter(t => t.category === normCategory);
-  };
  
-  const mockFetchChoiceTemplates = async () => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Mock data based on test.templates_choices.json structure
-    return [
-      // Patinig Big Letters
-      {
-        _id: "68297e4979a34741f9cd1a0f",
-        choiceType: "patinigBigLetter",
-        choiceValue: "A",
-        choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/A_big.png",
-        soundText: null
-      },
-      {
-        _id: "68297e4979a34741f9cd1a10",
-        choiceType: "patinigBigLetter",
-        choiceValue: "E",
-        choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/E_big.png",
-        soundText: null
-      },
-      
-      // Patinig Small Letters
-      {
-        _id: "68297e4979a34741f9cd1a14",
-        choiceType: "patinigSmallLetter",
-        choiceValue: "a",
-        choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/a_small.png",
-        soundText: null
-      },
-      {
-        _id: "68297e4979a34741f9cd1a15",
-        choiceType: "patinigSmallLetter",
-        choiceValue: "e",
-        choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/e_small.png",
-        soundText: null
-      },
-      
-      // Katinig Big Letters
-      {
-        _id: "68297e4979a34741f9cd1a1e",
-        choiceType: "katinigBigLetter",
-        choiceValue: "B",
-        choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/B_big.png",
-        soundText: null
-      },
-      
-      // Katinig Small Letters
-      {
-        _id: "68297e4979a34741f9cd1a28",
-        choiceType: "katinigSmallLetter",
-        choiceValue: "b",
-        choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/letters/b_small.png",
-        soundText: null
-      },
-      
-      // Malapantig Text
-      {
-        _id: "6829828a79a34741f9cd1a3e",
-        choiceType: "malapatinigText",
-        choiceValue: "BA",
-        choiceImage: null,
-        soundText: "/ba/"
-      },
-      {
-        _id: "80049a1b2c3d4e5f6a7b8c9d",
-        choiceType: "malapatinigText",
-        choiceValue: "BO",
-        choiceImage: null,
-        soundText: "/bo/"
-      },
-      
-      // Word Text
-      {
-        _id: "6829828a79a34741f9cd1a4b",
-        choiceType: "wordText",
-        choiceValue: "BOLA",
-        choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/words/ball.png",
-        soundText: null
-      },
-      {
-        _id: "6829828a79a34741f9cd1a48",
-        choiceType: "wordText",
-        choiceValue: "ASO",
-        choiceImage: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/words/dog.png",
-        soundText: null
-      }
-    ];
-  };
  
-  const mockFetchSentenceTemplates = async (readingLevel) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Mock data based on test.sentence_templates.json structure
-    const allTemplates = [
-      {
-        _id: "68297c4379a34741f9cd1a00",
-        title: "Si Maria at ang mga Bulaklak",
-        category: "reading_comprehension",
-        readingLevel: "Low Emerging",
-        sentenceText: [
-          {
-            pageNumber: 1,
-            text: "Si Maria ay pumunta sa parke. Nakita niya ang maraming bulaklak na magaganda. Siya ay natuwa at nag-uwi ng ilang bulaklak para sa kanyang ina.",
-            image: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/passages/park_flowers.png"
-          },
-          {
-            pageNumber: 2,
-            text: "Nang makita ng ina ni Maria ang mga bulaklak, siya ay ngumiti at nagyakap sa kanyang anak. Gumawa sila ng maliit na hardin sa harap ng kanilang bahay.",
-            image: "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/passages/mother_garden.png"
-          }
-        ],
-        sentenceQuestions: [
-          {
-            questionNumber: 1,
-            questionText: "Sino ang pangunahing tauhan sa kwento?",
-            sentenceCorrectAnswer: "Si Maria",
-            sentenceOptionAnswers: ["Si Maria", "Si Juan", "Ang ina", "Ang hardinero"]
-          },
-          {
-            questionNumber: 2,
-            questionText: "Saan pumunta si Maria?",
-            sentenceCorrectAnswer: "Sa parke",
-            sentenceOptionAnswers: ["Sa parke", "Sa paaralan", "Sa tindahan", "Sa bahay"]
-          }
-        ]
-      }
-    ];
-    
-    return allTemplates.filter(t => t.readingLevel === readingLevel);
-  };
  
   // ===== INITIALIZATION FUNCTIONS =====
  
@@ -1519,6 +1238,58 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       }));
     }
     
+    // Reset the file input
+    e.target.value = null;
+  };
+
+  /**
+   * Handle question image upload for Alphabet Knowledge
+   */
+  const handleQuestionImageUpload = async (e, pairId) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      // Validate file
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        throw new Error("File size exceeds 5MB limit. Please choose a smaller file.");
+      }
+
+      if (!file.type.match(/^image\/(jpeg|jpg|png)$/i)) {
+        throw new Error("Only JPG and PNG images are supported.");
+      }
+
+      console.log(`[ALPHABET KNOWLEDGE] Processing file upload for pair ${pairId}: ${file.name}`);
+
+      // Set uploading state
+      setUploading(true);
+
+      // Clear any previous errors
+      setErrors(prev => ({ ...prev, upload: '' }));
+
+      // Upload to S3
+      const imageUrl = await uploadImageToS3(file);
+
+      if (imageUrl) {
+        // Update the question with the image URL
+        updateQuestionChoicePair(pairId, { questionImage: imageUrl });
+
+        console.log(`[ALPHABET KNOWLEDGE] Successfully uploaded image for pair ${pairId}: ${imageUrl}`);
+      } else {
+        throw new Error("Failed to get image URL from S3");
+      }
+    } catch (error) {
+      console.error("[ALPHABET KNOWLEDGE] Error uploading image:", error);
+
+      // Show error message
+      setErrors(prev => ({
+        ...prev,
+        upload: `Failed to upload image: ${error.message}`
+      }));
+    } finally {
+      setUploading(false);
+    }
+
     // Reset the file input
     e.target.value = null;
   };
@@ -1809,14 +1580,6 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           }
         }
         
-        // Last resort - check if we have a mock environment
-        if (import.meta.env.DEV) {
-          // Generate a mock S3 URL for development purposes
-          const mockUrl = `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mobile/fallback_${Date.now()}.png`;
-          console.warn(`[SAVE] ⚠️ Using fallback mock URL for blob in dev mode: ${mockUrl}`);
-          return mockUrl;
-        }
-        
         // If we can't find a corresponding uploaded URL, return null
         console.warn('[SAVE] No uploaded URL found for blob, returning null');
         return null;
@@ -2085,6 +1848,145 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     );
   };
  
+  /**
+   * Validation functions for Alphabet Knowledge
+   */
+  const validateQuestionText = (text) => {
+    if (!text || text.trim().length === 0) {
+      return "Question text is required.";
+    }
+    if (text.trim().length < 5) {
+      return "Question text must be at least 5 characters long.";
+    }
+    if (/\d/.test(text)) {
+      return "Question text cannot contain numbers.";
+    }
+    if (text.trim().length > 200) {
+      return "Question text must be less than 200 characters.";
+    }
+    return null;
+  };
+
+  const validateAnswerChoice = (choice, index) => {
+    if (!choice || choice.trim().length === 0) {
+      return `Choice ${index + 1} cannot be empty.`;
+    }
+    if (choice.trim().length > 50) {
+      return `Choice ${index + 1} must be less than 50 characters.`;
+    }
+    return null;
+  };
+
+  const validateAlphabetKnowledgeQuestion = (pair) => {
+    const errors = [];
+
+    // Validate question text
+    const questionError = validateQuestionText(pair.questionText);
+    if (questionError) errors.push(questionError);
+
+    // Validate choices
+    if (!pair.choices || pair.choices.length !== 3) {
+      errors.push("Must have exactly 3 answer choices.");
+    } else {
+      // Check each choice
+      pair.choices.forEach((choice, index) => {
+        const choiceError = validateAnswerChoice(choice.optionText, index);
+        if (choiceError) errors.push(choiceError);
+      });
+
+      // Check that exactly one choice is marked correct
+      const correctChoices = pair.choices.filter(choice => choice.isCorrect);
+      if (correctChoices.length === 0) {
+        errors.push("You must select one correct answer.");
+      } else if (correctChoices.length > 1) {
+        errors.push("Only one answer can be marked as correct.");
+      }
+
+      // Check for duplicate choices
+      const choiceTexts = pair.choices.map(c => c.optionText?.trim().toLowerCase()).filter(Boolean);
+      const uniqueChoices = new Set(choiceTexts);
+      if (choiceTexts.length !== uniqueChoices.size) {
+        errors.push("Answer choices must be different from each other.");
+      }
+    }
+
+    return errors;
+  };
+
+  const validateAllAlphabetKnowledgeQuestions = () => {
+    const allErrors = [];
+    questionChoicePairs.forEach((pair, index) => {
+      const pairErrors = validateAlphabetKnowledgeQuestion(pair);
+      if (pairErrors.length > 0) {
+        allErrors.push(`Question ${index + 1}: ${pairErrors.join(', ')}`);
+      }
+    });
+    return allErrors;
+  };
+
+  /**
+   * Apply template to Alphabet Knowledge question
+   */
+  const applyTemplateToQuestion = (pairId, templateId) => {
+    if (!templateId) return;
+
+    const template = questionTemplates.find(t => t._id === templateId);
+    if (!template) {
+      console.warn(`Template not found: ${templateId}`);
+      return;
+    }
+
+    console.log(`[TEMPLATE] Applying template "${template.templateText}" to question ${pairId}`);
+
+    // Prepare template choices for Alphabet Knowledge (exactly 3 choices)
+    let templateChoices = [];
+    if (template.choiceOptions && Array.isArray(template.choiceOptions)) {
+      // Use template choices directly
+      templateChoices = template.choiceOptions.map(option => ({
+        optionText: option.optionText,
+        isCorrect: option.isCorrect
+      }));
+    } else {
+      // Fallback: create default structure with correct answer if available
+      templateChoices = [
+        { optionText: template.questionValue || '', isCorrect: true },
+        { optionText: '', isCorrect: false },
+        { optionText: '', isCorrect: false }
+      ];
+    }
+
+    // Ensure exactly 3 choices for Alphabet Knowledge
+    while (templateChoices.length < 3) {
+      templateChoices.push({ optionText: '', isCorrect: false });
+    }
+    if (templateChoices.length > 3) {
+      templateChoices = templateChoices.slice(0, 3);
+    }
+
+    // Update the question with template data including choices
+    updateQuestionChoicePair(pairId, {
+      questionText: template.templateText,
+      questionType: template.questionType,
+      questionImage: template.questionImage || null,
+      sourceTemplateId: template._id,
+      choices: templateChoices
+    });
+
+    // Show success message
+    setErrors(prev => ({
+      ...prev,
+      success: `Applied template: "${template.templateText}" with choices`
+    }));
+
+    // Clear success message after 3 seconds
+    setTimeout(() => {
+      setErrors(prev => ({
+        ...prev,
+        success: ''
+      }));
+    }, 3000);
+  };
+
   /**
    * Template Management
    */
@@ -2945,14 +2847,7 @@ const renderSentenceSelectionStep = () => {
 const renderAlphabetKnowledgeStep = () => {
   return (
     <div className="alphabet-knowledge-container">
-      {/* Info Banner */}
-      <div className="alphabet-knowledge-info-banner">
-        <FaInfoCircle className="info-icon" />
-        <p className="alphabet-knowledge-info-text">
-          Create intervention questions for {student?.firstName || 'the student'}'s Alphabet Knowledge needs.
-          Each question has exactly 3 choices with one correct answer. All new questions automatically become reusable templates.
-        </p>
-      </div>
+
 
       {/* Questions Section */}
       <div className="alphabet-knowledge-questions-section">
@@ -2982,87 +2877,396 @@ const renderAlphabetKnowledgeStep = () => {
               </button>
             </div>
 
-            {/* Question Text */}
+            {/* Template Selection */}
             <div className="alphabet-knowledge-form-group">
-              <label className="alphabet-knowledge-form-label">Question Text</label>
+              <label className="alphabet-knowledge-form-label">
+                Step 1: Use a Pre-made Template (Recommended) or Create Your Own
+              </label>
+
+              <select
+                className="alphabet-knowledge-question-input"
+                value=""
+                onChange={(e) => applyTemplateToQuestion(pair.id, e.target.value)}
+                style={{
+                  marginBottom: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                <option value="">-- Choose a pre-made template (recommended) --</option>
+                {safe(questionTemplates)
+                  .filter(template => template.category === 'alphabet_knowledge')
+                  .map(template => (
+                    <option key={template._id} value={template._id}>
+                      Template: {template.templateText} ({template.questionType})
+                    </option>
+                  ))}
+              </select>
+
+              <div style={{
+                fontSize: '12px',
+                color: '#6b7280',
+                marginBottom: '12px',
+                fontStyle: 'italic'
+              }}>
+                Or skip the template and create your own custom question using the fields below.
+              </div>
+              {errors.success && (
+                <div style={{
+                  background: '#d1fae5',
+                  border: '1px solid #10b981',
+                  color: '#059669',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  marginBottom: '12px'
+                }}>
+                  {errors.success}
+                </div>
+              )}
+            </div>
+
+            {/* Question Text */}
+            <div className="alphabet-knowledge-form-group" style={{ marginBottom: '24px' }}>
+              <label className="alphabet-knowledge-form-label">
+                Step 2: Write Your Question Text
+              </label>
+              <div style={{
+                fontSize: '12px',
+                color: '#6b7280',
+                marginBottom: '8px'
+              }}>
+                {pair.sourceTemplateId
+                  ? "This text is filled automatically from your selected template."
+                  : "Type the question you want to ask students (no numbers allowed, 5-200 characters)"
+                }
+              </div>
               <input
                 type="text"
                 className="alphabet-knowledge-question-input"
                 value={pair.questionText || ''}
-                onChange={(e) => updateQuestionChoicePair(pair.id, { questionText: e.target.value })}
-                placeholder="Anong ang katumbas na maliit na letra?"
+                onChange={(e) => {
+                  const newText = e.target.value;
+                  updateQuestionChoicePair(pair.id, { questionText: newText });
+
+                  // Real-time validation for question text
+                  if (!pair.sourceTemplateId) {
+                    const validationError = validateQuestionText(newText);
+                    setErrors(prev => ({
+                      ...prev,
+                      [`questionText_${pair.id}`]: validationError
+                    }));
+                  }
+                }}
+                placeholder="Example: Anong ang katumbas na maliit na letra?"
+                readOnly={pair.sourceTemplateId}
+                disabled={pair.sourceTemplateId}
+                style={{
+                  backgroundColor: pair.sourceTemplateId ? '#f3f4f6' : 'white',
+                  cursor: pair.sourceTemplateId ? 'not-allowed' : 'text',
+                  opacity: pair.sourceTemplateId ? 0.7 : 1,
+                  border: errors[`questionText_${pair.id}`] ? '2px solid #ef4444' : '1px solid #d1d5db'
+                }}
+                maxLength={200}
               />
+              {errors[`questionText_${pair.id}`] && (
+                <div style={{
+                  color: '#ef4444',
+                  fontSize: '12px',
+                  marginTop: '4px',
+                  fontWeight: '500'
+                }}>
+                  {errors[`questionText_${pair.id}`]}
+                </div>
+              )}
+              {pair.sourceTemplateId && (
+                <div style={{
+                  fontSize: '12px',
+                  color: '#6b7280',
+                  marginTop: '4px',
+                  fontStyle: 'italic'
+                }}>
+                  This field is protected because a template is being used. To edit, remove the template first.
+                </div>
+              )}
+              {/* Character counter */}
+              {!pair.sourceTemplateId && (
+                <div style={{
+                  fontSize: '11px',
+                  color: '#9ca3af',
+                  marginTop: '2px',
+                  textAlign: 'right'
+                }}>
+                  {(pair.questionText || '').length}/200 characters
+                </div>
+              )}
             </div>
 
             {/* Question Image */}
-            <div className="alphabet-knowledge-form-group">
-              <label className="alphabet-knowledge-form-label">Question Image (Optional)</label>
+            <div className="alphabet-knowledge-form-group" style={{ marginBottom: '24px' }}>
+              <label className="alphabet-knowledge-form-label">
+                Step 3: Add a Picture (Optional)
+              </label>
+              <div style={{
+                fontSize: '12px',
+                color: '#6b7280',
+                marginBottom: '12px'
+              }}>
+                {pair.sourceTemplateId
+                  ? "Image is provided by your selected template."
+                  : "Upload a picture to help students understand the question (like showing a big letter 'A')"
+                }
+              </div>
               <div className="alphabet-knowledge-image-section">
                 {pair.questionImage && (
-                  <img
-                    src={pair.questionImage}
-                    alt="Question visual"
-                    className="alphabet-knowledge-image-preview"
-                  />
+                  <div style={{ position: 'relative', display: 'inline-block' }}>
+                    <img
+                      src={pair.questionImage}
+                      alt="Question visual"
+                      className="alphabet-knowledge-image-preview"
+                    />
+                    <button
+                      type="button"
+                      className="alphabet-knowledge-remove-btn"
+                      onClick={() => updateQuestionChoicePair(pair.id, { questionImage: null })}
+                      style={{
+                        position: 'absolute',
+                        top: '5px',
+                        right: '5px',
+                        background: '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '24px',
+                        height: '24px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px'
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
                 )}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={(e) => handleQuestionImageUpload(e, pair.id)}
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                />
                 <button
                   type="button"
                   className="alphabet-knowledge-change-image-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading || pair.sourceTemplateId}
+                  style={{
+                    opacity: pair.sourceTemplateId ? 0.5 : 1,
+                    cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer'
+                  }}
                 >
-                  <FaImage /> Change Image
+                  <FaImage /> {pair.sourceTemplateId ? 'Image Protected by Template' : uploading ? 'Uploading...' : (pair.questionImage ? 'Change Image' : 'Upload Image')}
                 </button>
+                {pair.sourceTemplateId && (
+                  <div style={{
+                    fontSize: '12px',
+                    color: '#6b7280',
+                    marginTop: '4px',
+                    fontStyle: 'italic'
+                  }}>
+                    Image cannot be changed when using a template.
+                  </div>
+                )}
               </div>
+              {errors.upload && (
+                <div className="literexia-error-message">{errors.upload}</div>
+              )}
             </div>
 
             {/* Choices Section */}
             <div className="alphabet-knowledge-choices-section">
               <div className="alphabet-knowledge-choices-header">
-                <h4 className="alphabet-knowledge-choices-title">Question Choices</h4>
-                <span className="alphabet-knowledge-choices-info">Exactly 3 choices</span>
+                <h4 className="alphabet-knowledge-choices-title">Step 4: Create Answer Choices</h4>
+                <span className="alphabet-knowledge-choices-info">Exactly 3 choices required</span>
+              </div>
+
+              {/* Instructions for teachers */}
+              <div style={{
+                background: '#e0f2fe',
+                border: '1px solid #0284c7',
+                borderRadius: '6px',
+                padding: '14px',
+                marginBottom: '16px',
+                fontSize: '14px',
+                color: '#0369a1'
+              }}>
+                <strong>How to set up your answer choices:</strong>
+                <br />
+                <strong>1.</strong> Type your answers in the text boxes below
+                <br />
+                <strong>2.</strong> Click the circle next to the CORRECT answer
+                <br />
+                <strong>3.</strong> Make sure only ONE circle is selected (the correct answer will turn green)
+                <br />
+                <br />
+                {pair.sourceTemplateId && (
+                  <div style={{ background: '#fef3c7', padding: '8px', borderRadius: '4px', marginTop: '8px' }}>
+                    <strong>Template Mode:</strong> You can only edit the wrong answers. The correct answer is protected.
+                  </div>
+                )}
               </div>
 
               {/* Render exactly 3 choices */}
               {[0, 1, 2].map((choiceIndex) => {
                 const choice = pair.choices?.[choiceIndex] || { optionText: '', isCorrect: false };
+                const isTemplateChoice = pair.sourceTemplateId && choice.isCorrect;
+                const canEditChoice = !pair.sourceTemplateId || !choice.isCorrect;
+
                 return (
                   <div key={choiceIndex} className="alphabet-knowledge-choice-item">
-                    <input
-                      type="radio"
-                      name={`correct-${pair.id}`}
-                      className="alphabet-knowledge-choice-radio"
-                      checked={choice.isCorrect}
-                      onChange={() => {
-                        // Set this choice as correct and others as incorrect
-                        const newChoices = [...(pair.choices || [])];
-                        newChoices[0] = newChoices[0] || { optionText: '', isCorrect: false };
-                        newChoices[1] = newChoices[1] || { optionText: '', isCorrect: false };
-                        newChoices[2] = newChoices[2] || { optionText: '', isCorrect: false };
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
+                      {/* Radio button with clear label */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px' }}>
+                        <input
+                          type="radio"
+                          name={`correct-${pair.id}`}
+                          className="alphabet-knowledge-choice-radio"
+                          checked={choice.isCorrect}
+                          disabled={pair.sourceTemplateId}
+                          style={{
+                            opacity: pair.sourceTemplateId ? 0.5 : 1,
+                            cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer',
+                            transform: 'scale(1.2)',
+                            marginBottom: '4px'
+                          }}
+                          onChange={() => {
+                            if (pair.sourceTemplateId) return; // Prevent changes when template is used
 
-                        newChoices[0].isCorrect = choiceIndex === 0;
-                        newChoices[1].isCorrect = choiceIndex === 1;
-                        newChoices[2].isCorrect = choiceIndex === 2;
+                            // Set this choice as correct and others as incorrect
+                            const newChoices = [...(pair.choices || [])];
+                            newChoices[0] = newChoices[0] || { optionText: '', isCorrect: false };
+                            newChoices[1] = newChoices[1] || { optionText: '', isCorrect: false };
+                            newChoices[2] = newChoices[2] || { optionText: '', isCorrect: false };
 
-                        updateQuestionChoicePair(pair.id, { choices: newChoices });
-                      }}
-                    />
-                    <input
-                      type="text"
-                      className="alphabet-knowledge-choice-input"
-                      value={choice.optionText || ''}
-                      onChange={(e) => {
-                        const newChoices = [...(pair.choices || [])];
-                        newChoices[0] = newChoices[0] || { optionText: '', isCorrect: false };
-                        newChoices[1] = newChoices[1] || { optionText: '', isCorrect: false };
-                        newChoices[2] = newChoices[2] || { optionText: '', isCorrect: false };
+                            newChoices[0].isCorrect = choiceIndex === 0;
+                            newChoices[1].isCorrect = choiceIndex === 1;
+                            newChoices[2].isCorrect = choiceIndex === 2;
 
-                        newChoices[choiceIndex].optionText = e.target.value;
-                        updateQuestionChoicePair(pair.id, { choices: newChoices });
-                      }}
-                      placeholder={`Choice ${choiceIndex + 1}`}
-                    />
+                            updateQuestionChoicePair(pair.id, { choices: newChoices });
+                          }}
+                        />
+                        <span style={{
+                          fontSize: '11px',
+                          color: choice.isCorrect ? '#059669' : '#6b7280',
+                          fontWeight: choice.isCorrect ? 'bold' : 'normal',
+                          textAlign: 'center'
+                        }}>
+                          {choice.isCorrect ? 'CORRECT' : 'Click here if correct'}
+                        </span>
+                      </div>
+
+                      {/* Input field with clear labeling */}
+                      <div style={{ flex: 1 }}>
+                        <label style={{
+                          fontSize: '12px',
+                          color: '#374151',
+                          fontWeight: '500',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Choice {choiceIndex + 1} {choice.isCorrect ? '(Correct Answer)' : '(Wrong Answer)'}
+                        </label>
+                        <input
+                          type="text"
+                          className="alphabet-knowledge-choice-input"
+                          value={choice.optionText || ''}
+                          readOnly={isTemplateChoice}
+                          disabled={isTemplateChoice}
+                          style={{
+                            backgroundColor: isTemplateChoice ? '#f3f4f6' : 'white',
+                            cursor: isTemplateChoice ? 'not-allowed' : 'text',
+                            opacity: isTemplateChoice ? 0.7 : 1,
+                            width: '100%',
+                            border: errors[`choice_${pair.id}_${choiceIndex}`]
+                              ? '2px solid #ef4444'
+                              : choice.isCorrect ? '2px solid #059669' : '1px solid #d1d5db'
+                          }}
+                          onChange={(e) => {
+                            if (!canEditChoice) return; // Prevent changes to correct answer when template is used
+
+                            const newText = e.target.value;
+                            const newChoices = [...(pair.choices || [])];
+                            newChoices[0] = newChoices[0] || { optionText: '', isCorrect: false };
+                            newChoices[1] = newChoices[1] || { optionText: '', isCorrect: false };
+                            newChoices[2] = newChoices[2] || { optionText: '', isCorrect: false };
+
+                            newChoices[choiceIndex].optionText = newText;
+                            updateQuestionChoicePair(pair.id, { choices: newChoices });
+
+                            // Real-time validation for choices
+                            if (!isTemplateChoice) {
+                              const validationError = validateAnswerChoice(newText, choiceIndex);
+                              setErrors(prev => ({
+                                ...prev,
+                                [`choice_${pair.id}_${choiceIndex}`]: validationError
+                              }));
+                            }
+                          }}
+                          placeholder={isTemplateChoice ? "Protected by template" : `Enter ${choice.isCorrect ? 'correct' : 'wrong'} answer...`}
+                          maxLength={50}
+                        />
+                        {errors[`choice_${pair.id}_${choiceIndex}`] && (
+                          <div style={{
+                            color: '#ef4444',
+                            fontSize: '11px',
+                            marginTop: '2px',
+                            fontWeight: '500'
+                          }}>
+                            {errors[`choice_${pair.id}_${choiceIndex}`]}
+                          </div>
+                        )}
+                        {/* Character counter for choices */}
+                        {!isTemplateChoice && (
+                          <div style={{
+                            fontSize: '10px',
+                            color: '#9ca3af',
+                            marginTop: '1px'
+                          }}>
+                            {(choice.optionText || '').length}/50 chars
+                          </div>
+                        )}
+                        {isTemplateChoice && (
+                          <div style={{
+                            fontSize: '10px',
+                            color: '#6b7280',
+                            marginTop: '2px',
+                            fontStyle: 'italic'
+                          }}>
+                            Correct answer (protected by template)
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 );
               })}
+
+              {/* Template Protection Info */}
+              {pair.sourceTemplateId && (
+                <div style={{
+                  background: '#fef3c7',
+                  border: '1px solid #f59e0b',
+                  color: '#92400e',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  marginTop: '8px'
+                }}>
+                  <strong>Template Protection:</strong> When using a template, you can only edit the incorrect choices (the two wrong answers). The correct answer and question text are protected to maintain template integrity.
+                </div>
+              )}
             </div>
           </div>
         ))}
