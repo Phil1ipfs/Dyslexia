@@ -2375,7 +2375,6 @@ const PrescriptiveAnalysis = ({
           {/* Left Column: Detailed Error Analysis */}
           <div className="epa-left-column">
             <div className="epa-column-header">
-              <span>📊</span>
               <span>Detailed Error Analysis</span>
             </div>
             {renderDetailedErrorAnalysis(detailedErrorAnalysis, categoryName)}
@@ -2384,7 +2383,6 @@ const PrescriptiveAnalysis = ({
           {/* Right Column: Intervention Prescription and Plan */}
           <div className="epa-right-column">
             <div className="epa-column-header">
-              <span>🎯</span>
               <span>Intervention Prescription & Plan</span>
             </div>
             {renderComprehensiveResearchAnalysis(researchBasedPrescriptions, categoryName)}
