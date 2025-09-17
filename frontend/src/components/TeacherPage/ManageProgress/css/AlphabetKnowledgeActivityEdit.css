@@ -1,9 +1,9 @@
 /* Alphabet Knowledge Activity Edit Modal Styles */
 
 .alphabet-knowledge-container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 24px;
+  max-width: none; /* Remove width constraint to use full modal width */
+  margin: 0;
+  padding: 40px 48px; /* Increased padding for better spacing */
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -26,27 +26,29 @@
 }
 
 .alphabet-knowledge-info-banner {
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  border: 1px solid #3b82f6;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 24px;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 1rem;
+  background-color: #e3f2fd;
+  color: #1565c0;
+  padding: 1.25rem 1.5rem;
+  border-radius: 10px;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  line-height: 1.6;
 }
 
 .alphabet-knowledge-info-banner .info-icon {
-  color: #3b82f6;
-  font-size: 18px;
-  margin-top: 2px;
+  color: #1565c0;
+  font-size: 1.25rem;
+  margin-top: 0.2rem;
   flex-shrink: 0;
 }
 
 .alphabet-knowledge-info-text {
-  color: #1e40af;
-  font-size: 14px;
-  line-height: 1.5;
+  color: #1565c0;
+  font-size: 1rem;
+  line-height: 1.6;
   margin: 0;
 }
 
@@ -100,8 +102,8 @@
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 16px;
+  padding: 28px;
+  margin-bottom: 24px;
   transition: all 0.2s ease;
   position: relative;
 }
@@ -143,7 +145,7 @@
 }
 
 .alphabet-knowledge-form-group {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .alphabet-knowledge-form-label {
@@ -230,14 +232,11 @@
 }
 
 .alphabet-knowledge-choice-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
+  padding: 16px;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 14px;
   transition: all 0.2s ease;
 }
 
