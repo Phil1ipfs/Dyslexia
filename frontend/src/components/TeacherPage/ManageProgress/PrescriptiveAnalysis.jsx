@@ -1159,7 +1159,7 @@ const PrescriptiveAnalysis = ({
             <div className="epa-header">
               <FaExclamationTriangle className="epa-icon" />
               <div>
-                <h4 className="epa-title">Comprehensive {categoryName} Analysis</h4>
+                <h4 className="epa-title">Evidence {categoryName} Analysis</h4>
                 <p className="epa-subtitle epa-subtitle--white">Evidence-based deficit analysis, intervention prescriptions, and escalation protocols</p>
               </div>
               <div className="epa-summary">
@@ -1733,31 +1733,6 @@ const PrescriptiveAnalysis = ({
                 </div>
               )}
 
-              {/* Summary Section */}
-              <div className="epa-error-summary">
-                <h6 className="epa-error-summary-title">Error Analysis Summary</h6>
-                <div className="epa-error-summary-stats">
-                  <div className="epa-error-summary-stat">
-                    <span className="epa-error-summary-label">Total Errors:</span>
-                    <span className="epa-error-summary-value">{detailedErrorAnalysis.length}</span>
-                  </div>
-                  {vowelErrors.length > 0 && (
-                    <div className="epa-error-summary-stat">
-                      <span className="epa-error-summary-label">Vowel Errors:</span>
-                      <span className="epa-error-summary-value">{vowelErrors.length}</span>
-                    </div>
-                  )}
-                  {consonantErrors.length > 0 && (
-                    <div className="epa-error-summary-stat">
-                      <span className="epa-error-summary-label">Consonant Errors:</span>
-                      <span className="epa-error-summary-value">{consonantErrors.length}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="epa-error-summary-note">
-                  This detailed analysis provides specific intervention targets for each identified error pattern.
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -2419,40 +2394,102 @@ const PrescriptiveAnalysis = ({
               const categoryName = category.categoryName;
               const displayName = formatCategoryName(categoryName);
               const score = Number(category.score) || 0;
-              const needsIntervention = score < 75;
+              const isCompleted = category.isCompleted || false;
+              const isPassed = category.isPassed || false;
+              const needsIntervention = isCompleted && score < 75;
               const correctAnswers = category.correctAnswers || 0;
               const totalQuestions = category.totalQuestions || 0;
-              const statusLabel = needsIntervention ? "NEEDS ATTENTION" : "NOT STARTED";
-              const statusClass = needsIntervention ? "needs-attention" : "not-started";
-              
+
+              // Define prerequisite order for reading levels
+              const categoryPrerequisites = {
+                'Alphabet Knowledge': [],
+                'Phonological Awareness': ['Alphabet Knowledge'],
+                'Decoding': ['Alphabet Knowledge', 'Phonological Awareness'],
+                'Word Recognition': ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding'],
+                'Reading Comprehension': ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition']
+              };
+
+              // Check if prerequisites are met
+              const prerequisites = categoryPrerequisites[categoryName] || [];
+              const prerequisitesMet = prerequisites.every(prereqName => {
+                const prereqCategory = liveCategoryResults?.categories?.find(cat => cat.categoryName === prereqName);
+                return prereqCategory && prereqCategory.isPassed && prereqCategory.score >= 75;
+              });
+
+              // Determine blocking status
+              const isBlocked = !prerequisitesMet && prerequisites.length > 0;
+              const blockingCategory = prerequisites.find(prereqName => {
+                const prereqCategory = liveCategoryResults?.categories?.find(cat => cat.categoryName === prereqName);
+                return !prereqCategory || !prereqCategory.isPassed || prereqCategory.score < 75;
+              });
+
+              // Determine status and styling
+              let statusLabel, statusClass, isClickable = true;
+
+              if (isBlocked) {
+                statusLabel = "BLOCKED";
+                statusClass = "blocked";
+                isClickable = false;
+              } else if (needsIntervention) {
+                statusLabel = "NEEDS ATTENTION";
+                statusClass = "needs-attention";
+              } else if (isPassed) {
+                statusLabel = "PASSED";
+                statusClass = "passed";
+              } else if (isCompleted && !isPassed) {
+                statusLabel = "FAILED";
+                statusClass = "failed";
+              } else {
+                statusLabel = "NOT STARTED";
+                statusClass = "not-started";
+              }
+
               return (
-                <div 
+                <div
                   key={index}
-                  className={`literexia-category-tabb ${selectedCategory === categoryName ? 'active' : ''} ${needsIntervention ? 'needs-intervention' : ''}`}
-                  onClick={() => setSelectedCategory(categoryName)}
+                  className={`literexia-category-tabb ${selectedCategory === categoryName ? 'active' : ''} ${statusClass} ${isBlocked ? 'blocked' : ''}`}
+                  onClick={() => isClickable && setSelectedCategory(categoryName)}
+                  style={isBlocked ? { cursor: 'not-allowed', opacity: 0.6 } : {}}
                 >
                   <div className="literexia-tab-contentt">
                     <div className="literexia-tab-namee">{displayName}</div>
                     <div className="literexia-tab-scoree">{score}%</div>
-                    
+
                     <div className="literexia-progress-indicators">
                       {Array.from({ length: Math.min(totalQuestions, 5) }).map((_, i) => (
-                        <div 
-                          key={i} 
-                          className={`literexia-progress-indicator ${i < correctAnswers ? 'correct' : ''}`}
+                        <div
+                          key={i}
+                          className={`literexia-progress-indicator ${i < correctAnswers ? 'correct' : ''} ${isBlocked ? 'blocked' : ''}`}
                         />
                       ))}
                     </div>
-                    
-                    {needsIntervention ? (
-                      <div className={`literexia-tab-badge ${statusClass}`}>
-                        <FaExclamationTriangle /> {statusLabel}
-                      </div>
-                    ) : (
+
+                    <div className={`literexia-tab-badge ${statusClass}`}>
+                      {isBlocked ? (
+                        <>
+                          <FaTimes /> {statusLabel}
+                          <div className="blocked-reason">
+                            Must pass: {blockingCategory}
+                          </div>
+                        </>
+                      ) : needsIntervention ? (
+                        <>
+                          <FaExclamationTriangle /> {statusLabel}
+                        </>
+                      ) : isPassed ? (
+                        <>
+                          <FaCheckCircle /> {statusLabel}
+                        </>
+                      ) : (
+                        <>
+                          <FaInfoCircle /> {statusLabel}
+                        </>
+                      )}
+                    </div>
+
+                    {!isBlocked && !needsIntervention && !isPassed && correctAnswers > 0 && (
                       <div className="literexia-status-text">
-                        {correctAnswers > 0 
-                          ? `Need ${Math.ceil(totalQuestions * 0.75) - correctAnswers} more to pass` 
-                          : 'Not started'}
+                        Need {Math.ceil(totalQuestions * 0.75) - correctAnswers} more to pass
                       </div>
                     )}
                   </div>

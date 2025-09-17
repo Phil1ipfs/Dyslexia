@@ -1145,19 +1145,20 @@
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 1.25rem;
+  padding: 1.5rem 2rem;
   margin-top: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .epa-escalation-header {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .epa-escalation-label {
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #3B4F81;
   text-transform: uppercase;
@@ -1167,7 +1168,7 @@
 .epa-escalation-subtitle {
   font-size: 1rem;
   color: #6b7280;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
   line-height: 1.6;
 }
 
@@ -1175,35 +1176,37 @@
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 1.25rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .epa-escalation-title {
-  font-size: 1.125rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #dc2626;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .epa-escalation-content {
   font-size: 1rem;
   color: #374151;
   line-height: 1.7;
+  margin-bottom: 1rem;
 }
 
 .epa-escalation-steps {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
+  gap: 0.6rem;
+  margin-top: 1rem;
 }
 
 .epa-escalation-step {
   background: #fee2e2;
   color: #dc2626;
-  padding: 0.25rem 0.5rem;
-  border-radius: 8px;
-  font-size: 0.75rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
   font-weight: 500;
 }
 
@@ -1442,14 +1445,14 @@
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2.5rem;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
 }
 
 .epa-research-header {
   background: #3B4F81;
-  padding: 1rem 1.5rem;
+  padding: 2rem 2.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1457,13 +1460,14 @@
 }
 
 .epa-research-title {
-  font-size: 1.125rem;
+  font-size: 1.5rem;
   font-weight: 600;
   color: white;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  letter-spacing: 0.025em;
 }
 
 .epa-research-classification,
@@ -1504,17 +1508,17 @@
 /* Deficit Analysis */
 .epa-deficit-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1rem;
-  padding: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem 2.5rem;
 }
 
 .epa-deficit-card {
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .epa-deficit-header {
@@ -1549,6 +1553,7 @@
 }
 
 .epa-deficit-title {
+  font-size: 1.1rem;
   font-weight: 600;
   color: #374151;
   flex: 1;
@@ -1557,14 +1562,15 @@
 .epa-deficit-details {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .epa-deficit-manifestation,
 .epa-deficit-error-rate,
 .epa-deficit-evidence {
-  font-size: 0.875rem;
+  font-size: 1rem;
   color: #6B7280;
+  line-height: 1.6;
 }
 
 .epa-deficit-manifestation strong,
@@ -1576,33 +1582,36 @@
 
 /* Root Cause Analysis */
 .epa-root-cause {
-  padding: 1.5rem;
+  padding: 2rem 2.5rem;
   background: #f8fafc;
   border-left: 4px solid #3B4F81;
-  margin: 1.5rem;
+  margin: 2rem 2.5rem;
 }
 
 .epa-root-cause h6 {
+  font-size: 1.2rem;
   font-weight: 600;
   color: #3B4F81;
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 1rem 0;
 }
 
 .epa-root-cause p {
   color: #374151;
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 1rem;
+  line-height: 1.7;
 }
 
 /* Cognitive Factors */
 .epa-cognitive-factors {
-  padding: 1.5rem;
+  padding: 2rem 2.5rem;
 }
 
 .epa-cognitive-factors h6 {
+  font-size: 1.2rem;
   font-weight: 600;
   color: #374151;
-  margin: 0 0 0.75rem 0;
+  margin: 0 0 1rem 0;
 }
 
 .epa-factor-tags {
@@ -1643,27 +1652,28 @@
 
 /* Techniques Grid */
 .epa-techniques-grid {
-  padding: 1.5rem;
+  padding: 2rem 2.5rem;
 }
 
 .epa-techniques-grid h6 {
+  font-size: 1.2rem;
   font-weight: 600;
   color: #374151;
-  margin: 0 0 1rem 0;
+  margin: 0 0 1.5rem 0;
 }
 
 .epa-techniques-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
 }
 
 .epa-technique-card {
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 1rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .epa-technique-header {
@@ -1671,17 +1681,17 @@
 }
 
 .epa-technique-name {
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #374151;
   margin: 0;
 }
 
 .epa-technique-description {
-  font-size: 0.875rem;
+  font-size: 1rem;
   color: #6B7280;
-  margin-bottom: 0.75rem;
-  line-height: 1.5;
+  margin-bottom: 1rem;
+  line-height: 1.6;
 }
 
 .epa-technique-details {
@@ -1816,15 +1826,15 @@
 
 /* Escalation Protocol */
 .epa-escalation-triggers {
-  padding: 1.5rem;
+  padding: 1.5rem 2rem;
 }
 
 .epa-escalation-card {
   background: white;
   border: 1px solid #fecaca;
   border-radius: 6px;
-  padding: 1rem;
-  margin-bottom: 1rem;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
   box-shadow: 0 1px 3px rgba(239, 68, 68, 0.1);
 }
 
@@ -1832,51 +1842,55 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .epa-escalation-trigger {
+  font-size: 1rem;
   font-weight: 600;
   color: #dc2626;
   margin: 0;
 }
 
 .epa-escalation-approach {
-  padding: 0.25rem 0.75rem;
+  padding: 0.3rem 0.8rem;
   background: #fef2f2;
   color: #dc2626;
   border-radius: 12px;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 500;
 }
 
 .epa-escalation-techniques {
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .epa-escalation-technique {
-  padding: 0.75rem;
+  padding: 1rem;
   background: #fef9f9;
   border-radius: 4px;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .epa-escalation-technique-name {
+  font-size: 0.95rem;
   font-weight: 600;
   color: #991b1b;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
 }
 
 .epa-escalation-technique-purpose,
 .epa-escalation-technique-implementation {
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   color: #7f1d1d;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
 }
 
 .epa-escalation-research {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: #7f1d1d;
+  line-height: 1.4;
 }
 
 .epa-escalation-research strong {
@@ -1885,21 +1899,23 @@
 
 /* Intensity Recommendations */
 .epa-intensity-recommendations {
-  padding: 0.75rem;
+  padding: 1rem;
   background: #fef3c7;
   border-radius: 4px;
+  margin-top: 0.75rem;
 }
 
 .epa-intensity-details {
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
 }
 
 .epa-intensity-details div {
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   color: #92400e;
+  line-height: 1.5;
 }
 
 .epa-intensity-details strong {
@@ -1907,9 +1923,11 @@
 }
 
 .epa-escalation-foundation {
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   color: #7f1d1d;
   font-style: italic;
+  line-height: 1.5;
+  margin-top: 0.75rem;
 }
 
 .epa-escalation-foundation strong {
