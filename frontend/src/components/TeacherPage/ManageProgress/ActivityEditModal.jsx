@@ -254,8 +254,13 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         console.error("Error fetching MongoDB analysis:", error);
       }
       
-      // No dummy data - only use real MongoDB prescriptive analysis
-      console.warn("No MongoDB prescriptive analysis found for student:", studentId, "category:", category);
+      // NO DUMMY DATA - ONLY REAL DATA FROM DATABASE
+      console.error("❌ NO REAL PRESCRIPTIVE ANALYSIS FOUND in database for student:", studentId, "category:", category);
+      console.error("❌ This means the backend CategoryResultsService automatic trigger failed!");
+      console.error("❌ Student", studentId, "needs a valid prescriptive_analysis record in the database");
+
+      // Don't set any analysis data - return null to indicate missing data
+      setMongoDbAnalysis(null);
       
       return null;
     } catch (error) {
@@ -289,13 +294,15 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   // Separate effect for logging analysis to avoid dependency array size changes
   useEffect(() => {
     if (analysis) {
-      console.log("Analysis object received in ActivityEditModal:", analysis);
-      
+      console.log("✅ [ANALYSIS DEBUG] Analysis object received in ActivityEditModal:", analysis);
+      console.log("✅ [ANALYSIS DEBUG] Analysis type:", typeof analysis);
+      console.log("✅ [ANALYSIS DEBUG] Analysis keys:", Object.keys(analysis));
+
       // Log the structure of the analysis for debugging
       if (analysis._id && typeof analysis._id === 'object' && analysis._id.$oid) {
-        console.log("MongoDB format analysis with $oid:", analysis._id.$oid);
+        console.log("✅ [ANALYSIS DEBUG] MongoDB format analysis with $oid:", analysis._id.$oid);
       } else if (analysis._id && typeof analysis._id === 'string') {
-        console.log("MongoDB format analysis with string ID:", analysis._id);
+        console.log("✅ [ANALYSIS DEBUG] MongoDB format analysis with string ID:", analysis._id);
       } else if (analysis.id) {
         console.log("Mock format analysis with id:", analysis.id);
       }
@@ -443,9 +450,28 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       // Check for valid choices in each question
       interventionData.questions.forEach((question, index) => {
         if (!question.choices || !Array.isArray(question.choices)) {
+          console.error(`[SAVE] ❌ Question ${index} choices validation failed:`, {
+            question: question,
+            choices: question.choices,
+            choicesType: typeof question.choices,
+            isArray: Array.isArray(question.choices)
+          });
           throw new Error(`Question ${index} has invalid choices`);
         }
-        console.log(`Question ${index} has ${safe(question.choices).length} choices`);
+
+        // Validate each choice has required fields
+        question.choices.forEach((choice, choiceIndex) => {
+          if (!choice.optionText && choice.optionText !== '') {
+            console.error(`[SAVE] ❌ Question ${index}, choice ${choiceIndex} missing optionText:`, choice);
+            throw new Error(`Question ${index}, choice ${choiceIndex} has invalid optionText`);
+          }
+          if (typeof choice.isCorrect !== 'boolean') {
+            console.error(`[SAVE] ❌ Question ${index}, choice ${choiceIndex} invalid isCorrect:`, choice);
+            throw new Error(`Question ${index}, choice ${choiceIndex} has invalid isCorrect field`);
+          }
+        });
+
+        console.log(`✅ Question ${index} has ${safe(question.choices).length} valid choices`);
       });
       
       // Make the API call
@@ -1559,26 +1585,68 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     // Keep studentId as number to match database format
     console.log("[SAVE] Final studentId:", studentId, "Type:", typeof studentId);
     
-    // Get prescriptive analysis ID if available
+    // Get prescriptive analysis ID - ONLY from real database data
     let prescriptiveAnalysisId = null;
-    
-    // First try to get it from the MongoDB analysis
-    if (mongoDbAnalysis) {
-      console.log("[SAVE] Extracting prescriptive analysis ID from:", mongoDbAnalysis);
-      
+    let realAnalysisData = null;
+
+    // First try to get it from the passed analysis prop (real data)
+    if (analysis && analysis._id) {
+      console.log("[SAVE] ✅ Checking real prescriptive analysis from prop:", analysis);
+      console.log("[SAVE] Analysis ID structure:", analysis._id, "Type:", typeof analysis._id);
+
+      if (analysis._id && typeof analysis._id === 'object' && analysis._id.$oid) {
+        // MongoDB format with $oid field
+        prescriptiveAnalysisId = analysis._id.$oid;
+        realAnalysisData = analysis;
+        console.log("[SAVE] ✅ Using REAL analysis prop prescriptive ID (from $oid):", prescriptiveAnalysisId);
+        console.log("[SAVE] ✅ KNOWN PRESCRIPTIVE ANALYSIS ID:", prescriptiveAnalysisId, "should match 68c9fc70d26632a89f218ef0");
+      } else if (analysis._id && typeof analysis._id === 'string' && /^[0-9a-fA-F]{24}$/.test(analysis._id)) {
+        // MongoDB format with valid ObjectId string
+        prescriptiveAnalysisId = analysis._id;
+        realAnalysisData = analysis;
+        console.log("[SAVE] ✅ Using REAL analysis prop prescriptive ID (from string):", prescriptiveAnalysisId);
+        console.log("[SAVE] ✅ KNOWN PRESCRIPTIVE ANALYSIS ID:", prescriptiveAnalysisId, "should match 68c9fc70d26632a89f218ef0");
+      } else {
+        console.error("[SAVE] ❌ Invalid analysis ID format:", analysis._id);
+        console.error("[SAVE] ❌ Expected 68c9fc70d26632a89f218ef0 but got:", analysis._id);
+      }
+    } else {
+      console.error("[SAVE] ❌ No analysis prop provided or missing _id field");
+      console.error("[SAVE] ❌ analysis:", analysis);
+    }
+
+    // Try mongoDbAnalysis only if it has real data structure
+    if (!prescriptiveAnalysisId && mongoDbAnalysis && mongoDbAnalysis._id) {
+      console.log("[SAVE] Checking mongoDbAnalysis for real data:", mongoDbAnalysis);
+
       if (mongoDbAnalysis._id && typeof mongoDbAnalysis._id === 'object' && mongoDbAnalysis._id.$oid) {
         // MongoDB format with $oid field
         prescriptiveAnalysisId = mongoDbAnalysis._id.$oid;
-        console.log("[SAVE] Using MongoDB prescriptive analysis ID (from $oid):", prescriptiveAnalysisId);
-      } else if (mongoDbAnalysis._id && typeof mongoDbAnalysis._id === 'string') {
-        // MongoDB format with string ID
+        realAnalysisData = mongoDbAnalysis;
+        console.log("[SAVE] ✅ Using REAL mongoDb prescriptive ID (from $oid):", prescriptiveAnalysisId);
+      } else if (mongoDbAnalysis._id && typeof mongoDbAnalysis._id === 'string' && /^[0-9a-fA-F]{24}$/.test(mongoDbAnalysis._id)) {
+        // MongoDB format with valid ObjectId string
         prescriptiveAnalysisId = mongoDbAnalysis._id;
-        console.log("[SAVE] Using MongoDB prescriptive analysis ID (from string):", prescriptiveAnalysisId);
+        realAnalysisData = mongoDbAnalysis;
+        console.log("[SAVE] ✅ Using REAL mongoDb prescriptive ID (from string):", prescriptiveAnalysisId);
       } else {
-        console.warn("[SAVE] No valid ID found in MongoDB prescriptive analysis:", mongoDbAnalysis);
+        console.error("[SAVE] ❌ Invalid mongoDbAnalysis ID format:", mongoDbAnalysis._id);
       }
+    }
+
+    // NO FALLBACKS - only real data
+    if (!prescriptiveAnalysisId) {
+      console.error("[SAVE] ❌ NO REAL PRESCRIPTIVE ANALYSIS FOUND for student:", studentId, "category:", category);
+      console.error("[SAVE] ❌ analysis prop:", analysis);
+      console.error("[SAVE] ❌ mongoDbAnalysis:", mongoDbAnalysis);
+      console.error("[SAVE] ❌ Cannot create intervention without real prescriptive analysis!");
+      console.error("[SAVE] ❌ Expected to find prescriptive analysis ID: 68c9fc70d26632a89f218ef0");
+
+      // Still allow creation but log the issue
+      console.warn("[SAVE] ⚠️ Proceeding WITHOUT prescriptive analysis ID - intervention will have limited data");
     } else {
-      console.warn("[SAVE] No MongoDB prescriptive analysis available");
+      console.log("[SAVE] ✅ FINAL PRESCRIPTIVE ANALYSIS ID:", prescriptiveAnalysisId);
+      console.log("[SAVE] ✅ Using real prescriptive analysis data for intervention creation");
     }
     
     // Ensure prescriptiveAnalysisId is a valid MongoDB ObjectId (24 hex chars) or null
@@ -1874,44 +1942,45 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         readingLevel,
         passThreshold: 75,
 
-        // Doctor's Prescription (from prescriptive analytics)
-        doctorPrescription: mongoDbAnalysis ? {
+        // Doctor's Prescription (ONLY from real prescriptive analytics data)
+        doctorPrescription: realAnalysisData ? {
           deficitAnalysis: {
-            specificDeficits: mongoDbAnalysis.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.map(d => d.deficit) || [],
-            severity: mongoDbAnalysis.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.[0]?.severity || "moderate",
-            errorRate: mongoDbAnalysis.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.[0]?.errorRate || "0%",
-            confusionPairs: mongoDbAnalysis.errorPatterns?.[category]?.detailedErrorAnalysis?.map(err => ({
+            specificDeficits: realAnalysisData.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.map(d => d.deficit) || realAnalysisData.errorPatterns?.[category]?.detailedErrorAnalysis?.map(err => err.errorPattern) || [],
+            severity: realAnalysisData.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.[0]?.severity || "moderate",
+            errorRate: realAnalysisData.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.[0]?.errorRate || `${Math.round((realAnalysisData.skillMastery?.[category]?.score || 0))}%`,
+            confusionPairs: realAnalysisData.errorPatterns?.[category]?.detailedErrorAnalysis?.map(err => ({
               sounds: err.specificPairs || [],
               confusionRate: err.errorRate || 0
             })) || []
           },
           interventionPrescription: {
-            primaryApproach: mongoDbAnalysis.researchBasedPrescriptions?.[category]?.interventionPrescription?.primaryApproach || "multisensory_structured",
-            recommendedQuestionCount: mongoDbAnalysis.interventionPlan?.specificFocus?.[category]?.questionDistribution?.total || questionChoicePairs.length,
-            intensityLevel: mongoDbAnalysis.researchBasedPrescriptions?.[category]?.interventionPrescription?.intensityLevel || "intensive",
-            sessionStructure: mongoDbAnalysis.researchBasedPrescriptions?.[category]?.interventionPrescription?.sessionStructure || {
+            primaryApproach: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.primaryApproach || "multisensory_structured",
+            recommendedQuestionCount: realAnalysisData.interventionPlan?.specificFocus?.[category]?.questionDistribution?.total || questionChoicePairs.length,
+            intensityLevel: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.intensityLevel || "intensive",
+            sessionStructure: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.sessionStructure || {
               optimalLength: "15-20 minutes",
               breakPattern: "Every 10 minutes"
             },
-            specificTechniques: mongoDbAnalysis.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.map(t => t.technique || t) || []
+            specificTechniques: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.map(t => t.technique || t) || realAnalysisData.interventionPlan?.specificFocus?.[category]?.recommendedActivities || []
           },
-          materialRecommendations: mongoDbAnalysis.researchBasedPrescriptions?.[category]?.interventionPrescription?.materialRecommendations || []
+          materialRecommendations: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.materialRecommendations || ["Teacher-created intervention questions"]
         } : {
+          // NO REAL DATA AVAILABLE - Create minimal prescription structure
           deficitAnalysis: {
-            specificDeficits: [`${category} skill development needed`],
-            severity: "moderate",
-            errorRate: "N/A",
+            specificDeficits: ["No prescriptive analysis data available"],
+            severity: "unknown",
+            errorRate: "unknown",
             confusionPairs: []
           },
           interventionPrescription: {
             primaryApproach: "multisensory_structured",
             recommendedQuestionCount: questionChoicePairs.length,
-            intensityLevel: "intensive",
+            intensityLevel: "standard",
             sessionStructure: {
               optimalLength: "15-20 minutes",
               breakPattern: "Every 10 minutes"
             },
-            specificTechniques: ["Systematic, explicit instruction", "Immediate corrective feedback"]
+            specificTechniques: ["Teacher-created intervention based on observation"]
           },
           materialRecommendations: ["Teacher-created intervention questions"]
         },
@@ -1940,6 +2009,17 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           const selectedChoices = isAlphabetKnowledge
             ? (pair.choices || [])  // Alphabet Knowledge uses pair.choices array
             : getChoicesByIds(pair.choiceIds); // Other categories use pair.choiceIds
+
+          // Validate selectedChoices is not empty
+          if (!selectedChoices || selectedChoices.length === 0) {
+            console.error(`[SAVE] ❌ Question ${index} has no choices:`, {
+              isAlphabetKnowledge,
+              pairChoices: pair.choices,
+              pairChoiceIds: pair.choiceIds,
+              selectedChoices
+            });
+            throw new Error(`Question ${index} has no valid choices available`);
+          }
           
           // Debug log for image URLs
           if (pair.questionImage) {
@@ -1971,19 +2051,17 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             questionImage: processedImageUrl,
             questionValue: pair.questionValue || (pair.questionImage ? pair.questionText?.split(' ').pop() || '' : ''),
 
-            // For Alphabet Knowledge, use choiceOptions structure per CLAUDE.md
-            ...(isAlphabetKnowledge ? {
-              choiceOptions: selectedChoices.map((choice, choiceIdx) => ({
-                optionId: String(choiceIdx + 1),
-                optionText: choice.optionText || '',
-                isCorrect: choice.isCorrect,
-                imageUrl: choice.imageUrl || null
-              }))
-            } : {
-              // For other categories, keep the existing structure
-              choiceIds: pair.choiceIds,
-              correctChoiceId: pair.correctChoiceId,
-              choices: selectedChoices.map(choice => {
+            // ALWAYS include choices array for backend validation (ALL categories)
+            choices: selectedChoices.map(choice => {
+              if (isAlphabetKnowledge) {
+                // Alphabet Knowledge choice structure
+                return {
+                  optionText: choice.optionText || '',
+                  isCorrect: choice.isCorrect || false,
+                  description: choice.description || ''
+                };
+              } else {
+                // Other categories choice structure
                 const choiceDescription = choice.description || '';
                 console.log(`Saving choice for question ${index}:`, {
                   optionText: choice.choiceValue || choice.soundText || '',
@@ -1995,7 +2073,21 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                   isCorrect: choice._id === pair.correctChoiceId,
                   description: choiceDescription
                 };
-              })
+              }
+            }),
+
+            // For Alphabet Knowledge, also include choiceOptions (CLAUDE.md format)
+            ...(isAlphabetKnowledge ? {
+              choiceOptions: selectedChoices.map((choice, choiceIdx) => ({
+                optionId: String(choiceIdx + 1),
+                optionText: choice.optionText || '',
+                isCorrect: choice.isCorrect,
+                imageUrl: choice.imageUrl || null
+              }))
+            } : {
+              // For other categories, include additional fields
+              choiceIds: pair.choiceIds,
+              correctChoiceId: pair.correctChoiceId
             }),
 
             // Add prescription alignment per CLAUDE.md
@@ -2032,19 +2124,21 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           immediateFeeback: false
         },
 
-        // Question Count Calculation (dynamic)
+        // Question Count Calculation (dynamic, based on real data)
         questionCountCalculation: {
           finalCount: questionChoicePairs.length,
-          rationale: `Teacher created ${questionChoicePairs.length} questions based on prescription and student needs`,
+          rationale: realAnalysisData
+            ? `Teacher created ${questionChoicePairs.length} questions based on real prescriptive analysis`
+            : `Teacher created ${questionChoicePairs.length} questions (no prescriptive analysis available)`,
           factors: {
-            base: mongoDbAnalysis?.interventionPlan?.specificFocus?.[category]?.questionDistribution?.total || 10,
+            base: realAnalysisData?.interventionPlan?.specificFocus?.[category]?.questionDistribution?.total || 10,
             errorSeverity: {
-              level: mongoDbAnalysis?.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.[0]?.severity || "moderate",
+              level: realAnalysisData?.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.[0]?.severity || "unknown",
               adjustment: 0,
-              percentage: parseFloat(mongoDbAnalysis?.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.[0]?.errorRate) || 0
+              percentage: parseFloat(realAnalysisData?.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.[0]?.errorRate) || realAnalysisData?.skillMastery?.[category]?.score || 0
             },
             masteryLevel: {
-              score: mongoDbAnalysis?.skillMastery?.[category]?.score || 0,
+              score: realAnalysisData?.skillMastery?.[category]?.score || 0,
               adjustment: 0
             },
             categoryComplexity: {

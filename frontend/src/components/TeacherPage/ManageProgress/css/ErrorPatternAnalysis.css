@@ -9,6 +9,115 @@
   margin: 1.25rem 0;
 }
 
+/* ========== TWO-COLUMN LAYOUT FOR ERROR ANALYSIS ========== */
+.epa-two-column-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin: 1rem 0;
+  height: 70vh;
+  max-height: 70vh;
+  min-height: 600px;
+}
+
+.epa-left-column {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0;
+  overflow-y: auto;
+  height: 100%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.epa-right-column {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0;
+  overflow-y: auto;
+  height: 100%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Column Headers */
+.epa-column-header {
+  background: linear-gradient(135deg, #3B4F81 0%, #4A5E91 100%);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px 8px 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.epa-column-header .epa-icon {
+  font-size: 1.1rem;
+}
+
+/* Content padding inside columns */
+.epa-left-column > div:not(.epa-column-header) {
+  padding: 1rem;
+}
+
+.epa-right-column > div:not(.epa-column-header) {
+  padding: 1rem;
+}
+
+/* Minimize section spacing in two-column layout */
+.epa-two-column-layout .epa-section {
+  margin-bottom: 1rem !important;
+}
+
+.epa-two-column-layout .epa-section-header {
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.9rem !important;
+}
+
+.epa-two-column-layout .epa-section-content {
+  padding: 0.75rem !important;
+}
+
+/* Compact error pattern cards in two-column */
+.epa-two-column-layout .epa-error-pattern-card {
+  margin-bottom: 0.75rem !important;
+  padding: 0.75rem !important;
+}
+
+/* Minimize intervention prescription spacing */
+.epa-two-column-layout .epa-intervention-card {
+  margin-bottom: 0.75rem !important;
+  padding: 0.75rem !important;
+}
+
+/* Compact recommendation items */
+.epa-two-column-layout .epa-recommendation-item {
+  margin-bottom: 0.5rem !important;
+  padding: 0.5rem !important;
+}
+
+/* Responsive Design for Two-Column Layout */
+@media (max-width: 1024px) {
+  .epa-two-column-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    max-height: none;
+    height: auto;
+  }
+
+  .epa-left-column,
+  .epa-right-column {
+    max-height: none;
+    overflow-y: visible;
+    height: auto;
+  }
+}
+
 /* ===== DYNAMIC UI THEMES ===== */
 /* Initial Analysis Theme (Blue - Diagnostic) */
 .epa-container.theme-initial {

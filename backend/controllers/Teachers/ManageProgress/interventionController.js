@@ -108,25 +108,8 @@ class InterventionController {
         });
       }
       
-      // Handle case where studentId might be a string ID number instead of ObjectId
-      if (typeof interventionData.studentId === 'string' && !mongoose.Types.ObjectId.isValid(interventionData.studentId)) {
-        // Try to find student by idNumber
-        const User = require('../../../models/userModel');
-        const student = await User.findOne({ idNumber: interventionData.studentId });
-        
-        if (student) {
-          // Save the original ID as studentNumber
-          interventionData.studentNumber = interventionData.studentId;
-          // Update studentId to be the MongoDB ObjectId
-          interventionData.studentId = student._id;
-          console.log(`Converted student ID number ${interventionData.studentNumber} to ObjectId ${interventionData.studentId}`);
-        } else {
-          return res.status(404).json({
-            success: false,
-            message: `Student with ID number ${interventionData.studentId} not found`
-          });
-        }
-      }
+      // InterventionAssessment expects studentId as Number - let service handle validation
+      console.log(`[INTERVENTION CONTROLLER] Received studentId: ${interventionData.studentId} (type: ${typeof interventionData.studentId})`);
       
       if (!interventionData.category) {
         return res.status(400).json({

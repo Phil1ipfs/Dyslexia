@@ -540,6 +540,14 @@ const PrescriptiveAnalysis = ({
 
     console.log('Found REAL prescriptive analysis:', studentAnalysis);
 
+    // Debug: Log the _id field specifically
+    console.log('ANALYSIS _ID FIELD:', studentAnalysis._id);
+    console.log('ANALYSIS _ID TYPE:', typeof studentAnalysis._id);
+    if (studentAnalysis._id && typeof studentAnalysis._id === 'object') {
+      console.log('ANALYSIS _ID OBJECT KEYS:', Object.keys(studentAnalysis._id));
+      console.log('ANALYSIS _ID.$oid:', studentAnalysis._id.$oid);
+    }
+
     // Debug: Log detailed structure of the found analysis
     console.log('DETAILED ANALYSIS STRUCTURE:');
     console.log('- skillMastery exists:', Boolean(studentAnalysis.skillMastery));
@@ -2362,11 +2370,26 @@ const PrescriptiveAnalysis = ({
           </div>
         )}
 
-        {/* Detailed Error Analysis - Individual Letter/Question Level from Database */}
-        {renderDetailedErrorAnalysis(detailedErrorAnalysis, categoryName)}
+        {/* Two-Column Layout for Error Analysis */}
+        <div className="epa-two-column-layout">
+          {/* Left Column: Detailed Error Analysis */}
+          <div className="epa-left-column">
+            <div className="epa-column-header">
+              <span>📊</span>
+              <span>Detailed Error Analysis</span>
+            </div>
+            {renderDetailedErrorAnalysis(detailedErrorAnalysis, categoryName)}
+          </div>
 
-        {/* Comprehensive Research-Based Analysis - All Database Content */}
-        {renderComprehensiveResearchAnalysis(researchBasedPrescriptions, categoryName)}
+          {/* Right Column: Intervention Prescription and Plan */}
+          <div className="epa-right-column">
+            <div className="epa-column-header">
+              <span>🎯</span>
+              <span>Intervention Prescription & Plan</span>
+            </div>
+            {renderComprehensiveResearchAnalysis(researchBasedPrescriptions, categoryName)}
+          </div>
+        </div>
       </div>
     );
   };

@@ -148,7 +148,7 @@ const interventionAssessmentSchema = new mongoose.Schema({
   prescriptiveAnalysisId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'PrescriptiveAnalysis',
-    required: true
+    required: true    // Required per CLAUDE.md - all interventions must be based on prescriptive analysis
   },
   category: {
     type: String,
