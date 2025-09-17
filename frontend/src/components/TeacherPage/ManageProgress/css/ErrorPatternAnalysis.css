@@ -15,6 +15,11 @@
   border-left: 4px solid #3B4F81;
 }
 
+.epa-icon {
+  color: #ffffff;
+  font-size: 30px;
+}
+
 .epa-container.theme-initial .epa-header {
   background: linear-gradient(135deg, #3B4F81 0%, #4A5E91 100%);
 }
@@ -1049,6 +1054,10 @@
   line-height: 1.5;
 }
 
+.epa-subtitle--white {
+  color: white;
+}
+
 .epa-research-content {
   display: flex;
   flex-direction: column;
@@ -1525,16 +1534,18 @@
 }
 
 .epa-severity-badge--severe {
-  background: #dc2626;
+  background: #374151;
+  color: white;
 }
 
 .epa-severity-badge--moderate {
-  background: #ea580c;
+  background: #6b7280;
+  color: white;
 }
 
 .epa-severity-badge--mild {
-  background: #facc15;
-  color: #374151;
+  background: #3B4F81;
+  color: white;
 }
 
 .epa-deficit-title {
@@ -1566,19 +1577,19 @@
 /* Root Cause Analysis */
 .epa-root-cause {
   padding: 1.5rem;
-  background: #fef3c7;
-  border-left: 4px solid #f59e0b;
+  background: #f8fafc;
+  border-left: 4px solid #3B4F81;
   margin: 1.5rem;
 }
 
 .epa-root-cause h6 {
   font-weight: 600;
-  color: #92400e;
+  color: #3B4F81;
   margin: 0 0 0.5rem 0;
 }
 
 .epa-root-cause p {
-  color: #92400e;
+  color: #374151;
   margin: 0;
   font-size: 0.875rem;
 }
@@ -1612,19 +1623,19 @@
 /* Intervention Prescription */
 .epa-primary-approach {
   padding: 1.5rem;
-  background: #ecfdf5;
-  border-left: 4px solid #10b981;
+  background: #f8fafc;
+  border-left: 4px solid #3B4F81;
   margin: 1.5rem;
 }
 
 .epa-primary-approach h6 {
   font-weight: 600;
-  color: #047857;
+  color: #3B4F81;
   margin: 0 0 0.5rem 0;
 }
 
 .epa-approach-name {
-  color: #047857;
+  color: #374151;
   font-weight: 500;
   text-transform: capitalize;
   margin: 0;
@@ -1764,14 +1775,14 @@
 /* Progress Monitoring */
 .epa-progress-monitoring {
   padding: 1.5rem;
-  background: #f0f9ff;
-  border-left: 4px solid #0ea5e9;
+  background: #f8fafc;
+  border-left: 4px solid #3B4F81;
   margin: 1.5rem;
 }
 
 .epa-progress-monitoring h6 {
   font-weight: 600;
-  color: #0c4a6e;
+  color: #3B4F81;
   margin: 0 0 1rem 0;
 }
 
@@ -1785,7 +1796,7 @@
 .epa-monitoring-indicators,
 .epa-monitoring-method {
   font-size: 0.875rem;
-  color: #0c4a6e;
+  color: #374151;
 }
 
 .epa-monitoring-frequency strong,

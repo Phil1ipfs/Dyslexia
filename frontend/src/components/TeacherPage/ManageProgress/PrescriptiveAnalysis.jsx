@@ -1144,7 +1144,11 @@ const PrescriptiveAnalysis = ({
       accelerationRecommendations
     } = researchBasedPrescriptions;
 
-    if (!deficitAnalysis && !interventionPrescription) {
+    // Get intervention plan from the selected analysis
+    const selectedAnalysis = getAnalysisForCategory(categoryName);
+    const interventionPlan = selectedAnalysis?.interventionPlan;
+
+    if (!deficitAnalysis && !interventionPrescription && !interventionPlan) {
       return null; // No research data available for this category
     }
 
@@ -1348,6 +1352,68 @@ const PrescriptiveAnalysis = ({
                         {interventionPrescription.progressMonitoring.dataCollectionMethod && (
                           <div className="epa-monitoring-method">
                             <strong>Data Collection:</strong> {interventionPrescription.progressMonitoring.dataCollectionMethod}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Intervention Plan Section - Integrated from database */}
+              {interventionPlan && (
+                <div className="epa-research-section">
+                  <div className="epa-research-header">
+                    <h5 className="epa-research-title">Intervention Plan</h5>
+                    <span className="epa-intensity-badge">IMPLEMENTATION</span>
+                  </div>
+
+                  {/* Primary Focus */}
+                  {interventionPlan.focus && (
+                    <div className="epa-primary-approach">
+                      <h6>Primary Focus Area</h6>
+                      <p className="epa-approach-name">{interventionPlan.focus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                    </div>
+                  )}
+
+                  {/* Recommended Activities */}
+                  {interventionPlan.recommendedActivities && interventionPlan.recommendedActivities.length > 0 && (
+                    <div className="epa-techniques-grid">
+                      <h6>Recommended Activities</h6>
+                      <div className="epa-techniques-container">
+                        {interventionPlan.recommendedActivities.map((activity, index) => (
+                          <div key={index} className="epa-technique-card">
+                            <div className="epa-technique-header">
+                              <h7 className="epa-technique-name">{index + 1}</h7>
+                            </div>
+                            <div className="epa-technique-description">{activity.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Question Distribution Plan */}
+                  {interventionPlan.questionDistribution && Object.keys(interventionPlan.questionDistribution).length > 0 && (
+                    <div className="epa-session-structure">
+                      <h6>Question Distribution Plan</h6>
+                      <div className="epa-session-details">
+                        <div className="epa-session-length">
+                          <strong>total:</strong> {interventionPlan.recommendedQuestionCount || Object.values(interventionPlan.questionDistribution).reduce((sum, count) => sum + (typeof count === 'number' ? count : 0), 0)} questions
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Question Requirements */}
+                  {interventionPlan.recommendedQuestionCount && (
+                    <div className="epa-materials">
+                      <h6>Intervention Question Requirements</h6>
+                      <div className="epa-requirements-content">
+                        <div className="epa-requirements-count">{interventionPlan.recommendedQuestionCount} Questions Recommended</div>
+                        {interventionPlan.questionCountRationale && (
+                          <div className="epa-requirements-rationale">
+                            <span className="epa-requirements-rationale-label">Rationale:</span> {interventionPlan.questionCountRationale}
                           </div>
                         )}
                       </div>
@@ -2610,7 +2676,7 @@ const PrescriptiveAnalysis = ({
           {renderMathematicalAnalysis(selectedCategory, selectedAnalysis)}
 
           {/* Comprehensive Intervention Plan - Full Width */}
-          {selectedAnalysis?.interventionPlan && (
+          {/* {selectedAnalysis?.interventionPlan && (
             <div className="literexia-analysis-card literexia-full-width">
               <div className="literexia-card-content">
                 <div className={`epa-intervention-container theme-${getUITheme(selectedCategory)}`}>
@@ -2625,7 +2691,7 @@ const PrescriptiveAnalysis = ({
                   {renderStatusContent(selectedCategory, (
                     <div className="epa-intervention-content">
                       {/* Primary Focus */}
-                      {selectedAnalysis.interventionPlan.focus && (
+                      {/* {selectedAnalysis.interventionPlan.focus && (
                         <div className="epa-focus-section">
                           <div className="epa-focus-header">
                             <FaUserMd className="epa-focus-icon" />
@@ -2635,10 +2701,10 @@ const PrescriptiveAnalysis = ({
                             {selectedAnalysis.interventionPlan.focus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                           </div>
                         </div>
-                      )}
+                      )} */}
 
                       {/* Target Sounds */}
-                      {selectedAnalysis.interventionPlan.targetSounds && selectedAnalysis.interventionPlan.targetSounds.length > 0 && (
+                      {/* {selectedAnalysis.interventionPlan.targetSounds && selectedAnalysis.interventionPlan.targetSounds.length > 0 && (
                         <div className="epa-target-sounds">
                           <div className="epa-target-sounds-header">
                             <FaBook className="epa-focus-icon" />
@@ -2650,10 +2716,10 @@ const PrescriptiveAnalysis = ({
                             ))}
                           </div>
                         </div>
-                      )}
+                      )} */}
 
                       {/* Recommended Activities */}
-                      {selectedAnalysis.interventionPlan.recommendedActivities && selectedAnalysis.interventionPlan.recommendedActivities.length > 0 && (
+                      {/* {selectedAnalysis.interventionPlan.recommendedActivities && selectedAnalysis.interventionPlan.recommendedActivities.length > 0 && (
                         <div className="epa-activities-section">
                           <div className="epa-activities-header">
                             <FaEdit className="epa-focus-icon" />
@@ -2668,10 +2734,10 @@ const PrescriptiveAnalysis = ({
                             ))}
                           </div>
                         </div>
-                      )}
+                      )} */}
 
                       {/* Question Distribution */}
-                      {selectedAnalysis.interventionPlan.questionDistribution && Object.keys(selectedAnalysis.interventionPlan.questionDistribution).length > 0 && (
+                      {/* {selectedAnalysis.interventionPlan.questionDistribution && Object.keys(selectedAnalysis.interventionPlan.questionDistribution).length > 0 && (
                         <div className="epa-distribution-section">
                           <div className="epa-distribution-header">
                             <FaChartLine className="epa-focus-icon" />
@@ -2681,10 +2747,10 @@ const PrescriptiveAnalysis = ({
                             total: {selectedAnalysis.interventionPlan.recommendedQuestionCount || Object.values(selectedAnalysis.interventionPlan.questionDistribution).reduce((sum, count) => sum + (typeof count === 'number' ? count : 0), 0)} questions
                           </div>
                         </div>
-                      )}
+                      )} */}
 
                       {/* Question Requirements */}
-                      {selectedAnalysis.interventionPlan.recommendedQuestionCount && (
+                      {/* {selectedAnalysis.interventionPlan.recommendedQuestionCount && (
                         <div className="epa-requirements-section">
                           <div className="epa-requirements-header">
                             <FaEdit className="epa-focus-icon" />
@@ -2701,16 +2767,16 @@ const PrescriptiveAnalysis = ({
                             )}
                           </div>
                         </div>
-                      )}
-                    </div>
+                      )} */}
+                    {/* </div>
                   ))}
                 </div>
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Research-Based Prescriptions - Full Width */}
-          {selectedAnalysis?.researchBasedPrescriptions && (
+          {/* {selectedAnalysis?.researchBasedPrescriptions && (
             <div className="literexia-analysis-card literexia-full-width">
               <div className="literexia-card-content">
                 <div className={`epa-research-container theme-${getUITheme(selectedCategory)}`}>
@@ -2724,7 +2790,7 @@ const PrescriptiveAnalysis = ({
 
                   <div className="epa-research-content">
                     {/* Intervention Strategies */}
-                    {selectedAnalysis.researchBasedPrescriptions.interventionStrategies && selectedAnalysis.researchBasedPrescriptions.interventionStrategies.length > 0 && (
+                    {/* {selectedAnalysis.researchBasedPrescriptions.interventionStrategies && selectedAnalysis.researchBasedPrescriptions.interventionStrategies.length > 0 && (
                       <div className="epa-strategies-section">
                         <div className="epa-strategies-header">
                           <FaUserMd className="epa-focus-icon" />
@@ -2751,10 +2817,10 @@ const PrescriptiveAnalysis = ({
                           </div>
                         ))}
                       </div>
-                    )}
+                    )} */}
 
                     {/* Escalation Protocols */}
-                    {selectedAnalysis.researchBasedPrescriptions.escalationProtocols && selectedAnalysis.researchBasedPrescriptions.escalationProtocols.length > 0 && (
+                    {/* {selectedAnalysis.researchBasedPrescriptions.escalationProtocols && selectedAnalysis.researchBasedPrescriptions.escalationProtocols.length > 0 && (
                       <div className="epa-escalation-section">
                         <div className="epa-escalation-header">
                           <FaExclamationTriangle className="epa-focus-icon" />
@@ -2781,12 +2847,14 @@ const PrescriptiveAnalysis = ({
                           </div>
                         ))}
                       </div>
-                    )}
-                  </div>
+                    )} */}
+                  {/* </div>
                 </div>
               </div>
             </div>
-          )}
+          )} */}
+
+          
           <br></br> <br></br>
 
           {/* Current interventions - only show if the selected category has not passed */}
