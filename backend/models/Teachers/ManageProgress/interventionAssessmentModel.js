@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 
 // Define interventionTechniqueSchema to match prescriptive analysis
 const interventionTechniqueSchema = new mongoose.Schema({
+  technique: { type: String, required: true },
   description: { type: String, required: true },
   duration: { type: String, required: true },
   materials: { type: String, required: true },

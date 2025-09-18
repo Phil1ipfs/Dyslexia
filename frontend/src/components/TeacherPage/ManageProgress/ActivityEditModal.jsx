@@ -574,8 +574,14 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    * Load initial data when component mounts
    */
   useEffect(() => {
+    console.log('🚀 [USEEFFECT] loadInitialData useEffect triggered');
+    console.log('🚀 [USEEFFECT] Dependencies:', { category, readingLevel, contentType });
+
     if (category && readingLevel && contentType) {
+      console.log('🚀 [USEEFFECT] All dependencies present, calling loadInitialData()');
       loadInitialData();
+    } else {
+      console.log('🚀 [USEEFFECT] Missing dependencies, not calling loadInitialData');
     }
   }, [category, readingLevel, contentType]);
   
@@ -729,6 +735,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    * Load all initial data needed for the modal
    */
   const loadInitialData = async () => {
+    console.log('📚 [LOAD INITIAL DATA] Starting loadInitialData...');
+    console.log('📚 [LOAD INITIAL DATA] Current state:', { category, readingLevel, contentType });
+
     // Check if we have all the required data before proceeding
     if (!category || !readingLevel) {
       console.warn('Missing required data for API calls:', { category, readingLevel });
@@ -739,9 +748,11 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     setLoading(true);
     try {
       if (contentType === 'sentence') {
+        console.log('📚 [LOAD INITIAL DATA] contentType is sentence, loading sentence templates');
         // For Reading Comprehension, load sentence templates
         await loadSentenceTemplates();
       } else {
+        console.log('📚 [LOAD INITIAL DATA] contentType is not sentence, loading question and choice templates');
         // For template-only categories, load templates and start with clean form
         await loadQuestionTemplates();
         await loadChoiceTemplates();
@@ -767,15 +778,39 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   const loadQuestionTemplates = async () => {
     try {
       // Make the API call with proper authentication
-      console.log('Loading question templates:', `/api/interventions/templates/questions?category=${category}`);
-      
+      console.log('🔄 [TEMPLATE LOADING] Starting template load for category:', category);
+      console.log('🔄 [TEMPLATE LOADING] API URL will be:', `/api/interventions/templates/questions?category=${category}`);
+
       const response = await api.interventions.getTemplateQuestions(category);
-      console.log('Question templates response:', response.data);
-      
+      console.log('🔄 [TEMPLATE LOADING] Raw API response:', response);
+      console.log('🔄 [TEMPLATE LOADING] Response data:', response.data);
+      console.log('🔄 [TEMPLATE LOADING] Response data.data:', response.data?.data);
+      console.log('🔄 [TEMPLATE LOADING] Templates array length:', response.data?.data?.length || 0);
+
+      // Log each template for debugging
+      if (response.data?.data && Array.isArray(response.data.data)) {
+        response.data.data.forEach((template, index) => {
+          console.log(`🔄 [TEMPLATE LOADING] Template ${index + 1}:`, {
+            _id: template._id,
+            templateText: template.templateText,
+            questionType: template.questionType,
+            category: template.category
+          });
+        });
+      }
+
       // Update state with the fetched templates
-      setQuestionTemplates(response.data.data || []);
+      const templates = response.data.data || [];
+      console.log('🔄 [TEMPLATE LOADING] Setting questionTemplates state to:', templates);
+      setQuestionTemplates(templates);
+
+      // Log state after setting
+      setTimeout(() => {
+        console.log('🔄 [TEMPLATE LOADING] questionTemplates state after setting:', questionTemplates);
+      }, 100);
+
     } catch (error) {
-      console.error('Error loading question templates:', error);
+      console.error('❌ [TEMPLATE LOADING] Error loading question templates:', error);
       setQuestionTemplates([]);
     }
   };
@@ -3765,7 +3800,7 @@ const renderAlphabetKnowledgeStep = () => {
                   border: '1px solid #d1fae5',
                   borderRadius: '4px'
                 }}>
-                  💡 <strong>Tip:</strong> Choose based on the prescriptive analysis. If student has vowel errors, use "Patinig". If consonant errors, use "Katinig".
+                  <strong>Tip:</strong> Choose based on the prescriptive analysis. If student has vowel errors, use "Patinig". If consonant errors, use "Katinig".
                 </div>
               )}
             </div>
@@ -4212,11 +4247,32 @@ const renderQuestionChoicesStepWithTemplates = () => {
               onChange={(e) => setTemplateForPair(pair.id, e.target.value)}
             >
               <option value="">-- Select Template --</option>
-              {safe(questionTemplates).map(template => (
-                <option key={template._id} value={template._id}>
-                  {template.templateText} ({template.questionType})
-                </option>
-              ))}
+              {(() => {
+                console.log('🎯 [DROPDOWN RENDER] Rendering template options...');
+                console.log('🎯 [DROPDOWN RENDER] questionTemplates state:', questionTemplates);
+                console.log('🎯 [DROPDOWN RENDER] safe(questionTemplates):', safe(questionTemplates));
+                console.log('🎯 [DROPDOWN RENDER] safe(questionTemplates).length:', safe(questionTemplates).length);
+                console.log('🎯 [DROPDOWN RENDER] category for filtering:', category);
+
+                return safe(questionTemplates).map((template, templateIndex) => {
+                  console.log(`🎯 [DROPDOWN RENDER] Template ${templateIndex + 1}:`, {
+                    _id: template._id,
+                    questionText: template.questionText,
+                    templateText: template.templateText,
+                    questionType: template.questionType,
+                    category: template.category
+                  });
+
+                  // Use questionText if templateText is not available (database field mismatch)
+                  const displayText = template.templateText || template.questionText || 'Untitled Template';
+
+                  return (
+                    <option key={template._id} value={template._id}>
+                      {displayText} ({template.questionType})
+                    </option>
+                  );
+                });
+              })()}
             </select>
           </div>
 
@@ -4398,7 +4454,7 @@ const renderQuestionChoicesStep = () => {
               <option value="">-- Select Template --</option>
               {safe(questionTemplates).map(template => (
                 <option key={template._id} value={template._id}>
-                  {template.templateText} ({template.questionType})
+                  {template.templateText || template.questionText || 'Untitled Template'} ({template.questionType})
                 </option>
               ))}
             </select>
