@@ -3045,7 +3045,7 @@ const PrescriptiveAnalysis = ({
                           <div className="literexia-progress-header">
                             <div className="literexia-progress-title">
                               <FaChartLine className="progress-icon" />
-                              <span>Completion Progress</span>
+                              <span>Score Percentage</span>
                             </div>
                             <div className="literexia-progress-percentage">
                               {progressPercentage}%

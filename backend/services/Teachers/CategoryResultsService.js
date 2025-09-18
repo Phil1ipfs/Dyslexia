@@ -132,7 +132,7 @@ class CategoryResultsService {
         readingLevel: categoryResultData.readingLevel || 'Low Emerging',
         categories: normalizedCategories,
         overallScore: overallStats.overallScore,
-        completedCategories: normalizedCategories.length,
+        completedCategories: normalizedCategories.filter(cat => cat.isPassed || cat.interventionCompleted).length,
         totalCategories: normalizedCategories.length,
         allCategoriesPassed: overallStats.passedCategories === normalizedCategories.length,
         readingLevelUpdated: false
@@ -194,7 +194,7 @@ class CategoryResultsService {
         // Recalculate overall stats
         const overallStats = this.calculateOverallStats(updateData.categories);
         updateData.overallScore = overallStats.overallScore;
-        updateData.completedCategories = updateData.categories.length;
+        updateData.completedCategories = updateData.categories.filter(cat => cat.isPassed || cat.interventionCompleted).length;
         updateData.totalCategories = updateData.categories.length;
         updateData.allCategoriesPassed = overallStats.passedCategories === updateData.categories.length;
 

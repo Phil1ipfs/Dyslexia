@@ -126,7 +126,7 @@ class InterventionAssessmentController {
 
       // 🔗 UPDATE CATEGORY_RESULTS: Link the new intervention to the category results
       try {
-        const CategoryResults = require('../../models/Teachers/ManageProgress/categoryResultsModel');
+        const CategoryResults = require('../../models/Teachers/ManageProgress/categoryResultModel');
 
         console.log(`[INTERVENTION CONTROLLER] 🔗 DEBUGGING: Attempting to update category_results`);
         console.log(`[INTERVENTION CONTROLLER] 🔗 studentId: ${savedIntervention.studentId} (type: ${typeof savedIntervention.studentId})`);
@@ -923,6 +923,111 @@ class InterventionAssessmentController {
         success: false,
         message: 'Service health check failed',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Process intervention completion manually
+   * POST /api/intervention-assessment/:interventionId/process-completion
+   */
+  async processInterventionCompletion(req, res) {
+    const { interventionId } = req.params;
+
+    try {
+      console.log(`[INTERVENTION CONTROLLER] Manual processing completion for intervention: ${interventionId}`);
+
+      const InterventionCompletionService = require('../../services/Teachers/InterventionCompletionService');
+
+      // Get intervention first to validate and get student info
+      const intervention = await InterventionAssessment.findById(interventionId);
+      if (!intervention) {
+        return res.status(404).json({
+          success: false,
+          message: 'Intervention assessment not found',
+          interventionId: interventionId
+        });
+      }
+
+      // Process completion
+      const result = await InterventionCompletionService.manuallyProcessIntervention(interventionId);
+
+      console.log(`[INTERVENTION CONTROLLER] Manual processing complete for intervention: ${interventionId}`);
+      console.log(`[INTERVENTION CONTROLLER] Results:`, {
+        score: result.score,
+        passed: result.isPassed,
+        interventionResultsId: result.interventionResultsId
+      });
+
+      res.json({
+        success: true,
+        message: 'Intervention completion processed successfully',
+        data: {
+          interventionId: interventionId,
+          studentId: intervention.studentId,
+          category: intervention.category,
+          processingResults: result,
+          processedAt: new Date()
+        }
+      });
+
+    } catch (error) {
+      console.error(`[INTERVENTION CONTROLLER] Error processing intervention completion for ${interventionId}:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Error processing intervention completion',
+        error: error.message,
+        interventionId: interventionId
+      });
+    }
+  }
+
+  /**
+   * Get intervention completion status
+   * GET /api/intervention-assessment/:interventionId/completion-status
+   */
+  async getInterventionCompletionStatus(req, res) {
+    const { interventionId } = req.params;
+
+    try {
+      console.log(`[INTERVENTION CONTROLLER] Getting completion status for intervention: ${interventionId}`);
+
+      const InterventionCompletionService = require('../../services/Teachers/InterventionCompletionService');
+
+      // Get intervention first to get student ID
+      const intervention = await InterventionAssessment.findById(interventionId);
+      if (!intervention) {
+        return res.status(404).json({
+          success: false,
+          message: 'Intervention assessment not found',
+          interventionId: interventionId
+        });
+      }
+
+      // Get completion status
+      const status = await InterventionCompletionService.getCompletionStatus(interventionId, intervention.studentId);
+
+      if (!status.found) {
+        return res.status(404).json({
+          success: false,
+          message: 'Unable to determine completion status',
+          reason: status.reason || 'unknown'
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Completion status retrieved successfully',
+        data: status
+      });
+
+    } catch (error) {
+      console.error(`[INTERVENTION CONTROLLER] Error getting completion status for ${interventionId}:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Error retrieving completion status',
+        error: error.message,
+        interventionId: interventionId
       });
     }
   }

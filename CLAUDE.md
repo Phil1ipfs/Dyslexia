@@ -1193,61 +1193,257 @@ CATEGORY_WEIGHTS = {
 ```
 
 ### 8. Intervention Results Collection (`test.intervention_results`)
-**Purpose**: Final results of intervention attempt - pass/fail determination
+**Purpose**: Comprehensive intervention analysis matching prescriptive_analysis complexity for complete post-intervention insights
 ```javascript
 {
   "_id": ObjectId("..."),
   "studentId": 202210222,
   "interventionAssessmentId": ObjectId("..."),
+  "prescriptiveAnalysisId": ObjectId("..."), // Links to original main assessment analysis
   "category": "Phonological Awareness",
   "assessmentDate": "2025-01-16T10:00:00Z",
-  
-  // INTERVENTION PERFORMANCE
+  "assessmentType": "intervention",
+  "readingLevel": "High Emerging",
+
+  // ===== INTERVENTION PERFORMANCE (Basic Metrics) =====
   "totalQuestions": 12,                // Dynamically calculated based on student needs
-  "totalPossibleMatches": 36,          // 12 questions × 3 matches each
-  "correctMatches": 26,                // Got 26 matches right
+  "correctAnswers": 8,                 // Standard correct answers count
+  "totalPossibleMatches": 36,          // For Phonological Awareness: 12 questions × 3 matches each
+  "correctMatches": 26,                // For Phonological Awareness: matches gotten right
   "score": 72,                         // (26/36) * 100 = 72.22% ≈ 72%
   "isPassed": false,                   // 72% < 75% - FAILED intervention
   "passThreshold": 75,
-  
-  // IMPROVEMENT TRACKING
+
+  // ===== IMPROVEMENT TRACKING =====
   "previousScore": 44,                 // Original main assessment score
-  "improvement": 29,                   // 73 - 44 = 29% improvement
-  "improvementPercentage": 65.9,       // (29/44) * 100 = 65.9% relative improvement
-  
-  // BKT ANALYSIS FOR INTERVENTION
+  "improvement": 28,                   // 72 - 44 = 28% improvement
+  "improvementPercentage": 63.6,       // (28/44) * 100 = 63.6% relative improvement
+
+  // ===== COMPREHENSIVE BKT SKILL MASTERY ANALYSIS =====
   "skillMastery": {
-    "masteryProbability": 0.58,        // Improved from 0.31 to 0.58
-    "masteryImprovement": 0.27,        // 0.58 - 0.31 = 0.27 increase
-    "responseHistory": [               // BKT evolution during intervention
-      {"questionId": "int_pa_001", "correct": false, "masteryAfter": 0.35},
-      {"questionId": "int_pa_002", "correct": true, "masteryAfter": 0.42},
-      // ... continues through all 10 intervention questions
-    ]
-  },
-  
-  // ERROR PATTERN EVOLUTION
-  "errorPatterns": {
-    "remaining_issues": {
-      "B-P_confusion": "improved",     // Still some confusion but better
-      "M-N_discrimination": "resolved", // No longer an issue
-      "sequencing_difficulty": "new"   // New error pattern emerged
+    "Phonological Awareness": {         // Dynamic category name as key
+      "masteryProbability": 0.58,      // Improved from 0.31 to 0.58
+      "lastUpdated": "2025-01-16T10:25:45Z",
+      "totalQuestions": 12,
+      "correctAnswers": 8,
+      "totalPossibleMatches": 36,
+      "correctMatches": 26,
+      "score": 72,
+      "isPassed": false,
+      "status": "NEEDS_IMPROVEMENT",    // Based on score range
+      "responseHistory": [              // Complete BKT evolution during intervention
+        {
+          "questionId": "int_pa_001",
+          "correct": false,
+          "timestamp": "2025-01-16T10:05:30Z",
+          "masteryAfter": 0.35
+        },
+        {
+          "questionId": "int_pa_002",
+          "correct": true,
+          "timestamp": "2025-01-16T10:06:15Z",
+          "masteryAfter": 0.42
+        }
+        // ... continues through all 12 intervention questions to final 0.58
+      ]
     }
   },
-  
-  // NEXT STEPS DETERMINATION
-  "nextSteps": {
-    "recommendedAction": "face_to_face_intervention", // Failed intervention
-    "reason": "intervention_failed",   // Why face-to-face is needed
-    "specificFocus": [                 // What teacher should focus on
-      "B-P sound discrimination with audio support",
-      "Sequential processing of multiple sound pairs"
-    ],
-    "estimatedTime": "15-20 minutes guided practice"
+
+  // ===== IRT ABILITY ESTIMATES (Updated after intervention) =====
+  "abilityEstimates": {
+    "Phonological Awareness": -0.5     // Improved from -1.1 to -0.5 on IRT scale
   },
-  
+
+  // ===== COMPREHENSIVE ERROR PATTERN ANALYSIS =====
+  "errorPatterns": {
+    "Phonological Awareness": {        // Category-specific analysis
+      "detailedErrorAnalysis": [{
+        "errorPattern": "Sound discrimination difficulties persist",
+        "specificPairs": ["B-P", "M-N"],
+        "interventionFocus": "Continued multisensory sound practice"
+      }],
+
+      // Phonological Awareness specific error patterns
+      "matching_errors": {
+        "count": 4,                     // 4 questions had errors
+        "total": 12,                    // 12 total questions
+        "percentage": 33,               // 33% error rate (improved from 83%)
+        "avg_partial_success": 0.72,    // 72% of matches correct on average
+        "error_type": "sound_discrimination",
+        "confusion_pairs": [
+          {"sounds": ["B", "P"], "confusion_rate": 40}, // Improved from 75%
+          {"sounds": ["M", "N"], "confusion_rate": 25}  // Improved from 60%
+        ],
+        "sequential_difficulty": {
+          "two_sounds": 85,             // Improved processing ability
+          "three_sounds": 60,           // Significant improvement
+          "four_sounds": 30             // Some improvement
+        },
+        "questionIds": ["int_pa_003", "int_pa_007", "int_pa_009", "int_pa_011"]
+      }
+    }
+  },
+
+  // ===== INTERVENTION EFFECTIVENESS ANALYSIS =====
+  "interventionEffectiveness": {
+    "overallEffectiveness": "MODERATELY_EFFECTIVE", // 28% improvement = moderate
+    "errorPatternResolution": {
+      "resolved": [],                   // No patterns completely resolved
+      "improved": ["B-P confusion", "M-N discrimination"], // Patterns showing improvement
+      "persistent": ["sequential processing"], // Still challenging
+      "new_patterns": []                // No new problems emerged
+    },
+    "skillProgression": {
+      "masteryGrowth": 0.27,           // BKT improved from 0.31 to 0.58
+      "responseTimeImprovement": 15,    // 15% faster responses
+      "consistencyImprovement": 20     // 20% more consistent performance
+    },
+    "interventionInsights": {
+      "strengths": ["Student responsive to instruction", "Significant improvement shown"],
+      "weaknesses": ["Sequential processing still challenging", "Needs continued support"],
+      "teachingApproachEffectiveness": "MODERATELY_EFFECTIVE"
+    }
+  },
+
+  // ===== RESEARCH-BASED PRESCRIPTIONS (Updated after intervention) =====
+  "researchBasedPrescriptions": {
+    "Phonological Awareness": {
+      "categoryStatus": "failed_needs_revision", // Near-miss case
+
+      "deficitAnalysis": {
+        "specificDeficits": [{
+          "deficit": "Sequential sound processing",
+          "severity": "moderate",       // Improved from severe
+          "manifestation": "Difficulty with 3+ sound sequences",
+          "errorRate": "33%",          // Improved from 83%
+          "researchEvidence": "Common in early phonological development",
+          "interventionResponse": "Positive response shown with 28% improvement"
+        }],
+        "rootCauseAnalysis": "Improved but needs continued scaffolding",
+        "cognitiveFactors": ["Auditory processing", "Working memory"],
+        "researchClassification": "Moderate Phonological Awareness Delay",
+        "linguisticFactors": ["Sound discrimination", "Phonemic segmentation"]
+      },
+
+      "nextInterventionPrescription": {
+        "recommendedAction": "teacher_revision",
+        "primaryApproach": "Continued multisensory with increased scaffolding",
+        "specificTechniques": [{
+          "technique": "Reduced cognitive load approach",
+          "description": "Limit to 2-sound sequences initially",
+          "duration": "15-20 minutes daily",
+          "materials": "Visual mouth position cards + audio supports",
+          "progressCriteria": "80% accuracy on 2-sound pairs",
+          "researchBasis": "Gradual release of complexity",
+          "modificationFromPrevious": "Reduced sequence complexity per near-miss guidance"
+        }],
+        "intensityLevel": "moderate",
+        "sessionStructure": {
+          "optimalLength": "15-20 minutes",
+          "sessionComponents": ["Warm-up review", "Focused practice", "Application"],
+          "breakPattern": "Every 7-8 minutes"
+        },
+        "materialRecommendations": ["Visual cues", "Audio replay functionality", "Immediate feedback"],
+        "progressMonitoring": {
+          "frequency": "Every 3 sessions",
+          "keyIndicators": ["Accuracy", "Response time", "Consistency"],
+          "dataCollectionMethod": "Session performance tracking"
+        }
+      },
+
+      "teacherRevisionGuidance": {
+        "revisionRecommended": true,    // Near-miss case needs revision
+        "revisionPriority": "medium",   // Good improvement but needs final push
+        "specificChanges": [{
+          "change": "Reduce sound sequence complexity",
+          "rationale": "Student showing progress but overwhelmed by 3+ sounds",
+          "expectedImpact": "5-8% score improvement"
+        }],
+        "questionModifications": [{
+          "questionType": "Sequential matching",
+          "currentDifficulty": "3-4 sound sequences",
+          "recommendedChange": "2-3 sound sequences with visual support",
+          "reason": "Enable success while maintaining skill development"
+        }],
+        "supportFeatures": ["Visual mouth position images", "Audio replay", "Immediate feedback"],
+        "estimatedImpact": "High likelihood of reaching 75% threshold"
+      },
+
+      "escalationProtocol": {
+        "escalationTriggered": false,   // Improvement shown, no escalation needed
+        "triggers": []
+      }
+    }
+  },
+
+  // ===== COMPREHENSIVE ANALYTICS METRICS =====
+  "analyticsMetrics": {
+    "fatigueIndicators": {
+      "performanceDecline": false,      // No fatigue observed
+      "responseTimeIncrease": false,    // Actually improved
+      "errorPatternShift": false,       // Consistent improvement
+      "attentionDropoff": false
+    },
+    "confidenceMetrics": {
+      "skillMasteryConfidence": 0.72,   // 72% confidence in current assessment
+      "interventionSuccessProbability": 0.85, // High probability of success with revision
+      "teacherRevisionLikelihood": 0.90 // Very likely to succeed with teacher revision
+    },
+    "totalQuestions": 12,
+    "totalCorrect": 8,
+    "averageResponseTime": 8.5,        // Seconds per question
+    "consistencyIndex": 0.67,          // 67% consistency across questions
+    "improvementTrajectory": "steady_improvement"
+  },
+
+  // ===== LEARNING PROGRESS COMPARISON =====
+  "progressComparison": {
+    "mainAssessmentPerformance": {
+      "score": 44,
+      "masteryProbability": 0.31,
+      "errorPatterns": ["Severe B-P confusion", "M-N discrimination difficulty"]
+    },
+    "interventionPerformance": {
+      "score": 72,
+      "masteryProbability": 0.58,
+      "errorPatterns": ["Moderate sequential processing difficulty"]
+    },
+    "progressIndicators": {
+      "scoreImprovement": 28,           // 28% score improvement
+      "masteryGrowth": 0.27,           // BKT mastery growth
+      "errorReduction": 0.60,          // 60% reduction in error patterns
+      "skillTransfer": "good"          // Good evidence of skill transfer
+    }
+  },
+
+  // ===== INSIGHTS AND RECOMMENDATIONS =====
+  "insights": {
+    "strengths": ["Significant improvement shown", "Responsive to multisensory instruction"],
+    "weaknesses": ["Sequential processing still challenging", "Needs continued support"],
+    "overallReadiness": "Near ready - needs teacher revision for final push",
+    "recommendedAction": "teacher_revision",
+    "interventionImpact": "Moderately effective with 28% improvement",
+    "nextStepsRationale": "Student showed significant progress but fell just short of passing threshold. Teacher revision with reduced complexity should enable success."
+  },
+
+  "strengths": ["Significant phonological awareness improvement", "Responsive to intervention"],
+  "weaknesses": ["Sequential sound processing needs continued work"],
+  "recommendations": ["Reduce cognitive load", "Add visual supports", "Continue multisensory approach"],
+
+  // ===== INTERVENTION HISTORY TRACKING =====
+  "interventionHistory": [{
+    "category": "Phonological Awareness",
+    "interventionId": ObjectId("..."),
+    "dateTaken": "2025-01-16T10:00:00Z",
+    "passed": false,
+    "score": 72,
+    "attempt": 1
+  }],
+
+  // ===== TIMESTAMPS =====
   "completedAt": "2025-01-16T10:25:45Z",
-  "createdAt": Date
+  "createdAt": "2025-01-16T10:25:45Z",
+  "updatedAt": "2025-01-16T10:25:45Z"
 }
 ```
 
@@ -2687,25 +2883,100 @@ const teacherCreatedIntervention = {
 ```javascript
 // Juan attempts the teacher-created intervention
 const juanInterventionResults = {
+  studentId: 202210222,
+  interventionAssessmentId: ObjectId("..."),
+  prescriptiveAnalysisId: ObjectId("..."),
+  category: "Phonological Awareness",
+
+  // INTERVENTION PERFORMANCE
   totalQuestions: 11,     // Teacher created 11 questions per prescription
-  totalMatches: 33,       // 11 questions × 3 matches each
+  correctAnswers: 8,      // 8 questions correct
+  totalPossibleMatches: 33, // 11 questions × 3 matches each
   correctMatches: 24,     // Good improvement but not quite enough
   score: 73,              // (24/33) * 100 = 72.73% ≈ 73%
-  result: "FAILED",       // 73% < 75% - FAILED but close!
-  improvement: 29,        // Improved from 44% to 73% (+29% - significant!)
+  isPassed: false,        // 73% < 75% - FAILED but close!
+  passThreshold: 75,
 
-  // BKT shows significant learning occurred
-  masteryImprovement: {
-    before: 0.31,         // 31% mastery before intervention
-    after: 0.58,          // 58% mastery after intervention
-    increase: 0.27        // Significant improvement indicates learning
+  // IMPROVEMENT TRACKING
+  previousScore: 44,      // Original main assessment score
+  improvement: 29,        // Improved from 44% to 73% (+29% - significant!)
+  improvementPercentage: 65.9, // (29/44) * 100 = 65.9% relative improvement
+
+  // COMPREHENSIVE BKT SKILL MASTERY ANALYSIS
+  skillMastery: {
+    "Phonological Awareness": {
+      masteryProbability: 0.58,    // Improved from 0.31 to 0.58
+      lastUpdated: new Date(),
+      totalQuestions: 11,
+      correctAnswers: 8,
+      totalPossibleMatches: 33,
+      correctMatches: 24,
+      score: 73,
+      isPassed: false,
+      status: "NEEDS_IMPROVEMENT",
+      responseHistory: [
+        {questionId: "int_pa_001", correct: false, timestamp: new Date(), masteryAfter: 0.35},
+        {questionId: "int_pa_002", correct: true, timestamp: new Date(), masteryAfter: 0.42}
+        // ... continues through all 11 intervention questions to final 0.58
+      ]
+    }
   },
 
-  // NEAR-MISS CASE: Student improved significantly but fell just short
-  nearMiss: {
-    gapToPass: 2,         // Only 2% away from passing
-    improvementRate: 66,  // 66% improvement rate (29/44 * 100)
-    learningEvidence: "Strong BKT mastery increase indicates effective intervention"
+  // INTERVENTION EFFECTIVENESS ANALYSIS
+  interventionEffectiveness: {
+    overallEffectiveness: "MODERATELY_EFFECTIVE", // 29% improvement = moderate
+    errorPatternResolution: {
+      resolved: [],
+      improved: ["B-P confusion", "M-N discrimination"],
+      persistent: ["sequential processing"],
+      new_patterns: []
+    },
+    skillProgression: {
+      masteryGrowth: 0.27,        // BKT improved from 0.31 to 0.58
+      responseTimeImprovement: 15,
+      consistencyImprovement: 20
+    }
+  },
+
+  // RESEARCH-BASED PRESCRIPTIONS
+  researchBasedPrescriptions: {
+    "Phonological Awareness": {
+      categoryStatus: "failed_needs_revision", // Near-miss case
+      nextInterventionPrescription: {
+        recommendedAction: "teacher_revision",
+        primaryApproach: "Reduced complexity with visual supports"
+      },
+      teacherRevisionGuidance: {
+        revisionRecommended: true,
+        revisionPriority: "medium",
+        specificChanges: [{
+          change: "Reduce sound sequence complexity",
+          rationale: "Student showing progress but overwhelmed by 3+ sounds",
+          expectedImpact: "5-8% score improvement"
+        }],
+        estimatedImpact: "High likelihood of reaching 75% threshold"
+      }
+    }
+  },
+
+  // COMPREHENSIVE ANALYTICS METRICS
+  analyticsMetrics: {
+    confidenceMetrics: {
+      skillMasteryConfidence: 0.73,
+      interventionSuccessProbability: 0.85, // High probability with revision
+      teacherRevisionLikelihood: 0.90       // Very likely to succeed
+    },
+    improvementTrajectory: "steady_improvement"
+  },
+
+  // INSIGHTS AND RECOMMENDATIONS
+  insights: {
+    strengths: ["Significant improvement shown", "Responsive to multisensory instruction"],
+    weaknesses: ["Sequential processing still challenging"],
+    overallReadiness: "Near ready - needs teacher revision for final push",
+    recommendedAction: "teacher_revision",
+    interventionImpact: "Moderately effective with 29% improvement",
+    nextStepsRationale: "Student showed significant progress but fell just short of passing threshold"
   }
 };
 ```

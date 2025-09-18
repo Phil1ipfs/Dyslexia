@@ -299,6 +299,20 @@ router.get('/statistics/:studentId',
   interventionAssessmentController.getStudentInterventionStatistics
 );
 
+// POST /api/intervention-assessment/:interventionId/process-completion
+// Manually process intervention completion (for testing/fixing missed processing)
+router.post('/:interventionId/process-completion',
+  validateInterventionId,
+  interventionAssessmentController.processInterventionCompletion
+);
+
+// GET /api/intervention-assessment/:interventionId/completion-status
+// Check intervention completion status
+router.get('/:interventionId/completion-status',
+  validateInterventionId,
+  interventionAssessmentController.getInterventionCompletionStatus
+);
+
 // Error handling middleware
 router.use((error, req, res, next) => {
   console.error('Intervention Assessment Route Error:', error);

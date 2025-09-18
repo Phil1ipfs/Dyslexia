@@ -443,6 +443,15 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load intervention assessment routes:', error.message);
     }
 
+    // Load intervention monitoring routes (background service control)
+    try {
+      const interventionMonitoringRoutes = require('./routes/Teachers/interventionMonitoringRoutes');
+      app.use('/api/intervention-monitoring', interventionMonitoringRoutes);
+      console.log('✅ Loaded intervention monitoring routes at /api/intervention-monitoring/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load intervention monitoring routes:', error.message);
+    }
+
     // Load templates routes (questions, choices, sentences for intervention generation)
     try {
       const templatesRoutes = require('./routes/Teachers/templatesRoutes');
@@ -1091,5 +1100,16 @@ app.listen(PORT, () => {
     console.log('🤖 Auto-processing service started - will check for complete assessments every 5 minutes');
   } catch (error) {
     console.warn('⚠️ Could not start auto-processing service:', error.message);
+  }
+
+  // Start intervention monitoring service
+  try {
+    const interventionMonitoringService = require('./services/Teachers/InterventionMonitoringService');
+
+    // Auto-start the monitoring service
+    interventionMonitoringService.start();
+    console.log('🎯 Intervention monitoring service auto-started - will check for completed interventions every 30 seconds');
+  } catch (error) {
+    console.warn('⚠️ Could not start intervention monitoring service:', error.message);
   }
 });

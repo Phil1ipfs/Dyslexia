@@ -1,0 +1,480 @@
+{
+  "_id": {
+    "$oid": "68c9fc70d26632a89f218ef0"
+  },
+  "studentId": 202522233,
+  "categoryResultId": {
+    "$oid": "68c9fc6fd26632a89f218ede"
+  },
+  "assessmentDate": {
+    "$date": "2025-09-17T00:10:23.583Z"
+  },
+  "assessmentType": "main",
+  "readingLevel": "At Grade Level",
+  "skillMastery": {
+    "Alphabet Knowledge": {
+      "masteryProbability": 0.371,
+      "lastUpdated": {
+        "$date": "2025-09-17T00:10:23.937Z"
+      },
+      "totalQuestions": 15,
+      "correctAnswers": 5,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "score": 33,
+      "isPassed": false,
+      "status": "ADEQUATE",
+      "responseHistory": [
+        {
+          "questionId": "AK_001",
+          "correct": false,
+          "timestamp": {
+            "$date": "2025-09-16T08:00:00.000Z"
+          },
+          "masteryAfter": 0.213
+        },
+        {
+          "questionId": "AK_002",
+          "correct": false,
+          "timestamp": {
+            "$date": "2025-09-16T08:00:30.000Z"
+          },
+          "masteryAfter": 0.133
+        },
+        {
+          "questionId": "AK_003",
+          "correct": true,
+          "timestamp": {
+            "$date": "2025-09-16T08:01:00.000Z"
+          },
+          "masteryAfter": 0.384
+        },
+        {
+          "questionId": "AK_004",
+          "correct": false,
+          "timestamp": {
+            "$date": "2025-09-16T08:01:30.000Z"
+          },
+          "masteryAfter": 0.174
+        },
+        {
+          "questionId": "AK_005",
+          "correct": false,
+          "timestamp": {
+            "$date": "2025-09-16T08:02:00.000Z"
+          },
+          "masteryAfter": 0.126
+        },
+        {
+          "questionId": "AK_006",
+          "correct": true,
+          "timestamp": {
+            "$date": "2025-09-16T08:02:30.000Z"
+          },
+          "masteryAfter": 0.372
+        },
+        {
+          "questionId": "AK_007",
+          "correct": false,
+          "timestamp": {
+            "$date": "2025-09-16T08:03:00.000Z"
+          },
+          "masteryAfter": 0.17
+        },
+        {
+          "questionId": "AK_008",
+          "correct": false,
+          "timestamp": {
+            "$date": "2025-09-16T08:03:30.000Z"
+          },
+          "masteryAfter": 0.126
+        },
+        {
+          "questionId": "AK_009",
+          "correct": true,
+          "timestamp": {
+            "$date": "2025-09-16T08:04:00.000Z"
+          },
+          "masteryAfter": 0.371
+        },
+        {
+          "questionId": "AK_010",
+          "correct": false,
+          "timestamp": {
+            "$date": "2025-09-16T08:04:30.000Z"
+          },
+          "masteryAfter": 0.17
+        },
+        {
+          "questionId": "AK_011",
+          "correct": false,
+          "timestamp": {
+            "$date": "2025-09-16T08:05:00.000Z"
+          },
+          "masteryAfter": 0.126
+        },
+        {
+          "questionId": "AK_012",
+          "correct": true,
+          "timestamp": {
+            "$date": "2025-09-16T08:05:30.000Z"
+          },
+          "masteryAfter": 0.371
+        },
+        {
+          "questionId": "AK_013",
+          "correct": false,
+          "timestamp": {
+            "$date": "2025-09-16T08:06:00.000Z"
+          },
+          "masteryAfter": 0.17
+        },
+        {
+          "questionId": "AK_014",
+          "correct": false,
+          "timestamp": {
+            "$date": "2025-09-16T08:06:30.000Z"
+          },
+          "masteryAfter": 0.126
+        },
+        {
+          "questionId": "AK_015",
+          "correct": true,
+          "timestamp": {
+            "$date": "2025-09-16T08:07:00.000Z"
+          },
+          "masteryAfter": 0.371
+        }
+      ]
+    },
+    "Phonological Awareness": {
+      "masteryProbability": 0.5,
+      "lastUpdated": {
+        "$date": "2025-09-17T00:10:23.937Z"
+      },
+      "totalQuestions": 0,
+      "correctAnswers": 0,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "score": 0,
+      "isPassed": false,
+      "status": "ADEQUATE",
+      "responseHistory": []
+    },
+    "Decoding": {
+      "masteryProbability": 0.5,
+      "lastUpdated": {
+        "$date": "2025-09-17T00:10:23.937Z"
+      },
+      "totalQuestions": 0,
+      "correctAnswers": 0,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "score": 0,
+      "isPassed": false,
+      "status": "ADEQUATE",
+      "responseHistory": []
+    },
+    "Word Recognition": {
+      "masteryProbability": 0.5,
+      "lastUpdated": {
+        "$date": "2025-09-17T00:10:23.937Z"
+      },
+      "totalQuestions": 0,
+      "correctAnswers": 0,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "score": 0,
+      "isPassed": false,
+      "status": "ADEQUATE",
+      "responseHistory": []
+    },
+    "Reading Comprehension": {
+      "masteryProbability": 0.5,
+      "lastUpdated": {
+        "$date": "2025-09-17T00:10:23.937Z"
+      },
+      "totalQuestions": 0,
+      "correctAnswers": 0,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "score": 0,
+      "isPassed": false,
+      "status": "ADEQUATE",
+      "responseHistory": []
+    }
+  },
+  "abilityEstimates": {
+    "Alphabet Knowledge": -2,
+    "Phonological Awareness": -2,
+    "Decoding": -2,
+    "Word Recognition": -2,
+    "Reading Comprehension": -2
+  },
+  "errorPatterns": {
+    "Alphabet Knowledge": {
+      "detailedErrorAnalysis": [
+        {
+          "errorPattern": "Vowel recognition difficulty with E",
+          "specificPairs": [],
+          "interventionFocus": "Vowel discrimination training for E"
+        },
+        {
+          "errorPattern": "Vowel recognition difficulty with O",
+          "specificPairs": [],
+          "interventionFocus": "Vowel discrimination training for O"
+        },
+        {
+          "errorPattern": "Vowel recognition difficulty with u",
+          "specificPairs": [],
+          "interventionFocus": "Vowel discrimination training for u"
+        },
+        {
+          "errorPattern": "Vowel recognition difficulty with A",
+          "specificPairs": [],
+          "interventionFocus": "Vowel discrimination training for A"
+        },
+        {
+          "errorPattern": "Vowel recognition difficulty with I",
+          "specificPairs": [],
+          "interventionFocus": "Vowel discrimination training for I"
+        },
+        {
+          "errorPattern": "Consonant recognition difficulty with d",
+          "specificPairs": [],
+          "interventionFocus": "Consonant-sound correspondence practice for d"
+        },
+        {
+          "errorPattern": "Consonant recognition difficulty with R",
+          "specificPairs": [],
+          "interventionFocus": "Consonant-sound correspondence practice for R"
+        },
+        {
+          "errorPattern": "Consonant recognition difficulty with Y",
+          "specificPairs": [],
+          "interventionFocus": "Consonant-sound correspondence practice for Y"
+        },
+        {
+          "errorPattern": "Consonant recognition difficulty with G u l a y",
+          "specificPairs": [],
+          "interventionFocus": "Consonant-sound correspondence practice for G u l a y"
+        },
+        {
+          "errorPattern": "Consonant recognition difficulty with w a l i s",
+          "specificPairs": [],
+          "interventionFocus": "Consonant-sound correspondence practice for w a l i s"
+        }
+      ],
+      "patinig_errors": {
+        "count": 5,
+        "total": 5,
+        "percentage": 100,
+        "specific_letters": [
+          "E",
+          "O",
+          "u",
+          "A",
+          "I"
+        ],
+        "error_type": "visual_confusion",
+        "questionIds": [
+          "AK_001",
+          "AK_002",
+          "AK_004",
+          "AK_007",
+          "AK_010"
+        ],
+        "researchClassification": "Multiple vowel confusion - potential visual processing difficulty",
+        "interventionFocus": "Visual-auditory vowel discrimination with multisensory support"
+      },
+      "katinig_errors": {
+        "count": 5,
+        "total": 10,
+        "percentage": 50,
+        "specific_letters": [
+          "d",
+          "R",
+          "Y",
+          "G u l a y",
+          "w a l i s"
+        ],
+        "error_type": "general_difficulty",
+        "questionIds": [
+          "AK_005",
+          "AK_008",
+          "AK_011",
+          "AK_013",
+          "AK_014"
+        ],
+        "researchClassification": "General consonant processing deficit",
+        "interventionFocus": "Systematic consonant-sound correspondence building"
+      }
+    }
+  },
+  "interventionPlan": {
+    "required": true,
+    "priority": [
+      "Alphabet Knowledge"
+    ],
+    "specificFocus": {
+      "Alphabet Knowledge": {
+        "focus": "Vowel recognition and sound-symbol correspondence",
+        "targetSounds": [],
+        "targetPatterns": [
+          "Foundation alphabet knowledge skills"
+        ],
+        "recommendedActivities": [
+          "Systematic, explicit instruction",
+          "Immediate corrective feedback"
+        ],
+        "questionDistribution": {
+          "total": 18
+        }
+      }
+    }
+  },
+  "insights": {
+    "strengths": [],
+    "weaknesses": [
+      "Alphabet Knowledge - 37%"
+    ],
+    "overallReadiness": "Intervention needed for Alphabet Knowledge. Teacher should create approximately 18 questions total, focusing on identified error patterns and target skills.",
+    "recommendedAction": "immediate_intervention",
+    "passedCategories": 0,
+    "failedCategories": 1,
+    "overallScore": 33
+  },
+  "researchBasedPrescriptions": {
+    "Alphabet Knowledge": {
+      "categoryStatus": "failed",
+      "maintenanceRecommendations": {
+        "implementationGuidance": {
+          "monitoringIndicators": []
+        },
+        "activities": []
+      },
+      "accelerationRecommendations": {
+        "bridgingActivities": [],
+        "nextLevelSkills": [],
+        "researchEvidence": []
+      },
+      "deficitAnalysis": {
+        "specificDeficits": [
+          {
+            "deficit": "Vowel recognition and sound-symbol correspondence",
+            "severity": "severe",
+            "manifestation": "Score: 33% (below 75% threshold)",
+            "errorRate": "67%",
+            "researchEvidence": "Evidence-based deficit identification"
+          }
+        ],
+        "rootCauseAnalysis": "Alphabet Knowledge: Vowel recognition weaknesses",
+        "cognitiveFactors": [
+          "workingMemory",
+          "processingSpeed",
+          "attention",
+          "auditoryProcessing"
+        ],
+        "researchClassification": "Alphabet Knowledge learning difficulty",
+        "linguisticFactors": []
+      },
+      "interventionPrescription": {
+        "primaryApproach": "multisensory_structured",
+        "specificTechniques": [
+          {
+            "technique": "Vowel recognition and sound-symbol correspondence",
+            "description": "Targeted alphabet knowledge intervention",
+            "duration": "6-8 weeks intensive intervention",
+            "materials": "Teacher-created intervention questions from templates",
+            "progressCriteria": "75% accuracy on intervention assessment",
+            "researchBasis": "Systematic, explicit instruction principles"
+          }
+        ],
+        "intensityLevel": "highly_intensive",
+        "sessionStructure": {
+          "optimalLength": "15-20 minutes",
+          "sessionComponents": [
+            "Systematic, explicit instruction",
+            "Immediate corrective feedback"
+          ],
+          "breakPattern": "Short breaks every 10 minutes"
+        },
+        "materialRecommendations": [
+          "Create 18 intervention questions using templates",
+          "Focus on identified error patterns",
+          "Use multisensory approach"
+        ],
+        "progressMonitoring": {
+          "frequency": "Weekly",
+          "keyIndicators": [
+            "Accuracy improvement",
+            "Error pattern reduction"
+          ],
+          "dataCollectionMethod": "Intervention assessment performance"
+        }
+      },
+      "escalationProtocol": {
+        "triggers": [
+          {
+            "trigger": "No improvement after 2 weeks",
+            "approach": "Increase intervention intensity",
+            "researchFoundation": "Response to Intervention (RTI) model",
+            "specificTechniques": [
+              {
+                "technique": "Intensive one-on-one instruction",
+                "purpose": "Address persistent learning difficulties",
+                "implementation": "Daily 20-minute sessions",
+                "materials": [
+                  "Teacher-created materials",
+                  "Multisensory aids"
+                ],
+                "progression": "Gradual skill building",
+                "researchBasis": "Systematic synthetic phonics approach",
+                "researchEvidence": "Evidence-based intervention research"
+              }
+            ],
+            "intensityRecommendations": {
+              "duration": "4-6 weeks intensive",
+              "frequency": "Daily sessions",
+              "totalIntervention": "20-30 hours",
+              "researchSupport": "RTI framework guidelines"
+            }
+          }
+        ]
+      },
+      "_id": {
+        "$oid": "68c9fc70d26632a89f218ef1"
+      }
+    }
+  },
+  "analyticsMetrics": {
+    "fatigueIndicators": {
+      "performanceDecline": false,
+      "responseTimeIncrease": false,
+      "errorPatternShift": false
+    },
+    "confidenceMetrics": {
+      "skillMasteryConfidence": 0,
+      "interventionSuccessProbability": 0
+    },
+    "totalQuestions": 0,
+    "totalCorrect": 0,
+    "averageResponseTime": 0,
+    "consistencyIndex": 0
+  },
+  "strengths": [],
+  "weaknesses": [
+    "Alphabet Knowledge: Fundamental skill gaps"
+  ],
+  "recommendations": [
+    "Alphabet Knowledge: Create 18 intervention questions"
+  ],
+  "createdAt": {
+    "$date": "2025-09-17T00:10:24.122Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-17T00:10:24.135Z"
+  },
+  "interventionHistory": [],
+  "__v": 0
+}
