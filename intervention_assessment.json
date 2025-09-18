@@ -1,4 +1,4 @@
-{
+[{
   "_id": {
     "$oid": "68cbb0975a26e73b61e061d3"
   },
@@ -470,10 +470,14 @@
     "$date": "2025-09-18T07:11:19.540Z"
   },
   "updatedAt": {
-    "$date": "2025-09-18T07:11:19.553Z"
+    "$date": "2025-09-18T08:33:46.574Z"
   },
   "startedAt": null,
-  "completedAt": null,
-  "interventionResultsId": null,
+  "completedAt": {
+    "$date": "2025-09-18T08:33:46.573Z"
+  },
+  "interventionResultsId": {
+    "$oid": "68cbc3eaa434746159a082b9"
+  },
   "__v": 0
-}
+}]

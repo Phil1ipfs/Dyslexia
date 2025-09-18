@@ -102,7 +102,7 @@
 }
 
 /* Responsive Design for Two-Column Layout */
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   .epa-two-column-layout {
     grid-template-columns: 1fr;
     gap: 1rem;
@@ -2273,5 +2273,1136 @@
 
   .epa-error-secondary {
     text-align: left;
+  }
+}
+
+/* ========== INTERVENTION COMPARISON LAYOUT (TWO-COLUMN) ========== */
+.epa-intervention-comparison-two-column {
+  margin: 1rem 0;
+}
+
+/* Intervention Results Header */
+.epa-intervention-results-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.epa-intervention-header--success {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #bbf7d0;
+}
+
+.epa-intervention-header--revision_needed {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #fcd34d;
+}
+
+.epa-results-header-content {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.epa-results-icon {
+  font-size: 2rem;
+  color: #3B4F81;
+  flex-shrink: 0;
+}
+
+.epa-intervention-header--success .epa-results-icon {
+  color: #22c55e;
+}
+
+.epa-intervention-header--revision_needed .epa-results-icon {
+  color: #f59e0b;
+}
+
+.epa-results-title-section {
+  flex: 1;
+}
+
+.epa-results-title {
+  color: #374151;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.epa-results-subtitle {
+  color: #6b7280;
+  font-size: 1rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.epa-results-score-summary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.epa-score-before,
+.epa-score-after,
+.epa-score-improvement {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.epa-score-label,
+.epa-improvement-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b7280;
+}
+
+.epa-score-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+.epa-score-value.before {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.epa-score-value.after.passed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.epa-score-value.after.needs-revision {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.epa-improvement-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+.epa-improvement-value.positive {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.epa-improvement-value.negative {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.epa-score-arrow {
+  font-size: 1.5rem;
+  color: #6b7280;
+  font-weight: bold;
+}
+
+/* Two-Column Content Layout - High Specificity Override */
+.epa-intervention-comparison-two-column .epa-two-column-layout,
+.epa-intervention-comparison-two-column > .epa-two-column-layout {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 1.5rem;
+  height: 70vh;
+  max-height: 70vh;
+  min-height: 600px;
+  width: 100% !important;
+  
+  /* Ensure it's not flex */
+  flex-direction: unset !important;
+}
+
+.epa-intervention-comparison-two-column .epa-left-column,
+.epa-intervention-comparison-two-column .epa-right-column {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0;
+  overflow-y: auto;
+  height: 100%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.epa-column-content {
+  padding: 1rem;
+  height: calc(100% - 60px);
+  overflow-y: auto;
+}
+
+/* Score Cards */
+.epa-initial-score-card,
+.epa-outcome-score-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.epa-initial-score-card {
+  border-left: 4px solid #dc2626;
+}
+
+.epa-outcome--success {
+  border-left: 4px solid #22c55e;
+  background: #f0fdf4;
+}
+
+.epa-outcome--revision_needed {
+  border-left: 4px solid #f59e0b;
+  background: #fffbeb;
+}
+
+.epa-score-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.epa-score-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.epa-score-status.failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.epa-score-status.passed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.epa-score-status.needs-revision {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.epa-score-value.initial-failed {
+  font-size: 2rem;
+  color: #dc2626;
+  font-weight: 700;
+  text-align: center;
+}
+
+.epa-score-value.intervention-success {
+  font-size: 2rem;
+  color: #22c55e;
+  font-weight: 700;
+  text-align: center;
+}
+
+.epa-score-value.intervention-revision_needed {
+  font-size: 2rem;
+  color: #f59e0b;
+  font-weight: 700;
+  text-align: center;
+}
+
+.epa-threshold-info {
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+/* Progress Bar */
+.epa-progress-bar-container {
+  margin-top: 1rem;
+}
+
+.epa-progress-bar {
+  width: 100%;
+  height: 12px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.epa-progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.8s ease-in-out;
+}
+
+.epa-progress--success {
+  background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+}
+
+.epa-progress--revision_needed {
+  background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+}
+
+.epa-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.threshold-marker {
+  color: #374151;
+  font-weight: 600;
+}
+
+/* Section Titles */
+.epa-subsection-title {
+  color: #374151;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Simplified Components */
+.epa-simplified-error-patterns {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.epa-error-pattern-summary {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.epa-error-pattern-type {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.epa-error-pattern-description {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.epa-error-pattern-focus {
+  font-size: 0.75rem;
+  color: #3B4F81;
+  font-weight: 500;
+}
+
+.epa-more-patterns {
+  font-size: 0.8rem;
+  color: #6b7280;
+  text-align: center;
+  font-style: italic;
+  padding: 0.5rem;
+  background: #f3f4f6;
+  border-radius: 6px;
+}
+
+/* Simplified Prescription */
+.epa-simplified-prescription {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.epa-prescription-summary > div {
+  margin-bottom: 0.75rem;
+}
+
+.epa-prescription-summary > div:last-child {
+  margin-bottom: 0;
+}
+
+.epa-technique-list,
+.epa-deficit-list {
+  margin: 0.5rem 0 0 1rem;
+  padding: 0;
+}
+
+.epa-technique-list li,
+.epa-deficit-list li {
+  font-size: 0.875rem;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+/* Improvement Metrics */
+.epa-improvement-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.epa-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.epa-metric:last-child {
+  border-bottom: none;
+}
+
+.epa-metric-label {
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.epa-metric-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.epa-metric-value.positive {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.epa-metric-value.moderate {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Error Pattern Resolution */
+.epa-pattern-resolution {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.epa-resolution-item {
+  text-align: center;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: white;
+}
+
+.epa-resolution-item.success {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+}
+
+.epa-resolution-item.improved {
+  background: #fef3c7;
+  border-color: #fcd34d;
+}
+
+.epa-resolution-item.persistent {
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+
+.epa-resolution-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #374151;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.epa-resolution-count {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+/* Action Recommendations */
+.epa-action-recommendations {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.epa-action-recommendations.success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.epa-action-recommendations.revision-needed {
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+
+.epa-action-item {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.epa-action-item:last-child {
+  margin-bottom: 0;
+}
+
+.epa-action-item.success-item {
+  border-left: 4px solid #22c55e;
+}
+
+.epa-action-item.revision-primary {
+  border-left: 4px solid #f59e0b;
+}
+
+.epa-action-item.priority-high {
+  border-left: 4px solid #dc2626;
+}
+
+.epa-action-title {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.epa-action-description {
+  font-size: 0.8rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.epa-revision-suggestions {
+  margin-top: 1rem;
+}
+
+.epa-revision-title {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.epa-suggestion-list {
+  margin: 0.5rem 0 0 1rem;
+  padding: 0;
+}
+
+.epa-suggestion-list li {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+/* Responsive Design for Two-Column Layout */
+@media (max-width: 1200px) {
+  .epa-results-header-content {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .epa-results-score-summary {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .epa-intervention-comparison-two-column .epa-two-column-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-height: none;
+    height: auto;
+  }
+
+  .epa-left-column,
+  .epa-right-column {
+    max-height: 500px;
+    overflow-y: auto;
+    height: auto;
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .epa-intervention-results-header {
+    padding: 1rem;
+  }
+
+  .epa-results-title {
+    font-size: 1.25rem;
+  }
+
+  .epa-results-subtitle {
+    font-size: 0.875rem;
+  }
+
+  .epa-results-score-summary {
+    padding: 0.75rem;
+  }
+
+  .epa-column-content {
+    padding: 0.75rem;
+  }
+
+  .epa-pattern-resolution {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+}
+
+/* Remove old three-column styles */
+
+.epa-three-column-comparison {
+  display: contents;
+}
+
+/* Before Column (Left) */
+.epa-before-column {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0;
+  overflow-y: auto;
+  height: 100%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid #3B4F81;
+}
+
+/* Progress Column (Center) */
+.epa-progress-column {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-y: auto;
+  height: 100%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid #22c55e;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* After Column (Right) */
+.epa-after-column {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0;
+  overflow-y: auto;
+  height: 100%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid #f59e0b;
+}
+
+/* Comparison Headers */
+.epa-comparison-header {
+  background: linear-gradient(135deg, #3B4F81 0%, #4A5E91 100%);
+  color: white;
+  padding: 0.875rem 1.25rem;
+  border-radius: 8px 8px 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.epa-comparison-header.progress-header {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  border-radius: 8px;
+  position: static;
+}
+
+.epa-comparison-header.after-header {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.epa-comparison-header .epa-icon {
+  font-size: 1.2rem;
+}
+
+/* Comparison Content */
+.epa-comparison-content {
+  padding: 1rem;
+  height: calc(100% - 60px);
+  overflow-y: auto;
+}
+
+/* Progress Analysis Specific Styles */
+.epa-progress-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+}
+
+.epa-progress-overview {
+  background: white;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.epa-progress-title {
+  color: #166534;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.epa-progress-subtitle {
+  color: #16a34a;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* Score Progress Bar */
+.epa-score-progress {
+  margin: 1rem 0;
+}
+
+.epa-score-progress-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.epa-score-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #166534;
+}
+
+.epa-score-values {
+  font-size: 0.875rem;
+  color: #16a34a;
+}
+
+.epa-progress-bar {
+  width: 100%;
+  height: 12px;
+  background: #dcfce7;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #bbf7d0;
+}
+
+.epa-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+  border-radius: 6px;
+  transition: width 0.8s ease-in-out;
+  position: relative;
+}
+
+.epa-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.1) 75%, transparent 75%);
+  background-size: 8px 8px;
+  animation: progress-stripe 1s linear infinite;
+}
+
+@keyframes progress-stripe {
+  0% { background-position: 0 0; }
+  100% { background-position: 8px 0; }
+}
+
+/* Status Indicators */
+.epa-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.epa-status-indicator--passed {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.epa-status-indicator--failed {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.epa-status-indicator--improved {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+/* Improvement Metrics */
+.epa-improvement-metrics {
+  background: white;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.epa-metrics-title {
+  color: #166534;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+}
+
+.epa-metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.epa-metric-item {
+  text-align: center;
+  padding: 0.75rem;
+  background: #f0fdf4;
+  border-radius: 6px;
+  border: 1px solid #bbf7d0;
+}
+
+.epa-metric-label {
+  font-size: 0.75rem;
+  color: #166534;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+  letter-spacing: 0.5px;
+}
+
+.epa-metric-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #15803d;
+}
+
+.epa-metric-value.positive {
+  color: #22c55e;
+}
+
+.epa-metric-value.negative {
+  color: #dc2626;
+}
+
+/* Score Comparison */
+.epa-score-comparison {
+  background: white;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.epa-score-comparison-title {
+  color: #166534;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+}
+
+.epa-score-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.epa-score-row:last-child {
+  border-bottom: none;
+}
+
+.epa-score-label {
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.epa-score-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.epa-score-value.before {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.epa-score-value.after {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.epa-score-improvement {
+  font-size: 0.75rem;
+  color: #22c55e;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+/* Teacher Actions Section */
+.epa-teacher-actions-section {
+  background: white;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.epa-teacher-actions-title {
+  color: #166534;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+}
+
+.epa-action-card {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.epa-action-card:last-child {
+  margin-bottom: 0;
+}
+
+.epa-action-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.epa-action-title {
+  color: #166534;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.epa-action-priority {
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.epa-action-priority.high {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.epa-action-priority.medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.epa-action-priority.low {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.epa-action-description {
+  font-size: 0.8rem;
+  color: #15803d;
+  line-height: 1.4;
+}
+
+/* Minimized sections for comparison layout */
+.epa-intervention-comparison-layout .epa-section {
+  margin-bottom: 0.75rem !important;
+}
+
+.epa-intervention-comparison-layout .epa-section-header {
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.85rem !important;
+}
+
+.epa-intervention-comparison-layout .epa-section-content {
+  padding: 0.5rem !important;
+}
+
+.epa-intervention-comparison-layout .epa-error-pattern-card {
+  margin-bottom: 0.5rem !important;
+  padding: 0.5rem !important;
+}
+
+.epa-intervention-comparison-layout .epa-intervention-card {
+  margin-bottom: 0.5rem !important;
+  padding: 0.5rem !important;
+}
+
+.epa-intervention-comparison-layout .epa-recommendation-item {
+  margin-bottom: 0.375rem !important;
+  padding: 0.375rem !important;
+}
+
+/* Responsive Design for Three-Column Layout */
+@media (max-width: 1400px) {
+  .epa-intervention-comparison-layout {
+    grid-template-columns: 1fr 280px 1fr;
+    gap: 1rem;
+  }
+
+  .epa-progress-column {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 1200px) {
+  .epa-intervention-comparison-layout {
+    grid-template-columns: 1fr 260px 1fr;
+    gap: 0.75rem;
+  }
+
+  .epa-comparison-header {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .epa-progress-column {
+    padding: 0.5rem;
+  }
+
+  .epa-metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .epa-intervention-comparison-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-height: none;
+    height: auto;
+  }
+
+  .epa-before-column,
+  .epa-progress-column,
+  .epa-after-column {
+    max-height: 500px;
+    overflow-y: auto;
+    height: auto;
+    min-height: 300px;
+  }
+
+  .epa-progress-column {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-left: 4px solid #22c55e;
+    order: -1;
+  }
+
+  .epa-comparison-header.progress-header {
+    border-radius: 8px 8px 0 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .epa-intervention-comparison-layout {
+    gap: 0.75rem;
+  }
+
+  .epa-before-column,
+  .epa-progress-column,
+  .epa-after-column {
+    max-height: 400px;
+    min-height: 250px;
+  }
+
+  .epa-comparison-content {
+    padding: 0.75rem;
+  }
+
+  .epa-progress-column {
+    padding: 0.75rem;
+  }
+
+  .epa-score-comparison,
+  .epa-improvement-metrics,
+  .epa-teacher-actions-section {
+    padding: 0.75rem;
+  }
+}
+
+/* ============ CRITICAL OVERRIDE - FORCE TWO-COLUMN LAYOUT ============ */
+@media (min-width: 769px) {
+  .epa-intervention-comparison-two-column .epa-two-column-layout {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-rows: 1fr !important;
+    gap: 1.5rem !important;
+    width: 100% !important;
+    height: 70vh !important;
+    max-height: 70vh !important;
+    min-height: 600px !important;
+  }
+  
+  .epa-intervention-comparison-two-column .epa-left-column,
+  .epa-intervention-comparison-two-column .epa-right-column {
+    grid-column: span 1 !important;
+    min-width: 0 !important;
+    overflow-y: auto !important;
+    height: 100% !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
   }
 }
