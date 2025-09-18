@@ -1,6 +1,6 @@
-[{
+{
   "_id": {
-    "$oid": "68cbc3eaa434746159a082b9"
+    "$oid": "68cbd7fc73335662b9259e64"
   },
   "studentId": 202522233,
   "interventionAssessmentId": {
@@ -11,7 +11,7 @@
   },
   "category": "Alphabet Knowledge",
   "assessmentDate": {
-    "$date": "2025-09-18T08:33:46.181Z"
+    "$date": "2025-09-18T09:59:24.478Z"
   },
   "assessmentType": "intervention",
   "readingLevel": "At Grade Level",
@@ -32,7 +32,7 @@
       "currentMastery": 0.44,
       "masteryGrowth": 0.10999999999999999,
       "lastUpdated": {
-        "$date": "2025-09-18T08:33:46.180Z"
+        "$date": "2025-09-18T09:59:24.476Z"
       },
       "totalQuestions": 9,
       "correctAnswers": 4,
@@ -117,7 +117,7 @@
     "function String() { [native code] }": {
       "masteryProbability": 0.5,
       "lastUpdated": {
-        "$date": "2025-09-18T08:33:46.184Z"
+        "$date": "2025-09-18T09:59:24.484Z"
       },
       "totalPossibleMatches": 0,
       "correctMatches": 0,
@@ -400,14 +400,14 @@
     "Multisensory letter identification"
   ],
   "completedAt": {
-    "$date": "2025-09-18T08:33:46.181Z"
+    "$date": "2025-09-18T09:59:24.478Z"
   },
   "interventionHistory": [],
   "createdAt": {
-    "$date": "2025-09-18T08:33:46.186Z"
+    "$date": "2025-09-18T09:59:24.488Z"
   },
   "updatedAt": {
-    "$date": "2025-09-18T08:33:46.193Z"
+    "$date": "2025-09-18T09:59:24.498Z"
   },
   "__v": 0
-}]
+}

@@ -11,14 +11,12 @@ const interventionResultsSchema = new mongoose.Schema({
   interventionAssessmentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'InterventionAssessment',
-    required: true,
-    index: true
+    required: true
   },
   prescriptiveAnalysisId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'PrescriptiveAnalysis',
-    required: false, // Made optional - will be populated if available
-    index: true
+    required: false
   },
   category: {
     type: String,

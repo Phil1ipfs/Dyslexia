@@ -1086,7 +1086,7 @@ connectDB().then(async (connected) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`\n✅ Server is running on port ${PORT}`);
   console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`API URL: http://localhost:${PORT}`);
@@ -1100,6 +1100,23 @@ app.listen(PORT, () => {
     console.log('🤖 Auto-processing service started - will check for complete assessments every 5 minutes');
   } catch (error) {
     console.warn('⚠️ Could not start auto-processing service:', error.message);
+  }
+
+  // Sync existing intervention data with category_results
+  try {
+    const InterventionSyncService = require('./services/Teachers/InterventionSyncService');
+
+    // Run one-time sync on startup
+    console.log('🔄 Starting intervention data sync...');
+    const syncResult = await InterventionSyncService.syncInterventionDataOnStartup();
+
+    if (syncResult.success) {
+      console.log(`✅ Intervention sync completed: ${syncResult.updated} updated, ${syncResult.skipped} skipped`);
+    } else {
+      console.warn(`⚠️ Intervention sync had issues: ${syncResult.error}`);
+    }
+  } catch (error) {
+    console.warn('⚠️ Could not complete intervention sync:', error.message);
   }
 
   // Start intervention monitoring service
