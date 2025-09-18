@@ -2506,7 +2506,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   };
  
   const removeQuestionChoicePair = (id) => {
-    if (safe(questionChoicePairs).length <= 1) return;
+    // Allow removal of any question, including Question 1 when it's the only one
     setQuestionChoicePairs(prev => prev.filter(pair => pair.id !== id));
   };
  
@@ -2675,19 +2675,22 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       templateChoices = templateChoices.slice(0, 3);
     }
 
-    // Update the question with template data including choices
+    // Update the question with template data including choices and questionValue
+    const templateQuestionText = template.templateText || template.questionText || '';
     updateQuestionChoicePair(pairId, {
-      questionText: template.templateText,
+      questionText: templateQuestionText,
       questionType: template.questionType,
       questionImage: template.questionImage || null,
+      questionValue: template.questionValue || null, // Extract questionValue from template
       sourceTemplateId: template._id,
       choices: templateChoices
     });
 
     // Show success message
+    const templateName = template.templateText || template.questionText || 'Template';
     setErrors(prev => ({
       ...prev,
-      success: `Applied template: "${template.templateText}" with choices`
+      success: `Applied template: "${templateName}" with choices`
     }));
 
     // Clear success message after 3 seconds
@@ -3688,7 +3691,6 @@ const renderAlphabetKnowledgeStep = () => {
                 type="button"
                 className="alphabet-knowledge-remove-btn"
                 onClick={() => removeQuestionChoicePair(pair.id)}
-                disabled={safe(questionChoicePairs).length <= 1}
               >
                 <FaTrash /> Remove
               </button>
@@ -3720,6 +3722,7 @@ const renderAlphabetKnowledgeStep = () => {
                   .map(template => (
                     <option key={template._id} value={template._id}>
                       Template: {template.questionText || template.templateText} ({template.questionType})
+                      {template.questionValue ? ` - Value: "${template.questionValue}"` : ''}
                     </option>
                   ))}
               </select>
@@ -3790,19 +3793,6 @@ const renderAlphabetKnowledgeStep = () => {
                   Question type is fixed by the selected template to ensure consistency.
                 </div>
               )}
-              {!pair.sourceTemplateId && (
-                <div style={{
-                  fontSize: '12px',
-                  color: '#059669',
-                  marginTop: '4px',
-                  padding: '6px 8px',
-                  backgroundColor: '#ecfdf5',
-                  border: '1px solid #d1fae5',
-                  borderRadius: '4px'
-                }}>
-                  <strong>Tip:</strong> Choose based on the prescriptive analysis. If student has vowel errors, use "Patinig". If consonant errors, use "Katinig".
-                </div>
-              )}
             </div>
 
             {/* Question Text */}
@@ -3816,7 +3806,7 @@ const renderAlphabetKnowledgeStep = () => {
                 marginBottom: '8px'
               }}>
                 {pair.sourceTemplateId
-                  ? "This text is filled automatically from your selected template."
+                  ? `Question Text: "${pair.questionText || 'Loading...'}" (from template)`
                   : "Type the question you want to ask students (no numbers allowed, 5-200 characters)"
                 }
               </div>
@@ -3904,29 +3894,32 @@ const renderAlphabetKnowledgeStep = () => {
                       alt="Question visual"
                       className="alphabet-knowledge-image-preview"
                     />
-                    <button
-                      type="button"
-                      className="alphabet-knowledge-remove-btn"
-                      onClick={() => updateQuestionChoicePair(pair.id, { questionImage: null })}
-                      style={{
-                        position: 'absolute',
-                        top: '5px',
-                        right: '5px',
-                        background: '#ef4444',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '24px',
-                        height: '24px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '12px'
-                      }}
-                    >
-                      ×
-                    </button>
+                    {/* Only show remove button if not using a template */}
+                    {!pair.sourceTemplateId && (
+                      <button
+                        type="button"
+                        className="alphabet-knowledge-remove-btn"
+                        onClick={() => updateQuestionChoicePair(pair.id, { questionImage: null })}
+                        style={{
+                          position: 'absolute',
+                          top: '5px',
+                          right: '5px',
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '24px',
+                          height: '24px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '12px'
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
                   </div>
                 )}
                 <input
@@ -3971,7 +3964,7 @@ const renderAlphabetKnowledgeStep = () => {
               </label>
               <div className="alphabet-knowledge-step-description">
                 {pair.sourceTemplateId
-                  ? "Question Value is provided by your selected template."
+                  ? `Question Value: "${pair.questionValue || 'Loading...'}" (from template)`
                   : "Enter the specific word or letter for this question."
                 }
               </div>
@@ -3985,7 +3978,7 @@ const renderAlphabetKnowledgeStep = () => {
                   updateQuestionChoicePair(pair.id, 'questionValue', lettersOnly);
                 }}
                 disabled={pair.sourceTemplateId}
-                placeholder={pair.sourceTemplateId ? "Protected by template" : "Enter word or letter (e.g., CAT, DOG, A, a)"}
+                placeholder={pair.sourceTemplateId ? "Value provided by template" : "Enter word or letter (e.g., CAT, DOG, A, a)"}
                 maxLength="100"
                 style={{
                   opacity: pair.sourceTemplateId ? 0.5 : 1,
@@ -4010,7 +4003,7 @@ const renderAlphabetKnowledgeStep = () => {
                   marginTop: '4px',
                   fontStyle: 'italic'
                 }}>
-                  Question Value cannot be changed when using a template.
+                  Question Value is automatically set by the template and cannot be changed.
                 </div>
               )}
               {/* Error message for required Question Value */}
@@ -4233,7 +4226,6 @@ const renderQuestionChoicesStepWithTemplates = () => {
               type="button"
               className="literexia-remove-pair-btn"
               onClick={() => removeQuestionChoicePair(pair.id)}
-              disabled={safe(questionChoicePairs).length <= 1}
             >
               <FaTrash /> Remove
             </button>
@@ -4269,6 +4261,7 @@ const renderQuestionChoicesStepWithTemplates = () => {
                   return (
                     <option key={template._id} value={template._id}>
                       {displayText} ({template.questionType})
+                      {template.questionValue ? ` - Value: "${template.questionValue}"` : ''}
                     </option>
                   );
                 });
@@ -4299,13 +4292,16 @@ const renderQuestionChoicesStepWithTemplates = () => {
                       alt="Question image"
                       className="literexia-question-image-preview"
                     />
-                    <button
-                      type="button"
-                      className="literexia-remove-image-btn"
-                      onClick={() => removeQuestionImage(pair.id)}
-                    >
-                      <FaTimes /> Remove Image
-                    </button>
+                    {/* Only show remove button if not using a template */}
+                    {!pair.sourceTemplateId && (
+                      <button
+                        type="button"
+                        className="literexia-remove-image-btn"
+                        onClick={() => removeQuestionImage(pair.id)}
+                      >
+                        <FaTimes /> Remove Image
+                      </button>
+                    )}
                   </div>
                 )}
                 <button
@@ -4438,7 +4434,6 @@ const renderQuestionChoicesStep = () => {
                       type="button"
               className="literexia-remove-pair-btn"
               onClick={() => removeQuestionChoicePair(pair.id)}
-                      disabled={safe(questionChoicePairs).length <= 1}
                     >
                       <FaTrash /> Remove
                     </button>
@@ -4455,6 +4450,7 @@ const renderQuestionChoicesStep = () => {
               {safe(questionTemplates).map(template => (
                 <option key={template._id} value={template._id}>
                   {template.templateText || template.questionText || 'Untitled Template'} ({template.questionType})
+                  {template.questionValue ? ` - Value: "${template.questionValue}"` : ''}
                 </option>
               ))}
             </select>
@@ -4564,13 +4560,16 @@ const renderQuestionChoicesStep = () => {
                     {pair.questionImage && (
                       <div className="literexia-image-preview">
                         <img src={pair.questionImage} alt="Question" />
-                        <button 
-                          type="button" 
-                          className="literexia-remove-image-btn"
-                          onClick={() => updateQuestionChoicePair(pair.id, 'questionImage', null)}
-                        >
-                          <FaTimes />
-                        </button>
+                        {/* Only show remove button if not using a template */}
+                        {!pair.sourceTemplateId && (
+                          <button
+                            type="button"
+                            className="literexia-remove-image-btn"
+                            onClick={() => updateQuestionChoicePair(pair.id, 'questionImage', null)}
+                          >
+                            <FaTimes />
+                          </button>
+                        )}
                       </div>
                     )}
                   </>

@@ -642,39 +642,38 @@ prescriptive_analysis
 }
 
 templates_qeustions 
-
-{
+[{
   "_id": {
-    "$oid": "68cb7eea4f67de82e7fc8b8b"
+    "$oid": "68cba2fcf06ef8899a9bf738"
   },
   "category": "Alphabet Knowledge",
-  "questionType": "patinig",
-  "questionText": "asdfret",
-  "questionImage": null,
-  "questionValue": "sdfgrfd",
+  "questionType": "katinig",
+  "questionText": "Anong katumbas ng malaking letra?",
+  "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mobile/1758175841689_big_H.png",
+  "questionValue": "H",
   "choiceOptions": [
     {
       "optionId": "1",
-      "optionText": "dferdv",
+      "optionText": "a",
       "isCorrect": false,
       "_id": {
-        "$oid": "68cb7eea4f67de82e7fc8b8c"
+        "$oid": "68cba2fcf06ef8899a9bf739"
       }
     },
     {
       "optionId": "2",
-      "optionText": "fgffg",
+      "optionText": "v",
       "isCorrect": true,
       "_id": {
-        "$oid": "68cb7eea4f67de82e7fc8b8d"
+        "$oid": "68cba2fcf06ef8899a9bf73a"
       }
     },
     {
       "optionId": "3",
-      "optionText": "df",
+      "optionText": "c",
       "isCorrect": false,
       "_id": {
-        "$oid": "68cb7eea4f67de82e7fc8b8e"
+        "$oid": "68cba2fcf06ef8899a9bf73b"
       }
     }
   ],
@@ -695,13 +694,308 @@ templates_qeustions
     "$oid": "6816482b816c9582b244bff7"
   },
   "createdAt": {
-    "$date": "2025-09-18T03:39:22.138Z"
+    "$date": "2025-09-18T06:13:16.727Z"
   },
   "updatedAt": {
-    "$date": "2025-09-18T03:39:22.153Z"
+    "$date": "2025-09-18T06:13:16.729Z"
   },
   "__v": 0
-}
+},
+{
+  "_id": {
+    "$oid": "68cba2fcf06ef8899a9bf73d"
+  },
+  "category": "Alphabet Knowledge",
+  "questionType": "katinig",
+  "questionText": "Anong katumbas ng malaking letra",
+  "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mobile/1758175875998_big_W.png",
+  "questionValue": "S",
+  "choiceOptions": [
+    {
+      "optionId": "1",
+      "optionText": "s",
+      "isCorrect": false,
+      "_id": {
+        "$oid": "68cba2fcf06ef8899a9bf73e"
+      }
+    },
+    {
+      "optionId": "2",
+      "optionText": "v",
+      "isCorrect": true,
+      "_id": {
+        "$oid": "68cba2fcf06ef8899a9bf73f"
+      }
+    },
+    {
+      "optionId": "3",
+      "optionText": "c",
+      "isCorrect": false,
+      "_id": {
+        "$oid": "68cba2fcf06ef8899a9bf740"
+      }
+    }
+  ],
+  "matchCount": null,
+  "displaySequence": [],
+  "dragElements": [],
+  "correctSequence": [],
+  "blankPosition": null,
+  "displayWord": null,
+  "blankOptions": [],
+  "correctAnswer": [],
+  "targetSkills": [
+    "general_practice"
+  ],
+  "difficultyLevel": "medium",
+  "isActive": true,
+  "createdBy": {
+    "$oid": "6816482b816c9582b244bff7"
+  },
+  "createdAt": {
+    "$date": "2025-09-18T06:13:16.774Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-18T06:13:16.775Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68cba2fcf06ef8899a9bf742"
+  },
+  "category": "Alphabet Knowledge",
+  "questionType": "katinig",
+  "questionText": "Anong katumbas ng maliit na letra?",
+  "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mobile/1758175903691_big_K.png",
+  "questionValue": "K",
+  "choiceOptions": [
+    {
+      "optionId": "1",
+      "optionText": "ka",
+      "isCorrect": false,
+      "_id": {
+        "$oid": "68cba2fcf06ef8899a9bf743"
+      }
+    },
+    {
+      "optionId": "2",
+      "optionText": "k",
+      "isCorrect": true,
+      "_id": {
+        "$oid": "68cba2fcf06ef8899a9bf744"
+      }
+    },
+    {
+      "optionId": "3",
+      "optionText": "v",
+      "isCorrect": false,
+      "_id": {
+        "$oid": "68cba2fcf06ef8899a9bf745"
+      }
+    }
+  ],
+  "matchCount": null,
+  "displaySequence": [],
+  "dragElements": [],
+  "correctSequence": [],
+  "blankPosition": null,
+  "displayWord": null,
+  "blankOptions": [],
+  "correctAnswer": [],
+  "targetSkills": [
+    "general_practice"
+  ],
+  "difficultyLevel": "medium",
+  "isActive": true,
+  "createdBy": {
+    "$oid": "6816482b816c9582b244bff7"
+  },
+  "createdAt": {
+    "$date": "2025-09-18T06:13:16.810Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-18T06:13:16.811Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68cba2fcf06ef8899a9bf747"
+  },
+  "category": "Alphabet Knowledge",
+  "questionType": "patinig",
+  "questionText": "Anong katumbas ng maliit na letra?",
+  "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mobile/1758175934395_big_R.png",
+  "questionValue": "R",
+  "choiceOptions": [
+    {
+      "optionId": "1",
+      "optionText": "s",
+      "isCorrect": false,
+      "_id": {
+        "$oid": "68cba2fcf06ef8899a9bf748"
+      }
+    },
+    {
+      "optionId": "2",
+      "optionText": "r",
+      "isCorrect": true,
+      "_id": {
+        "$oid": "68cba2fcf06ef8899a9bf749"
+      }
+    },
+    {
+      "optionId": "3",
+      "optionText": "v",
+      "isCorrect": false,
+      "_id": {
+        "$oid": "68cba2fcf06ef8899a9bf74a"
+      }
+    }
+  ],
+  "matchCount": null,
+  "displaySequence": [],
+  "dragElements": [],
+  "correctSequence": [],
+  "blankPosition": null,
+  "displayWord": null,
+  "blankOptions": [],
+  "correctAnswer": [],
+  "targetSkills": [
+    "general_practice"
+  ],
+  "difficultyLevel": "medium",
+  "isActive": true,
+  "createdBy": {
+    "$oid": "6816482b816c9582b244bff7"
+  },
+  "createdAt": {
+    "$date": "2025-09-18T06:13:16.846Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-18T06:13:16.847Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68cba2fcf06ef8899a9bf74c"
+  },
+  "category": "Alphabet Knowledge",
+  "questionType": "patinig",
+  "questionText": "Anong katumbas ng maliit na letra",
+  "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mobile/1758175951494_small_m.png",
+  "questionValue": "M",
+  "choiceOptions": [
+    {
+      "optionId": "1",
+      "optionText": "n",
+      "isCorrect": false,
+      "_id": {
+        "$oid": "68cba2fcf06ef8899a9bf74d"
+      }
+    },
+    {
+      "optionId": "2",
+      "optionText": "m",
+      "isCorrect": true,
+      "_id": {
+        "$oid": "68cba2fcf06ef8899a9bf74e"
+      }
+    },
+    {
+      "optionId": "3",
+      "optionText": "v",
+      "isCorrect": false,
+      "_id": {
+        "$oid": "68cba2fcf06ef8899a9bf74f"
+      }
+    }
+  ],
+  "matchCount": null,
+  "displaySequence": [],
+  "dragElements": [],
+  "correctSequence": [],
+  "blankPosition": null,
+  "displayWord": null,
+  "blankOptions": [],
+  "correctAnswer": [],
+  "targetSkills": [
+    "general_practice"
+  ],
+  "difficultyLevel": "medium",
+  "isActive": true,
+  "createdBy": {
+    "$oid": "6816482b816c9582b244bff7"
+  },
+  "createdAt": {
+    "$date": "2025-09-18T06:13:16.881Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-18T06:13:16.882Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68cba2fcf06ef8899a9bf751"
+  },
+  "category": "Alphabet Knowledge",
+  "questionType": "patinig",
+  "questionText": "Anong katumbas ng lamiit na letra",
+  "questionImage": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mobile/1758175985446_small_b.png",
+  "questionValue": "B",
+  "choiceOptions": [
+    {
+      "optionId": "1",
+      "optionText": "b",
+      "isCorrect": true,
+      "_id": {
+        "$oid": "68cba2fcf06ef8899a9bf752"
+      }
+    },
+    {
+      "optionId": "2",
+      "optionText": "a",
+      "isCorrect": false,
+      "_id": {
+        "$oid": "68cba2fcf06ef8899a9bf753"
+      }
+    },
+    {
+      "optionId": "3",
+      "optionText": "c",
+      "isCorrect": false,
+      "_id": {
+        "$oid": "68cba2fcf06ef8899a9bf754"
+      }
+    }
+  ],
+  "matchCount": null,
+  "displaySequence": [],
+  "dragElements": [],
+  "correctSequence": [],
+  "blankPosition": null,
+  "displayWord": null,
+  "blankOptions": [],
+  "correctAnswer": [],
+  "targetSkills": [
+    "general_practice"
+  ],
+  "difficultyLevel": "medium",
+  "isActive": true,
+  "createdBy": {
+    "$oid": "6816482b816c9582b244bff7"
+  },
+  "createdAt": {
+    "$date": "2025-09-18T06:13:16.915Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-18T06:13:16.916Z"
+  },
+  "__v": 0
+}]
 
 
 teachers.profile 

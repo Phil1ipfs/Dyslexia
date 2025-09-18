@@ -1030,29 +1030,95 @@ const PrescriptiveAnalysis = ({
   };
 
   /**
+   * Refresh interventions from server to get the latest data
+   */
+  const refreshInterventions = async () => {
+    if (!liveStudent?.idNumber) return;
+
+    try {
+      console.log('🔄 Refreshing interventions for student:', liveStudent.idNumber);
+      const response = await api.get(`/api/progress/student/${liveStudent.idNumber}/interventions`);
+
+      console.log('✅ Refreshed interventions response:', response);
+
+      // Ensure we always set an array, even if the API returns null, undefined, or a non-array
+      if (Array.isArray(response.data)) {
+        setLiveInterventions(response.data);
+        console.log('✅ Updated liveInterventions with', response.data.length, 'interventions');
+      } else if (response.data && Array.isArray(response.data.data)) {
+        // Handle {success: true, data: [...]} format
+        setLiveInterventions(response.data.data);
+        console.log('✅ Updated liveInterventions with', response.data.data.length, 'interventions (nested data)');
+      } else {
+        // Fallback to empty array for any other response format
+        console.warn('Unexpected interventions response format:', response.data);
+        setLiveInterventions([]);
+      }
+
+      console.log('✅ Interventions refreshed successfully');
+    } catch (error) {
+      console.error('❌ Error refreshing interventions:', error);
+      // Don't clear existing data on refresh error
+      // Note: We don't show an error notification here as this is a silent background refresh
+    }
+  };
+
+  /**
    * Handle saving activity (from ActivityEditModal)
    * @param {Object} activityData - Activity data from modal
    */
-  const handleSaveActivity = (activityData) => {
-    setLocalInterventions(prev => {
-      const existingIndex = prev.findIndex(item => item._id === activityData._id);
-      if (existingIndex >= 0) {
-        // Update existing
-        const updated = [...prev];
-        updated[existingIndex] = activityData;
-        return updated;
+  const handleSaveActivity = async (activityData) => {
+    console.log('🔄 handleSaveActivity called with:', activityData);
+
+    try {
+      // For existing interventions (editing), update local state immediately for responsive UI
+      // For new interventions, skip local state update to avoid duplicates after server refresh
+      if (activityData._id && localInterventions.some(item => item._id === activityData._id)) {
+        setLocalInterventions(prev => {
+          const existingIndex = prev.findIndex(item => item._id === activityData._id);
+          if (existingIndex >= 0) {
+            const updated = [...prev];
+            updated[existingIndex] = activityData;
+            console.log('📝 Updated existing intervention in local state');
+            return updated;
+          }
+          return prev;
+        });
       } else {
-        // Add new
-        return [...prev, activityData];
+        console.log('➕ New intervention - skipping local state update to prevent duplicates');
       }
-    });
 
-    setShowActivityModal(false);
-    setEditingActivity(null);
+      // Close modal immediately for responsive UI
+      setShowActivityModal(false);
+      setEditingActivity(null);
 
-    // Call parent callback if provided
-    if (onCreateActivity) {
-      onCreateActivity(activityData);
+      // Refresh interventions from server to get complete, up-to-date data
+      // This ensures the UI shows the correct intervention with all questions
+      await refreshInterventions();
+
+      // Show success notification
+      setNotificationMessage({
+        title: 'Intervention Saved Successfully!',
+        message: `The intervention for ${activityData.category || 'this category'} has been created and is ready for the student.`
+      });
+      setShowSuccessNotification(true);
+
+      // Call parent callback if provided
+      if (onCreateActivity) {
+        onCreateActivity(activityData);
+      }
+
+      console.log('✅ Activity save process completed with server refresh');
+    } catch (error) {
+      console.error('❌ Error in handleSaveActivity:', error);
+
+      // If refresh fails, still show some success feedback since the intervention was saved
+      // But indicate there might be a display issue
+      setNotificationMessage({
+        title: 'Intervention Saved',
+        message: `The intervention has been saved, but there was an issue refreshing the display. Please refresh the page to see the latest data.`
+      });
+      setShowSuccessNotification(true);
     }
   };
 
@@ -2959,7 +3025,7 @@ const PrescriptiveAnalysis = ({
                         <div className="literexia-intervention-progress">
                           <div className="literexia-progress-item">
                             <div className="literexia-progress-label">
-                              <span>Completion</span>
+                              <span>Completion Percentage</span>
                               <span>{progressPercentage}%</span>
                             </div>
                             <div className="literexia-progress-bar-container">
@@ -2970,18 +3036,6 @@ const PrescriptiveAnalysis = ({
                             </div>
                           </div>
                           
-                          <div className="literexia-progress-item">
-                            <div className="literexia-progress-label">
-                              <span>Accuracy</span>
-                              <span>{correctPercentage}%</span>
-                            </div>
-                            <div className="literexia-progress-bar-container">
-                              <div 
-                                className={`literexia-progress-bar-fill ${correctPercentage >= 75 ? 'achieved' : 'in-progress'}`}
-                                style={{width: `${correctPercentage}%`}}
-                              ></div>
-                            </div>
-                          </div>
                         </div>
                         
                         <div className="literexia-intervention-details">
