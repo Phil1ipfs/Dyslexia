@@ -682,6 +682,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border: 1px solid #e5e7eb;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
 }
 
 .literexia-intervention-card:hover {
@@ -6046,4 +6047,317 @@
 .literexia-insight-item {
   color: #374151;
   line-height: 1.5;
+}
+
+/* ========================================
+   ENHANCED INTERVENTION CARDS STYLING
+   ======================================== */
+
+/* Card Header with Category Badge and Status */
+.literexia-intervention-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.literexia-intervention-category-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #5470a8 0%, #3d5285 100%);
+  color: white;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  box-shadow: 0 2px 8px rgba(84, 112, 168, 0.3);
+}
+
+.literexia-intervention-category-badge .category-icon {
+  font-size: 1rem;
+}
+
+.literexia-intervention-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+}
+
+.literexia-intervention-status-badge.passed {
+  background: linear-gradient(135deg, #5470a8 0%, #3d5285 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(84, 112, 168, 0.3);
+}
+
+.literexia-intervention-status-badge.active {
+  background: linear-gradient(135deg, #5470a8 0%, #3d5285 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(84, 112, 168, 0.3);
+}
+
+.literexia-intervention-status-badge.draft {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(148, 163, 184, 0.3);
+}
+
+.literexia-intervention-status-badge .status-icon {
+  font-size: 0.875rem;
+}
+
+/* Progress Section */
+.literexia-intervention-progress-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.literexia-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.literexia-progress-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.literexia-progress-title .progress-icon {
+  color: #5470a8;
+  font-size: 1rem;
+}
+
+.literexia-progress-percentage {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.literexia-progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.literexia-progress-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s ease-in-out;
+  position: relative;
+  background: linear-gradient(90deg, currentColor 0%, currentColor 100%);
+}
+
+.literexia-progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Details Grid */
+.literexia-intervention-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.literexia-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.literexia-detail-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #d1d5db;
+}
+
+.literexia-detail-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #e0e7f0 0%, #c5d2e8 100%);
+  border-radius: 8px;
+  color: #5470a8;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.literexia-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.literexia-detail-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.literexia-detail-value {
+  font-size: 0.875rem;
+  color: #1f2937;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+/* Action Buttons */
+.literexia-intervention-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.literexia-edit-activity-btn,
+.literexia-push-mobile-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  min-height: 44px;
+}
+
+.literexia-edit-activity-btn {
+  background: linear-gradient(135deg, #5470a8 0%, #3d5285 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(84, 112, 168, 0.3);
+}
+
+.literexia-edit-activity-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(84, 112, 168, 0.4);
+}
+
+.literexia-edit-activity-btn:disabled {
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  color: #64748b;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.literexia-push-mobile-btn {
+  background: linear-gradient(135deg, #5470a8 0%, #3d5285 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(84, 112, 168, 0.3);
+}
+
+.literexia-push-mobile-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(84, 112, 168, 0.4);
+}
+
+.literexia-push-mobile-btn:disabled {
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  color: #64748b;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.literexia-active-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.action-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .literexia-intervention-card-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .literexia-intervention-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .literexia-intervention-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .literexia-edit-activity-btn,
+  .literexia-push-mobile-btn,
+  .literexia-active-status {
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .literexia-intervention-card {
+    padding: 1rem;
+  }
+
+  .literexia-intervention-progress-section {
+    padding: 0.75rem;
+  }
+
+  .literexia-detail-item {
+    padding: 0.5rem;
+  }
 }

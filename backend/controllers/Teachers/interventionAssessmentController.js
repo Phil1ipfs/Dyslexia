@@ -124,6 +124,79 @@ class InterventionAssessmentController {
 
       console.log(`[INTERVENTION CONTROLLER] ✅ Successfully created intervention ${savedIntervention._id}`);
 
+      // 🔗 UPDATE CATEGORY_RESULTS: Link the new intervention to the category results
+      try {
+        const CategoryResults = require('../../models/Teachers/ManageProgress/categoryResultsModel');
+
+        console.log(`[INTERVENTION CONTROLLER] 🔗 DEBUGGING: Attempting to update category_results`);
+        console.log(`[INTERVENTION CONTROLLER] 🔗 studentId: ${savedIntervention.studentId} (type: ${typeof savedIntervention.studentId})`);
+        console.log(`[INTERVENTION CONTROLLER] 🔗 category: "${savedIntervention.category}"`);
+        console.log(`[INTERVENTION CONTROLLER] 🔗 interventionId: ${savedIntervention._id}`);
+
+        // First, let's check if the category_results document exists
+        const existingCategoryResults = await CategoryResults.findOne({
+          studentId: savedIntervention.studentId
+        });
+
+        if (!existingCategoryResults) {
+          console.error(`[INTERVENTION CONTROLLER] ❌ No category_results found for student ${savedIntervention.studentId}`);
+        } else {
+          console.log(`[INTERVENTION CONTROLLER] 🔍 Found category_results document with ${existingCategoryResults.categories.length} categories`);
+
+          // Check if the specific category exists
+          const targetCategory = existingCategoryResults.categories.find(cat => cat.categoryName === savedIntervention.category);
+          if (!targetCategory) {
+            console.error(`[INTERVENTION CONTROLLER] ❌ Category "${savedIntervention.category}" not found in categories array`);
+            console.log(`[INTERVENTION CONTROLLER] Available categories:`, existingCategoryResults.categories.map(c => c.categoryName));
+          } else {
+            console.log(`[INTERVENTION CONTROLLER] ✅ Found target category:`, {
+              categoryName: targetCategory.categoryName,
+              currentInterventionId: targetCategory.currentInterventionId,
+              interventionAttempts: targetCategory.interventionAttempts
+            });
+          }
+        }
+
+        // Now perform the update with detailed logging
+        const updateResult = await CategoryResults.findOneAndUpdate(
+          {
+            studentId: savedIntervention.studentId,
+            'categories.categoryName': savedIntervention.category
+          },
+          {
+            '$set': {
+              'categories.$.currentInterventionId': savedIntervention._id,
+              'updatedAt': new Date()
+            },
+            '$inc': {
+              'categories.$.interventionAttempts': 1
+            }
+          },
+          { new: true }
+        );
+
+        if (updateResult) {
+          console.log(`[INTERVENTION CONTROLLER] ✅ Successfully linked intervention ${savedIntervention._id} to category_results`);
+
+          // Verify the update worked
+          const updatedCategory = updateResult.categories.find(cat => cat.categoryName === savedIntervention.category);
+          if (updatedCategory) {
+            console.log(`[INTERVENTION CONTROLLER] ✅ Verification - Updated category now has:`, {
+              categoryName: updatedCategory.categoryName,
+              currentInterventionId: updatedCategory.currentInterventionId,
+              interventionAttempts: updatedCategory.interventionAttempts
+            });
+          }
+        } else {
+          console.error(`[INTERVENTION CONTROLLER] ❌ Update failed - no document matched the query`);
+          console.error(`[INTERVENTION CONTROLLER] Query was: { studentId: ${savedIntervention.studentId}, 'categories.categoryName': '${savedIntervention.category}' }`);
+        }
+      } catch (categoryUpdateError) {
+        console.error(`[INTERVENTION CONTROLLER] ❌ Error updating category_results:`, categoryUpdateError);
+        console.error(`[INTERVENTION CONTROLLER] Error stack:`, categoryUpdateError.stack);
+        // Don't fail the intervention creation if category update fails - just log the error
+      }
+
       res.status(201).json({
         success: true,
         message: 'Intervention created successfully',

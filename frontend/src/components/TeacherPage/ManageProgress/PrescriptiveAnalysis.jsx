@@ -20,7 +20,10 @@ import {
   FaChalkboardTeacher,
   FaHandsHelping,
   FaSpinner,
-  FaTimes
+  FaTimes,
+  FaGraduationCap,
+  FaQuestionCircle,
+  FaClock
 } from 'react-icons/fa';
 import ActivityEditModal from './ActivityEditModal';
 import ConfirmationDialog from './ConfirmationDialog';
@@ -3011,78 +3014,131 @@ const PrescriptiveAnalysis = ({
                     
                     return (
                       <div key={index} className="literexia-intervention-card">
-                        <div className="literexia-intervention-header">
-                          <div className="literexia-intervention-title-container">
-                            <h4 className="literexia-intervention-title">{intervention.name}</h4>
-                            <div className="literexia-intervention-subtitle">{intervention.description}</div>
+                        {/* Card Header with Status Badge */}
+                        <div className="literexia-intervention-card-header">
+                          <div className="literexia-intervention-category-badge">
+                            <FaBook className="category-icon" />
+                            <span className="category-name">{intervention.category || selectedCategory}</span>
                           </div>
-                          <div className={`literexia-intervention-status ${isPassed ? 'passed' : intervention.status}`}>
-                            {isPassed ? 'Passed' : intervention.status === 'active' ? 'Active' : 'Draft'}
+                          <div className={`literexia-intervention-status-badge ${isPassed ? 'passed' : intervention.status}`}>
+                            {isPassed ? (
+                              <>
+                                <FaCheckCircle className="status-icon" />
+                                <span>PASSED</span>
+                              </>
+                            ) : intervention.status === 'active' ? (
+                              <>
+                                <FaMobile className="status-icon" />
+                                <span>ACTIVE</span>
+                              </>
+                            ) : (
+                              <>
+                                <FaEdit className="status-icon" />
+                                <span>DRAFT</span>
+                              </>
+                            )}
                           </div>
                         </div>
-                        
-                        {/* // will be on the category_results need to fix later on  */}
-                        <div className="literexia-intervention-progress">
-                          <div className="literexia-progress-item">
-                            <div className="literexia-progress-label">
-                              <span>Completion Percentage</span>
-                              <span>{progressPercentage}%</span>
+
+                        {/* Progress Section */}
+                        <div className="literexia-intervention-progress-section">
+                          <div className="literexia-progress-header">
+                            <div className="literexia-progress-title">
+                              <FaChartLine className="progress-icon" />
+                              <span>Completion Progress</span>
                             </div>
-                            <div className="literexia-progress-bar-container">
-                              <div 
-                                className="literexia-progress-bar-fill" 
-                                style={{width: `${progressPercentage}%`}}
-                              ></div>
+                            <div className="literexia-progress-percentage">
+                              {progressPercentage}%
                             </div>
                           </div>
-                          
-                        </div>
-                        
-                        <div className="literexia-intervention-details">
-                          <div className="literexia-intervention-detail">
-                            <span className="literexia-detail-label">Reading Level:</span>
-                            <span className="literexia-detail-value">{intervention.readingLevel}</span>
-                          </div>
-                          <div className="literexia-intervention-detail">
-                            <span className="literexia-detail-label">Questions:</span>
-                            <span className="literexia-detail-value">{intervention.questions ? intervention.questions.length : 0}</span>
-                          </div>
-                          <div className="literexia-intervention-detail">
-                            <span className="literexia-detail-label">Status:</span>
-                            <span className="literexia-detail-value">{intervention.status}</span>
-                          </div>
-                          <div className="literexia-intervention-detail">
-                            <span className="literexia-detail-label">Created:</span>
-                            <span className="literexia-detail-value">
-                              {new Date(intervention.createdAt).toLocaleDateString()}
-                            </span>
+                          <div className="literexia-progress-bar-container">
+                            <div
+                              className="literexia-progress-bar-fill"
+                              style={{
+                                width: `${progressPercentage}%`,
+                                backgroundColor: '#5470a8'
+                              }}
+                            ></div>
                           </div>
                         </div>
-                        
+
+                        {/* Intervention Details Grid */}
+                        <div className="literexia-intervention-details-grid">
+                          <div className="literexia-detail-item">
+                            <div className="literexia-detail-icon">
+                              <FaGraduationCap />
+                            </div>
+                            <div className="literexia-detail-content">
+                              <span className="literexia-detail-label">Reading Level</span>
+                              <span className="literexia-detail-value">{intervention.readingLevel}</span>
+                            </div>
+                          </div>
+
+                          <div className="literexia-detail-item">
+                            <div className="literexia-detail-icon">
+                              <FaQuestionCircle />
+                            </div>
+                            <div className="literexia-detail-content">
+                              <span className="literexia-detail-label">Questions</span>
+                              <span className="literexia-detail-value">{intervention.questions ? intervention.questions.length : 0}</span>
+                            </div>
+                          </div>
+
+                          <div className="literexia-detail-item">
+                            <div className="literexia-detail-icon">
+                              <FaClock />
+                            </div>
+                            <div className="literexia-detail-content">
+                              <span className="literexia-detail-label">Created</span>
+                              <span className="literexia-detail-value">
+                                {new Date(intervention.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="literexia-detail-item">
+                            <div className="literexia-detail-icon">
+                              <FaInfoCircle />
+                            </div>
+                            <div className="literexia-detail-content">
+                              <span className="literexia-detail-label">Status</span>
+                              <span className="literexia-detail-value">{intervention.status}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
                         <div className="literexia-intervention-actions">
-                          <button 
+                          <button
                             className="literexia-edit-activity-btn"
                             onClick={() => handleCreateActivity(selectedCategory, selectedAnalysis, intervention)}
                             disabled={loading || intervention.status === 'active'}
-                            title={intervention.status === 'active' ? 
-                              "Active interventions cannot be edited after being pushed to mobile" : 
+                            title={intervention.status === 'active' ?
+                              "Active interventions cannot be edited after being pushed to mobile" :
                               "Edit this intervention activity"}
                           >
-                            <FaEdit /> Edit Activity
+                            <FaEdit className="action-icon" />
+                            <span>Edit Activity</span>
                           </button>
+
                           {intervention.status === 'draft' ? (
-                            <button 
+                            <button
                               className="literexia-push-mobile-btn"
                               onClick={() => handlePushToMobile(intervention)}
                               disabled={loading}
                               title="Push this intervention to the student's mobile device"
                             >
-                              {loading && pendingIntervention?._id === intervention._id ? <FaSpinner className="fa-spin" /> : <FaMobile />}
-                              Push to Mobile
+                              {loading && pendingIntervention?._id === intervention._id ? (
+                                <FaSpinner className="fa-spin action-icon" />
+                              ) : (
+                                <FaMobile className="action-icon" />
+                              )}
+                              <span>Active on Mobile</span>
                             </button>
                           ) : (
                             <div className="literexia-active-status">
-                              <FaCheckCircle /> Active on Mobile
+                              <FaCheckCircle className="action-icon" />
+                              <span>Active on Mobile</span>
                             </div>
                           )}
                         </div>
