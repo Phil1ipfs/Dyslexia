@@ -2212,6 +2212,65 @@
   border-top: 8px solid #3B4F81;
 }
 
+/* Alphabet Knowledge Radio Button Styling */
+.alphabet-knowledge-choice-radio {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ef4444; /* Red border for unselected */
+  border-radius: 50%;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: #fff;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+/* Add styling for choice items container */
+.alphabet-knowledge-choice-item {
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background-color: #f9fafb;
+  transition: border-color 0.2s ease;
+}
+
+/* Highlight when choice needs attention */
+.alphabet-knowledge-choice-item.needs-selection {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.alphabet-knowledge-choice-radio:checked {
+  border-color: #10b981; /* Green border when selected */
+  background-color: #10b981; /* Green background when selected */
+}
+
+.alphabet-knowledge-choice-radio:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: white;
+}
+
+.alphabet-knowledge-choice-radio:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: #9ca3af;
+}
+
+.alphabet-knowledge-choice-radio:disabled:checked {
+  border-color: #9ca3af;
+  background-color: #9ca3af;
+}
+
 /* Accessibility Improvements */
 @media (prefers-reduced-motion: reduce) {
   .literexia-activity-edit-modal,

@@ -105,12 +105,24 @@ class ErrorPatternService {
 
     // Separate patinig and katinig responses based on questionValue
     const patinigLetters = ['A', 'E', 'I', 'O', 'U'];
-    const patinigResponses = enhancedResponses.filter(r =>
-      r.questionValue && patinigLetters.includes(r.questionValue.toUpperCase())
-    );
-    const katinigResponses = enhancedResponses.filter(r =>
-      r.questionValue && !patinigLetters.includes(r.questionValue.toUpperCase()) && r.questionValue
-    );
+
+    // Helper function to determine if questionValue represents a vowel concept
+    const isVowelValue = (value) => {
+      if (!value) return false;
+      const upperValue = value.toUpperCase();
+      // Check if it's a single vowel letter
+      if (upperValue.length === 1 && patinigLetters.includes(upperValue)) {
+        return true;
+      }
+      // Check if it's a word that starts with a vowel (common for vowel teaching)
+      if (upperValue.length > 1 && patinigLetters.includes(upperValue.charAt(0))) {
+        return true;
+      }
+      return false;
+    };
+
+    const patinigResponses = enhancedResponses.filter(r => r.questionValue && isVowelValue(r.questionValue));
+    const katinigResponses = enhancedResponses.filter(r => r.questionValue && !isVowelValue(r.questionValue));
     
     // Analyze patinig errors
     const patinigErrors = patinigResponses.filter(r => !r.isCorrect);

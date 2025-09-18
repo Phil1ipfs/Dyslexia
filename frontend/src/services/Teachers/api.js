@@ -72,66 +72,82 @@ export default {
   put: (url, data = {}, config = {}) => api.put(url, data, config),
   delete: (url, config = {}) => api.delete(url, config),
   
-  // Domain-specific API methods for intervention management
+  // Domain-specific API methods for intervention management (CLAUDE.md compliant)
   interventions: {
     // Get all interventions for a student
-    getStudentInterventions: (studentId) => 
-      api.get(`/api/interventions/student/${studentId}`),
-      
+    getStudentInterventions: (studentId) =>
+      api.get(`/api/intervention-assessment/student/${studentId}`),
+
     // Get intervention by ID
-    getById: (interventionId) => 
-      api.get(`/api/interventions/${interventionId}`),
-      
+    getById: (interventionId) =>
+      api.get(`/api/intervention-assessment/${interventionId}`),
+
     // Check if intervention exists for student and category
-    checkExisting: (studentId, category) => 
-      api.get(`/api/interventions/check?studentId=${studentId}&category=${category}`),
-      
-    // Create new intervention
-    create: (interventionData) => 
-      api.post('/api/interventions', interventionData),
-      
+    checkExisting: (studentId, category) =>
+      api.get(`/api/intervention-assessment/eligibility/${studentId}/${category}`),
+
+    // Create new intervention assessment (Teacher-created)
+    create: (interventionData) =>
+      api.post('/api/intervention-assessment', interventionData),
+
+    // Generate new intervention using CLAUDE.md Doctor-Teacher-Student model
+    generate: (analysisId, category) =>
+      api.post('/api/intervention-assessment/generate', { analysisId, category }),
+
     // Update intervention
-    update: (interventionId, updateData) => 
-      api.put(`/api/interventions/${interventionId}`, updateData),
-      
+    update: (interventionId, updateData) =>
+      api.put(`/api/intervention-assessment/${interventionId}`, updateData),
+
     // Delete intervention
-    delete: (interventionId) => 
-      api.delete(`/api/interventions/${interventionId}`),
-      
-    // Push to mobile and activate intervention
-    activate: (interventionId) => 
-      api.put(`/api/interventions/${interventionId}/activate`, { status: 'active' }),
+    delete: (interventionId) =>
+      api.delete(`/api/intervention-assessment/${interventionId}`),
+
+    // Start intervention (mark as started)
+    start: (interventionId) =>
+      api.post(`/api/intervention-assessment/${interventionId}/start`),
+
+    // Complete intervention (mark as completed)
+    complete: (interventionId) =>
+      api.post(`/api/intervention-assessment/${interventionId}/complete`),
       
     // Legacy push to mobile (will be deprecated)
     pushToMobile: (interventionId) => 
       api.post(`/api/interventions/${interventionId}/push`),
       
-    // Get main assessment questions
-    getMainAssessmentQuestions: (category, readingLevel) => 
+    // Get main assessment questions (legacy system)
+    getMainAssessmentQuestions: (category, readingLevel) =>
       api.get(`/api/interventions/questions/main?category=${encodeURIComponent(category)}&readingLevel=${encodeURIComponent(readingLevel)}`),
-      
-    // Get template questions
-    getTemplateQuestions: (category) => 
+
+    // Get template questions (CLAUDE.md system)
+    getTemplateQuestions: (category) =>
       api.get(`/api/interventions/templates/questions?category=${encodeURIComponent(category)}`),
-      
-    // Get template choices
+
+    // Get template choices (CLAUDE.md system)
     getTemplateChoices: (choiceTypes = []) => {
-      const queryParam = choiceTypes.length > 0 ? 
+      const queryParam = choiceTypes.length > 0 ?
         `?choiceTypes=${choiceTypes.join(',')}` : '';
       return api.get(`/api/interventions/templates/choices${queryParam}`);
     },
-    
-    // Get sentence templates
-    getSentenceTemplates: (readingLevel) => 
-      api.get(`/api/interventions/templates/sentences?readingLevel=${encodeURIComponent(readingLevel)}`),
-      
-    // Create template question
-    createTemplateQuestion: (templateData) => 
+
+    // Get template choices by types (CLAUDE.md system)
+    getTemplateChoicesByTypes: (choiceTypes) =>
+      api.post('/api/interventions/templates/choices/by-types', { choiceTypes }),
+
+    // Get sentence templates (CLAUDE.md system)
+    getSentenceTemplates: (readingLevel) =>
+      api.get(`/api/interventions/templates/sentences/level/${encodeURIComponent(readingLevel)}`),
+
+    // Create template question (CLAUDE.md system)
+    createTemplateQuestion: (templateData) =>
       api.post('/api/interventions/templates/questions', templateData),
-      
-    // Create template choice
-    createTemplateChoice: (choiceData) => 
+
+    // Create template choice (CLAUDE.md system)
+    createTemplateChoice: (choiceData) =>
       api.post('/api/interventions/templates/choices', choiceData),
+
+    // Generate intervention using templates (CLAUDE.md system)
+    generateInterventionFromTemplates: (prescriptiveAnalysisId, category) =>
+      api.post('/api/interventions/templates/generate-intervention', { prescriptiveAnalysisId, category }),
       
     // Get upload URL
     getUploadUrl: (fileName, fileType, targetFolder = 'mobile') => 
@@ -143,6 +159,14 @@ export default {
       
     // Get prescriptive analysis for student and category
     getPrescriptiveAnalysis: (studentId, category) =>
-      api.get(`/api/prescriptive-analytics/student/${studentId}/latest`)
+      api.get(`/api/prescriptive-analytics/student/${studentId}/latest`),
+
+    // Generate prescriptive analysis (CLAUDE.md Doctor's diagnosis)
+    generatePrescriptiveAnalysis: (categoryResultId) =>
+      api.post('/api/prescriptive-analytics/generate', { categoryResultId }),
+
+    // Get all prescriptive analyses for student
+    getStudentPrescriptiveAnalyses: (studentId) =>
+      api.get(`/api/prescriptive-analytics/student/${studentId}`)
   }
 };

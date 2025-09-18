@@ -120,9 +120,47 @@ const validateEligibilityCheck = (req, res, next) => {
   next();
 };
 
+// POST /api/intervention-assessment
+// Create new teacher-created intervention assessment
+router.post('/',
+  (req, res, next) => {
+    // Validate required fields for teacher-created interventions
+    const errors = [];
+    const { studentId, category, questions } = req.body;
+
+    if (!studentId) {
+      errors.push({ field: 'studentId', message: 'Student ID is required' });
+    }
+
+    if (!category) {
+      errors.push({ field: 'category', message: 'Category is required' });
+    }
+
+    if (!questions || !Array.isArray(questions) || questions.length === 0) {
+      errors.push({ field: 'questions', message: 'At least one question is required' });
+    }
+
+    // Check if teacherImplementation.implementedBy is provided
+    if (!req.body.teacherImplementation?.implementedBy) {
+      errors.push({ field: 'teacherImplementation.implementedBy', message: 'Teacher implementation implementedBy is required' });
+    }
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors
+      });
+    }
+
+    next();
+  },
+  interventionAssessmentController.createIntervention
+);
+
 // POST /api/intervention-assessment/generate
 // Generate one-time intervention based on prescriptive analysis
-router.post('/generate', 
+router.post('/generate',
   validateInterventionGeneration,
   interventionAssessmentController.generateIntervention
 );
@@ -134,8 +172,22 @@ router.get('/eligibility/:studentId/:category',
   interventionAssessmentController.checkEligibility
 );
 
+// Add all other specific routes before parameterized routes
+// POST /api/intervention-assessment/validate-generation
+// Validate intervention generation request without creating
+router.post('/validate-generation',
+  validateInterventionGeneration,
+  interventionAssessmentController.validateInterventionGeneration
+);
+
+// GET /api/intervention-assessment/health
+// Health check for intervention assessment service
+router.get('/health',
+  interventionAssessmentController.getServiceHealth
+);
+
 // GET /api/intervention-assessment/:interventionId
-// Get intervention assessment by ID
+// Get intervention assessment by ID (MOVED AFTER SPECIFIC ROUTES)
 router.get('/:interventionId',
   validateInterventionId,
   interventionAssessmentController.getInterventionById
@@ -245,19 +297,6 @@ router.delete('/:interventionId',
 router.get('/statistics/:studentId',
   validateStudentId,
   interventionAssessmentController.getStudentInterventionStatistics
-);
-
-// POST /api/intervention-assessment/validate-generation
-// Validate intervention generation request without creating
-router.post('/validate-generation',
-  validateInterventionGeneration,
-  interventionAssessmentController.validateInterventionGeneration
-);
-
-// GET /api/intervention-assessment/health
-// Health check for intervention assessment service
-router.get('/health',
-  interventionAssessmentController.getServiceHealth
 );
 
 // Error handling middleware

@@ -63,6 +63,7 @@ import {
   FaImage
 } from 'react-icons/fa';
 import api from '../../../services/Teachers/api';
+import { toast } from '../../../utils/toastHelper';
 
 import './css/ActivityEditModal.css';
 import './css/AlphabetKnowledgeActivityEdit.css';
@@ -204,14 +205,41 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    * or from an API call if needed
    */
   const findMongoDbAnalysis = async () => {
-    // Get the student ID
-    const studentId = student?._id || student?.id || student?.studentId;
-    
+    // Get the student ID - prioritize idNumber since that's what prescriptive analysis uses
+    console.log("🔍 [DEBUG] Student object structure:", {
+      student,
+      idNumber: student?.idNumber,
+      studentId: student?.studentId,
+      _id: student?._id,
+      id: student?.id
+    });
+
+    // Try to extract the student ID number (not MongoDB ObjectId)
+    let studentId = student?.idNumber || student?.studentId;
+
+    // If we still don't have a numeric student ID, check if it's a numeric string in other fields
+    if (!studentId || typeof studentId !== 'number') {
+      // Look for numeric IDs in other fields
+      const potentialIds = [student?.id, student?._id, student?.idNumber, student?.studentId];
+      for (const id of potentialIds) {
+        if (typeof id === 'number' && id > 1000000) { // Student IDs are typically large numbers like 202522233
+          studentId = id;
+          break;
+        }
+        if (typeof id === 'string' && /^\d{6,10}$/.test(id)) { // 6-10 digit numeric string
+          studentId = parseInt(id);
+          break;
+        }
+      }
+    }
+
+    console.log("🔍 [DEBUG] Extracted studentId:", studentId, "Type:", typeof studentId);
+
     if (!studentId || !category) {
-      console.error("Missing student ID or category to find MongoDB analysis");
+      console.error("❌ Missing student ID or category to find MongoDB analysis. StudentId:", studentId, "Category:", category);
       return null;
     }
-    
+
     console.log("Finding MongoDB analysis for student:", studentId, "and category:", category);
     
     try {
@@ -447,20 +475,20 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       // Log the number of questions
       console.log(`Number of questions: ${interventionData.questions.length}`);
       
-      // Check for valid choices in each question
+      // Check for valid choices in each question (using choiceOptions for CLAUDE.md format)
       interventionData.questions.forEach((question, index) => {
-        if (!question.choices || !Array.isArray(question.choices)) {
-          console.error(`[SAVE] ❌ Question ${index} choices validation failed:`, {
+        if (!question.choiceOptions || !Array.isArray(question.choiceOptions)) {
+          console.error(`[SAVE] ❌ Question ${index} choiceOptions validation failed:`, {
             question: question,
-            choices: question.choices,
-            choicesType: typeof question.choices,
-            isArray: Array.isArray(question.choices)
+            choiceOptions: question.choiceOptions,
+            choiceOptionsType: typeof question.choiceOptions,
+            isArray: Array.isArray(question.choiceOptions)
           });
-          throw new Error(`Question ${index} has invalid choices`);
+          throw new Error(`Question ${index} has invalid choiceOptions`);
         }
 
         // Validate each choice has required fields
-        question.choices.forEach((choice, choiceIndex) => {
+        question.choiceOptions.forEach((choice, choiceIndex) => {
           if (!choice.optionText && choice.optionText !== '') {
             console.error(`[SAVE] ❌ Question ${index}, choice ${choiceIndex} missing optionText:`, choice);
             throw new Error(`Question ${index}, choice ${choiceIndex} has invalid optionText`);
@@ -1460,12 +1488,38 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   const saveActivity = async () => {
     try {
       if (!validateAllSteps()) {
+        console.log('[SAVE] Validation failed, current errors:', errors);
+
+        // Show toast notifications for validation errors
+        const errorMessages = [];
+
+        if (errors.title) errorMessages.push("Title is required");
+        if (errors.description) errorMessages.push("Description is required");
+        if (errors.sentenceTemplate) errorMessages.push("Please select a sentence template");
+        if (errors.pairs) errorMessages.push("Please fill in all required question fields");
+        if (errors.questionValue) errorMessages.push("Question Value is required for all questions");
+        if (errors.questionText) errorMessages.push("Question Text is required for all questions");
+
+        console.log('[SAVE] Showing error messages:', errorMessages);
+
+        // Show specific validation errors
+        errorMessages.forEach(message => {
+          console.log('[TOAST] Showing error:', message);
+          toast.error(message);
+        });
+
+        // Show general validation error if no specific errors
+        if (errorMessages.length === 0) {
+          console.log('[TOAST] Showing general validation error');
+          toast.error("Please fill in all required fields before saving");
+        }
+
         // Go to first step with errors
         if (errors.title || errors.description) {
           setCurrentStep(1);
         } else if (errors.sentenceTemplate) {
           setCurrentStep(2);
-        } else if (errors.pairs) {
+        } else if (errors.pairs || errors.questionValue) {
           setCurrentStep(3);
         }
         return;
@@ -1611,8 +1665,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         console.error("[SAVE] ❌ Expected 68c9fc70d26632a89f218ef0 but got:", analysis._id);
       }
     } else {
-      console.error("[SAVE] ❌ No analysis prop provided or missing _id field");
-      console.error("[SAVE] ❌ analysis:", analysis);
+      console.warn("[SAVE] ⚠️ No analysis prop provided, will try to fetch from API");
+      console.log("[SAVE] ❌ analysis:", analysis);
     }
 
     // Try mongoDbAnalysis only if it has real data structure
@@ -1634,16 +1688,78 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       }
     }
 
-    // NO FALLBACKS - only real data
+    // TRY API FALLBACK - fetch prescriptive analysis if not provided
+    if (!prescriptiveAnalysisId) {
+      console.warn("[SAVE] ⚠️ No prescriptive analysis in props, trying API fallback for student:", studentId, "category:", category);
+
+      try {
+        console.log("[SAVE] 🔍 Fetching prescriptive analysis for student:", studentId);
+
+        // Try to get all prescriptive analyses for this student
+        const response = await api.interventions.getStudentPrescriptiveAnalyses(studentId);
+        console.log("[SAVE] API response for prescriptive analysis:", response);
+
+        if (response.data && response.data.success && response.data.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
+          console.log("[SAVE] 📊 Found prescriptive analyses:", response.data.data.length);
+
+          // Look for the analysis that contains data for our category
+          let foundAnalysis = null;
+          for (const analysis of response.data.data) {
+            console.log("[SAVE] 🔍 Checking analysis:", analysis._id, "for category:", category);
+
+            // Check if this analysis has data for the category we need
+            if (analysis.skillMastery && analysis.skillMastery[category]) {
+              foundAnalysis = analysis;
+              console.log("[SAVE] ✅ Found analysis with category data:", analysis._id);
+              break;
+            }
+
+            // Also check in error patterns or intervention plan
+            if (analysis.errorPatterns && analysis.errorPatterns[category]) {
+              foundAnalysis = analysis;
+              console.log("[SAVE] ✅ Found analysis with error patterns for category:", analysis._id);
+              break;
+            }
+
+            if (analysis.interventionPlan && analysis.interventionPlan.specificFocus && analysis.interventionPlan.specificFocus[category]) {
+              foundAnalysis = analysis;
+              console.log("[SAVE] ✅ Found analysis with intervention plan for category:", analysis._id);
+              break;
+            }
+          }
+
+          if (foundAnalysis) {
+            prescriptiveAnalysisId = foundAnalysis._id.$oid || foundAnalysis._id;
+            realAnalysisData = foundAnalysis;
+            console.log("[SAVE] ✅ Using prescriptive analysis ID:", prescriptiveAnalysisId);
+            console.log("[SAVE] ✅ Real analysis data from API:", {
+              id: prescriptiveAnalysisId,
+              hasErrorPatterns: !!foundAnalysis.errorPatterns,
+              hasSkillMastery: !!foundAnalysis.skillMastery,
+              hasInterventionPlan: !!foundAnalysis.interventionPlan,
+              hasResearchBasedPrescriptions: !!foundAnalysis.researchBasedPrescriptions,
+              categoryData: foundAnalysis.skillMastery?.[category] ? "found" : "not found"
+            });
+          } else {
+            console.warn("[SAVE] ⚠️ No prescriptive analysis found with data for category:", category);
+          }
+        } else {
+          console.warn("[SAVE] ⚠️ API response format unexpected:", response.data);
+        }
+      } catch (error) {
+        console.error("[SAVE] ❌ Failed to fetch prescriptive analysis via API:", error);
+        console.error("[SAVE] ❌ Error details:", error.response?.data || error.message);
+      }
+    }
+
     if (!prescriptiveAnalysisId) {
       console.error("[SAVE] ❌ NO REAL PRESCRIPTIVE ANALYSIS FOUND for student:", studentId, "category:", category);
       console.error("[SAVE] ❌ analysis prop:", analysis);
       console.error("[SAVE] ❌ mongoDbAnalysis:", mongoDbAnalysis);
       console.error("[SAVE] ❌ Cannot create intervention without real prescriptive analysis!");
-      console.error("[SAVE] ❌ Expected to find prescriptive analysis ID: 68c9fc70d26632a89f218ef0");
 
-      // Still allow creation but log the issue
-      console.warn("[SAVE] ⚠️ Proceeding WITHOUT prescriptive analysis ID - intervention will have limited data");
+      toast("Cannot create intervention: No prescriptive analysis found for this student and category. Please ensure the student has completed the main assessment.", 'error', 6000);
+      return;
     } else {
       console.log("[SAVE] ✅ FINAL PRESCRIPTIVE ANALYSIS ID:", prescriptiveAnalysisId);
       console.log("[SAVE] ✅ Using real prescriptive analysis data for intervention creation");
@@ -1945,25 +2061,143 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         // Doctor's Prescription (ONLY from real prescriptive analytics data)
         doctorPrescription: realAnalysisData ? {
           deficitAnalysis: {
-            specificDeficits: realAnalysisData.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.map(d => d.deficit) || realAnalysisData.errorPatterns?.[category]?.detailedErrorAnalysis?.map(err => err.errorPattern) || [],
-            severity: realAnalysisData.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.[0]?.severity || "moderate",
-            errorRate: realAnalysisData.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.[0]?.errorRate || `${Math.round((realAnalysisData.skillMastery?.[category]?.score || 0))}%`,
-            confusionPairs: realAnalysisData.errorPatterns?.[category]?.detailedErrorAnalysis?.map(err => ({
-              sounds: err.specificPairs || [],
-              confusionRate: err.errorRate || 0
-            })) || []
+            specificDeficits: realAnalysisData.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.map(d => d.deficit || d) ||
+                             realAnalysisData.errorPatterns?.[category]?.detailedErrorAnalysis?.map(err => err.errorPattern) ||
+                             (realAnalysisData.errorPatterns?.[category] ? [
+                               ...(realAnalysisData.errorPatterns[category].patinig_errors ? [
+                                 `Vowel recognition difficulties (${realAnalysisData.errorPatterns[category].patinig_errors.percentage}% error rate)`,
+                                 `Specific vowel confusions: ${realAnalysisData.errorPatterns[category].patinig_errors.specific_letters?.join(', ')}`
+                               ] : []),
+                               ...(realAnalysisData.errorPatterns[category].katinig_errors ? [
+                                 `Consonant recognition difficulties (${realAnalysisData.errorPatterns[category].katinig_errors.percentage}% error rate)`,
+                                 `Specific consonant confusions: ${realAnalysisData.errorPatterns[category].katinig_errors.specific_letters?.join(', ')}`
+                               ] : []),
+                               `${category} difficulties identified`
+                             ] : [`${category} skill deficits`]),
+            severity: realAnalysisData.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.[0]?.severity ||
+                     realAnalysisData.errorPatterns?.[category]?.severity ||
+                     (realAnalysisData.skillMastery?.[category]?.score < 40 ? "severe" :
+                      realAnalysisData.skillMastery?.[category]?.score < 60 ? "moderate" : "mild"),
+            errorRate: realAnalysisData.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.[0]?.errorRate ||
+                      (realAnalysisData.errorPatterns?.[category]?.patinig_errors?.percentage ? `${realAnalysisData.errorPatterns[category].patinig_errors.percentage}%` :
+                       realAnalysisData.errorPatterns?.[category]?.errorRate ? `${realAnalysisData.errorPatterns[category].errorRate}%` :
+                       `${Math.round(100 - (realAnalysisData.skillMastery?.[category]?.score || 0))}%`),
+            confusionPairs: realAnalysisData.researchBasedPrescriptions?.[category]?.deficitAnalysis?.confusionPairs ||
+                           realAnalysisData.errorPatterns?.[category]?.confusion_pairs ||
+                           realAnalysisData.errorPatterns?.[category]?.confusionPairs ||
+                           // Build confusion pairs from error patterns data
+                           (() => {
+                             const pairs = [];
+                             const errorPattern = realAnalysisData.errorPatterns?.[category];
+                             if (errorPattern?.patinig_errors?.specific_letters) {
+                               // Create vowel confusion pairs
+                               const vowels = errorPattern.patinig_errors.specific_letters;
+                               for (let i = 0; i < vowels.length - 1; i += 2) {
+                                 pairs.push({
+                                   sounds: [vowels[i], vowels[i + 1] || vowels[0]],
+                                   confusionRate: errorPattern.patinig_errors.percentage || 75
+                                 });
+                               }
+                             }
+                             if (errorPattern?.katinig_errors?.specific_letters) {
+                               // Create consonant confusion pairs
+                               const consonants = errorPattern.katinig_errors.specific_letters;
+                               for (let i = 0; i < consonants.length - 1; i += 2) {
+                                 pairs.push({
+                                   sounds: [consonants[i], consonants[i + 1] || consonants[0]],
+                                   confusionRate: errorPattern.katinig_errors.percentage || 50
+                                 });
+                               }
+                             }
+                             return pairs;
+                           })()
           },
           interventionPrescription: {
-            primaryApproach: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.primaryApproach || "multisensory_structured",
-            recommendedQuestionCount: realAnalysisData.interventionPlan?.specificFocus?.[category]?.questionDistribution?.total || questionChoicePairs.length,
-            intensityLevel: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.intensityLevel || "intensive",
+            primaryApproach: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.primaryApproach ||
+                           realAnalysisData.interventionPlan?.specificFocus?.[category]?.primaryApproach ||
+                           "multisensory_structured",
+            recommendedQuestionCount: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.recommendedQuestionCount ||
+                                    realAnalysisData.interventionPlan?.specificFocus?.[category]?.questionDistribution?.total ||
+                                    questionChoicePairs.length,
+            intensityLevel: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.intensityLevel ||
+                          realAnalysisData.interventionPlan?.intensity ||
+                          (realAnalysisData.skillMastery?.[category]?.score < 40 ? "highly_intensive" :
+                           realAnalysisData.skillMastery?.[category]?.score < 60 ? "intensive" : "standard"),
             sessionStructure: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.sessionStructure || {
-              optimalLength: "15-20 minutes",
+              optimalLength: realAnalysisData.interventionPlan?.specificFocus?.[category]?.sessionLength || "15-20 minutes",
               breakPattern: "Every 10 minutes"
             },
-            specificTechniques: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.map(t => t.technique || t) || realAnalysisData.interventionPlan?.specificFocus?.[category]?.recommendedActivities || []
+            specificTechniques: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.map(t => {
+                              if (typeof t === 'object' && t.technique) {
+                                return {
+                                  technique: t.technique,
+                                  description: t.description || '',
+                                  duration: t.duration || '10-15 minutes daily',
+                                  materials: t.materials || 'Visual-auditory materials',
+                                  progressCriteria: t.progressCriteria || '80% accuracy',
+                                  researchBasis: t.researchBasis || 'Evidence-based practice'
+                                };
+                              }
+                              return typeof t === 'string' ? t : t.technique || t;
+                            }) ||
+                              realAnalysisData.interventionPlan?.specificFocus?.[category]?.recommendedActivities ||
+                              realAnalysisData.interventionPlan?.specificFocus?.[category]?.techniques ||
+                              // Generate specific techniques based on error patterns
+                              (() => {
+                                const techniques = [];
+                                const errorPattern = realAnalysisData.errorPatterns?.[category];
+                                if (errorPattern?.patinig_errors) {
+                                  techniques.push({
+                                    technique: "Auditory Discrimination Training",
+                                    description: "Systematic practice distinguishing similar vowel sounds",
+                                    duration: "10-15 minutes daily",
+                                    materials: "Minimal pair cards, audio recordings",
+                                    progressCriteria: "90% accuracy on targeted sound pairs",
+                                    researchBasis: "Tallal et al. (1996) - Intensive auditory training improves discrimination"
+                                  });
+                                }
+                                if (errorPattern?.katinig_errors) {
+                                  techniques.push({
+                                    technique: "Multisensory Sound-Symbol Mapping",
+                                    description: "Visual-auditory-kinesthetic consonant learning",
+                                    duration: "15-20 minutes daily",
+                                    materials: "Letter cards, mirrors, tactile materials",
+                                    progressCriteria: "Consistent cross-modal sound identification",
+                                    researchBasis: "Gillingham & Stillman (1960) - Multisensory approach for struggling readers"
+                                  });
+                                }
+                                if (techniques.length === 0) {
+                                  techniques.push("Systematic, explicit instruction", "Immediate corrective feedback");
+                                }
+                                return techniques;
+                              })()
           },
-          materialRecommendations: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.materialRecommendations || ["Teacher-created intervention questions"]
+          materialRecommendations: realAnalysisData.researchBasedPrescriptions?.[category]?.materialRecommendations ||
+                                 realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.materialRecommendations ||
+                                 realAnalysisData.interventionPlan?.specificFocus?.[category]?.materials ||
+                                 // Generate material recommendations based on error patterns
+                                 (() => {
+                                   const materials = [];
+                                   const errorPattern = realAnalysisData.errorPatterns?.[category];
+                                   if (errorPattern?.patinig_errors) {
+                                     materials.push(
+                                       "Letter recognition flashcards with high-contrast visuals",
+                                       "Visual discrimination worksheets targeting vowel confusions",
+                                       "Audio recordings with clear vowel sound distinctions"
+                                     );
+                                   }
+                                   if (errorPattern?.katinig_errors) {
+                                     materials.push(
+                                       "Tactile letter cards with sandpaper texture",
+                                       "Mirror for mouth position awareness during sound production",
+                                       "Minimal pair cards focusing on confused consonant sounds"
+                                     );
+                                   }
+                                   if (materials.length === 0) {
+                                     materials.push("Teacher-created intervention questions", "Visual-auditory learning materials");
+                                   }
+                                   return materials;
+                                 })()
         } : {
           // NO REAL DATA AVAILABLE - Create minimal prescription structure
           deficitAnalysis: {
@@ -2051,14 +2285,15 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             questionImage: processedImageUrl,
             questionValue: pair.questionValue || (pair.questionImage ? pair.questionText?.split(' ').pop() || '' : ''),
 
-            // ALWAYS include choices array for backend validation (ALL categories)
-            choices: selectedChoices.map(choice => {
+            // Use choiceOptions for all categories (CLAUDE.md format)
+            choiceOptions: selectedChoices.map((choice, choiceIdx) => {
               if (isAlphabetKnowledge) {
                 // Alphabet Knowledge choice structure
                 return {
+                  optionId: String(choiceIdx + 1),
                   optionText: choice.optionText || '',
                   isCorrect: choice.isCorrect || false,
-                  description: choice.description || ''
+                  imageUrl: choice.imageUrl || null
                 };
               } else {
                 // Other categories choice structure
@@ -2069,31 +2304,27 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                   description: choiceDescription
                 });
                 return {
+                  optionId: String(choiceIdx + 1),
                   optionText: choice.choiceValue || choice.soundText || '',
                   isCorrect: choice._id === pair.correctChoiceId,
-                  description: choiceDescription
+                  imageUrl: null
                 };
               }
             }),
 
-            // For Alphabet Knowledge, also include choiceOptions (CLAUDE.md format)
-            ...(isAlphabetKnowledge ? {
-              choiceOptions: selectedChoices.map((choice, choiceIdx) => ({
-                optionId: String(choiceIdx + 1),
-                optionText: choice.optionText || '',
-                isCorrect: choice.isCorrect,
-                imageUrl: choice.imageUrl || null
-              }))
-            } : {
-              // For other categories, include additional fields
+            // For other categories, include additional identification fields
+            ...(!isAlphabetKnowledge ? {
               choiceIds: pair.choiceIds,
               correctChoiceId: pair.correctChoiceId
-            }),
+            } : {}),
 
             // Add prescription alignment per CLAUDE.md
             prescriptionAlignment: {
               targetSkill: isTemplateQuestion ? category.toLowerCase().replace(/\s+/g, '_') : "general_practice",
-              technique: mongoDbAnalysis?.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.[0] || "Systematic, explicit instruction",
+              technique: mongoDbAnalysis?.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.[0]?.technique ||
+                        mongoDbAnalysis?.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.[0] ||
+                        mongoDbAnalysis?.interventionPlan?.specificFocus?.[category]?.recommendedActivities?.[0] ||
+                        "Systematic, explicit instruction",
               difficultyLevel: "standard",
               multisensoryElements: ["visual", "cognitive"]
             },
@@ -2133,9 +2364,14 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           factors: {
             base: realAnalysisData?.interventionPlan?.specificFocus?.[category]?.questionDistribution?.total || 10,
             errorSeverity: {
-              level: realAnalysisData?.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.[0]?.severity || "unknown",
+              level: realAnalysisData?.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.[0]?.severity ||
+                    realAnalysisData?.errorPatterns?.[category]?.severity ||
+                    (realAnalysisData?.skillMastery?.[category]?.score < 40 ? "severe" :
+                     realAnalysisData?.skillMastery?.[category]?.score < 60 ? "moderate" : "mild"),
               adjustment: 0,
-              percentage: parseFloat(realAnalysisData?.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.[0]?.errorRate) || realAnalysisData?.skillMastery?.[category]?.score || 0
+              percentage: parseFloat(realAnalysisData?.researchBasedPrescriptions?.[category]?.deficitAnalysis?.specificDeficits?.[0]?.errorRate) ||
+                         realAnalysisData?.errorPatterns?.[category]?.errorRate ||
+                         (100 - (realAnalysisData?.skillMastery?.[category]?.score || 0))
             },
             masteryLevel: {
               score: realAnalysisData?.skillMastery?.[category]?.score || 0,
@@ -2524,10 +2760,28 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   };
  
   const setCorrectChoice = (pairId, choiceId) => {
-    setQuestionChoicePairs(prev => 
-      prev.map(pair => 
-        pair.id === pairId ? { ...pair, correctChoiceId: choiceId } : pair
-      )
+    setQuestionChoicePairs(prev =>
+      prev.map(pair => {
+        if (pair.id !== pairId) return pair;
+
+        // For Alphabet Knowledge, update both correctChoiceId and choices isCorrect flags
+        const normCategory = normalizeCategory(category);
+        if (normCategory === 'alphabet_knowledge' && pair.choices && pair.choices.length > 0) {
+          const updatedChoices = pair.choices.map((choice, index) => ({
+            ...choice,
+            isCorrect: choice._id === choiceId || index === parseInt(choiceId) || choice.optionText === choiceId
+          }));
+
+          return {
+            ...pair,
+            correctChoiceId: choiceId,
+            choices: updatedChoices
+          };
+        }
+
+        // For other categories, just update correctChoiceId
+        return { ...pair, correctChoiceId: choiceId };
+      })
     );
   };
 
@@ -2773,6 +3027,24 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           if (invalidPairs.length > 0) {
             newErrors.pairs = "All questions must have exactly 3 choices with one marked as correct";
           }
+
+          // Validate Question Value is required for Alphabet Knowledge
+          const missingQuestionValue = questionChoicePairs.filter(pair =>
+            !pair.sourceTemplateId && (!pair.questionValue || pair.questionValue.trim() === '')
+          );
+
+          if (missingQuestionValue.length > 0) {
+            newErrors.questionValue = "Question Value is required for all Alphabet Knowledge questions";
+          }
+
+          // Validate Question Text is required for Alphabet Knowledge
+          const missingQuestionText = questionChoicePairs.filter(pair =>
+            !pair.sourceTemplateId && (!pair.questionText || pair.questionText.trim() === '')
+          );
+
+          if (missingQuestionText.length > 0) {
+            newErrors.questionText = "Question Text is required for all Alphabet Knowledge questions";
+          }
         } else {
           // Original validation for other categories
           const invalidPairs = questionChoicePairs.filter(pair =>
@@ -2828,14 +3100,45 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         // Validate Alphabet Knowledge questions
         const invalidPairs = questionChoicePairs.filter(pair => {
           if (!pair.choices || pair.choices.length !== 3) {
+            console.log(`[VALIDATION] Question ${pair.id}: Invalid choice count - has ${pair.choices?.length || 0}, needs 3`);
             return true; // Must have exactly 3 choices
           }
+
+          // Check both isCorrect flags and correctChoiceId for validation
           const correctChoices = pair.choices.filter(choice => choice.isCorrect);
-          return correctChoices.length !== 1; // Must have exactly 1 correct choice
+          const hasCorrectChoiceId = pair.correctChoiceId !== null && pair.correctChoiceId !== undefined;
+
+          const isValid = correctChoices.length === 1 || hasCorrectChoiceId;
+
+          if (!isValid) {
+            console.log(`[VALIDATION] Question ${pair.id}: No correct answer - correctChoices: ${correctChoices.length}, correctChoiceId: ${pair.correctChoiceId}`);
+          }
+
+          // Valid if either has exactly 1 correct choice OR has a correctChoiceId
+          return !isValid;
         });
 
         if (invalidPairs.length > 0) {
+          console.log(`[VALIDATION] Found ${invalidPairs.length} invalid pairs for Alphabet Knowledge`);
           allErrors.pairs = "All questions must have exactly 3 choices with one marked as correct";
+        }
+
+        // Validate Question Value is required for Alphabet Knowledge
+        const missingQuestionValue = questionChoicePairs.filter(pair =>
+          !pair.sourceTemplateId && (!pair.questionValue || pair.questionValue.trim() === '')
+        );
+
+        if (missingQuestionValue.length > 0) {
+          allErrors.questionValue = "Question Value is required for all Alphabet Knowledge questions";
+        }
+
+        // Validate Question Text is required for Alphabet Knowledge
+        const missingQuestionText = questionChoicePairs.filter(pair =>
+          !pair.sourceTemplateId && (!pair.questionText || pair.questionText.trim() === '')
+        );
+
+        if (missingQuestionText.length > 0) {
+          allErrors.questionText = "Question Text is required for all Alphabet Knowledge questions";
         }
       } else {
         // Original validation for other categories
@@ -3359,7 +3662,7 @@ const renderAlphabetKnowledgeStep = () => {
             {/* Template Selection */}
             <div className="alphabet-knowledge-form-group">
               <label className="alphabet-knowledge-form-label">
-                Step 1: Use a Pre-made Template (Recommended) or Create Your Own
+                Step 1: Use a Pre-made Template (Recommended) or Create Your Own <span style={{ color: '#ef4444' }}>*</span>
               </label>
 
               <select
@@ -3374,10 +3677,14 @@ const renderAlphabetKnowledgeStep = () => {
               >
                 <option value="">-- Choose a pre-made template (recommended) --</option>
                 {safe(questionTemplates)
-                  .filter(template => template.category === 'alphabet_knowledge')
+                  .filter(template => {
+                    const normCategory = normalizeCategory(category);
+                    const templateCategory = normalizeCategory(template.category);
+                    return templateCategory === normCategory;
+                  })
                   .map(template => (
                     <option key={template._id} value={template._id}>
-                      Template: {template.templateText} ({template.questionType})
+                      Template: {template.questionText || template.templateText} ({template.questionType})
                     </option>
                   ))}
               </select>
@@ -3405,10 +3712,68 @@ const renderAlphabetKnowledgeStep = () => {
               )}
             </div>
 
+            {/* Question Type Selector */}
+            <div className="alphabet-knowledge-form-group" style={{ marginBottom: '24px' }}>
+              <label className="alphabet-knowledge-form-label">
+                Step 2: Choose Question Type <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <div style={{
+                fontSize: '12px',
+                color: '#6b7280',
+                marginBottom: '8px'
+              }}>
+                {pair.sourceTemplateId
+                  ? "Question type is determined by your selected template."
+                  : "Select whether this question tests vowels (patinig) or consonants (katinig). This affects analysis accuracy."
+                }
+              </div>
+              <select
+                className="alphabet-knowledge-question-input"
+                value={pair.questionType || 'patinig'}
+                onChange={(e) => {
+                  const newQuestionType = e.target.value;
+                  updateQuestionChoicePair(pair.id, { questionType: newQuestionType });
+                }}
+                disabled={pair.sourceTemplateId}
+                style={{
+                  backgroundColor: pair.sourceTemplateId ? '#f3f4f6' : 'white',
+                  cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer',
+                  opacity: pair.sourceTemplateId ? 0.7 : 1,
+                  marginBottom: '8px'
+                }}
+              >
+                <option value="patinig">Patinig (Vowels) - Tests A, E, I, O, U recognition</option>
+                <option value="katinig">Katinig (Consonants) - Tests consonant letter recognition</option>
+              </select>
+              {pair.sourceTemplateId && (
+                <div style={{
+                  fontSize: '12px',
+                  color: '#6b7280',
+                  marginTop: '4px',
+                  fontStyle: 'italic'
+                }}>
+                  Question type is fixed by the selected template to ensure consistency.
+                </div>
+              )}
+              {!pair.sourceTemplateId && (
+                <div style={{
+                  fontSize: '12px',
+                  color: '#059669',
+                  marginTop: '4px',
+                  padding: '6px 8px',
+                  backgroundColor: '#ecfdf5',
+                  border: '1px solid #d1fae5',
+                  borderRadius: '4px'
+                }}>
+                  💡 <strong>Tip:</strong> Choose based on the prescriptive analysis. If student has vowel errors, use "Patinig". If consonant errors, use "Katinig".
+                </div>
+              )}
+            </div>
+
             {/* Question Text */}
             <div className="alphabet-knowledge-form-group" style={{ marginBottom: '24px' }}>
               <label className="alphabet-knowledge-form-label">
-                Step 2: Write Your Question Text
+                Step 3: Write Your Question Text <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <div style={{
                 fontSize: '12px',
@@ -3484,7 +3849,7 @@ const renderAlphabetKnowledgeStep = () => {
             {/* Question Image */}
             <div className="alphabet-knowledge-form-group" style={{ marginBottom: '24px' }}>
               <label className="alphabet-knowledge-form-label">
-                Step 3: Add a Picture (Optional)
+                Step 4: Add a Picture (Optional)
               </label>
               <div style={{
                 fontSize: '12px',
@@ -3564,10 +3929,72 @@ const renderAlphabetKnowledgeStep = () => {
               )}
             </div>
 
+            {/* Question Value */}
+            <div className="alphabet-knowledge-step-section">
+              <label className="alphabet-knowledge-form-label">
+                Step 5: Question Value (Word/Letter) <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <div className="alphabet-knowledge-step-description">
+                {pair.sourceTemplateId
+                  ? "Question Value is provided by your selected template."
+                  : "Enter the specific word or letter for this question."
+                }
+              </div>
+              <input
+                type="text"
+                className="alphabet-knowledge-question-input"
+                value={pair.questionValue || ''}
+                onChange={(e) => {
+                  // Only allow letters (no numbers or special characters)
+                  const lettersOnly = e.target.value.replace(/[^a-zA-Z]/g, '');
+                  updateQuestionChoicePair(pair.id, 'questionValue', lettersOnly);
+                }}
+                disabled={pair.sourceTemplateId}
+                placeholder={pair.sourceTemplateId ? "Protected by template" : "Enter word or letter (e.g., CAT, DOG, A, a)"}
+                maxLength="100"
+                style={{
+                  opacity: pair.sourceTemplateId ? 0.5 : 1,
+                  cursor: pair.sourceTemplateId ? 'not-allowed' : 'text',
+                  backgroundColor: pair.sourceTemplateId ? '#f9fafb' : 'white'
+                }}
+              />
+              {/* Character counter for question value */}
+              {!pair.sourceTemplateId && (
+                <div style={{
+                  fontSize: '10px',
+                  color: '#9ca3af',
+                  marginTop: '4px'
+                }}>
+                  {(pair.questionValue || '').length}/100 chars
+                </div>
+              )}
+              {pair.sourceTemplateId && (
+                <div style={{
+                  fontSize: '12px',
+                  color: '#6b7280',
+                  marginTop: '4px',
+                  fontStyle: 'italic'
+                }}>
+                  Question Value cannot be changed when using a template.
+                </div>
+              )}
+              {/* Error message for required Question Value */}
+              {errors.questionValue && (
+                <div style={{
+                  color: '#ef4444',
+                  fontSize: '11px',
+                  marginTop: '2px',
+                  fontWeight: '500'
+                }}>
+                  {errors.questionValue}
+                </div>
+              )}
+            </div>
+
             {/* Choices Section */}
             <div className="alphabet-knowledge-choices-section">
               <div className="alphabet-knowledge-choices-header">
-                <h4 className="alphabet-knowledge-choices-title">Step 4: Create Answer Choices</h4>
+                <h4 className="alphabet-knowledge-choices-title">Step 6: Create Answer Choices <span style={{ color: '#ef4444' }}>*</span></h4>
                 <span className="alphabet-knowledge-choices-info">Exactly 3 choices required</span>
               </div>
 
@@ -3607,12 +4034,16 @@ const renderAlphabetKnowledgeStep = () => {
                             newChoices[1].isCorrect = choiceIndex === 1;
                             newChoices[2].isCorrect = choiceIndex === 2;
 
-                            updateQuestionChoicePair(pair.id, { choices: newChoices });
+                            // Update both choices array and correctChoiceId for consistency
+                            updateQuestionChoicePair(pair.id, {
+                              choices: newChoices,
+                              correctChoiceId: choiceIndex.toString() // Store the index as correctChoiceId
+                            });
                           }}
                         />
                         <span style={{
                           fontSize: '11px',
-                          color: choice.isCorrect ? '#059669' : '#6b7280',
+                          color: choice.isCorrect ? '#059669' : '#ef4444', // Green if correct, red if not selected
                           fontWeight: choice.isCorrect ? 'bold' : 'normal',
                           textAlign: 'center'
                         }}>
@@ -3796,7 +4227,7 @@ const renderQuestionChoicesStepWithTemplates = () => {
               <input
                 type="text"
                 value={pair.questionText || ''}
-                onChange={(e) => updateQuestionText(pair.id, e.target.value)}
+                onChange={(e) => updateQuestionChoicePair(pair.id, 'questionText', e.target.value)}
                 placeholder="Enter question text..."
               />
             </div>
@@ -4606,7 +5037,7 @@ const renderReviewStep = () => {
        <div className="literexia-notice-content">
          <h4>Ready to Save</h4>
          <p>
-           This activity will be saved as a draft and can be pushed to {student?.firstName || 'the student'}'s 
+           This activity will be saved and can be pushed to {student?.firstName || 'the student'}'s 
            mobile device from the interventions list.
          </p>
        </div>

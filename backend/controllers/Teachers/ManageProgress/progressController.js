@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const CategoryResult = require('../../../models/Teachers/ManageProgress/categoryResultModel');
 const PrescriptiveAnalysis = require('../../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
 const InterventionPlan = require('../../../models/Teachers/ManageProgress/interventionPlanModel');
+const InterventionAssessment = require('../../../models/Teachers/ManageProgress/interventionAssessmentModel');
 const InterventionResults = require('../../../models/Teachers/ManageProgress/interventionResultsModel');
 const StudentResponse = require('../../../models/Teachers/ManageProgress/studentResponseModel');
 
@@ -558,41 +559,57 @@ class ProgressController {
     }
 
     /**
-     * Get all intervention plans for a student
+     * Get all intervention assessments for a student (updated for new CLAUDE.md system)
      */
     async getStudentInterventions(req, res) {
         try {
             const { studentId } = req.params;
+            console.log(`[PROGRESS CONTROLLER] Fetching interventions for student: ${studentId}`);
 
-            if (!mongoose.Types.ObjectId.isValid(studentId)) {
+            // Convert to integer for studentId (intervention_assessment uses integer studentId)
+            const studentIdInt = parseInt(studentId);
+            if (isNaN(studentIdInt)) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Invalid student ID format'
+                    message: 'Invalid student ID format - must be integer'
                 });
             }
 
-            // Get intervention plans
-            const interventionPlans = await InterventionPlan.find({
-                studentId: new mongoose.Types.ObjectId(studentId)
+            // Get intervention assessments from the new system (CLAUDE.md compliant)
+            const interventionAssessments = await InterventionAssessment.find({
+                studentId: studentIdInt
             }).sort({ createdAt: -1 });
 
-            // Get progress for each plan
-            const interventionsWithProgress = await Promise.all(
-                interventionPlans.map(async (plan) => {
-                    const progress = await InterventionResults.findOne({
-                        interventionPlanId: plan._id
+            console.log(`[PROGRESS CONTROLLER] Found ${interventionAssessments.length} intervention assessments`);
+
+            // Get intervention results for each assessment
+            const interventionsWithResults = await Promise.all(
+                interventionAssessments.map(async (assessment) => {
+                    const results = await InterventionResults.findOne({
+                        interventionAssessmentId: assessment._id
                     });
 
+                    const assessmentObj = assessment.toObject();
+
                     return {
-                        ...plan.toObject(),
-                        progress: progress ? progress.toObject() : null
+                        ...assessmentObj,
+                        progress: results ? {
+                            percentComplete: results.percentComplete || 0,
+                            percentCorrect: results.percentCorrect || 0,
+                            passedThreshold: results.isPassed || false,
+                            score: results.score || 0,
+                            completedAt: results.completedAt,
+                            results: results.toObject()
+                        } : null
                     };
                 })
             );
 
+            console.log(`[PROGRESS CONTROLLER] Returning ${interventionsWithResults.length} interventions with progress data`);
+
             return res.status(200).json({
                 success: true,
-                data: interventionsWithProgress
+                data: interventionsWithResults
             });
         } catch (error) {
             console.error('Error getting student interventions:', error);

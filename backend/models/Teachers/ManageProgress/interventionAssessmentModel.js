@@ -5,6 +5,15 @@ const mongoose = require('mongoose');
  * This model represents the one-time intervention questions generated based on prescriptive analysis
  */
 
+// Define interventionTechniqueSchema to match prescriptive analysis
+const interventionTechniqueSchema = new mongoose.Schema({
+  description: { type: String, required: true },
+  duration: { type: String, required: true },
+  materials: { type: String, required: true },
+  progressCriteria: { type: String, required: true },
+  researchBasis: { type: String, required: true }
+}, { _id: false });
+
 // Question selection strategy schema
 const questionSelectionStrategySchema = new mongoose.Schema({
   method: {
@@ -166,7 +175,88 @@ const interventionAssessmentSchema = new mongoose.Schema({
     min: 0,
     max: 100
   },
-  
+
+  // DOCTOR'S PRESCRIPTION (from prescriptive analytics) - CLAUDE.md requirement
+  doctorPrescription: {
+    deficitAnalysis: {
+      specificDeficits: [String],
+      severity: {
+        type: String,
+        enum: ['mild', 'moderate', 'severe'],
+        default: 'moderate'
+      },
+      errorRate: String,
+      confusionPairs: [mongoose.Schema.Types.Mixed]
+    },
+    interventionPrescription: {
+      primaryApproach: String,
+      recommendedQuestionCount: Number,
+      intensityLevel: {
+        type: String,
+        enum: ['low', 'moderate', 'high', 'highly_intensive'],
+        default: 'moderate'
+      },
+      sessionStructure: {
+        optimalLength: String,
+        sessionComponents: [String],
+        breakPattern: String
+      },
+      specificTechniques: [interventionTechniqueSchema]
+    },
+    materialRecommendations: [String]
+  },
+
+  // TEACHER IMPLEMENTATION (based on prescription) - CLAUDE.md requirement
+  teacherImplementation: {
+    implementedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    implementationDate: {
+      type: Date,
+      default: Date.now
+    },
+    prescriptionFollowed: {
+      type: Boolean,
+      default: true
+    },
+    questionDistribution: {
+      type: mongoose.Schema.Types.Mixed, // Changed from Map to Mixed to handle both Object and Map types
+      default: {}
+    }
+  },
+
+  // QUESTION COUNT CALCULATION DETAILS - CLAUDE.md requirement
+  questionCountCalculation: {
+    finalCount: Number,
+    rationale: String,
+    factors: {
+      base: Number,
+      errorSeverity: {
+        level: String,
+        adjustment: Number,
+        percentage: Number
+      },
+      masteryLevel: {
+        score: Number,
+        adjustment: Number
+      },
+      categoryComplexity: {
+        multiplier: Number,
+        adjustment: Number
+      },
+      interventionHistory: {
+        attemptCount: Number,
+        adjustment: Number
+      }
+    },
+    calculatedAt: {
+      type: Date,
+      default: Date.now
+    }
+  },
+
   // Smart question selection based on error analysis
   questionSelectionStrategy: questionSelectionStrategySchema,
   

@@ -256,6 +256,240 @@ class InterventionService {
   }
 
   /**
+   * Calculate optimal question count based on prescriptive analytics
+   * @param {Object} prescriptiveAnalysis - The prescriptive analysis
+   * @param {string} category - The category
+   * @param {string} readingLevel - Student's reading level
+   * @returns {Object} Question count calculation
+   */
+  async calculateOptimalQuestionCount(prescriptiveAnalysis, category, readingLevel) {
+    const baseCountByLevel = {
+      'Low Emerging': 8, 'High Emerging': 10, 'Developing': 12,
+      'Transitioning': 14, 'At Grade Level': 16
+    };
+
+    let baseCount = baseCountByLevel[readingLevel] || 10;
+    const categoryMastery = prescriptiveAnalysis.skillMastery?.get ?
+      prescriptiveAnalysis.skillMastery.get(category) :
+      prescriptiveAnalysis.skillMastery?.[category];
+
+    const categoryErrors = prescriptiveAnalysis.errorPatterns?.get ?
+      prescriptiveAnalysis.errorPatterns.get(category) :
+      prescriptiveAnalysis.errorPatterns?.[category];
+
+    // Adjust based on error severity
+    let errorAdjustment = 0;
+    if (categoryErrors) {
+      const errorRate = this.getErrorRate(categoryErrors);
+      if (errorRate > 70) errorAdjustment = 4; // Severe errors
+      else if (errorRate > 50) errorAdjustment = 2; // Moderate errors
+      else if (errorRate > 30) errorAdjustment = 1; // Mild errors
+    }
+
+    // Adjust based on mastery level
+    let masteryAdjustment = 0;
+    if (categoryMastery) {
+      const score = categoryMastery.score || 0;
+      if (score < 40) masteryAdjustment = 3; // Very low mastery
+      else if (score < 55) masteryAdjustment = 2; // Low mastery
+      else if (score < 65) masteryAdjustment = 1; // Below average
+    }
+
+    const finalCount = Math.max(5, Math.min(18, baseCount + errorAdjustment + masteryAdjustment));
+
+    return {
+      recommendedCount: finalCount,
+      rationale: `Started with base count of ${baseCount} for ${readingLevel} level, adjusted by ${errorAdjustment} for error severity and ${masteryAdjustment} for mastery level = ${finalCount} total questions`,
+      factors: {
+        base: baseCount,
+        errorSeverity: {
+          level: errorAdjustment > 2 ? 'severe' : errorAdjustment > 0 ? 'moderate' : 'low',
+          adjustment: errorAdjustment
+        },
+        masteryLevel: {
+          adjustment: masteryAdjustment
+        }
+      },
+      calculatedAt: new Date()
+    };
+  }
+
+  /**
+   * Calculate error severity based on error patterns
+   * @param {Object} categoryErrors - Error patterns for category
+   * @returns {string} Severity level
+   */
+  calculateErrorSeverity(categoryErrors) {
+    if (!categoryErrors) return 'mild';
+    const errorRate = this.getErrorRate(categoryErrors);
+    if (errorRate >= 70) return 'severe';
+    if (errorRate >= 50) return 'moderate';
+    return 'mild';
+  }
+
+  /**
+   * Extract error rate from error patterns
+   * @param {Object} errorPattern - Error pattern data
+   * @returns {number} Error rate percentage
+   */
+  getErrorRate(errorPattern) {
+    if (errorPattern.matching_errors?.percentage) {
+      return errorPattern.matching_errors.percentage;
+    }
+    if (errorPattern.patinig_errors?.percentage) {
+      return errorPattern.patinig_errors.percentage;
+    }
+    if (errorPattern.katinig_errors?.percentage) {
+      return errorPattern.katinig_errors.percentage;
+    }
+    if (errorPattern.decoding_errors?.percentage) {
+      return errorPattern.decoding_errors.percentage;
+    }
+    if (errorPattern.word_errors?.percentage) {
+      return errorPattern.word_errors.percentage;
+    }
+    if (errorPattern.comprehension_errors?.percentage) {
+      return errorPattern.comprehension_errors.percentage;
+    }
+    return 0;
+  }
+
+  /**
+   * Extract confusion pairs from error patterns
+   * @param {Object} categoryErrors - Error patterns
+   * @returns {Array} Array of confusion pairs
+   */
+  extractConfusionPairs(categoryErrors) {
+    if (!categoryErrors) return [];
+    // Extract specific confusion patterns based on category
+    const confusionPairs = [];
+    Object.entries(categoryErrors).forEach(([errorType, errorData]) => {
+      if (errorType.includes('confusion') && errorData.confusionPairs) {
+        confusionPairs.push(...errorData.confusionPairs);
+      }
+    });
+    return confusionPairs;
+  }
+
+  /**
+   * Calculate intervention intensity level
+   * @param {number} score - Student's score
+   * @returns {string} Intensity level
+   */
+  calculateIntensityLevel(score) {
+    if (score < 40) return 'highly_intensive';
+    if (score < 55) return 'high';
+    if (score < 65) return 'moderate';
+    return 'low';
+  }
+
+  /**
+   * Get recommended techniques for category
+   * @param {string} category - The category
+   * @param {Object} categoryErrors - Error patterns
+   * @returns {Array} Array of techniques
+   */
+  getRecommendedTechniques(category, categoryErrors) {
+    const techniques = {
+      'Alphabet Knowledge': [
+        'Visual-tactile letter recognition',
+        'Multisensory letter formation',
+        'Letter-sound correspondence practice'
+      ],
+      'Phonological Awareness': [
+        'Auditory discrimination training',
+        'Sound-symbol mapping exercises',
+        'Phoneme isolation practice'
+      ],
+      'Decoding': [
+        'Systematic phonics instruction',
+        'Blending and segmenting practice',
+        'Word building activities'
+      ],
+      'Word Recognition': [
+        'Sight word practice',
+        'Context clue strategies',
+        'Fluency building exercises'
+      ],
+      'Reading Comprehension': [
+        'Guided reading with questioning',
+        'Text structure instruction',
+        'Vocabulary development'
+      ]
+    };
+    return techniques[category] || ['General reading instruction'];
+  }
+
+  /**
+   * Get material recommendations for category
+   * @param {string} category - The category
+   * @returns {Array} Array of materials
+   */
+  getMaterialRecommendations(category) {
+    const materials = {
+      'Alphabet Knowledge': [
+        'Letter cards with tactile elements',
+        'Alphabet manipulatives',
+        'Visual letter charts'
+      ],
+      'Phonological Awareness': [
+        'Audio recordings with clear sounds',
+        'Sound discrimination cards',
+        'Phoneme manipulation tools'
+      ],
+      'Decoding': [
+        'Phonics readers',
+        'Word building materials',
+        'Decodable text sets'
+      ],
+      'Word Recognition': [
+        'High-frequency word cards',
+        'Context-rich reading materials',
+        'Word recognition games'
+      ],
+      'Reading Comprehension': [
+        'Leveled reading passages',
+        'Graphic organizers',
+        'Question prompt cards'
+      ]
+    };
+    return materials[category] || ['General reading materials'];
+  }
+
+  /**
+   * Calculate question distribution based on error patterns
+   * @param {string} category - The category
+   * @param {number} totalQuestions - Total number of questions
+   * @param {Object} categoryErrors - Error patterns
+   * @returns {Object} Question distribution
+   */
+  calculateQuestionDistribution(category, totalQuestions, categoryErrors) {
+    if (!categoryErrors) {
+      return { general_practice: totalQuestions };
+    }
+
+    const distribution = {};
+    let allocated = 0;
+
+    // Allocate questions based on specific error patterns
+    Object.entries(categoryErrors).forEach(([errorType, errorData]) => {
+      const errorRate = errorData.percentage || 0;
+      if (errorRate > 30) { // Focus on significant errors
+        const allocation = Math.ceil(totalQuestions * (errorRate / 100) * 0.6); // 60% weight to major errors
+        distribution[errorType] = Math.min(allocation, totalQuestions - allocated);
+        allocated += distribution[errorType];
+      }
+    });
+
+    // Allocate remaining to general practice
+    if (allocated < totalQuestions) {
+      distribution.general_practice = totalQuestions - allocated;
+    }
+
+    return distribution;
+  }
+
+  /**
    * Calculate error severity for a specific category
    * @param {Map|Object} errorPatterns - Error patterns from prescriptive analysis
    * @param {string} category - Category to analyze
@@ -458,6 +692,56 @@ class InterventionService {
             interventionRequired: existingAnalysis.interventionPlan?.required
           });
           prescriptiveAnalysisId = existingAnalysis._id;
+
+          // CLAUDE.md COMPLIANCE: Populate doctorPrescription from prescriptive analysis
+          console.log('[INTERVENTION SERVICE] 🩺 Populating doctor prescription from prescriptive analysis');
+
+          // Extract error patterns and mastery data for the specific category
+          const categoryMastery = existingAnalysis.skillMastery?.get ?
+            existingAnalysis.skillMastery.get(category) :
+            existingAnalysis.skillMastery?.[category];
+
+          const categoryErrors = existingAnalysis.errorPatterns?.get ?
+            existingAnalysis.errorPatterns.get(category) :
+            existingAnalysis.errorPatterns?.[category];
+
+          // Calculate question count based on error severity and mastery
+          const questionCount = await this.calculateOptimalQuestionCount(
+            existingAnalysis,
+            category,
+            interventionData.readingLevel
+          );
+
+          // Populate CLAUDE.md required fields
+          interventionData.doctorPrescription = {
+            deficitAnalysis: {
+              specificDeficits: categoryErrors ? Object.keys(categoryErrors) : [],
+              severity: this.calculateErrorSeverity(categoryErrors),
+              errorRate: categoryMastery ? `${100 - (categoryMastery.score || 0)}%` : "unknown",
+              confusionPairs: this.extractConfusionPairs(categoryErrors)
+            },
+            interventionPrescription: {
+              primaryApproach: "multisensory_structured",
+              recommendedQuestionCount: questionCount.recommendedCount,
+              intensityLevel: this.calculateIntensityLevel(categoryMastery?.score || 0),
+              sessionStructure: {
+                optimalLength: "15-25 minutes with breaks",
+                breakPattern: "Every 8-10 minutes"
+              },
+              specificTechniques: this.getRecommendedTechniques(category, categoryErrors)
+            },
+            materialRecommendations: this.getMaterialRecommendations(category)
+          };
+
+          interventionData.teacherImplementation = {
+            implementationDate: new Date(),
+            prescriptionFollowed: true,
+            questionDistribution: this.calculateQuestionDistribution(category, questionCount.recommendedCount, categoryErrors)
+          };
+
+          interventionData.questionCountCalculation = questionCount;
+
+          console.log('[INTERVENTION SERVICE] ✅ Doctor prescription populated successfully');
         } else {
           // This should not happen per CLAUDE.md - prescriptive analysis should be auto-created
           console.error('❌ ERROR: No prescriptive analysis found for student', studentIdNumber, 'category', category);
@@ -520,19 +804,9 @@ class InterventionService {
         throw saveError; // Re-throw the error after logging details
       }
       
-      // Only save progress record if intervention was saved successfully and progress record was created
-      if (interventionProgress) {
-        try {
-          // Update the progress record with the intervention ID
-          interventionProgress.interventionPlanId = intervention._id;
-          await interventionProgress.save();
-          console.log('Progress record saved successfully with ID:', interventionProgress._id);
-        } catch (progressSaveError) {
-          console.error('Error saving progress record:', progressSaveError);
-          // Don't fail the entire operation if only the progress record fails
-          // Just log the error and continue
-        }
-      }
+      // CLAUDE.md COMPLIANCE: InterventionResults should ONLY be created after student completes intervention
+      // Skip creating any progress records during intervention creation
+      console.log('[INTERVENTION SERVICE] ✅ Intervention created successfully - InterventionResults will be created later when student completes intervention');
       
       // Restore original User.findOne method
       if (typeof originalUserFindOne !== 'undefined') {
@@ -587,6 +861,30 @@ class InterventionService {
         }
       }
       
+      // CLAUDE.md: Auto-save custom questions to templates_questions collection
+      let autoSaveResults = null;
+      if (updateData.questions && Array.isArray(updateData.questions)) {
+        try {
+          // Find custom questions that should be saved as templates
+          const customQuestions = updateData.questions.filter(q =>
+            q.source === 'custom' || !q.source ||
+            (q.questionText && !q.sourceTemplateId && !q.sourceQuestionId)
+          );
+
+          if (customQuestions.length > 0) {
+            console.log(`[INTERVENTION SERVICE] ✅ CLAUDE.md compliance: Auto-saving ${customQuestions.length} custom questions to templates_questions`);
+            autoSaveResults = await this.autoSaveCustomQuestionsToTemplates(
+              customQuestions,
+              existingIntervention.category,
+              updateData.createdBy || existingIntervention.createdBy
+            );
+            console.log(`[INTERVENTION SERVICE] Auto-save results: ${autoSaveResults.succeeded} succeeded, ${autoSaveResults.failed} failed`);
+          }
+        } catch (autoSaveError) {
+          console.error('[INTERVENTION SERVICE] Template auto-save failed (non-critical):', autoSaveError.message);
+        }
+      }
+
       // If questions are being updated, make sure descriptions are maintained
       if (updateData.questions && Array.isArray(updateData.questions)) {
         updateData.questions = updateData.questions.map(question => {
@@ -2090,6 +2388,164 @@ class InterventionService {
 
     // Simple filtering - can be enhanced based on specific error pattern logic
     return templates;
+  }
+  /**
+   * Auto-save custom questions to templates_questions collection (CLAUDE.md requirement)
+   * @param {Array} customQuestions - Array of custom intervention questions
+   * @param {string} category - Question category
+   * @param {string} createdBy - User ID who created the questions
+   * @returns {Object} Save results summary
+   */
+  async autoSaveCustomQuestionsToTemplates(customQuestions, category, createdBy = null) {
+    console.log(`[INTERVENTION SERVICE] Auto-saving ${customQuestions.length} custom questions to templates_questions collection`);
+
+    const saveResults = {
+      attempted: customQuestions.length,
+      succeeded: 0,
+      failed: 0,
+      errors: []
+    };
+
+    for (const question of customQuestions) {
+      try {
+        // Only save questions marked as 'custom' source or questions without source info
+        if (question.source && question.source !== 'custom') {
+          continue;
+        }
+
+        // Create template question from intervention question
+        const templateData = {
+          category: category,
+          questionType: question.questionType,
+          questionText: question.questionText,
+          questionImage: question.questionImage || null,
+          questionValue: question.questionValue || null,
+          targetSkills: this.extractTargetSkillsFromQuestion(question, category),
+          difficultyLevel: 'medium', // Default to medium difficulty
+          createdBy: createdBy || new mongoose.Types.ObjectId(), // System-generated if no user
+          isActive: true
+        };
+
+        // Add category-specific fields
+        switch (category) {
+          case 'Alphabet Knowledge':
+            if (question.choiceOptions && question.choiceOptions.length > 0) {
+              templateData.choiceOptions = question.choiceOptions;
+            }
+            break;
+
+          case 'Phonological Awareness':
+            if (question.questionSet && question.questionSet.length > 0) {
+              templateData.questionSet = question.questionSet[0]; // Extract first questionSet
+              templateData.matchCount = question.questionSet[0]?.correctPairs?.length || 3;
+            }
+            break;
+
+          case 'Decoding':
+            templateData.displaySequence = question.displaySequence || null;
+            templateData.dragElements = question.dragElements || [];
+            templateData.correctSequence = question.correctSequence || [];
+            templateData.blankPosition = question.blankPosition || null;
+            break;
+
+          case 'Word Recognition':
+            templateData.displayWord = question.displayWord || null;
+            templateData.blankOptions = question.blankOptions || [];
+            templateData.correctAnswer = question.correctAnswer || [];
+            break;
+
+          case 'Reading Comprehension':
+            // Reading Comprehension uses sentence_templates collection, not templates_questions
+            console.log(`[INTERVENTION SERVICE] Skipping Reading Comprehension question - uses sentence_templates collection`);
+            continue;
+        }
+
+        // Check if similar template already exists (avoid duplicates)
+        const existingTemplate = await TemplateQuestion.findOne({
+          category: category,
+          questionType: question.questionType,
+          questionText: question.questionText,
+          isActive: true
+        });
+
+        if (existingTemplate) {
+          console.log(`[INTERVENTION SERVICE] Template already exists for: ${question.questionText.substring(0, 50)}...`);
+          continue;
+        }
+
+        // Create and save the template
+        const template = new TemplateQuestion(templateData);
+        await template.save();
+
+        saveResults.succeeded++;
+        console.log(`[INTERVENTION SERVICE] ✅ Saved custom question as template: ${question.questionId || 'unnamed'}`);
+
+      } catch (error) {
+        console.error(`[INTERVENTION SERVICE] ❌ Failed to save custom question as template: ${question.questionId || 'unnamed'}`, error.message);
+        saveResults.failed++;
+        saveResults.errors.push({
+          questionId: question.questionId || 'unnamed',
+          error: error.message
+        });
+      }
+    }
+
+    console.log(`[INTERVENTION SERVICE] Auto-save completed: ${saveResults.succeeded} succeeded, ${saveResults.failed} failed`);
+    return saveResults;
+  }
+
+  /**
+   * Extract target skills from a question based on its content and category
+   * @param {Object} question - The intervention question
+   * @param {string} category - Question category
+   * @returns {Array} Array of target skills
+   */
+  extractTargetSkillsFromQuestion(question, category) {
+    const skills = [];
+
+    switch (category) {
+      case 'Alphabet Knowledge':
+        if (question.questionType === 'patinig') {
+          skills.push('vowel_recognition');
+        } else if (question.questionType === 'katinig') {
+          skills.push('consonant_recognition');
+        }
+        if (question.questionValue) {
+          skills.push(`letter_${question.questionValue.toLowerCase()}`);
+        }
+        break;
+
+      case 'Phonological Awareness':
+        skills.push('sound_discrimination');
+        if (question.questionSet && question.questionSet[0]?.audioTexts) {
+          const sounds = question.questionSet[0].audioTexts;
+          if (sounds.includes('B') && sounds.includes('P')) {
+            skills.push('B_P_discrimination');
+          }
+          if (sounds.includes('M') && sounds.includes('N')) {
+            skills.push('M_N_discrimination');
+          }
+        }
+        break;
+
+      case 'Decoding':
+        if (question.questionType === 'complete_word_identification') {
+          skills.push('word_identification');
+        } else if (question.questionType === 'fill_missing_letter') {
+          skills.push('initial_sound_identification');
+        }
+        break;
+
+      case 'Word Recognition':
+        if (question.questionType === 'sentence_completion') {
+          skills.push('context_clues');
+        } else if (question.questionType === 'rhyming_words') {
+          skills.push('rhyming_patterns');
+        }
+        break;
+    }
+
+    return skills;
   }
 }
 

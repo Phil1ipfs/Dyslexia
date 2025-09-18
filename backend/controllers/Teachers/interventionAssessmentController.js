@@ -11,6 +11,192 @@ const InterventionResults = require('../../models/Teachers/ManageProgress/interv
 class InterventionAssessmentController {
 
   /**
+   * Create new teacher-created intervention assessment
+   * POST /api/intervention-assessment
+   */
+  async createIntervention(req, res) {
+    try {
+      console.log(`[INTERVENTION CONTROLLER] Creating teacher-created intervention`);
+      console.log(`[INTERVENTION CONTROLLER] Request body:`, JSON.stringify(req.body, null, 2));
+
+      // Create new intervention assessment directly from teacher data
+      const interventionData = req.body;
+
+      // 🔍 ENHANCED DEBUGGING: Validate required fields BEFORE attempting to save
+      console.log(`[INTERVENTION CONTROLLER] 🔍 Pre-validation debugging:`);
+      console.log(`[INTERVENTION CONTROLLER] studentId:`, interventionData.studentId, `(type: ${typeof interventionData.studentId})`);
+      console.log(`[INTERVENTION CONTROLLER] prescriptiveAnalysisId:`, interventionData.prescriptiveAnalysisId, `(type: ${typeof interventionData.prescriptiveAnalysisId})`);
+      console.log(`[INTERVENTION CONTROLLER] category:`, interventionData.category, `(type: ${typeof interventionData.category})`);
+      console.log(`[INTERVENTION CONTROLLER] readingLevel:`, interventionData.readingLevel, `(type: ${typeof interventionData.readingLevel})`);
+      console.log(`[INTERVENTION CONTROLLER] questions array length:`, interventionData.questions?.length || 0);
+
+      // Validate required fields first
+      if (!interventionData.teacherImplementation?.implementedBy) {
+        return res.status(400).json({
+          success: false,
+          message: 'teacherImplementation.implementedBy is required',
+          error: 'Missing required field: teacherImplementation.implementedBy'
+        });
+      }
+
+      // Save custom questions to templates_questions collection for future reuse
+      if (interventionData.questions && interventionData.questions.length > 0) {
+        console.log(`[INTERVENTION CONTROLLER] Saving ${interventionData.questions.length} custom questions to templates_questions for future reuse`);
+
+        for (const question of interventionData.questions) {
+          if (question.source === 'custom') {
+            try {
+              // Create template following exact CLAUDE.md schema per category
+              // Map any invalid difficulty levels to valid ones
+              let mappedDifficultyLevel = 'medium'; // default
+              if (question.prescriptionAlignment?.difficultyLevel) {
+                const diffLevel = question.prescriptionAlignment.difficultyLevel;
+                if (diffLevel === 'standard' || diffLevel === 'slightly_easier') {
+                  mappedDifficultyLevel = 'medium';
+                } else if (['easy', 'medium', 'hard'].includes(diffLevel)) {
+                  mappedDifficultyLevel = diffLevel;
+                }
+              }
+
+              const templateData = {
+                category: interventionData.category,
+                questionType: question.questionType,
+                questionText: question.questionText,
+                targetSkills: question.prescriptionAlignment?.targetSkill ? [question.prescriptionAlignment.targetSkill] : ['general_practice'],
+                difficultyLevel: mappedDifficultyLevel,
+                createdBy: interventionData.teacherImplementation.implementedBy,
+                isActive: true
+              };
+
+              // Add category-specific fields following CLAUDE.md schema
+              if (interventionData.category === 'Alphabet Knowledge') {
+                // CLAUDE.md: Alphabet Knowledge Complete Templates
+                templateData.questionImage = question.questionImage;
+                templateData.questionValue = question.questionValue;
+                templateData.choiceOptions = question.choiceOptions;
+              } else if (interventionData.category === 'Phonological Awareness') {
+                // CLAUDE.md: Phonological Awareness Complete Templates
+                templateData.questionSet = question.questionSet;
+                templateData.matchCount = question.questionSet ? question.questionSet.correctPairs?.length || 3 : 3;
+              } else if (interventionData.category === 'Decoding') {
+                // CLAUDE.md: Decoding Complete Templates
+                templateData.questionImage = question.questionImage;
+                templateData.dragElements = question.dragElements;
+                templateData.correctSequence = question.correctSequence;
+                templateData.displaySequence = question.displaySequence;
+                templateData.blankPosition = question.blankPosition;
+              } else if (interventionData.category === 'Word Recognition') {
+                // CLAUDE.md: Word Recognition Complete Templates
+                templateData.questionImage = question.questionImage;
+                templateData.displayWord = question.displayWord;
+                templateData.blankOptions = question.blankOptions;
+                templateData.correctAnswer = question.correctAnswer;
+              }
+
+              const templateQuestion = new (require('../../models/Teachers/ManageProgress/templatesQuestionsModel'))(templateData);
+
+              await templateQuestion.save();
+              console.log(`[INTERVENTION CONTROLLER] ✅ Saved custom question ${question.questionId} to templates_questions`);
+
+              // Update the question to reference the saved template
+              question.sourceTemplateId = templateQuestion._id.toString();
+              question.source = 'template_question';
+            } catch (templateError) {
+              console.warn(`[INTERVENTION CONTROLLER] ⚠️ Failed to save question ${question.questionId} to templates:`, templateError.message);
+              // Continue anyway - this is just for future reuse
+            }
+          }
+        }
+      }
+
+      // Ensure the intervention has proper timestamps
+      interventionData.createdAt = new Date();
+      interventionData.updatedAt = new Date();
+
+      console.log(`[INTERVENTION CONTROLLER] 🔍 Creating new InterventionAssessment document...`);
+      const newIntervention = new InterventionAssessment(interventionData);
+
+      console.log(`[INTERVENTION CONTROLLER] 🔍 Validating document before save...`);
+      await newIntervention.validate();
+
+      console.log(`[INTERVENTION CONTROLLER] 🔍 Validation passed, saving to database...`);
+      const savedIntervention = await newIntervention.save();
+
+      console.log(`[INTERVENTION CONTROLLER] ✅ Successfully created intervention ${savedIntervention._id}`);
+
+      res.status(201).json({
+        success: true,
+        message: 'Intervention created successfully',
+        data: {
+          interventionId: savedIntervention._id,
+          studentId: savedIntervention.studentId,
+          category: savedIntervention.category,
+          title: savedIntervention.title || 'Teacher-Created Intervention',
+          status: savedIntervention.status,
+          totalQuestions: savedIntervention.totalQuestions,
+          revisionNumber: savedIntervention.revisionNumber,
+          intervention: savedIntervention
+        }
+      });
+
+    } catch (error) {
+      console.error(`[INTERVENTION CONTROLLER] ❌ Error creating intervention:`, error);
+
+      // 🔍 ENHANCED ERROR DEBUGGING
+      if (error.name === 'ValidationError') {
+        console.error(`[INTERVENTION CONTROLLER] 🔍 DETAILED VALIDATION ERROR ANALYSIS:`);
+        console.error(`[INTERVENTION CONTROLLER] Error name: ${error.name}`);
+        console.error(`[INTERVENTION CONTROLLER] Error message: ${error.message}`);
+        console.error(`[INTERVENTION CONTROLLER] Error errors object:`, JSON.stringify(error.errors, null, 2));
+
+        const validationErrors = Object.keys(error.errors).map(key => {
+          const err = error.errors[key];
+          console.error(`[INTERVENTION CONTROLLER] Field: ${key}`);
+          console.error(`[INTERVENTION CONTROLLER]   - Message: ${err.message}`);
+          console.error(`[INTERVENTION CONTROLLER]   - Kind: ${err.kind}`);
+          console.error(`[INTERVENTION CONTROLLER]   - Path: ${err.path}`);
+          console.error(`[INTERVENTION CONTROLLER]   - Value: ${err.value}`);
+
+          return {
+            field: key,
+            message: err.message,
+            kind: err.kind,
+            path: err.path,
+            value: err.value
+          };
+        });
+
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: validationErrors,
+          detailedError: {
+            name: error.name,
+            message: error.message,
+            fields: validationErrors
+          }
+        });
+      }
+
+      // 🔍 ENHANCED GENERAL ERROR DEBUGGING
+      console.error(`[INTERVENTION CONTROLLER] 🔍 GENERAL ERROR ANALYSIS:`);
+      console.error(`[INTERVENTION CONTROLLER] Error name: ${error.name}`);
+      console.error(`[INTERVENTION CONTROLLER] Error message: ${error.message}`);
+      console.error(`[INTERVENTION CONTROLLER] Error stack:`, error.stack);
+
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error while creating intervention',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+        errorDetails: process.env.NODE_ENV === 'development' ? {
+          name: error.name,
+          stack: error.stack
+        } : undefined
+      });
+    }
+  }
+
+  /**
    * Generate one-time intervention based on prescriptive analysis
    * POST /api/intervention-assessment/generate
    */
