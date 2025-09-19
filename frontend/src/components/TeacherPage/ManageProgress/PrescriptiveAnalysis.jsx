@@ -261,6 +261,7 @@ const PrescriptiveAnalysis = ({
           return {
             category: categoryResult.category,
             score: categoryResult.score,
+            isPassed: categoryResult.isPassed,
             passed: categoryResult.isPassed,
             previousScore: categoryResult.previousScore,
             improvement: categoryResult.improvement,
@@ -521,6 +522,7 @@ const PrescriptiveAnalysis = ({
         }
 
         setInterventionResults(results);
+        console.log('[INTERVENTION RESULTS] All intervention results loaded:', results);
       } finally {
         isLoadingInterventionsRef.current = false;
       }
@@ -1288,8 +1290,14 @@ const PrescriptiveAnalysis = ({
 
       // Get intervention results for this category
       const categoryInterventionResults = interventionResults[category];
+      console.log('🔍 Category intervention results for modal:', {
+        category,
+        categoryInterventionResults,
+        score: categoryInterventionResults?.score,
+        isPassed: categoryInterventionResults?.isPassed
+      });
 
-      setSelectedInterventionData({
+      const modalData = {
         intervention,
         category,
         interventionResults: categoryInterventionResults,
@@ -1298,7 +1306,10 @@ const PrescriptiveAnalysis = ({
         isComplete,
         score: categoryInterventionResults?.score || intervention.score || 0,
         isPassed: categoryInterventionResults?.isPassed || intervention.isPassed || false
-      });
+      };
+
+      console.log('📋 Final modal data being set:', modalData);
+      setSelectedInterventionData(modalData);
       setInterventionResponses(enrichedResponses);
       console.log('📋 Setting modal state:', { responses: enrichedResponses.length, modalWillShow: true });
       setShowResponseModal(true);
