@@ -30,10 +30,12 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 0;
-  overflow: visible !important;
-  height: auto !important;
-  max-height: none !important;
+  height: 700px !important;
+  max-height: 700px !important;
+  overflow: hidden !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
 }
 
 .epa-right-column {
@@ -41,10 +43,12 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 0;
-  overflow: visible !important;
-  height: auto !important;
-  max-height: none !important;
+  height: 700px !important;
+  max-height: 700px !important;
+  overflow: hidden !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
 }
 
 /* Column Headers */
@@ -70,10 +74,78 @@
 /* Content padding inside columns */
 .epa-left-column > div:not(.epa-column-header) {
   padding: 1rem;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
 }
 
 .epa-right-column > div:not(.epa-column-header) {
   padding: 1rem;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+/* Add scrollable content wrapper */
+.epa-column-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem;
+  line-height: 1.5;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Prevent text overflow in all content areas */
+.epa-column-content *,
+.epa-left-column *,
+.epa-right-column * {
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  hyphens: auto !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure proper spacing between elements */
+.epa-column-content > * {
+  margin-bottom: 1rem !important;
+}
+
+.epa-column-content > *:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Custom scrollbar styles for column content */
+.epa-left-column > div:not(.epa-column-header)::-webkit-scrollbar,
+.epa-right-column > div:not(.epa-column-header)::-webkit-scrollbar,
+.epa-column-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.epa-left-column > div:not(.epa-column-header)::-webkit-scrollbar-track,
+.epa-right-column > div:not(.epa-column-header)::-webkit-scrollbar-track,
+.epa-column-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.epa-left-column > div:not(.epa-column-header)::-webkit-scrollbar-thumb,
+.epa-right-column > div:not(.epa-column-header)::-webkit-scrollbar-thumb,
+.epa-column-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.epa-left-column > div:not(.epa-column-header)::-webkit-scrollbar-thumb:hover,
+.epa-right-column > div:not(.epa-column-header)::-webkit-scrollbar-thumb:hover,
+.epa-column-content::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
 }
 
 /* Minimize section spacing in two-column layout */
@@ -113,16 +185,353 @@
   .epa-two-column-layout {
     grid-template-columns: 1fr !important;
     gap: 1rem !important;
-    height: 30vh !important;
-    max-height: 30vh !important;
-    overflow-y: scroll !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
     padding: 0.5rem !important;
   }
 
   .epa-left-column,
   .epa-right-column {
-    overflow: visible !important;
-    height: auto !important;
+    height: 600px !important;
+    max-height: 600px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .epa-left-column > div:not(.epa-column-header),
+  .epa-right-column > div:not(.epa-column-header) {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.75rem;
+  }
+}
+
+/* Enhanced Responsive Typography and Spacing */
+@media (max-width: 1024px) {
+  /* Reduce font sizes and improve spacing for better readability */
+  .epa-column-header {
+    font-size: 1rem !important;
+    padding: 0.875rem 1.25rem !important;
+  }
+
+  .epa-subsection-title {
+    font-size: 0.9rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  .epa-metric-label,
+  .epa-progression-label,
+  .epa-resolution-label,
+  .epa-stat-label,
+  .epa-letters-label,
+  .epa-comparison-label,
+  .epa-status-label {
+    font-size: 0.8rem !important;
+    margin-bottom: 0.375rem !important;
+  }
+
+  .epa-metric-value,
+  .epa-progression-value,
+  .epa-resolution-value,
+  .epa-stat-value,
+  .epa-comparison-value,
+  .epa-status-value {
+    font-size: 1rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Better card spacing */
+  .epa-effectiveness-analysis-card,
+  .epa-error-patterns-card,
+  .epa-progress-comparison-card,
+  .epa-next-steps-card,
+  .epa-skill-mastery-card,
+  .epa-response-history-card,
+  .epa-irt-analysis-card {
+    margin-bottom: 1rem !important;
+    padding: 1rem !important;
+  }
+
+  /* Improve row spacing */
+  .epa-metric-row,
+  .epa-progression-item,
+  .epa-comparison-item {
+    margin-bottom: 0.5rem !important;
+    padding: 0.625rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Mobile-specific responsive improvements */
+  .epa-column-header {
+    font-size: 0.95rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  .epa-subsection-title {
+    font-size: 0.85rem !important;
+    margin-bottom: 0.625rem !important;
+    gap: 0.375rem !important;
+  }
+
+  .epa-section-icon {
+    font-size: 0.875rem !important;
+  }
+
+  /* Compact metric display */
+  .epa-metric-label,
+  .epa-progression-label,
+  .epa-resolution-label,
+  .epa-stat-label,
+  .epa-letters-label,
+  .epa-comparison-label,
+  .epa-status-label {
+    font-size: 0.75rem !important;
+    margin-bottom: 0.25rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .epa-metric-value,
+  .epa-progression-value,
+  .epa-resolution-value,
+  .epa-stat-value,
+  .epa-comparison-value,
+  .epa-status-value {
+    font-size: 0.9rem !important;
+    margin-bottom: 0.375rem !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Compact card spacing for mobile */
+  .epa-effectiveness-analysis-card,
+  .epa-error-patterns-card,
+  .epa-progress-comparison-card,
+  .epa-next-steps-card,
+  .epa-skill-mastery-card,
+  .epa-response-history-card,
+  .epa-irt-analysis-card {
+    margin-bottom: 0.75rem !important;
+    padding: 0.75rem !important;
+  }
+
+  /* Better row layout for mobile */
+  .epa-metric-row,
+  .epa-progression-item,
+  .epa-comparison-item {
+    margin-bottom: 0.375rem !important;
+    padding: 0.5rem !important;
+    gap: 0.25rem !important;
+  }
+
+  /* Error pattern mobile optimization */
+  .epa-error-pattern-item,
+  .epa-category-error-section {
+    margin-bottom: 0.625rem !important;
+    padding: 0.75rem !important;
+  }
+
+  .epa-error-pattern {
+    margin-bottom: 0.375rem !important;
+    font-size: 0.8rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .epa-intervention-focus {
+    margin-bottom: 0.375rem !important;
+    font-size: 0.75rem !important;
+    line-height: 1.3 !important;
+  }
+
+  /* Error statistics mobile layout */
+  .epa-error-stats {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+    margin-top: 0.5rem !important;
+  }
+
+  .epa-error-stat {
+    padding: 0.375rem !important;
+    gap: 0.125rem !important;
+  }
+
+  /* Letter tags mobile spacing */
+  .epa-letters-list {
+    gap: 0.25rem !important;
+  }
+
+  .epa-letter-tag {
+    padding: 0.1875rem 0.375rem !important;
+    font-size: 0.6875rem !important;
+  }
+
+  /* BKT display mobile optimization */
+  .epa-mastery-circle {
+    width: 70px !important;
+    height: 70px !important;
+  }
+
+  .epa-mastery-percentage {
+    font-size: 1.125rem !important;
+  }
+
+  .epa-mastery-label {
+    font-size: 0.6875rem !important;
+  }
+
+  .epa-bkt-metrics {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Response timeline mobile optimization */
+  .epa-response-timeline {
+    gap: 0.375rem !important;
+    justify-content: center !important;
+  }
+
+  .epa-response-item {
+    padding: 0.375rem !important;
+    min-width: 50px !important;
+  }
+
+  .epa-response-indicator {
+    width: 20px !important;
+    height: 20px !important;
+    font-size: 0.6875rem !important;
+  }
+
+  .epa-question-id {
+    font-size: 0.5625rem !important;
+  }
+
+  .epa-mastery-after {
+    font-size: 0.6875rem !important;
+  }
+
+  /* IRT analysis mobile optimization */
+  .epa-ability-marker {
+    font-size: 0.6875rem !important;
+    padding: 0.1875rem 0.375rem !important;
+  }
+
+  .epa-scale-label {
+    font-size: 0.6875rem !important;
+  }
+
+  .epa-irt-interpretation {
+    font-size: 0.8rem !important;
+    padding: 0.5rem !important;
+  }
+}
+
+/* Extra small screens optimization */
+@media (max-width: 480px) {
+  .epa-left-column,
+  .epa-right-column {
+    height: 450px !important;
+    max-height: 450px !important;
+  }
+
+  .epa-column-header {
+    font-size: 0.9rem !important;
+    padding: 0.625rem 0.875rem !important;
+    flex-wrap: wrap !important;
+    gap: 0.25rem !important;
+  }
+
+  .epa-subsection-title {
+    font-size: 0.8rem !important;
+    margin-bottom: 0.5rem !important;
+    flex-wrap: wrap !important;
+  }
+
+  /* Ensure very small text remains readable */
+  .epa-metric-label,
+  .epa-progression-label,
+  .epa-resolution-label,
+  .epa-stat-label,
+  .epa-letters-label,
+  .epa-comparison-label,
+  .epa-status-label {
+    font-size: 0.7rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .epa-metric-value,
+  .epa-progression-value,
+  .epa-resolution-value,
+  .epa-stat-value,
+  .epa-comparison-value,
+  .epa-status-value {
+    font-size: 0.85rem !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Compact content padding */
+  .epa-left-column > div:not(.epa-column-header),
+  .epa-right-column > div:not(.epa-column-header),
+  .epa-column-content {
+    padding: 0.625rem !important;
+  }
+
+  /* Ensure cards don't get too cramped */
+  .epa-effectiveness-analysis-card,
+  .epa-error-patterns-card,
+  .epa-progress-comparison-card,
+  .epa-next-steps-card,
+  .epa-skill-mastery-card,
+  .epa-response-history-card,
+  .epa-irt-analysis-card {
+    margin-bottom: 0.625rem !important;
+    padding: 0.625rem !important;
+    min-height: auto !important;
+  }
+
+  /* Prevent content from being too compressed */
+  .epa-metric-row,
+  .epa-progression-item,
+  .epa-comparison-item {
+    min-height: 40px !important;
+    align-items: flex-start !important;
+    gap: 0.125rem !important;
+  }
+
+  /* Better mastery circle for very small screens */
+  .epa-mastery-circle {
+    width: 60px !important;
+    height: 60px !important;
+  }
+
+  .epa-mastery-percentage {
+    font-size: 1rem !important;
+  }
+}
+
+/* Prevent layout breaks and ensure readability across all sizes */
+@media (max-width: 1200px) {
+  /* Global text overflow prevention */
+  .epa-two-column-layout * {
+    text-overflow: ellipsis !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+
+  /* Better grid spacing */
+  .epa-two-column-layout {
+    gap: 1.5rem !important;
+  }
+
+  /* Ensure minimum heights for interactive elements */
+  .epa-metric-row,
+  .epa-progression-item,
+  .epa-comparison-item,
+  .epa-error-stat {
+    min-height: 45px !important;
+    display: flex !important;
+    align-items: center !important;
   }
 }
 
