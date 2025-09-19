@@ -431,8 +431,8 @@
 @media (max-width: 480px) {
   .epa-left-column,
   .epa-right-column {
-    height: 450px !important;
-    max-height: 450px !important;
+    height: 550px !important;
+    max-height: 550px !important;
   }
 
   .epa-column-header {
