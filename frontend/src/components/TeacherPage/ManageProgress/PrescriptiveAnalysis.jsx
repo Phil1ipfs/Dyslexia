@@ -36,7 +36,6 @@ import ConfirmationDialog from './ConfirmationDialog';
 import SuccessNotification from './SuccessNotification';
 import './css/PrescriptiveAnalysis.css';
 import './css/ErrorPatternAnalysis.css';
-import './css/BKTTimelineCompact.css';
 
 // Add inline styles for elements that might not be in the CSS file
 const inlineStyles = {
@@ -2668,24 +2667,32 @@ const PrescriptiveAnalysis = ({
 
                 {/* Response History Evolution - Real BKT Learning Curve */}
                 {interventionData.skillMastery?.[categoryName]?.responseHistory && (
-                  <div className="bkt-compact-container">
-                    <h4 className="bkt-compact-header">
+                  <div className="epa-response-history-card">
+                    <h4 className="epa-subsection-title">
                       <FaChartLine className="epa-section-icon" />
                       Learning Progression (BKT Evolution)
                     </h4>
-                    <div className="bkt-compact-timeline">
-                      {interventionData.skillMastery[categoryName].responseHistory.slice(-12).map((response, index) => (
-                        <div key={index} className="bkt-compact-item">
-                          <div className={`bkt-compact-icon ${response.correct ? 'correct' : 'incorrect'}`}>
+                    <div className="epa-response-timeline">
+                      {interventionData.skillMastery[categoryName].responseHistory.slice(-8).map((response, index) => (
+                        <div key={index} className="epa-response-item">
+                          <div className={`epa-response-indicator ${response.correct ? 'correct' : 'incorrect'}`}>
+                            {response.correct ? <FaCheck /> : <FaTimes />}
                           </div>
-                          <div className="bkt-compact-question">
-                            {response.questionId}
-                          </div>
-                          <div className="bkt-compact-score">
-                            {(response.masteryAfter * 100).toFixed(0)}%
+                          <div className="epa-response-details">
+                            <div className="epa-question-id">{response.questionId}</div>
+                            <div className="epa-mastery-after">{(response.masteryAfter * 100).toFixed(0)}%</div>
                           </div>
                         </div>
                       ))}
+                    </div>
+                    <div className="epa-learning-trend">
+                      <strong>Learning Trend:</strong> {(() => {
+                        const history = interventionData.skillMastery[categoryName].responseHistory;
+                        if (history.length < 2) return 'Insufficient data';
+                        const first = history[0].masteryAfter;
+                        const last = history[history.length - 1].masteryAfter;
+                        return last > first ? 'Improving' : last < first ? 'Declining' : 'Stable';
+                      })()}
                     </div>
                   </div>
                 )}
