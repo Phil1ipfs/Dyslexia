@@ -2976,8 +2976,8 @@ const PrescriptiveAnalysis = ({
               </div>
             </div>
 
-            {/* Right Column: Intervention Results & Analysis */}
-            <div className="epa-right-column">
+            {/* Left Column: Intervention Results & Analysis */}
+            <div className="epa-left-column">
               <div className="epa-column-header">
                 {interventionData.isPassed ? <FaCheckCircle className="epa-icon" /> : <FaEdit className="epa-icon" />}
                 <span>Intervention Performance & Analysis</span>
