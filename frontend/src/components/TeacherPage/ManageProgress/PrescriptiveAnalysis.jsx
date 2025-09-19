@@ -3319,12 +3319,14 @@ const PrescriptiveAnalysis = ({
                       <div className="error-resolution-summary">
                         {interventionData.interventionEffectiveness.errorPatternResolution.improved?.length > 0 && (
                           <div className="resolution-item improved">
-                            <strong>Improved Patterns:</strong> {interventionData.interventionEffectiveness.errorPatternResolution.improved.join(', ')}
+                            <div className="resolution-label">Improved Patterns:</div>
+                            <div className="resolution-value">{interventionData.interventionEffectiveness.errorPatternResolution.improved.join(', ')}</div>
                           </div>
                         )}
                         {interventionData.interventionEffectiveness.errorPatternResolution.persistent?.length > 0 && (
                           <div className="resolution-item persistent">
-                            <strong>Persistent Patterns:</strong> {interventionData.interventionEffectiveness.errorPatternResolution.persistent.join(', ')}
+                            <div className="resolution-label">Persistent Patterns:</div>
+                            <div className="resolution-value">{interventionData.interventionEffectiveness.errorPatternResolution.persistent.join(', ')}</div>
                           </div>
                         )}
                       </div>
@@ -3334,22 +3336,22 @@ const PrescriptiveAnalysis = ({
                     {interventionData.interventionEffectiveness?.skillProgression && (
                       <div className="skill-progression-metrics">
                         <div className="progression-item">
-                          <span>Mastery Growth:</span>
-                          <span className="progression-value">
+                          <div className="progression-label">Mastery Growth:</div>
+                          <div className="progression-value">
                             {(interventionData.interventionEffectiveness.skillProgression.masteryGrowth * 100).toFixed(1)}%
-                          </span>
+                          </div>
                         </div>
                         <div className="progression-item">
-                          <span>Response Time:</span>
-                          <span className="progression-value">
+                          <div className="progression-label">Response Time:</div>
+                          <div className="progression-value">
                             +{interventionData.interventionEffectiveness.skillProgression.responseTimeImprovement}%
-                          </span>
+                          </div>
                         </div>
                         <div className="progression-item">
-                          <span>Consistency:</span>
-                          <span className="progression-value">
+                          <div className="progression-label">Consistency:</div>
+                          <div className="progression-value">
                             +{interventionData.interventionEffectiveness.skillProgression.consistencyImprovement}%
-                          </span>
+                          </div>
                         </div>
                       </div>
                     )}
