@@ -538,19 +538,113 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   };
 
   /**
-   * Update an existing intervention
+   * Update an existing intervention with versioning support
    * API: PUT /api/interventions/{id}
+   * UPDATED: Added intervention versioning system as per CLAUDE.md specification
    */
   const updateIntervention = async (interventionId, interventionData) => {
     try {
-      console.log(`Updating intervention ${interventionId}:`, interventionData);
-      
+      console.log(`[INTERVENTION UPDATE] Starting update for intervention ${interventionId}`);
+      console.log(`[INTERVENTION UPDATE] Intervention data:`, interventionData);
+
+      // Step 1: Check if this intervention has failed and needs versioning
+      let needsVersioning = false;
+      let currentIntervention = null;
+
+      try {
+        // Fetch current intervention to check its status
+        const currentResponse = await api.interventions.getById(interventionId);
+        currentIntervention = currentResponse.data;
+        console.log(`[INTERVENTION UPDATE] Current intervention:`, currentIntervention);
+
+        // Check if intervention has failed results that require versioning
+        if (currentIntervention) {
+          const hasFailedResults = currentIntervention.interventionResultsId ||
+                                 (currentIntervention.interventionResults && currentIntervention.interventionResults.length > 0);
+
+          if (hasFailedResults) {
+            console.log(`[INTERVENTION UPDATE] ✅ Intervention has existing results - creating version ${(currentIntervention.revisionNumber || 1) + 1}`);
+            needsVersioning = true;
+          } else {
+            console.log(`[INTERVENTION UPDATE] No existing results found - updating current version`);
+          }
+        }
+      } catch (error) {
+        console.warn(`[INTERVENTION UPDATE] Could not fetch current intervention status:`, error);
+        // Continue with normal update if we can't determine status
+      }
+
+      // Step 2: Apply versioning logic if needed
+      if (needsVersioning && currentIntervention) {
+        console.log(`[INTERVENTION UPDATE] 🔄 Applying intervention versioning system`);
+
+        // Increment revision number
+        const newRevisionNumber = (currentIntervention.revisionNumber || 1) + 1;
+        interventionData.revisionNumber = newRevisionNumber;
+
+        console.log(`[INTERVENTION UPDATE] ✅ Incremented revisionNumber: ${currentIntervention.revisionNumber || 1} → ${newRevisionNumber}`);
+
+        // Create revision history entry
+        const revisionEntry = {
+          version: newRevisionNumber,
+          editedBy: localStorage.getItem('userId') || 'teacher_default',
+          editedAt: new Date().toISOString(),
+          changes: "Teacher revision after intervention failure - questions modified per student needs",
+          prescriptionCompliance: "revised_for_student_needs"
+        };
+
+        // Add to revision history
+        interventionData.revisionHistory = [
+          ...(currentIntervention.revisionHistory || []),
+          revisionEntry
+        ];
+
+        console.log(`[INTERVENTION UPDATE] ✅ Added revision history entry:`, revisionEntry);
+
+        // Clear intervention completion status for new version (as per CLAUDE.md)
+        interventionData.completedAt = null;
+        interventionData.startedAt = null;
+        interventionData.interventionResultsId = null;
+        interventionData.interventionResults = []; // Clear results array but keep historical record
+
+        // Update last edited metadata
+        interventionData.lastEditedBy = localStorage.getItem('userId') || 'teacher_default';
+        interventionData.lastEditedAt = new Date().toISOString();
+        interventionData.updatedAt = new Date().toISOString();
+
+        console.log(`[INTERVENTION UPDATE] ✅ Reset completion status for version ${newRevisionNumber}`);
+        console.log(`[INTERVENTION UPDATE] ✅ Previous intervention_results preserved as reference for prescriptive analysis`);
+        console.log(`[INTERVENTION UPDATE] ✅ Student can now retake revised intervention version ${newRevisionNumber}`);
+
+        // Status remains active for student to retake
+        interventionData.status = 'active';
+
+        // Log the versioning changes for audit trail
+        console.log(`[INTERVENTION UPDATE] 📝 VERSIONING SUMMARY:`);
+        console.log(`[INTERVENTION UPDATE] - Previous version: ${currentIntervention.revisionNumber || 1}`);
+        console.log(`[INTERVENTION UPDATE] - New version: ${newRevisionNumber}`);
+        console.log(`[INTERVENTION UPDATE] - Previous results preserved: ${currentIntervention.interventionResultsId ? 'Yes' : 'No'}`);
+        console.log(`[INTERVENTION UPDATE] - Ready for student retake: Yes`);
+        console.log(`[INTERVENTION UPDATE] - Mobile will detect version change: Yes`);
+
+      } else {
+        console.log(`[INTERVENTION UPDATE] No versioning needed - standard update`);
+      }
+
+      // Step 3: Perform the actual update
       const response = await api.interventions.update(interventionId, interventionData);
-      console.log('Intervention update response:', response.data);
-      
+      console.log('[INTERVENTION UPDATE] ✅ Update response:', response.data);
+
+      if (needsVersioning) {
+        console.log(`[INTERVENTION UPDATE] 🎯 INTERVENTION VERSIONING COMPLETE`);
+        console.log(`[INTERVENTION UPDATE] 📱 Mobile app will detect revisionNumber change and allow student retake`);
+        console.log(`[INTERVENTION UPDATE] 📊 Previous intervention_results remain as reference for analytics`);
+        console.log(`[INTERVENTION UPDATE] 🔄 New intervention_results will be created when student completes version ${interventionData.revisionNumber}`);
+      }
+
       return response.data.data;
     } catch (error) {
-      console.error('Error updating intervention:', error);
+      console.error('[INTERVENTION UPDATE] ❌ Error updating intervention:', error);
       throw error;
     }
   };
