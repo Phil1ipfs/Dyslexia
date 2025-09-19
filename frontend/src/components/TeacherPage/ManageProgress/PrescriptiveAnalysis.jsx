@@ -2550,81 +2550,196 @@ const PrescriptiveAnalysis = ({
         </div>
       );
     } else {
-      // ===== AFTER INTERVENTION: Two-Column Before/After Comparison Layout =====
+      // ===== AFTER INTERVENTION: Comprehensive Results Display =====
       const interventionStatus = getInterventionStatus(categoryName);
       const statusTheme = getUITheme(categoryName);
 
       return (
-        <div className="epa-intervention-comparison-two-column">
-          {/* Intervention Results Summary Header */}
-          <div className={`epa-intervention-results-header epa-intervention-header--${statusTheme}`}>
+        <div className="epa-intervention-results-display">
+          {/* Comprehensive Intervention Results Header */}
+          <div className="epa-intervention-results-header">
             <div className="epa-results-header-content">
               <div className="epa-results-icon">
-                {interventionStatus === 'success' ? <FaCheckCircle /> :
-                 interventionStatus === 'revision_needed' ? <FaEdit /> : <FaClock />}
+                <FaEdit />
               </div>
               <div className="epa-results-title-section">
                 <h3 className="epa-results-title">
                   Intervention Results for {categoryName}
                 </h3>
                 <p className="epa-results-subtitle">
-                  {interventionStatus === 'success'
-                    ? `Student successfully completed intervention! Score improved from ${interventionData.previousScore}% to ${interventionData.score}%.`
-                    : interventionStatus === 'revision_needed'
-                    ? `Student scored ${interventionData.score}% - close to passing! Teacher revision recommended.`
-                    : 'Intervention analysis in progress...'}
+                  {interventionData.isPassed ? (
+                    `Student scored ${interventionData.score}% - Intervention successful!`
+                  ) : (
+                    `Student scored ${interventionData.score}% - Teacher revision recommended.`
+                  )}
                 </p>
+                <div className="epa-assessment-metadata">
+                  <span>Assessment Date: {new Date(interventionData.assessmentDate || Date.now()).toLocaleDateString()}</span>
+                  <span>Reading Level: {interventionData.readingLevel}</span>
+                  <span>Total Questions: {interventionData.totalQuestions}</span>
+                  {interventionData.revisionNumber && (
+                    <span>Revision: #{interventionData.revisionNumber}</span>
+                  )}
+                </div>
               </div>
               <div className="epa-results-score-summary">
-                <div className="epa-score-before">
-                  <div className="epa-score-label">Before</div>
-                  <div className="epa-score-value before">{interventionData.previousScore || 'N/A'}%</div>
+                <div className="epa-score-metric">
+                  <div className="epa-score-label">BEFORE</div>
+                  <div className="epa-score-value before">{interventionData.previousScore || 0}%</div>
                 </div>
                 <div className="epa-score-arrow">→</div>
-                <div className="epa-score-after">
-                  <div className="epa-score-label">After</div>
-                  <div className={`epa-score-value after ${interventionStatus === 'success' ? 'passed' : 'needs-revision'}`}>
+                <div className="epa-score-metric">
+                  <div className="epa-score-label">AFTER</div>
+                  <div className={`epa-score-value after ${interventionData.isPassed ? 'passed' : 'needs-revision'}`}>
                     {interventionData.score}%
                   </div>
                 </div>
-                <div className="epa-score-improvement">
-                  <div className="epa-improvement-label">Improvement</div>
+                <div className="epa-score-metric">
+                  <div className="epa-score-label">IMPROVEMENT</div>
                   <div className={`epa-improvement-value ${interventionData.improvement >= 0 ? 'positive' : 'negative'}`}>
-                    {interventionData.improvement >= 0 ? '+' : ''}{interventionData.improvement}%
+                    +{interventionData.improvement}%
+                  </div>
+                </div>
+                <div className="epa-score-metric">
+                  <div className="epa-score-label">STATUS</div>
+                  <div className={`epa-status-badge ${interventionData.isPassed ? 'passed' : 'failed'}`}>
+                    {interventionData.isPassed ? 'PASSED' : 'NEEDS REVISION'}
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Two-Column Comparison Layout */}
+          {/* Two-Column Layout Based on intervention_results.json structure */}
           <div className="epa-two-column-layout">
-            {/* Left Column: Before Intervention (Initial Diagnosis) */}
+            {/* Left Column: Skill Mastery & Analysis */}
             <div className="epa-left-column">
               <div className="epa-column-header">
-                <FaUserMd className="epa-icon" />
-                <span>Before Intervention - Initial Diagnosis</span>
+                <FaChartLine className="epa-icon" />
+                <span>Skill Mastery Analysis</span>
               </div>
               <div className="epa-column-content">
-                <div className="epa-initial-assessment-summary">
-                  <div className="epa-initial-score-card">
-                    <div className="epa-score-header">
-                      <span className="epa-score-label">Initial Assessment Score</span>
-                      <span className="epa-score-status failed">Below Passing Threshold</span>
+
+                {/* Comprehensive Skill Mastery from intervention_results.json */}
+                {interventionData.skillMastery?.[categoryName] && (
+                  <div className="epa-skill-mastery-card">
+                    <h4 className="epa-subsection-title">
+                      <FaBrain className="epa-section-icon" />
+                      Bayesian Knowledge Tracing (BKT) Analysis
+                    </h4>
+                    <div className="epa-bkt-display">
+                      <div className="epa-mastery-gauge">
+                        <div className="epa-gauge-container">
+                          <div className={`epa-mastery-circle ${interventionData.skillMastery[categoryName].masteryProbability >= 0.75 ? 'high' :
+                            interventionData.skillMastery[categoryName].masteryProbability >= 0.5 ? 'medium' : 'low'}`}>
+                            <span className="epa-mastery-percentage">
+                              {(interventionData.skillMastery[categoryName].masteryProbability * 100).toFixed(1)}%
+                            </span>
+                            <span className="epa-mastery-label">Mastery</span>
+                          </div>
+                        </div>
+                        <div className="epa-mastery-interpretation">
+                          <strong>Skill Status:</strong> {interventionData.skillMastery[categoryName].status ||
+                            (interventionData.skillMastery[categoryName].masteryProbability >= 0.75 ? 'MASTERED' :
+                             interventionData.skillMastery[categoryName].masteryProbability >= 0.5 ? 'DEVELOPING' : 'NEEDS_IMPROVEMENT')}
+                        </div>
+                      </div>
+
+                      <div className="epa-bkt-metrics">
+                        <div className="epa-metric-row">
+                          <span className="epa-metric-label">Questions Answered:</span>
+                          <span className="epa-metric-value">{interventionData.skillMastery[categoryName].totalQuestions}</span>
+                        </div>
+                        <div className="epa-metric-row">
+                          <span className="epa-metric-label">Correct Answers:</span>
+                          <span className="epa-metric-value">{interventionData.skillMastery[categoryName].correctAnswers}</span>
+                        </div>
+                        {interventionData.skillMastery[categoryName].correctMatches !== undefined && (
+                          <div className="epa-metric-row">
+                            <span className="epa-metric-label">Correct Matches:</span>
+                            <span className="epa-metric-value">
+                              {interventionData.skillMastery[categoryName].correctMatches}/{interventionData.skillMastery[categoryName].totalPossibleMatches || interventionData.skillMastery[categoryName].totalQuestions * 3}
+                            </span>
+                          </div>
+                        )}
+                        <div className="epa-metric-row">
+                          <span className="epa-metric-label">Final Score:</span>
+                          <span className={`epa-metric-value ${interventionData.skillMastery[categoryName].isPassed ? 'passed' : 'failed'}`}>
+                            {interventionData.skillMastery[categoryName].score}%
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="epa-score-value initial-failed">{interventionData.previousScore || 'N/A'}%</div>
-                    <div className="epa-threshold-info">Passing threshold: 75%</div>
                   </div>
+                )}
 
-                  <div className="epa-key-issues-identified">
-                    <h4 className="epa-subsection-title">Key Issues Identified</h4>
-                    {renderSimplifiedErrorPatterns(detailedErrorAnalysis, categoryName)}
+                {/* Response History Evolution - Real BKT Learning Curve */}
+                {interventionData.skillMastery?.[categoryName]?.responseHistory && (
+                  <div className="epa-response-history-card">
+                    <h4 className="epa-subsection-title">
+                      <FaChartLine className="epa-section-icon" />
+                      Learning Progression (BKT Evolution)
+                    </h4>
+                    <div className="epa-response-timeline">
+                      {interventionData.skillMastery[categoryName].responseHistory.slice(-8).map((response, index) => (
+                        <div key={index} className="epa-response-item">
+                          <div className={`epa-response-indicator ${response.correct ? 'correct' : 'incorrect'}`}>
+                            {response.correct ? <FaCheck /> : <FaTimes />}
+                          </div>
+                          <div className="epa-response-details">
+                            <div className="epa-question-id">{response.questionId}</div>
+                            <div className="epa-mastery-after">{(response.masteryAfter * 100).toFixed(0)}%</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="epa-learning-trend">
+                      <strong>Learning Trend:</strong> {(() => {
+                        const history = interventionData.skillMastery[categoryName].responseHistory;
+                        if (history.length < 2) return 'Insufficient data';
+                        const first = history[0].masteryAfter;
+                        const last = history[history.length - 1].masteryAfter;
+                        return last > first ? 'Improving' : last < first ? 'Declining' : 'Stable';
+                      })()}
+                    </div>
                   </div>
+                )}
 
-                  <div className="epa-original-prescription">
-                    <h4 className="epa-subsection-title">Original Intervention Prescription</h4>
-                    {renderSimplifiedPrescription(researchBasedPrescriptions, categoryName)}
+                {/* IRT Ability Estimate */}
+                {interventionData.abilityEstimates?.[categoryName] !== undefined && (
+                  <div className="epa-irt-analysis-card">
+                    <h4 className="epa-subsection-title">
+                      <FaCalculator className="epa-section-icon" />
+                      Item Response Theory (IRT) Analysis
+                    </h4>
+                    <div className="epa-irt-display">
+                      <div className="epa-ability-scale">
+                        <div className="epa-scale-line">
+                          <span className="epa-scale-label">-3.0</span>
+                          <div className="epa-scale-bar">
+                            <div
+                              className="epa-ability-marker"
+                              style={{ left: `${((interventionData.abilityEstimates[categoryName] + 3) / 6) * 100}%` }}
+                            >
+                              <span className="epa-ability-value">{interventionData.abilityEstimates[categoryName].toFixed(1)}</span>
+                            </div>
+                          </div>
+                          <span className="epa-scale-label">+3.0</span>
+                        </div>
+                      </div>
+                      <div className="epa-irt-interpretation">
+                        <strong>Ability Level:</strong> {(() => {
+                          const ability = interventionData.abilityEstimates[categoryName];
+                          if (ability >= 1.5) return 'Excellent - Well above grade level';
+                          if (ability >= 0.5) return 'Above Average - Performing well';
+                          if (ability >= -0.5) return 'Average - Meeting expectations';
+                          if (ability >= -1.5) return 'Below Average - Needs support';
+                          return 'Significant difficulty - Intensive intervention needed';
+                        })()}
+                      </div>
+                    </div>
                   </div>
+                )}
 
                   {/* Add the COMPLETE detailed mathematical analysis from the main assessment */}
                   <div className="epa-detailed-mathematical-analysis">
@@ -2766,74 +2881,173 @@ const PrescriptiveAnalysis = ({
               </div>
             </div>
 
-            {/* Right Column: After Intervention (Results & Next Steps) */}
+            {/* Right Column: Intervention Results & Analysis */}
             <div className="epa-right-column">
               <div className="epa-column-header">
-                {interventionStatus === 'success' ? <FaCheckCircle className="epa-icon" /> : <FaEdit className="epa-icon" />}
-                <span>After Intervention - Results & Next Steps</span>
+                {interventionData.isPassed ? <FaCheckCircle className="epa-icon" /> : <FaEdit className="epa-icon" />}
+                <span>Intervention Performance & Analysis</span>
               </div>
               <div className="epa-column-content">
-                <div className="epa-intervention-outcome-summary">
-                  <div className={`epa-outcome-score-card epa-outcome--${interventionStatus}`}>
-                    <div className="epa-score-header">
-                      <span className="epa-score-label">Intervention Score</span>
-                      <span className={`epa-score-status ${interventionStatus === 'success' ? 'passed' : 'needs-revision'}`}>
-                        {interventionStatus === 'success' ? 'Passed!' : 'Needs Revision'}
+                {/* Intervention Performance Metrics */}
+                {interventionData.progressComparison?.interventionPerformance && (
+                  <div className="epa-intervention-performance-card">
+                    <div className="epa-performance-header">
+                      <span className="epa-performance-label">Intervention Score</span>
+                      <span className={`epa-performance-status ${interventionData.isPassed ? 'passed' : 'needs-revision'}`}>
+                        {interventionData.isPassed ? 'Passed!' : 'Needs Revision'}
                       </span>
                     </div>
-                    <div className={`epa-score-value intervention-${interventionStatus}`}>{interventionData.score}%</div>
-                    <div className="epa-progress-bar-container">
-                      <div className="epa-progress-bar">
-                        <div
-                          className={`epa-progress-fill epa-progress--${interventionStatus}`}
-                          style={{ width: `${Math.min(100, (interventionData.score / 75) * 100)}%` }}
-                        ></div>
+                    <div className="epa-performance-metrics">
+                      <div className={`epa-score-value intervention-${interventionData.isPassed ? 'passed' : 'failed'}`}>
+                        {interventionData.score}%
                       </div>
-                      <div className="epa-progress-labels">
-                        <span>0%</span>
-                        <span className="threshold-marker">75% (Pass)</span>
-                        <span>100%</span>
+                      <div className="epa-threshold-info">Passing threshold: {interventionData.passThreshold || 75}%</div>
+                      <div className="epa-mastery-probability">
+                        Mastery Probability: {(interventionData.progressComparison.interventionPerformance.masteryProbability * 100).toFixed(1)}%
+                      </div>
+                      <div className="epa-progress-bar-container">
+                        <div className="epa-progress-bar">
+                          <div
+                            className={`epa-progress-fill epa-progress--${interventionData.isPassed ? 'passed' : 'failed'}`}
+                            style={{ width: `${Math.min(100, (interventionData.score / (interventionData.passThreshold || 75)) * 100)}%` }}
+                          ></div>
+                        </div>
+                        <div className="epa-progress-labels">
+                          <span>0%</span>
+                          <span className="threshold-marker">{interventionData.passThreshold || 75}% (Pass)</span>
+                          <span>100%</span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                )}
 
-                  <div className="epa-improvement-analysis">
-                    <h4 className="epa-subsection-title">Progress Analysis</h4>
-                    <div className="epa-improvement-metrics">
+                {/* Progress Indicators from intervention_results.json */}
+                {interventionData.progressComparison?.progressIndicators && (
+                  <div className="epa-progress-indicators-card">
+                    <h4 className="epa-subsection-title">Progress Indicators</h4>
+                    <div className="epa-progress-metrics">
                       <div className="epa-metric">
                         <span className="epa-metric-label">Score Improvement:</span>
-                        <span className={`epa-metric-value ${interventionData.improvement >= 0 ? 'positive' : 'negative'}`}>
-                          {interventionData.improvement >= 0 ? '+' : ''}{interventionData.improvement}%
+                        <span className={`epa-metric-value ${interventionData.progressComparison.progressIndicators.scoreImprovement >= 0 ? 'positive' : 'negative'}`}>
+                          {interventionData.progressComparison.progressIndicators.scoreImprovement >= 0 ? '+' : ''}{interventionData.progressComparison.progressIndicators.scoreImprovement}%
                         </span>
                       </div>
                       <div className="epa-metric">
                         <span className="epa-metric-label">Mastery Growth:</span>
                         <span className="epa-metric-value positive">
-                          {interventionData.masteryImprovement ? `+${(interventionData.masteryImprovement * 100).toFixed(0)}%` : 'Calculating...'}
+                          +{(interventionData.progressComparison.progressIndicators.masteryGrowth * 100).toFixed(1)}%
                         </span>
                       </div>
                       <div className="epa-metric">
-                        <span className="epa-metric-label">Overall Effectiveness:</span>
-                        <span className={`epa-metric-value ${interventionStatus === 'success' ? 'positive' : 'moderate'}`}>
-                          {interventionData.overallEffectiveness || 'Moderately Effective'}
+                        <span className="epa-metric-label">Error Reduction:</span>
+                        <span className="epa-metric-value positive">
+                          {interventionData.progressComparison.progressIndicators.errorReduction * 100}%
+                        </span>
+                      </div>
+                      <div className="epa-metric">
+                        <span className="epa-metric-label">Skill Transfer:</span>
+                        <span className={`epa-metric-value ${interventionData.progressComparison.progressIndicators.skillTransfer === 'excellent' || interventionData.progressComparison.progressIndicators.skillTransfer === 'good' ? 'positive' : 'moderate'}`}>
+                          {interventionData.progressComparison.progressIndicators.skillTransfer}
                         </span>
                       </div>
                     </div>
                   </div>
+                )}
 
-                  <div className="epa-error-pattern-resolution">
+                {/* Intervention Effectiveness Analysis */}
+                {interventionData.interventionEffectiveness && (
+                  <div className="epa-effectiveness-card">
+                    <h4 className="epa-subsection-title">Intervention Effectiveness</h4>
+                    <div className="epa-effectiveness-content">
+                      <div className="epa-effectiveness-item">
+                        <strong>Overall Effectiveness:</strong>
+                        <span className={`epa-effectiveness-value ${interventionData.interventionEffectiveness.overallEffectiveness === 'HIGHLY_EFFECTIVE' ? 'high' :
+                          interventionData.interventionEffectiveness.overallEffectiveness === 'MODERATELY_EFFECTIVE' ? 'moderate' : 'low'}`}>
+                          {interventionData.interventionEffectiveness.overallEffectiveness?.replace('_', ' ')}
+                        </span>
+                      </div>
+                      {interventionData.interventionEffectiveness.skillProgression && (
+                        <div className="epa-skill-progression">
+                          <div className="epa-effectiveness-item">
+                            <strong>Mastery Growth:</strong> +{(interventionData.interventionEffectiveness.skillProgression.masteryGrowth * 100).toFixed(1)}%
+                          </div>
+                          <div className="epa-effectiveness-item">
+                            <strong>Response Time Improvement:</strong> +{interventionData.interventionEffectiveness.skillProgression.responseTimeImprovement}%
+                          </div>
+                          <div className="epa-effectiveness-item">
+                            <strong>Consistency Improvement:</strong> +{interventionData.interventionEffectiveness.skillProgression.consistencyImprovement}%
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Error Pattern Resolution */}
+                {interventionData.interventionEffectiveness?.errorPatternResolution && (
+                  <div className="epa-error-resolution-card">
                     <h4 className="epa-subsection-title">Error Pattern Resolution</h4>
-                    {renderErrorPatternResolution(interventionData, categoryName)}
+                    <div className="epa-resolution-content">
+                      {interventionData.interventionEffectiveness.errorPatternResolution.improved?.length > 0 && (
+                        <div className="epa-resolution-item improved">
+                          <FaCheckCircle className="epa-resolution-icon" />
+                          <div>
+                            <strong>Improved Patterns:</strong>
+                            <div className="epa-pattern-list">
+                              {interventionData.interventionEffectiveness.errorPatternResolution.improved.map((pattern, index) => (
+                                <span key={index} className="epa-pattern-tag improved">{pattern}</span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {interventionData.interventionEffectiveness.errorPatternResolution.persistent?.length > 0 && (
+                        <div className="epa-resolution-item persistent">
+                          <FaExclamationTriangle className="epa-resolution-icon" />
+                          <div>
+                            <strong>Persistent Patterns:</strong>
+                            <div className="epa-pattern-list">
+                              {interventionData.interventionEffectiveness.errorPatternResolution.persistent.map((pattern, index) => (
+                                <span key={index} className="epa-pattern-tag persistent">{pattern}</span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
+                )}
 
-                  <div className="epa-teacher-next-steps">
+                {/* Teacher Action Recommendations */}
+                {interventionData.insights && (
+                  <div className="epa-insights-card">
                     <h4 className="epa-subsection-title">
-                      {interventionStatus === 'success' ? '🎉 Success! Next Steps:' : '📝 Action Required:'}
+                      {interventionData.isPassed ? '🎉 Success! Next Steps:' : '📝 Action Required:'}
                     </h4>
-                    {renderTeacherActionRecommendations(interventionData, categoryName, interventionStatus)}
+                    <div className="epa-insights-content">
+                      <div className="epa-insight-item">
+                        <strong>Recommended Action:</strong> {interventionData.insights.recommendedAction?.replace('_', ' ')}
+                      </div>
+                      <div className="epa-insight-item">
+                        <strong>Impact Assessment:</strong> {interventionData.insights.interventionImpact}
+                      </div>
+                      <div className="epa-insight-item">
+                        <strong>Next Steps Rationale:</strong> {interventionData.insights.nextStepsRationale}
+                      </div>
+                      {interventionData.insights.strengths?.length > 0 && (
+                        <div className="epa-insight-item">
+                          <strong>Strengths Observed:</strong>
+                          <ul className="epa-insight-list">
+                            {interventionData.insights.strengths.map((strength, index) => (
+                              <li key={index}>{strength}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

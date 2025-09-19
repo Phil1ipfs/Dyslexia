@@ -2773,6 +2773,476 @@ const handleTemplateShortage = {
 
 ---
 
+## Comprehensive Intervention Results System
+
+### Overview
+
+The intervention_results system provides complete post-intervention analysis matching the complexity of prescriptive_analysis. It tracks intervention effectiveness, learning progress, error pattern resolution, and generates revision guidance for teachers.
+
+### System Architecture
+
+The intervention results system follows the **Doctor-Teacher-Student** model:
+
+1. **Doctor Role (Analytics)**: Diagnoses intervention effectiveness and prescribes revision strategies
+2. **Teacher Role (Implementation)**: Reviews analytics and revises intervention questions based on recommendations
+3. **Student Role (Learning)**: Benefits from improved interventions through teacher revisions
+
+### Core Components
+
+#### 1. Comprehensive Data Collection
+
+```javascript
+const interventionResultsSchema = {
+  // Basic Performance Metrics
+  totalQuestions: Number,           // Total intervention questions attempted
+  correctAnswers: Number,           // Standard correct count
+  totalPossibleMatches: Number,     // For Phonological Awareness matching questions
+  correctMatches: Number,           // For Phonological Awareness correct matches
+  score: Number,                    // Final percentage score (0-100)
+  isPassed: Boolean,                // Did student reach ≥75% threshold?
+  passThreshold: Number,            // Required passing score (default 75%)
+
+  // Improvement Tracking
+  previousScore: Number,            // Original main assessment score
+  improvement: Number,              // Score difference (intervention - original)
+  improvementPercentage: Number,    // Relative improvement percentage
+
+  // Version Tracking
+  revisionNumber: Number,           // Which revision of intervention was taken
+  interventionVersion: Number,      // Links to intervention_assessment.revisionNumber
+
+  // Comprehensive Analytics (matching prescriptive_analysis complexity)
+  skillMastery: Mixed,              // BKT skill mastery analysis with response history
+  abilityEstimates: Mixed,          // IRT ability estimates (updated post-intervention)
+  errorPatterns: Mixed,             // Detailed error pattern analysis with resolution tracking
+  researchBasedPrescriptions: Mixed, // Next intervention prescriptions and teacher guidance
+
+  // Intervention Effectiveness Analysis
+  interventionEffectiveness: {
+    overallEffectiveness: String,   // HIGHLY_EFFECTIVE, MODERATELY_EFFECTIVE, etc.
+    errorPatternResolution: {
+      resolved: [String],           // Error patterns completely resolved
+      improved: [String],           // Error patterns showing improvement
+      persistent: [String],         // Error patterns still present
+      new_patterns: [String]        // New error patterns that emerged
+    },
+    skillProgression: {
+      masteryGrowth: Number,        // BKT mastery probability growth
+      responseTimeImprovement: Number, // Response time improvement percentage
+      consistencyImprovement: Number   // Consistency improvement percentage
+    }
+  }
+};
+```
+
+#### 2. Automatic Revision Tracking
+
+**Version-Aware Processing**: The system automatically tracks which revision of an intervention the student took:
+
+```javascript
+// Mobile app requests intervention version info before student starts
+GET /api/intervention-assessment/{interventionId}/version-info
+Response: {
+  interventionId: "ObjectId(...)",
+  revisionNumber: 2,                    // Version 2 (teacher edited)
+  lastEditedBy: "Teacher ID",
+  lastEditedAt: "2025-01-16T10:30:00Z",
+  hasBeenRevised: true,                 // True = teacher made changes
+  questions: [...],                     // Updated questions for version 2
+  prescriptionBased: true
+}
+
+// Mobile records responses with version tracking
+POST /api/intervention-responses
+Body: {
+  studentId: 202210222,
+  interventionAssessmentId: "ObjectId(...)",
+  revisionNumber: 2,                    // CRITICAL: Which version student took
+  responses: [...],
+  completedAt: "2025-01-16T11:00:00Z"
+}
+
+// Web processes results knowing which version was used
+intervention_results: {
+  revisionNumber: 2,                    // Links to intervention_assessment.revisionNumber
+  score: 78,                           // Student passed version 2!
+  isPassed: true                       // ≥ 75% - SUCCESS!
+}
+```
+
+#### 3. Comprehensive Error Pattern Analysis
+
+**Category-Specific Error Resolution Tracking**:
+
+```javascript
+// Example: Phonological Awareness error pattern analysis
+const errorPatternAnalysis = {
+  "Phonological Awareness": {
+    detailedErrorAnalysis: [{
+      errorPattern: "Sound discrimination difficulties persist",
+      specificPairs: ["B-P", "M-N"],
+      interventionFocus: "Continued multisensory sound practice",
+      resolutionStatus: "improved" // resolved, improved, persistent, new
+    }],
+
+    // Phonological Awareness specific patterns
+    matching_errors: {
+      count: 4,                     // 4 questions had errors (improved from 5)
+      total: 12,                    // 12 total questions
+      percentage: 33,               // 33% error rate (improved from 83%)
+      avg_partial_success: 0.72,    // 72% of matches correct on average
+      error_type: "sound_discrimination",
+      confusion_pairs: [
+        {"sounds": ["B", "P"], "confusion_rate": 40}, // Improved from 75%
+        {"sounds": ["M", "N"], "confusion_rate": 25}  // Improved from 60%
+      ],
+      questionIds: ["int_pa_003", "int_pa_007", "int_pa_009", "int_pa_011"]
+    }
+  }
+};
+```
+
+#### 4. Research-Based Prescription Generation
+
+**Dynamic Revision Recommendations**: Based on intervention results, the system generates specific teacher guidance:
+
+```javascript
+const revisionPrescription = {
+  "Phonological Awareness": {
+    categoryStatus: "failed_needs_revision", // Near-miss case
+
+    deficitAnalysis: {
+      specificDeficits: [{
+        deficit: "Sequential sound processing",
+        severity: "moderate",       // Improved from severe
+        manifestation: "Difficulty with 3+ sound sequences",
+        errorRate: "33%",          // Improved from 83%
+        interventionResponse: "Positive response shown with 28% improvement"
+      }]
+    },
+
+    nextInterventionPrescription: {
+      recommendedAction: "teacher_revision",
+      primaryApproach: "Continued multisensory with increased scaffolding",
+      specificTechniques: [{
+        technique: "Reduced cognitive load approach",
+        description: "Limit to 2-sound sequences initially",
+        modificationFromPrevious: "Reduced sequence complexity per near-miss guidance"
+      }]
+    },
+
+    teacherRevisionGuidance: {
+      revisionRecommended: true,    // Near-miss case needs revision
+      revisionPriority: "medium",   // Good improvement but needs final push
+      specificChanges: [{
+        change: "Reduce sound sequence complexity",
+        rationale: "Student showing progress but overwhelmed by 3+ sounds",
+        expectedImpact: "5-8% score improvement"
+      }],
+      estimatedImpact: "High likelihood of reaching 75% threshold"
+    }
+  }
+};
+```
+
+### Automatic Integration Workflow
+
+#### 1. Intervention Completion → Results Generation
+
+```javascript
+// InterventionGeneratorService.processInterventionResults()
+async processInterventionResults(interventionId) {
+  // Validate intervention completeness
+  const completenessValidation = await CategoryResultsService.validateInterventionCompleteness(
+    intervention.studentId,
+    interventionId
+  );
+
+  if (!completenessValidation.isComplete) {
+    throw new Error(`Intervention incomplete - cannot create results`);
+  }
+
+  // Generate comprehensive intervention results
+  const interventionResults = await InterventionResultsAnalysisService.generateComprehensiveResults(
+    intervention.studentId,
+    interventionId,
+    intervention.prescriptiveAnalysisId,
+    intervention.category
+  );
+
+  // Automatically link results back to intervention_assessment
+  await InterventionResultsAnalysisService.linkInterventionResults(
+    interventionId,
+    interventionResults._id,
+    interventionResults.score,
+    interventionResults.isPassed
+  );
+
+  return interventionResults;
+}
+```
+
+#### 2. Automatic intervention_assessment Updating
+
+```javascript
+// interventionAssessmentModel.js - addInterventionResult method
+interventionAssessmentSchema.methods.addInterventionResult = function(
+  interventionResultsId,
+  score,
+  isPassed,
+  reason = 'initial_attempt'
+) {
+  const attemptNumber = (this.interventionResults || []).length + 1;
+
+  this.interventionResults.push({
+    attemptNumber: attemptNumber,
+    interventionResultsId: interventionResultsId,    // Links to intervention_results
+    revisionNumber: this.revisionNumber,             // Which version was taken
+    score: score,
+    isPassed: isPassed,
+    completedAt: new Date(),
+    reason: reason
+  });
+
+  // Update primary reference to latest result
+  this.interventionResultsId = interventionResultsId;
+  this.completedAt = new Date();
+
+  return this.save();
+};
+```
+
+#### 3. Automatic category_results Updating
+
+```javascript
+// InterventionResultsAnalysisService.updateCategoryResults()
+static async updateCategoryResults(studentId, category, interventionResults) {
+  if (interventionResults.isPassed) {
+    // Update original category_results to "passed"
+    const categoryResult = await CategoryResult.findOne({
+      studentId: studentId,
+      'categories.categoryName': category
+    });
+
+    if (categoryResult) {
+      const categoryIndex = categoryResult.categories.findIndex(
+        cat => cat.categoryName === category
+      );
+
+      if (categoryIndex !== -1) {
+        // Update category to passed status
+        categoryResult.categories[categoryIndex].isPassed = true;
+        categoryResult.categories[categoryIndex].interventionCompleted = true;
+        categoryResult.categories[categoryIndex].score = Math.max(
+          categoryResult.categories[categoryIndex].score,
+          interventionResults.score
+        );
+
+        // Add to intervention history with revision tracking
+        const interventionHistoryEntry = {
+          attemptNumber: attemptNumber,
+          interventionId: interventionResults.interventionAssessmentId,
+          interventionResultId: interventionResults._id,
+          revisionNumber: interventionResults.revisionNumber || 1,
+          score: interventionResults.score,
+          isPassed: interventionResults.isPassed,
+          attemptedAt: interventionResults.assessmentDate,
+          completedAt: interventionResults.completedAt,
+          attemptReason: this.determineAttemptReason(attemptNumber, interventionResults.revisionNumber)
+        };
+
+        categoryResult.categories[categoryIndex].interventionHistory.push(interventionHistoryEntry);
+        await categoryResult.save();
+
+        console.log(`[CATEGORY RESULTS] ✅ Updated category ${category} to passed via intervention`);
+      }
+    }
+  }
+}
+```
+
+### Teacher Revision Workflow
+
+#### 1. Near-Miss Detection
+
+```javascript
+const nearMissAnalysis = {
+  trigger: "improvement_shown_but_below_threshold",
+  criteria: {
+    minimumImprovement: 10,          // At least 10% improvement shown
+    gapToPass: 5,                    // Within 5% of passing threshold
+    positiveTrajectory: true         // BKT mastery probability increased
+  },
+
+  example: {
+    originalScore: 44,               // Main assessment
+    interventionScore: 73,           // Intervention result
+    improvement: 29,                 // Significant improvement
+    gapToPass: 2,                   // Only 2% short of 75%
+    recommendation: "teacher_revision"
+  }
+};
+```
+
+#### 2. Revision Guidance Generation
+
+```javascript
+const teacherRevisionGuidance = {
+  revisionType: "NEAR_MISS_OPTIMIZATION",
+  priority: "MEDIUM",
+
+  student: {
+    name: "Juan Dela Cruz",
+    category: "Phonological Awareness",
+    currentRevision: 1,
+    performanceIndicators: {
+      originalScore: 44,
+      interventionScore: 73,
+      masteryGrowth: 0.27,           // BKT improved from 0.31 to 0.58
+      improvementTrajectory: "steady_improvement"
+    }
+  },
+
+  revisionRecommendations: {
+    questionModifications: [{
+      questionType: "B-P discrimination",
+      currentDifficulty: "3 sound pairs simultaneously",
+      recommendedChange: "reduce to 2 sound pairs",
+      reason: "student shows improvement but needs less cognitive load"
+    }],
+    supportFeatures: [
+      "Add replay button for audio",
+      "Include mouth position images",
+      "Provide immediate feedback after each match"
+    ],
+    estimatedImpact: "5-10% score improvement with modifications"
+  }
+};
+```
+
+#### 3. Revision Implementation
+
+```javascript
+// Teacher implements revision through intervention_assessment
+const revisionWorkflow = {
+  step1: "Teacher receives revision guidance via dashboard",
+  step2: "Teacher accesses intervention_assessment editor",
+  step3: "Teacher modifies questions based on specific recommendations",
+  step4: "System creates new revision (revisionNumber: 2)",
+  step5: "Student attempts revised intervention",
+  step6: "Mobile detects version 2 and tracks accordingly",
+  step7: "Results show revision number for proper tracking"
+};
+```
+
+### Data Integrity and Quality Assurance
+
+#### 1. Completeness Validation
+
+```javascript
+// InterventionResultsAnalysisService.validateInterventionCompleteness()
+static async validateInterventionCompleteness(studentId, interventionAssessmentId) {
+  const intervention = await InterventionAssessment.findById(interventionAssessmentId);
+  const expectedQuestions = intervention.totalQuestions || intervention.questions?.length || 0;
+
+  const interventionResponses = await InterventionResponse.find({
+    studentId: studentId,
+    interventionAssessmentId: interventionAssessmentId
+  });
+
+  const answeredQuestions = interventionResponses.length;
+  const isComplete = answeredQuestions >= expectedQuestions;
+
+  if (!isComplete) {
+    throw new Error(`Intervention incomplete: Required ${expectedQuestions}, Answered ${answeredQuestions}`);
+  }
+
+  return { isComplete, required: expectedQuestions, answered: answeredQuestions };
+}
+```
+
+#### 2. Data Sanitization
+
+```javascript
+// Remove corrupted "function String() { [native code] }" entries
+static sanitizeObjectKeys(obj) {
+  const sanitized = {};
+  Object.keys(obj).forEach(key => {
+    if (key.includes('function String()') || key.includes('[native code]')) {
+      console.warn(`Removing corrupted key: "${key}"`);
+      return;
+    }
+    const validCategories = [
+      'Alphabet Knowledge', 'Phonological Awareness', 'Decoding',
+      'Word Recognition', 'Reading Comprehension'
+    ];
+    if (validCategories.includes(key.trim())) {
+      sanitized[key.trim()] = obj[key];
+    }
+  });
+  return sanitized;
+}
+```
+
+### System Benefits
+
+#### For Students
+- **Personalized Progression**: Each intervention attempt is tracked and optimized
+- **Reduced Frustration**: Teacher revisions address specific learning barriers
+- **Clear Progress Tracking**: BKT mastery growth shows learning trajectory
+
+#### For Teachers
+- **Data-Driven Revision**: Specific recommendations based on error pattern analysis
+- **Effort Optimization**: Near-miss cases get targeted small adjustments vs. complete overhauls
+- **Student Insight**: Comprehensive analytics show exactly what is/isn't working
+
+#### For System
+- **Quality Assurance**: Completeness validation prevents corrupt records
+- **Automatic Integration**: All collections update automatically with proper references
+- **Scalable Architecture**: Supports unlimited revision cycles with full tracking
+
+### API Endpoints for Frontend Integration
+
+```javascript
+// Intervention Results Management
+GET    /api/intervention-results/:studentId/:category     // Get latest intervention results
+GET    /api/intervention-results/history/:studentId      // Get all intervention history
+POST   /api/intervention-results/generate                // Generate new intervention results
+PUT    /api/intervention-results/:id/teacher-review      // Mark as teacher reviewed
+
+// Teacher Revision Guidance
+GET    /api/intervention-revision/guidance/:studentId/:category  // Get revision recommendations
+POST   /api/intervention-revision/acknowledge             // Teacher acknowledges guidance
+POST   /api/intervention-revision/complete               // Teacher completes revision
+
+// Version and Progress Tracking
+GET    /api/intervention-assessment/:id/version-info     // Get current version info
+GET    /api/intervention-progress/:studentId             // Get complete intervention progress
+POST   /api/intervention-attempt/retry                   // Enable retry after revision
+```
+
+### Mobile App Integration
+
+```javascript
+// Mobile checks intervention version before starting
+const versionInfo = await fetch(`/api/intervention-assessment/${interventionId}/version-info`);
+const { revisionNumber, hasBeenRevised, questions } = await versionInfo.json();
+
+// Mobile submits responses with version tracking
+const submissionData = {
+  studentId: studentId,
+  interventionAssessmentId: interventionId,
+  revisionNumber: revisionNumber,           // Critical for tracking which version was taken
+  responses: studentResponses,
+  completedAt: new Date()
+};
+
+// Web processes knowing exact version taken
+const results = await processInterventionResults(submissionData);
+```
+
+---
+
 ## Real Student Journey Examples
 
 ### Example 1: Juan - Success After Struggle

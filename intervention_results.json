@@ -1,6 +1,6 @@
 {
   "_id": {
-    "$oid": "68cbd7fc73335662b9259e64"
+    "$oid": "68cc9fc3820650c15befc9ca"
   },
   "studentId": 202522233,
   "interventionAssessmentId": {
@@ -11,7 +11,7 @@
   },
   "category": "Alphabet Knowledge",
   "assessmentDate": {
-    "$date": "2025-09-18T09:59:24.478Z"
+    "$date": "2025-09-19T00:11:47.370Z"
   },
   "assessmentType": "intervention",
   "readingLevel": "At Grade Level",
@@ -32,7 +32,7 @@
       "currentMastery": 0.44,
       "masteryGrowth": 0.10999999999999999,
       "lastUpdated": {
-        "$date": "2025-09-18T09:59:24.476Z"
+        "$date": "2025-09-19T00:11:47.369Z"
       },
       "totalQuestions": 9,
       "correctAnswers": 4,
@@ -113,16 +113,6 @@
           "masteryAfter": 0.38
         }
       ]
-    },
-    "function String() { [native code] }": {
-      "masteryProbability": 0.5,
-      "lastUpdated": {
-        "$date": "2025-09-18T09:59:24.484Z"
-      },
-      "totalPossibleMatches": 0,
-      "correctMatches": 0,
-      "status": "ADEQUATE",
-      "responseHistory": []
     }
   },
   "abilityEstimates": {
@@ -184,31 +174,6 @@
           ]
         }
       ]
-    },
-    "function String() { [native code] }": {
-      "detailedErrorAnalysis": [],
-      "patinig_errors": {
-        "specific_letters": [],
-        "questionIds": []
-      },
-      "katinig_errors": {
-        "specific_letters": [],
-        "questionIds": []
-      },
-      "matching_errors": {
-        "confusion_pairs": [],
-        "questionIds": []
-      },
-      "decoding_errors": {
-        "pattern_types": [],
-        "questionIds": []
-      },
-      "word_errors": {
-        "questionIds": []
-      },
-      "comprehension_errors": {
-        "failed_questionIds": []
-      }
     }
   },
   "interventionEffectiveness": {
@@ -333,33 +298,6 @@
         "escalationTriggered": false,
         "triggers": []
       }
-    },
-    "function String() { [native code] }": {
-      "categoryStatus": "failed_needs_revision",
-      "deficitAnalysis": {
-        "specificDeficits": [],
-        "cognitiveFactors": [],
-        "linguisticFactors": []
-      },
-      "nextInterventionPrescription": {
-        "recommendedAction": "teacher_revision",
-        "specificTechniques": [],
-        "sessionStructure": {
-          "sessionComponents": []
-        },
-        "materialRecommendations": [],
-        "progressMonitoring": {
-          "keyIndicators": []
-        }
-      },
-      "teacherRevisionGuidance": {
-        "specificChanges": [],
-        "questionModifications": [],
-        "supportFeatures": []
-      },
-      "escalationProtocol": {
-        "triggers": []
-      }
     }
   },
   "progressComparison": {
@@ -400,14 +338,14 @@
     "Multisensory letter identification"
   ],
   "completedAt": {
-    "$date": "2025-09-18T09:59:24.478Z"
+    "$date": "2025-09-19T00:11:47.370Z"
   },
   "interventionHistory": [],
   "createdAt": {
-    "$date": "2025-09-18T09:59:24.488Z"
+    "$date": "2025-09-19T00:11:47.372Z"
   },
   "updatedAt": {
-    "$date": "2025-09-18T09:59:24.498Z"
+    "$date": "2025-09-19T00:11:47.374Z"
   },
   "__v": 0
 }
