@@ -1286,38 +1286,37 @@ const PrescriptiveAnalysis = ({
         };
       });
 
+      // Get intervention results for this category
+      const categoryInterventionResults = interventionResults[category];
+
       setSelectedInterventionData({
         intervention,
         category,
-        interventionResults: interventionResults[category],
-        totalQuestions,
-        completedResponses,
-        isComplete
-      });
-      setInterventionResponses(enrichedResponses);
-      setSelectedInterventionData({
-        intervention,
-        category,
+        interventionResults: categoryInterventionResults,
         totalQuestions,
         completedResponses,
         isComplete,
-        score: intervention.score || 0,
-        isPassed: intervention.isPassed || false
+        score: categoryInterventionResults?.score || intervention.score || 0,
+        isPassed: categoryInterventionResults?.isPassed || intervention.isPassed || false
       });
+      setInterventionResponses(enrichedResponses);
       console.log('📋 Setting modal state:', { responses: enrichedResponses.length, modalWillShow: true });
       setShowResponseModal(true);
     } catch (error) {
       console.error('Error fetching intervention responses:', error);
 
       // Show modal anyway with error message
+      const categoryInterventionResults = interventionResults[category];
+
       setSelectedInterventionData({
         intervention,
         category,
+        interventionResults: categoryInterventionResults,
         totalQuestions: intervention.totalQuestions || intervention.questions?.length || 0,
         completedResponses: 0,
         isComplete: false,
-        score: 0,
-        isPassed: false,
+        score: categoryInterventionResults?.score || 0,
+        isPassed: categoryInterventionResults?.isPassed || false,
         error: error.message
       });
       setInterventionResponses([]);
