@@ -2732,10 +2732,10 @@ const PrescriptiveAnalysis = ({
                 </div>
 
                 <div className="revision-priority">
-                  <strong>Priority Level:</strong>
-                  <span className={`priority-${researchData.teacherRevisionGuidance.revisionPriority || 'medium'}`}>
+                  <div className="priority-label">Priority Level:</div>
+                  <div className="priority-value">
                     {researchData.teacherRevisionGuidance.revisionPriority?.toUpperCase() || 'MEDIUM'}
-                  </span>
+                  </div>
                 </div>
 
                 {researchData.teacherRevisionGuidance.specificChanges && researchData.teacherRevisionGuidance.specificChanges.length > 0 && (
@@ -2752,11 +2752,11 @@ const PrescriptiveAnalysis = ({
                 )}
 
                 {researchData.teacherRevisionGuidance.estimatedImpact && (
-                  <div style={{ marginTop: '16px', padding: '12px', background: '#ecfdf5', borderRadius: '6px', border: '1px solid #10b981' }}>
-                    <strong style={{ color: '#065f46' }}>Estimated Impact:</strong>
-                    <span style={{ color: '#047857', marginLeft: '8px' }}>
+                  <div className="estimated-impact-section">
+                    <div className="impact-label">Estimated Impact:</div>
+                    <div className="impact-value">
                       {researchData.teacherRevisionGuidance.estimatedImpact}
-                    </span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -2772,26 +2772,18 @@ const PrescriptiveAnalysis = ({
                 <FaCheckCircle />
                 Escalation Status
               </h5>
-              <span className="research-classification-badge" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#065f46' }}>
+              <span className="research-classification-badge escalation-success">
                 NO ESCALATION
               </span>
             </div>
             <div className="research-section-content">
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '16px',
-                background: '#ecfdf5',
-                borderRadius: '8px',
-                border: '1px solid #10b981'
-              }}>
-                <FaCheckCircle style={{ color: '#10b981', fontSize: '20px' }} />
-                <div>
-                  <strong style={{ color: '#065f46' }}>No Escalation Required</strong>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#047857' }}>
+              <div className="escalation-status-content">
+                <FaCheckCircle className="escalation-icon" />
+                <div className="escalation-details">
+                  <div className="escalation-title">No Escalation Required</div>
+                  <div className="escalation-description">
                     Student showing progress - continue with current intervention approach
-                  </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2949,15 +2941,15 @@ const PrescriptiveAnalysis = ({
 
                       <div className="epa-bkt-metrics">
                         <div className="epa-metric-row">
-                          <span className="epa-metric-label">QUESTIONS ANSWERED:</span>
+                          <span className="epa-metric-label">Questions Answered:</span>
                           <span className="epa-metric-value">{interventionData.skillMastery[categoryName].totalQuestions}</span>
                         </div>
                         <div className="epa-metric-row">
-                          <span className="epa-metric-label">CORRECT ANSWERS:</span>
+                          <span className="epa-metric-label">Correct Answers:</span>
                           <span className="epa-metric-value">{interventionData.skillMastery[categoryName].correctAnswers}</span>
                         </div>
                         <div className="epa-metric-row">
-                          <span className="epa-metric-label">FINAL SCORE:</span>
+                          <span className="epa-metric-label">Final Score:</span>
                           <span className={`epa-metric-value ${interventionData.skillMastery[categoryName].isPassed ? 'passed' : 'failed'}`}>
                             {interventionData.skillMastery[categoryName].score}%
                           </span>
@@ -3008,20 +3000,32 @@ const PrescriptiveAnalysis = ({
 
                     <div className="epa-pattern-summary">
                       <div className="epa-pattern-overview">
-                        <strong>Overall Error Rate:</strong> {interventionData.errorPatterns[categoryName].percentage || interventionData.errorPatterns[categoryName].count && interventionData.errorPatterns[categoryName].total ?
-                          Math.round((interventionData.errorPatterns[categoryName].count / interventionData.errorPatterns[categoryName].total) * 100) : 0}%
+                        <div className="pattern-summary-label">Overall Error Rate:</div>
+                        <div className="pattern-summary-value">
+                          {interventionData.errorPatterns[categoryName].percentage || interventionData.errorPatterns[categoryName].count && interventionData.errorPatterns[categoryName].total ?
+                            Math.round((interventionData.errorPatterns[categoryName].count / interventionData.errorPatterns[categoryName].total) * 100) : 0}%
+                        </div>
                       </div>
                       <div className="epa-pattern-focus">
-                        <strong>Primary Focus:</strong> {interventionData.errorPatterns[categoryName].detailedErrorAnalysis?.[0]?.interventionFocus ||
-                          interventionData.errorPatterns[categoryName].error_type?.replace('_', ' ') || 'systematic_skill_review'}
+                        <div className="pattern-summary-label">Primary Focus:</div>
+                        <div className="pattern-summary-value">
+                          {interventionData.errorPatterns[categoryName].detailedErrorAnalysis?.[0]?.interventionFocus ||
+                            interventionData.errorPatterns[categoryName].error_type?.replace('_', ' ') || 'systematic_skill_review'}
+                        </div>
                       </div>
                       <div className="epa-pattern-issues">
-                        <strong>Specific Issues:</strong> {interventionData.errorPatterns[categoryName].detailedErrorAnalysis?.[0]?.specificPairs?.join(', ') ||
-                          interventionData.errorPatterns[categoryName].currentPatterns?.[0] || 'Pattern analysis in progress'}
+                        <div className="pattern-summary-label">Specific Issues:</div>
+                        <div className="pattern-summary-value">
+                          {interventionData.errorPatterns[categoryName].detailedErrorAnalysis?.[0]?.specificPairs?.join(', ') ||
+                            interventionData.errorPatterns[categoryName].currentPatterns?.[0] || 'Pattern analysis in progress'}
+                        </div>
                       </div>
                       {interventionData.errorPatterns[categoryName].questionIds && (
                         <div className="epa-pattern-questions">
-                          <strong>Problem Questions:</strong> {interventionData.errorPatterns[categoryName].questionIds.length} out of {interventionData.errorPatterns[categoryName].total || interventionData.totalQuestions}
+                          <div className="pattern-summary-label">Problem Questions:</div>
+                          <div className="pattern-summary-value">
+                            {interventionData.errorPatterns[categoryName].questionIds.length} out of {interventionData.errorPatterns[categoryName].total || interventionData.totalQuestions}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -3035,11 +3039,11 @@ const PrescriptiveAnalysis = ({
                             <h5 className="error-category-title">Patinig (Vowel) Errors</h5>
                             <div className="epa-error-metrics">
                               <div className="epa-error-metric">
-                                <span className="epa-error-label">ERROR COUNT:</span>
+                                <span className="epa-error-label">Error Count:</span>
                                 <span className="epa-error-value">{interventionData.errorPatterns[categoryName].patinig_errors.count}</span>
                               </div>
                               <div className="epa-error-metric">
-                                <span className="epa-error-label">ERROR RATE:</span>
+                                <span className="epa-error-label">Error Rate:</span>
                                 <span className={`epa-error-value ${interventionData.errorPatterns[categoryName].patinig_errors.percentage === 0 ? 'success' : 'warning'}`}>
                                   {interventionData.errorPatterns[categoryName].patinig_errors.percentage}%
                                 </span>
@@ -3047,7 +3051,7 @@ const PrescriptiveAnalysis = ({
                             </div>
                             {interventionData.errorPatterns[categoryName].patinig_errors.specific_letters?.length > 0 && (
                               <div className="epa-problem-letters">
-                                <strong>PROBLEM LETTERS:</strong>
+                                <div className="problem-letters-label">Problem Letters:</div>
                                 <div className="epa-letter-tags">
                                   {interventionData.errorPatterns[categoryName].patinig_errors.specific_letters.map((letter, index) => (
                                     <span key={index} className="epa-letter-tag vowel">{letter}</span>
@@ -3056,7 +3060,10 @@ const PrescriptiveAnalysis = ({
                               </div>
                             )}
                             <div className="epa-intervention-focus">
-                              <strong>INTERVENTION FOCUS:</strong> {interventionData.errorPatterns[categoryName].patinig_errors.interventionFocus || 'vowel_discrimination_practice'}
+                              <div className="intervention-focus-label">Intervention Focus:</div>
+                              <div className="intervention-focus-value">
+                                {interventionData.errorPatterns[categoryName].patinig_errors.interventionFocus || 'vowel_discrimination_practice'}
+                              </div>
                             </div>
                           </div>
                         )}
@@ -3067,11 +3074,11 @@ const PrescriptiveAnalysis = ({
                             <h5 className="error-category-title">Katinig (Consonant) Errors</h5>
                             <div className="epa-error-metrics">
                               <div className="epa-error-metric">
-                                <span className="epa-error-label">ERROR COUNT:</span>
+                                <span className="epa-error-label">Error Count:</span>
                                 <span className="epa-error-value">{interventionData.errorPatterns[categoryName].katinig_errors.count}</span>
                               </div>
                               <div className="epa-error-metric">
-                                <span className="epa-error-label">ERROR RATE:</span>
+                                <span className="epa-error-label">Error Rate:</span>
                                 <span className={`epa-error-value ${interventionData.errorPatterns[categoryName].katinig_errors.percentage === 0 ? 'success' : 'warning'}`}>
                                   {interventionData.errorPatterns[categoryName].katinig_errors.percentage}%
                                 </span>
@@ -3079,7 +3086,7 @@ const PrescriptiveAnalysis = ({
                             </div>
                             {interventionData.errorPatterns[categoryName].katinig_errors.specific_letters?.length > 0 && (
                               <div className="epa-problem-letters">
-                                <strong>PROBLEM LETTERS:</strong>
+                                <div className="problem-letters-label">Problem Letters:</div>
                                 <div className="epa-letter-tags">
                                   {interventionData.errorPatterns[categoryName].katinig_errors.specific_letters.map((letter, index) => (
                                     <span key={index} className="epa-letter-tag consonant">{letter}</span>
@@ -3098,23 +3105,23 @@ const PrescriptiveAnalysis = ({
                         <h5 className="error-category-title">Sound Matching Errors</h5>
                         <div className="epa-error-metrics">
                           <div className="epa-error-metric">
-                            <span className="epa-error-label">MATCHING ERRORS:</span>
+                            <span className="epa-error-label">Matching Errors:</span>
                             <span className="epa-error-value">{interventionData.errorPatterns[categoryName].matching_errors.count}</span>
                           </div>
                           <div className="epa-error-metric">
-                            <span className="epa-error-label">ERROR RATE:</span>
+                            <span className="epa-error-label">Error Rate:</span>
                             <span className={`epa-error-value ${interventionData.errorPatterns[categoryName].matching_errors.percentage > 50 ? 'danger' : 'warning'}`}>
                               {interventionData.errorPatterns[categoryName].matching_errors.percentage}%
                             </span>
                           </div>
                           <div className="epa-error-metric">
-                            <span className="epa-error-label">AVG PARTIAL SUCCESS:</span>
+                            <span className="epa-error-label">Avg Partial Success:</span>
                             <span className="epa-error-value">{(interventionData.errorPatterns[categoryName].matching_errors.avg_partial_success * 100).toFixed(0)}%</span>
                           </div>
                         </div>
                         {interventionData.errorPatterns[categoryName].matching_errors.confusion_pairs && (
                           <div className="epa-confusion-pairs">
-                            <strong>CONFUSION PAIRS:</strong>
+                            <div className="confusion-pairs-label">Confusion Pairs:</div>
                             <div className="epa-confusion-tags">
                               {interventionData.errorPatterns[categoryName].matching_errors.confusion_pairs.map((pair, index) => (
                                 <span key={index} className="epa-confusion-tag">
