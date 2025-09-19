@@ -4921,6 +4921,27 @@
   color: #16a34a;
 }
 
+/* Completed intervention status styling */
+.literexia-active-status.completed-passed {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.literexia-active-status.completed-passed svg {
+  color: #16a34a;
+}
+
+.literexia-active-status.completed-failed {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.literexia-active-status.completed-failed svg {
+  color: #dc2626;
+}
+
 /* Edit button with disabled state styling */
 .literexia-edit-activity-btn:disabled {
   background-color: #f3f4f6;
@@ -6285,6 +6306,24 @@
   color: #64748b;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+/* Special styling for Edit Activity button (when intervention failed) */
+.literexia-edit-activity-btn.version-two {
+  background: linear-gradient(135deg, #5470a8 0%, #3d5285 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(84, 112, 168, 0.3);
+  border: 1px solid #5470a8;
+}
+
+.literexia-edit-activity-btn.version-two:hover:not(:disabled) {
+  background: linear-gradient(135deg, #3d5285 0%, #2a3f6b 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(84, 112, 168, 0.4);
+}
+
+.literexia-edit-activity-btn.version-two .action-icon {
+  color: white;
 }
 
 .literexia-push-mobile-btn {

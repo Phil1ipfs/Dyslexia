@@ -4058,7 +4058,7 @@ const PrescriptiveAnalysis = ({
                         {/* Action Buttons */}
                         <div className="literexia-intervention-actions">
                           <button
-                            className="literexia-edit-activity-btn"
+                            className={`literexia-edit-activity-btn ${hasInterventionResults && !isPassed ? 'version-two' : ''}`}
                             onClick={() => handleCreateActivity(selectedCategory, selectedAnalysis, intervention)}
                             disabled={loading || (intervention.status === 'active' && !(hasInterventionResults && !isPassed))}
                             title={
@@ -4070,12 +4070,15 @@ const PrescriptiveAnalysis = ({
                             }
                           >
                             <FaEdit className="action-icon" />
-                            <span>
-                              {hasInterventionResults && !isPassed ? 'Create Version 2' : 'Edit Activity'}
-                            </span>
+                            <span>Edit Activity</span>
                           </button>
 
-                          {intervention.status === 'draft' ? (
+                          {hasInterventionResults ? (
+                            <div className={`literexia-active-status ${isPassed ? 'completed-passed' : 'completed-failed'}`}>
+                              <FaCheckCircle className="action-icon" />
+                              <span>{isPassed ? 'Completed - Passed' : 'Completed - Failed'}</span>
+                            </div>
+                          ) : intervention.status === 'draft' ? (
                             <button
                               className="literexia-push-mobile-btn"
                               onClick={() => handlePushToMobile(intervention)}
