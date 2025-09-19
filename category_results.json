@@ -20,11 +20,32 @@
       "lastQuestionAnswered": "",
       "interventionRequired": true,
       "interventionAttempts": 1,
-      "interventionCompleted": false,
+      "interventionCompleted": true,
       "currentInterventionId": {
         "$oid": "68cbb0975a26e73b61e061d3"
       },
-      "interventionHistory": [],
+      "interventionHistory": [
+        {
+          "attemptNumber": 1,
+          "interventionId": {
+            "$oid": "68cbb0975a26e73b61e061d3"
+          },
+          "interventionResultId": {
+            "$oid": "68cbd7fc73335662b9259e64"
+          },
+          "score": 44,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-18T09:59:24.478Z"
+          },
+          "completedAt": {
+            "$date": "2025-09-18T09:59:24.478Z"
+          },
+          "_id": {
+            "$oid": "68cc943e357a92c72975ede4"
+          }
+        }
+      ],
       "_id": {
         "$oid": "68c9fc6fd26632a89f218edf"
       }
@@ -120,7 +141,7 @@
     "$date": "2025-09-17T00:10:23.643Z"
   },
   "updatedAt": {
-    "$date": "2025-09-18T07:11:19.617Z"
+    "$date": "2025-09-18T23:22:38.115Z"
   },
-  "__v": 0
+  "__v": 2
 }

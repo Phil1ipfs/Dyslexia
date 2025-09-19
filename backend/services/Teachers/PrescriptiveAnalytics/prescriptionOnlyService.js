@@ -951,7 +951,7 @@ class PrescriptionOnlyService {
         };
       } else {
         // Intensive intervention for failed categories
-        const interventionDetails = prescription.interventionPrescriptions[categoryName];
+        const interventionDetails = prescription.interventionPrescriptions && prescription.interventionPrescriptions[categoryName];
         if (interventionDetails) {
           prescriptions[categoryName] = {
             categoryStatus: 'failed',

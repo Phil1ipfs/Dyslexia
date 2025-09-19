@@ -323,11 +323,47 @@ const interventionAssessmentSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+
+  // UPDATED: Track multiple intervention results for retakes/revisions
   interventionResultsId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'InterventionResults',
     default: null
-  }
+  },
+
+  // NEW: Track all intervention attempts/results
+  interventionResults: [{
+    attemptNumber: {
+      type: Number,
+      required: true
+    },
+    interventionResultsId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'InterventionResults',
+      required: true
+    },
+    revisionNumber: {
+      type: Number,
+      required: true
+    },
+    score: {
+      type: Number,
+      required: true
+    },
+    isPassed: {
+      type: Boolean,
+      required: true
+    },
+    completedAt: {
+      type: Date,
+      required: true
+    },
+    reason: {
+      type: String,
+      enum: ['initial_attempt', 'teacher_revision', 'student_retake'],
+      default: 'initial_attempt'
+    }
+  }]
 }, {
   collection: 'intervention_assessment',
   timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' }
@@ -368,6 +404,53 @@ interventionAssessmentSchema.methods.markAsCompleted = function(interventionResu
     this.interventionResultsId = interventionResultsId;
   }
   return this.save();
+};
+
+// NEW: Add intervention result to tracking array
+interventionAssessmentSchema.methods.addInterventionResult = function(interventionResultsId, score, isPassed, reason = 'initial_attempt') {
+  const attemptNumber = (this.interventionResults || []).length + 1;
+
+  if (!this.interventionResults) {
+    this.interventionResults = [];
+  }
+
+  this.interventionResults.push({
+    attemptNumber: attemptNumber,
+    interventionResultsId: interventionResultsId,
+    revisionNumber: this.revisionNumber,
+    score: score,
+    isPassed: isPassed,
+    completedAt: new Date(),
+    reason: reason
+  });
+
+  // Update primary reference to latest result
+  this.interventionResultsId = interventionResultsId;
+  this.completedAt = new Date();
+
+  return this.save();
+};
+
+// Get all intervention attempts for this assessment
+interventionAssessmentSchema.methods.getAllInterventionAttempts = function() {
+  return this.interventionResults || [];
+};
+
+// Get latest intervention result
+interventionAssessmentSchema.methods.getLatestInterventionResult = function() {
+  const results = this.interventionResults || [];
+  return results.length > 0 ? results[results.length - 1] : null;
+};
+
+// Check if student has passed any intervention attempt
+interventionAssessmentSchema.methods.hasPassedAnyAttempt = function() {
+  const results = this.interventionResults || [];
+  return results.some(result => result.isPassed);
+};
+
+// Get attempt count
+interventionAssessmentSchema.methods.getAttemptCount = function() {
+  return (this.interventionResults || []).length;
 };
 
 // Instance method to get question by ID

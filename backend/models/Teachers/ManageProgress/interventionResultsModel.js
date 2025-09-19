@@ -94,158 +94,20 @@ const interventionResultsSchema = new mongoose.Schema({
 
   // ===== COMPREHENSIVE BKT SKILL MASTERY ANALYSIS =====
   skillMastery: {
-    [String]: { // Dynamic category name as key
-      masteryProbability: {
-        type: Number,
-        required: false, // Made optional - will be populated when BKT analysis available
-        min: 0,
-        max: 1,
-        default: 0.5
-      },
-      lastUpdated: {
-        type: Date,
-        default: Date.now
-      },
-      totalQuestions: Number,
-      correctAnswers: Number,
-      totalPossibleMatches: {
-        type: Number,
-        default: 0
-      },
-      correctMatches: {
-        type: Number,
-        default: 0
-      },
-      score: Number,
-      isPassed: Boolean,
-      status: {
-        type: String,
-        enum: ['EXCELLENT', 'GOOD', 'ADEQUATE', 'NEEDS_IMPROVEMENT', 'CRITICAL'],
-        default: 'ADEQUATE'
-      },
-      responseHistory: [{
-        questionId: String,
-        correct: Boolean,
-        timestamp: Date,
-        masteryAfter: {
-          type: Number,
-          min: 0,
-          max: 1
-        }
-      }]
-    }
+    type: mongoose.Schema.Types.Mixed, // FIXED: Use Mixed type for dynamic category keys
+    default: {}
   },
 
   // ===== IRT ABILITY ESTIMATES (Updated after intervention) =====
   abilityEstimates: {
-    [String]: Number // Category name -> IRT ability estimate (-3 to +3)
+    type: mongoose.Schema.Types.Mixed, // FIXED: Use Mixed type for dynamic category keys
+    default: {}
   },
 
   // ===== COMPREHENSIVE ERROR PATTERN ANALYSIS =====
   errorPatterns: {
-    [String]: { // Category name as key
-      detailedErrorAnalysis: [{
-        errorPattern: String,
-        specificPairs: [String],
-        interventionFocus: String
-      }],
-
-      // Alphabet Knowledge specific error patterns
-      patinig_errors: {
-        count: Number,
-        total: Number,
-        percentage: Number,
-        specific_letters: [String],
-        error_type: String,
-        questionIds: [String],
-        researchClassification: String,
-        interventionFocus: String
-      },
-      katinig_errors: {
-        count: Number,
-        total: Number,
-        percentage: Number,
-        specific_letters: [String],
-        error_type: String,
-        questionIds: [String],
-        researchClassification: String,
-        interventionFocus: String
-      },
-
-      // Phonological Awareness specific error patterns
-      matching_errors: {
-        count: Number,
-        total: Number,
-        percentage: Number,
-        avg_partial_success: Number,
-        error_type: String,
-        confusion_pairs: [{
-          sounds: [String],
-          confusion_rate: Number
-        }],
-        sequential_difficulty: {
-          two_sounds: Number,
-          three_sounds: Number,
-          four_sounds: Number
-        },
-        questionIds: [String]
-      },
-
-      // Decoding specific error patterns
-      decoding_errors: {
-        count: Number,
-        total: Number,
-        percentage: Number,
-        position_analysis: {
-          beginning: Number,
-          middle: Number,
-          end: Number
-        },
-        most_error_position: Number,
-        pattern_types: [{
-          pattern: String,
-          error_rate: Number
-        }],
-        error_type: String,
-        questionIds: [String]
-      },
-
-      // Word Recognition specific error patterns
-      word_errors: {
-        count: Number,
-        total: Number,
-        percentage: Number,
-        sentence_completion_errors: Number,
-        rhyming_errors: Number,
-        error_type: String,
-        secondary_type: String,
-        questionIds: [String]
-      },
-
-      // Reading Comprehension specific error patterns
-      comprehension_errors: {
-        count: Number,
-        total: Number,
-        percentage: Number,
-        question_breakdown: {
-          [String]: { // Question ID as key
-            sentence_questions_total: Number,
-            sentence_questions_correct: Number,
-            result: String,
-            partial_success_rate: Number
-          }
-        },
-        scoring_methodology: String,
-        scoring_rule: String,
-        literal_comprehension: {
-          errors: Number,
-          description: String
-        },
-        error_type: String,
-        failed_questionIds: [String],
-        diagnostic_note: String
-      }
-    }
+    type: mongoose.Schema.Types.Mixed, // FIXED: Use Mixed type for dynamic category keys
+    default: {}
   },
 
   // ===== INTERVENTION EFFECTIVENESS ANALYSIS =====
@@ -276,113 +138,8 @@ const interventionResultsSchema = new mongoose.Schema({
 
   // ===== RESEARCH-BASED PRESCRIPTIONS (Updated after intervention) =====
   researchBasedPrescriptions: {
-    [String]: { // Category name as key
-      categoryStatus: {
-        type: String,
-        enum: ['passed', 'failed_needs_revision', 'failed_needs_escalation'],
-        required: false, // Made optional - will be determined based on score
-        default: 'failed_needs_revision'
-      },
-
-      deficitAnalysis: {
-        specificDeficits: [{
-          deficit: String,
-          severity: {
-            type: String,
-            enum: ['mild', 'moderate', 'severe', 'critical']
-          },
-          manifestation: String,
-          errorRate: String,
-          researchEvidence: String,
-          interventionResponse: String // How did deficit respond to intervention?
-        }],
-        rootCauseAnalysis: String,
-        cognitiveFactors: [String],
-        researchClassification: String,
-        linguisticFactors: [String]
-      },
-
-      // Next intervention prescription based on results
-      nextInterventionPrescription: {
-        recommendedAction: {
-          type: String,
-          enum: ['category_completion', 'teacher_revision', 'face_to_face_intervention', 'intensive_escalation'],
-          required: false, // Made optional - will be determined based on intervention success
-          default: 'teacher_revision'
-        },
-        primaryApproach: String,
-        specificTechniques: [{
-          technique: String,
-          description: String,
-          duration: String,
-          materials: String,
-          progressCriteria: String,
-          researchBasis: String,
-          modificationFromPrevious: String // What changed from first intervention?
-        }],
-        intensityLevel: {
-          type: String,
-          enum: ['maintenance', 'moderate', 'intensive', 'highly_intensive']
-        },
-        sessionStructure: {
-          optimalLength: String,
-          sessionComponents: [String],
-          breakPattern: String
-        },
-        materialRecommendations: [String],
-        progressMonitoring: {
-          frequency: String,
-          keyIndicators: [String],
-          dataCollectionMethod: String
-        }
-      },
-
-      // Teacher revision guidance (if needed)
-      teacherRevisionGuidance: {
-        revisionRecommended: Boolean,
-        revisionPriority: {
-          type: String,
-          enum: ['low', 'medium', 'high', 'critical']
-        },
-        specificChanges: [{
-          change: String,
-          rationale: String,
-          expectedImpact: String
-        }],
-        questionModifications: [{
-          questionType: String,
-          currentDifficulty: String,
-          recommendedChange: String,
-          reason: String
-        }],
-        supportFeatures: [String],
-        estimatedImpact: String
-      },
-
-      escalationProtocol: {
-        escalationTriggered: Boolean,
-        triggers: [{
-          trigger: String,
-          approach: String,
-          researchFoundation: String,
-          specificTechniques: [{
-            technique: String,
-            purpose: String,
-            implementation: String,
-            materials: [String],
-            progression: String,
-            researchBasis: String,
-            researchEvidence: String
-          }],
-          intensityRecommendations: {
-            duration: String,
-            frequency: String,
-            totalIntervention: String,
-            researchSupport: String
-          }
-        }]
-      }
-    }
+    type: mongoose.Schema.Types.Mixed, // FIXED: Use Mixed type for dynamic category keys
+    default: {}
   },
 
   // ===== COMPREHENSIVE ANALYTICS METRICS =====
