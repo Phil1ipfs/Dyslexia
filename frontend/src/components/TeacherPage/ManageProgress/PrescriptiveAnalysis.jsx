@@ -2603,13 +2603,13 @@ const PrescriptiveAnalysis = ({
             </div>
           </div>
 
-          {/* Two-Column Layout: Intervention Performance & Research Prescriptions */}
+          {/* Two-Column Layout Based on intervention_results.json structure */}
           <div className="epa-two-column-layout">
-            {/* Left Column: Intervention Performance & Analysis */}
+            {/* Left Column: Skill Mastery & Analysis */}
             <div className="epa-left-column">
               <div className="epa-column-header">
-                {interventionData.isPassed ? <FaCheckCircle className="epa-icon" /> : <FaEdit className="epa-icon" />}
-                <span>Intervention Performance & Analysis</span>
+                <FaChartLine className="epa-icon" />
+                <span>Skill Mastery Analysis</span>
               </div>
               <div className="epa-column-content">
 
@@ -2980,11 +2980,11 @@ const PrescriptiveAnalysis = ({
               </div>
             </div>
 
-            {/* Right Column: Research-Based Prescriptions */}
+            {/* Right Column: Intervention Results & Analysis */}
             <div className="epa-right-column">
               <div className="epa-column-header">
-                <FaUserMd className="epa-icon" />
-                <span>Research-Based Prescriptions</span>
+                {interventionData.isPassed ? <FaCheckCircle className="epa-icon" /> : <FaEdit className="epa-icon" />}
+                <span>Intervention Performance & Analysis</span>
               </div>
               <div className="epa-column-content">
                 {/* DEBUG: Log intervention data structure */}
