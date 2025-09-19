@@ -98,6 +98,845 @@
   padding: 1rem;
   line-height: 1.5;
   word-wrap: break-word;
+}
+
+/* ========== COMPREHENSIVE RESEARCH-BASED PRESCRIPTIONS CONTAINER ========== */
+
+/* Main Research Prescriptions Container */
+.epa-research-prescriptions-container {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.epa-research-prescriptions-container .epa-subsection-title {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  padding: 1rem;
+  margin: 0;
+  border-radius: 8px 8px 0 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Category Status Card */
+.epa-category-status-card {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.epa-status-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.epa-status-badge.status-failed-needs-revision {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.epa-status-badge.status-passed {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.epa-status-badge.status-needs-improvement {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fed7aa;
+}
+
+/* Deficit Analysis Card */
+.epa-deficit-analysis-card {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.epa-analysis-title {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.epa-deficit-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.epa-deficit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.epa-deficit-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.95rem;
+}
+
+.epa-severity-badge.severity-severe {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.epa-severity-badge.severity-moderate {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.epa-severity-badge.severity-mild {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.epa-deficit-details > div {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.epa-deficit-details strong {
+  color: #475569;
+  font-weight: 600;
+}
+
+/* Root Cause Analysis */
+.epa-root-cause {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.875rem;
+  margin: 1rem 0;
+}
+
+.epa-root-cause h6 {
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+  color: #334155;
+}
+
+.epa-root-cause p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #475569;
+}
+
+/* Factors Grid */
+.epa-factors-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.epa-factors-section h6 {
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.epa-factors-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.epa-factor-tag {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid;
+}
+
+.epa-factor-tag.cognitive {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+}
+
+.epa-factor-tag.linguistic {
+  background: #f3e8ff;
+  color: #7c3aed;
+  border-color: #c4b5fd;
+}
+
+/* Research Classification */
+.epa-research-classification {
+  margin: 1rem 0;
+}
+
+.epa-research-classification h6 {
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.epa-classification-badge {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Intervention Prescription Card */
+.epa-intervention-prescription-card {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.epa-prescription-title {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.epa-recommended-action {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.epa-action-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.epa-action-badge.action-teacher-revision {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fed7aa;
+}
+
+.epa-action-badge.action-continue {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.epa-primary-approach {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 6px;
+  border-left: 4px solid #6366f1;
+}
+
+/* Specific Techniques */
+.epa-specific-techniques {
+  margin: 1rem 0;
+}
+
+.epa-specific-techniques h6 {
+  margin: 0 0 0.75rem 0;
+  font-weight: 600;
+  color: #334155;
+}
+
+.epa-technique-name {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.epa-technique-description {
+  color: #475569;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.epa-technique-card > div:not(.epa-technique-name):not(.epa-technique-description) {
+  margin-bottom: 0.375rem;
+  font-size: 0.85rem;
+}
+
+.epa-technique-card strong {
+  color: #334155;
+  font-weight: 600;
+}
+
+/* Intensity Level */
+.epa-intensity-level {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+  font-weight: 600;
+}
+
+.epa-intensity-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.epa-intensity-badge.intensity-intensive {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.epa-intensity-badge.intensity-moderate {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.epa-intensity-badge.intensity-light {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+/* Session Structure */
+.epa-session-structure {
+  margin: 1rem 0;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.875rem;
+}
+
+.epa-session-structure h6 {
+  margin: 0 0 0.75rem 0;
+  font-weight: 600;
+  color: #334155;
+}
+
+.epa-session-length,
+.epa-break-pattern {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.epa-session-components strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #334155;
+  font-weight: 600;
+}
+
+.epa-components-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.epa-component-tag {
+  padding: 0.25rem 0.5rem;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Material Recommendations */
+.epa-material-recommendations {
+  margin: 1rem 0;
+}
+
+.epa-material-recommendations h6 {
+  margin: 0 0 0.75rem 0;
+  font-weight: 600;
+  color: #334155;
+}
+
+.epa-materials-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.epa-material-item {
+  padding: 0.5rem;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+/* Progress Monitoring */
+.epa-progress-monitoring {
+  margin: 1rem 0;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 0.875rem;
+}
+
+.epa-progress-monitoring h6 {
+  margin: 0 0 0.75rem 0;
+  font-weight: 600;
+  color: #166534;
+}
+
+.epa-monitoring-frequency,
+.epa-monitoring-method {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.epa-monitoring-indicators ul {
+  margin: 0.5rem 0 0 1.25rem;
+  padding: 0;
+}
+
+.epa-monitoring-indicators li {
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+/* Teacher Revision Card */
+.epa-teacher-revision-card {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fffbeb;
+}
+
+.epa-revision-title {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.epa-revision-status {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.epa-revision-recommended,
+.epa-revision-priority {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.epa-recommendation-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.epa-recommendation-badge.recommended {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.epa-recommendation-badge.not-recommended {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.epa-priority-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.epa-priority-badge.priority-high {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.epa-priority-badge.priority-medium {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.epa-priority-badge.priority-low {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+/* Specific Changes */
+.epa-specific-changes {
+  margin: 1rem 0;
+}
+
+.epa-specific-changes h6 {
+  margin: 0 0 0.75rem 0;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.epa-change-item {
+  background: #fefce8;
+  border: 1px solid #fde047;
+  border-radius: 6px;
+  padding: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.epa-change-description,
+.epa-change-rationale,
+.epa-change-impact {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.epa-change-description strong,
+.epa-change-rationale strong,
+.epa-change-impact strong {
+  color: #92400e;
+  font-weight: 600;
+}
+
+/* Question Modifications */
+.epa-question-modifications {
+  margin: 1rem 0;
+}
+
+.epa-question-modifications h6 {
+  margin: 0 0 0.75rem 0;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.epa-modification-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.epa-modification-type,
+.epa-modification-current,
+.epa-modification-recommended,
+.epa-modification-reason {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* Support Features */
+.epa-support-features {
+  margin: 1rem 0;
+}
+
+.epa-support-features h6 {
+  margin: 0 0 0.75rem 0;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.epa-features-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.epa-feature-tag {
+  padding: 0.25rem 0.5rem;
+  background: #fefce8;
+  color: #ca8a04;
+  border: 1px solid #fde047;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Estimated Impact */
+.epa-estimated-impact {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  font-weight: 600;
+  color: #166534;
+}
+
+/* Escalation Protocol Card */
+.epa-escalation-protocol-card {
+  padding: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.epa-escalation-title {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.epa-escalation-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.epa-escalation-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.epa-escalation-badge.triggered {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.epa-escalation-badge.not-triggered {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.epa-escalation-triggers h6 {
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.epa-escalation-triggers ul {
+  margin: 0 0 0 1.25rem;
+  padding: 0;
+}
+
+.epa-escalation-triggers li {
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+  color: #991b1b;
+}
+
+/* ========== DYNAMIC ERROR PATTERN STYLES ========== */
+
+/* Enhanced category-specific error sections */
+.epa-error-type-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  text-transform: capitalize;
+}
+
+.epa-error-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.epa-error-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+.epa-stat-label {
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.875rem;
+}
+
+.epa-stat-value {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.epa-stat-value.rate-high {
+  color: #dc2626;
+}
+
+.epa-stat-value.rate-medium {
+  color: #d97706;
+}
+
+.epa-stat-value.rate-low {
+  color: #166534;
+}
+
+.epa-error-type,
+.epa-type-label {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.epa-type-label {
+  font-weight: 600;
+  color: #475569;
+}
+
+.epa-type-value {
+  color: #1e293b;
+  text-transform: capitalize;
+}
+
+/* Enhanced letters and confusion pairs */
+.epa-specific-letters,
+.epa-confusion-pairs,
+.epa-failed-questions {
+  margin: 0.75rem 0;
+}
+
+.epa-letters-label,
+.epa-pairs-label,
+.epa-questions-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.875rem;
+}
+
+.epa-letters-list,
+.epa-pairs-list,
+.epa-question-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.epa-letter-tag {
+  padding: 0.25rem 0.5rem;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.epa-confusion-pair {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.epa-pair-sounds {
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.epa-pair-rate {
+  color: #991b1b;
+  font-weight: 500;
+}
+
+.epa-failed-question {
+  padding: 0.25rem 0.5rem;
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fed7aa;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.epa-intervention-focus,
+.epa-research-classification {
+  margin: 0.75rem 0;
+}
+
+.epa-focus-label,
+.epa-classification-label {
+  font-weight: 600;
+  color: #475569;
+  margin-right: 0.5rem;
+}
+
+.epa-focus-value,
+.epa-classification-value {
+  color: #1e293b;
+}
+
+/* Current Patterns Summary */
+.epa-current-patterns {
+  margin: 1rem 0;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.875rem;
+}
+
+.epa-patterns-title {
+  margin: 0 0 0.75rem 0;
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.95rem;
+}
+
+.epa-patterns-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.epa-pattern-item {
+  padding: 0.5rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #475569;
+}
   hyphens: auto;
 }
 
@@ -146,6 +985,73 @@
 .epa-right-column > div:not(.epa-column-header)::-webkit-scrollbar-thumb:hover,
 .epa-column-content::-webkit-scrollbar-thumb:hover {
   background: #a1a1a1;
+}
+
+/* ========== RESPONSIVE DESIGN ========== */
+
+@media (max-width: 1200px) {
+  .epa-two-column-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .epa-left-column,
+  .epa-right-column {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .epa-factors-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .epa-revision-status {
+    grid-template-columns: 1fr;
+  }
+
+  .epa-error-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .epa-research-prescriptions-container {
+    margin-bottom: 1rem;
+  }
+
+  .epa-deficit-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .epa-letters-list,
+  .epa-pairs-list,
+  .epa-question-list,
+  .epa-components-list,
+  .epa-features-list,
+  .epa-factors-list {
+    flex-direction: column;
+  }
+
+  .epa-research-prescriptions-container .epa-subsection-title {
+    font-size: 1rem;
+    padding: 0.75rem;
+  }
+
+  .epa-technique-card,
+  .epa-deficit-item,
+  .epa-change-item,
+  .epa-modification-item {
+    padding: 0.75rem;
+  }
+
+  .epa-session-structure,
+  .epa-progress-monitoring,
+  .epa-escalation-protocol-card {
+    padding: 0.75rem;
+  }
 }
 
 /* Minimize section spacing in two-column layout */
