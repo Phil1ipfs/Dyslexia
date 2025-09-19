@@ -1451,6 +1451,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   /**
    * Auto-save custom questions as templates for future reuse
    * This function converts custom questions into reusable templates
+   * UPDATED: Added validation to prevent duplicate template creation
    */
   const saveCustomQuestionsAsTemplates = async () => {
     try {
@@ -1463,21 +1464,61 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         return;
       }
 
-      // Filter custom questions (not from templates)
-      const customQuestions = questionChoicePairs.filter(pair =>
-        pair.sourceType === 'custom' && !pair.sourceTemplateId
-      );
+      // Filter for truly custom questions (not from pre-made templates)
+      const customQuestions = questionChoicePairs.filter(pair => {
+        // Exclude if it has a sourceTemplateId (came from a pre-made template)
+        if (pair.sourceTemplateId) {
+          console.log(`[TEMPLATE AUTO-SAVE] Skipping question "${pair.questionText}" - has sourceTemplateId: ${pair.sourceTemplateId}`);
+          return false;
+        }
+
+        // Exclude if sourceType is 'template_question' (came from pre-made template)
+        if (pair.sourceType === 'template_question') {
+          console.log(`[TEMPLATE AUTO-SAVE] Skipping question "${pair.questionText}" - sourceType is template_question`);
+          return false;
+        }
+
+        // Include only truly custom questions
+        const isCustom = pair.sourceType === 'custom' || !pair.sourceType;
+        if (isCustom) {
+          console.log(`[TEMPLATE AUTO-SAVE] Including custom question: "${pair.questionText}"`);
+        }
+        return isCustom;
+      });
 
       if (customQuestions.length === 0) {
         console.log('[TEMPLATE AUTO-SAVE] No custom questions to save as templates');
         return;
       }
 
-      console.log(`[TEMPLATE AUTO-SAVE] Found ${customQuestions.length} custom questions to convert to templates`);
+      console.log(`[TEMPLATE AUTO-SAVE] Found ${customQuestions.length} truly custom questions to convert to templates`);
 
-      // Save each custom question as a template
+      // Check for existing templates to prevent duplicates
+      let existingTemplates = [];
+      try {
+        const templatesResponse = await api.interventions.getTemplateQuestions();
+        if (templatesResponse.success) {
+          existingTemplates = templatesResponse.data || [];
+          console.log(`[TEMPLATE AUTO-SAVE] Found ${existingTemplates.length} existing templates for duplicate checking`);
+        }
+      } catch (error) {
+        console.warn('[TEMPLATE AUTO-SAVE] Could not fetch existing templates for duplicate checking:', error);
+      }
+
+      // Save each custom question as a template with duplicate validation
       for (const pair of customQuestions) {
         try {
+          // Check for duplicate templates based on questionText and category
+          const isDuplicate = existingTemplates.some(template =>
+            template.questionText === pair.questionText &&
+            template.category === category
+          );
+
+          if (isDuplicate) {
+            console.log(`[TEMPLATE AUTO-SAVE] ⚠️ Skipping duplicate template: "${pair.questionText}" already exists`);
+            continue;
+          }
+
           const templateData = {
             category: category,
             questionType: pair.questionType || 'patinig',
@@ -1493,12 +1534,14 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             isActive: true
           };
 
-          console.log(`[TEMPLATE AUTO-SAVE] Saving question as template: "${pair.questionText}"`);
+          console.log(`[TEMPLATE AUTO-SAVE] Saving NEW custom question as template: "${pair.questionText}"`);
 
           const response = await api.interventions.createTemplateQuestion(templateData);
 
           if (response.success) {
             console.log(`[TEMPLATE AUTO-SAVE] ✅ Successfully saved template: ${response.data._id}`);
+            // Add to existing templates list to prevent duplicates within this save session
+            existingTemplates.push(response.data);
           } else {
             console.warn(`[TEMPLATE AUTO-SAVE] ⚠️ Failed to save template: ${response.message}`);
           }
@@ -1509,7 +1552,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         }
       }
 
-      console.log('[TEMPLATE AUTO-SAVE] ✅ Auto-save process completed');
+      console.log('[TEMPLATE AUTO-SAVE] ✅ Auto-save process completed with duplicate validation');
 
     } catch (error) {
       console.error('[TEMPLATE AUTO-SAVE] Error in auto-save process:', error);
