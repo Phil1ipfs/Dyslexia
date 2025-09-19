@@ -1274,18 +1274,7 @@ const PrescriptiveAnalysis = ({
       <div className="literexia-analysis-card literexia-full-width">
         <div className="literexia-card-content">
           <div className={`epa-container theme-${getUITheme(categoryName)}`}>
-            <div className="epa-header">
-              <FaExclamationTriangle className="epa-icon" />
-              <div>
-                <h4 className="epa-title">Evidence {categoryName} Analysis</h4>
-                <p className="epa-subtitle epa-subtitle--white">Evidence-based deficit analysis, intervention prescriptions, and escalation protocols</p>
-              </div>
-              <div className="epa-summary">
-                <span className={`epa-status-badge epa-status-badge--${categoryStatus}`}>
-                  {categoryStatus?.toUpperCase() || 'ANALYSIS'}
-                </span>
-              </div>
-            </div>
+         
 
             <div className="epa-content">
               {/* Deficit Analysis Section */}
@@ -1735,10 +1724,7 @@ const PrescriptiveAnalysis = ({
           <div className={`epa-container theme-${getUITheme(categoryName)}`}>
             <div className="epa-header">
               <FaExclamationTriangle className="epa-icon" />
-              <div>
-                <h4 className="epa-title">Detailed Error Analysis</h4>
-                <p className="epa-subtitle epa-subtitle--white">Individual letter and question-level breakdown with specific intervention targets</p>
-              </div>
+            
               <div className="epa-summary">
                 <span className="epa-error-count">{detailedErrorAnalysis.length} specific errors identified</span>
               </div>
@@ -3501,6 +3487,295 @@ const PrescriptiveAnalysis = ({
             ) : (
               <div className="epa-no-data">Next steps prescription not available</div>
             )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  /**
+   * Renders comprehensive intervention results details that aren't shown elsewhere
+   * Dynamically fetches from interventionResults state
+   */
+  const renderDetailedInterventionData = (categoryName) => {
+    const interventionData = interventionResults[categoryName];
+
+    if (!interventionData) {
+      return null;
+    }
+
+    return (
+      <div className="epa-detailed-intervention-container">
+        <div className="epa-detailed-header">
+          <h4>
+            <FaListAlt className="epa-icon" />
+            Comprehensive Intervention Analysis
+          </h4>
+          <span className="epa-data-source">Live Database Data</span>
+        </div>
+
+        <div className="epa-two-column-layout">
+          {/* Left Column: Technical Analysis */}
+          <div className="epa-left-column">
+            <div className="epa-column-header">
+              <FaCog className="epa-icon" />
+              <span>Technical Analysis Data</span>
+            </div>
+            <div className="epa-column-content">
+
+              {/* Response History Details */}
+              {interventionData.skillMastery?.[categoryName]?.responseHistory && (
+                <div className="epa-response-history-section">
+                  <h5>
+                    <FaHistory className="epa-section-icon" />
+                    Response History ({interventionData.skillMastery[categoryName].responseHistory.length} questions)
+                  </h5>
+                  <div className="epa-response-timeline">
+                    {interventionData.skillMastery[categoryName].responseHistory.map((response, index) => (
+                      <div key={index} className="epa-response-item">
+                        <div className="epa-response-question">
+                          <span className="epa-question-id">{response.questionId}</span>
+                          <span className={`epa-response-result ${response.correct ? 'correct' : 'incorrect'}`}>
+                            {response.correct ? '✓' : '✗'}
+                          </span>
+                        </div>
+                        <div className="epa-response-mastery">
+                          Mastery: {(response.masteryAfter * 100).toFixed(1)}%
+                        </div>
+                        <div className="epa-response-time">
+                          {new Date(response.timestamp).toLocaleTimeString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Ability Estimates */}
+              {interventionData.abilityEstimates && (
+                <div className="epa-ability-section">
+                  <h5>
+                    <FaChartBar className="epa-section-icon" />
+                    IRT Ability Estimates
+                  </h5>
+                  <div className="epa-ability-data">
+                    {Object.entries(interventionData.abilityEstimates).map(([category, estimate]) => (
+                      <div key={category} className="epa-ability-item">
+                        <span className="epa-ability-category">{category}:</span>
+                        <span className={`epa-ability-value ${estimate >= 0 ? 'positive' : 'negative'}`}>
+                          {estimate.toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Assessment Metadata */}
+              <div className="epa-metadata-section">
+                <h5>
+                  <FaInfoCircle className="epa-section-icon" />
+                  Assessment Details
+                </h5>
+                <div className="epa-metadata-grid">
+                  <div className="epa-metadata-item">
+                    <label>Assessment Date:</label>
+                    <span>{new Date(interventionData.assessmentDate).toLocaleString()}</span>
+                  </div>
+                  <div className="epa-metadata-item">
+                    <label>Reading Level:</label>
+                    <span>{interventionData.readingLevel}</span>
+                  </div>
+                  <div className="epa-metadata-item">
+                    <label>Total Questions:</label>
+                    <span>{interventionData.totalQuestions}</span>
+                  </div>
+                  <div className="epa-metadata-item">
+                    <label>Correct Answers:</label>
+                    <span>{interventionData.correctAnswers}</span>
+                  </div>
+                  <div className="epa-metadata-item">
+                    <label>Pass Threshold:</label>
+                    <span>{interventionData.passThreshold}%</span>
+                  </div>
+                  <div className="epa-metadata-item">
+                    <label>Previous Score:</label>
+                    <span>{interventionData.previousScore}%</span>
+                  </div>
+                  <div className="epa-metadata-item">
+                    <label>Improvement:</label>
+                    <span className={`${interventionData.improvement >= 0 ? 'positive' : 'negative'}`}>
+                      {interventionData.improvement >= 0 ? '+' : ''}{interventionData.improvement}%
+                    </span>
+                  </div>
+                  <div className="epa-metadata-item">
+                    <label>Improvement Percentage:</label>
+                    <span>{interventionData.improvementPercentage.toFixed(1)}%</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Right Column: Research & Prescriptions */}
+          <div className="epa-right-column">
+            <div className="epa-column-header">
+              <FaUserMd className="epa-icon" />
+              <span>Research-Based Prescriptions</span>
+            </div>
+            <div className="epa-column-content">
+
+              {/* Detailed Error Patterns */}
+              {interventionData.errorPatterns?.[categoryName] && (
+                <div className="epa-detailed-errors-section">
+                  <h5>
+                    <FaExclamationTriangle className="epa-section-icon" />
+                    Detailed Error Analysis
+                  </h5>
+                  <div className="epa-error-breakdown">
+                    <div className="epa-error-stats">
+                      <span>Error Count: {interventionData.errorPatterns[categoryName].count}/{interventionData.errorPatterns[categoryName].total}</span>
+                      <span>Error Rate: {interventionData.errorPatterns[categoryName].percentage}%</span>
+                      <span>Error Type: {interventionData.errorPatterns[categoryName].error_type}</span>
+                    </div>
+
+                    {/* Category-specific error details */}
+                    {interventionData.errorPatterns[categoryName].patinig_errors && (
+                      <div className="epa-vowel-errors">
+                        <h6>Vowel (Patinig) Errors</h6>
+                        <div className="epa-error-letters">
+                          {interventionData.errorPatterns[categoryName].patinig_errors.specific_letters?.map((letter, index) => (
+                            <span key={index} className="epa-error-letter vowel">{letter}</span>
+                          ))}
+                        </div>
+                        <p>Focus: {interventionData.errorPatterns[categoryName].patinig_errors.interventionFocus}</p>
+                      </div>
+                    )}
+
+                    {interventionData.errorPatterns[categoryName].katinig_errors && (
+                      <div className="epa-consonant-errors">
+                        <h6>Consonant (Katinig) Errors</h6>
+                        <div className="epa-error-letters">
+                          {interventionData.errorPatterns[categoryName].katinig_errors.specific_letters?.map((letter, index) => (
+                            <span key={index} className="epa-error-letter consonant">{letter}</span>
+                          ))}
+                        </div>
+                        <p>Focus: {interventionData.errorPatterns[categoryName].katinig_errors.interventionFocus}</p>
+                      </div>
+                    )}
+
+                    {/* Failed Question IDs */}
+                    {interventionData.errorPatterns[categoryName].questionIds && (
+                      <div className="epa-failed-questions">
+                        <h6>Failed Questions</h6>
+                        <div className="epa-question-list">
+                          {interventionData.errorPatterns[categoryName].questionIds.map((questionId, index) => (
+                            <span key={index} className="epa-failed-question">{questionId}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Research-Based Prescriptions */}
+              {interventionData.researchBasedPrescriptions?.[categoryName] && (
+                <div className="epa-research-prescriptions-section">
+                  <h5>
+                    <FaBookOpen className="epa-section-icon" />
+                    Next Intervention Prescription
+                  </h5>
+                  <div className="epa-prescription-details">
+                    <div className="epa-prescription-status">
+                      <strong>Status:</strong> {interventionData.researchBasedPrescriptions[categoryName].categoryStatus?.replace('_', ' ')}
+                    </div>
+
+                    {interventionData.researchBasedPrescriptions[categoryName].deficitAnalysis?.specificDeficits && (
+                      <div className="epa-specific-deficits">
+                        <h6>Specific Deficits</h6>
+                        {interventionData.researchBasedPrescriptions[categoryName].deficitAnalysis.specificDeficits.map((deficit, index) => (
+                          <div key={index} className="epa-deficit-item">
+                            <div className="epa-deficit-name">{deficit.deficit}</div>
+                            <div className="epa-deficit-severity">Severity: {deficit.severity}</div>
+                            <div className="epa-deficit-rate">Error Rate: {deficit.errorRate}</div>
+                            <div className="epa-deficit-evidence">{deficit.researchEvidence}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {interventionData.researchBasedPrescriptions[categoryName].teacherRevisionGuidance && (
+                      <div className="epa-teacher-guidance">
+                        <h6>Teacher Revision Guidance</h6>
+                        <div className="epa-guidance-priority">
+                          Priority: {interventionData.researchBasedPrescriptions[categoryName].teacherRevisionGuidance.revisionPriority}
+                        </div>
+                        {interventionData.researchBasedPrescriptions[categoryName].teacherRevisionGuidance.specificChanges?.map((change, index) => (
+                          <div key={index} className="epa-guidance-change">
+                            <strong>{change.change}:</strong> {change.rationale}
+                            <span className="epa-expected-impact">Expected: {change.expectedImpact}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Insights & Recommendations */}
+              {interventionData.insights && (
+                <div className="epa-insights-section">
+                  <h5>
+                    <FaLightbulb className="epa-section-icon" />
+                    AI Insights & Recommendations
+                  </h5>
+                  <div className="epa-insights-content">
+                    {interventionData.insights.strengths?.length > 0 && (
+                      <div className="epa-strengths">
+                        <h6>Strengths</h6>
+                        <ul>
+                          {interventionData.insights.strengths.map((strength, index) => (
+                            <li key={index}>{strength}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {interventionData.insights.weaknesses?.length > 0 && (
+                      <div className="epa-weaknesses">
+                        <h6>Areas for Improvement</h6>
+                        <ul>
+                          {interventionData.insights.weaknesses.map((weakness, index) => (
+                            <li key={index}>{weakness}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {interventionData.recommendations?.length > 0 && (
+                      <div className="epa-recommendations">
+                        <h6>Recommendations</h6>
+                        <ul>
+                          {interventionData.recommendations.map((rec, index) => (
+                            <li key={index}>{rec}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    <div className="epa-readiness">
+                      <strong>Overall Readiness:</strong> {interventionData.insights.overallReadiness}
+                    </div>
+                    <div className="epa-next-action">
+                      <strong>Recommended Action:</strong> {interventionData.insights.recommendedAction?.replace('_', ' ')}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
           </div>
         </div>
       </div>

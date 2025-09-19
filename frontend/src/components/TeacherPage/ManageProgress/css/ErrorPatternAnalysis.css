@@ -15,14 +15,14 @@
   grid-template-columns: 1fr 1fr !important;
   gap: 1.5rem !important;
   margin: 1rem 0 !important;
-  max-height: 40vh !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
   padding: 1rem !important;
   border-radius: 8px !important;
   background: #f8fafc !important;
-  border: 2px solid #3B4F81 !important;
-  box-shadow: inset 0 -10px 10px -10px rgba(0,0,0,0.1) !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
 }
 
 .epa-left-column {
@@ -30,8 +30,9 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 0;
-  overflow: visible;
-  height: auto;
+  overflow: visible !important;
+  height: auto !important;
+  max-height: none !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
@@ -40,39 +41,10 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 0;
-  overflow: visible;
-  height: auto;
+  overflow: visible !important;
+  height: auto !important;
+  max-height: none !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-/* Enhanced scrollbar styling for container - VERY visible for teachers */
-.epa-two-column-layout {
-  scrollbar-width: thick !important;
-  scrollbar-color: #3B4F81 #e2e8f0 !important;
-}
-
-.epa-two-column-layout::-webkit-scrollbar {
-  width: 16px !important;
-}
-
-.epa-two-column-layout::-webkit-scrollbar-track {
-  background: #e2e8f0 !important;
-  border-radius: 8px !important;
-  margin: 2px !important;
-}
-
-.epa-two-column-layout::-webkit-scrollbar-thumb {
-  background: #3B4F81 !important;
-  border-radius: 8px !important;
-  border: 2px solid #e2e8f0 !important;
-}
-
-.epa-two-column-layout::-webkit-scrollbar-thumb:hover {
-  background: #2D3A5E !important;
-}
-
-.epa-two-column-layout::-webkit-scrollbar-corner {
-  background: #e2e8f0 !important;
 }
 
 /* Column Headers */
@@ -139,17 +111,18 @@
 /* Responsive Design for Two-Column Layout */
 @media (max-width: 768px) {
   .epa-two-column-layout {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-    max-height: 50vh;
-    overflow-y: auto;
-    padding: 0.5rem;
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+    height: 30vh !important;
+    max-height: 30vh !important;
+    overflow-y: scroll !important;
+    padding: 0.5rem !important;
   }
 
   .epa-left-column,
   .epa-right-column {
-    overflow: visible;
-    height: auto;
+    overflow: visible !important;
+    height: auto !important;
   }
 }
 
@@ -2457,12 +2430,13 @@
   display: grid !important;
   grid-template-columns: 1fr 1fr !important;
   gap: 1.5rem;
-  max-height: 40vh !important;
-  overflow-y: auto !important;
+  height: 25vh !important;
+  max-height: 25vh !important;
+  overflow-y: scroll !important;
   padding: 0.5rem !important;
   border-radius: 8px !important;
   background: #f8fafc !important;
-  border: 1px solid #e2e8f0 !important;
+  border: none !important;
   width: 100% !important;
 
   /* Ensure it's not flex */
@@ -2482,8 +2456,8 @@
 
 .epa-column-content {
   padding: 1rem;
-  height: calc(100% - 60px);
-  overflow-y: auto;
+  height: auto;
+  overflow: visible;
 }
 
 /* Score Cards */
@@ -2885,11 +2859,12 @@
     display: flex !important;
     flex-direction: column !important;
     gap: 1rem !important;
-    max-height: 50vh !important;
-    overflow-y: auto !important;
+    height: 30vh !important;
+    max-height: 30vh !important;
+    overflow-y: scroll !important;
     padding: 0.5rem !important;
     background: #f8fafc !important;
-    border: 1px solid #e2e8f0 !important;
+    border: none !important;
   }
 
   .epa-intervention-comparison-two-column .epa-left-column,
@@ -2938,8 +2913,8 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 0;
-  overflow-y: auto;
-  height: 100%;
+  overflow: visible;
+  height: auto;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   border-left: 4px solid #3B4F81;
 }
@@ -2950,8 +2925,8 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 1rem;
-  overflow-y: auto;
-  height: 100%;
+  overflow: visible;
+  height: auto;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   border-left: 4px solid #22c55e;
   display: flex;
@@ -2965,8 +2940,8 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 0;
-  overflow-y: auto;
-  height: 100%;
+  overflow: visible;
+  height: auto;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   border-left: 4px solid #f59e0b;
 }
@@ -3004,8 +2979,8 @@
 /* Comparison Content */
 .epa-comparison-content {
   padding: 1rem;
-  height: calc(100% - 60px);
-  overflow-y: auto;
+  height: auto;
+  overflow: visible;
 }
 
 /* Progress Analysis Specific Styles */
@@ -3376,10 +3351,10 @@
   .epa-before-column,
   .epa-progress-column,
   .epa-after-column {
-    max-height: 500px;
-    overflow-y: auto;
+    max-height: none;
+    overflow: visible;
     height: auto;
-    min-height: 300px;
+    min-height: auto;
   }
 
   .epa-progress-column {
@@ -3428,19 +3403,20 @@
     grid-template-rows: 1fr !important;
     gap: 1.5rem !important;
     width: 100% !important;
-    max-height: 40vh !important;
-    overflow-y: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
     padding: 0.5rem !important;
     background: #f8fafc !important;
-    border: 1px solid #e2e8f0 !important;
+    border: none !important;
   }
   
   .epa-intervention-comparison-two-column .epa-left-column,
   .epa-intervention-comparison-two-column .epa-right-column {
     grid-column: span 1 !important;
     min-width: 0 !important;
-    overflow-y: auto !important;
-    height: 100% !important;
+    overflow: visible !important;
+    height: auto !important;
     background: #ffffff !important;
     border: 1px solid #e2e8f0 !important;
     border-radius: 8px !important;
@@ -3822,8 +3798,8 @@
 /* Column Content */
 .epa-column-content {
   padding: 1rem;
-  height: calc(100% - 3.5rem);
-  overflow-y: auto;
+  height: auto;
+  overflow: visible;
 }
 
 /* Responsive Design for Mobile */
