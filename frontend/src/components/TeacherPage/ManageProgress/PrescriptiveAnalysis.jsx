@@ -12,7 +12,6 @@ import {
   FaBrain,
   FaRuler,
   FaUserMd,
-  FaChartBar,
   FaArrowUp,
   FaArrowRight,
   FaPlus,
@@ -2931,17 +2930,17 @@ const PrescriptiveAnalysis = ({
                       Bayesian Knowledge Tracing (BKT) Analysis
                     </h4>
                     <div className="epa-bkt-display">
-                      <div className="epa-mastery-gauge">
-                        <div className="epa-gauge-container">
-                          <div className={`epa-mastery-circle ${interventionData.skillMastery[categoryName].masteryProbability >= 0.75 ? 'high' :
-                            interventionData.skillMastery[categoryName].masteryProbability >= 0.5 ? 'medium' : 'low'}`}>
-                            <span className="epa-mastery-percentage">
-                              {(interventionData.skillMastery[categoryName].masteryProbability * 100).toFixed(1)}%
-                            </span>
-                            <span className="epa-mastery-label">MASTERY</span>
+                      <div className="mastery-gauge-container">
+                        <div
+                          className="mastery-gauge"
+                          style={{'--percentage': (interventionData.skillMastery[categoryName].masteryProbability * 100).toFixed(0)}}
+                        >
+                          <div className="mastery-percentage">
+                            {(interventionData.skillMastery[categoryName].masteryProbability * 100).toFixed(1)}%
+                            <span className="mastery-gauge-label">MASTERY</span>
                           </div>
                         </div>
-                        <div className="epa-mastery-interpretation">
+                        <div className="mastery-interpretation">
                           <strong>Skill Status:</strong> {interventionData.skillMastery[categoryName].status ||
                             (interventionData.skillMastery[categoryName].masteryProbability >= 0.75 ? 'MASTERED' :
                              interventionData.skillMastery[categoryName].masteryProbability >= 0.5 ? 'DEVELOPING' : 'NEEDS_IMPROVEMENT')}
@@ -3009,66 +3008,198 @@ const PrescriptiveAnalysis = ({
 
                     <div className="epa-pattern-summary">
                       <div className="epa-pattern-overview">
-                        <strong>Pattern:</strong> {interventionData.errorPatterns[categoryName].percentage}% overall error rate
+                        <strong>Overall Error Rate:</strong> {interventionData.errorPatterns[categoryName].percentage || interventionData.errorPatterns[categoryName].count && interventionData.errorPatterns[categoryName].total ?
+                          Math.round((interventionData.errorPatterns[categoryName].count / interventionData.errorPatterns[categoryName].total) * 100) : 0}%
                       </div>
                       <div className="epa-pattern-focus">
-                        <strong>Focus:</strong> {interventionData.errorPatterns[categoryName].detailedErrorAnalysis?.[0]?.interventionFocus || 'systematic_letter_review'}
+                        <strong>Primary Focus:</strong> {interventionData.errorPatterns[categoryName].detailedErrorAnalysis?.[0]?.interventionFocus ||
+                          interventionData.errorPatterns[categoryName].error_type?.replace('_', ' ') || 'systematic_skill_review'}
                       </div>
                       <div className="epa-pattern-issues">
-                        <strong>Specific Issues:</strong> {interventionData.errorPatterns[categoryName].detailedErrorAnalysis?.[0]?.specificPairs?.join(', ') || 'B-D, P-Q, M-N'}
+                        <strong>Specific Issues:</strong> {interventionData.errorPatterns[categoryName].detailedErrorAnalysis?.[0]?.specificPairs?.join(', ') ||
+                          interventionData.errorPatterns[categoryName].currentPatterns?.[0] || 'Pattern analysis in progress'}
                       </div>
+                      {interventionData.errorPatterns[categoryName].questionIds && (
+                        <div className="epa-pattern-questions">
+                          <strong>Problem Questions:</strong> {interventionData.errorPatterns[categoryName].questionIds.length} out of {interventionData.errorPatterns[categoryName].total || interventionData.totalQuestions}
+                        </div>
+                      )}
                     </div>
 
-                    {/* Patinig Errors */}
-                    {interventionData.errorPatterns[categoryName].patinig_errors && (
-                      <div className="epa-patinig-errors">
-                        <h5>Patinig Errors</h5>
+                    {/* Category-Specific Error Patterns */}
+                    {categoryName === 'Alphabet Knowledge' && (
+                      <>
+                        {/* Patinig Errors for Alphabet Knowledge */}
+                        {interventionData.errorPatterns[categoryName].patinig_errors && (
+                          <div className="epa-category-specific-errors">
+                            <h5 className="error-category-title">Patinig (Vowel) Errors</h5>
+                            <div className="epa-error-metrics">
+                              <div className="epa-error-metric">
+                                <span className="epa-error-label">ERROR COUNT:</span>
+                                <span className="epa-error-value">{interventionData.errorPatterns[categoryName].patinig_errors.count}</span>
+                              </div>
+                              <div className="epa-error-metric">
+                                <span className="epa-error-label">ERROR RATE:</span>
+                                <span className={`epa-error-value ${interventionData.errorPatterns[categoryName].patinig_errors.percentage === 0 ? 'success' : 'warning'}`}>
+                                  {interventionData.errorPatterns[categoryName].patinig_errors.percentage}%
+                                </span>
+                              </div>
+                            </div>
+                            {interventionData.errorPatterns[categoryName].patinig_errors.specific_letters?.length > 0 && (
+                              <div className="epa-problem-letters">
+                                <strong>PROBLEM LETTERS:</strong>
+                                <div className="epa-letter-tags">
+                                  {interventionData.errorPatterns[categoryName].patinig_errors.specific_letters.map((letter, index) => (
+                                    <span key={index} className="epa-letter-tag vowel">{letter}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            <div className="epa-intervention-focus">
+                              <strong>INTERVENTION FOCUS:</strong> {interventionData.errorPatterns[categoryName].patinig_errors.interventionFocus || 'vowel_discrimination_practice'}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Katinig Errors for Alphabet Knowledge */}
+                        {interventionData.errorPatterns[categoryName].katinig_errors && (
+                          <div className="epa-category-specific-errors">
+                            <h5 className="error-category-title">Katinig (Consonant) Errors</h5>
+                            <div className="epa-error-metrics">
+                              <div className="epa-error-metric">
+                                <span className="epa-error-label">ERROR COUNT:</span>
+                                <span className="epa-error-value">{interventionData.errorPatterns[categoryName].katinig_errors.count}</span>
+                              </div>
+                              <div className="epa-error-metric">
+                                <span className="epa-error-label">ERROR RATE:</span>
+                                <span className={`epa-error-value ${interventionData.errorPatterns[categoryName].katinig_errors.percentage === 0 ? 'success' : 'warning'}`}>
+                                  {interventionData.errorPatterns[categoryName].katinig_errors.percentage}%
+                                </span>
+                              </div>
+                            </div>
+                            {interventionData.errorPatterns[categoryName].katinig_errors.specific_letters?.length > 0 && (
+                              <div className="epa-problem-letters">
+                                <strong>PROBLEM LETTERS:</strong>
+                                <div className="epa-letter-tags">
+                                  {interventionData.errorPatterns[categoryName].katinig_errors.specific_letters.map((letter, index) => (
+                                    <span key={index} className="epa-letter-tag consonant">{letter}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Phonological Awareness Specific Errors */}
+                    {categoryName === 'Phonological Awareness' && interventionData.errorPatterns[categoryName].matching_errors && (
+                      <div className="epa-category-specific-errors">
+                        <h5 className="error-category-title">Sound Matching Errors</h5>
                         <div className="epa-error-metrics">
                           <div className="epa-error-metric">
-                            <span className="epa-error-label">ERROR COUNT:</span>
-                            <span className="epa-error-value">{interventionData.errorPatterns[categoryName].patinig_errors.count}</span>
+                            <span className="epa-error-label">MATCHING ERRORS:</span>
+                            <span className="epa-error-value">{interventionData.errorPatterns[categoryName].matching_errors.count}</span>
                           </div>
                           <div className="epa-error-metric">
                             <span className="epa-error-label">ERROR RATE:</span>
-                            <span className="epa-error-value success">{interventionData.errorPatterns[categoryName].patinig_errors.percentage}%</span>
+                            <span className={`epa-error-value ${interventionData.errorPatterns[categoryName].matching_errors.percentage > 50 ? 'danger' : 'warning'}`}>
+                              {interventionData.errorPatterns[categoryName].matching_errors.percentage}%
+                            </span>
+                          </div>
+                          <div className="epa-error-metric">
+                            <span className="epa-error-label">AVG PARTIAL SUCCESS:</span>
+                            <span className="epa-error-value">{(interventionData.errorPatterns[categoryName].matching_errors.avg_partial_success * 100).toFixed(0)}%</span>
                           </div>
                         </div>
-                        <div className="epa-error-type">
-                          <strong>Error Type:</strong> {interventionData.errorPatterns[categoryName].patinig_errors.error_type?.replace('_', ' ') || 'Vowel Confusion'}
-                        </div>
-                        <div className="epa-problem-letters">
-                          <strong>PROBLEM LETTERS:</strong>
-                          <div className="epa-letter-tags">
-                            {interventionData.errorPatterns[categoryName].patinig_errors.specific_letters?.map((letter, index) => (
-                              <span key={index} className="epa-letter-tag">{letter}</span>
-                            )) || ['A', 'S', 'V'].map((letter, index) => (
-                              <span key={index} className="epa-letter-tag">{letter}</span>
-                            ))}
+                        {interventionData.errorPatterns[categoryName].matching_errors.confusion_pairs && (
+                          <div className="epa-confusion-pairs">
+                            <strong>CONFUSION PAIRS:</strong>
+                            <div className="epa-confusion-tags">
+                              {interventionData.errorPatterns[categoryName].matching_errors.confusion_pairs.map((pair, index) => (
+                                <span key={index} className="epa-confusion-tag">
+                                  {pair.sounds?.join('-') || 'N/A'} ({pair.confusion_rate}%)
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Decoding Specific Errors */}
+                    {categoryName === 'Decoding' && interventionData.errorPatterns[categoryName].decoding_errors && (
+                      <div className="epa-category-specific-errors">
+                        <h5 className="error-category-title">Decoding Difficulties</h5>
+                        <div className="epa-error-metrics">
+                          <div className="epa-error-metric">
+                            <span className="epa-error-label">DECODING ERRORS:</span>
+                            <span className="epa-error-value">{interventionData.errorPatterns[categoryName].decoding_errors.count}</span>
+                          </div>
+                          <div className="epa-error-metric">
+                            <span className="epa-error-label">MOST ERRORS AT:</span>
+                            <span className="epa-error-value">
+                              {interventionData.errorPatterns[categoryName].decoding_errors.most_error_position === 0 ? 'Beginning' :
+                               interventionData.errorPatterns[categoryName].decoding_errors.most_error_position === 1 ? 'Middle' : 'End'}
+                            </span>
                           </div>
                         </div>
-                        <div className="epa-intervention-focus">
-                          <strong>INTERVENTION FOCUS:</strong> {interventionData.errorPatterns[categoryName].patinig_errors.interventionFocus || 'vowel_discrimination_practice'}
-                        </div>
-                        <div className="epa-research-classification">
-                          <strong>RESEARCH CLASSIFICATION:</strong> {interventionData.errorPatterns[categoryName].patinig_errors.researchClassification?.toUpperCase().replace('_', ' ') || 'PHONEMIC AWARENESS DEFICIT'}
+                        {interventionData.errorPatterns[categoryName].decoding_errors.pattern_types && (
+                          <div className="epa-pattern-types">
+                            <strong>PATTERN DIFFICULTIES:</strong>
+                            <div className="epa-pattern-tags">
+                              {interventionData.errorPatterns[categoryName].decoding_errors.pattern_types.map((pattern, index) => (
+                                <span key={index} className="epa-pattern-tag">
+                                  {pattern.pattern} ({pattern.error_rate}% errors)
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Word Recognition Specific Errors */}
+                    {categoryName === 'Word Recognition' && interventionData.errorPatterns[categoryName].word_errors && (
+                      <div className="epa-category-specific-errors">
+                        <h5 className="error-category-title">Word Recognition Issues</h5>
+                        <div className="epa-error-metrics">
+                          <div className="epa-error-metric">
+                            <span className="epa-error-label">WORD ERRORS:</span>
+                            <span className="epa-error-value">{interventionData.errorPatterns[categoryName].word_errors.count}</span>
+                          </div>
+                          <div className="epa-error-metric">
+                            <span className="epa-error-label">PRIMARY ISSUE:</span>
+                            <span className="epa-error-value">{interventionData.errorPatterns[categoryName].word_errors.error_type?.replace('_', ' ') || 'context_clues'}</span>
+                          </div>
                         </div>
                       </div>
                     )}
 
-                    {/* Katinig Errors */}
-                    {interventionData.errorPatterns[categoryName].katinig_errors && (
-                      <div className="epa-katinig-errors">
-                        <h5>Katinig Errors</h5>
+                    {/* Reading Comprehension Specific Errors */}
+                    {categoryName === 'Reading Comprehension' && interventionData.errorPatterns[categoryName].comprehension_errors && (
+                      <div className="epa-category-specific-errors">
+                        <h5 className="error-category-title">Comprehension Difficulties</h5>
                         <div className="epa-error-metrics">
                           <div className="epa-error-metric">
-                            <span className="epa-error-label">ERROR COUNT:</span>
-                            <span className="epa-error-value">{interventionData.errorPatterns[categoryName].katinig_errors.count}</span>
+                            <span className="epa-error-label">FAILED PASSAGES:</span>
+                            <span className="epa-error-value">{interventionData.errorPatterns[categoryName].comprehension_errors.count}</span>
                           </div>
                           <div className="epa-error-metric">
-                            <span className="epa-error-label">ERROR RATE:</span>
-                            <span className="epa-error-value success">{interventionData.errorPatterns[categoryName].katinig_errors.percentage}%</span>
+                            <span className="epa-error-label">MAIN ISSUE:</span>
+                            <span className="epa-error-value">{interventionData.errorPatterns[categoryName].comprehension_errors.error_type?.replace('_', ' ') || 'literal_comprehension'}</span>
                           </div>
                         </div>
+                        {interventionData.errorPatterns[categoryName].comprehension_errors.question_breakdown && (
+                          <div className="epa-comprehension-breakdown">
+                            <strong>QUESTION BREAKDOWN:</strong>
+                            {Object.entries(interventionData.errorPatterns[categoryName].comprehension_errors.question_breakdown).map(([questionId, details], index) => (
+                              <div key={index} className="epa-question-detail">
+                                {questionId}: {details.sentence_questions_correct}/{details.sentence_questions_total} correct (Status: {details.result})
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -3217,89 +3348,173 @@ const PrescriptiveAnalysis = ({
                     )}
                   </div>
                 </div>
-                      Item Response Theory (IRT) Analysis
-                    </h4>
-                    <div className="epa-irt-display">
-                      <div className="epa-ability-scale">
-                        <div className="epa-scale-line">
-                          <span className="epa-scale-label">-3.0</span>
-                          <div className="epa-scale-bar">
-                            <div
-                              className="epa-ability-marker"
-                              style={{ left: `${((interventionData.abilityEstimates[categoryName] + 3) / 6) * 100}%` }}
-                            >
-                              <span className="epa-ability-value">{interventionData.abilityEstimates[categoryName].toFixed(1)}</span>
+
+                {/* Progress Comparison Card */}
+                {interventionData.progressComparison && (
+                  <div className="progress-comparison-card">
+                    <div className="performance-header">
+                      <h3 className="performance-label">Progress Comparison</h3>
+                    </div>
+                    <div className="comparison-content">
+                      <div className="comparison-section">
+                        <h4 className="comparison-subtitle">Main Assessment vs Intervention</h4>
+                        <div className="comparison-metrics">
+                          <div className="comparison-item">
+                            <span className="comparison-label">Original Score:</span>
+                            <span className="comparison-value original">
+                              {interventionData.progressComparison.mainAssessmentPerformance?.score || interventionData.previousScore}%
+                            </span>
+                          </div>
+                          <div className="comparison-item">
+                            <span className="comparison-label">Intervention Score:</span>
+                            <span className="comparison-value intervention">
+                              {interventionData.progressComparison.interventionPerformance?.score || interventionData.score}%
+                            </span>
+                          </div>
+                          <div className="comparison-item">
+                            <span className="comparison-label">Improvement:</span>
+                            <span className={`comparison-value ${interventionData.improvement >= 0 ? 'positive' : 'negative'}`}>
+                              {interventionData.improvement >= 0 ? '+' : ''}{interventionData.improvement}%
+                            </span>
+                          </div>
+                        </div>
+                        {interventionData.progressComparison.progressIndicators && (
+                          <div className="progress-indicators-detail">
+                            <div className="indicator-item">
+                              <span>Mastery Growth:</span>
+                              <span className="indicator-value">
+                                +{((interventionData.progressComparison.progressIndicators.masteryGrowth || 0) * 100).toFixed(1)}%
+                              </span>
+                            </div>
+                            <div className="indicator-item">
+                              <span>Error Reduction:</span>
+                              <span className="indicator-value">
+                                {interventionData.progressComparison.progressIndicators.errorReduction || 0}%
+                              </span>
+                            </div>
+                            <div className="indicator-item">
+                              <span>Skill Transfer:</span>
+                              <span className="indicator-value">
+                                {interventionData.progressComparison.progressIndicators.skillTransfer || 'limited'}
+                              </span>
                             </div>
                           </div>
-                          <span className="epa-scale-label">+3.0</span>
-                        </div>
-                      </div>
-                      <div className="epa-irt-interpretation">
-                        <strong>Ability Level:</strong> {(() => {
-                          const ability = interventionData.abilityEstimates[categoryName];
-                          if (ability >= 1.5) return 'Excellent - Well above grade level';
-                          if (ability >= 0.5) return 'Above Average - Performing well';
-                          if (ability >= -0.5) return 'Average - Meeting expectations';
-                          if (ability >= -1.5) return 'Below Average - Needs support';
-                          return 'Significant difficulty - Intensive intervention needed';
-                        })()}
+                        )}
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Intervention Effectiveness Analysis - Based on intervention_results data */}
-                {interventionData.interventionEffectiveness && (
-                  <div className="epa-effectiveness-analysis-card">
-                    <h4 className="epa-subsection-title">
-                      <FaChartBar className="epa-section-icon" />
-                      Intervention Effectiveness Analysis
-                    </h4>
-                    <div className="epa-effectiveness-display">
-                      <div className="epa-effectiveness-metric">
-                        <span className="epa-metric-label">Overall Effectiveness:</span>
-                        <span className={`epa-metric-value effectiveness-${interventionData.interventionEffectiveness.overallEffectiveness?.toLowerCase()}`}>
-                          {interventionData.interventionEffectiveness.overallEffectiveness?.replace(/_/g, ' ')}
-                        </span>
-                      </div>
-
-                      {interventionData.interventionEffectiveness.skillProgression && (
-                        <div className="epa-skill-progression">
-                          <div className="epa-progression-item">
-                            <span className="epa-progression-label">Mastery Growth:</span>
-                            <span className="epa-progression-value">
-                              +{(interventionData.interventionEffectiveness.skillProgression.masteryGrowth * 100).toFixed(1)}%
-                            </span>
-                          </div>
-                          {interventionData.interventionEffectiveness.skillProgression.responseTimeImprovement && (
-                            <div className="epa-progression-item">
-                              <span className="epa-progression-label">Response Time Improvement:</span>
-                              <span className="epa-progression-value">
-                                +{interventionData.interventionEffectiveness.skillProgression.responseTimeImprovement}%
-                              </span>
-                            </div>
-                          )}
+                {/* Insights and Recommendations Card */}
+                {interventionData.insights && (
+                  <div className="insights-recommendations-card">
+                    <div className="performance-header">
+                      <h3 className="performance-label">Insights & Recommendations</h3>
+                    </div>
+                    <div className="insights-content">
+                      {interventionData.insights.strengths?.length > 0 && (
+                        <div className="insights-section strengths">
+                          <h4 className="insights-subtitle">Strengths</h4>
+                          <ul className="insights-list">
+                            {interventionData.insights.strengths.map((strength, index) => (
+                              <li key={index} className="insight-item strength">{strength}</li>
+                            ))}
+                          </ul>
                         </div>
                       )}
+                      {interventionData.insights.weaknesses?.length > 0 && (
+                        <div className="insights-section weaknesses">
+                          <h4 className="insights-subtitle">Areas for Improvement</h4>
+                          <ul className="insights-list">
+                            {interventionData.insights.weaknesses.map((weakness, index) => (
+                              <li key={index} className="insight-item weakness">{weakness}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      <div className="insights-section readiness">
+                        <div className="readiness-assessment">
+                          <span className="readiness-label">Overall Readiness:</span>
+                          <span className="readiness-value">
+                            {interventionData.insights.overallReadiness || 'Developing skills steadily'}
+                          </span>
+                        </div>
+                        <div className="recommended-action">
+                          <span className="action-label">Recommended Action:</span>
+                          <span className={`action-value ${interventionData.insights.recommendedAction}`}>
+                            {interventionData.insights.recommendedAction?.replace('_', ' ').toUpperCase() || 'CONTINUE MONITORING'}
+                          </span>
+                        </div>
+                      </div>
+                      {interventionData.insights.nextStepsRationale && (
+                        <div className="insights-section rationale">
+                          <h4 className="insights-subtitle">Next Steps Rationale</h4>
+                          <p className="rationale-text">{interventionData.insights.nextStepsRationale}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
-                      {interventionData.interventionEffectiveness.errorPatternResolution && (
-                        <div className="epa-error-resolution">
-                          {interventionData.interventionEffectiveness.errorPatternResolution.improved?.length > 0 && (
-                            <div className="epa-resolution-category">
-                              <span className="epa-resolution-label">Improved Patterns:</span>
-                              <span className="epa-resolution-value improved">
-                                {interventionData.interventionEffectiveness.errorPatternResolution.improved.join(', ')}
+                {/* Analytics Metrics Card */}
+                {interventionData.analyticsMetrics && (
+                  <div className="analytics-metrics-card">
+                    <div className="performance-header">
+                      <h3 className="performance-label">Analytics Metrics</h3>
+                    </div>
+                    <div className="analytics-content">
+                      <div className="analytics-grid">
+                        <div className="analytics-item">
+                          <span className="analytics-label">Total Questions:</span>
+                          <span className="analytics-value">
+                            {interventionData.analyticsMetrics.totalQuestions || interventionData.totalQuestions}
+                          </span>
+                        </div>
+                        <div className="analytics-item">
+                          <span className="analytics-label">Total Correct:</span>
+                          <span className="analytics-value">
+                            {interventionData.analyticsMetrics.totalCorrect || interventionData.correctAnswers}
+                          </span>
+                        </div>
+                        <div className="analytics-item">
+                          <span className="analytics-label">Avg Response Time:</span>
+                          <span className="analytics-value">
+                            {interventionData.analyticsMetrics.averageResponseTime || 'N/A'}s
+                          </span>
+                        </div>
+                        <div className="analytics-item">
+                          <span className="analytics-label">Consistency Index:</span>
+                          <span className="analytics-value">
+                            {interventionData.analyticsMetrics.consistencyIndex ?
+                              (interventionData.analyticsMetrics.consistencyIndex * 100).toFixed(0) + '%' : 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                      {interventionData.analyticsMetrics.confidenceMetrics && (
+                        <div className="confidence-section">
+                          <h4 className="confidence-subtitle">Confidence Metrics</h4>
+                          <div className="confidence-grid">
+                            <div className="confidence-item">
+                              <span className="confidence-label">Skill Mastery Confidence:</span>
+                              <span className="confidence-value">
+                                {(interventionData.analyticsMetrics.confidenceMetrics.skillMasteryConfidence * 100).toFixed(0)}%
                               </span>
                             </div>
-                          )}
-                          {interventionData.interventionEffectiveness.errorPatternResolution.persistent?.length > 0 && (
-                            <div className="epa-resolution-category">
-                              <span className="epa-resolution-label">Persistent Patterns:</span>
-                              <span className="epa-resolution-value persistent">
-                                {interventionData.interventionEffectiveness.errorPatternResolution.persistent.join(', ')}
+                            <div className="confidence-item">
+                              <span className="confidence-label">Intervention Success Probability:</span>
+                              <span className="confidence-value">
+                                {(interventionData.analyticsMetrics.confidenceMetrics.interventionSuccessProbability * 100).toFixed(0)}%
                               </span>
                             </div>
-                          )}
+                            {interventionData.analyticsMetrics.confidenceMetrics.teacherRevisionLikelihood && (
+                              <div className="confidence-item">
+                                <span className="confidence-label">Teacher Revision Success Likelihood:</span>
+                                <span className="confidence-value">
+                                  {(interventionData.analyticsMetrics.confidenceMetrics.teacherRevisionLikelihood * 100).toFixed(0)}%
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
