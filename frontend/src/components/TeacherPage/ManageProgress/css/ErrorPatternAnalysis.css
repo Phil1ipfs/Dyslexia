@@ -6211,10 +6211,25 @@ div.epa-score-metric .epa-status-badge {
 
 /* BKT Evolution Container Height Constraints */
 .epa-bkt-evolution-section {
-  max-height: 400px !important;
+  max-height: 300px !important;
+  height: 300px !important;
   overflow-y: auto !important;
   scrollbar-width: thin !important;
   scrollbar-color: #c1c1c1 #f1f1f1 !important;
+}
+
+/* Additional constraints for BKT section content */
+.epa-section[data-section="bkt-evolution"],
+.epa-section.bkt-evolution {
+  max-height: 300px !important;
+  height: 300px !important;
+  overflow: hidden !important;
+}
+
+.epa-section[data-section="bkt-evolution"] .epa-section-content,
+.epa-section.bkt-evolution .epa-section-content {
+  max-height: 250px !important;
+  overflow-y: auto !important;
 }
 
 .epa-bkt-evolution-section::-webkit-scrollbar {
@@ -6236,14 +6251,78 @@ div.epa-score-metric .epa-status-badge {
 }
 
 .epa-response-timeline {
-  max-height: 350px !important;
+  max-height: 200px !important;
+  height: 200px !important;
   overflow-y: auto !important;
   padding: 0.5rem !important;
 }
 
 .epa-timeline-item {
-  margin-bottom: 0.75rem !important;
-  padding: 0.5rem !important;
+  margin-bottom: 0.3rem !important;
+  padding: 0 !important;
+  min-height: auto !important;
+  max-height: 24px !important;
+  background: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  font-size: 0.85rem !important;
+  line-height: 1.2 !important;
+}
+
+/* Simple icon and text layout */
+.epa-timeline-item .epa-timeline-icon {
+  font-size: 0.9rem !important;
+  width: 16px !important;
+  height: 16px !important;
+  flex-shrink: 0 !important;
+  text-align: center !important;
+  line-height: 1 !important;
+}
+
+/* Icon colors for correct/incorrect */
+.epa-timeline-item.correct .epa-timeline-icon {
+  color: #16a34a !important;
+}
+
+.epa-timeline-item.incorrect .epa-timeline-icon {
+  color: #dc2626 !important;
+}
+
+/* Icon content for check/X */
+.epa-timeline-item.correct .epa-timeline-icon::before {
+  content: "✓" !important;
+}
+
+.epa-timeline-item.incorrect .epa-timeline-icon::before {
+  content: "✗" !important;
+}
+
+.epa-timeline-item .epa-question-info {
+  font-size: 0.85rem !important;
+  line-height: 1.2 !important;
+  color: #4b5563 !important;
+  flex: 1 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.epa-timeline-item .epa-mastery-score {
+  font-size: 0.8rem !important;
+  line-height: 1.2 !important;
+  color: #6b7280 !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+}
+
+/* Remove all decorative elements */
+.epa-timeline-item::before,
+.epa-timeline-item::after {
+  display: none !important;
 }
 
 /* Enhanced Responsive Design for Research Prescriptions */
@@ -6257,15 +6336,52 @@ div.epa-score-metric .epa-status-badge {
   }
 
   .epa-bkt-evolution-section {
-    max-height: 300px !important;
+    max-height: 250px !important;
+    height: 250px !important;
   }
 
   .epa-response-timeline {
+    max-height: 180px !important;
+    height: 180px !important;
+  }
+
+  .epa-section[data-section="bkt-evolution"],
+  .epa-section.bkt-evolution {
     max-height: 250px !important;
+    height: 250px !important;
   }
 }
 
 @media (max-width: 768px) {
+  .epa-bkt-evolution-section {
+    max-height: 200px !important;
+    height: 200px !important;
+  }
+
+  .epa-response-timeline {
+    max-height: 150px !important;
+    height: 150px !important;
+  }
+
+  .epa-section[data-section="bkt-evolution"],
+  .epa-section.bkt-evolution {
+    max-height: 200px !important;
+    height: 200px !important;
+  }
+
+  .epa-timeline-item {
+    max-height: 20px !important;
+    font-size: 0.8rem !important;
+  }
+
+  .epa-timeline-item .epa-question-info {
+    font-size: 0.8rem !important;
+  }
+
+  .epa-timeline-item .epa-mastery-score {
+    font-size: 0.75rem !important;
+  }
+
   .epa-research-prescriptions-container {
     margin-bottom: 1rem !important;
     border-radius: 10px !important;
