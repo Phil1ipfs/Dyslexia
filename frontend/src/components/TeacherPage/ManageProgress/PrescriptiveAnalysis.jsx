@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import api from '../../../services/Teachers/api';
+import InterventionResultsPrescriptions from './InterventionResultsPrescriptions';
 import {
   FaInfoCircle,
   FaExclamationTriangle,
@@ -3659,17 +3660,28 @@ const PrescriptiveAnalysis = ({
             </div>
           </div>
 
-          {/* Right Column: Research & Prescriptions */}
-          <div className="epa-right-column">
-            <div className="epa-column-header">
-              <FaUserMd className="epa-icon" />
-              <span>Research-Based Prescriptions</span>
-            </div>
-            <div className="epa-column-content">
+          {/* Research-Based Prescriptions - Direct Display */}
+          <div style={{ width: '100%', marginTop: '20px' }}>
+            {interventionData.researchBasedPrescriptions?.[categoryName] && (
+              <InterventionResultsPrescriptions
+                researchBasedPrescriptions={interventionData.researchBasedPrescriptions}
+                categoryName={categoryName}
+                interventionData={interventionData}
+                showDetailedAnalysis={true}
+              />
+            )}
+          </div>
 
-
-              {/* Comprehensive Research-Based Prescriptions Container */}
-              {interventionData.researchBasedPrescriptions?.[categoryName] && (
+          {/* Original Complex Right Column (Disabled) */}
+          {false && (
+            <div className="epa-right-column">
+              <div className="epa-column-header">
+                <FaUserMd className="epa-icon" />
+                <span>Research-Based Prescriptions</span>
+              </div>
+              <div className="epa-column-content">
+                {/* Original Research-Based Prescriptions (kept as fallback) */}
+                {false && interventionData.researchBasedPrescriptions?.[categoryName] && (
                 <div className="epa-research-prescriptions-container">
                   <h4 className="epa-subsection-title">
                     <FaFlask className="epa-section-icon" />
@@ -4080,6 +4092,7 @@ const PrescriptiveAnalysis = ({
 
             </div>
           </div>
+          )}
         </div>
       </div>
     );
