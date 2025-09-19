@@ -15,9 +15,6 @@ import {
   FaUserMd,
   FaChartBar,
   FaBug,
-  FaFlask,
-  FaSearch,
-  FaChalkboardTeacher,
   FaArrowUp,
   FaRoute,
   FaArrowRight,
@@ -496,20 +493,19 @@ const PrescriptiveAnalysis = ({
         return;
       }
 
-      // Load intervention results for ALL categories that have intervention data, not just pending ones
-      const allCategories = liveCategoryResults?.categories || [];
-      if (!allCategories || allCategories.length === 0) {
+      // Skip if no categories need intervention
+      if (!categoriesNeedingIntervention || categoriesNeedingIntervention.length === 0) {
         setInterventionResults({});
         return;
       }
 
-      console.log('Loading intervention results for all categories:', allCategories.map(cat => cat.categoryName));
+      console.log('Loading intervention results for categories:', categoriesNeedingIntervention.map(cat => cat.categoryName));
 
       isLoadingInterventionsRef.current = true;
 
       try {
         const results = {};
-        for (const category of allCategories) {
+        for (const category of categoriesNeedingIntervention) {
           try {
             const categoryResults = await fetchInterventionResults(currentStudentId, category.categoryName);
             if (categoryResults) {
@@ -531,7 +527,7 @@ const PrescriptiveAnalysis = ({
     if (liveStudent || studentId) {
       loadInterventionResults();
     }
-  }, [liveStudent?.idNumber, liveStudent?.id, studentId, liveCategoryResults?.categories?.length]);
+  }, [liveStudent?.idNumber, liveStudent?.id, studentId, categoriesNeedingIntervention?.length]);
 
   // ===== HELPER FUNCTIONS =====
 
@@ -2994,155 +2990,164 @@ const PrescriptiveAnalysis = ({
                 <span>Intervention Performance & Analysis</span>
               </div>
               <div className="epa-column-content">
-                {/* DEBUG: Log intervention data structure */}
-                {console.log('🔍 [DEBUG] Right Column - Intervention Data for', categoryName, ':', {
-                  hasInterventionData: !!interventionData,
-                  hasResearchPrescriptions: !!interventionData?.researchBasedPrescriptions,
-                  categoryName: categoryName,
-                  prescriptionKeys: interventionData?.researchBasedPrescriptions ? Object.keys(interventionData.researchBasedPrescriptions) : 'none',
-                  targetPrescription: interventionData?.researchBasedPrescriptions?.[categoryName],
-                  conditionalResult: !!(interventionData?.researchBasedPrescriptions?.[categoryName]),
-                  fullInterventionData: interventionData
-                })}
-
-                {/* Comprehensive Research-Based Prescriptions Container */}
-                {interventionData?.researchBasedPrescriptions?.[categoryName] ? (
-                  <div className="epa-research-prescriptions-container">
-                    <h4 className="epa-subsection-title">
-                      <FaFlask className="epa-section-icon" />
-                      Research-Based Prescriptions - {categoryName}
-                    </h4>
-
-                    {/* Category Status */}
-                    {interventionData.researchBasedPrescriptions[categoryName].categoryStatus && (
-                      <div className="epa-category-status-card">
-                        <div className="epa-status-indicator">
-                          <span className="epa-status-label">Category Status:</span>
-                          <span className={`epa-status-value ${interventionData.researchBasedPrescriptions[categoryName].categoryStatus}`}>
-                            {interventionData.researchBasedPrescriptions[categoryName].categoryStatus}
-                          </span>
+                {/* Intervention Performance Metrics */}
+                {interventionData.progressComparison?.interventionPerformance && (
+                  <div className="epa-intervention-performance-card">
+                    <div className="epa-performance-header">
+                      <span className="epa-performance-label">Intervention Score</span>
+                      <span className={`epa-performance-status ${interventionData.isPassed ? 'passed' : 'needs-revision'}`}>
+                        {interventionData.isPassed ? 'Passed!' : 'Needs Revision'}
+                      </span>
+                    </div>
+                    <div className="epa-performance-metrics">
+                      <div className={`epa-score-value intervention-${interventionData.isPassed ? 'passed' : 'failed'}`}>
+                        {interventionData.score}%
+                      </div>
+                      <div className="epa-threshold-info">Passing threshold: {interventionData.passThreshold || 75}%</div>
+                      <div className="epa-mastery-probability">
+                        Mastery Probability: {(interventionData.progressComparison.interventionPerformance.masteryProbability * 100).toFixed(1)}%
+                      </div>
+                      <div className="epa-progress-bar-container">
+                        <div className="epa-progress-bar">
+                          <div
+                            className={`epa-progress-fill epa-progress--${interventionData.isPassed ? 'passed' : 'failed'}`}
+                            style={{ width: `${Math.min(100, (interventionData.score / (interventionData.passThreshold || 75)) * 100)}%` }}
+                          ></div>
+                        </div>
+                        <div className="epa-progress-labels">
+                          <span>0%</span>
+                          <span className="threshold-marker">{interventionData.passThreshold || 75}% (Pass)</span>
+                          <span>100%</span>
                         </div>
                       </div>
-                    )}
+                    </div>
+                  </div>
+                )}
 
-                    {/* Deficit Analysis */}
-                    {interventionData.researchBasedPrescriptions[categoryName].deficitAnalysis && (
-                      <div className="epa-analysis-card">
-                        <h5 className="epa-analysis-title">
-                          <FaSearch className="epa-analysis-icon" />
-                          Deficit Analysis
-                        </h5>
-                        {interventionData.researchBasedPrescriptions[categoryName].deficitAnalysis.specificDeficits && (
-                          <div className="epa-deficits-list">
-                            {interventionData.researchBasedPrescriptions[categoryName].deficitAnalysis.specificDeficits.map((deficit, index) => (
-                              <div key={index} className="epa-deficit-item">
-                                <div className="epa-deficit-header">
-                                  <span className="epa-deficit-name">{deficit.deficit}</span>
-                                  <span className={`epa-severity-badge ${deficit.severity}`}>{deficit.severity}</span>
-                                </div>
-                                <div className="epa-deficit-details">
-                                  <p><strong>Manifestation:</strong> {deficit.manifestation}</p>
-                                  <p><strong>Error Rate:</strong> {deficit.errorRate}</p>
-                                  <p><strong>Research Evidence:</strong> {deficit.researchEvidence}</p>
-                                  <p><strong>Intervention Response:</strong> {deficit.interventionResponse}</p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {interventionData.researchBasedPrescriptions[categoryName].deficitAnalysis.rootCauseAnalysis && (
-                          <div className="epa-root-cause">
-                            <strong>Root Cause Analysis:</strong>
-                            <p>{interventionData.researchBasedPrescriptions[categoryName].deficitAnalysis.rootCauseAnalysis}</p>
-                          </div>
-                        )}
+                {/* Progress Indicators from intervention_results.json */}
+                {interventionData.progressComparison?.progressIndicators && (
+                  <div className="epa-progress-indicators-card">
+                    <h4 className="epa-subsection-title">Progress Indicators</h4>
+                    <div className="epa-progress-metrics">
+                      <div className="epa-metric">
+                        <span className="epa-metric-label">Score Improvement:</span>
+                        <span className={`epa-metric-value ${interventionData.progressComparison.progressIndicators.scoreImprovement >= 0 ? 'positive' : 'negative'}`}>
+                          {interventionData.progressComparison.progressIndicators.scoreImprovement >= 0 ? '+' : ''}{interventionData.progressComparison.progressIndicators.scoreImprovement}%
+                        </span>
                       </div>
-                    )}
+                      <div className="epa-metric">
+                        <span className="epa-metric-label">Mastery Growth:</span>
+                        <span className="epa-metric-value positive">
+                          +{(interventionData.progressComparison.progressIndicators.masteryGrowth * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="epa-metric">
+                        <span className="epa-metric-label">Error Reduction:</span>
+                        <span className="epa-metric-value positive">
+                          {interventionData.progressComparison.progressIndicators.errorReduction * 100}%
+                        </span>
+                      </div>
+                      <div className="epa-metric">
+                        <span className="epa-metric-label">Skill Transfer:</span>
+                        <span className={`epa-metric-value ${interventionData.progressComparison.progressIndicators.skillTransfer === 'excellent' || interventionData.progressComparison.progressIndicators.skillTransfer === 'good' ? 'positive' : 'moderate'}`}>
+                          {interventionData.progressComparison.progressIndicators.skillTransfer}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                    {/* Next Intervention Prescription */}
-                    {interventionData.researchBasedPrescriptions[categoryName].nextInterventionPrescription && (
-                      <div className="epa-prescription-card">
-                        <h5 className="epa-prescription-title">
-                          <FaUserMd className="epa-prescription-icon" />
-                          Next Intervention Prescription
-                        </h5>
-                        <div className="epa-prescription-content">
-                          <div className="epa-prescription-header">
-                            <span className="epa-action-label">Recommended Action:</span>
-                            <span className={`epa-action-value ${interventionData.researchBasedPrescriptions[categoryName].nextInterventionPrescription.recommendedAction}`}>
-                              {interventionData.researchBasedPrescriptions[categoryName].nextInterventionPrescription.recommendedAction}
-                            </span>
+                {/* Intervention Effectiveness Analysis */}
+                {interventionData.interventionEffectiveness && (
+                  <div className="epa-effectiveness-card">
+                    <h4 className="epa-subsection-title">Intervention Effectiveness</h4>
+                    <div className="epa-effectiveness-content">
+                      <div className="epa-effectiveness-item">
+                        <strong>Overall Effectiveness:</strong>
+                        <span className={`epa-effectiveness-value ${interventionData.interventionEffectiveness.overallEffectiveness === 'HIGHLY_EFFECTIVE' ? 'high' :
+                          interventionData.interventionEffectiveness.overallEffectiveness === 'MODERATELY_EFFECTIVE' ? 'moderate' : 'low'}`}>
+                          {interventionData.interventionEffectiveness.overallEffectiveness?.replace('_', ' ')}
+                        </span>
+                      </div>
+                      {interventionData.interventionEffectiveness.skillProgression && (
+                        <div className="epa-skill-progression">
+                          <div className="epa-effectiveness-item">
+                            <strong>Mastery Growth:</strong> +{(interventionData.interventionEffectiveness.skillProgression.masteryGrowth * 100).toFixed(1)}%
                           </div>
-                          <div className="epa-prescription-details">
-                            <p><strong>Primary Approach:</strong> {interventionData.researchBasedPrescriptions[categoryName].nextInterventionPrescription.primaryApproach}</p>
-                            {interventionData.researchBasedPrescriptions[categoryName].nextInterventionPrescription.specificTechniques && (
-                              <div className="epa-techniques">
-                                <strong>Specific Techniques:</strong>
-                                {interventionData.researchBasedPrescriptions[categoryName].nextInterventionPrescription.specificTechniques.map((technique, index) => (
-                                  <div key={index} className="epa-technique-item">
-                                    <h6>{technique.technique}</h6>
-                                    <p>{technique.description}</p>
-                                    <div className="epa-technique-details">
-                                      <span><strong>Duration:</strong> {technique.duration}</span>
-                                      <span><strong>Materials:</strong> {technique.materials}</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                          <div className="epa-effectiveness-item">
+                            <strong>Response Time Improvement:</strong> +{interventionData.interventionEffectiveness.skillProgression.responseTimeImprovement}%
+                          </div>
+                          <div className="epa-effectiveness-item">
+                            <strong>Consistency Improvement:</strong> +{interventionData.interventionEffectiveness.skillProgression.consistencyImprovement}%
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                  </div>
+                )}
 
-                    {/* Teacher Revision Guidance */}
-                    {interventionData.researchBasedPrescriptions[categoryName].teacherRevisionGuidance && (
-                      <div className="epa-teacher-guidance-card">
-                        <h5 className="epa-guidance-title">
-                          <FaChalkboardTeacher className="epa-guidance-icon" />
-                          Teacher Revision Guidance
-                        </h5>
-                        <div className="epa-guidance-content">
-                          {interventionData.researchBasedPrescriptions[categoryName].teacherRevisionGuidance.revisionRecommended && (
-                            <div className="epa-revision-status">
-                              <span className="epa-revision-indicator recommended">
-                                <FaEdit /> Revision Recommended
-                              </span>
-                              <span className={`epa-priority-badge ${interventionData.researchBasedPrescriptions[categoryName].teacherRevisionGuidance.revisionPriority}`}>
-                                {interventionData.researchBasedPrescriptions[categoryName].teacherRevisionGuidance.revisionPriority} priority
-                              </span>
-                            </div>
-                          )}
-                          {interventionData.researchBasedPrescriptions[categoryName].teacherRevisionGuidance.specificChanges && (
-                            <div className="epa-specific-changes">
-                              <strong>Specific Changes:</strong>
-                              {interventionData.researchBasedPrescriptions[categoryName].teacherRevisionGuidance.specificChanges.map((change, index) => (
-                                <div key={index} className="epa-change-item">
-                                  <div className="epa-change-header">
-                                    <strong>{change.change}</strong>
-                                  </div>
-                                  <p><strong>Rationale:</strong> {change.rationale}</p>
-                                  <p><strong>Expected Impact:</strong> {change.expectedImpact}</p>
-                                </div>
+                {/* Error Pattern Resolution */}
+                {interventionData.interventionEffectiveness?.errorPatternResolution && (
+                  <div className="epa-error-resolution-card">
+                    <h4 className="epa-subsection-title">Error Pattern Resolution</h4>
+                    <div className="epa-resolution-content">
+                      {interventionData.interventionEffectiveness.errorPatternResolution.improved?.length > 0 && (
+                        <div className="epa-resolution-item improved">
+                          <FaCheckCircle className="epa-resolution-icon" />
+                          <div>
+                            <strong>Improved Patterns:</strong>
+                            <div className="epa-pattern-list">
+                              {interventionData.interventionEffectiveness.errorPatternResolution.improved.map((pattern, index) => (
+                                <span key={index} className="epa-pattern-tag improved">{pattern}</span>
                               ))}
                             </div>
-                          )}
-                          {interventionData.researchBasedPrescriptions[categoryName].teacherRevisionGuidance.estimatedImpact && (
-                            <div className="epa-estimated-impact">
-                              <strong>Estimated Impact:</strong>
-                              <span className="epa-impact-value">
-                                {interventionData.researchBasedPrescriptions[categoryName].teacherRevisionGuidance.estimatedImpact}
-                              </span>
-                            </div>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                      {interventionData.interventionEffectiveness.errorPatternResolution.persistent?.length > 0 && (
+                        <div className="epa-resolution-item persistent">
+                          <FaExclamationTriangle className="epa-resolution-icon" />
+                          <div>
+                            <strong>Persistent Patterns:</strong>
+                            <div className="epa-pattern-list">
+                              {interventionData.interventionEffectiveness.errorPatternResolution.persistent.map((pattern, index) => (
+                                <span key={index} className="epa-pattern-tag persistent">{pattern}</span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <div className="epa-no-prescriptions">
-                    <p>No research-based prescriptions available for {categoryName}.</p>
-                    <p>Debug info: {JSON.stringify(interventionData?.researchBasedPrescriptions, null, 2)}</p>
+                )}
+
+                {/* Teacher Action Recommendations */}
+                {interventionData.insights && (
+                  <div className="epa-insights-card">
+                    <h4 className="epa-subsection-title">
+                      {interventionData.isPassed ? '🎉 Success! Next Steps:' : ' Action Required:'}
+                    </h4>
+                    <div className="epa-insights-content">
+                      <div className="epa-insight-item">
+                        <strong>Recommended Action:</strong> {interventionData.insights.recommendedAction?.replace('_', ' ')}
+                      </div>
+                      <div className="epa-insight-item">
+                        <strong>Impact Assessment:</strong> {interventionData.insights.interventionImpact}
+                      </div>
+                      <div className="epa-insight-item">
+                        <strong>Next Steps Rationale:</strong> {interventionData.insights.nextStepsRationale}
+                      </div>
+                      {interventionData.insights.strengths?.length > 0 && (
+                        <div className="epa-insight-item">
+                          <strong>Strengths Observed:</strong>
+                          <ul className="epa-insight-list">
+                            {interventionData.insights.strengths.map((strength, index) => (
+                              <li key={index}>{strength}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
