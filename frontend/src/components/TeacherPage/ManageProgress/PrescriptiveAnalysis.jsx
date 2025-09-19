@@ -2798,14 +2798,15 @@ const PrescriptiveAnalysis = ({
               </div>
               <div className="epa-column-content">
 
-                {/* Detailed Error Analysis from intervention_results */}
+                {/* Dynamic Error Pattern Analysis for All Categories */}
                 {interventionData.errorPatterns?.[categoryName] && (
                   <div className="epa-error-patterns-card">
                     <h4 className="epa-subsection-title">
                       <FaBug className="epa-section-icon" />
-                      Error Pattern Details
+                      Error Pattern Analysis - {categoryName}
                     </h4>
                     <div className="epa-error-patterns-content">
+                      {/* Detailed Error Analysis */}
                       {interventionData.errorPatterns[categoryName].detailedErrorAnalysis?.map((error, index) => (
                         <div key={index} className="epa-error-pattern-item">
                           <div className="epa-error-pattern">
@@ -2822,40 +2823,120 @@ const PrescriptiveAnalysis = ({
                         </div>
                       ))}
 
-                      {/* Category-specific error patterns */}
+                      {/* Dynamic Category-Specific Error Patterns */}
                       {Object.entries(interventionData.errorPatterns[categoryName])
-                        .filter(([key]) => !['detailedErrorAnalysis'].includes(key))
-                        .map(([errorType, errorData]) => (
-                          <div key={errorType} className="epa-category-error-section">
-                            <h5 className="epa-error-type-title">
-                              {errorType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            </h5>
-                            {errorData.count !== undefined && (
-                              <div className="epa-error-stats">
-                                <div className="epa-error-stat">
-                                  <span className="epa-stat-label">Error Count:</span>
-                                  <span className="epa-stat-value">{errorData.count}/{errorData.total}</span>
+                        .filter(([key]) => !['detailedErrorAnalysis', 'currentPatterns', 'errorReductionRate'].includes(key))
+                        .map(([errorType, errorData]) => {
+                          // Skip if errorData is not an object or is null/undefined
+                          if (!errorData || typeof errorData !== 'object' || Array.isArray(errorData)) {
+                            return null;
+                          }
+
+                          return (
+                            <div key={errorType} className="epa-category-error-section">
+                              <h5 className="epa-error-type-title">
+                                {errorType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </h5>
+
+                              {/* Error Statistics */}
+                              {(errorData.count !== undefined || errorData.percentage !== undefined) && (
+                                <div className="epa-error-stats">
+                                  {errorData.count !== undefined && (
+                                    <div className="epa-error-stat">
+                                      <span className="epa-stat-label">Error Count:</span>
+                                      <span className="epa-stat-value">{errorData.count}{errorData.total ? `/${errorData.total}` : ''}</span>
+                                    </div>
+                                  )}
+                                  {errorData.percentage !== undefined && (
+                                    <div className="epa-error-stat">
+                                      <span className="epa-stat-label">Error Rate:</span>
+                                      <span className={`epa-stat-value rate-${errorData.percentage > 70 ? 'high' : errorData.percentage > 40 ? 'medium' : 'low'}`}>
+                                        {errorData.percentage}%
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
-                                <div className="epa-error-stat">
-                                  <span className="epa-stat-label">Error Rate:</span>
-                                  <span className={`epa-stat-value rate-${errorData.percentage > 70 ? 'high' : errorData.percentage > 40 ? 'medium' : 'low'}`}>
-                                    {errorData.percentage}%
-                                  </span>
+                              )}
+
+                              {/* Error Type */}
+                              {errorData.error_type && (
+                                <div className="epa-error-type">
+                                  <span className="epa-type-label">Error Type:</span>
+                                  <span className="epa-type-value">{errorData.error_type.replace(/_/g, ' ')}</span>
                                 </div>
-                              </div>
-                            )}
-                            {errorData.specific_letters?.length > 0 && (
-                              <div className="epa-specific-letters">
-                                <span className="epa-letters-label">Problem Letters:</span>
-                                <div className="epa-letters-list">
-                                  {errorData.specific_letters.map((letter, idx) => (
-                                    <span key={idx} className="epa-letter-tag">{letter}</span>
-                                  ))}
+                              )}
+
+                              {/* Specific Letters (for letter-based categories) */}
+                              {errorData.specific_letters?.length > 0 && (
+                                <div className="epa-specific-letters">
+                                  <span className="epa-letters-label">Problem Letters:</span>
+                                  <div className="epa-letters-list">
+                                    {errorData.specific_letters.map((letter, idx) => (
+                                      <span key={idx} className="epa-letter-tag">{letter}</span>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
+
+                              {/* Confusion Pairs (for phonological awareness) */}
+                              {errorData.confusion_pairs?.length > 0 && (
+                                <div className="epa-confusion-pairs">
+                                  <span className="epa-pairs-label">Confusion Pairs:</span>
+                                  <div className="epa-pairs-list">
+                                    {errorData.confusion_pairs.map((pair, idx) => (
+                                      <div key={idx} className="epa-confusion-pair">
+                                        <span className="epa-pair-sounds">{pair.sounds?.join('-') || 'N/A'}</span>
+                                        <span className="epa-pair-rate">{pair.confusion_rate || pair.confusionRate || 0}%</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Question IDs */}
+                              {errorData.questionIds?.length > 0 && (
+                                <div className="epa-failed-questions">
+                                  <span className="epa-questions-label">Affected Questions:</span>
+                                  <div className="epa-question-list">
+                                    {errorData.questionIds.map((questionId, idx) => (
+                                      <span key={idx} className="epa-failed-question">{questionId}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Intervention Focus */}
+                              {errorData.interventionFocus && (
+                                <div className="epa-intervention-focus">
+                                  <span className="epa-focus-label">Intervention Focus:</span>
+                                  <span className="epa-focus-value">{errorData.interventionFocus}</span>
+                                </div>
+                              )}
+
+                              {/* Research Classification */}
+                              {errorData.researchClassification && (
+                                <div className="epa-research-classification">
+                                  <span className="epa-classification-label">Research Classification:</span>
+                                  <span className="epa-classification-value">{errorData.researchClassification.replace(/_/g, ' ')}</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                        .filter(Boolean) // Remove null entries
+                      }
+
+                      {/* Current Patterns Summary */}
+                      {interventionData.errorPatterns[categoryName].currentPatterns?.length > 0 && (
+                        <div className="epa-current-patterns">
+                          <h5 className="epa-patterns-title">Current Error Patterns</h5>
+                          <div className="epa-patterns-list">
+                            {interventionData.errorPatterns[categoryName].currentPatterns.map((pattern, idx) => (
+                              <div key={idx} className="epa-pattern-item">{pattern}</div>
+                            ))}
                           </div>
-                        ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -3626,59 +3707,6 @@ const PrescriptiveAnalysis = ({
             </div>
             <div className="epa-column-content">
 
-              {/* Detailed Error Patterns */}
-              {interventionData.errorPatterns?.[categoryName] && (
-                <div className="epa-detailed-errors-section">
-                  <h5>
-                    <FaExclamationTriangle className="epa-section-icon" />
-                    Detailed Error Analysis
-                  </h5>
-                  <div className="epa-error-breakdown">
-                    <div className="epa-error-stats">
-                      <span>Error Count: {interventionData.errorPatterns[categoryName].count}/{interventionData.errorPatterns[categoryName].total}</span>
-                      <span>Error Rate: {interventionData.errorPatterns[categoryName].percentage}%</span>
-                      <span>Error Type: {interventionData.errorPatterns[categoryName].error_type}</span>
-                    </div>
-
-                    {/* Category-specific error details */}
-                    {interventionData.errorPatterns[categoryName].patinig_errors && (
-                      <div className="epa-vowel-errors">
-                        <h6>Vowel (Patinig) Errors</h6>
-                        <div className="epa-error-letters">
-                          {interventionData.errorPatterns[categoryName].patinig_errors.specific_letters?.map((letter, index) => (
-                            <span key={index} className="epa-error-letter vowel">{letter}</span>
-                          ))}
-                        </div>
-                        <p>Focus: {interventionData.errorPatterns[categoryName].patinig_errors.interventionFocus}</p>
-                      </div>
-                    )}
-
-                    {interventionData.errorPatterns[categoryName].katinig_errors && (
-                      <div className="epa-consonant-errors">
-                        <h6>Consonant (Katinig) Errors</h6>
-                        <div className="epa-error-letters">
-                          {interventionData.errorPatterns[categoryName].katinig_errors.specific_letters?.map((letter, index) => (
-                            <span key={index} className="epa-error-letter consonant">{letter}</span>
-                          ))}
-                        </div>
-                        <p>Focus: {interventionData.errorPatterns[categoryName].katinig_errors.interventionFocus}</p>
-                      </div>
-                    )}
-
-                    {/* Failed Question IDs */}
-                    {interventionData.errorPatterns[categoryName].questionIds && (
-                      <div className="epa-failed-questions">
-                        <h6>Failed Questions</h6>
-                        <div className="epa-question-list">
-                          {interventionData.errorPatterns[categoryName].questionIds.map((questionId, index) => (
-                            <span key={index} className="epa-failed-question">{questionId}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* Research-Based Prescriptions */}
               {interventionData.researchBasedPrescriptions?.[categoryName] && (
