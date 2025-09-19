@@ -348,7 +348,7 @@ class CategoryResultsService {
    */
   static async validateInterventionCompleteness(studentId, interventionAssessmentId) {
     try {
-      console.log(`[INTERVENTION COMPLETENESS] Checking completeness for student ${studentId}, intervention ${interventionAssessmentId}`);
+      console.log(`[INTERVENTION COMPLETENESS] 🔍 Checking completeness for student ${studentId}, intervention ${interventionAssessmentId}`);
 
       const InterventionAssessment = require('../../models/Teachers/ManageProgress/interventionAssessmentModel');
       const InterventionResponse = require('../../models/Teachers/ManageProgress/interventionResponseModel');
@@ -357,6 +357,7 @@ class CategoryResultsService {
       const intervention = await InterventionAssessment.findById(interventionAssessmentId);
 
       if (!intervention) {
+        console.error(`[INTERVENTION COMPLETENESS] ❌ Intervention not found: ${interventionAssessmentId}`);
         return {
           isComplete: false,
           reason: 'intervention_not_found',
@@ -364,7 +365,10 @@ class CategoryResultsService {
         };
       }
 
+      const currentRevision = intervention.revisionNumber || 1;
       const totalQuestionsInIntervention = intervention.totalQuestions || intervention.questions.length;
+
+      console.log(`[INTERVENTION COMPLETENESS] 📋 Intervention details: ${intervention.category}, Version: ${currentRevision}, Total Questions: ${totalQuestionsInIntervention}`);
 
       // Get student responses for this intervention
       const interventionResponses = await InterventionResponse.find({
@@ -372,26 +376,86 @@ class CategoryResultsService {
         interventionAssessmentId: interventionAssessmentId
       });
 
+      console.log(`[INTERVENTION COMPLETENESS] 📝 Found ${interventionResponses.length} intervention responses`);
+
+      // For revision 2+, ensure all responses are for the current revision
+      if (currentRevision > 1) {
+        console.log(`[INTERVENTION COMPLETENESS] 🔄 This is revision ${currentRevision} - validating version-specific responses`);
+
+        // Check if responses include revisionNumber tracking
+        const versionAwareResponses = interventionResponses.filter(response => {
+          // If response has revisionNumber, it must match current revision
+          if (response.revisionNumber) {
+            return response.revisionNumber === currentRevision;
+          }
+          // If no revisionNumber field, assume it's for current revision (backward compatibility)
+          return true;
+        });
+
+        console.log(`[INTERVENTION COMPLETENESS] 📊 Version-aware responses: ${versionAwareResponses.length}/${interventionResponses.length} match revision ${currentRevision}`);
+
+        // Validate all expected questions are answered for current revision
+        const expectedQuestionIds = intervention.questions.map(q => q.questionId);
+        const answeredQuestionIds = versionAwareResponses.map(r => r.questionId);
+
+        console.log(`[INTERVENTION COMPLETENESS] 🎯 Expected questions: [${expectedQuestionIds.join(', ')}]`);
+        console.log(`[INTERVENTION COMPLETENESS] ✅ Answered questions: [${answeredQuestionIds.join(', ')}]`);
+
+        const missingQuestions = expectedQuestionIds.filter(qId => !answeredQuestionIds.includes(qId));
+
+        if (missingQuestions.length > 0) {
+          console.warn(`[INTERVENTION COMPLETENESS] ⚠️ Missing responses for revision ${currentRevision}: [${missingQuestions.join(', ')}]`);
+          return {
+            isComplete: false,
+            category: intervention.category,
+            revisionNumber: currentRevision,
+            required: totalQuestionsInIntervention,
+            answered: versionAwareResponses.length,
+            missing: missingQuestions.length,
+            missingQuestions: missingQuestions,
+            interventionId: interventionAssessmentId,
+            reason: 'incomplete_revision',
+            details: `Revision ${currentRevision} incomplete: missing responses for questions ${missingQuestions.join(', ')}`
+          };
+        }
+      }
+
       const answeredQuestions = interventionResponses.length;
       const isComplete = answeredQuestions >= totalQuestionsInIntervention;
 
-      console.log(`[INTERVENTION COMPLETENESS] ${intervention.category}: ${answeredQuestions}/${totalQuestionsInIntervention} questions answered - ${isComplete ? 'COMPLETE' : 'INCOMPLETE'}`);
+      // Enhanced logging for revision tracking
+      if (currentRevision > 1) {
+        console.log(`[INTERVENTION COMPLETENESS] ✅ REVISION ${currentRevision} COMPLETENESS CHECK:`);
+        console.log(`[INTERVENTION COMPLETENESS] - Total questions required: ${totalQuestionsInIntervention}`);
+        console.log(`[INTERVENTION COMPLETENESS] - Responses received: ${answeredQuestions}`);
+        console.log(`[INTERVENTION COMPLETENESS] - Status: ${isComplete ? 'COMPLETE' : 'INCOMPLETE'}`);
+        console.log(`[INTERVENTION COMPLETENESS] - Ready for intervention_results generation: ${isComplete ? 'YES' : 'NO'}`);
+      } else {
+        console.log(`[INTERVENTION COMPLETENESS] ${intervention.category}: ${answeredQuestions}/${totalQuestionsInIntervention} questions answered - ${isComplete ? 'COMPLETE' : 'INCOMPLETE'}`);
+      }
 
       return {
         isComplete,
         category: intervention.category,
+        revisionNumber: currentRevision,
         required: totalQuestionsInIntervention,
         answered: answeredQuestions,
         missing: Math.max(0, totalQuestionsInIntervention - answeredQuestions),
-        interventionId: interventionAssessmentId
+        interventionId: interventionAssessmentId,
+        validationDetails: {
+          isRevision: currentRevision > 1,
+          versionValidated: currentRevision > 1 ? true : 'not_applicable',
+          readyForResults: isComplete
+        }
       };
 
     } catch (error) {
-      console.error('[INTERVENTION COMPLETENESS] Error validating intervention completeness:', error);
+      console.error('[INTERVENTION COMPLETENESS] ❌ Error validating intervention completeness:', error);
       return {
         isComplete: false,
         reason: 'validation_error',
-        error: error.message
+        error: error.message,
+        interventionId: interventionAssessmentId
       };
     }
   }

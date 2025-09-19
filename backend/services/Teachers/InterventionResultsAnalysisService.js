@@ -107,13 +107,55 @@ class InterventionResultsAnalysisService {
 
     console.log(`  - Safe category validated: "${safeCategory}"`);
 
+    // ===== NEW: INTERVENTION HISTORY CROSS-REFERENCING =====
+    console.log(`[INTERVENTION ANALYSIS] 🔄 Gathering intervention history for cross-referencing...`);
+
+    // Get intervention revision information
+    const currentRevision = interventionAssessment.revisionNumber || 1;
+    const isRevisionAttempt = currentRevision > 1;
+
+    console.log(`[INTERVENTION ANALYSIS] Current revision: ${currentRevision}, Is revision attempt: ${isRevisionAttempt}`);
+
+    // Get ALL previous intervention results for this student/category for longitudinal analysis
+    const previousInterventionResults = await InterventionResults.find({
+      studentId: studentId,
+      category: safeCategory
+    }).sort({ createdAt: 1 }); // Sort chronologically to see progression
+
+    console.log(`[INTERVENTION ANALYSIS] 📚 Found ${previousInterventionResults.length} previous intervention results for longitudinal analysis`);
+
+    // Get ALL previous intervention assessments for this student/category
+    const allInterventionAssessments = await InterventionAssessment.find({
+      studentId: studentId,
+      category: safeCategory
+    }).sort({ createdAt: 1 });
+
+    console.log(`[INTERVENTION ANALYSIS] 📋 Found ${allInterventionAssessments.length} intervention assessments for revision tracking`);
+
+    // Enhanced intervention history context
+    const interventionHistory = {
+      currentRevision: currentRevision,
+      isRevisionAttempt: isRevisionAttempt,
+      previousResults: previousInterventionResults,
+      allAssessments: allInterventionAssessments,
+      totalAttempts: previousInterventionResults.length,
+      hasProgressionData: previousInterventionResults.length > 0
+    };
+
+    console.log(`[INTERVENTION ANALYSIS] 🔍 Intervention history analysis:`);
+    console.log(`  - Current revision: ${currentRevision}`);
+    console.log(`  - Previous intervention attempts: ${interventionHistory.totalAttempts}`);
+    console.log(`  - Has progression data: ${interventionHistory.hasProgressionData}`);
+    console.log(`  - Ready for longitudinal analysis: ${interventionHistory.hasProgressionData && isRevisionAttempt}`);
+
     return {
       interventionAssessment,
       interventionResponses,
       originalPrescriptiveAnalysis,
       categoryResults,
       studentId,
-      category: safeCategory // Use validated string
+      category: safeCategory, // Use validated string
+      interventionHistory // NEW: Complete intervention history for cross-referencing
     };
   }
 
