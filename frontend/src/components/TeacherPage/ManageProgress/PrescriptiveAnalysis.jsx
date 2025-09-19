@@ -13,6 +13,10 @@ import {
   FaBrain,
   FaRuler,
   FaUserMd,
+  FaChartBar,
+  FaBug,
+  FaArrowUp,
+  FaRoute,
   FaArrowRight,
   FaPlus,
   FaMobile,
@@ -2575,8 +2579,6 @@ const PrescriptiveAnalysis = ({
                 </p>
                 <div className="epa-assessment-metadata">
                   <span>Assessment Date: {new Date(interventionData.assessmentDate || Date.now()).toLocaleDateString()}</span>
-                  <span>Reading Level: {interventionData.readingLevel}</span>
-                  <span>Total Questions: {interventionData.totalQuestions}</span>
                   {interventionData.revisionNumber && (
                     <span>Revision: #{interventionData.revisionNumber}</span>
                   )}
@@ -2741,143 +2743,209 @@ const PrescriptiveAnalysis = ({
                   </div>
                 )}
 
-                  {/* Add the COMPLETE detailed mathematical analysis from the main assessment */}
-                  <div className="epa-detailed-mathematical-analysis">
-                    <h4 className="epa-subsection-title">Complete Analysis from Main Assessment</h4>
-                    {/* DEBUG: Check what data we have */}
-                    <div style={{fontSize: '12px', color: 'red', padding: '10px', border: '1px solid red', margin: '10px 0'}}>
-                      <strong>DEBUG INFO:</strong><br/>
-                      - selectedAnalysis exists: {selectedAnalysis ? 'YES' : 'NO'}<br/>
-                      - detailedErrorAnalysis exists: {selectedAnalysis?.detailedErrorAnalysis ? 'YES' : 'NO'}<br/>
-                      - bktData exists: {selectedAnalysis?.bktData ? 'YES' : 'NO'}<br/>
-                      - irtAbility exists: {selectedAnalysis?.irtAbility ? 'YES' : 'NO'}<br/>
-                      - categoryName: {categoryName}<br/>
-                      - intervention results exist: {interventionData ? 'YES' : 'NO'}
-                    </div>
-                    {/* Include the full mathematical analysis that was previously showing */}
-                    {/* Fallback: if selectedAnalysis is not provided, try to get it */}
-                    {(() => {
-                      const analysisToUse = selectedAnalysis || getAnalysisForCategory(categoryName);
-                      if (!analysisToUse) {
-                        return <div style={{color: 'red'}}>No analysis data available for {categoryName}</div>;
-                      }
-                      return (
-                      <div className="epa-embedded-mathematical-analysis">
-                        {renderDetailedErrorAnalysis(selectedAnalysis.detailedErrorAnalysis, categoryName)}
-
-                        {/* BKT Analysis - Full Version */}
-                        {selectedAnalysis.bktData && (
-                          <div className="literexia-analysis-card">
-                            <div className="literexia-card-content">
-                              <div className="literexia-math-analysis-bkt-container">
-                                <div className="literexia-math-analysis-bkt-gauge">
-                                  <div className="literexia-mastery-label">Mastery Probability:</div>
-                                  <div className="literexia-math-analysis-bkt-circle">
-                                    <div className={`literexia-math-analysis-bkt-percent ${
-                                      selectedAnalysis.bktData.masteryProbability >= 0.75 ? 'high' :
-                                      selectedAnalysis.bktData.masteryProbability >= 0.5 ? 'medium' : 'low'
-                                    }`}>
-                                      {(selectedAnalysis.bktData.masteryProbability * 100).toFixed(1)}%
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="literexia-math-analysis-bkt-details">
-                                  <div className="literexia-math-analysis-bkt-metric">
-                                    <span className="literexia-math-analysis-bkt-label">Assessment Score:</span>
-                                    <span className="literexia-math-analysis-bkt-value">{selectedAnalysis.bktData.score}% ({selectedAnalysis.bktData.isPassed ? 'Passed' : 'Needs Intervention'})</span>
-                                  </div>
-                                  <div className="literexia-math-analysis-bkt-metric">
-                                    <span className="literexia-math-analysis-bkt-label">Questions Answered:</span>
-                                    <span className="literexia-math-analysis-bkt-value">{selectedAnalysis.bktData.totalQuestions} total, {selectedAnalysis.bktData.correctAnswers} correct
-                                    {selectedAnalysis.bktData.totalPossibleMatches > 0 && (
-                                      <span> ({selectedAnalysis.bktData.correctMatches}/{selectedAnalysis.bktData.totalPossibleMatches} matches)</span>
-                                    )}</span>
-                                  </div>
-                                  <div className="literexia-math-analysis-bkt-metric">
-                                    <span className="literexia-math-analysis-bkt-label">BKT Interpretation:</span>
-                                    <span className="literexia-math-analysis-bkt-value">{
-                                      selectedAnalysis.bktData.masteryProbability >= 0.75 ?
-                                        `High confidence - student demonstrates mastery of ${formatCategoryName(categoryName)}` :
-                                      selectedAnalysis.bktData.masteryProbability >= 0.5 ?
-                                        `Moderate confidence - student shows partial mastery of ${formatCategoryName(categoryName)}` :
-                                        `Low confidence - student needs targeted intervention for ${formatCategoryName(categoryName)}`
-                                    }</span>
-                                  </div>
-
-                                  {/* BKT Response History Evolution - The missing chart from Image #2 */}
-                                  {selectedAnalysis.bktData.responseHistory && selectedAnalysis.bktData.responseHistory.length > 0 && (
-                                    <div className="literexia-math-analysis-bkt-evolution">
-                                      <div className="literexia-math-analysis-bkt-evolution-header">
-                                        <h6><FaChartLine className="literexia-section-icon" /> Learning Progression (BKT Evolution)</h6>
-                                        <p>Real-time mastery probability changes as student answers each question</p>
-                                      </div>
-                                      <div className="literexia-math-analysis-bkt-evolution-chart">
-                                        {selectedAnalysis.bktData.responseHistory.slice(-10).map((response, index) => (
-                                          <div key={index} className="literexia-math-analysis-bkt-evolution-item">
-                                            <div className={`literexia-math-analysis-bkt-evolution-icon ${response.correct ? 'correct' : 'incorrect'}`}>
-                                              {response.correct ? <FaCheck /> : <FaTimes />}
-                                            </div>
-                                            <div className="literexia-math-analysis-bkt-evolution-mastery">
-                                              {(response.masteryAfter * 100).toFixed(0)}%
-                                            </div>
-                                            <div className="literexia-math-analysis-bkt-evolution-question">
-                                              {response.questionId}
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                      <div className="literexia-math-analysis-bkt-evolution-footer">
-                                        <span>Showing last 10 responses with mastery evolution</span>
-                                        <span className="literexia-math-analysis-bkt-trend">
-                                          Trend: <FaChartLine className="literexia-trending-icon" />
-                                          {selectedAnalysis.bktData.responseHistory.length > 1 &&
-                                           selectedAnalysis.bktData.responseHistory[selectedAnalysis.bktData.responseHistory.length - 1].masteryAfter >
-                                           selectedAnalysis.bktData.responseHistory[0].masteryAfter ? 'Improving' : 'Declining'}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* IRT Analysis - Full Version */}
-                        {selectedAnalysis.irtAbility && (
-                          <div className="literexia-analysis-card">
-                            <div className="literexia-card-content">
-                              <div className="literexia-math-analysis-irt-container">
-                                <h6>Item Response Theory (IRT) Ability Estimate</h6>
-                                <div className="literexia-math-analysis-irt-details">
-                                  <div className="literexia-math-analysis-irt-score">
-                                    <span className="literexia-math-analysis-irt-label">Ability Level (θ):</span>
-                                    <span className={`literexia-math-analysis-irt-value ${
-                                      selectedAnalysis.irtAbility >= 0 ? 'positive' : 'negative'
-                                    }`}>
-                                      {selectedAnalysis.irtAbility.toFixed(1)}
-                                    </span>
-                                    <span className="literexia-math-analysis-irt-scale">(Scale: -3.0 to +3.0)</span>
-                                  </div>
-                                  <div className="literexia-math-analysis-irt-interpretation">
-                                    <span className="literexia-math-analysis-irt-label">IRT Interpretation:</span>
-                                    <span className="literexia-math-analysis-irt-value">{
-                                      selectedAnalysis.irtAbility >= 1.5 ? 'Excellent ability - well above grade level' :
-                                      selectedAnalysis.irtAbility >= 0.5 ? 'Above average ability - performing well' :
-                                      selectedAnalysis.irtAbility >= -0.5 ? 'Average ability - meeting expectations' :
-                                      selectedAnalysis.irtAbility >= -1.5 ? 'Below average ability - needs support' :
-                                      'Significant difficulty - intensive intervention recommended for ' + formatCategoryName(categoryName)
-                                    }</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
+                {/* Intervention Effectiveness Analysis - Based on intervention_results data */}
+                {interventionData.interventionEffectiveness && (
+                  <div className="epa-effectiveness-analysis-card">
+                    <h4 className="epa-subsection-title">
+                      <FaChartBar className="epa-section-icon" />
+                      Intervention Effectiveness Analysis
+                    </h4>
+                    <div className="epa-effectiveness-display">
+                      <div className="epa-effectiveness-metric">
+                        <span className="epa-metric-label">Overall Effectiveness:</span>
+                        <span className={`epa-metric-value effectiveness-${interventionData.interventionEffectiveness.overallEffectiveness?.toLowerCase()}`}>
+                          {interventionData.interventionEffectiveness.overallEffectiveness?.replace(/_/g, ' ')}
+                        </span>
                       </div>
-                    );
-                  })()}
-                </div>
+
+                      {interventionData.interventionEffectiveness.skillProgression && (
+                        <div className="epa-skill-progression">
+                          <div className="epa-progression-item">
+                            <span className="epa-progression-label">Mastery Growth:</span>
+                            <span className="epa-progression-value">
+                              +{(interventionData.interventionEffectiveness.skillProgression.masteryGrowth * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                          {interventionData.interventionEffectiveness.skillProgression.responseTimeImprovement && (
+                            <div className="epa-progression-item">
+                              <span className="epa-progression-label">Response Time Improvement:</span>
+                              <span className="epa-progression-value">
+                                +{interventionData.interventionEffectiveness.skillProgression.responseTimeImprovement}%
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {interventionData.interventionEffectiveness.errorPatternResolution && (
+                        <div className="epa-error-resolution">
+                          {interventionData.interventionEffectiveness.errorPatternResolution.improved?.length > 0 && (
+                            <div className="epa-resolution-category">
+                              <span className="epa-resolution-label">Improved Patterns:</span>
+                              <span className="epa-resolution-value improved">
+                                {interventionData.interventionEffectiveness.errorPatternResolution.improved.join(', ')}
+                              </span>
+                            </div>
+                          )}
+                          {interventionData.interventionEffectiveness.errorPatternResolution.persistent?.length > 0 && (
+                            <div className="epa-resolution-category">
+                              <span className="epa-resolution-label">Persistent Patterns:</span>
+                              <span className="epa-resolution-value persistent">
+                                {interventionData.interventionEffectiveness.errorPatternResolution.persistent.join(', ')}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
+
+            {/* Right Column: Error Patterns & Progress */}
+            <div className="epa-right-column">
+              <div className="epa-column-header">
+                <FaExclamationTriangle className="epa-icon" />
+                <span>Error Pattern Analysis</span>
+              </div>
+              <div className="epa-column-content">
+
+                {/* Detailed Error Analysis from intervention_results */}
+                {interventionData.errorPatterns?.[categoryName] && (
+                  <div className="epa-error-patterns-card">
+                    <h4 className="epa-subsection-title">
+                      <FaBug className="epa-section-icon" />
+                      Error Pattern Details
+                    </h4>
+                    <div className="epa-error-patterns-content">
+                      {interventionData.errorPatterns[categoryName].detailedErrorAnalysis?.map((error, index) => (
+                        <div key={index} className="epa-error-pattern-item">
+                          <div className="epa-error-pattern">
+                            <strong>Pattern:</strong> {error.errorPattern}
+                          </div>
+                          <div className="epa-intervention-focus">
+                            <strong>Focus:</strong> {error.interventionFocus}
+                          </div>
+                          {error.specificPairs?.length > 0 && (
+                            <div className="epa-specific-pairs">
+                              <strong>Specific Issues:</strong> {error.specificPairs.join(', ')}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+
+                      {/* Category-specific error patterns */}
+                      {Object.entries(interventionData.errorPatterns[categoryName])
+                        .filter(([key]) => !['detailedErrorAnalysis'].includes(key))
+                        .map(([errorType, errorData]) => (
+                          <div key={errorType} className="epa-category-error-section">
+                            <h5 className="epa-error-type-title">
+                              {errorType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </h5>
+                            {errorData.count !== undefined && (
+                              <div className="epa-error-stats">
+                                <div className="epa-error-stat">
+                                  <span className="epa-stat-label">Error Count:</span>
+                                  <span className="epa-stat-value">{errorData.count}/{errorData.total}</span>
+                                </div>
+                                <div className="epa-error-stat">
+                                  <span className="epa-stat-label">Error Rate:</span>
+                                  <span className={`epa-stat-value rate-${errorData.percentage > 70 ? 'high' : errorData.percentage > 40 ? 'medium' : 'low'}`}>
+                                    {errorData.percentage}%
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                            {errorData.specific_letters?.length > 0 && (
+                              <div className="epa-specific-letters">
+                                <span className="epa-letters-label">Problem Letters:</span>
+                                <div className="epa-letters-list">
+                                  {errorData.specific_letters.map((letter, idx) => (
+                                    <span key={idx} className="epa-letter-tag">{letter}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Progress Comparison */}
+                {interventionData.progressComparison && (
+                  <div className="epa-progress-comparison-card">
+                    <h4 className="epa-subsection-title">
+                      <FaArrowUp className="epa-section-icon" />
+                      Progress Comparison
+                    </h4>
+                    <div className="epa-comparison-content">
+                      <div className="epa-comparison-section">
+                        <h5>Main Assessment vs. Intervention</h5>
+                        <div className="epa-comparison-metrics">
+                          <div className="epa-comparison-item">
+                            <span className="epa-comparison-label">Score Improvement:</span>
+                            <span className="epa-comparison-value positive">
+                              +{interventionData.progressComparison.progressIndicators?.scoreImprovement}%
+                            </span>
+                          </div>
+                          <div className="epa-comparison-item">
+                            <span className="epa-comparison-label">Mastery Growth:</span>
+                            <span className="epa-comparison-value positive">
+                              +{(interventionData.progressComparison.progressIndicators?.masteryGrowth * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="epa-comparison-item">
+                            <span className="epa-comparison-label">Error Reduction:</span>
+                            <span className="epa-comparison-value positive">
+                              -{(interventionData.progressComparison.progressIndicators?.errorReduction * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Research-Based Prescriptions for next steps */}
+                {interventionData.researchBasedPrescriptions?.[categoryName] && (
+                  <div className="epa-next-steps-card">
+                    <h4 className="epa-subsection-title">
+                      <FaRoute className="epa-section-icon" />
+                      Next Steps & Recommendations
+                    </h4>
+                    <div className="epa-next-steps-content">
+                      {interventionData.researchBasedPrescriptions[categoryName].categoryStatus && (
+                        <div className="epa-category-status">
+                          <span className="epa-status-label">Status:</span>
+                          <span className={`epa-status-value status-${interventionData.researchBasedPrescriptions[categoryName].categoryStatus}`}>
+                            {interventionData.researchBasedPrescriptions[categoryName].categoryStatus.replace(/_/g, ' ')}
+                          </span>
+                        </div>
+                      )}
+
+                      {interventionData.researchBasedPrescriptions[categoryName].teacherRevisionGuidance?.revisionRecommended && (
+                        <div className="epa-revision-guidance">
+                          <h5>Teacher Revision Guidance</h5>
+                          <div className="epa-revision-priority">
+                            Priority: <span className={`priority-${interventionData.researchBasedPrescriptions[categoryName].teacherRevisionGuidance.revisionPriority}`}>
+                              {interventionData.researchBasedPrescriptions[categoryName].teacherRevisionGuidance.revisionPriority}
+                            </span>
+                          </div>
+                          {interventionData.researchBasedPrescriptions[categoryName].teacherRevisionGuidance.specificChanges?.map((change, idx) => (
+                            <div key={idx} className="epa-revision-change">
+                              <div className="epa-change-description">{change.change}</div>
+                              <div className="epa-change-rationale">{change.rationale}</div>
+                              <div className="epa-change-impact">Expected: {change.expectedImpact}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -3023,7 +3091,7 @@ const PrescriptiveAnalysis = ({
                 {interventionData.insights && (
                   <div className="epa-insights-card">
                     <h4 className="epa-subsection-title">
-                      {interventionData.isPassed ? '🎉 Success! Next Steps:' : '📝 Action Required:'}
+                      {interventionData.isPassed ? '🎉 Success! Next Steps:' : ' Action Required:'}
                     </h4>
                     <div className="epa-insights-content">
                       <div className="epa-insight-item">
@@ -3193,7 +3261,7 @@ const PrescriptiveAnalysis = ({
         <div className="epa-action-recommendations success">
           <div className="epa-success-actions">
             <div className="epa-action-item success-item">
-              <div className="epa-action-title">✅ Category Complete</div>
+              <div className="epa-action-title">Category Complete</div>
               <div className="epa-action-description">
                 Student has mastered {categoryName}. They can now proceed to the next category or reading level.
               </div>
