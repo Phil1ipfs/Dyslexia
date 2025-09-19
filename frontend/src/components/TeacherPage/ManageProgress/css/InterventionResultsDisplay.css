@@ -2118,3 +2118,34 @@
   color: #3b82f6;
   line-height: 1.2;
 }
+
+/* Current Interventions Result Display Styling */
+.literexia-intervention-status-badge.failed {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.literexia-intervention-status-badge.failed .status-icon {
+  color: #dc2626;
+}
+
+.literexia-progress-percentage.passed-score {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.literexia-progress-percentage.failed-score {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+.literexia-progress-bar-fill.passed-bar {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+.literexia-progress-bar-fill.failed-bar {
+  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}

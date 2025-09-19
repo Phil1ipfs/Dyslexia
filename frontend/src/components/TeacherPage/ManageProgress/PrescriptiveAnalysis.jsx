@@ -1062,7 +1062,20 @@ const PrescriptiveAnalysis = ({
    * @param {Object} existingActivity - Existing activity to edit (optional)
    */
   const handleCreateActivity = (category, analysis, existingActivity = null) => {
-    setEditingActivity(existingActivity);
+    // Check if this is for creating version 2 based on failed intervention results
+    const interventionResultData = interventionResults[category];
+    const hasInterventionResults = interventionResultData && interventionResultData.score !== undefined;
+    const isFailedIntervention = hasInterventionResults && !interventionResultData.isPassed;
+
+    // Pass additional context for version 2 creation
+    const activityContext = {
+      ...existingActivity,
+      isVersionTwo: isFailedIntervention && existingActivity !== null,
+      interventionResults: isFailedIntervention ? interventionResultData : null,
+      revisionReason: isFailedIntervention ? `Student scored ${interventionResultData.score}% (below 75% threshold) - creating revised intervention` : null
+    };
+
+    setEditingActivity(activityContext);
     setSelectedCategory(category);
     setShowActivityModal(true);
   };
@@ -3925,10 +3938,18 @@ const PrescriptiveAnalysis = ({
               {selectedInterventions.length > 0 ? (
                 <div className="literexia-interventions-list">
                   {selectedInterventions.map((intervention, index) => {
+                    // Check for intervention results first (actual completed intervention data)
+                    const interventionResultData = interventionResults[selectedCategory];
+                    const hasInterventionResults = interventionResultData && interventionResultData.score !== undefined;
+
+                    // Use intervention results if available, otherwise fall back to progress tracking
                     const progress = getProgressForIntervention(intervention._id);
-                    const progressPercentage = progress ? progress.percentComplete : 0;
-                    // Removed unused variable: correctPercentage
-                    const isPassed = progress ? progress.passedThreshold : false;
+                    const progressPercentage = hasInterventionResults
+                      ? interventionResultData.score
+                      : (progress ? progress.percentComplete : 0);
+                    const isPassed = hasInterventionResults
+                      ? interventionResultData.isPassed
+                      : (progress ? progress.passedThreshold : false);
                     
                     return (
                       <div key={index} className="literexia-intervention-card">
@@ -3938,12 +3959,19 @@ const PrescriptiveAnalysis = ({
                             <FaBook className="category-icon" />
                             <span className="category-name">{intervention.category || selectedCategory}</span>
                           </div>
-                          <div className={`literexia-intervention-status-badge ${isPassed ? 'passed' : intervention.status}`}>
-                            {isPassed ? (
-                              <>
-                                <FaCheckCircle className="status-icon" />
-                                <span>PASSED</span>
-                              </>
+                          <div className={`literexia-intervention-status-badge ${hasInterventionResults ? (isPassed ? 'passed' : 'failed') : intervention.status}`}>
+                            {hasInterventionResults ? (
+                              isPassed ? (
+                                <>
+                                  <FaCheckCircle className="status-icon" />
+                                  <span>PASSED</span>
+                                </>
+                              ) : (
+                                <>
+                                  <FaTimes className="status-icon" />
+                                  <span>FAILED</span>
+                                </>
+                              )
                             ) : intervention.status === 'active' ? (
                               <>
                                 <FaMobile className="status-icon" />
@@ -3963,18 +3991,20 @@ const PrescriptiveAnalysis = ({
                           <div className="literexia-progress-header">
                             <div className="literexia-progress-title">
                               <FaChartLine className="progress-icon" />
-                              <span>Score Percentage</span>
+                              <span>{hasInterventionResults ? 'Intervention Score' : 'Progress Percentage'}</span>
                             </div>
-                            <div className="literexia-progress-percentage">
+                            <div className={`literexia-progress-percentage ${hasInterventionResults ? (isPassed ? 'passed-score' : 'failed-score') : ''}`}>
                               {progressPercentage}%
                             </div>
                           </div>
                           <div className="literexia-progress-bar-container">
                             <div
-                              className="literexia-progress-bar-fill"
+                              className={`literexia-progress-bar-fill ${hasInterventionResults ? (isPassed ? 'passed-bar' : 'failed-bar') : ''}`}
                               style={{
                                 width: `${progressPercentage}%`,
-                                backgroundColor: '#5470a8'
+                                backgroundColor: hasInterventionResults
+                                  ? (isPassed ? '#10b981' : '#ef4444')
+                                  : '#5470a8'
                               }}
                             ></div>
                           </div>
@@ -4030,13 +4060,19 @@ const PrescriptiveAnalysis = ({
                           <button
                             className="literexia-edit-activity-btn"
                             onClick={() => handleCreateActivity(selectedCategory, selectedAnalysis, intervention)}
-                            disabled={loading || intervention.status === 'active'}
-                            title={intervention.status === 'active' ?
-                              "Active interventions cannot be edited after being pushed to mobile" :
-                              "Edit this intervention activity"}
+                            disabled={loading || (intervention.status === 'active' && !(hasInterventionResults && !isPassed))}
+                            title={
+                              hasInterventionResults && !isPassed
+                                ? "Create version 2 of this intervention (score below 75%)"
+                                : intervention.status === 'active'
+                                ? "Active interventions cannot be edited after being pushed to mobile"
+                                : "Edit this intervention activity"
+                            }
                           >
                             <FaEdit className="action-icon" />
-                            <span>Edit Activity</span>
+                            <span>
+                              {hasInterventionResults && !isPassed ? 'Create Version 2' : 'Edit Activity'}
+                            </span>
                           </button>
 
                           {intervention.status === 'draft' ? (
