@@ -3666,10 +3666,19 @@ const PrescriptiveAnalysis = ({
               <span>Research-Based Prescriptions</span>
             </div>
             <div className="epa-column-content">
-
+              {/* DEBUG: Log intervention data structure */}
+              {console.log('🔍 [DEBUG] Right Column - Intervention Data for', categoryName, ':', {
+                hasInterventionData: !!interventionData,
+                hasResearchPrescriptions: !!interventionData?.researchBasedPrescriptions,
+                categoryName: categoryName,
+                prescriptionKeys: interventionData?.researchBasedPrescriptions ? Object.keys(interventionData.researchBasedPrescriptions) : 'none',
+                targetPrescription: interventionData?.researchBasedPrescriptions?.[categoryName],
+                conditionalResult: !!(interventionData?.researchBasedPrescriptions?.[categoryName]),
+                fullInterventionData: interventionData
+              })}
 
               {/* Comprehensive Research-Based Prescriptions Container */}
-              {interventionData.researchBasedPrescriptions?.[categoryName] && (
+              {interventionData?.researchBasedPrescriptions?.[categoryName] ? (
                 <div className="epa-research-prescriptions-container">
                   <h4 className="epa-subsection-title">
                     <FaFlask className="epa-section-icon" />
@@ -4023,6 +4032,28 @@ const PrescriptiveAnalysis = ({
                         </div>
                       )}
                     </div>
+                  )}
+                </div>
+              ) : (
+                <div className="epa-research-prescriptions-fallback" style={{padding: '20px', border: '2px dashed #ff6b6b', borderRadius: '8px', backgroundColor: '#ffe0e0'}}>
+                  <h4 style={{color: '#d63031', marginBottom: '10px'}}>DEBUG: Research Prescriptions Not Found</h4>
+                  <p><strong>Category:</strong> {categoryName}</p>
+                  <p><strong>Has Intervention Data:</strong> {interventionData ? 'Yes' : 'No'}</p>
+                  <p><strong>Has Research Prescriptions:</strong> {interventionData?.researchBasedPrescriptions ? 'Yes' : 'No'}</p>
+                  {interventionData?.researchBasedPrescriptions && (
+                    <div>
+                      <p><strong>Available Prescription Keys:</strong> {Object.keys(interventionData.researchBasedPrescriptions).join(', ')}</p>
+                      <p><strong>Looking for Key:</strong> "{categoryName}"</p>
+                      <p><strong>Key Match Found:</strong> {interventionData.researchBasedPrescriptions[categoryName] ? 'Yes' : 'No'}</p>
+                    </div>
+                  )}
+                  {interventionData && (
+                    <details style={{marginTop: '10px'}}>
+                      <summary style={{cursor: 'pointer', fontWeight: 'bold'}}>Full Intervention Data</summary>
+                      <pre style={{fontSize: '10px', maxHeight: '200px', overflow: 'auto', background: '#f8f9fa', padding: '10px', borderRadius: '4px'}}>
+                        {JSON.stringify(interventionData, null, 2)}
+                      </pre>
+                    </details>
                   )}
                 </div>
               )}
