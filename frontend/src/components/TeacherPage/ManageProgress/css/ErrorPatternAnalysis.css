@@ -5731,3 +5731,615 @@ div.epa-score-metric .epa-status-badge {
     justify-content: center !important;
   }
 }
+
+/* ========== ENHANCED RESEARCH-BASED PRESCRIPTIONS STYLING ========== */
+
+/* Enhanced Main Container with Visual Hierarchy */
+.epa-research-prescriptions-container {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  margin-bottom: 1.5rem !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.epa-research-prescriptions-container::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 4px !important;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6, #06b6d4) !important;
+}
+
+/* Enhanced Header with Icons and Better Typography */
+.epa-research-prescriptions-container .epa-subsection-title {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+  color: white !important;
+  padding: 1.25rem !important;
+  margin: 0 !important;
+  border-radius: 12px 12px 0 0 !important;
+  font-size: 1.2rem !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  position: relative !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Enhanced Category Status Card */
+.epa-category-status-card {
+  padding: 1.25rem !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%) !important;
+  position: relative !important;
+}
+
+.epa-status-title {
+  margin: 0 0 0.75rem 0 !important;
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+
+/* Enhanced Status Badges with Better Visual Design */
+.epa-status-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 8px 16px !important;
+  border-radius: 24px !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.epa-status-badge::before {
+  content: '' !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  animation: pulse 2s infinite !important;
+}
+
+.epa-status-badge.status-failed-needs-revision {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
+  color: #dc2626 !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+.epa-status-badge.status-failed-needs-revision::before {
+  background: #dc2626 !important;
+}
+
+.epa-status-badge.status-passed {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%) !important;
+  color: #166534 !important;
+  border: 1px solid #86efac !important;
+}
+
+.epa-status-badge.status-passed::before {
+  background: #166534 !important;
+}
+
+.epa-status-badge.status-needs-improvement {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+  color: #d97706 !important;
+  border: 1px solid #fcd34d !important;
+}
+
+.epa-status-badge.status-needs-improvement::before {
+  background: #d97706 !important;
+}
+
+/* Enhanced Deficit Analysis Cards */
+.epa-deficit-analysis-card {
+  padding: 1.25rem !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  background: #ffffff !important;
+}
+
+.epa-analysis-title {
+  margin: 0 0 1.25rem 0 !important;
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  padding-bottom: 0.5rem !important;
+  border-bottom: 2px solid #f1f5f9 !important;
+}
+
+
+.epa-deficit-item {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%) !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  padding: 1.25rem !important;
+  margin-bottom: 1rem !important;
+  transition: all 0.3s ease !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.epa-deficit-item::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 4px !important;
+  height: 100% !important;
+  background: linear-gradient(180deg, #3b82f6, #8b5cf6) !important;
+}
+
+.epa-deficit-item:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+  border-color: #3b82f6 !important;
+}
+
+.epa-deficit-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 1rem !important;
+  padding-left: 16px !important;
+}
+
+.epa-deficit-name {
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  font-size: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+
+/* Enhanced Severity Badges */
+.epa-severity-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 4px 12px !important;
+  border-radius: 16px !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  text-transform: capitalize !important;
+  transition: all 0.2s ease !important;
+}
+
+.epa-severity-badge::before {
+  content: '' !important;
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+}
+
+.epa-severity-badge.severity-severe {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
+  color: #dc2626 !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+.epa-severity-badge.severity-severe::before {
+  background: #dc2626 !important;
+}
+
+.epa-severity-badge.severity-moderate {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+  color: #92400e !important;
+  border: 1px solid #fcd34d !important;
+}
+
+.epa-severity-badge.severity-moderate::before {
+  background: #92400e !important;
+}
+
+.epa-severity-badge.severity-high {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
+  color: #dc2626 !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+.epa-severity-badge.severity-high::before {
+  background: #dc2626 !important;
+}
+
+/* Enhanced Technique Cards */
+.epa-technique-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 1.25rem !important;
+  margin-bottom: 1rem !important;
+  transition: all 0.3s ease !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.epa-technique-card::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 4px !important;
+  height: 100% !important;
+  background: linear-gradient(180deg, #10b981, #059669) !important;
+}
+
+.epa-technique-card:hover {
+  transform: translateX(4px) !important;
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15) !important;
+  border-color: #10b981 !important;
+}
+
+.epa-technique-title {
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  margin-bottom: 0.75rem !important;
+  font-size: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding-left: 16px !important;
+}
+
+
+.epa-technique-description {
+  color: #64748b !important;
+  font-size: 0.9rem !important;
+  line-height: 1.5 !important;
+  margin-bottom: 0.75rem !important;
+  padding-left: 16px !important;
+}
+
+.epa-technique-details {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
+  gap: 0.75rem !important;
+  margin-top: 1rem !important;
+  padding-left: 16px !important;
+}
+
+.epa-technique-detail {
+  background: #f0f9ff !important;
+  border: 1px solid #bae6fd !important;
+  border-radius: 6px !important;
+  padding: 0.5rem !important;
+  text-align: center !important;
+  font-size: 0.8rem !important;
+}
+
+.epa-technique-detail strong {
+  display: block !important;
+  color: #0369a1 !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+/* Enhanced Modification Items */
+.epa-change-item,
+.epa-modification-item {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
+  border: 1px solid #7dd3fc !important;
+  border-radius: 10px !important;
+  padding: 1rem !important;
+  margin-bottom: 1rem !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: all 0.3s ease !important;
+}
+
+.epa-change-item::before,
+.epa-modification-item::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 4px !important;
+  height: 100% !important;
+  background: linear-gradient(180deg, #0ea5e9, #3b82f6) !important;
+}
+
+.epa-change-item:hover,
+.epa-modification-item:hover {
+  transform: translateX(4px) !important;
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.15) !important;
+}
+
+.epa-change-title {
+  font-weight: 700 !important;
+  color: #0369a1 !important;
+  margin-bottom: 0.75rem !important;
+  font-size: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding-left: 16px !important;
+}
+
+
+.epa-change-rationale {
+  color: #374151 !important;
+  font-size: 0.9rem !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.4 !important;
+  padding-left: 16px !important;
+}
+
+.epa-expected-impact {
+  color: #059669 !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding-left: 16px !important;
+}
+
+
+/* Enhanced Support Features */
+.epa-features-list {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+  gap: 0.75rem !important;
+  margin: 1rem 0 !important;
+}
+
+.epa-feature-item {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%) !important;
+  border: 1px solid #86efac !important;
+  border-radius: 8px !important;
+  padding: 0.75rem !important;
+  text-align: center !important;
+  color: #065f46 !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+
+.epa-feature-item:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.15) !important;
+}
+
+/* Enhanced Session Structure and Monitoring */
+.epa-session-structure,
+.epa-progress-monitoring {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  padding: 1rem !important;
+  margin-bottom: 1rem !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.epa-session-structure::before,
+.epa-progress-monitoring::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 4px !important;
+  height: 100% !important;
+  background: linear-gradient(180deg, #8b5cf6, #6366f1) !important;
+}
+
+.epa-session-structure h5,
+.epa-progress-monitoring h5 {
+  color: #4c1d95 !important;
+  font-weight: 700 !important;
+  margin-bottom: 0.75rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding-left: 16px !important;
+}
+
+
+/* Enhanced Escalation Protocol */
+.epa-escalation-protocol-card {
+  border-radius: 12px !important;
+  padding: 1.25rem !important;
+  margin-top: 1rem !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: all 0.3s ease !important;
+}
+
+.epa-escalation-protocol-card::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 4px !important;
+  height: 100% !important;
+}
+
+.epa-escalation-triggered {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%) !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+.epa-escalation-triggered::before {
+  background: linear-gradient(180deg, #dc2626, #991b1b) !important;
+}
+
+.epa-escalation-triggered h5 {
+  color: #dc2626 !important;
+}
+
+.epa-escalation-not-triggered {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%) !important;
+  border: 1px solid #86efac !important;
+}
+
+.epa-escalation-not-triggered::before {
+  background: linear-gradient(180deg, #16a34a, #15803d) !important;
+}
+
+.epa-escalation-not-triggered h5 {
+  color: #16a34a !important;
+}
+
+/* Animation Keyframes */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* BKT Evolution Container Height Constraints */
+.epa-bkt-evolution-section {
+  max-height: 400px !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #c1c1c1 #f1f1f1 !important;
+}
+
+.epa-bkt-evolution-section::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.epa-bkt-evolution-section::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+.epa-bkt-evolution-section::-webkit-scrollbar-thumb {
+  background: #c1c1c1 !important;
+  border-radius: 3px !important;
+}
+
+.epa-bkt-evolution-section::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1 !important;
+}
+
+.epa-response-timeline {
+  max-height: 350px !important;
+  overflow-y: auto !important;
+  padding: 0.5rem !important;
+}
+
+.epa-timeline-item {
+  margin-bottom: 0.75rem !important;
+  padding: 0.5rem !important;
+}
+
+/* Enhanced Responsive Design for Research Prescriptions */
+@media (max-width: 1024px) {
+  .epa-features-list {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+  }
+
+  .epa-technique-details {
+    grid-template-columns: 1fr !important;
+  }
+
+  .epa-bkt-evolution-section {
+    max-height: 300px !important;
+  }
+
+  .epa-response-timeline {
+    max-height: 250px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .epa-research-prescriptions-container {
+    margin-bottom: 1rem !important;
+    border-radius: 10px !important;
+  }
+
+  .epa-research-prescriptions-container .epa-subsection-title {
+    font-size: 1.1rem !important;
+    padding: 1rem !important;
+    border-radius: 10px 10px 0 0 !important;
+  }
+
+  .epa-deficit-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+  }
+
+  .epa-features-list {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+  }
+
+  .epa-technique-details {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+  }
+
+  .epa-category-status-card,
+  .epa-deficit-analysis-card {
+    padding: 1rem !important;
+  }
+
+  .epa-technique-card,
+  .epa-deficit-item,
+  .epa-change-item,
+  .epa-modification-item {
+    padding: 1rem !important;
+  }
+
+  .epa-session-structure,
+  .epa-progress-monitoring,
+  .epa-escalation-protocol-card {
+    padding: 1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .epa-research-prescriptions-container {
+    border-radius: 8px !important;
+  }
+
+  .epa-research-prescriptions-container .epa-subsection-title {
+    font-size: 1rem !important;
+    padding: 0.875rem !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+    border-radius: 8px 8px 0 0 !important;
+  }
+
+  .epa-status-badge {
+    font-size: 0.8rem !important;
+    padding: 6px 12px !important;
+  }
+
+  .epa-severity-badge {
+    font-size: 0.75rem !important;
+    padding: 3px 10px !important;
+  }
+
+  .epa-technique-card,
+  .epa-deficit-item,
+  .epa-change-item,
+  .epa-modification-item {
+    padding: 0.875rem !important;
+  }
+}
