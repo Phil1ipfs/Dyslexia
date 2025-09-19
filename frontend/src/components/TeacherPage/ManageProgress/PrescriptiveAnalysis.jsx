@@ -11,6 +11,7 @@ import {
   FaCheckCircle,
   FaBrain,
   FaRuler,
+  FaEye,
   FaUserMd,
   FaArrowUp,
   FaArrowRight,
@@ -139,6 +140,11 @@ const PrescriptiveAnalysis = ({
     title: 'Success!',
     message: 'Intervention successfully pushed to mobile device!'
   });
+
+  // Response modal states
+  const [showResponseModal, setShowResponseModal] = useState(false);
+  const [selectedInterventionData, setSelectedInterventionData] = useState(null);
+  const [interventionResponses, setInterventionResponses] = useState([]);
 
   // Helper function to get intervention status for a category
   const getInterventionStatus = (categoryName) => {
@@ -1078,6 +1084,60 @@ const PrescriptiveAnalysis = ({
     setEditingActivity(activityContext);
     setSelectedCategory(category);
     setShowActivityModal(true);
+  };
+
+  /**
+   * Handle viewing intervention responses
+   * @param {Object} intervention - Intervention object
+   * @param {string} category - Category name
+   */
+  const handleViewResponses = async (intervention, category) => {
+    try {
+      setLoading(true);
+
+      // Fetch intervention responses from the server
+      const responsesResponse = await api.get(`/intervention-responses/${intervention._id}`);
+      const fetchedResponses = responsesResponse.data || [];
+
+      // Calculate completion status based on intervention assessment questions vs responses
+      const totalQuestions = intervention.totalQuestions || intervention.questions?.length || 0;
+      const completedResponses = fetchedResponses.length;
+      const isComplete = completedResponses >= totalQuestions;
+
+      if (!isComplete) {
+        console.warn(`Intervention incomplete: ${completedResponses}/${totalQuestions} responses`);
+        return;
+      }
+
+      // Combine response data with question data from intervention assessment
+      const enrichedResponses = fetchedResponses.map(response => {
+        const question = intervention.questions?.find(q => q.questionId === response.questionId);
+        return {
+          ...response,
+          questionText: question?.questionText || 'Question text not found',
+          questionImage: question?.questionImage,
+          questionValue: question?.questionValue,
+          choiceOptions: question?.choiceOptions || [],
+          correctAnswer: question?.choiceOptions?.find(opt => opt.isCorrect)?.optionText || 'N/A'
+        };
+      });
+
+      setSelectedInterventionData({
+        intervention,
+        category,
+        interventionResults: interventionResults[category],
+        totalQuestions,
+        completedResponses,
+        isComplete
+      });
+      setInterventionResponses(enrichedResponses);
+      setShowResponseModal(true);
+    } catch (error) {
+      console.error('Error fetching intervention responses:', error);
+      // No fallbacks - show error to user if needed
+    } finally {
+      setLoading(false);
+    }
   };
 
   /**
@@ -4073,6 +4133,18 @@ const PrescriptiveAnalysis = ({
                             <span>Edit Activity</span>
                           </button>
 
+                          {hasInterventionResults && (
+                            <button
+                              className="literexia-view-responses-btn"
+                              onClick={() => handleViewResponses(intervention, selectedCategory)}
+                              disabled={loading}
+                              title="View detailed student responses and analysis"
+                            >
+                              <FaEye className="action-icon" />
+                              <span>View Responses</span>
+                            </button>
+                          )}
+
                           {hasInterventionResults ? (
                             <div className={`literexia-active-status ${isPassed ? 'completed-passed' : 'completed-failed'}`}>
                               <FaCheckCircle className="action-icon" />
@@ -4161,6 +4233,104 @@ const PrescriptiveAnalysis = ({
           message={notificationMessage.message}
           onDismiss={() => setShowSuccessNotification(false)}
         />
+      )}
+
+      {/* Intervention Responses Modal */}
+      {showResponseModal && selectedInterventionData && (
+        <div className="literexia-modal-overlay" onClick={() => setShowResponseModal(false)}>
+          <div className="literexia-response-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="literexia-modal-header">
+              <h3>
+                <FaEye className="modal-icon" />
+                Intervention Responses - {selectedInterventionData.category}
+              </h3>
+              <button
+                className="literexia-modal-close"
+                onClick={() => setShowResponseModal(false)}
+                title="Close modal"
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            <div className="literexia-modal-content">
+              {/* Intervention Summary */}
+              <div className="literexia-response-summary">
+                <div className="literexia-summary-card">
+                  <h4>Intervention Summary</h4>
+                  <div className="literexia-summary-stats">
+                    <div className="literexia-stat-item">
+                      <span className="literexia-stat-label">Total Questions:</span>
+                      <span className="literexia-stat-value">{selectedInterventionData.totalQuestions}</span>
+                    </div>
+                    <div className="literexia-stat-item">
+                      <span className="literexia-stat-label">Completed:</span>
+                      <span className="literexia-stat-value">{selectedInterventionData.completedResponses}</span>
+                    </div>
+                    <div className="literexia-stat-item">
+                      <span className="literexia-stat-label">Score:</span>
+                      <span className={`literexia-stat-value ${selectedInterventionData.interventionResults?.isPassed ? 'passed' : 'failed'}`}>
+                        {selectedInterventionData.interventionResults?.score || 0}%
+                      </span>
+                    </div>
+                    <div className="literexia-stat-item">
+                      <span className="literexia-stat-label">Status:</span>
+                      <span className={`literexia-stat-badge ${selectedInterventionData.interventionResults?.isPassed ? 'passed' : 'failed'}`}>
+                        {selectedInterventionData.interventionResults?.isPassed ? 'PASSED' : 'FAILED'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Individual Responses */}
+              <div className="literexia-responses-list">
+                <h4>Student Responses</h4>
+                {interventionResponses.map((response, index) => (
+                  <div key={index} className={`literexia-response-item ${response.isCorrect ? 'correct' : 'incorrect'}`}>
+                    <div className="literexia-response-header">
+                      <div className="literexia-question-number">
+                        <span>Q{index + 1}</span>
+                        <div className={`literexia-response-indicator ${response.isCorrect ? 'correct' : 'incorrect'}`}>
+                          {response.isCorrect ? <FaCheck /> : <FaTimes />}
+                        </div>
+                      </div>
+                      <div className="literexia-response-time">
+                        <FaClock className="time-icon" />
+                        <span>{response.responseTime}s</span>
+                      </div>
+                    </div>
+
+                    <div className="literexia-question-content">
+                      <div className="literexia-question-text">
+                        <strong>Question:</strong> {response.questionText}
+                      </div>
+
+                      {response.questionImage && (
+                        <div className="literexia-question-image">
+                          <img src={response.questionImage} alt="Question" />
+                        </div>
+                      )}
+
+                      <div className="literexia-response-details">
+                        <div className="literexia-response-row">
+                          <span className="literexia-response-label">Student Answer:</span>
+                          <span className={`literexia-response-value ${response.isCorrect ? 'correct' : 'incorrect'}`}>
+                            {response.response}
+                          </span>
+                        </div>
+                        <div className="literexia-response-row">
+                          <span className="literexia-response-label">Correct Answer:</span>
+                          <span className="literexia-response-value correct">{response.correctAnswer}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

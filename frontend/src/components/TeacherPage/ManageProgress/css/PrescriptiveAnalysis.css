@@ -4934,12 +4934,13 @@
 
 .literexia-active-status.completed-failed {
   background-color: #fef2f2;
-  color: #dc2626;
+  color: white;
   border: 1px solid #fecaca;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
 }
 
 .literexia-active-status.completed-failed svg {
-  color: #dc2626;
+  color: white;
 }
 
 /* Edit button with disabled state styling */
@@ -6324,6 +6325,386 @@
 
 .literexia-edit-activity-btn.version-two .action-icon {
   color: white;
+}
+
+/* View Responses Button */
+.literexia-view-responses-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  min-height: 44px;
+  background: linear-gradient(135deg, #5470a8 0%, #3d5285 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(84, 112, 168, 0.3);
+}
+
+.literexia-view-responses-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(84, 112, 168, 0.4);
+}
+
+.literexia-view-responses-btn:disabled {
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  color: #64748b;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Modal Overlay and Base Modal */
+.literexia-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999 !important;
+  backdrop-filter: blur(4px);
+}
+
+.literexia-response-modal {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 1000px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Modal Header */
+.literexia-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, #5470a8 0%, #3d5285 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+}
+
+.literexia-modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.literexia-modal-header .modal-icon {
+  font-size: 1.1rem;
+}
+
+.literexia-modal-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.literexia-modal-close:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Modal Content */
+.literexia-modal-content {
+  padding: 2rem;
+}
+
+/* Response Summary */
+.literexia-response-summary {
+  margin-bottom: 2rem;
+}
+
+.literexia-summary-card {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.literexia-summary-card h4 {
+  margin: 0 0 1rem 0;
+  color: #5470a8;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.literexia-summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.literexia-stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+
+.literexia-stat-label {
+  font-weight: 500;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.literexia-stat-value {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 1rem;
+}
+
+.literexia-stat-value.passed {
+  color: #16a34a;
+}
+
+.literexia-stat-value.failed {
+  color: #dc2626;
+}
+
+.literexia-stat-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.literexia-stat-badge.passed {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.literexia-stat-badge.failed {
+  background-color: #fef2f2;
+  color: white;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border: 1px solid #fecaca;
+}
+
+/* Responses List */
+.literexia-responses-list h4 {
+  margin: 0 0 1.5rem 0;
+  color: #5470a8;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.literexia-response-item {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.literexia-response-item:hover {
+  box-shadow: 0 4px 12px rgba(84, 112, 168, 0.1);
+}
+
+.literexia-response-item.correct {
+  border-left: 4px solid #16a34a;
+}
+
+.literexia-response-item.incorrect {
+  border-left: 4px solid #dc2626;
+}
+
+.literexia-response-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.literexia-question-number {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.literexia-question-number span {
+  background: linear-gradient(135deg, #5470a8 0%, #3d5285 100%);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  min-width: 2.5rem;
+  text-align: center;
+}
+
+.literexia-response-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  font-size: 0.875rem;
+}
+
+.literexia-response-indicator.correct {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.literexia-response-indicator.incorrect {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+.literexia-response-time {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.literexia-response-time .time-icon {
+  color: #5470a8;
+}
+
+/* Question Content */
+.literexia-question-content {
+  padding: 1.5rem;
+}
+
+.literexia-question-text {
+  margin-bottom: 1rem;
+  color: #374151;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.literexia-question-image {
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.literexia-question-image img {
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.literexia-response-details {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.literexia-response-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+
+.literexia-response-label {
+  font-weight: 500;
+  color: #64748b;
+  min-width: 120px;
+  font-size: 0.9rem;
+}
+
+.literexia-response-value {
+  font-weight: 600;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.literexia-response-value.correct {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.literexia-response-value.incorrect {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .literexia-response-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .literexia-modal-header {
+    padding: 1rem 1.5rem;
+  }
+
+  .literexia-modal-content {
+    padding: 1.5rem;
+  }
+
+  .literexia-summary-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .literexia-response-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .literexia-question-content {
+    padding: 1rem;
+  }
+
+  .literexia-response-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .literexia-response-label {
+    min-width: auto;
+  }
 }
 
 .literexia-push-mobile-btn {
