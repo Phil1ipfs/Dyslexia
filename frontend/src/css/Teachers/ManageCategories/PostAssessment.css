@@ -7936,3 +7936,12 @@
 .pa-modal .pa-assessment-preview-enhanced .pa-preview-header-enhanced .pa-summary-status {
   color: #ffffff !important;
 }
+
+/* Override uppercase for Word Recognition section */
+.pa-no-uppercase {
+  text-transform: none !important;
+  -webkit-text-transform: none !important;
+  -moz-text-transform: none !important;
+  -ms-text-transform: none !important;
+  -o-text-transform: none !important;
+}

@@ -2654,9 +2654,9 @@ const MainAssessment = ({ templates }) => {
                 </div>
                 <div className="pa-cell">{assessment.questions.length}</div>
                 <div className="pa-cell">
-                  <span className="pa-status pa-active">
-                    <FontAwesomeIcon icon={faCheckCircle} /> Active
-                  </span>
+                    <span className="pa-status pa-active">
+                      <FontAwesomeIcon icon={faCheckCircle} /> Active
+                    </span>
                 </div>
                 <div className="pa-cell pa-actions">
                   <button
@@ -4215,17 +4215,23 @@ const MainAssessment = ({ templates }) => {
                                 <label className="pa-form-label">Display Word:</label>
                                 <input
                                   type="text"
-                                  placeholder="SUMBRERO"
+                                  placeholder="Sumbrero"
                                   value={questionFormData.displayWord || ''}
                                   onChange={(e) => {
-                                    const sanitizedValue = e.target.value.replace(/[^a-zA-Z\s]/g, '').toUpperCase();
+                                    const sanitizedValue = e.target.value.replace(/[^a-zA-Z\s]/g, '');
                                     setQuestionFormData(prev => ({
                                       ...prev,
                                       displayWord: sanitizedValue
                                     }));
                                   }}
-                                  className="pa-display-word-input"
-                                  style={{ textTransform: 'uppercase' }}
+                                  className="pa-display-word-input pa-no-uppercase"
+                                  style={{ 
+                                    textTransform: 'none',
+                                    WebkitTextTransform: 'none',
+                                    MozTextTransform: 'none',
+                                    msTextTransform: 'none',
+                                    OTextTransform: 'none'
+                                  }}
                                 />
                               </div>
 
@@ -4244,36 +4250,33 @@ const MainAssessment = ({ templates }) => {
                                         value={option}
                                         onChange={(e) => {
                                           const updatedOptions = [...(questionFormData.blankOptions || [])];
-                                          updatedOptions[index] = e.target.value.toUpperCase();
+                                          updatedOptions[index] = e.target.value;
                                           setQuestionFormData(prev => ({
                                             ...prev,
                                             blankOptions: updatedOptions
                                           }));
                                         }}
-                                        className="pa-sound-input"
-                                        style={{ textTransform: 'uppercase' }}
+                                        className="pa-sound-input pa-no-uppercase"
+                                        style={{ 
+                                          textTransform: 'none',
+                                          WebkitTextTransform: 'none',
+                                          MozTextTransform: 'none',
+                                          msTextTransform: 'none',
+                                          OTextTransform: 'none'
+                                        }}
                                       />
                                       <div className="pa-sound-controls">
                                         <label>
                                           <input
-                                            type="checkbox"
-                                            checked={questionFormData.correctAnswer?.includes(option)}
+                                            type="radio"
+                                            name="correctAnswer"
+                                            checked={questionFormData.correctAnswer === option}
                                             onChange={() => {
-                                              const correctAnswers = questionFormData.correctAnswer || [];
-                                              const isCorrect = correctAnswers.includes(option);
-                                              
-                                              // This section handles sound/syllable recognition - allow multiple answers
-                                              if (isCorrect) {
+                                              // Only allow one correct answer
                                                 setQuestionFormData(prev => ({
                                                   ...prev,
-                                                  correctAnswer: correctAnswers.filter(a => a !== option)
-                                                }));
-                                              } else {
-                                                setQuestionFormData(prev => ({
-                                                  ...prev,
-                                                  correctAnswer: [...correctAnswers, option]
-                                                }));
-                                              }
+                                                correctAnswer: option
+                                              }));
                                             }}
                                           />
                                           <FontAwesomeIcon icon={faCheckCircle} />
@@ -4286,13 +4289,13 @@ const MainAssessment = ({ templates }) => {
                                             const optionToRemove = option;
                                             const updatedOptions = questionFormData.blankOptions.filter((_, i) => i !== index);
                                             
-                                            // Also remove from correctAnswer if it was marked as correct
-                                            const updatedCorrectAnswers = questionFormData.correctAnswer?.filter(answer => answer !== optionToRemove) || [];
+                                            // Clear correctAnswer if the removed option was the correct one
+                                            const updatedCorrectAnswer = questionFormData.correctAnswer === optionToRemove ? null : questionFormData.correctAnswer;
                                             
                                             setQuestionFormData(prev => ({
                                               ...prev,
                                               blankOptions: updatedOptions,
-                                              correctAnswer: updatedCorrectAnswers
+                                              correctAnswer: updatedCorrectAnswer
                                             }));
                                           }}
                                           title="Remove this sound option"
@@ -4317,17 +4320,23 @@ const MainAssessment = ({ templates }) => {
                                   <div className="pa-add-option-input">
                                     <input
                                       type="text"
-                                      placeholder="Enter sound/syllable option (e.g., LIB, RO)"
+                                      placeholder="Enter sound/syllable option (e.g., lib, ro)"
                                       value={newSoundOption}
-                                      onChange={(e) => setNewSoundOption(e.target.value.replace(/[^a-zA-Z\s]/g, '').toUpperCase())}
+                                      onChange={(e) => setNewSoundOption(e.target.value.replace(/[^a-zA-Z\s]/g, ''))}
                                       className="pa-new-option-input"
-                                      style={{ textTransform: 'uppercase' }}
+                                      style={{ 
+                                        textTransform: 'none',
+                                        WebkitTextTransform: 'none',
+                                        MozTextTransform: 'none',
+                                        msTextTransform: 'none',
+                                        OTextTransform: 'none'
+                                      }}
                                       autoFocus
                                       onKeyDown={(e) => {
                                         if (e.key === 'Enter' && newSoundOption.trim()) {
                                           setQuestionFormData(prev => ({
                                             ...prev,
-                                            blankOptions: [...(prev.blankOptions || []), newSoundOption.trim().toUpperCase()]
+                                            blankOptions: [...(prev.blankOptions || []), newSoundOption.trim()]
                                           }));
                                           setNewSoundOption('');
                                           setShowAddSoundInput(false);
@@ -4341,7 +4350,7 @@ const MainAssessment = ({ templates }) => {
                                         if (newSoundOption.trim()) {
                                           setQuestionFormData(prev => ({
                                             ...prev,
-                                            blankOptions: [...(prev.blankOptions || []), newSoundOption.trim().toUpperCase()]
+                                            blankOptions: [...(prev.blankOptions || []), newSoundOption.trim()]
                                           }));
                                           setNewSoundOption('');
                                           setShowAddSoundInput(false);
@@ -4365,20 +4374,19 @@ const MainAssessment = ({ templates }) => {
                               </div>
 
                               <div className="pa-correct-answers">
-                                <h5>Correct Answers <span className="pa-selected-options">SELECTED FROM OPTIONS</span></h5>
-                                <p>Check the correct options above to mark them as correct answers</p>
+                                <h5>Correct Answer <span className="pa-selected-options">SELECTED FROM OPTIONS</span></h5>
+                                <p>Select the correct option above to mark it as the correct answer</p>
                                 <div className="pa-correct-sounds-display">
-                                  {questionFormData.correctAnswer?.map((answer, index) => (
-                                    <div key={index} className="pa-correct-sound-item">
-                                      <span style={{ textTransform: 'uppercase', fontWeight: '600' }}>{answer}</span>
+                                  {questionFormData.correctAnswer ? (
+                                    <div className="pa-correct-sound-item">
+                                      <span style={{ textTransform: 'none', fontWeight: '600' }}>{questionFormData.correctAnswer}</span>
                                       <button
                                         type="button"
                                         className="pa-remove-correct-answer"
                                         onClick={() => {
-                                          const updatedCorrectAnswers = questionFormData.correctAnswer.filter((_, i) => i !== index);
                                           setQuestionFormData(prev => ({
                                             ...prev,
-                                            correctAnswer: updatedCorrectAnswers
+                                            correctAnswer: null
                                           }));
                                         }}
                                         title="Remove from correct answers"
@@ -4407,7 +4415,11 @@ const MainAssessment = ({ templates }) => {
                                         <FontAwesomeIcon icon={faTimes} />
                                       </button>
                                     </div>
-                                  ))}
+                                  ) : (
+                                    <div className="pa-no-correct-answer">
+                                      <span style={{ color: '#6b7280', fontStyle: 'italic' }}>No correct answer selected</span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
