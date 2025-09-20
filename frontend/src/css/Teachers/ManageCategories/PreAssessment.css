@@ -5921,3 +5921,12 @@
     gap: 12px;
   }
 }
+
+/* Override uppercase for PreAssessment Word Recognition section */
+.pre-no-uppercase {
+  text-transform: none !important;
+  -webkit-text-transform: none !important;
+  -moz-text-transform: none !important;
+  -ms-text-transform: none !important;
+  -o-text-transform: none !important;
+}

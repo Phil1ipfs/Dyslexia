@@ -1336,10 +1336,10 @@ const PreAssessment = () => {
     // Allow letters only, preserve case (no numbers)
     let sanitizedValue = value.replace(/[^a-zA-Z\s]/g, '');
 
-    // For "Anong kasing tunog" questions, enforce complete words and uppercase
+    // For "Anong kasing tunog" questions, enforce complete words but keep original case
     if (currentQuestionData.questionText === 'Anong kasing tunog ng salitang nakikita?') {
-      // Convert to uppercase and remove extra spaces for consistency
-      sanitizedValue = sanitizedValue.trim().toUpperCase().replace(/\s+/g, ' ');
+      // Keep original case and remove extra spaces for consistency
+      sanitizedValue = sanitizedValue.trim().replace(/\s+/g, ' ');
 
       // Validate it's a complete word (no short fragments that look like syllables)
       const words = sanitizedValue.split(' ');
@@ -2462,12 +2462,12 @@ const PreAssessment = () => {
                         )}
                         {question.blankOptions && (
                           <div className="pre-blank-options">
-                            <strong>Answer Options:</strong> {question.blankOptions.join(', ')}
+                            <strong>Answer Options:</strong> <span className="pre-no-uppercase">{question.blankOptions.join(', ')}</span>
                           </div>
                         )}
                         {question.correctAnswer && (
                           <div className="pre-correct-answer">
-                            <strong>Correct Answer:</strong> {question.correctAnswer.join(', ')}
+                            <strong>Correct Answer:</strong> <span className="pre-no-uppercase">{question.correctAnswer.join(', ')}</span>
                           </div>
                         )}
                       </div>
@@ -2479,7 +2479,7 @@ const PreAssessment = () => {
                           key={option.optionId || index} 
                           className={`pre-option-item ${option.isCorrect ? 'pre-correct-option' : ''}`}
                         >
-                          <div className="pre-option-content">
+                          <div className="pre-option-content pre-no-uppercase">
                             {option.optionText}
                           </div>
                           {option.isCorrect && (
@@ -3481,12 +3481,9 @@ const PreAssessment = () => {
                                 if (currentQuestionData.questionText === 'Buoin ang salita') {
                                   // For "Buoin ang salita" - add correct letter + some distractors
                                   const correctLetter = currentQuestionData.correctSequence[0] || '';
-                                  // Match case of correct letter - if lowercase, use lowercase distractors
-                                  const isLowercase = correctLetter === correctLetter.toLowerCase();
-                                  const baseDistractors = ['A', 'E', 'I', 'O', 'U', 'B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'];
-                                  const distractors = isLowercase ? 
-                                    baseDistractors.map(d => d.toLowerCase()) : 
-                                    baseDistractors;
+                                  // Use mixed case distractors for variety
+                                  const distractors = ['a', 'e', 'i', 'o', 'u', 'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z',
+                                                      'A', 'E', 'I', 'O', 'U', 'B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'];
                                   const availableDistractors = distractors.filter(d => d !== correctLetter);
                                   // Randomize distractor selection
                                   const shuffled = availableDistractors.sort(() => Math.random() - 0.5);
@@ -3500,7 +3497,8 @@ const PreAssessment = () => {
                                 } else {
                                   // For "Tukuyin ang nasa larawan" - add all word letters + some distractors
                                   const wordLetters = currentQuestionData.completeWord.split('');
-                                  const distractors = ['A', 'E', 'I', 'O', 'U', 'B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'];
+                                  const distractors = ['a', 'e', 'i', 'o', 'u', 'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z',
+                                                      'A', 'E', 'I', 'O', 'U', 'B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'];
                                   const availableDistractors = distractors.filter(d => !wordLetters.includes(d));
                                   // Randomize distractor selection
                                   const shuffled = availableDistractors.sort(() => Math.random() - 0.5);
@@ -3718,13 +3716,14 @@ const PreAssessment = () => {
                                     setCurrentQuestionData(prev => {
                                       // Auto-sync blanked words with correct answers and blank options
                                       // Only include words that are currently blanked
-                                      const newCorrectAnswers = [...new Set(newBlankWords.map(w => w.toUpperCase()))];
+                                      // Keep original case for all Word Recognition questions
+                                      const newCorrectAnswers = [...new Set(newBlankWords)]; // Keep original case
                                       
                                       // Keep existing non-blank options and add new blank words
                                       const existingNonBlankOptions = (prev.blankOptions || []).filter(option => 
-                                        !prev.blankWords?.map(w => w.toUpperCase()).includes(option)
+                                        !prev.blankWords?.includes(option)
                                       );
-                                      const updatedBlankOptions = [...new Set([...existingNonBlankOptions, ...newBlankWords.map(w => w.toUpperCase())])];
+                                      const updatedBlankOptions = [...new Set([...existingNonBlankOptions, ...newBlankWords])]; // Keep original case
                                       
                                       return {
                                         ...prev,
@@ -3823,7 +3822,8 @@ const PreAssessment = () => {
                                     placeholder={currentQuestionData.questionText === 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.'
                                       ? `Option ${index + 1}`
                                       : `Complete word ${index + 1}`}
-                                    className="pre-blank-option-input"
+                                    className="pre-blank-option-input pre-no-uppercase"
+                                    style={{ textTransform: 'none !important' }}
                                   />
 
                                   {/* For sound matching questions, show radio button */}
@@ -3838,7 +3838,7 @@ const PreAssessment = () => {
                                             // For sound matching questions, only one correct answer is allowed
                                             setCurrentQuestionData(prev => ({
                                               ...prev,
-                                              correctAnswer: [option.toUpperCase()] // Single correct answer, always uppercase
+                                              correctAnswer: [option] // Single correct answer, preserve case
                                             }));
                                           }}
                                         />
@@ -3858,14 +3858,17 @@ const PreAssessment = () => {
                                     )
                                   )}
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={() => removeBlankOption(index)}
-                                  className="pre-remove-btn-small"
-                                  title="Remove"
-                                >
-                                  <FontAwesomeIcon icon={faTimes} />
-                                </button>
+                                {/* Only show remove button for non-correct answers in auto-generated questions */}
+                                {!(currentQuestionData.questionText === 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.' && isCorrectAnswer) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeBlankOption(index)}
+                                    className="pre-remove-btn-small"
+                                    title="Remove"
+                                  >
+                                    <FontAwesomeIcon icon={faTimes} />
+                                  </button>
+                                )}
                               </div>
                             );
                           })}
@@ -3908,21 +3911,24 @@ const PreAssessment = () => {
                           {currentQuestionData.correctAnswer && currentQuestionData.correctAnswer.length > 0 ? (
                             currentQuestionData.correctAnswer.map((answer, index) => (
                               <div key={index} className="pre-correct-answer-chip">
-                                <span className="pre-answer-text">{answer}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const newCorrectAnswers = currentQuestionData.correctAnswer.filter((_, i) => i !== index);
-                                    setCurrentQuestionData(prev => ({
-                                      ...prev,
-                                      correctAnswer: newCorrectAnswers
-                                    }));
-                                  }}
-                                  className="pre-remove-chip"
-                                  title="Remove"
-                                >
-                                  <FontAwesomeIcon icon={faTimes} />
-                                </button>
+                                <span className="pre-answer-text" style={{ textTransform: 'none !important' }}>{answer}</span>
+                                {/* Only show X button for non-auto-generated questions */}
+                                {currentQuestionData.questionText !== 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newCorrectAnswers = currentQuestionData.correctAnswer.filter((_, i) => i !== index);
+                                      setCurrentQuestionData(prev => ({
+                                        ...prev,
+                                        correctAnswer: newCorrectAnswers
+                                      }));
+                                    }}
+                                    className="pre-remove-chip"
+                                    title="Remove"
+                                  >
+                                    <FontAwesomeIcon icon={faTimes} />
+                                  </button>
+                                )}
                               </div>
                             ))
                           ) : (
