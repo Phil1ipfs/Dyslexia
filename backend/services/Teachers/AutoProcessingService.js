@@ -140,6 +140,15 @@ class AutoProcessingService {
 
       if (existingCategoryResult) {
         const categoryData = existingCategoryResult.categories.find(cat => cat.categoryName === category);
+
+        // DEBUG: Log what we're actually seeing for PA
+        if (category === 'Phonological Awareness') {
+          console.log(`[AUTO PROCESSOR] 🔍 DEBUG PA: categoryData found: ${!!categoryData}`);
+          if (categoryData) {
+            console.log(`[AUTO PROCESSOR] 🔍 DEBUG PA: isCompleted: ${categoryData.isCompleted}, score: ${categoryData.score}, isPassed: ${categoryData.isPassed}`);
+          }
+        }
+
         if (categoryData && categoryData.isCompleted) {
           return {
             action: 'skipped',

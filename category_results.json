@@ -18,12 +18,10 @@
       "passingThreshold": 75,
       "isCompleted": true,
       "lastQuestionAnswered": "",
-      "interventionRequired": true,
-      "interventionAttempts": 1,
+      "interventionRequired": false,
+      "interventionAttempts": 3,
       "interventionCompleted": true,
-      "currentInterventionId": {
-        "$oid": "68cbb0975a26e73b61e061d3"
-      },
+      "currentInterventionId": null,
       "interventionHistory": [
         {
           "attemptNumber": 1,
@@ -31,18 +29,58 @@
             "$oid": "68cbb0975a26e73b61e061d3"
           },
           "interventionResultId": {
-            "$oid": "68cbd7fc73335662b9259e64"
+            "$oid": "68ce50f42ff099f3079f395f"
           },
           "score": 44,
           "isPassed": false,
           "attemptedAt": {
-            "$date": "2025-09-18T09:59:24.478Z"
+            "$date": "2025-09-20T07:00:04.203Z"
           },
           "completedAt": {
-            "$date": "2025-09-18T09:59:24.478Z"
+            "$date": "2025-09-20T18:16:48.630Z"
           },
           "_id": {
-            "$oid": "68cc943e357a92c72975ede4"
+            "$oid": "68ce516c2ad8b86e3b6761f1"
+          }
+        },
+        {
+          "attemptNumber": 2,
+          "interventionId": {
+            "$oid": "68cbb0975a26e73b61e061d3"
+          },
+          "interventionResultId": {
+            "$oid": "68cee876a812e160638033a7"
+          },
+          "score": 44,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-20T17:46:30.553Z"
+          },
+          "completedAt": {
+            "$date": "2025-09-20T17:46:30.553Z"
+          },
+          "_id": {
+            "$oid": "68cee876a812e160638033b0"
+          }
+        },
+        {
+          "attemptNumber": 3,
+          "interventionId": {
+            "$oid": "68cbb0975a26e73b61e061d3"
+          },
+          "interventionResultId": {
+            "$oid": "68cf01e0886bbc2c8c77e3ea"
+          },
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-20T18:16:48.445Z"
+          },
+          "completedAt": {
+            "$date": "2025-09-20T18:16:48.445Z"
+          },
+          "_id": {
+            "$oid": "68ceef90886bbc2c8c77cfd4"
           }
         }
       ],
@@ -131,8 +169,8 @@
       }
     }
   ],
-  "overallScore": 7,
-  "completedCategories": 0,
+  "overallScore": 20,
+  "completedCategories": 1,
   "totalCategories": 5,
   "allCategoriesPassed": false,
   "readingLevel": "At Grade Level",
@@ -141,7 +179,7 @@
     "$date": "2025-09-17T00:10:23.643Z"
   },
   "updatedAt": {
-    "$date": "2025-09-18T23:22:38.115Z"
+    "$date": "2025-09-20T18:16:48.631Z"
   },
-  "__v": 2
+  "__v": 7
 }

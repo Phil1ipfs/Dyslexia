@@ -548,6 +548,20 @@ class CategoryResultsService {
 
       console.log(`[CATEGORY RESULTS] Found ${responses.length} responses for student ${studentId}`);
 
+      // DEBUG: Log what categories we actually found
+      const foundCategories = [...new Set(responses.map(r => r.category))];
+      console.log(`[CATEGORY RESULTS] 🔍 DEBUG: Found responses for categories: [${foundCategories.join(', ')}]`);
+
+      // DEBUG: Check specifically for PA responses
+      const paResponses = responses.filter(r => r.category === 'Phonological Awareness');
+      console.log(`[CATEGORY RESULTS] 🔍 DEBUG: Phonological Awareness responses: ${paResponses.length}`);
+      if (paResponses.length > 0) {
+        console.log(`[CATEGORY RESULTS] 🔍 DEBUG: PA questionIds: [${paResponses.map(r => r.questionId).join(', ')}]`);
+      }
+
+      // DEBUG: Log the query being used
+      console.log(`[CATEGORY RESULTS] 🔍 DEBUG: Query used:`, JSON.stringify(query));
+
       // Group responses by category
       const responsesByCategory = {};
       responses.forEach(response => {
@@ -565,26 +579,36 @@ class CategoryResultsService {
         const categoryResponses = responsesByCategory[categoryName] || [];
         const isComplete = categoryCompleteness[categoryName]?.isComplete || false;
 
-        if (!isComplete || categoryResponses.length === 0) {
-          // Category is incomplete or has no responses - create placeholder entry
-          console.log(`[CATEGORY RESULTS] Creating placeholder for ${categoryName} (${isComplete ? 'has responses but incomplete' : 'no responses yet'})`);
-          categories.push({
-            categoryName: categoryName,
-            totalQuestions: categoryCompleteness[categoryName]?.required || 0,
-            correctAnswers: 0,
-            totalPossibleMatches: 0,
-            correctMatches: 0,
-            score: 0,
-            isPassed: false,
-            passingThreshold: 75,
-            isCompleted: false,
-            lastQuestionAnswered: '',
-            interventionRequired: false,
-            interventionAttempts: 0,
-            interventionCompleted: false,
-            currentInterventionId: null,
-            interventionHistory: []
-          });
+        // CRITICAL FIX: If processing specific category and this isn't it, skip placeholder creation
+        if (category && category !== categoryName) {
+          console.log(`[CATEGORY RESULTS] ⏭️  Skipping ${categoryName} (processing specific category: ${category})`);
+          continue;
+        }
+
+        if (categoryResponses.length === 0) {
+          // Category has no responses - create placeholder entry ONLY if processing all categories
+          if (!category) {
+            console.log(`[CATEGORY RESULTS] Creating placeholder for ${categoryName} (no responses yet)`);
+            categories.push({
+              categoryName: categoryName,
+              totalQuestions: categoryCompleteness[categoryName]?.required || 0,
+              correctAnswers: 0,
+              totalPossibleMatches: 0,
+              correctMatches: 0,
+              score: 0,
+              isPassed: false,
+              passingThreshold: 75,
+              isCompleted: false,
+              lastQuestionAnswered: '',
+              interventionRequired: false,
+              interventionAttempts: 0,
+              interventionCompleted: false,
+              currentInterventionId: null,
+              interventionHistory: []
+            });
+          } else {
+            console.log(`[CATEGORY RESULTS] ⏭️  Skipping placeholder for ${categoryName} (specific category processing)`);
+          }
           continue;
         }
         console.log(`[CATEGORY RESULTS] Processing ${categoryResponses.length} responses for ${categoryName}`);
@@ -618,7 +642,7 @@ class CategoryResultsService {
               correctMatches: correctMatches,
               score: score,
               isPassed: score >= 75,
-              isCompleted: true,
+              isCompleted: isComplete, // ✅ FIX: Use actual completeness status
               interventionRequired: score < 75,
               responseDetails: categoryResponses.map(r => ({
                 questionId: r.questionId,
@@ -637,7 +661,7 @@ class CategoryResultsService {
               correctAnswers: correctAnswers,
               score: score,
               isPassed: score >= 75,
-              isCompleted: true,
+              isCompleted: isComplete, // ✅ FIX: Use actual completeness status
               interventionRequired: score < 75,
               responseDetails: categoryResponses.map(r => ({
                 questionId: r.questionId,
@@ -685,18 +709,84 @@ class CategoryResultsService {
       const existingResults = await this.getCategoryResults(parseInt(studentId));
 
       if (existingResults && existingResults.length > 0) {
-        console.log(`[CATEGORY RESULTS] ⚠️  EXISTING RECORD FOUND - UPDATING INSTEAD OF CREATING NEW`);
+        console.log(`[CATEGORY RESULTS] ⚠️  EXISTING RECORD FOUND - UPDATING WITH INTERVENTION PRESERVATION`);
 
-        // Update the existing record instead of creating a new one
+        // CRITICAL FIX: Preserve existing intervention data when updating from responses
         const existingResult = existingResults[0]; // Get the first (most recent) record
+
+        // CRITICAL FIX: Handle category-specific updates vs full updates
+        let mergedCategories;
+
+        if (category) {
+          // Category-specific update: Only update the specific category, preserve all others
+          console.log(`[CATEGORY RESULTS] 🔄 Category-specific update for: ${category}`);
+
+          mergedCategories = existingResult.categories.map(existingCategory => {
+            if (existingCategory.categoryName === category) {
+              // This is the category being updated
+              const newCategory = categories.find(cat => cat.categoryName === category);
+              if (newCategory) {
+                console.log(`[CATEGORY RESULTS] 🔄 Updating ${category} with new response data`);
+
+                // Preserve intervention data and merge with new assessment data
+                return {
+                  ...newCategory,
+                  // Preserve intervention tracking
+                  interventionAttempts: existingCategory.interventionAttempts || 0,
+                  interventionCompleted: existingCategory.interventionCompleted || false,
+                  currentInterventionId: existingCategory.currentInterventionId || null,
+                  interventionHistory: existingCategory.interventionHistory || [],
+                  // Use intervention status if intervention was completed successfully
+                  isPassed: existingCategory.interventionCompleted && existingCategory.isPassed ? true : newCategory.isPassed,
+                  score: existingCategory.interventionCompleted && existingCategory.isPassed ?
+                         Math.max(newCategory.score, existingCategory.score) : newCategory.score,
+                  interventionRequired: existingCategory.interventionCompleted && existingCategory.isPassed ? false : newCategory.interventionRequired
+                };
+              }
+            }
+
+            // For all other categories, preserve existing data completely
+            console.log(`[CATEGORY RESULTS] ✅ Preserving existing data for ${existingCategory.categoryName}`);
+            return existingCategory;
+          });
+        } else {
+          // Full update: Process all categories as before
+          mergedCategories = categories.map(newCategory => {
+            const existingCategory = existingResult.categories.find(cat => cat.categoryName === newCategory.categoryName);
+
+            if (existingCategory && existingCategory.interventionHistory && existingCategory.interventionHistory.length > 0) {
+              console.log(`[CATEGORY RESULTS] 🔄 Preserving intervention data for ${newCategory.categoryName}: ${existingCategory.interventionHistory.length} attempts, isPassed: ${existingCategory.isPassed}`);
+
+              // Preserve intervention data and use higher score between original assessment and intervention
+              return {
+                ...newCategory,
+                // Preserve intervention tracking
+                interventionAttempts: existingCategory.interventionAttempts || 0,
+                interventionCompleted: existingCategory.interventionCompleted || false,
+                currentInterventionId: existingCategory.currentInterventionId || null,
+                interventionHistory: existingCategory.interventionHistory || [],
+                // Use intervention status if intervention was completed successfully
+                isPassed: existingCategory.interventionCompleted && existingCategory.isPassed ? true : newCategory.isPassed,
+                score: existingCategory.interventionCompleted && existingCategory.isPassed ?
+                       Math.max(newCategory.score, existingCategory.score) : newCategory.score,
+                interventionRequired: existingCategory.interventionCompleted && existingCategory.isPassed ? false : newCategory.interventionRequired
+              };
+            } else {
+              // No intervention data to preserve
+              console.log(`[CATEGORY RESULTS] ➡️  No intervention data to preserve for ${newCategory.categoryName}`);
+              return newCategory;
+            }
+          });
+        }
+
         const updatedResult = await this.updateCategoryResult(existingResult._id, {
-          categories: categories,
+          categories: mergedCategories,
           assessmentDate: new Date()
         });
 
-        console.log(`[CATEGORY RESULTS] ✅ Successfully UPDATED existing category results for student ${studentId}`);
+        console.log(`[CATEGORY RESULTS] ✅ Successfully UPDATED existing category results with intervention preservation for student ${studentId}`);
         console.log(`[CATEGORY RESULTS] Record ID: ${updatedResult._id}`);
-        console.log(`[CATEGORY RESULTS] Categories: ${updatedResult.categories.map(c => `${c.categoryName} (${c.totalQuestions}Q)`).join(', ')}`);
+        console.log(`[CATEGORY RESULTS] Categories: ${updatedResult.categories.map(c => `${c.categoryName} (${c.totalQuestions}Q, ${c.interventionHistory?.length || 0} interventions)`).join(', ')}`);
 
         return updatedResult;
       }
