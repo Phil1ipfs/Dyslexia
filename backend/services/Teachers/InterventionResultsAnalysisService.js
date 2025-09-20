@@ -114,6 +114,8 @@ class InterventionResultsAnalysisService {
     const currentRevision = interventionAssessment.revisionNumber || 1;
     const isRevisionAttempt = currentRevision > 1;
 
+    console.log(`[INTERVENTION ANALYSIS] 🔍 DEBUG: interventionAssessment.revisionNumber = ${interventionAssessment.revisionNumber}`);
+    console.log(`[INTERVENTION ANALYSIS] 🔍 DEBUG: interventionAssessment has revisionNumber field: ${interventionAssessment.hasOwnProperty('revisionNumber')}`);
     console.log(`[INTERVENTION ANALYSIS] Current revision: ${currentRevision}, Is revision attempt: ${isRevisionAttempt}`);
 
     // Get ALL previous intervention results for this student/category for longitudinal analysis
@@ -1224,6 +1226,9 @@ class InterventionResultsAnalysisService {
       assessmentType: 'intervention',
       readingLevel: interventionAssessment.readingLevel,
 
+        // ===== CRITICAL: VERSION TRACKING =====
+        revisionNumber: currentRevision, // ALWAYS include current revisionNumber from intervention_assessment
+
       // Basic intervention performance
       totalQuestions: basicMetrics.totalQuestions,
       correctAnswers: basicMetrics.correctAnswers,
@@ -1280,6 +1285,7 @@ class InterventionResultsAnalysisService {
     // CRITICAL: Debug object before save to identify corruption source
     console.log(`[INTERVENTION ANALYSIS] 🔍 DEBUG: skillMastery object before save:`, JSON.stringify(interventionResultsData.skillMastery, null, 2));
     console.log(`[INTERVENTION ANALYSIS] 🔍 DEBUG: skillMastery keys before save:`, Object.keys(interventionResultsData.skillMastery));
+    console.log(`[INTERVENTION ANALYSIS] 🔍 DEBUG: revisionNumber in interventionResultsData: ${interventionResultsData.revisionNumber}`);
 
     // Save to database
     const interventionResults = new InterventionResults(interventionResultsData);
@@ -1316,6 +1322,7 @@ class InterventionResultsAnalysisService {
 
     // ENHANCED VERSION TRACKING: Get complete revision information
     const currentRevision = interventionAssessment.revisionNumber || 1;
+    console.log(`[INTERVENTION ANALYSIS] 🔍 DEBUG (second location): interventionAssessment.revisionNumber = ${interventionAssessment.revisionNumber}, currentRevision = ${currentRevision}`);
     const attemptCount = (interventionAssessment.interventionResults || []).length + 1;
     const hasRevisionHistory = interventionAssessment.revisionHistory && interventionAssessment.revisionHistory.length > 0;
     const lastEditedAt = interventionAssessment.lastEditedAt;

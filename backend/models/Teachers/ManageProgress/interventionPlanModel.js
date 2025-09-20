@@ -143,6 +143,7 @@ interventionPlanSchema.post('save', async function(doc) {
       await InterventionResults.create({
         studentId: doc.studentId,
         interventionPlanId: doc._id,
+        revisionNumber: 1, // Default for InterventionPlan-based results
         completedActivities: 0,
         totalActivities: doc.questions.length,
         percentComplete: 0,

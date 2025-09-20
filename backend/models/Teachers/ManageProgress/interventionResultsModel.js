@@ -249,10 +249,58 @@ const interventionResultsSchema = new mongoose.Schema({
   strict: false // Allow dynamic category keys in skillMastery and errorPatterns
 });
 
-// Update timestamp on save
-interventionResultsSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
+// BULLETPROOF PRE-SAVE MIDDLEWARE - GUARANTEES revisionNumber is ALWAYS set
+interventionResultsSchema.pre('save', async function(next) {
+  try {
+    console.log(`[INTERVENTION RESULTS] 🔍 PRE-SAVE MIDDLEWARE TRIGGERED for ${this._id || 'new record'}`);
+    console.log(`[INTERVENTION RESULTS] 🔍 Current revisionNumber: ${this.revisionNumber}`);
+    console.log(`[INTERVENTION RESULTS] 🔍 interventionAssessmentId: ${this.interventionAssessmentId}`);
+    
+    // Update timestamp
+    this.updatedAt = new Date();
+
+    // CRITICAL: ENSURE revisionNumber is ALWAYS set
+    if (!this.revisionNumber || this.revisionNumber < 1) {
+      console.log(`[INTERVENTION RESULTS] 🚨 CRITICAL: Missing revisionNumber detected for ${this._id || 'new record'}`);
+
+      // Try to get revisionNumber from linked intervention_assessment
+      if (this.interventionAssessmentId) {
+        console.log(`[INTERVENTION RESULTS] 🔍 Fetching revisionNumber from intervention_assessment ${this.interventionAssessmentId}`);
+
+        try {
+          const InterventionAssessment = require('./interventionAssessmentModel');
+          const intervention = await InterventionAssessment.findById(this.interventionAssessmentId);
+
+          if (intervention && intervention.revisionNumber) {
+            this.revisionNumber = intervention.revisionNumber;
+            console.log(`[INTERVENTION RESULTS] ✅ AUTOMATIC FIX: Set revisionNumber to ${this.revisionNumber} from intervention_assessment`);
+          } else {
+            this.revisionNumber = 1;
+            console.log(`[INTERVENTION RESULTS] ⚠️ FALLBACK: Set revisionNumber to 1 (intervention_assessment not found or missing revisionNumber)`);
+          }
+        } catch (linkError) {
+          console.error(`[INTERVENTION RESULTS] ❌ Error fetching intervention_assessment:`, linkError.message);
+          this.revisionNumber = 1;
+          console.log(`[INTERVENTION RESULTS] ⚠️ EMERGENCY FALLBACK: Set revisionNumber to 1 due to error`);
+        }
+      } else {
+        this.revisionNumber = 1;
+        console.log(`[INTERVENTION RESULTS] ⚠️ DEFAULT: Set revisionNumber to 1 (no interventionAssessmentId provided)`);
+      }
+    } else {
+      console.log(`[INTERVENTION RESULTS] ✅ revisionNumber already set: ${this.revisionNumber}`);
+    }
+
+    next();
+  } catch (error) {
+    console.error(`[INTERVENTION RESULTS] ❌ Critical error in pre-save middleware:`, error);
+    // NEVER let save fail due to revisionNumber issues - always provide fallback
+    if (!this.revisionNumber || this.revisionNumber < 1) {
+      this.revisionNumber = 1;
+      console.log(`[INTERVENTION RESULTS] 🚨 EMERGENCY: Set revisionNumber to 1 to prevent save failure`);
+    }
+    next();
+  }
 });
 
 // Create comprehensive indexes for efficient queries
@@ -328,6 +376,7 @@ interventionResultsSchema.statics.getComprehensiveAnalysis = function(studentId,
   .populate('prescriptiveAnalysisId')
   .sort({ createdAt: -1 });
 };
+
 
 const InterventionResults = mongoose.models.InterventionResults || mongoose.model('InterventionResults', interventionResultsSchema);
 

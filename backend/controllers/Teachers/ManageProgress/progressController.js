@@ -535,6 +535,7 @@ class ProgressController {
             await InterventionResults.create({
                 studentId: new mongoose.Types.ObjectId(studentId),
                 interventionPlanId: newPlan._id,
+                revisionNumber: 1, // Default for InterventionPlan-based results
                 completedActivities: 0,
                 totalActivities: interventionQuestions.length,
                 percentComplete: 0,
@@ -700,6 +701,7 @@ class ProgressController {
                 progress = await InterventionResults.create({
                     studentId: intervention.studentId,
                     interventionPlanId: interventionId,
+                    revisionNumber: 1, // Default for InterventionPlan-based results
                     completedActivities: 0,
                     totalActivities: intervention.questions.length,
                     percentComplete: 0,
