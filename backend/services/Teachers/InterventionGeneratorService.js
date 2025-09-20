@@ -1578,10 +1578,14 @@ class InterventionGeneratorService {
       console.log(`[INTERVENTION GENERATOR] ✅ INTERVENTION COMPLETENESS VALIDATED - PROCEEDING WITH RESULTS CREATION`);
       console.log(`[INTERVENTION GENERATOR] Completeness: ${completenessValidation.answered}/${completenessValidation.required} questions answered`);
 
-      // Get all responses for this intervention
+      // Get all responses for this intervention - FIXED: Filter by revision number
       const responses = await InterventionResponse.find({
-        interventionAssessmentId: interventionId
+        interventionAssessmentId: interventionId,
+        revisionNumber: intervention.revisionNumber || 1  // CRITICAL: Only get responses for current revision
       }).sort({ answeredAt: 1 });
+
+      console.log(`[INTERVENTION GENERATOR] 🔍 FILTERING BY REVISION: ${intervention.revisionNumber || 1}`);
+      console.log(`[INTERVENTION GENERATOR] 📊 Found ${responses.length} responses for revision ${intervention.revisionNumber || 1}`);
 
       if (responses.length === 0) {
         throw new Error(`No responses found for intervention ${interventionId}`);
@@ -1681,7 +1685,7 @@ class InterventionGeneratorService {
 
         // CORE PERFORMANCE METRICS
         totalQuestions,
-        correctAnswers,
+        correctAnswers: cappedCorrectAnswers,  // FIXED: Use capped value instead of raw count
         score: finalScore,
         isPassed,
         passThreshold: 75,
