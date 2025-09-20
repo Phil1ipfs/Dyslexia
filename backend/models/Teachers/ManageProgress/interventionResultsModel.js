@@ -37,6 +37,20 @@ const interventionResultsSchema = new mongoose.Schema({
     required: true
   },
 
+  // ===== VERSION TRACKING (CRITICAL for revision awareness) =====
+  revisionNumber: {
+    type: Number,
+    required: true,
+    default: 1,
+    min: 1,
+    validate: {
+      validator: function(v) {
+        return Number.isInteger(v) && v >= 1;
+      },
+      message: 'Revision number must be a positive integer starting from 1'
+    }
+  },
+
   // ===== INTERVENTION PERFORMANCE (Basic Metrics) =====
   totalQuestions: {
     type: Number,

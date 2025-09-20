@@ -470,15 +470,15 @@
     "$date": "2025-09-18T07:11:19.540Z"
   },
   "updatedAt": {
-    "$date": "2025-09-19T00:11:47.461Z"
+    "$date": "2025-09-20T06:14:04.078Z"
   },
   "startedAt": null,
   "__v": 2,
   "completedAt": {
-    "$date": "2025-09-19T00:11:47.460Z"
+    "$date": "2025-09-20T06:14:04.077Z"
   },
   "interventionResultsId": {
-    "$oid": "68cc9fc3820650c15befc9ca"
+    "$oid": "68ce462c2ff099f3079f3522"
   },
   "interventionResults": []
 }

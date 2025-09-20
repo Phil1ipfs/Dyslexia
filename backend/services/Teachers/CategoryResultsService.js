@@ -383,7 +383,7 @@ class CategoryResultsService {
 
       // Check if responses include revisionNumber tracking
       const versionAwareResponses = interventionResponses.filter(response => {
-        // CRITICAL: For ALL revisions, revisionNumber is now REQUIRED
+        // CRITICAL: revisionNumber is now STRICTLY REQUIRED for ALL responses
         if (response.revisionNumber) {
           const matches = response.revisionNumber === currentRevision;
           if (!matches) {
@@ -392,14 +392,8 @@ class CategoryResultsService {
           return matches;
         }
 
-        // Legacy responses without revisionNumber (assume revision 1 only)
-        if (currentRevision === 1) {
-          console.warn(`[INTERVENTION COMPLETENESS] ⚠️ Response ${response._id} missing revisionNumber - assuming revision 1 (LEGACY SUPPORT)`);
-          return true;
-        }
-
-        // For revision 2+, responses WITHOUT revisionNumber are invalid
-        console.error(`[INTERVENTION COMPLETENESS] ❌ Response ${response._id} missing revisionNumber for revision ${currentRevision}`);
+        // NO LEGACY SUPPORT: ALL responses must have revisionNumber
+        console.error(`[INTERVENTION COMPLETENESS] ❌ Response ${response._id} missing revisionNumber - STRICT VALIDATION FAILED`);
         return false;
       });
 

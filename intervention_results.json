@@ -1,6 +1,6 @@
 {
   "_id": {
-    "$oid": "68cc9fc3820650c15befc9ca"
+    "$oid": "68ce462c2ff099f3079f3522"
   },
   "studentId": 202522233,
   "interventionAssessmentId": {
@@ -11,7 +11,7 @@
   },
   "category": "Alphabet Knowledge",
   "assessmentDate": {
-    "$date": "2025-09-19T00:11:47.370Z"
+    "$date": "2025-09-20T06:14:04.006Z"
   },
   "assessmentType": "intervention",
   "readingLevel": "At Grade Level",
@@ -32,7 +32,7 @@
       "currentMastery": 0.44,
       "masteryGrowth": 0.10999999999999999,
       "lastUpdated": {
-        "$date": "2025-09-19T00:11:47.369Z"
+        "$date": "2025-09-20T06:14:04.006Z"
       },
       "totalQuestions": 9,
       "correctAnswers": 4,
@@ -328,34 +328,7 @@
     "overallReadiness": "Developing skills steadily",
     "recommendedAction": "teacher_revision",
     "interventionImpact": "Moderately effective with measurable progress",
-    "nextStepsRationale": "Student showing progress - minor adjustments recommended",
-    "versionTracking": {
-      "interventionAssessmentId": {
-        "$oid": "68cbb0975a26e73b61e061d3"
-      },
-      "revisionNumber": 1,
-      "isRevisedIntervention": false,
-      "hasRevisionHistory": false,
-      "attemptNumber": 1,
-      "attemptReason": "initial_attempt",
-      "lastModifiedBy": null,
-      "lastModifiedAt": null,
-      "assessmentVersionInfo": {
-        "canAccessPreviousResults": false,
-        "canTrackRevisionEffectiveness": false,
-        "totalAttemptsOnThisIntervention": 1,
-        "bidirectionalTrackingEnabled": true
-      }
-    },
-    "prescriptionAnalysisAccuracy": {
-      "accuracy": 75,
-      "versionAwareAccuracy": 75,
-      "revisionBasedConfidence": "moderate",
-      "longitudinalDataAvailable": false,
-      "crossReferenceCapable": true,
-      "methodology": "research_baseline",
-      "dataPoints": 1
-    }
+    "nextStepsRationale": "Student showing progress - minor adjustments recommended"
   },
   "strengths": [],
   "weaknesses": [
@@ -365,14 +338,14 @@
     "Multisensory letter identification"
   ],
   "completedAt": {
-    "$date": "2025-09-19T00:11:47.370Z"
+    "$date": "2025-09-20T06:14:04.006Z"
   },
   "interventionHistory": [],
   "createdAt": {
-    "$date": "2025-09-19T00:11:47.372Z"
+    "$date": "2025-09-20T06:14:04.009Z"
   },
   "updatedAt": {
-    "$date": "2025-09-19T00:11:47.374Z"
+    "$date": "2025-09-20T06:14:04.010Z"
   },
   "__v": 0
 }
