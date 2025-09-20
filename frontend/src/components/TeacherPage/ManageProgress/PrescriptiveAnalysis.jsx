@@ -154,15 +154,47 @@ const PrescriptiveAnalysis = ({
   const [interventionResponses, setInterventionResponses] = useState([]);
 
   // Helper function to get intervention status for a category
-  const getInterventionStatus = (categoryName) => {
-    const results = interventionResults[categoryName];
-    if (!results) return 'initial';
+  const getInterventionStatus = (categoryName, categoryData = null) => {
+    // 🎯 PRIORITY 1: Check category data for intervention history FIRST
+    if (categoryData) {
+      // Check intervention history for successful attempts (most reliable indicator)
+      const hasSuccessfulIntervention = categoryData.interventionHistory?.some(attempt => attempt.isPassed);
 
-    if (results.passed && results.score >= 75) {
+      // Check if category passed via intervention based on flags
+      const passedViaIntervention = categoryData.isPassed && categoryData.interventionCompleted;
+
+      if (hasSuccessfulIntervention || passedViaIntervention) {
+        console.log(`[INTERVENTION STATUS] ✅ ${categoryName} detected as intervention SUCCESS via:`, {
+          hasSuccessfulIntervention,
+          passedViaIntervention,
+          interventionAttempts: categoryData.interventionAttempts,
+          mainScore: categoryData.score
+        });
+        return 'success';
+      }
+
+      // Check if there are failed intervention attempts
+      const hasFailedInterventions = categoryData.interventionHistory?.some(attempt => !attempt.isPassed);
+      if (hasFailedInterventions && !hasSuccessfulIntervention) {
+        console.log(`[INTERVENTION STATUS] ❌ ${categoryName} needs revision:`, {
+          hasFailedInterventions,
+          hasSuccessfulIntervention
+        });
+        return 'revision_needed';
+      }
+    }
+
+    // 🎯 PRIORITY 2: Check intervention results state (fallback)
+    const results = interventionResults[categoryName];
+    if (results?.passed && results?.score >= 75) {
+      console.log(`[INTERVENTION STATUS] ✅ ${categoryName} detected as intervention SUCCESS via results state`);
       return 'success';
-    } else if (results.passed === false && results.score < 75) {
+    } else if (results?.passed === false && results?.score < 75) {
+      console.log(`[INTERVENTION STATUS] ❌ ${categoryName} needs revision via results state`);
       return 'revision_needed';
     }
+
+    console.log(`[INTERVENTION STATUS] 📊 ${categoryName} has no intervention attempts - using initial status`);
     return 'initial';
   };
 
@@ -763,9 +795,10 @@ const PrescriptiveAnalysis = ({
   /**
    * Get prescriptive analysis for a specific category from REAL CLAUDE.md data
    * @param {string} categoryName - Category name
+   * @param {Object|null} categoryData - Category data for intervention status detection
    * @return {Object|null} Analysis object with BKT, IRT, and error patterns from real data
    */
-  const getAnalysisForCategory = (categoryName) => {
+  const getAnalysisForCategory = (categoryName, categoryData = null) => {
     console.log('Looking for REAL prescriptive analysis for category:', categoryName);
     console.log('Available real analyses:', liveAnalyses);
 
@@ -858,8 +891,29 @@ const PrescriptiveAnalysis = ({
     console.log(`- errorPatterns["${categoryName}"] exists:`, Boolean(studentAnalysis.errorPatterns?.[categoryName]));
     console.log(`- errorPatterns["${normalizedCategory}"] exists:`, Boolean(studentAnalysis.errorPatterns?.[normalizedCategory]));
 
-    // Extract complete BKT data with response history
-    const skillMasteryData = studentAnalysis.skillMastery?.[categoryName] || studentAnalysis.skillMastery?.[normalizedCategory];
+    // 🔄 PRIORITIZE POST-INTERVENTION ANALYSIS: Check if category passed via intervention
+    const interventionStatus = getInterventionStatus(categoryName, categoryData);
+    const hasPassedViaIntervention = interventionStatus === 'success';
+    const interventionData = interventionResults[categoryName];
+
+    console.log(`[ANALYSIS DATA] Category: ${categoryName}, Intervention Status: ${interventionStatus}, Has Intervention Data: ${!!interventionData}`);
+
+    // Extract BKT data - prioritize intervention results if category passed via intervention
+    let skillMasteryData;
+    let dataSource = '';
+
+    if (hasPassedViaIntervention && interventionData?.skillMastery?.[categoryName]) {
+      // 🎯 Use POST-INTERVENTION analysis for categories that passed via intervention
+      skillMasteryData = interventionData.skillMastery[categoryName];
+      dataSource = 'intervention_results (post-intervention)';
+      console.log(`[ANALYSIS DATA] ✅ Using POST-INTERVENTION analysis for ${categoryName}:`, skillMasteryData);
+    } else {
+      // 📊 Use PRE-INTERVENTION analysis for categories not yet attempted or failed intervention
+      skillMasteryData = studentAnalysis.skillMastery?.[categoryName] || studentAnalysis.skillMastery?.[normalizedCategory];
+      dataSource = 'prescriptive_analysis (pre-intervention)';
+      console.log(`[ANALYSIS DATA] 📊 Using PRE-INTERVENTION analysis for ${categoryName}:`, skillMasteryData);
+    }
+
     const bktData = skillMasteryData ? {
       ...skillMasteryData,
       // Ensure we have all BKT fields from the database
@@ -871,7 +925,10 @@ const PrescriptiveAnalysis = ({
       totalPossibleMatches: skillMasteryData.totalPossibleMatches || 0,
       correctMatches: skillMasteryData.correctMatches || 0,
       responseHistory: skillMasteryData.responseHistory || [],
-      lastUpdated: skillMasteryData.lastUpdated
+      lastUpdated: skillMasteryData.lastUpdated,
+      // Add metadata about data source
+      _dataSource: dataSource,
+      _isPostIntervention: hasPassedViaIntervention
     } : null;
 
     // Extract complete error patterns with all confusion pairs
@@ -5044,7 +5101,7 @@ const PrescriptiveAnalysis = ({
   // Use a try-catch block to handle any potential errors in getAnalysisForCategory
   let selectedAnalysis = null;
   try {
-    selectedAnalysis = selectedCategory ? getAnalysisForCategory(selectedCategory) : null;
+    selectedAnalysis = selectedCategory ? getAnalysisForCategory(selectedCategory, selectedCategoryData) : null;
   } catch (error) {
     console.error("Error getting analysis for category:", error);
   }

@@ -1341,7 +1341,7 @@ class CategoryResultsService {
    */
   static async updateCategoryFromIntervention(studentId, category, interventionScore, interventionResultId) {
     try {
-      console.log(`[INTERVENTION UPDATE] Updating category_results for student ${studentId}, category ${category}, score ${interventionScore}`);
+      console.log(`[INTERVENTION UPDATE] Updating category_results for student ${studentId}, category ${category} - marking as passed via intervention (original score preserved)`);
 
       // Find the category result that needs updating
       const categoryResult = await CategoryResult.findOne({
@@ -1363,7 +1363,7 @@ class CategoryResultsService {
       }
 
       // Update the category with intervention success
-      categoryResult.categories[categoryIndex].score = interventionScore;
+      // NOTE: Original assessment score is preserved - intervention success tracked via flags
       categoryResult.categories[categoryIndex].isPassed = true;
       categoryResult.categories[categoryIndex].interventionRequired = false;
       categoryResult.categories[categoryIndex].interventionCompleted = true;
