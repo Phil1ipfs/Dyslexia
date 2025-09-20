@@ -63,6 +63,133 @@ class InterventionResultsAnalysisService {
   }
 
   /**
+   * CRITICAL: Validate intervention data integrity for ANY revision number
+   * Ensures accurate calculations regardless of revision (3, 4, 5, etc.)
+   */
+  static async validateInterventionDataIntegrity(interventionAssessment, interventionResponses, currentRevision) {
+    console.log(`[DATA INTEGRITY] 🔍 Validating intervention data integrity for revision ${currentRevision}...`);
+
+    // 1. Validate intervention assessment structure
+    if (!interventionAssessment.questions || !Array.isArray(interventionAssessment.questions)) {
+      throw new Error(`Invalid intervention assessment: questions array missing or invalid for revision ${currentRevision}`);
+    }
+
+    if (!interventionAssessment.totalQuestions || interventionAssessment.totalQuestions <= 0) {
+      throw new Error(`Invalid intervention assessment: totalQuestions missing or invalid (${interventionAssessment.totalQuestions}) for revision ${currentRevision}`);
+    }
+
+    // 2. Validate question count consistency
+    const assessmentQuestionCount = interventionAssessment.questions.length;
+    const declaredQuestionCount = interventionAssessment.totalQuestions;
+
+    if (assessmentQuestionCount !== declaredQuestionCount) {
+      console.warn(`[DATA INTEGRITY] ⚠️  Question count mismatch: assessment has ${assessmentQuestionCount} questions but declares ${declaredQuestionCount}`);
+      // Use actual questions array length as source of truth
+      interventionAssessment.totalQuestions = assessmentQuestionCount;
+    }
+
+    // 3. Validate revision number consistency
+    if (interventionAssessment.revisionNumber !== currentRevision) {
+      throw new Error(`Revision number mismatch: assessment shows ${interventionAssessment.revisionNumber} but expected ${currentRevision}`);
+    }
+
+    // 4. Validate response data quality
+    if (interventionResponses.length === 0) {
+      console.warn(`[DATA INTEGRITY] ⚠️  No responses found for revision ${currentRevision} - this might be incomplete`);
+      return; // Can't validate further without responses
+    }
+
+    // 5. Check for response data contamination
+    const invalidResponses = interventionResponses.filter(response =>
+      !response.revisionNumber || response.revisionNumber !== currentRevision
+    );
+
+    if (invalidResponses.length > 0) {
+      throw new Error(`Data contamination detected: ${invalidResponses.length} responses have wrong/missing revisionNumber for revision ${currentRevision}`);
+    }
+
+    // 6. Validate response completeness
+    const expectedQuestionIds = interventionAssessment.questions.map(q => q.questionId);
+    const responseQuestionIds = interventionResponses.map(r => r.questionId);
+    const missingResponses = expectedQuestionIds.filter(qId => !responseQuestionIds.includes(qId));
+    const extraResponses = responseQuestionIds.filter(qId => !expectedQuestionIds.includes(qId));
+
+    if (missingResponses.length > 0) {
+      console.warn(`[DATA INTEGRITY] ⚠️  Missing responses for questions: ${missingResponses.join(', ')}`);
+    }
+
+    if (extraResponses.length > 0) {
+      console.warn(`[DATA INTEGRITY] ⚠️  Extra responses for unknown questions: ${extraResponses.join(', ')}`);
+    }
+
+    // 7. Validate response data structure
+    for (const response of interventionResponses) {
+      if (typeof response.isCorrect !== 'boolean') {
+        throw new Error(`Invalid response data: isCorrect must be boolean for question ${response.questionId} in revision ${currentRevision}`);
+      }
+
+      if (!response.answeredAt || !(response.answeredAt instanceof Date)) {
+        throw new Error(`Invalid response data: answeredAt must be valid Date for question ${response.questionId} in revision ${currentRevision}`);
+      }
+    }
+
+    console.log(`[DATA INTEGRITY] ✅ Validation passed for revision ${currentRevision}: ${interventionResponses.length} valid responses`);
+  }
+
+  /**
+   * FINAL VALIDATION: Ensure intervention results are mathematically correct
+   * Works for ANY revision number (1, 2, 3, 4, 5, etc.)
+   */
+  static validateFinalInterventionResults(interventionResults, interventionAssessment, interventionResponses) {
+    const revision = interventionAssessment.revisionNumber;
+    console.log(`[FINAL VALIDATION] 🔍 Validating intervention results accuracy for revision ${revision}...`);
+
+    // 1. Validate basic metrics
+    const expectedTotalQuestions = interventionAssessment.totalQuestions || interventionAssessment.questions?.length;
+    const expectedCorrectAnswers = Math.min(
+      interventionResponses.filter(r => r.isCorrect).length,
+      expectedTotalQuestions
+    );
+    const expectedScore = expectedTotalQuestions > 0
+      ? Math.round((expectedCorrectAnswers / expectedTotalQuestions) * 100)
+      : 0;
+    const expectedPassed = expectedScore >= (interventionAssessment.passThreshold || 75);
+
+    // 2. Check for calculation errors
+    const errors = [];
+
+    if (interventionResults.totalQuestions !== expectedTotalQuestions) {
+      errors.push(`totalQuestions: expected ${expectedTotalQuestions}, got ${interventionResults.totalQuestions}`);
+    }
+
+    if (interventionResults.correctAnswers !== expectedCorrectAnswers) {
+      errors.push(`correctAnswers: expected ${expectedCorrectAnswers}, got ${interventionResults.correctAnswers}`);
+    }
+
+    if (interventionResults.score !== expectedScore) {
+      errors.push(`score: expected ${expectedScore}%, got ${interventionResults.score}%`);
+    }
+
+    if (interventionResults.isPassed !== expectedPassed) {
+      errors.push(`isPassed: expected ${expectedPassed}, got ${interventionResults.isPassed}`);
+    }
+
+    if (interventionResults.revisionNumber !== revision) {
+      errors.push(`revisionNumber: expected ${revision}, got ${interventionResults.revisionNumber}`);
+    }
+
+    // 3. Report validation results
+    if (errors.length > 0) {
+      console.error(`[FINAL VALIDATION] ❌ CALCULATION ERRORS detected for revision ${revision}:`);
+      errors.forEach(error => console.error(`  - ${error}`));
+      throw new Error(`Intervention results contain calculation errors for revision ${revision}: ${errors.join(', ')}`);
+    }
+
+    console.log(`[FINAL VALIDATION] ✅ All calculations verified correct for revision ${revision}`);
+    console.log(`[FINAL VALIDATION] Summary: ${expectedCorrectAnswers}/${expectedTotalQuestions} = ${expectedScore}% (${expectedPassed ? 'PASSED' : 'FAILED'})`);
+  }
+
+  /**
    * Gather all data needed for comprehensive intervention analysis
    */
   static async gatherAnalysisContext(interventionAssessmentId, studentId) {
@@ -76,11 +203,25 @@ class InterventionResultsAnalysisService {
       throw new Error(`Intervention assessment not found: ${interventionAssessmentId}`);
     }
 
-    // Get all intervention responses
+    // Get intervention responses for CURRENT REVISION ONLY
+    // CRITICAL: Strict revision filtering to prevent data contamination
+    const currentRevision = interventionAssessment.revisionNumber;
+    if (!currentRevision || currentRevision < 1) {
+      throw new Error(`Invalid intervention revision number: ${currentRevision}. Must be >= 1`);
+    }
+
+    console.log(`[INTERVENTION ANALYSIS] 🔍 Fetching responses for revision ${currentRevision} only`);
+
     const interventionResponses = await InterventionResponse.find({
       studentId: studentId,
-      interventionAssessmentId: interventionAssessmentId
+      interventionAssessmentId: interventionAssessmentId,
+      revisionNumber: { $eq: currentRevision }  // STRICT: Exact revision match, no fallback
     }).sort({ answeredAt: 1 });
+
+    console.log(`[INTERVENTION ANALYSIS] 📊 Found ${interventionResponses.length} responses for revision ${currentRevision}`);
+
+    // CRITICAL: Data integrity validation for ANY revision number
+    await this.validateInterventionDataIntegrity(interventionAssessment, interventionResponses, currentRevision);
 
     // Get original prescriptive analysis for before/after comparison
     const originalPrescriptiveAnalysis = interventionAssessment.prescriptiveAnalysisId;
@@ -111,12 +252,12 @@ class InterventionResultsAnalysisService {
     console.log(`[INTERVENTION ANALYSIS] 🔄 Gathering intervention history for cross-referencing...`);
 
     // Get intervention revision information
-    const currentRevision = interventionAssessment.revisionNumber || 1;
-    const isRevisionAttempt = currentRevision > 1;
+    const revisionInfo = interventionAssessment.revisionNumber || 1;
+    const isRevisionAttempt = revisionInfo > 1;
 
     console.log(`[INTERVENTION ANALYSIS] 🔍 DEBUG: interventionAssessment.revisionNumber = ${interventionAssessment.revisionNumber}`);
     console.log(`[INTERVENTION ANALYSIS] 🔍 DEBUG: interventionAssessment has revisionNumber field: ${interventionAssessment.hasOwnProperty('revisionNumber')}`);
-    console.log(`[INTERVENTION ANALYSIS] Current revision: ${currentRevision}, Is revision attempt: ${isRevisionAttempt}`);
+    console.log(`[INTERVENTION ANALYSIS] Current revision: ${revisionInfo}, Is revision attempt: ${isRevisionAttempt}`);
 
     // Get ALL previous intervention results for this student/category for longitudinal analysis
     const previousInterventionResults = await InterventionResults.find({
@@ -212,7 +353,8 @@ class InterventionResultsAnalysisService {
     const skillMasteryAnalysis = this.performAdvancedBKTAnalysis(
       interventionResponses,
       originalPrescriptiveAnalysis,
-      category
+      category,
+      interventionAssessment
     );
 
     // Step 3: Calculate IRT ability estimates (updated after intervention)
@@ -358,23 +500,47 @@ class InterventionResultsAnalysisService {
 
   /**
    * Calculate basic intervention performance metrics
+   * ENHANCED: Works accurately for ANY revision number (3, 4, 5, etc.)
    */
   static calculateBasicInterventionMetrics(interventionResponses, interventionAssessment) {
+    console.log(`[METRICS CALCULATION] 🧮 Calculating intervention metrics for revision ${interventionAssessment.revisionNumber}...`);
+
+    // CRITICAL VALIDATION: Ensure data integrity before calculation
+    if (!interventionAssessment || !interventionResponses) {
+      throw new Error(`Missing required data for metrics calculation`);
+    }
+
+    if (!Array.isArray(interventionResponses)) {
+      throw new Error(`interventionResponses must be an array, got ${typeof interventionResponses}`);
+    }
+
     // CRITICAL FIX: Use intervention assessment's question count, not response count
     // This prevents score calculation errors when old responses exceed new intervention questions
     const totalQuestions = interventionAssessment.totalQuestions || interventionAssessment.questions?.length || interventionResponses.length;
-    const correctAnswers = interventionResponses.filter(response => response.isCorrect).length;
+    const rawCorrectAnswers = interventionResponses.filter(response => response.isCorrect).length;
+
+    // ENHANCED VALIDATION: Check for calculation anomalies
+    if (totalQuestions <= 0) {
+      throw new Error(`Invalid totalQuestions: ${totalQuestions}. Must be > 0 for revision ${interventionAssessment.revisionNumber}`);
+    }
+
+    if (interventionResponses.length > totalQuestions * 2) {
+      console.warn(`[METRICS CALCULATION] ⚠️  Suspicious: ${interventionResponses.length} responses for ${totalQuestions} questions in revision ${interventionAssessment.revisionNumber}`);
+    }
 
     // Cap the correct answers to not exceed total questions (for revision scenarios)
-    const cappedCorrectAnswers = Math.min(correctAnswers, totalQuestions);
+    const cappedCorrectAnswers = Math.min(rawCorrectAnswers, totalQuestions);
     const score = totalQuestions > 0 ? Math.round((cappedCorrectAnswers / totalQuestions) * 100) : 0;
 
-    console.log(`[INTERVENTION METRICS] Score calculation:`);
-    console.log(`[INTERVENTION METRICS] - Total questions in intervention: ${totalQuestions}`);
-    console.log(`[INTERVENTION METRICS] - Responses received: ${interventionResponses.length}`);
-    console.log(`[INTERVENTION METRICS] - Correct answers (raw): ${correctAnswers}`);
-    console.log(`[INTERVENTION METRICS] - Correct answers (capped): ${cappedCorrectAnswers}`);
-    console.log(`[INTERVENTION METRICS] - Final score: ${score}%`);
+    // ENHANCED LOGGING: Detailed calculation breakdown for any revision
+    console.log(`[METRICS CALCULATION] Revision ${interventionAssessment.revisionNumber} calculation breakdown:`);
+
+    console.log(`[METRICS CALCULATION] - Total questions in intervention: ${totalQuestions}`);
+    console.log(`[METRICS CALCULATION] - Responses received: ${interventionResponses.length}`);
+    console.log(`[METRICS CALCULATION] - Correct answers (raw): ${rawCorrectAnswers}`);
+    console.log(`[METRICS CALCULATION] - Correct answers (capped): ${cappedCorrectAnswers}`);
+    console.log(`[METRICS CALCULATION] - Final score: ${score}%`);
+    console.log(`[METRICS CALCULATION] - Passed: ${score >= (interventionAssessment.passThreshold || 75)}`);
     const isPassed = score >= (interventionAssessment.passThreshold || 75);
 
     // Calculate matches for categories that use matching (like Phonological Awareness)
@@ -401,7 +567,7 @@ class InterventionResultsAnalysisService {
 
     return {
       totalQuestions,
-      correctAnswers,
+      correctAnswers: cappedCorrectAnswers, // FIXED: Use capped value for accurate reporting
       cappedCorrectAnswers, // Include capped value for accurate score calculations
       totalPossibleMatches,
       correctMatches,
@@ -420,7 +586,7 @@ class InterventionResultsAnalysisService {
   /**
    * Perform advanced BKT analysis with before/after comparison
    */
-  static performAdvancedBKTAnalysis(interventionResponses, originalPrescriptiveAnalysis, category) {
+  static performAdvancedBKTAnalysis(interventionResponses, originalPrescriptiveAnalysis, category, interventionAssessment) {
     // CRITICAL: Validate category parameter to prevent data corruption
     if (!category || typeof category !== 'string') {
       console.error(`[INTERVENTION ANALYSIS] ❌ Invalid category parameter:`, { category, type: typeof category });
@@ -428,6 +594,13 @@ class InterventionResultsAnalysisService {
     }
 
     console.log(`[INTERVENTION ANALYSIS] 🔬 Performing BKT analysis for category: "${category}"`);
+
+    // CRITICAL: Calculate intervention assessment metrics for accurate score calculation
+    const totalQuestions = interventionAssessment.totalQuestions || interventionAssessment.questions?.length || interventionResponses.length;
+    const rawCorrectAnswers = interventionResponses.filter(r => r.isCorrect).length;
+    const cappedCorrectAnswers = Math.min(rawCorrectAnswers, totalQuestions);
+
+    console.log(`[BKT ANALYSIS] Intervention metrics: totalQuestions=${totalQuestions}, rawCorrect=${rawCorrectAnswers}, cappedCorrect=${cappedCorrectAnswers}`);
 
     // Get original mastery probability
     const originalMastery = originalPrescriptiveAnalysis.skillMastery?.[category]?.masteryProbability || 0.5;
@@ -484,7 +657,7 @@ class InterventionResultsAnalysisService {
       masteryGrowth: Math.round(masteryGrowth * 1000) / 1000,
       lastUpdated: new Date(),
       totalQuestions: totalQuestions, // Use the corrected totalQuestions from intervention assessment
-      correctAnswers: interventionResponses.filter(r => r.isCorrect).length,
+      correctAnswers: cappedCorrectAnswers, // FIXED: Use capped correct answers for accurate reporting
       score: Math.round((cappedCorrectAnswers / totalQuestions) * 100),
       isPassed: currentMastery >= 0.75, // BKT confidence threshold
       status: status,
@@ -1298,6 +1471,9 @@ class InterventionResultsAnalysisService {
     // Debug the saved result
     console.log(`[INTERVENTION ANALYSIS] 🔍 DEBUG: Saved skillMastery keys:`, Object.keys(savedResults.skillMastery));
 
+    // FINAL VALIDATION: Ensure mathematical accuracy for ANY revision number
+    this.validateFinalInterventionResults(savedResults, dataContext.interventionAssessment, dataContext.interventionResponses);
+
     console.log(`[INTERVENTION ANALYSIS] 💾 Comprehensive intervention results saved: ${savedResults._id}`);
     return savedResults;
   }
@@ -1322,7 +1498,7 @@ class InterventionResultsAnalysisService {
 
     // ENHANCED VERSION TRACKING: Get complete revision information
     const currentRevision = interventionAssessment.revisionNumber || 1;
-    console.log(`[INTERVENTION ANALYSIS] 🔍 DEBUG (second location): interventionAssessment.revisionNumber = ${interventionAssessment.revisionNumber}, currentRevision = ${currentRevision}`);
+    console.log(`[INTERVENTION ANALYSIS] 🔍 DEBUG (linkInterventionResults): interventionAssessment.revisionNumber = ${interventionAssessment.revisionNumber}, currentRevision = ${currentRevision}`);
     const attemptCount = (interventionAssessment.interventionResults || []).length + 1;
     const hasRevisionHistory = interventionAssessment.revisionHistory && interventionAssessment.revisionHistory.length > 0;
     const lastEditedAt = interventionAssessment.lastEditedAt;
