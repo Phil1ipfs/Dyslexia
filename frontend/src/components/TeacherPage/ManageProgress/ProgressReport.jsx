@@ -565,6 +565,10 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
   const getCategoryProgressionStatus = (category) => {
     const latestAttempt = getLatestInterventionAttempt(category);
 
+    // Check if student has actually attempted the category (has questions answered)
+    const hasAttemptedCategory = (Number(category.totalQuestions) || 0) > 0 &&
+                                 (Number(category.correctAnswers) || 0) >= 0;
+
     // If category passed, check if it was via intervention or original assessment
     if (category.isPassed) {
       // Check if passed via intervention
@@ -588,7 +592,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
           message: 'Category passed via intervention'
         };
       }
-      
+
       // Otherwise, passed via original assessment
       return {
         status: 'passed',
@@ -597,7 +601,17 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
         message: 'Category passed via intervention'
       };
     }
-    
+
+    // If no assessment attempt yet, show as not attempted
+    if (!hasAttemptedCategory) {
+      return {
+        status: 'not_attempted',
+        score: 0,
+        source: 'none',
+        message: 'Student has not answered any questions yet'
+      };
+    }
+
     // If no intervention attempts yet, show as needs intervention
     if (!latestAttempt) {
       return {
@@ -607,7 +621,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
         message: 'Needs intervention - original score below threshold'
       };
     }
-    
+
     // Check latest intervention attempt
     if (latestAttempt.isPassed && latestAttempt.score >= 75) {
       return {
@@ -990,9 +1004,24 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
               let displayScore = getCurrentDisplayScore(category); // Use the current display score (latest intervention or original)
               let isPassed = progressionStatus.status === 'passed';
 
+              // ✅ FIX: Check if student has actually attempted any questions
+              // For Phonological Awareness: check correctMatches and totalPossibleMatches
+              // For other categories: check correctAnswers and totalQuestions
+              const hasAttemptedQuestions = (() => {
+                if (categoryName === 'Phonological Awareness') {
+                  return (category.correctMatches > 0 || category.totalPossibleMatches > 0);
+                } else {
+                  return (category.correctAnswers > 0 || category.totalQuestions > 0);
+                }
+              })();
+
               if (!isUnlocked) {
                 categoryStatus = 'blocked';
                 statusMessage = 'Prerequisites not met - previous categories need to pass';
+              } else if (!hasAttemptedQuestions) {
+                // If no questions attempted, show as not attempted regardless of other status
+                categoryStatus = 'not_attempted';
+                statusMessage = 'Student has not answered any questions yet';
               } else if (progressionStatus.status === 'passed') {
                 categoryStatus = 'passed';
                 statusMessage = progressionStatus.message;

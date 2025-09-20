@@ -713,15 +713,33 @@ const PrescriptiveAnalysis = ({
    */
   useEffect(() => {
     if (!selectedCategory) {
-      if (categoriesNeedingIntervention?.length > 0) {
-        // If there are categories needing intervention, select the first one
-        setSelectedCategory(categoriesNeedingIntervention[0].categoryName);
-      } else if (liveCategoryResults?.categories?.length > 0) {
-        // If all categories are passed, just select the first category
-        setSelectedCategory(liveCategoryResults.categories[0].categoryName);
+      // ✅ FIX: Only auto-select categories that have prescriptive analysis data
+      const categoriesWithAnalysis = liveCategoryResults?.categories?.filter(cat => {
+        if (!liveAnalyses || liveAnalyses.length === 0) return false;
+
+        // Check if any prescriptive analysis contains skillMastery data for this category
+        return liveAnalyses.some(analysis =>
+          analysis?.skillMastery &&
+          analysis.skillMastery[cat.categoryName] &&
+          analysis.skillMastery[cat.categoryName].responseHistory &&
+          analysis.skillMastery[cat.categoryName].responseHistory.length > 0
+        );
+      }) || [];
+
+      if (categoriesWithAnalysis.length > 0) {
+        // Select the first category with analysis (prioritize those needing intervention)
+        const analysisNeedingIntervention = categoriesNeedingIntervention?.filter(cat =>
+          categoriesWithAnalysis.some(withAnalysis => withAnalysis.categoryName === cat.categoryName)
+        ) || [];
+
+        if (analysisNeedingIntervention.length > 0) {
+          setSelectedCategory(analysisNeedingIntervention[0].categoryName);
+        } else {
+          setSelectedCategory(categoriesWithAnalysis[0].categoryName);
+        }
       }
     }
-  }, [categoriesNeedingIntervention, selectedCategory, liveCategoryResults]);
+  }, [categoriesNeedingIntervention, selectedCategory, liveCategoryResults, liveAnalyses]);
 
   // Debug effect to log data
   useEffect(() => {
@@ -2652,6 +2670,17 @@ const PrescriptiveAnalysis = ({
 
     // Extract the category data from selectedCategoryData for scores
     const currentScore = selectedCategoryData?.score || 0;
+
+    // Check if student has actually attempted any questions for this category
+    const hasAttemptedQuestions = currentScore > 0 ||
+                                 (selectedCategoryData?.totalQuestions && selectedCategoryData.totalQuestions > 0) ||
+                                 (selectedCategoryData?.correctAnswers && selectedCategoryData.correctAnswers >= 0);
+
+    if (!hasAttemptedQuestions) {
+      console.log('🎯 [NO ATTEMPT] Student has not attempted this category yet, not showing analysis');
+      return null;
+    }
+
     const targetScore = 75;
     const gap = Math.max(0, targetScore - currentScore);
 
@@ -2664,6 +2693,18 @@ const PrescriptiveAnalysis = ({
       interventionPlan,  // Intervention recommendations
       researchBasedPrescriptions // Research-based prescriptions from database
     } = analysis;
+
+    // Additional validation: Check if BKT data has meaningful values
+    const hasMeaningfulBKTData = bktData &&
+                                (bktData.masteryProbability > 0 ||
+                                 bktData.score > 0 ||
+                                 bktData.totalQuestions > 0 ||
+                                 (bktData.responseHistory && bktData.responseHistory.length > 0));
+
+    if (!hasMeaningfulBKTData && !errorPatterns && !researchBasedPrescriptions) {
+      console.log('🎯 [NO MEANINGFUL DATA] Analysis exists but contains no meaningful data for', categoryName);
+      return null;
+    }
 
     console.log('🎯 [RENDER DEBUG] Analysis data for', categoryName, ':', {
       bktData,
@@ -4841,12 +4882,30 @@ const PrescriptiveAnalysis = ({
               const isUnlocked = isCategoryUnlocked(categoryName, index);
               const latestAttempt = getLatestInterventionAttempt(category);
 
+              // ✅ FIX: Check if there's prescriptive analysis data for this category
+              const hasPrescriptiveAnalysis = (() => {
+                if (!liveAnalyses || liveAnalyses.length === 0) return false;
+
+                // Check if any prescriptive analysis contains skillMastery data for this category
+                return liveAnalyses.some(analysis =>
+                  analysis?.skillMastery &&
+                  analysis.skillMastery[categoryName] &&
+                  analysis.skillMastery[categoryName].responseHistory &&
+                  analysis.skillMastery[categoryName].responseHistory.length > 0
+                );
+              })();
+
               // Determine status and styling based on dynamic progression
               let statusLabel, statusClass, isClickable = true;
 
               if (!isUnlocked) {
                 statusLabel = "BLOCKED";
                 statusClass = "blocked";
+                isClickable = false;
+              } else if (!hasPrescriptiveAnalysis) {
+                // ✅ FIX: Block clicking for categories without prescriptive analysis
+                statusLabel = "NOT ANSWERED YET";
+                statusClass = "not-answered";
                 isClickable = false;
               } else if (progressionStatus.status === 'passed') {
                 // Show different labels based on how the category passed
@@ -4877,9 +4936,10 @@ const PrescriptiveAnalysis = ({
               return (
                 <div
                   key={index}
-                  className={`literexia-category-tabb ${selectedCategory === categoryName ? 'active' : ''} ${statusClass} ${!isUnlocked ? 'blocked' : ''}`}
+                  className={`literexia-category-tabb ${selectedCategory === categoryName ? 'active' : ''} ${statusClass} ${!isUnlocked ? 'blocked' : ''} ${!hasPrescriptiveAnalysis ? 'not-attempted' : ''}`}
                   onClick={() => isClickable && setSelectedCategory(categoryName)}
-                  style={!isUnlocked ? { cursor: 'not-allowed', opacity: 0.6 } : {}}
+                  style={(!isUnlocked || !hasPrescriptiveAnalysis) ? { cursor: 'not-allowed', opacity: 0.6 } : {}}
+                  title={!hasPrescriptiveAnalysis ? 'No prescriptive analysis available - student has not completed this category assessment' : ''}
                 >
                   <div className="literexia-tab-contentt">
                     <div className="literexia-tab-namee">{displayName}</div>
@@ -5132,8 +5192,37 @@ const PrescriptiveAnalysis = ({
       {renderCategoryTabs()}
       
       {/* Selected category analysis */}
-      {selectedCategory && selectedCategoryData && (
-        <div className="literexia-category-analysis">
+      {selectedCategory && selectedCategoryData && (() => {
+        // ✅ FIX: Check if there's prescriptive analysis data for this category
+        const hasPrescriptiveAnalysisForCategory = (() => {
+          if (!liveAnalyses || liveAnalyses.length === 0) return false;
+
+          // Check if any prescriptive analysis contains skillMastery data for this category
+          return liveAnalyses.some(analysis =>
+            analysis?.skillMastery &&
+            analysis.skillMastery[selectedCategory] &&
+            analysis.skillMastery[selectedCategory].responseHistory &&
+            analysis.skillMastery[selectedCategory].responseHistory.length > 0
+          );
+        })();
+
+        if (!hasPrescriptiveAnalysisForCategory) {
+          return (
+            <div className="literexia-category-analysis">
+              <div className="literexia-empty-analysis">
+                <FaQuestionCircle style={{ color: '#999', fontSize: '2rem' }} />
+                <div>
+                  <h4>No Prescriptive Analysis Available</h4>
+                  <p>No prescriptive analysis data exists for {formatCategoryName(selectedCategory)}.</p>
+                  <p>Analysis will be available once the student completes this category assessment and the system generates prescriptive analysis data.</p>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="literexia-category-analysis">
           
           {/* Show success banner for passed categories */}
           {selectedCategoryData?.isPassed && (
@@ -5419,9 +5508,8 @@ const PrescriptiveAnalysis = ({
                   {/* Display the "All Categories Passed" banner if applicable */}
                   {renderAllPassedBanner()}
         </div>
-
-        
-      )}
+        );
+      })()}
 
       
 
