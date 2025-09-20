@@ -237,10 +237,11 @@ const PrescriptiveAnalysis = ({
     }
   };
 
-  // Function to fetch intervention results from the backend
+  // Enhanced function to fetch intervention results with version tracking and cross-referencing
   const fetchInterventionResults = async (studentId, categoryName) => {
     try {
-      console.log(`[INTERVENTION RESULTS] Fetching intervention results for student ${studentId}, category ${categoryName}`);
+      console.log(`[INTERVENTION RESULTS] 🔄 Fetching ENHANCED intervention results for student ${studentId}, category ${categoryName}`);
+      console.log(`[INTERVENTION RESULTS] 📊 Implementing dynamic version tracking and cross-referencing...`);
 
       // Try to fetch intervention results for this specific category
       const response = await api.get(`/api/intervention-monitoring/debug-data`);
@@ -248,41 +249,120 @@ const PrescriptiveAnalysis = ({
       if (response.data && response.data.success && response.data.data.interventionResults) {
         const allResults = response.data.data.interventionResults;
 
-        // Filter results for this specific student and category
-        const categoryResult = allResults.find(result =>
+        // 🔄 ENHANCED: Get ALL intervention results for this student and category (for version tracking)
+        const categoryResults = allResults.filter(result =>
           result.studentId === parseInt(studentId) &&
           result.category === categoryName
-        );
+        ).sort((a, b) => {
+          // Sort by completion date to get most recent first
+          const dateA = new Date(a.completedAt || a.createdAt || 0);
+          const dateB = new Date(b.completedAt || b.createdAt || 0);
+          return dateB - dateA;
+        });
 
-        if (categoryResult) {
-          console.log(`[INTERVENTION RESULTS] Found intervention results for ${categoryName}:`, categoryResult);
+        if (categoryResults.length > 0) {
+          const mostRecentResult = categoryResults[0];
+          const hasMultipleAttempts = categoryResults.length > 1;
 
-          // Transform the data to match expected format
+          console.log(`[INTERVENTION RESULTS] ✅ Found ${categoryResults.length} intervention attempt(s) for ${categoryName}`);
+          console.log(`[INTERVENTION RESULTS] 📈 Most recent result:`, mostRecentResult);
+
+          if (hasMultipleAttempts) {
+            console.log(`[INTERVENTION RESULTS] 🔄 Multiple attempts detected - implementing cross-referencing`);
+            console.log(`[INTERVENTION RESULTS] 📊 Historical attempts:`, categoryResults.map(r => ({
+              score: r.score,
+              revision: r.insights?.versionTracking?.revisionNumber || 1,
+              completedAt: r.completedAt
+            })));
+          }
+
+          // 🎯 ENHANCED: Extract version tracking information from insights
+          const versionTracking = mostRecentResult.insights?.versionTracking || {};
+          const prescriptionAccuracy = mostRecentResult.insights?.prescriptionAnalysisAccuracy || {};
+
+          // 📊 ENHANCED: Calculate progression metrics from historical data
+          let progressionMetrics = null;
+          if (hasMultipleAttempts) {
+            const previousResult = categoryResults[1]; // Second most recent
+            progressionMetrics = {
+              previousScore: previousResult.score,
+              currentScore: mostRecentResult.score,
+              scoreImprovement: mostRecentResult.score - previousResult.score,
+              previousRevision: previousResult.insights?.versionTracking?.revisionNumber || 1,
+              currentRevision: versionTracking.revisionNumber || 1,
+              accuracyImprovement: prescriptionAccuracy.versionAwareAccuracy - (previousResult.insights?.prescriptionAnalysisAccuracy?.accuracy || 75),
+              totalAttempts: categoryResults.length,
+              interventionHistory: categoryResults.reverse().map((result, index) => ({
+                attemptNumber: index + 1,
+                score: result.score,
+                isPassed: result.isPassed,
+                revisionNumber: result.insights?.versionTracking?.revisionNumber || 1,
+                completedAt: result.completedAt,
+                accuracyAtTime: result.insights?.prescriptionAnalysisAccuracy?.versionAwareAccuracy ||
+                               result.insights?.prescriptionAnalysisAccuracy?.accuracy || 75
+              }))
+            };
+          }
+
+          // Transform the data to match expected format with ENHANCED version tracking
           return {
-            category: categoryResult.category,
-            score: categoryResult.score,
-            isPassed: categoryResult.isPassed,
-            passed: categoryResult.isPassed,
-            previousScore: categoryResult.previousScore,
-            improvement: categoryResult.improvement,
-            skillMastery: categoryResult.skillMastery,
-            errorPatterns: categoryResult.errorPatterns,
-            interventionEffectiveness: categoryResult.interventionEffectiveness,
-            researchBasedPrescriptions: categoryResult.researchBasedPrescriptions,
-            progressComparison: categoryResult.progressComparison,
-            insights: categoryResult.insights,
-            completedAt: categoryResult.completedAt,
-            interventionId: categoryResult.interventionAssessmentId
+            category: mostRecentResult.category,
+            score: mostRecentResult.score,
+            isPassed: mostRecentResult.isPassed,
+            passed: mostRecentResult.isPassed,
+            previousScore: mostRecentResult.previousScore,
+            improvement: mostRecentResult.improvement,
+            skillMastery: mostRecentResult.skillMastery,
+            errorPatterns: mostRecentResult.errorPatterns,
+            interventionEffectiveness: mostRecentResult.interventionEffectiveness,
+            researchBasedPrescriptions: mostRecentResult.researchBasedPrescriptions,
+            progressComparison: mostRecentResult.progressComparison,
+            insights: mostRecentResult.insights,
+            completedAt: mostRecentResult.completedAt,
+            interventionId: mostRecentResult.interventionAssessmentId,
+
+            // 🆕 ENHANCED VERSION TRACKING DATA
+            versionTracking: {
+              ...versionTracking,
+              hasMultipleAttempts: hasMultipleAttempts,
+              totalAttempts: categoryResults.length,
+              isLatestVersion: true
+            },
+
+            // 🆕 ENHANCED PRESCRIPTION ACCURACY WITH VERSION AWARENESS
+            prescriptionAccuracy: {
+              ...prescriptionAccuracy,
+              baselineAccuracy: prescriptionAccuracy.accuracy || 75,
+              versionAwareAccuracy: prescriptionAccuracy.versionAwareAccuracy || prescriptionAccuracy.accuracy || 75,
+              accuracyImprovement: prescriptionAccuracy.versionAwareAccuracy ?
+                (prescriptionAccuracy.versionAwareAccuracy - (prescriptionAccuracy.accuracy || 75)) : 0,
+              confidenceLevel: prescriptionAccuracy.revisionBasedConfidence || 'moderate'
+            },
+
+            // 🆕 ENHANCED PROGRESSION METRICS (cross-referencing with historical data)
+            progressionMetrics: progressionMetrics,
+
+            // 🆕 RAW HISTORICAL DATA for advanced displays
+            allAttempts: categoryResults,
+
+            // 🆕 ENHANCED METADATA
+            metadata: {
+              fetchedAt: new Date().toISOString(),
+              hasVersionTracking: !!versionTracking.revisionNumber,
+              hasCrossReferencing: hasMultipleAttempts,
+              dataCompleteness: 'enhanced',
+              apiVersion: '2.0-version-tracking'
+            }
           };
         } else {
-          console.log(`[INTERVENTION RESULTS] No intervention results found for student ${studentId}, category ${categoryName}`);
+          console.log(`[INTERVENTION RESULTS] ❌ No intervention results found for student ${studentId}, category ${categoryName}`);
           return null;
         }
       }
 
       return null;
     } catch (error) {
-      console.error('Error fetching intervention results:', error);
+      console.error('❌ Error fetching enhanced intervention results:', error);
       return null;
     }
   };
