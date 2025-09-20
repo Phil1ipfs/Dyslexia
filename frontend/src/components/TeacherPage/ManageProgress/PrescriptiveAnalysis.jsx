@@ -4851,22 +4851,25 @@ const PrescriptiveAnalysis = ({
                     const hasBeenRevised = currentRevision > 1;
                     const interventionResultData = interventionResults[selectedCategory];
 
+                    // Use progress data directly from intervention object (API already includes it)
+                    const progress = intervention.progress;
+
                     // Check if intervention results exist AND match current revision
-                    const hasCurrentVersionResults = interventionResultData &&
-                      interventionResultData.score !== undefined &&
-                      interventionResultData.revisionNumber === currentRevision;
+                    const hasCurrentVersionResults = progress &&
+                      progress.score !== undefined &&
+                      progress.results &&
+                      progress.results.revisionNumber === currentRevision;
 
                     // Check if student has started current version (has any responses)
-                    const progress = getProgressForIntervention(intervention._id);
                     const hasCurrentVersionResponses = progress && progress.revisionNumber === currentRevision;
 
                     // Determine display values based on current version status
                     let progressPercentage, isPassed, interventionStatus;
 
                     if (hasCurrentVersionResults) {
-                      // Student completed current version
-                      progressPercentage = interventionResultData.score;
-                      isPassed = interventionResultData.isPassed;
+                      // Student completed current version - use progress data from API
+                      progressPercentage = progress ? progress.score : interventionResultData.score;
+                      isPassed = progress ? progress.passedThreshold : interventionResultData.isPassed;
                       interventionStatus = isPassed ? 'passed' : 'failed';
                     } else if (hasBeenRevised && !hasCurrentVersionResponses) {
                       // Teacher created new version but student hasn't started it yet
@@ -4876,7 +4879,7 @@ const PrescriptiveAnalysis = ({
                     } else if (hasCurrentVersionResponses) {
                       // Student started current version but hasn't finished
                       progressPercentage = progress.percentComplete || 0;
-                      isPassed = false;
+                      isPassed = progress.passedThreshold || false;
                       interventionStatus = 'active';
                     } else {
                       // No responses yet for any version
