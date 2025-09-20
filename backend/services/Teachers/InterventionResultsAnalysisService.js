@@ -358,9 +358,21 @@ class InterventionResultsAnalysisService {
    * Calculate basic intervention performance metrics
    */
   static calculateBasicInterventionMetrics(interventionResponses, interventionAssessment) {
-    const totalQuestions = interventionResponses.length;
+    // CRITICAL FIX: Use intervention assessment's question count, not response count
+    // This prevents score calculation errors when old responses exceed new intervention questions
+    const totalQuestions = interventionAssessment.totalQuestions || interventionAssessment.questions?.length || interventionResponses.length;
     const correctAnswers = interventionResponses.filter(response => response.isCorrect).length;
-    const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+
+    // Cap the correct answers to not exceed total questions (for revision scenarios)
+    const cappedCorrectAnswers = Math.min(correctAnswers, totalQuestions);
+    const score = totalQuestions > 0 ? Math.round((cappedCorrectAnswers / totalQuestions) * 100) : 0;
+
+    console.log(`[INTERVENTION METRICS] Score calculation:`);
+    console.log(`[INTERVENTION METRICS] - Total questions in intervention: ${totalQuestions}`);
+    console.log(`[INTERVENTION METRICS] - Responses received: ${interventionResponses.length}`);
+    console.log(`[INTERVENTION METRICS] - Correct answers (raw): ${correctAnswers}`);
+    console.log(`[INTERVENTION METRICS] - Correct answers (capped): ${cappedCorrectAnswers}`);
+    console.log(`[INTERVENTION METRICS] - Final score: ${score}%`);
     const isPassed = score >= (interventionAssessment.passThreshold || 75);
 
     // Calculate matches for categories that use matching (like Phonological Awareness)
@@ -388,6 +400,7 @@ class InterventionResultsAnalysisService {
     return {
       totalQuestions,
       correctAnswers,
+      cappedCorrectAnswers, // Include capped value for accurate score calculations
       totalPossibleMatches,
       correctMatches,
       score,
@@ -468,9 +481,9 @@ class InterventionResultsAnalysisService {
       currentMastery: Math.round(currentMastery * 1000) / 1000,
       masteryGrowth: Math.round(masteryGrowth * 1000) / 1000,
       lastUpdated: new Date(),
-      totalQuestions: interventionResponses.length,
+      totalQuestions: totalQuestions, // Use the corrected totalQuestions from intervention assessment
       correctAnswers: interventionResponses.filter(r => r.isCorrect).length,
-      score: Math.round((interventionResponses.filter(r => r.isCorrect).length / interventionResponses.length) * 100),
+      score: Math.round((cappedCorrectAnswers / totalQuestions) * 100),
       isPassed: currentMastery >= 0.75, // BKT confidence threshold
       status: status,
       responseHistory: responseHistory

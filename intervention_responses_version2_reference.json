@@ -1,0 +1,312 @@
+{
+  "intervention_responses_version_2_attributes": {
+    "description": "Required attributes for intervention_responses when student takes VERSION 2",
+
+    "collection_name": "test.intervention_responses",
+
+    "required_attributes": {
+      "_id": {
+        "type": "ObjectId",
+        "description": "MongoDB auto-generated unique identifier",
+        "example": "ObjectId('65a8e9876543210987654321')"
+      },
+
+      "studentId": {
+        "type": "Number",
+        "description": "Student's ID number",
+        "required": true,
+        "example": 202210222
+      },
+
+      "interventionAssessmentId": {
+        "type": "ObjectId",
+        "description": "Links to intervention_assessment._id (SAME ID for all versions)",
+        "required": true,
+        "example": "ObjectId('68cbb0975a26e73b61e061d3')",
+        "note": "This stays the same across all versions - VERSION 1, 2, 3 use same intervention ID"
+      },
+
+      "revisionNumber": {
+        "type": "Number",
+        "description": "CRITICAL: Which version of intervention student took",
+        "required": true,
+        "example": 2,
+        "note": "VERSION 2 = revisionNumber: 2, VERSION 3 = revisionNumber: 3"
+      },
+
+      "questionId": {
+        "type": "String",
+        "description": "Specific question ID from VERSION 2 questions",
+        "required": true,
+        "example": "int_pa_001_v2",
+        "note": "Each version may have different questionIds"
+      },
+
+      "category": {
+        "type": "String",
+        "description": "Reading category being assessed",
+        "required": true,
+        "enum": ["Alphabet Knowledge", "Phonological Awareness", "Decoding", "Word Recognition", "Reading Comprehension"],
+        "example": "Phonological Awareness"
+      },
+
+      "response": {
+        "type": "Mixed",
+        "description": "Student's actual answer - format depends on question type",
+        "required": true,
+        "examples": {
+          "phonological_awareness_matching": [
+            {"audio": "B", "match": "Bb"},
+            {"audio": "P", "match": "Pp"}
+          ],
+          "alphabet_knowledge_choice": "a",
+          "reading_comprehension_array": ["Juan", "Parke", "Bulaklak"]
+        }
+      },
+
+      "isCorrect": {
+        "type": "Boolean",
+        "description": "Whether the overall question response is correct",
+        "required": true,
+        "example": true
+      },
+
+      "answeredAt": {
+        "type": "Date",
+        "description": "When student answered this question",
+        "required": true,
+        "example": "2025-01-17T09:15:30Z"
+      },
+
+      "createdAt": {
+        "type": "Date",
+        "description": "When this response record was created",
+        "required": true,
+        "example": "2025-01-17T09:15:30Z"
+      }
+    },
+
+    "category_specific_attributes": {
+      "phonological_awareness": {
+        "correctMatches": {
+          "type": "Number",
+          "description": "How many audio-letter pairs matched correctly",
+          "example": 2
+        },
+        "totalMatches": {
+          "type": "Number",
+          "description": "Total possible matches for this question",
+          "example": 2
+        }
+      },
+
+      "reading_comprehension": {
+        "sentenceResults": {
+          "type": "Array",
+          "description": "Individual sentence question results (all-or-nothing scoring)",
+          "example": [
+            {
+              "questionNumber": 1,
+              "questionText": "Sino ang pangunahing tauhan?",
+              "studentAnswer": "Juan",
+              "correctAnswer": "Juan",
+              "isCorrect": true
+            }
+          ]
+        },
+        "correctSentenceQuestions": {
+          "type": "Number",
+          "description": "How many sentence questions correct",
+          "example": 3
+        },
+        "totalSentenceQuestions": {
+          "type": "Number",
+          "description": "Total sentence questions for this questionId",
+          "example": 3
+        },
+        "allOrNothingScoring": {
+          "type": "Boolean",
+          "description": "Always true for Reading Comprehension",
+          "example": true
+        }
+      }
+    },
+
+    "optional_attributes": {
+      "responseTime": {
+        "type": "Number",
+        "description": "Seconds taken to answer (for BKT analysis)",
+        "example": 8.5
+      },
+
+      "readingLevel": {
+        "type": "String",
+        "description": "Student's reading level when answering",
+        "example": "High Emerging"
+      }
+    }
+  },
+
+  "complete_version_2_examples": {
+    "phonological_awareness_v2_response": {
+      "_id": "ObjectId('65a8e9876543210987654321')",
+      "studentId": 202210222,
+      "interventionAssessmentId": "ObjectId('68cbb0975a26e73b61e061d3')",
+      "revisionNumber": 2,
+      "questionId": "int_pa_001_v2",
+      "category": "Phonological Awareness",
+      "response": [
+        {"audio": "B", "match": "Bb"},
+        {"audio": "P", "match": "Pp"}
+      ],
+      "isCorrect": true,
+      "correctMatches": 2,
+      "totalMatches": 2,
+      "responseTime": 8.5,
+      "answeredAt": "2025-01-17T09:15:30Z",
+      "readingLevel": "High Emerging",
+      "createdAt": "2025-01-17T09:15:30Z"
+    },
+
+    "alphabet_knowledge_v2_response": {
+      "_id": "ObjectId('65a8e9876543210987654322')",
+      "studentId": 202210222,
+      "interventionAssessmentId": "ObjectId('68cbb0975a26e73b61e061d4')",
+      "revisionNumber": 2,
+      "questionId": "int_ak_005_v2",
+      "category": "Alphabet Knowledge",
+      "response": "e",
+      "isCorrect": true,
+      "responseTime": 4.2,
+      "answeredAt": "2025-01-17T09:16:15Z",
+      "readingLevel": "High Emerging",
+      "createdAt": "2025-01-17T09:16:15Z"
+    },
+
+    "reading_comprehension_v2_response": {
+      "_id": "ObjectId('65a8e9876543210987654323')",
+      "studentId": 202210222,
+      "interventionAssessmentId": "ObjectId('68cbb0975a26e73b61e061d5')",
+      "revisionNumber": 2,
+      "questionId": "int_rc_001_v2",
+      "category": "Reading Comprehension",
+      "response": [
+        "Juan",
+        "Parke",
+        "Bulaklak"
+      ],
+      "isCorrect": true,
+      "sentenceResults": [
+        {
+          "questionNumber": 1,
+          "questionText": "Sino ang pangunahing tauhan sa kwento?",
+          "studentAnswer": "Juan",
+          "correctAnswer": "Juan",
+          "isCorrect": true
+        },
+        {
+          "questionNumber": 2,
+          "questionText": "Saan pumunta si Juan?",
+          "studentAnswer": "Parke",
+          "correctAnswer": "Parke",
+          "isCorrect": true
+        },
+        {
+          "questionNumber": 3,
+          "questionText": "Ano ang nakita niya?",
+          "studentAnswer": "Bulaklak",
+          "correctAnswer": "Bulaklak",
+          "isCorrect": true
+        }
+      ],
+      "correctSentenceQuestions": 3,
+      "totalSentenceQuestions": 3,
+      "allOrNothingScoring": true,
+      "responseTime": 45.2,
+      "answeredAt": "2025-01-17T09:18:00Z",
+      "readingLevel": "At Grade Level",
+      "createdAt": "2025-01-17T09:18:00Z"
+    }
+  },
+
+  "mobile_app_submission_flow": {
+    "step_1_version_check": {
+      "api_call": "GET /api/intervention-assessment/68cbb0975a26e73b61e061d3/version-info",
+      "response": {
+        "interventionId": "68cbb0975a26e73b61e061d3",
+        "revisionNumber": 2,
+        "hasBeenRevised": true,
+        "questions": "... VERSION 2 questions ..."
+      }
+    },
+
+    "step_2_response_submission": {
+      "api_call": "POST /api/intervention-responses",
+      "request_body": {
+        "studentId": 202210222,
+        "interventionAssessmentId": "68cbb0975a26e73b61e061d3",
+        "revisionNumber": 2,
+        "responses": [
+          {
+            "questionId": "int_pa_001_v2",
+            "response": [
+              {"audio": "B", "match": "Bb"},
+              {"audio": "P", "match": "Pp"}
+            ],
+            "isCorrect": true,
+            "correctMatches": 2,
+            "totalMatches": 2,
+            "responseTime": 8.5,
+            "answeredAt": "2025-01-17T09:15:30Z"
+          }
+        ],
+        "completedAt": "2025-01-17T09:20:00Z"
+      }
+    },
+
+    "step_3_backend_processing": {
+      "creates_individual_records": "One intervention_responses record per question answered",
+      "triggers_results_analysis": "InterventionResultsAnalysisService.generateComprehensiveResults()",
+      "updates_intervention_assessment": "Adds to interventionResults[] array with revisionNumber: 2"
+    }
+  },
+
+  "critical_validation_rules": {
+    "revisionNumber_matching": {
+      "rule": "intervention_responses.revisionNumber MUST match intervention_assessment.revisionNumber",
+      "example": "If student takes VERSION 2, revisionNumber MUST be 2"
+    },
+
+    "intervention_id_consistency": {
+      "rule": "interventionAssessmentId stays the same across all versions",
+      "example": "VERSION 1, 2, 3 all use same interventionAssessmentId"
+    },
+
+    "question_id_versioning": {
+      "rule": "questionId should reflect version (optional but recommended)",
+      "examples": {
+        "version_1": "int_pa_001_v1",
+        "version_2": "int_pa_001_v2",
+        "version_3": "int_pa_001_v3"
+      }
+    },
+
+    "completeness_validation": {
+      "rule": "Must answer ALL questions in intervention before creating intervention_results",
+      "check": "COUNT(intervention_responses) >= intervention_assessment.totalQuestions"
+    }
+  },
+
+  "backend_model_schema_reference": {
+    "file": "/Users/goodboykit/Documents/Dyslexia/backend/models/interventionResponseModel.js",
+    "key_fields": {
+      "interventionAssessmentId": "ObjectId, ref: 'InterventionAssessment'",
+      "revisionNumber": "Number, default: 1",
+      "studentId": "Number, required: true",
+      "questionId": "String, required: true",
+      "category": "String, required: true",
+      "response": "Schema.Types.Mixed",
+      "isCorrect": "Boolean, required: true"
+    }
+  }
+}

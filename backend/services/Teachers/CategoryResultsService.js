@@ -378,74 +378,107 @@ class CategoryResultsService {
 
       console.log(`[INTERVENTION COMPLETENESS] 📝 Found ${interventionResponses.length} intervention responses`);
 
-      // For revision 2+, ensure all responses are for the current revision
-      if (currentRevision > 1) {
-        console.log(`[INTERVENTION COMPLETENESS] 🔄 This is revision ${currentRevision} - validating version-specific responses`);
+      // CRITICAL FIX: ALWAYS validate version-specific responses (including VERSION 1)
+      console.log(`[INTERVENTION COMPLETENESS] 🔄 This is revision ${currentRevision} - validating version-specific responses`);
 
-        // Check if responses include revisionNumber tracking
-        const versionAwareResponses = interventionResponses.filter(response => {
-          // If response has revisionNumber, it must match current revision
-          if (response.revisionNumber) {
-            return response.revisionNumber === currentRevision;
+      // Check if responses include revisionNumber tracking
+      const versionAwareResponses = interventionResponses.filter(response => {
+        // CRITICAL: For ALL revisions, revisionNumber is now REQUIRED
+        if (response.revisionNumber) {
+          const matches = response.revisionNumber === currentRevision;
+          if (!matches) {
+            console.warn(`[INTERVENTION COMPLETENESS] ⚠️ Response ${response._id} has revisionNumber ${response.revisionNumber}, expected ${currentRevision}`);
           }
-          // If no revisionNumber field, assume it's for current revision (backward compatibility)
-          return true;
-        });
-
-        console.log(`[INTERVENTION COMPLETENESS] 📊 Version-aware responses: ${versionAwareResponses.length}/${interventionResponses.length} match revision ${currentRevision}`);
-
-        // Validate all expected questions are answered for current revision
-        const expectedQuestionIds = intervention.questions.map(q => q.questionId);
-        const answeredQuestionIds = versionAwareResponses.map(r => r.questionId);
-
-        console.log(`[INTERVENTION COMPLETENESS] 🎯 Expected questions: [${expectedQuestionIds.join(', ')}]`);
-        console.log(`[INTERVENTION COMPLETENESS] ✅ Answered questions: [${answeredQuestionIds.join(', ')}]`);
-
-        const missingQuestions = expectedQuestionIds.filter(qId => !answeredQuestionIds.includes(qId));
-
-        if (missingQuestions.length > 0) {
-          console.warn(`[INTERVENTION COMPLETENESS] ⚠️ Missing responses for revision ${currentRevision}: [${missingQuestions.join(', ')}]`);
-          return {
-            isComplete: false,
-            category: intervention.category,
-            revisionNumber: currentRevision,
-            required: totalQuestionsInIntervention,
-            answered: versionAwareResponses.length,
-            missing: missingQuestions.length,
-            missingQuestions: missingQuestions,
-            interventionId: interventionAssessmentId,
-            reason: 'incomplete_revision',
-            details: `Revision ${currentRevision} incomplete: missing responses for questions ${missingQuestions.join(', ')}`
-          };
+          return matches;
         }
+
+        // Legacy responses without revisionNumber (assume revision 1 only)
+        if (currentRevision === 1) {
+          console.warn(`[INTERVENTION COMPLETENESS] ⚠️ Response ${response._id} missing revisionNumber - assuming revision 1 (LEGACY SUPPORT)`);
+          return true;
+        }
+
+        // For revision 2+, responses WITHOUT revisionNumber are invalid
+        console.error(`[INTERVENTION COMPLETENESS] ❌ Response ${response._id} missing revisionNumber for revision ${currentRevision}`);
+        return false;
+      });
+
+      console.log(`[INTERVENTION COMPLETENESS] 📊 Version-aware responses: ${versionAwareResponses.length}/${interventionResponses.length} match revision ${currentRevision}`);
+
+      // CRITICAL: Check for mixed version responses (data integrity issue)
+      const responsesWithoutRevision = interventionResponses.filter(r => !r.revisionNumber);
+      const responsesWithRevision = interventionResponses.filter(r => r.revisionNumber);
+
+      if (responsesWithoutRevision.length > 0 && responsesWithRevision.length > 0) {
+        console.error(`[INTERVENTION COMPLETENESS] ❌ MIXED DATA DETECTED: ${responsesWithoutRevision.length} responses lack revisionNumber, ${responsesWithRevision.length} have revisionNumber`);
+        console.error(`[INTERVENTION COMPLETENESS] ❌ This indicates incomplete migration - BLOCKING intervention_results creation`);
+
+        return {
+          isComplete: false,
+          category: intervention.category,
+          revisionNumber: currentRevision,
+          required: totalQuestionsInIntervention,
+          answered: interventionResponses.length,
+          missing: totalQuestionsInIntervention - versionAwareResponses.length,
+          interventionId: interventionAssessmentId,
+          reason: 'mixed_version_data',
+          details: `Data integrity issue: ${responsesWithoutRevision.length} responses missing revisionNumber. Run migration script to fix existing data.`,
+          responsesWithoutRevision: responsesWithoutRevision.map(r => ({ _id: r._id, questionId: r.questionId })),
+          responsesWithRevision: responsesWithRevision.map(r => ({ _id: r._id, questionId: r.questionId, revisionNumber: r.revisionNumber }))
+        };
       }
 
-      const answeredQuestions = interventionResponses.length;
-      const isComplete = answeredQuestions >= totalQuestionsInIntervention;
+      // Validate all expected questions are answered for current revision
+      const expectedQuestionIds = intervention.questions.map(q => q.questionId);
+      const answeredQuestionIds = versionAwareResponses.map(r => r.questionId);
 
-      // Enhanced logging for revision tracking
-      if (currentRevision > 1) {
-        console.log(`[INTERVENTION COMPLETENESS] ✅ REVISION ${currentRevision} COMPLETENESS CHECK:`);
-        console.log(`[INTERVENTION COMPLETENESS] - Total questions required: ${totalQuestionsInIntervention}`);
-        console.log(`[INTERVENTION COMPLETENESS] - Responses received: ${answeredQuestions}`);
-        console.log(`[INTERVENTION COMPLETENESS] - Status: ${isComplete ? 'COMPLETE' : 'INCOMPLETE'}`);
-        console.log(`[INTERVENTION COMPLETENESS] - Ready for intervention_results generation: ${isComplete ? 'YES' : 'NO'}`);
-      } else {
-        console.log(`[INTERVENTION COMPLETENESS] ${intervention.category}: ${answeredQuestions}/${totalQuestionsInIntervention} questions answered - ${isComplete ? 'COMPLETE' : 'INCOMPLETE'}`);
+      console.log(`[INTERVENTION COMPLETENESS] 🎯 Expected questions: [${expectedQuestionIds.join(', ')}]`);
+      console.log(`[INTERVENTION COMPLETENESS] ✅ Answered questions: [${answeredQuestionIds.join(', ')}]`);
+
+      const missingQuestions = expectedQuestionIds.filter(qId => !answeredQuestionIds.includes(qId));
+
+      if (missingQuestions.length > 0) {
+        console.warn(`[INTERVENTION COMPLETENESS] ⚠️ Missing responses for revision ${currentRevision}: [${missingQuestions.join(', ')}]`);
+        return {
+          isComplete: false,
+          category: intervention.category,
+          revisionNumber: currentRevision,
+          required: totalQuestionsInIntervention,
+          answered: versionAwareResponses.length,
+          missing: missingQuestions.length,
+          missingQuestions: missingQuestions,
+          interventionId: interventionAssessmentId,
+          reason: 'incomplete_revision',
+          details: `Revision ${currentRevision} incomplete: missing responses for questions ${missingQuestions.join(', ')}`
+        };
       }
+
+      // CRITICAL FIX: Use version-aware responses for final validation
+      const validAnsweredQuestions = versionAwareResponses.length;
+      const isComplete = validAnsweredQuestions >= totalQuestionsInIntervention;
+
+      // Enhanced logging for revision tracking (ALL VERSIONS)
+      console.log(`[INTERVENTION COMPLETENESS] ✅ REVISION ${currentRevision} COMPLETENESS CHECK:`);
+      console.log(`[INTERVENTION COMPLETENESS] - Total questions required: ${totalQuestionsInIntervention}`);
+      console.log(`[INTERVENTION COMPLETENESS] - Raw responses received: ${interventionResponses.length}`);
+      console.log(`[INTERVENTION COMPLETENESS] - Version-valid responses: ${validAnsweredQuestions}`);
+      console.log(`[INTERVENTION COMPLETENESS] - Status: ${isComplete ? 'COMPLETE' : 'INCOMPLETE'}`);
+      console.log(`[INTERVENTION COMPLETENESS] - Ready for intervention_results generation: ${isComplete ? 'YES' : 'NO'}`);
 
       return {
         isComplete,
         category: intervention.category,
         revisionNumber: currentRevision,
         required: totalQuestionsInIntervention,
-        answered: answeredQuestions,
-        missing: Math.max(0, totalQuestionsInIntervention - answeredQuestions),
+        answered: validAnsweredQuestions, // Use version-aware count
+        missing: Math.max(0, totalQuestionsInIntervention - validAnsweredQuestions),
         interventionId: interventionAssessmentId,
         validationDetails: {
           isRevision: currentRevision > 1,
-          versionValidated: currentRevision > 1 ? true : 'not_applicable',
-          readyForResults: isComplete
+          versionValidated: true, // Always validate version now
+          readyForResults: isComplete,
+          totalRawResponses: interventionResponses.length,
+          versionValidResponses: validAnsweredQuestions
         }
       };
 

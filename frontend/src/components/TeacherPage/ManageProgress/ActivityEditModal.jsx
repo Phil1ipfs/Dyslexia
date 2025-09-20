@@ -649,6 +649,81 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     }
   };
 
+  /**
+   * Create intervention revision (VERSION 2, 3, etc.)
+   * API: PUT /api/intervention-assessment/{id} with revision data
+   * SPEC: CLAUDE.md Doctor-Teacher-Student model - Teacher creates revisions
+   */
+  const createInterventionRevision = async (interventionId, interventionData) => {
+    try {
+      console.log(`[INTERVENTION REVISION] ✅ Creating revision for intervention ${interventionId}`);
+      console.log(`[INTERVENTION REVISION] Revision data:`, interventionData);
+
+      // Step 1: Get current intervention to determine next revision number
+      let currentIntervention = null;
+      try {
+        const currentResponse = await api.interventions.getById(interventionId);
+        currentIntervention = currentResponse.data;
+        console.log(`[INTERVENTION REVISION] Current intervention:`, currentIntervention);
+      } catch (error) {
+        console.error(`[INTERVENTION REVISION] Could not fetch current intervention:`, error);
+        throw new Error('Cannot create revision - unable to fetch current intervention');
+      }
+
+      // Step 2: Calculate next revision number
+      const newRevisionNumber = (currentIntervention.revisionNumber || 1) + 1;
+      console.log(`[INTERVENTION REVISION] Creating revision number: ${newRevisionNumber}`);
+
+      // Step 3: Prepare revision data
+      const revisionData = {
+        ...interventionData,
+        revisionNumber: newRevisionNumber,
+        // Add revision history entry
+        revisionHistory: [
+          ...(currentIntervention.revisionHistory || []),
+          {
+            version: newRevisionNumber,
+            editedBy: localStorage.getItem('userId') || 'teacher_default',
+            editedAt: new Date().toISOString(),
+            changes: `Teacher revision ${newRevisionNumber} - Intervention customization for improved student outcomes`,
+            previousVersion: currentIntervention.revisionNumber || 1
+          }
+        ],
+        // Reset completion status for new version
+        completedAt: null,
+        startedAt: null,
+        interventionResultsId: null,
+        interventionResults: currentIntervention.interventionResults || [], // Preserve previous results
+        // Update metadata
+        lastEditedBy: localStorage.getItem('userId') || 'teacher_default',
+        lastEditedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: 'active'
+      };
+
+      console.log(`[INTERVENTION REVISION] 🔄 REVISION SUMMARY:`);
+      console.log(`[INTERVENTION REVISION] - Previous version: ${currentIntervention.revisionNumber || 1}`);
+      console.log(`[INTERVENTION REVISION] - New version: ${newRevisionNumber}`);
+      console.log(`[INTERVENTION REVISION] - Previous results preserved: ${currentIntervention.interventionResultsId ? 'Yes' : 'No'}`);
+      console.log(`[INTERVENTION REVISION] - Ready for student retake: Yes`);
+      console.log(`[INTERVENTION REVISION] - Mobile will detect version change: Yes`);
+
+      // Step 4: Perform the revision update
+      const response = await api.interventions.update(interventionId, revisionData);
+      console.log('[INTERVENTION REVISION] ✅ Revision response:', response.data);
+
+      console.log(`[INTERVENTION REVISION] 🎯 INTERVENTION REVISION COMPLETE`);
+      console.log(`[INTERVENTION REVISION] 📱 Mobile app will detect revisionNumber change from ${currentIntervention.revisionNumber || 1} to ${newRevisionNumber}`);
+      console.log(`[INTERVENTION REVISION] 📊 Previous intervention_results remain as reference for VERSION ${currentIntervention.revisionNumber || 1} analytics`);
+      console.log(`[INTERVENTION REVISION] 🔄 New intervention_results will be created when student completes VERSION ${newRevisionNumber}`);
+
+      return response.data.data;
+    } catch (error) {
+      console.error('[INTERVENTION REVISION] ❌ Error creating revision:', error);
+      throw error;
+    }
+  };
+
   // ===== EFFECTS =====
   
   /**
@@ -1721,11 +1796,19 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       
       // Save intervention using the API
       let savedIntervention;
-      
+
       try {
         if (activity?._id) {
-          savedIntervention = await updateIntervention(activity._id, interventionData);
+          // EDITING EXISTING INTERVENTION - Create revision (VERSION 2, 3, etc.)
+          console.log('[SAVE] ✅ Editing existing intervention - creating revision');
+          console.log('[SAVE] Current intervention ID:', activity._id);
+          console.log('[SAVE] Current revision number:', activity.revisionNumber || 1);
+
+          // Create revision with proper versioning
+          savedIntervention = await createInterventionRevision(activity._id, interventionData);
         } else {
+          // CREATING NEW INTERVENTION - VERSION 1
+          console.log('[SAVE] ✅ Creating new intervention - VERSION 1');
           savedIntervention = await createIntervention(interventionData);
         }
 

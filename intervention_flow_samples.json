@@ -1,0 +1,379 @@
+{
+  "intervention_versioning_flow": {
+    "student_info": {
+      "studentId": 202210222,
+      "name": "Juan Dela Cruz",
+      "category": "Phonological Awareness",
+      "originalScore": 44,
+      "failedMainAssessment": true
+    },
+
+    "version_1_initial_intervention": {
+      "intervention_assessment": {
+        "_id": "68cbb0975a26e73b61e061d3",
+        "studentId": 202210222,
+        "category": "Phonological Awareness",
+        "revisionNumber": 1,
+        "status": "active",
+        "totalQuestions": 12,
+        "questions": [
+          {
+            "questionId": "int_pa_001_v1",
+            "questionText": "Pakinggan ang audio. Itugma ito sa katumbas na letra.",
+            "questionSet": {
+              "audioTexts": ["B", "P", "M"],
+              "matchingOptions": ["Bb", "Pp", "Mm", "Nn"],
+              "correctPairs": [
+                {"audio": "B", "match": "Bb"},
+                {"audio": "P", "match": "Pp"},
+                {"audio": "M", "match": "Mm"}
+              ]
+            },
+            "source": "template_question"
+          }
+        ],
+        "revisionHistory": [],
+        "interventionResults": [],
+        "createdAt": "2025-01-16T09:00:00Z",
+        "createdBy": "teacher_id_123"
+      },
+
+      "student_attempt_version_1": {
+        "intervention_responses": [
+          {
+            "studentId": 202210222,
+            "interventionAssessmentId": "68cbb0975a26e73b61e061d3",
+            "questionId": "int_pa_001_v1",
+            "revisionNumber": 1,
+            "response": [
+              {"audio": "B", "match": "Pp"},
+              {"audio": "P", "match": "Bb"},
+              {"audio": "M", "match": "Mm"}
+            ],
+            "isCorrect": false,
+            "correctMatches": 1,
+            "totalMatches": 3,
+            "answeredAt": "2025-01-16T10:15:00Z"
+          }
+        ],
+
+        "intervention_results": {
+          "_id": "result_v1_123",
+          "studentId": 202210222,
+          "interventionAssessmentId": "68cbb0975a26e73b61e061d3",
+          "revisionNumber": 1,
+          "score": 73,
+          "isPassed": false,
+          "improvement": 29,
+          "previousScore": 44,
+          "assessmentDate": "2025-01-16T10:20:00Z"
+        },
+
+        "frontend_display_version_1_failed": {
+          "score": "73%",
+          "status": "Completed - Failed",
+          "masteryStatus": "Needs Work",
+          "editButtonEnabled": true,
+          "editButtonText": "Edit Activity",
+          "editButtonTooltip": "Create version 2 of this intervention (score below 75%)",
+          "viewResponsesVisible": true,
+          "mobileStatus": "Active on Mobile"
+        }
+      }
+    },
+
+    "version_2_teacher_revision": {
+      "teacher_creates_revision": {
+        "action": "Teacher clicks 'Edit Activity' on VERSION 1",
+        "api_call": "PUT /api/intervention-assessment/68cbb0975a26e73b61e061d3",
+        "request_body": {
+          "questions": [
+            {
+              "questionId": "int_pa_001_v2",
+              "questionText": "Pakinggan ang audio. Itugma ito sa katumbas na letra.",
+              "questionSet": {
+                "audioTexts": ["B", "P"],
+                "matchingOptions": ["Bb", "Pp", "Mm"],
+                "correctPairs": [
+                  {"audio": "B", "match": "Bb"},
+                  {"audio": "P", "match": "Pp"}
+                ]
+              },
+              "source": "custom",
+              "revisionChanges": "Reduced from 3 to 2 sound pairs for less cognitive load"
+            }
+          ],
+          "revisionReason": "Near-miss case - reduced complexity per system guidance"
+        }
+      },
+
+      "updated_intervention_assessment": {
+        "_id": "68cbb0975a26e73b61e061d3",
+        "studentId": 202210222,
+        "category": "Phonological Awareness",
+        "revisionNumber": 2,
+        "status": "active",
+        "totalQuestions": 12,
+        "questions": [
+          {
+            "questionId": "int_pa_001_v2",
+            "questionText": "Pakinggan ang audio. Itugma ito sa katumbas na letra.",
+            "questionSet": {
+              "audioTexts": ["B", "P"],
+              "matchingOptions": ["Bb", "Pp", "Mm"],
+              "correctPairs": [
+                {"audio": "B", "match": "Bb"},
+                {"audio": "P", "match": "Pp"}
+              ]
+            },
+            "source": "custom"
+          }
+        ],
+        "revisionHistory": [
+          {
+            "version": 1,
+            "editedBy": "teacher_id_123",
+            "editedAt": "2025-01-16T09:00:00Z",
+            "changes": "Initial intervention creation"
+          },
+          {
+            "version": 2,
+            "editedBy": "teacher_id_123",
+            "editedAt": "2025-01-16T14:30:00Z",
+            "changes": "Near-miss case - reduced complexity per system guidance",
+            "modifications": "Reduced from 3 to 2 sound pairs for less cognitive load"
+          }
+        ],
+        "interventionResults": [
+          {
+            "attemptNumber": 1,
+            "interventionResultsId": "result_v1_123",
+            "revisionNumber": 1,
+            "score": 73,
+            "isPassed": false,
+            "completedAt": "2025-01-16T10:20:00Z",
+            "reason": "initial_attempt"
+          }
+        ],
+        "lastEditedAt": "2025-01-16T14:30:00Z",
+        "lastEditedBy": "teacher_id_123"
+      },
+
+      "frontend_display_version_2_not_attempted": {
+        "score": "0%",
+        "status": "Active on Mobile",
+        "masteryStatus": "Pending",
+        "editButtonEnabled": false,
+        "editButtonText": "Edit Activity",
+        "editButtonTooltip": "Cannot edit - student hasn't attempted this version yet",
+        "viewResponsesVisible": false,
+        "mobileStatus": "Active on Mobile",
+        "versionInfo": {
+          "currentRevision": 2,
+          "hasBeenRevised": true,
+          "hasCurrentVersionResults": false
+        }
+      }
+    },
+
+    "version_2_student_success": {
+      "mobile_version_detection": {
+        "api_call": "GET /api/intervention-assessment/68cbb0975a26e73b61e061d3/version-info",
+        "response": {
+          "interventionId": "68cbb0975a26e73b61e061d3",
+          "revisionNumber": 2,
+          "hasBeenRevised": true,
+          "lastEditedBy": "teacher_id_123",
+          "lastEditedAt": "2025-01-16T14:30:00Z",
+          "questions": "... VERSION 2 questions ..."
+        }
+      },
+
+      "student_attempt_version_2": {
+        "intervention_responses": [
+          {
+            "studentId": 202210222,
+            "interventionAssessmentId": "68cbb0975a26e73b61e061d3",
+            "questionId": "int_pa_001_v2",
+            "revisionNumber": 2,
+            "response": [
+              {"audio": "B", "match": "Bb"},
+              {"audio": "P", "match": "Pp"}
+            ],
+            "isCorrect": true,
+            "correctMatches": 2,
+            "totalMatches": 2,
+            "answeredAt": "2025-01-17T09:15:00Z"
+          }
+        ],
+
+        "intervention_results": {
+          "_id": "result_v2_456",
+          "studentId": 202210222,
+          "interventionAssessmentId": "68cbb0975a26e73b61e061d3",
+          "revisionNumber": 2,
+          "score": 82,
+          "isPassed": true,
+          "improvement": 38,
+          "previousScore": 44,
+          "assessmentDate": "2025-01-17T09:20:00Z"
+        }
+      },
+
+      "updated_intervention_assessment_after_v2_success": {
+        "interventionResults": [
+          {
+            "attemptNumber": 1,
+            "interventionResultsId": "result_v1_123",
+            "revisionNumber": 1,
+            "score": 73,
+            "isPassed": false,
+            "completedAt": "2025-01-16T10:20:00Z",
+            "reason": "initial_attempt"
+          },
+          {
+            "attemptNumber": 2,
+            "interventionResultsId": "result_v2_456",
+            "revisionNumber": 2,
+            "score": 82,
+            "isPassed": true,
+            "completedAt": "2025-01-17T09:20:00Z",
+            "reason": "teacher_revision"
+          }
+        ]
+      },
+
+      "frontend_display_version_2_passed": {
+        "score": "82%",
+        "status": "Completed - Passed",
+        "masteryStatus": "Passed",
+        "editButtonEnabled": false,
+        "editButtonText": "Edit Activity",
+        "editButtonTooltip": "Passed interventions cannot be edited",
+        "viewResponsesVisible": true,
+        "mobileStatus": "Active on Mobile",
+        "categoryUnblocked": true,
+        "readingLevelProgression": "eligible"
+      }
+    },
+
+    "version_3_hypothetical_scenario": {
+      "description": "If VERSION 2 had failed (score < 75%), teacher could create VERSION 3",
+
+      "version_2_failed_scenario": {
+        "intervention_results": {
+          "revisionNumber": 2,
+          "score": 74,
+          "isPassed": false
+        },
+
+        "frontend_display": {
+          "score": "74%",
+          "status": "Completed - Failed",
+          "editButtonEnabled": true,
+          "editButtonTooltip": "Create version 3 of this intervention (score below 75%)",
+          "viewResponsesVisible": true
+        }
+      },
+
+      "version_3_creation": {
+        "teacher_action": "Click 'Edit Activity' on VERSION 2",
+        "result": {
+          "revisionNumber": 3,
+          "revisionHistory": [
+            {"version": 1, "changes": "Initial intervention creation"},
+            {"version": 2, "changes": "Near-miss case - reduced complexity"},
+            {"version": 3, "changes": "Further refinement for final success"}
+          ]
+        }
+      }
+    },
+
+    "category_results_integration": {
+      "description": "How intervention success updates category results",
+
+      "before_intervention_success": {
+        "category_results": {
+          "studentId": 202210222,
+          "categories": [
+            {
+              "categoryName": "Phonological Awareness",
+              "score": 44,
+              "isPassed": false,
+              "interventionRequired": true,
+              "interventionCompleted": false,
+              "currentInterventionId": "68cbb0975a26e73b61e061d3"
+            }
+          ]
+        }
+      },
+
+      "after_version_2_success": {
+        "category_results": {
+          "studentId": 202210222,
+          "categories": [
+            {
+              "categoryName": "Phonological Awareness",
+              "score": 82,
+              "isPassed": true,
+              "interventionRequired": false,
+              "interventionCompleted": true,
+              "interventionHistory": [
+                {
+                  "attemptNumber": 1,
+                  "interventionId": "68cbb0975a26e73b61e061d3",
+                  "revisionNumber": 1,
+                  "score": 73,
+                  "isPassed": false,
+                  "attemptedAt": "2025-01-16T10:20:00Z",
+                  "attemptReason": "initial_attempt"
+                },
+                {
+                  "attemptNumber": 2,
+                  "interventionId": "68cbb0975a26e73b61e061d3",
+                  "revisionNumber": 2,
+                  "score": 82,
+                  "isPassed": true,
+                  "attemptedAt": "2025-01-17T09:20:00Z",
+                  "attemptReason": "teacher_revision"
+                }
+              ]
+            }
+          ]
+        },
+
+        "reading_level_progression": {
+          "triggered": true,
+          "fromLevel": "High Emerging",
+          "toLevel": "Developing",
+          "reason": "All categories for High Emerging level now passed"
+        }
+      }
+    },
+
+    "api_endpoints_used": {
+      "version_detection": "GET /api/intervention-assessment/:id/version-info",
+      "revision_creation": "PUT /api/intervention-assessment/:id",
+      "response_submission": "POST /api/intervention-responses",
+      "results_processing": "Automatic via InterventionResultsAnalysisService"
+    },
+
+    "frontend_validation_logic": {
+      "version_awareness": {
+        "currentRevision": "intervention.revisionNumber || 1",
+        "hasBeenRevised": "currentRevision > 1",
+        "hasCurrentVersionResults": "interventionResultData && interventionResultData.revisionNumber === currentRevision"
+      },
+
+      "button_states": {
+        "edit_disabled_when": [
+          "hasBeenRevised && !hasCurrentVersionResults",
+          "intervention.status === 'active' && !failed_current_version"
+        ],
+        "view_responses_visible_when": [
+          "hasCurrentVersionResults === true"
+        ]
+      }
+    }
+  }
+}

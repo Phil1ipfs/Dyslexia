@@ -285,6 +285,40 @@ router.get('/:interventionId/progress',
   interventionAssessmentController.getInterventionProgress
 );
 
+// PUT /api/intervention-assessment/:interventionId
+// Update intervention assessment (for revisions/versioning)
+router.put('/:interventionId',
+  validateInterventionId,
+  (req, res, next) => {
+    // Validate update data
+    const errors = [];
+    const { studentId, category } = req.body;
+
+    // Optional validation - if provided, must be valid
+    if (studentId && (typeof studentId !== 'number' || studentId < 1)) {
+      errors.push({ field: 'studentId', message: 'Student ID must be a positive integer' });
+    }
+
+    if (category) {
+      const validCategories = ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'];
+      if (!validCategories.includes(category)) {
+        errors.push({ field: 'category', message: 'Category must be one of: ' + validCategories.join(', ') });
+      }
+    }
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors
+      });
+    }
+
+    next();
+  },
+  interventionAssessmentController.updateIntervention
+);
+
 // DELETE /api/intervention-assessment/:interventionId
 // Delete an intervention (admin only)
 router.delete('/:interventionId',

@@ -2816,7 +2816,7 @@ const PrescriptiveAnalysis = ({
       return (
         <div className="comprehensive-research-container">
           <div className="research-section">
-            <div className="research-section-header">
+            <div className="after-intervention-research-section-header">
               <h5 className="research-section-title">
                 <FaUserMd />
                 Research-Based Prescriptions
@@ -2839,7 +2839,7 @@ const PrescriptiveAnalysis = ({
         {/* Deficit Analysis Section */}
         {researchData.deficitAnalysis && (
           <div className="research-section">
-            <div className="research-section-header">
+            <div className="after-intervention-research-section-header">
               <h5 className="research-section-title">
                 <FaExclamationTriangle />
                 Updated Deficit Analysis
@@ -2920,7 +2920,7 @@ const PrescriptiveAnalysis = ({
         {/* Next Intervention Prescription Section */}
         {researchData.nextInterventionPrescription && (
           <div className="research-section">
-            <div className="research-section-header">
+            <div className="after-intervention-research-section-header">
               <h5 className="research-section-title">
                 <FaUserMd />
                 Next Intervention Prescription
@@ -3033,7 +3033,7 @@ const PrescriptiveAnalysis = ({
         {/* Teacher Revision Guidance Section */}
         {researchData.teacherRevisionGuidance?.revisionRecommended && (
           <div className="research-section">
-            <div className="research-section-header">
+            <div className="after-intervention-research-section-header">
               <h5 className="research-section-title">
                 <FaEdit />
                 Teacher Revision Guidance
@@ -3087,7 +3087,7 @@ const PrescriptiveAnalysis = ({
         {/* Escalation Protocol Section */}
         {researchData.escalationProtocol && researchData.escalationProtocol.escalationTriggered === false && (
           <div className="research-section">
-            <div className="research-section-header">
+            <div className="after-intervention-research-section-header">
               <h5 className="research-section-title">
                 <FaCheckCircle />
                 Escalation Status
@@ -3230,7 +3230,7 @@ const PrescriptiveAnalysis = ({
           <div className="intervention-results-top-section">
             {/* Left Card: Skill Mastery Analysis */}
             <div className="intervention-results-skill-mastery-card">
-              <div className="skill-mastery-header">
+              <div className="after-intervention-skill-mastery-header">
                 <FaChartLine className="epa-icon" />
                 <span>Skill Mastery Analysis</span>
               </div>
@@ -3306,7 +3306,7 @@ const PrescriptiveAnalysis = ({
 
             {/* Right Card: Error Pattern Analysis */}
             <div className="intervention-results-error-pattern-card">
-              <div className="error-pattern-header">
+              <div className="after-intervention-error-pattern-header">
                 <FaExclamationTriangle className="epa-icon" />
                 <span>Error Pattern Analysis</span>
               </div>
@@ -3539,7 +3539,7 @@ const PrescriptiveAnalysis = ({
           <div className="intervention-results-two-column">
             {/* Left Column: Intervention Performance & Analysis */}
             <div className="intervention-results-left-column">
-              <div className="intervention-results-column-header">
+              <div className="after-intervention-column-header">
                 <FaChartLine className="epa-icon" />
                 <span>Intervention Performance & Analysis</span>
               </div>
@@ -3855,13 +3855,13 @@ const PrescriptiveAnalysis = ({
 
             {/* Right Column: Comprehensive Research Prescriptions */}
             <div className="intervention-results-right-column">
-              <div className="intervention-results-column-header">
+              <div className="after-intervention-column-header">
                 <FaUserMd className="epa-icon" />
                 <span>Comprehensive Research Prescriptions</span>
               </div>
               <div className="intervention-results-column-content">
                 {/* Render Comprehensive Research-Based Prescriptions for Intervention Results */}
-                {renderInterventionResearchPrescriptions(interventionData, categoryName)}
+                {renderInterventionResearchComprehensivePrescriptions(interventionData, categoryName)}
               </div>
             </div>
           </div>
@@ -4122,7 +4122,7 @@ const PrescriptiveAnalysis = ({
         {/* Deficit Analysis Section */}
         {prescription.deficitAnalysis && (
           <div className="research-prescription-section deficit-analysis">
-            <h4 className="section-title">
+            <h4 className="after-intervention-section-title">
               <FaStethoscope className="section-icon" />
               Comprehensive Deficit Analysis
             </h4>
@@ -4200,7 +4200,7 @@ const PrescriptiveAnalysis = ({
         {/* Next Intervention Prescription Section */}
         {prescription.nextInterventionPrescription && (
           <div className="research-prescription-section next-intervention">
-            <h4 className="section-title">
+            <h4 className="after-intervention-section-title">
               <FaPrescriptionBottleAlt className="section-icon" />
               Next Intervention Prescription
             </h4>
@@ -4325,7 +4325,7 @@ const PrescriptiveAnalysis = ({
         {/* Teacher Revision Guidance Section */}
         {prescription.teacherRevisionGuidance && (
           <div className="research-prescription-section teacher-revision">
-            <h4 className="section-title">
+            <h4 className="after-intervention-section-title">
               <FaUserEdit className="section-icon" />
               Teacher Revision Guidance
             </h4>
@@ -4415,7 +4415,7 @@ const PrescriptiveAnalysis = ({
         {/* Cross-Reference Analysis Section */}
         {interventionData.crossReferenceAnalysis && (
           <div className="research-prescription-section cross-reference">
-            <h4 className="section-title">
+            <h4 className="after-intervention-section-title">
               <FaLink className="section-icon" />
               Cross-Reference Analysis
             </h4>
@@ -4451,7 +4451,7 @@ const PrescriptiveAnalysis = ({
         {/* Escalation Protocol Section */}
         {prescription.escalationProtocol && (
           <div className="research-prescription-section escalation-protocol">
-            <h4 className="section-title">
+            <h4 className="after-intervention-section-title">
               <FaExclamationTriangle className="section-icon" />
               Escalation Protocol
             </h4>
@@ -4846,18 +4846,44 @@ const PrescriptiveAnalysis = ({
               {selectedInterventions.length > 0 ? (
                 <div className="literexia-interventions-list">
                   {selectedInterventions.map((intervention, index) => {
-                    // Check for intervention results first (actual completed intervention data)
+                    // VERSION-AWARE LOGIC: Check if student has responded to current version
+                    const currentRevision = intervention.revisionNumber || 1;
+                    const hasBeenRevised = currentRevision > 1;
                     const interventionResultData = interventionResults[selectedCategory];
-                    const hasInterventionResults = interventionResultData && interventionResultData.score !== undefined;
 
-                    // Use intervention results if available, otherwise fall back to progress tracking
+                    // Check if intervention results exist AND match current revision
+                    const hasCurrentVersionResults = interventionResultData &&
+                      interventionResultData.score !== undefined &&
+                      interventionResultData.revisionNumber === currentRevision;
+
+                    // Check if student has started current version (has any responses)
                     const progress = getProgressForIntervention(intervention._id);
-                    const progressPercentage = hasInterventionResults
-                      ? interventionResultData.score
-                      : (progress ? progress.percentComplete : 0);
-                    const isPassed = hasInterventionResults
-                      ? interventionResultData.isPassed
-                      : (progress ? progress.passedThreshold : false);
+                    const hasCurrentVersionResponses = progress && progress.revisionNumber === currentRevision;
+
+                    // Determine display values based on current version status
+                    let progressPercentage, isPassed, interventionStatus;
+
+                    if (hasCurrentVersionResults) {
+                      // Student completed current version
+                      progressPercentage = interventionResultData.score;
+                      isPassed = interventionResultData.isPassed;
+                      interventionStatus = isPassed ? 'passed' : 'failed';
+                    } else if (hasBeenRevised && !hasCurrentVersionResponses) {
+                      // Teacher created new version but student hasn't started it yet
+                      progressPercentage = 0;
+                      isPassed = false;
+                      interventionStatus = 'active'; // Show as active - waiting for student
+                    } else if (hasCurrentVersionResponses) {
+                      // Student started current version but hasn't finished
+                      progressPercentage = progress.percentComplete || 0;
+                      isPassed = false;
+                      interventionStatus = 'active';
+                    } else {
+                      // No responses yet for any version
+                      progressPercentage = 0;
+                      isPassed = false;
+                      interventionStatus = intervention.status || 'active';
+                    }
                     
                     return (
                       <div key={index} className="literexia-intervention-card">
@@ -4867,8 +4893,8 @@ const PrescriptiveAnalysis = ({
                             <FaBook className="category-icon" />
                             <span className="category-name">{intervention.category || selectedCategory}</span>
                           </div>
-                          <div className={`literexia-intervention-status-badge ${hasInterventionResults ? (isPassed ? 'passed' : 'failed') : intervention.status}`}>
-                            {hasInterventionResults ? (
+                          <div className={`literexia-intervention-status-badge ${hasCurrentVersionResults ? (isPassed ? 'passed' : 'failed') : intervention.status}`}>
+                            {hasCurrentVersionResults ? (
                               isPassed ? (
                                 <>
                                   <FaCheckCircle className="status-icon" />
@@ -4894,23 +4920,23 @@ const PrescriptiveAnalysis = ({
                           </div>
                         </div>
 
-                        {/* Progress Section */}
+                        {/* Progress Section with version awareness */}
                         <div className="literexia-intervention-progress-section">
                           <div className="literexia-progress-header">
                             <div className="literexia-progress-title">
                               <FaChartLine className="progress-icon" />
-                              <span>{hasInterventionResults ? 'Intervention Score' : 'Progress Percentage'}</span>
+                              <span>{hasCurrentVersionResults ? 'Intervention Score' : 'Progress Percentage'}</span>
                             </div>
-                            <div className={`literexia-progress-percentage ${hasInterventionResults ? (isPassed ? 'passed-score' : 'failed-score') : ''}`}>
+                            <div className={`literexia-progress-percentage ${hasCurrentVersionResults ? (isPassed ? 'passed-score' : 'failed-score') : ''}`}>
                               {progressPercentage}%
                             </div>
                           </div>
                           <div className="literexia-progress-bar-container">
                             <div
-                              className={`literexia-progress-bar-fill ${hasInterventionResults ? (isPassed ? 'passed-bar' : 'failed-bar') : ''}`}
+                              className={`literexia-progress-bar-fill ${hasCurrentVersionResults ? (isPassed ? 'passed-bar' : 'failed-bar') : ''}`}
                               style={{
                                 width: `${progressPercentage}%`,
-                                backgroundColor: hasInterventionResults
+                                backgroundColor: hasCurrentVersionResults
                                   ? (isPassed ? '#10b981' : '#ef4444')
                                   : '#5470a8'
                               }}
@@ -4963,15 +4989,21 @@ const PrescriptiveAnalysis = ({
                           </div>
                         </div>
 
-                        {/* Action Buttons */}
+                        {/* Action Buttons with version-aware logic */}
                         <div className="literexia-intervention-actions">
                           <button
-                            className={`literexia-edit-activity-btn ${hasInterventionResults && !isPassed ? 'version-two' : ''}`}
+                            className={`literexia-edit-activity-btn ${hasCurrentVersionResults && !isPassed ? 'version-two' : ''}`}
                             onClick={() => handleCreateActivity(selectedCategory, selectedAnalysis, intervention)}
-                            disabled={loading || (intervention.status === 'active' && !(hasInterventionResults && !isPassed))}
+                            disabled={
+                              loading ||
+                              (hasBeenRevised && !hasCurrentVersionResults) || // VERSION 2+ without results - disable edit
+                              (intervention.status === 'active' && !(hasCurrentVersionResults && !isPassed))
+                            }
                             title={
-                              hasInterventionResults && !isPassed
-                                ? "Create version 2 of this intervention (score below 75%)"
+                              hasBeenRevised && !hasCurrentVersionResults
+                                ? "Cannot edit - student hasn't attempted this version yet"
+                                : hasCurrentVersionResults && !isPassed
+                                ? "Create version 3 of this intervention (score below 75%)"
                                 : intervention.status === 'active'
                                 ? "Active interventions cannot be edited after being pushed to mobile"
                                 : "Edit this intervention activity"
@@ -4981,7 +5013,8 @@ const PrescriptiveAnalysis = ({
                             <span>Edit Activity</span>
                           </button>
 
-                          {hasInterventionResults && (
+                          {/* Only show View Responses if current version has results */}
+                          {hasCurrentVersionResults && (
                             <button
                               className="literexia-view-responses-btn"
                               onClick={() => handleViewResponses(intervention, selectedCategory)}
@@ -4993,7 +5026,7 @@ const PrescriptiveAnalysis = ({
                             </button>
                           )}
 
-                          {hasInterventionResults ? (
+                          {hasCurrentVersionResults ? (
                             <div className={`literexia-active-status ${isPassed ? 'completed-passed' : 'completed-failed'}`}>
                               <FaCheckCircle className="action-icon" />
                               <span>{isPassed ? 'Completed - Passed' : 'Completed - Failed'}</span>

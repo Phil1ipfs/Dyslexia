@@ -1588,10 +1588,20 @@ class InterventionGeneratorService {
       }
 
       // Calculate final scores
-      const totalQuestions = intervention.totalQuestions || 10;
+      const totalQuestions = intervention.totalQuestions || intervention.questions?.length || 10;
       const answeredQuestions = responses.length;
       const correctAnswers = responses.filter(r => r.isCorrect).length;
-      const finalScore = Math.round((correctAnswers / totalQuestions) * 100);
+
+      // CRITICAL FIX: Cap correct answers to not exceed total questions (for revision scenarios)
+      const cappedCorrectAnswers = Math.min(correctAnswers, totalQuestions);
+      const finalScore = Math.round((cappedCorrectAnswers / totalQuestions) * 100);
+
+      console.log(`[INTERVENTION GENERATOR] Score calculation:`);
+      console.log(`[INTERVENTION GENERATOR] - Total questions in intervention: ${totalQuestions}`);
+      console.log(`[INTERVENTION GENERATOR] - Responses received: ${answeredQuestions}`);
+      console.log(`[INTERVENTION GENERATOR] - Correct answers (raw): ${correctAnswers}`);
+      console.log(`[INTERVENTION GENERATOR] - Correct answers (capped): ${cappedCorrectAnswers}`);
+      console.log(`[INTERVENTION GENERATOR] - Final score: ${finalScore}%`);
       const isPassed = finalScore >= 75; // 75% pass threshold
 
       // Calculate average response time
@@ -1664,6 +1674,11 @@ class InterventionGeneratorService {
         category: intervention.category,
         readingLevel: intervention.readingLevel,
 
+        // VERSION TRACKING (CRITICAL for revision awareness)
+        revisionNumber: intervention.revisionNumber || 1,
+        assessmentType: "intervention",
+        assessmentDate: new Date(),
+
         // CORE PERFORMANCE METRICS
         totalQuestions,
         correctAnswers,
@@ -1707,8 +1722,7 @@ class InterventionGeneratorService {
         recommendations: researchPrescriptions.nextInterventionPrescription.specificTechniques.map(t => t.technique),
 
         // TIMESTAMPS
-        completedAt: new Date(),
-        assessmentDate: new Date()
+        completedAt: new Date()
       });
 
       await interventionResults.save();

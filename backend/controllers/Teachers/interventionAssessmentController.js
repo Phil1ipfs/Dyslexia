@@ -644,10 +644,11 @@ class InterventionAssessmentController {
         });
       }
 
-      // Create intervention response record
+      // Create intervention response record with VERSION TRACKING
       const responseData = {
         studentId: intervention.studentId,
         interventionAssessmentId: interventionId,
+        revisionNumber: intervention.revisionNumber || 1, // 🔥 CRITICAL: Version tracking
         categoryId: null, // We don't have categoryId in the new model
         questionId,
         category: intervention.category,
@@ -658,6 +659,9 @@ class InterventionAssessmentController {
         createdAt: new Date(),
         readingLevel: intervention.readingLevel
       };
+
+      console.log(`[INTERVENTION RESPONSE] 📝 Creating response for VERSION ${intervention.revisionNumber || 1}: ${questionId}`);
+      console.log(`[INTERVENTION RESPONSE] 🎯 Student: ${intervention.studentId}, Category: ${intervention.category}`);
 
       const interventionResponse = new InterventionResponse(responseData);
       await interventionResponse.save();
@@ -1028,6 +1032,177 @@ class InterventionAssessmentController {
         message: 'Error retrieving completion status',
         error: error.message,
         interventionId: interventionId
+      });
+    }
+  }
+
+  /**
+   * Update intervention assessment (for revisions/versioning)
+   * PUT /api/intervention-assessment/:interventionId
+   */
+  async updateIntervention(req, res) {
+    try {
+      const { interventionId } = req.params;
+      const updateData = req.body;
+
+      console.log(`[INTERVENTION CONTROLLER] ✅ Updating intervention ${interventionId}`);
+      console.log(`[INTERVENTION CONTROLLER] Update data:`, JSON.stringify(updateData, null, 2));
+
+      // Find the intervention
+      const intervention = await InterventionAssessment.findById(interventionId);
+      if (!intervention) {
+        return res.status(404).json({
+          success: false,
+          message: 'Intervention assessment not found',
+          interventionId: interventionId
+        });
+      }
+
+      // Log revision information if present
+      if (updateData.revisionNumber && updateData.revisionNumber > (intervention.revisionNumber || 1)) {
+        console.log(`[INTERVENTION CONTROLLER] 🔄 REVISION DETECTED:`);
+        console.log(`[INTERVENTION CONTROLLER] - Previous version: ${intervention.revisionNumber || 1}`);
+        console.log(`[INTERVENTION CONTROLLER] - New version: ${updateData.revisionNumber}`);
+        console.log(`[INTERVENTION CONTROLLER] - Revision history entries: ${updateData.revisionHistory?.length || 0}`);
+        console.log(`[INTERVENTION CONTROLLER] - Mobile will detect version change: YES`);
+      }
+
+      // Save custom questions to templates_questions collection for future reuse
+      if (updateData.questions && updateData.questions.length > 0) {
+        console.log(`[INTERVENTION CONTROLLER] Processing ${updateData.questions.length} questions for template auto-save`);
+        for (const question of updateData.questions) {
+          if (question.source === 'custom') {
+            try {
+              console.log(`[INTERVENTION CONTROLLER] Saving custom question ${question.questionId} to templates_questions for future reuse`);
+
+              // Create template following exact CLAUDE.md schema per category
+              // Map any invalid difficulty levels to valid ones
+              let mappedDifficultyLevel = 'medium'; // default
+              if (question.prescriptionAlignment?.difficultyLevel) {
+                const diffLevel = question.prescriptionAlignment.difficultyLevel;
+                if (diffLevel === 'standard' || diffLevel === 'slightly_easier') {
+                  mappedDifficultyLevel = 'medium';
+                } else if (['easy', 'medium', 'hard'].includes(diffLevel)) {
+                  mappedDifficultyLevel = diffLevel;
+                }
+              }
+
+              const templateData = {
+                category: updateData.category,
+                questionType: question.questionType,
+                questionText: question.questionText,
+                targetSkills: question.prescriptionAlignment?.targetSkill ? [question.prescriptionAlignment.targetSkill] : ['general_practice'],
+                difficultyLevel: mappedDifficultyLevel,
+                createdBy: updateData.teacherImplementation?.implementedBy || updateData.lastEditedBy,
+                isActive: true
+              };
+
+              // Add category-specific fields following CLAUDE.md schema
+              if (updateData.category === 'Alphabet Knowledge') {
+                templateData.questionImage = question.questionImage;
+                templateData.questionValue = question.questionValue;
+                templateData.choiceOptions = question.choiceOptions;
+              } else if (updateData.category === 'Phonological Awareness') {
+                templateData.questionSet = question.questionSet;
+                templateData.matchCount = question.questionSet ? question.questionSet.correctPairs?.length || 3 : 3;
+              } else if (updateData.category === 'Decoding') {
+                templateData.questionImage = question.questionImage;
+                templateData.dragElements = question.dragElements;
+                templateData.correctSequence = question.correctSequence;
+                templateData.displaySequence = question.displaySequence;
+                templateData.blankPosition = question.blankPosition;
+              } else if (updateData.category === 'Word Recognition') {
+                templateData.questionImage = question.questionImage;
+                templateData.displayWord = question.displayWord;
+                templateData.blankOptions = question.blankOptions;
+                templateData.correctAnswer = question.correctAnswer;
+              }
+
+              const templateQuestion = new (require('../../models/Teachers/ManageProgress/templatesQuestionsModel'))(templateData);
+              await templateQuestion.save();
+              console.log(`[INTERVENTION CONTROLLER] ✅ Saved custom question ${question.questionId} to templates_questions`);
+
+              // Update the question to reference the saved template
+              question.sourceTemplateId = templateQuestion._id.toString();
+              question.source = 'template_question';
+            } catch (templateError) {
+              console.warn(`[INTERVENTION CONTROLLER] ⚠️ Failed to save question ${question.questionId} to templates:`, templateError.message);
+              // Continue anyway - this is just for future reuse
+            }
+          } else {
+            console.log(`[INTERVENTION CONTROLLER] Question ${question.questionId} source: ${question.source} - no template auto-save needed`);
+          }
+        }
+      }
+
+      // Update timestamps
+      updateData.updatedAt = new Date();
+      if (!updateData.lastEditedAt) {
+        updateData.lastEditedAt = new Date();
+      }
+
+      // Perform the update
+      const updatedIntervention = await InterventionAssessment.findByIdAndUpdate(
+        interventionId,
+        updateData,
+        {
+          new: true, // Return updated document
+          runValidators: true // Run mongoose validation
+        }
+      );
+
+      if (!updatedIntervention) {
+        return res.status(404).json({
+          success: false,
+          message: 'Intervention assessment not found after update',
+          interventionId: interventionId
+        });
+      }
+
+      console.log(`[INTERVENTION CONTROLLER] ✅ Successfully updated intervention ${interventionId}`);
+
+      // Log revision completion if applicable
+      if (updateData.revisionNumber && updateData.revisionNumber > (intervention.revisionNumber || 1)) {
+        console.log(`[INTERVENTION CONTROLLER] 🎯 REVISION UPDATE COMPLETE:`);
+        console.log(`[INTERVENTION CONTROLLER] - Updated to version: ${updatedIntervention.revisionNumber}`);
+        console.log(`[INTERVENTION CONTROLLER] - Status: ${updatedIntervention.status}`);
+        console.log(`[INTERVENTION CONTROLLER] - Ready for student retake: ${updatedIntervention.status === 'active' ? 'YES' : 'NO'}`);
+        console.log(`[INTERVENTION CONTROLLER] - Revision history length: ${updatedIntervention.revisionHistory?.length || 0}`);
+      }
+
+      res.json({
+        success: true,
+        message: 'Intervention assessment updated successfully',
+        data: updatedIntervention
+      });
+
+    } catch (error) {
+      console.error(`[INTERVENTION CONTROLLER] ❌ Error updating intervention ${req.params.interventionId}:`, error);
+
+      if (error.name === 'ValidationError') {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation error',
+          errors: Object.values(error.errors).map(err => ({
+            field: err.path,
+            message: err.message
+          }))
+        });
+      }
+
+      if (error.name === 'CastError') {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid intervention ID format',
+          interventionId: req.params.interventionId
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Error updating intervention assessment',
+        error: error.message,
+        interventionId: req.params.interventionId
       });
     }
   }

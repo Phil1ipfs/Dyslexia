@@ -51,14 +51,41 @@ class InterventionCompletionService {
         };
       }
 
-      // 4. Check if already processed (avoid duplicate processing)
+      // 4. Check if already processed (VERSION-AWARE duplicate prevention)
       if (intervention.completedAt || intervention.interventionResultsId) {
-        console.log(`[INTERVENTION COMPLETION] Intervention already processed - completedAt: ${intervention.completedAt}, resultsId: ${intervention.interventionResultsId}`);
-        return {
-          completed: true,
-          alreadyProcessed: true,
-          reason: 'intervention_already_processed'
-        };
+        console.log(`[INTERVENTION COMPLETION] Checking existing processing - completedAt: ${intervention.completedAt}, resultsId: ${intervention.interventionResultsId}`);
+
+        // VERSION-AWARE CHECK: Verify if existing results match current revision
+        if (intervention.interventionResultsId) {
+          const InterventionResults = require('../../models/Teachers/ManageProgress/interventionResultsModel');
+          const existingResults = await InterventionResults.findById(intervention.interventionResultsId);
+
+          if (existingResults) {
+            const currentRevision = intervention.revisionNumber || 1;
+            const resultsRevision = existingResults.revisionNumber || 1;
+
+            console.log(`[INTERVENTION COMPLETION] Existing results revision: ${resultsRevision}, Current intervention revision: ${currentRevision}`);
+
+            if (resultsRevision === currentRevision) {
+              console.log(`[INTERVENTION COMPLETION] ✅ Results already exist for revision ${currentRevision} - skipping processing`);
+              return {
+                completed: true,
+                alreadyProcessed: true,
+                reason: 'intervention_already_processed_for_revision',
+                revisionNumber: currentRevision
+              };
+            } else {
+              console.log(`[INTERVENTION COMPLETION] 🔄 Revision mismatch detected - allowing reprocessing for revision ${currentRevision}`);
+              // Continue to processing - different revision needs new results
+            }
+          } else {
+            console.log(`[INTERVENTION COMPLETION] ⚠️ Linked results not found - allowing reprocessing`);
+            // Continue to processing - linked results don't exist
+          }
+        } else {
+          console.log(`[INTERVENTION COMPLETION] ⚠️ No results linked despite completedAt - allowing reprocessing`);
+          // Continue to processing - no results linked
+        }
       }
 
       // 5. INTERVENTION IS COMPLETE - TRIGGER AUTOMATIC PROCESSING

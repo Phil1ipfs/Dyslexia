@@ -59,15 +59,17 @@ const interventionResponseSchema = new mongoose.Schema({
     required: true
   },
 
-  // NEW: Revision tracking fields
-  assessmentRevision: {
+  // VERSION TRACKING: Critical for revision validation
+  revisionNumber: {
     type: Number,
     required: true,
-    default: 1 // Which revision of the assessment was answered
-  },
-  isPostRevision: {
-    type: Boolean,
-    default: false // Was this response to a teacher-revised assessment?
+    default: 1, // Which version of the intervention was taken (1, 2, 3...)
+    validate: {
+      validator: function(v) {
+        return v >= 1 && Number.isInteger(v);
+      },
+      message: 'Revision number must be a positive integer starting from 1'
+    }
   },
 
   readingLevel: {
