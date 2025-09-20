@@ -365,7 +365,12 @@ class CategoryResultsService {
         };
       }
 
-      const currentRevision = intervention.revisionNumber || 1;
+      // ✅ FIX: Auto-detect the most recent COMPLETED revision instead of just using assessment.revisionNumber
+      const currentRevision = await this.findMostRecentCompletedRevision(
+        studentId,
+        interventionAssessmentId,
+        intervention
+      );
       const totalQuestionsInIntervention = intervention.totalQuestions || intervention.questions.length;
 
       console.log(`[INTERVENTION COMPLETENESS] 📋 Intervention details: ${intervention.category}, Version: ${currentRevision}, Total Questions: ${totalQuestionsInIntervention}`);
@@ -1407,6 +1412,80 @@ class CategoryResultsService {
         reason: 'Failed to update category_results from intervention success'
       };
     }
+  }
+
+  /**
+   * ✅ FIX: Auto-detect the most recent completed revision
+   * This fixes the issue where intervention_assessment.revisionNumber might be outdated
+   * or point to an incomplete revision while a newer complete revision exists
+   */
+  static async findMostRecentCompletedRevision(studentId, interventionAssessmentId, interventionAssessment) {
+    console.log(`[REVISION DETECTION] 🔍 Auto-detecting most recent completed revision...`);
+
+    const InterventionResponse = require('../../models/Teachers/ManageProgress/interventionResponseModel');
+
+    // Get all intervention responses for this intervention
+    const allResponses = await InterventionResponse.find({
+      studentId: studentId,
+      interventionAssessmentId: interventionAssessmentId
+    }).sort({ revisionNumber: 1, answeredAt: 1 });
+
+    console.log(`[REVISION DETECTION] Found ${allResponses.length} total responses across all revisions`);
+
+    // Group responses by revision number
+    const responsesByRevision = {};
+    allResponses.forEach(response => {
+      const revision = response.revisionNumber || 1;
+      if (!responsesByRevision[revision]) {
+        responsesByRevision[revision] = [];
+      }
+      responsesByRevision[revision].push(response);
+    });
+
+    // Get expected question count from intervention assessment
+    const expectedQuestions = interventionAssessment.totalQuestions || interventionAssessment.questions?.length || 0;
+    console.log(`[REVISION DETECTION] Expected questions per revision: ${expectedQuestions}`);
+
+    // Find the highest revision number with complete responses
+    let mostRecentCompletedRevision = 0;
+    const revisionAnalysis = {};
+
+    Object.keys(responsesByRevision).forEach(revision => {
+      const revisionNum = parseInt(revision);
+      const responses = responsesByRevision[revision];
+      const responseCount = responses.length;
+      const isComplete = responseCount >= expectedQuestions;
+
+      revisionAnalysis[revisionNum] = {
+        responseCount,
+        expectedQuestions,
+        isComplete,
+        completionRate: Math.round((responseCount / expectedQuestions) * 100)
+      };
+
+      if (isComplete && revisionNum > mostRecentCompletedRevision) {
+        mostRecentCompletedRevision = revisionNum;
+      }
+
+      console.log(`[REVISION DETECTION] Revision ${revisionNum}: ${responseCount}/${expectedQuestions} responses (${isComplete ? 'COMPLETE' : 'INCOMPLETE'})`);
+    });
+
+    console.log(`[REVISION DETECTION] 📊 Revision analysis:`, revisionAnalysis);
+
+    if (mostRecentCompletedRevision === 0) {
+      throw new Error(`No completed revision found. All revisions are incomplete. Analysis: ${JSON.stringify(revisionAnalysis)}`);
+    }
+
+    const assessmentRevision = interventionAssessment.revisionNumber;
+    if (mostRecentCompletedRevision !== assessmentRevision) {
+      console.log(`[REVISION DETECTION] ⚠️  MISMATCH DETECTED AND FIXED:`);
+      console.log(`[REVISION DETECTION]   Assessment revision: ${assessmentRevision}`);
+      console.log(`[REVISION DETECTION]   Most recent completed: ${mostRecentCompletedRevision}`);
+      console.log(`[REVISION DETECTION]   🔧 Using completed revision instead of assessment revision`);
+    }
+
+    console.log(`[REVISION DETECTION] ✅ Using revision ${mostRecentCompletedRevision} (most recent completed)`);
+    return mostRecentCompletedRevision;
   }
 }
 

@@ -246,14 +246,15 @@ class InterventionResultsAnalysisService {
       throw new Error(`Intervention assessment not found: ${interventionAssessmentId}`);
     }
 
-    // Get intervention responses for CURRENT REVISION ONLY
-    // CRITICAL: Strict revision filtering to prevent data contamination
-    const currentRevision = interventionAssessment.revisionNumber;
-    if (!currentRevision || currentRevision < 1) {
-      throw new Error(`Invalid intervention revision number: ${currentRevision}. Must be >= 1`);
-    }
+    // ✅ FIX: Auto-detect the most recent COMPLETED revision instead of just using assessment.revisionNumber
+    // This fixes the issue where intervention_assessment.revisionNumber might be outdated
+    const currentRevision = await this.findMostRecentCompletedRevision(
+      studentId,
+      interventionAssessmentId,
+      interventionAssessment
+    );
 
-    console.log(`[INTERVENTION ANALYSIS] 🔍 Fetching responses for revision ${currentRevision} only`);
+    console.log(`[INTERVENTION ANALYSIS] 🔍 Fetching responses for auto-detected revision ${currentRevision}`);
 
     const interventionResponses = await InterventionResponse.find({
       studentId: studentId,
