@@ -190,6 +190,49 @@ class InterventionResultsAnalysisService {
   }
 
   /**
+   * CRITICAL: Apply strict filtering to remove contaminated responses
+   * Ensures only responses for current revision and valid question IDs are used
+   */
+  static applyStrictRevisionFiltering(interventionResponses, interventionAssessment) {
+    const currentRevision = interventionAssessment.revisionNumber;
+    const validQuestionIds = interventionAssessment.questions.map(q => q.questionId);
+
+    console.log(`[STRICT FILTERING] Applying filters for revision ${currentRevision}, valid questions: ${validQuestionIds.join(', ')}`);
+
+    const filteredResponses = interventionResponses.filter(response => {
+      // Must have matching revision number
+      const hasCorrectRevision = response.revisionNumber === currentRevision;
+
+      // Must be for questions that exist in current revision
+      const isValidQuestionId = validQuestionIds.includes(response.questionId);
+
+      // Must have valid timestamp from current revision timeframe
+      const responseDate = new Date(response.answeredAt);
+      const assessmentEditDate = new Date(interventionAssessment.lastEditedAt || interventionAssessment.createdAt);
+      const isRecentEnough = responseDate >= assessmentEditDate;
+
+      const isValid = hasCorrectRevision && isValidQuestionId && isRecentEnough;
+
+      if (!isValid) {
+        console.warn(`[STRICT FILTERING] ❌ Removing contaminated response:`, {
+          questionId: response.questionId,
+          responseRevision: response.revisionNumber,
+          expectedRevision: currentRevision,
+          isValidQuestion: isValidQuestionId,
+          responseDate: responseDate.toISOString(),
+          assessmentDate: assessmentEditDate.toISOString(),
+          isRecentEnough: isRecentEnough
+        });
+      }
+
+      return isValid;
+    });
+
+    console.log(`[STRICT FILTERING] ✅ Filtering complete: ${interventionResponses.length} → ${filteredResponses.length}`);
+    return filteredResponses;
+  }
+
+  /**
    * Gather all data needed for comprehensive intervention analysis
    */
   static async gatherAnalysisContext(interventionAssessmentId, studentId) {
@@ -222,6 +265,10 @@ class InterventionResultsAnalysisService {
 
     // CRITICAL: Data integrity validation for ANY revision number
     await this.validateInterventionDataIntegrity(interventionAssessment, interventionResponses, currentRevision);
+
+    // CRITICAL: Apply strict filtering to remove any contaminated responses
+    const cleanedResponses = this.applyStrictRevisionFiltering(interventionResponses, interventionAssessment);
+    console.log(`[DATA CLEANING] Cleaned responses: ${interventionResponses.length} → ${cleanedResponses.length} (removed ${interventionResponses.length - cleanedResponses.length} contaminated responses)`);
 
     // Get original prescriptive analysis for before/after comparison
     const originalPrescriptiveAnalysis = interventionAssessment.prescriptiveAnalysisId;
@@ -293,7 +340,7 @@ class InterventionResultsAnalysisService {
 
     return {
       interventionAssessment,
-      interventionResponses,
+      interventionResponses: cleanedResponses, // Use strictly filtered responses
       originalPrescriptiveAnalysis,
       categoryResults,
       studentId,
@@ -600,7 +647,7 @@ class InterventionResultsAnalysisService {
     const rawCorrectAnswers = interventionResponses.filter(r => r.isCorrect).length;
     const cappedCorrectAnswers = Math.min(rawCorrectAnswers, totalQuestions);
 
-    console.log(`[BKT ANALYSIS] Intervention metrics: totalQuestions=${totalQuestions}, rawCorrect=${rawCorrectAnswers}, cappedCorrect=${cappedCorrectAnswers}`);
+    console.log(`[BKT ANALYSIS] Initial metrics: totalQuestions=${totalQuestions}, rawCorrect=${rawCorrectAnswers}, cappedCorrect=${cappedCorrectAnswers}`);
 
     // Get original mastery probability
     const originalMastery = originalPrescriptiveAnalysis.skillMastery?.[category]?.masteryProbability || 0.5;
@@ -613,6 +660,15 @@ class InterventionResultsAnalysisService {
     const P_LEARN = 0.1;  // 10% chance of learning from each question
     const P_GUESS = 0.3;  // 30% chance of guessing correct answer
     const P_SLIP = 0.1;   // 10% chance of making careless mistake
+
+    // Note: interventionResponses are already strictly filtered by gatherAnalysisContext
+    console.log(`[BKT ANALYSIS] Processing ${interventionResponses.length} pre-filtered responses for BKT calculation`);
+
+    // RECALCULATE metrics based on clean responses
+    const correctAnswers = interventionResponses.filter(r => r.isCorrect).length;
+    const finalCappedCorrectAnswers = Math.min(correctAnswers, totalQuestions);
+
+    console.log(`[BKT ANALYSIS] CORRECTED metrics: totalQuestions=${totalQuestions}, correct=${correctAnswers}, capped=${finalCappedCorrectAnswers}`);
 
     // Process each response chronologically to track mastery evolution
     interventionResponses.forEach(response => {
@@ -657,8 +713,8 @@ class InterventionResultsAnalysisService {
       masteryGrowth: Math.round(masteryGrowth * 1000) / 1000,
       lastUpdated: new Date(),
       totalQuestions: totalQuestions, // Use the corrected totalQuestions from intervention assessment
-      correctAnswers: cappedCorrectAnswers, // FIXED: Use capped correct answers for accurate reporting
-      score: Math.round((cappedCorrectAnswers / totalQuestions) * 100),
+      correctAnswers: finalCappedCorrectAnswers, // FIXED: Use clean correct answers
+      score: Math.round((finalCappedCorrectAnswers / totalQuestions) * 100),
       isPassed: currentMastery >= 0.75, // BKT confidence threshold
       status: status,
       responseHistory: responseHistory
