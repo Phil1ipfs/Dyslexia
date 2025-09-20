@@ -534,9 +534,21 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
   // NEW: Get category status based on intervention progression
   const getCategoryProgressionStatus = (category) => {
     const latestAttempt = getLatestInterventionAttempt(category);
-    
-    // If category originally passed, it's passed
+
+    // If category passed, check if it was via intervention or original assessment
     if (category.isPassed) {
+      // Check if passed via intervention
+      if (category.interventionCompleted && latestAttempt && latestAttempt.isPassed) {
+        return {
+          status: 'passed',
+          score: latestAttempt.score,
+          source: 'intervention',
+          attemptNumber: latestAttempt.attemptNumber,
+          message: `Passed via intervention on attempt ${latestAttempt.attemptNumber} (Score: ${latestAttempt.score}%)`
+        };
+      }
+
+      // Otherwise, passed via original assessment
       return {
         status: 'passed',
         score: category.score,
@@ -1024,7 +1036,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                           )}
                           {categoryStatus === 'passed' && (
                             <span className="student-progress-needs-attention-badge" style={{ backgroundColor: '#28a745', color: 'white' }}>
-                              PASSED
+                              {progressionStatus.source === 'intervention' ? 'PASSED via Intervention' : 'PASSED'}
                             </span>
                           )}
                         </h3>

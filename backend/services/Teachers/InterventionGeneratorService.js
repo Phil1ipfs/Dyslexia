@@ -1730,6 +1730,33 @@ class InterventionGeneratorService {
       });
 
       await interventionResults.save();
+      console.log(`[INTERVENTION GENERATOR] 🎯 intervention_results saved successfully - ID: ${interventionResults._id}`);
+
+      // CRITICAL: Update category_results with intervention attempt
+      try {
+        console.log(`[INTERVENTION GENERATOR] 📊 STARTING category_results update for intervention attempt...`);
+        console.log(`[INTERVENTION GENERATOR] 📊 Student: ${intervention.studentId}, Category: ${intervention.category}, Revision: ${intervention.revisionNumber || 1}`);
+
+        const InterventionResultsAnalysisService = require('./InterventionResultsAnalysisService');
+        const dataContext = {
+          studentId: intervention.studentId,
+          category: intervention.category,
+          interventionAssessmentId: interventionId
+        };
+
+        console.log(`[INTERVENTION GENERATOR] 📊 Calling updateCategoryResultsWithIntervention...`);
+        await InterventionResultsAnalysisService.updateCategoryResultsWithIntervention(
+          interventionResults,
+          dataContext
+        );
+        console.log(`[INTERVENTION GENERATOR] ✅ Successfully updated category_results with intervention attempt ${intervention.revisionNumber || 1}`);
+        console.log(`[INTERVENTION GENERATOR] ✅ category_results update COMPLETE`);
+      } catch (updateError) {
+        console.error('[INTERVENTION GENERATOR] ❌ Failed to update category_results with intervention (critical error):', updateError);
+        console.error('[INTERVENTION GENERATOR] ❌ Error stack:', updateError.stack);
+        // This is critical - we want to know about this failure
+        throw updateError;
+      }
 
       // Clear currentInterventionId in category_results now that intervention is completed
       try {

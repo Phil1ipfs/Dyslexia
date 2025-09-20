@@ -1736,8 +1736,17 @@ class InterventionResultsAnalysisService {
 
     // Update category with intervention data
     const categoryData = categoryResults.categories[categoryIndex];
-    const currentAttempts = categoryData.interventionAttempts || 0;
-    const attemptNumber = currentAttempts + 1;
+
+    // FIXED: Use actual intervention history length for accurate attempt counting
+    const currentHistoryLength = (categoryData.interventionHistory || []).length;
+    const attemptNumber = currentHistoryLength + 1;
+
+    console.log(`[INTERVENTION ANALYSIS] 📊 Calculating attempt number:`, {
+      currentHistoryLength,
+      attemptNumber,
+      storedAttempts: categoryData.interventionAttempts || 0,
+      corrected: true
+    });
 
     // Update intervention tracking
     categoryResults.categories[categoryIndex].currentInterventionId = interventionResults.interventionAssessmentId;
@@ -1789,6 +1798,36 @@ class InterventionResultsAnalysisService {
       // 🔒 DATA NORMALIZATION: Original score remains unchanged regardless of intervention result
       console.log(`[INTERVENTION ANALYSIS] 🔒 Original assessment score preserved: ${categoryData.score}%`);
       console.log(`[INTERVENTION ANALYSIS] 📊 Failed intervention score (${interventionResults.score}%) tracked in history only`);
+    }
+
+    // 🔄 RECALCULATE OVERALL STATISTICS when intervention passes
+    if (interventionResults.isPassed) {
+      console.log(`[INTERVENTION ANALYSIS] 🔄 Recalculating overall statistics after intervention success...`);
+
+      // Recalculate completedCategories (count of passed categories)
+      const passedCategories = categoryResults.categories.filter(cat => cat.isPassed === true);
+      const previousCompletedCategories = categoryResults.completedCategories || 0;
+      categoryResults.completedCategories = passedCategories.length;
+
+      console.log(`[INTERVENTION ANALYSIS] 📊 completedCategories updated: ${previousCompletedCategories} → ${categoryResults.completedCategories}`);
+
+      // Recalculate overallScore (weighted average)
+      const totalCategories = categoryResults.categories.length;
+      const overallScore = Math.round((passedCategories.length / totalCategories) * 100);
+      const previousOverallScore = categoryResults.overallScore || 0;
+      categoryResults.overallScore = overallScore;
+
+      console.log(`[INTERVENTION ANALYSIS] 📊 overallScore updated: ${previousOverallScore}% → ${categoryResults.overallScore}%`);
+
+      // Update allCategoriesPassed flag
+      const allPassed = passedCategories.length === totalCategories;
+      categoryResults.allCategoriesPassed = allPassed;
+
+      console.log(`[INTERVENTION ANALYSIS] 📊 allCategoriesPassed updated: ${allPassed}`);
+
+      if (allPassed) {
+        console.log(`[INTERVENTION ANALYSIS] 🎉 ALL CATEGORIES PASSED! Student ready for reading level progression.`);
+      }
     }
 
     // Update timestamps

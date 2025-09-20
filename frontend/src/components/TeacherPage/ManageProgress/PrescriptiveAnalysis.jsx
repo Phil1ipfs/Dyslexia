@@ -214,9 +214,21 @@ const PrescriptiveAnalysis = ({
   // NEW: Get category progression status based on intervention history
   const getCategoryProgressionStatus = (category) => {
     const latestAttempt = getLatestInterventionAttempt(category);
-    
-    // If category originally passed, it's passed
+
+    // If category passed, check if it was via intervention or original assessment
     if (category.isPassed) {
+      // Check if passed via intervention
+      if (category.interventionCompleted && latestAttempt && latestAttempt.isPassed) {
+        return {
+          status: 'passed',
+          score: latestAttempt.score,
+          source: 'intervention',
+          attemptNumber: latestAttempt.attemptNumber,
+          message: `Passed via intervention on attempt ${latestAttempt.attemptNumber} (Score: ${latestAttempt.score}%)`
+        };
+      }
+
+      // Otherwise, passed via original assessment
       return {
         status: 'passed',
         score: category.score,
@@ -4762,7 +4774,12 @@ const PrescriptiveAnalysis = ({
                 statusClass = "blocked";
                 isClickable = false;
               } else if (progressionStatus.status === 'passed') {
-                statusLabel = "PASSED";
+                // Show different labels based on how the category passed
+                if (progressionStatus.source === 'intervention') {
+                  statusLabel = "PASSED via Intervention";
+                } else {
+                  statusLabel = "PASSED";
+                }
                 statusClass = "passed";
               } else if (progressionStatus.status === 'needs_revision') {
                 statusLabel = "NEEDS REVISION";
@@ -4822,7 +4839,7 @@ const PrescriptiveAnalysis = ({
                           <FaCheckCircle /> {statusLabel}
                           {progressionStatus.source === 'intervention' && (
                             <div className="intervention-success">
-                              🎯 Intervention Success!
+                              🎯 Intervention Success - {progressionStatus.score}%
                             </div>
                           )}
                         </>
