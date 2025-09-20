@@ -64,6 +64,20 @@
   margin-bottom: 1.5rem;
 }
 
+/* Centered summary cards (3 cards) */
+.student-progress-summary-cards-centered {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.student-progress-summary-cards-centered .student-progress-summary-card {
+  flex: 0 0 280px;
+  max-width: 280px;
+}
+
 .student-progress-summary-card {
   background-color: #ffffff;
   border-radius: 12px;

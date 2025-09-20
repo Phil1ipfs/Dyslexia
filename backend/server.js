@@ -486,6 +486,22 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load chatbot routes:', error.message);
     }
 
+    // Load category results fix routes
+    try {
+      app.use('/api/category-results-fix', require('./routes/Teachers/categoryResultsFixRoutes'));
+      console.log('✅ Loaded category results fix routes at /api/category-results-fix/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load category results fix routes:', error.message);
+    }
+
+    // Load intervention responses routes
+    try {
+      app.use('/api/intervention-responses', require('./routes/Teachers/interventionResponses'));
+      console.log('✅ Loaded intervention responses routes at /api/intervention-responses/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load intervention responses routes:', error.message);
+    }
+
     // Load dashboard routes
     try {
       const dashboardRoutes = require('./routes/Teachers/dashboardRoutes');
@@ -1119,6 +1135,27 @@ app.listen(PORT, async () => {
     console.warn('⚠️ Could not complete intervention sync:', error.message);
   }
 
+  // Fix category results where interventions passed but stats weren't updated
+  try {
+    const CategoryResultsFixService = require('./services/Teachers/CategoryResultsFixService');
+
+    console.log('🔧 Starting category results fix service...');
+    const fixResult = await CategoryResultsFixService.fixAllCategoryResults();
+
+    if (fixResult.success) {
+      console.log(`✅ Category results fix completed: ${fixResult.fixed} fixed, ${fixResult.skipped} already correct`);
+    } else {
+      console.warn(`⚠️ Category results fix had issues: ${fixResult.error}`);
+    }
+
+    // Start automatic monitoring every 10 minutes
+    CategoryResultsFixService.startAutoFixMonitoring(10);
+    console.log('🔄 Category results auto-fix monitoring started (every 10 minutes)');
+
+  } catch (error) {
+    console.warn('⚠️ Could not start category results fix service:', error.message);
+  }
+
   // Start intervention monitoring service
   try {
     const interventionMonitoringService = require('./services/Teachers/InterventionMonitoringService');
@@ -1128,5 +1165,22 @@ app.listen(PORT, async () => {
     console.log('🎯 Intervention monitoring service auto-started - will check for completed interventions every 30 seconds');
   } catch (error) {
     console.warn('⚠️ Could not start intervention monitoring service:', error.message);
+  }
+
+  // Start category results fix service (automatic statistics recalculation)
+  try {
+    const CategoryResultsFixService = require('./services/Teachers/CategoryResultsFixService');
+
+    // Run immediate fix on startup
+    console.log('[CATEGORY FIX] 🔧 Running startup category results fix...');
+    CategoryResultsFixService.fixAllCategoryResults().then(result => {
+      console.log(`[CATEGORY FIX] ✅ Startup fix completed: ${result.fixed} fixed, ${result.skipped} already correct`);
+    });
+
+    // Auto-start the periodic monitoring service
+    CategoryResultsFixService.startAutoFixMonitoring(5); // Every 5 minutes
+    console.log('🎯 Category results fix service auto-started - will check and fix category statistics every 5 minutes');
+  } catch (error) {
+    console.warn('⚠️ Could not start category results fix service:', error.message);
   }
 });

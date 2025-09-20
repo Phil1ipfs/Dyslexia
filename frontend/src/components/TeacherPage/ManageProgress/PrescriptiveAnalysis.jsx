@@ -28,6 +28,8 @@ import {
   FaStethoscope,
   FaPrescriptionBottleAlt,
   FaLink,
+  FaFlag,
+  FaCalendarAlt,
   FaHistory
 } from 'react-icons/fa';
 import ActivityEditModal from './ActivityEditModal';
@@ -4776,7 +4778,7 @@ const PrescriptiveAnalysis = ({
               } else if (progressionStatus.status === 'passed') {
                 // Show different labels based on how the category passed
                 if (progressionStatus.source === 'intervention') {
-                  statusLabel = "PASSED via Intervention";
+                  statusLabel = "PASSED";
                 } else {
                   statusLabel = "PASSED";
                 }
@@ -4839,7 +4841,7 @@ const PrescriptiveAnalysis = ({
                           <FaCheckCircle /> {statusLabel}
                           {progressionStatus.source === 'intervention' && (
                             <div className="intervention-success">
-                              🎯 Intervention Success - {progressionStatus.score}%
+                               - {progressionStatus.score}%
                             </div>
                           )}
                         </>
@@ -5392,11 +5394,15 @@ const PrescriptiveAnalysis = ({
       {showResponseModal && selectedInterventionData && (
         <div className="literexia-modal-overlay" onClick={handleCloseResponseModal}>
           <div className="literexia-response-modal" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
             <div className="literexia-modal-header">
-              <h3>
+              <div className="literexia-modal-title">
                 <FaEye className="modal-icon" />
-                Intervention Responses - {selectedInterventionData.category}
-              </h3>
+                <div className="title-content">
+                  <h3>Intervention Responses</h3>
+                  <span className="category-badge">{selectedInterventionData.category}</span>
+                </div>
+              </div>
               <button
                 className="literexia-modal-close"
                 onClick={handleCloseResponseModal}
@@ -5407,79 +5413,128 @@ const PrescriptiveAnalysis = ({
             </div>
 
             <div className="literexia-modal-content">
-              {/* Intervention Summary */}
-              <div className="literexia-response-summary">
-                <div className="literexia-summary-card">
-                  <h4>Intervention Summary</h4>
-                  <div className="literexia-summary-stats">
-                    <div className="literexia-stat-item">
-                      <span className="literexia-stat-label">Total Questions:</span>
-                      <span className="literexia-stat-value">{selectedInterventionData.totalQuestions}</span>
+              {/* Intervention Overview */}
+              <div className="literexia-intervention-overview">
+                <div className="overview-header">
+                  <h4>Intervention Overview</h4>
+                  <div className="revision-info">
+                    <span className="revision-badge">Revision {selectedInterventionData.interventionAssessment?.revisionNumber || 1}</span>
+                  </div>
+                </div>
+                
+                <div className="overview-stats-grid">
+                  <div className="stat-card">
+                    <div className="stat-icon">
+                      <FaQuestionCircle />
                     </div>
-                    <div className="literexia-stat-item">
-                      <span className="literexia-stat-label">Completed:</span>
-                      <span className="literexia-stat-value">{selectedInterventionData.completedResponses}</span>
+                    <div className="stat-content">
+                      <span className="stat-label">Total Questions</span>
+                      <span className="stat-value">{selectedInterventionData.totalQuestions}</span>
                     </div>
-                    <div className="literexia-stat-item">
-                      <span className="literexia-stat-label">Score:</span>
-                      <span className={`literexia-stat-value ${selectedInterventionData.interventionResults?.isPassed ? 'passed' : 'failed'}`}>
+                  </div>
+                  
+                  <div className="stat-card">
+                    <div className="stat-icon">
+                      <FaCheckCircle />
+                    </div>
+                    <div className="stat-content">
+                      <span className="stat-label">Completed</span>
+                      <span className="stat-value">{selectedInterventionData.completedResponses}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="stat-card score-card">
+                    <div className="stat-icon">
+                      <FaChartLine />
+                    </div>
+                    <div className="stat-content">
+                      <span className="stat-label">Score</span>
+                      <span className={`stat-value score ${selectedInterventionData.interventionResults?.isPassed ? 'passed' : 'failed'}`}>
                         {selectedInterventionData.interventionResults?.score || 0}%
                       </span>
                     </div>
-                    <div className="literexia-stat-item">
-                      <span className="literexia-stat-label">Status:</span>
-                      <span className={`literexia-stat-badge ${selectedInterventionData.interventionResults?.isPassed ? 'passed' : 'failed'}`}>
-                        {selectedInterventionData.interventionResults?.isPassed ? 'PASSED' : 'FAILED'}
-                      </span>
-                    </div>
                   </div>
+                  
+                    <div className="stat-card status-card">
+                      <div className="stat-icon">
+                        <FaFlag />
+                      </div>
+                      <div className="stat-content">
+                        <span className="stat-label">Status</span>
+                        <span className={`status-badge ${(selectedInterventionData.interventionResults?.score || 0) >= 75 ? 'passed' : 'failed'}`}>
+                          {(selectedInterventionData.interventionResults?.score || 0) >= 75 ? 'PASSED' : 'FAILED'}
+                        </span>
+                      </div>
+                    </div>
                 </div>
               </div>
 
-              {/* Individual Responses */}
-              <div className="literexia-responses-list">
-                <h4>Student Responses</h4>
-                {interventionResponses.map((response, index) => (
-                  <div key={index} className={`literexia-response-item ${response.isCorrect ? 'correct' : 'incorrect'}`}>
-                    <div className="literexia-response-header">
-                      <div className="literexia-question-number">
-                        <span>Q{index + 1}</span>
-                        <div className={`literexia-response-indicator ${response.isCorrect ? 'correct' : 'incorrect'}`}>
-                          {response.isCorrect ? <FaCheck /> : <FaTimes />}
-                        </div>
-                      </div>
-                      <div className="literexia-response-time">
-                        <FaClock className="time-icon" />
-                        <span>{response.responseTime}s</span>
-                      </div>
-                    </div>
-
-                    <div className="literexia-question-content">
-                      <div className="literexia-question-text">
-                        <strong>Question:</strong> {response.questionText}
-                      </div>
-
-                      {response.questionImage && (
-                        <div className="literexia-question-image">
-                          <img src={response.questionImage} alt="Question" />
-                        </div>
-                      )}
-
-                      <div className="literexia-response-details">
-                        <div className="literexia-response-row">
-                          <span className="literexia-response-label">Student Answer:</span>
-                          <span className={`literexia-response-value ${response.isCorrect ? 'correct' : 'incorrect'}`}>
-                            {response.response}
-                          </span>
-                        </div>
-                        <div className="literexia-response-row">
-                          <span className="literexia-response-label">Correct Answer:</span>
-                          <span className="literexia-response-value correct">{response.correctAnswer}</span>
-                        </div>
-                      </div>
-                    </div>
+              {/* Student Responses Section */}
+              <div className="literexia-responses-section">
+                <div className="responses-header">
+                  <h4>Student Responses</h4>
+                  <div className="responses-count">
+                    {interventionResponses.length} response{interventionResponses.length !== 1 ? 's' : ''}
                   </div>
-                ))}
+                </div>
+
+                <div className="responses-list">
+                  {interventionResponses.length > 0 ? (
+                    interventionResponses.map((response, index) => (
+                      <div key={index} className={`response-card ${response.isCorrect ? 'correct' : 'incorrect'}`}>
+                        <div className="response-card-header">
+                          <div className="question-info">
+                            <div className="question-number">
+                              <span>Q{index + 1}</span>
+                            </div>
+                            <div className={`response-statuss ${response.isCorrect ? 'correct' : 'incorrect'}`}>
+                              {response.isCorrect ? <FaCheck /> : <FaTimes />}
+                            </div>
+                          </div>
+                          <div className="response-meta">
+                            <div className="response-time">
+                              <FaClock />
+                              <span>{response.responseTime}s</span>
+                            </div>
+                            <div className="response-date">
+                              <FaCalendarAlt />
+                              <span>{new Date(response.answeredAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="response-card-content">
+                          <div className="question-section">
+                            <h5>Question</h5>
+                            <p className="question-text">{response.questionText || 'Question text not available'}</p>
+                          </div>
+
+                          <div className="answers-section">
+                            <div className="answer-row">
+                              <div className="answer-item student-answer">
+                                <span className="answer-label">Student Answer</span>
+                                <span className={`answer-value ${response.isCorrect ? 'correct' : 'incorrect'}`}>
+                                  {response.response || 'No response'}
+                                </span>
+                              </div>
+                              <div className="answer-item correct-answer">
+                                <span className="answer-label">Correct Answer</span>
+                                <span className="answer-value correct">
+                                  {response.correctAnswer || 'N/A'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="no-responses">
+                      <FaInfoCircle />
+                      <p>No responses found for this intervention.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

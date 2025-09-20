@@ -471,12 +471,30 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
 
   // NEW: Get latest intervention attempt for a category
   const getLatestInterventionAttempt = (category) => {
+    console.log(`[INTERVENTION ATTEMPT] Category: ${category.categoryName}`);
+    console.log(`[INTERVENTION ATTEMPT] Has interventionHistory:`, !!category.interventionHistory);
+    console.log(`[INTERVENTION ATTEMPT] History length:`, category.interventionHistory?.length || 0);
+    console.log(`[INTERVENTION ATTEMPT] Full history:`, category.interventionHistory);
+    
     if (!category.interventionHistory || category.interventionHistory.length === 0) {
+      console.log(`[INTERVENTION ATTEMPT] No intervention history found`);
       return null;
     }
     
-    // Sort by attempt number and get the latest
+    // First, try to find any passed intervention attempts
+    const passedAttempts = category.interventionHistory.filter(attempt => attempt.isPassed === true);
+    console.log(`[INTERVENTION ATTEMPT] Passed attempts:`, passedAttempts);
+    
+    if (passedAttempts.length > 0) {
+      // Return the latest passed attempt
+      const sortedPassed = [...passedAttempts].sort((a, b) => b.attemptNumber - a.attemptNumber);
+      console.log(`[INTERVENTION ATTEMPT] Latest passed attempt:`, sortedPassed[0]);
+      return sortedPassed[0];
+    }
+    
+    // If no passed attempts, return the latest attempt (even if failed)
     const sortedHistory = [...category.interventionHistory].sort((a, b) => b.attemptNumber - a.attemptNumber);
+    console.log(`[INTERVENTION ATTEMPT] Latest attempt (any):`, sortedHistory[0]);
     return sortedHistory[0];
   };
 
@@ -502,16 +520,28 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     return true;
   };
 
-  // NEW: Get the current display score for a category (latest intervention or original)
+  // NEW: Get the current display score for a category (prioritizes passed intervention scores)
   const getCurrentDisplayScore = (category) => {
     const latestAttempt = getLatestInterventionAttempt(category);
     
-    // If there's a latest intervention attempt, use that score
+    console.log(`[DISPLAY SCORE] Category: ${category.categoryName}`);
+    console.log(`[DISPLAY SCORE] Original score: ${category.score}`);
+    console.log(`[DISPLAY SCORE] Latest attempt:`, latestAttempt);
+    
+    // If there's a passed intervention attempt, use that score
+    if (latestAttempt && latestAttempt.isPassed) {
+      console.log(`[DISPLAY SCORE] Using passed intervention score: ${latestAttempt.score}`);
+      return latestAttempt.score;
+    }
+    
+    // If there's any intervention attempt (even failed), use that score
     if (latestAttempt) {
+      console.log(`[DISPLAY SCORE] Using intervention score: ${latestAttempt.score}`);
       return latestAttempt.score;
     }
     
     // Otherwise, use the original category score
+    console.log(`[DISPLAY SCORE] Using original score: ${category.score}`);
     return Number(category.score) || 0;
   };
 
@@ -548,12 +578,23 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
         };
       }
 
+      // Check if there's a passed intervention (even if not marked as interventionCompleted)
+      if (latestAttempt && latestAttempt.isPassed) {
+        return {
+          status: 'passed',
+          score: latestAttempt.score,
+          source: 'intervention',
+          attemptNumber: latestAttempt.attemptNumber,
+          message: 'Category passed via intervention'
+        };
+      }
+      
       // Otherwise, passed via original assessment
       return {
         status: 'passed',
-        score: category.score,
+        score: getCurrentDisplayScore(category), // Use the display score (intervention if available)
         source: 'original_assessment',
-        message: 'Category passed in original assessment'
+        message: 'Category passed via intervention'
       };
     }
     
@@ -833,8 +874,8 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
         </div>
       </div>
       
-      {/* Assessment Summary Cards */}
-      <div className="student-progress-summary-cards">
+      {/* Assessment Summary Cards - Centered */}
+      <div className="student-progress-summary-cards student-progress-summary-cards-centered">
         <div className={`student-progress-summary-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0s'}}>
           <div className="student-progress-card-header">
             <div className="student-progress-card-icon">
@@ -860,18 +901,6 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
         </div>
         
         <div className={`student-progress-summary-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.2s'}}>
-          <div className="student-progress-card-header">
-            <div className="student-progress-card-icon">
-              <FaBookOpen />
-            </div>
-            <div className="student-progress-card-value">
-              <span className="student-progress-counter" data-target={correctAnswers}>{animated ? correctAnswers : '0'}</span>/{totalQuestions}
-            </div>
-          </div>
-          <div className="student-progress-card-label">Correct Answers</div>
-        </div>
-        
-        <div className={`student-progress-summary-card ${animated ? 'animate' : ''}`} style={{animationDelay: '0.3s'}}>
           <div className="student-progress-card-header">
             <div className="student-progress-card-icon">
               <FaCalendarAlt />
@@ -920,20 +949,6 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
             </div>
           </div>
           
-          {/* Overall Progress Bar */}
-          <div className="student-progress-completion-bar">
-            <div className="student-progress-completion-bar-label">
-              <span>Overall Progress:</span>
-              <span className="student-progress-completion-count">{correctAnswers}/{totalQuestions} questions correct ({Math.round((correctAnswers / totalQuestions) * 100)}%)</span>
-            </div>
-            <div className="student-progress-completion-bar-container">
-              <div 
-                className="student-progress-completion-bar-fill" 
-                style={{width: `${Math.min(100, Math.round((correctAnswers / totalQuestions) * 100))}%`}}
-              ></div>
-            </div>
-          </div>
-          
           {/* Category Access Loading Indicator */}
           {categoryAccessLoading && (
             <div className="student-progress-loading-state" style={{ textAlign: 'center', padding: '10px 0', color: '#6c757d' }}>
@@ -972,7 +987,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
               // Determine category status for display based on dynamic progression
               let categoryStatus = '';
               let statusMessage = '';
-              let displayScore = score; // Use the current display score (latest intervention or original)
+              let displayScore = getCurrentDisplayScore(category); // Use the current display score (latest intervention or original)
               let isPassed = progressionStatus.status === 'passed';
 
               if (!isUnlocked) {
@@ -1113,10 +1128,16 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                       </div>
                     ) : categoryStatus === 'passed' ? (
                       <div className="student-progress-success-message">
-                        <FaCheckCircle /> {statusMessage} - Score: {displayScore}%
+                        <FaCheckCircle /> {statusMessage}
                         {progressionStatus.source === 'intervention' && (
                           <div className="intervention-success-details" style={{ fontSize: '0.8em', marginTop: '4px', opacity: 0.8 }}>
-                            Intervention Success! Student improved from {category.score}% to {displayScore}%
+                            <div>Intervention Success! Student improved from {category.score}% to {displayScore}%</div>
+                            <div style={{ marginTop: '2px' }}>Original Post Assessment: {category.score}% ({category.correctAnswers || 0}/{category.totalQuestions || 0} correct)</div>
+                          </div>
+                        )}
+                        {progressionStatus.source === 'original_assessment' && (
+                          <div className="original-assessment-details" style={{ fontSize: '0.8em', marginTop: '4px', opacity: 0.8 }}>
+                            Original Post Assessment: {category.score}% ({category.correctAnswers || 0}/{category.totalQuestions || 0} correct)
                           </div>
                         )}
                       </div>
