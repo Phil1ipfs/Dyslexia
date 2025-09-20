@@ -41,6 +41,7 @@ import {
   faLink
 } from "@fortawesome/free-solid-svg-icons";
 import "../../../css/Teachers/ManageCategories/PostAssessment.css";
+import "../../../css/Teachers/ManageCategories/AssessmentPreview.css";
 import MainAssessmentService from '../../../services/Teachers/MainAssessmentService';
 import { toast } from 'react-toastify';
 import { ToastContainer } from 'react-toastify';
@@ -122,7 +123,7 @@ const MainAssessment = ({ templates }) => {
       acceptableAnswers: []
     }
   });
-  const [previewPage, setPreviewPage] = useState(0);
+  const [previewPages, setPreviewPages] = useState({});
   const [uploadingImage, setUploadingImage] = useState(false);
   const [submitSuccessDialog, setSubmitSuccessDialog] = useState(false);
   const [deleteSuccessDialog, setDeleteSuccessDialog] = useState(false);
@@ -843,7 +844,7 @@ const MainAssessment = ({ templates }) => {
   const handlePreviewAssessment = (assessment) => {
     setModalType("preview");
     setSelectedAssessment(assessment);
-    setPreviewPage(0); // Reset to first page
+    setPreviewPages({}); // Reset all page tracking
     setShowModal(true);
   };
 
@@ -2095,11 +2096,21 @@ const MainAssessment = ({ templates }) => {
     }
   };
 
-  const handlePreviewPageChange = (direction) => {
-    if (direction === 'next' && selectedAssessment?.questions?.[0]?.passages?.length > previewPage + 1) {
-      setPreviewPage(prev => prev + 1);
-    } else if (direction === 'prev' && previewPage > 0) {
-      setPreviewPage(prev => prev - 1);
+  const handlePreviewPageChange = (direction, questionIndex) => {
+    const currentPage = previewPages[questionIndex] || 0;
+    const question = selectedAssessment?.questions?.[questionIndex];
+    const totalPages = question?.passages?.length || 0;
+    
+    if (direction === 'next' && totalPages > currentPage + 1) {
+      setPreviewPages(prev => ({
+        ...prev,
+        [questionIndex]: currentPage + 1
+      }));
+    } else if (direction === 'prev' && currentPage > 0) {
+      setPreviewPages(prev => ({
+        ...prev,
+        [questionIndex]: currentPage - 1
+      }));
     }
   };
 
@@ -2383,7 +2394,7 @@ const MainAssessment = ({ templates }) => {
         <h3>Main Assessment Process Flow</h3>
         <div className="pa-flow-steps">
           <div className="pa-flow-step">
-            <div className="pa-step-number">1</div>
+            <div className="paa-step-number">1</div>
             <div className="pa-step-content">
               <h4>Assessment Creation</h4>
               <p>Teachers create targeted assessments based on student reading levels and specific learning objectives.</p>
@@ -2393,7 +2404,7 @@ const MainAssessment = ({ templates }) => {
             <FontAwesomeIcon icon={faArrowRight} />
           </div>
           <div className="pa-flow-step">
-            <div className="pa-step-number">2</div>
+            <div className="paa-step-number">2</div>
             <div className="pa-step-content">
               <h4>Assessment Activation</h4>
               <p>Teachers activate assessments to make them available to students in the mobile application.</p>
@@ -2403,7 +2414,7 @@ const MainAssessment = ({ templates }) => {
             <FontAwesomeIcon icon={faArrowRight} />
           </div>
           <div className="pa-flow-step">
-            <div className="pa-step-number">3</div>
+            <div className="paa-step-number">3</div>
             <div className="pa-step-content">
               <h4>Student Assignment</h4>
               <p>Activated assessments are assigned to students based on their reading level and identified needs.</p>
@@ -2413,7 +2424,7 @@ const MainAssessment = ({ templates }) => {
             <FontAwesomeIcon icon={faArrowRight} />
           </div>
           <div className="pa-flow-step">
-            <div className="pa-step-number">4</div>
+            <div className="paa-step-number">4</div>
             <div className="pa-step-content">
               <h4>Progress Tracking</h4>
               <p>Monitor student performance and advancement through the assessment system in real-time.</p>
@@ -2423,7 +2434,7 @@ const MainAssessment = ({ templates }) => {
             <FontAwesomeIcon icon={faArrowRight} />
           </div>
           <div className="pa-flow-step">
-            <div className="pa-step-number">5</div>
+            <div className="paa-step-number">5</div>
             <div className="pa-step-content">
               <h4>Level Advancement</h4>
               <p>Students advance to higher reading levels based on successful completion of assessments.</p>
@@ -2691,21 +2702,21 @@ const MainAssessment = ({ templates }) => {
       </div>
 
       {showModal && (
-        <div className="pa-modal-overlay">
-          <div className={`pa-modal ${modalType === 'preview' || showQuestionForm ? 'pa-modal-enhanced' : ''} ${modalType === 'delete' ? 'pa-modal-narrow' : ''}`}>
-            <div className="pa-modal-header">
+        <div className={modalType === 'preview' ? 'ap-modal-overlay' : 'pa-modal-overlay'}>
+          <div className={modalType === 'preview' ? 'ap-modal' : `pa-modal ${modalType === 'preview' || showQuestionForm ? 'pa-modal-enhanced' : ''} ${modalType === 'delete' ? 'pa-modal-narrow' : ''}`}>
+            <div className={modalType === 'preview' ? 'ap-modal-header' : 'pa-modal-header'}>
               <h3>
                 {modalType === 'create' ?
                   <><FontAwesomeIcon icon={faPlus} className="pa-modal-header-icon" /> Create New Assessment</> :
                   modalType === 'edit' ?
                     <><FontAwesomeIcon icon={faEdit} className="pa-modal-header-icon" /> Edit Assessment</> :
                     modalType === 'preview' ?
-                      <><FontAwesomeIcon icon={faEye} className="pa-modal-header-icon" /> Assessment Preview</> :
+                      <> Assessment Preview</> :
                       <><FontAwesomeIcon icon={faTrash} className="pa-modal-header-icon" /> Delete Assessment</>
                 }
               </h3>
               <button
-                className="pa-modal-close"
+                className={modalType === 'preview' ? 'ap-modal-close' : 'pa-modal-close'}
                 onClick={() => setShowModal(false)}
                 title="Close"
               >
@@ -2728,33 +2739,33 @@ const MainAssessment = ({ templates }) => {
                   </div>
                 </div>
               ) : modalType === 'preview' ? (
-                <div className="pa-assessment-preview">
-                  <div className="pa-preview-header">
-                    <div className="pa-preview-info">
-                      <div className="pa-preview-section">
-                        <span className="pa-preview-label">Reading Level:</span>
-                        <span className="pa-preview-value">{selectedAssessment.readingLevel}</span>
+                <div className="ap-assessment-preview">
+                  <div className="ap-preview-header">
+                    <div className="ap-preview-info">
+                      <div className="ap-preview-section">
+                        <span className="ap-preview-label">Reading Level</span>
+                        <span className="ap-preview-value">{selectedAssessment.readingLevel}</span>
                       </div>
 
-                      <div className="pa-preview-section">
-                        <span className="pa-preview-label">Category:</span>
-                        <span className="pa-preview-value">{selectedAssessment.category}</span>
+                      <div className="ap-preview-section">
+                        <span className="ap-preview-label">Category</span>
+                        <span className="ap-preview-value">{selectedAssessment.category}</span>
                       </div>
 
-                      <div className="pa-preview-section">
-                        <span className="pa-preview-label">Total Questions:</span>
-                        <span className="pa-preview-value">{selectedAssessment.questions.length}</span>
+                      <div className="ap-preview-section">
+                        <span className="ap-preview-label">Total Questions</span>
+                        <span className="ap-preview-value">{selectedAssessment.questions.length}</span>
                       </div>
 
-                      <div className="pa-preview-section">
-                        <span className="pa-preview-label">Status:</span>
-                        <span className="pa-preview-value">
+                      <div className="ap-preview-section">
+                        <span className="ap-preview-label">Status</span>
+                        <span className="ap-preview-value">
                           {selectedAssessment.isActive ? (
-                            <span className="pa-status-tag active">
+                            <span className="ap-status-tag active">
                               <FontAwesomeIcon icon={faCheckCircle} /> Active
                             </span>
                           ) : (
-                            <span className="pa-status-tag inactive">
+                            <span className="ap-status-tag inactive">
                               <FontAwesomeIcon icon={faExclamationTriangle} /> Inactive
                             </span>
                           )}
@@ -2763,18 +2774,18 @@ const MainAssessment = ({ templates }) => {
                     </div>
                   </div>
 
-                  <div className="pa-preview-content">
+                  <div className="ap-preview-content">
                     <h4>
-                      <FontAwesomeIcon icon={faClipboardList} className="pa-preview-icon" />
+                      <FontAwesomeIcon icon={faClipboardList} className="ap-preview-icon" />
                       Assessment Questions
                     </h4>
 
                     {selectedAssessment.questions.map((question, index) => (
-                      <div key={index} className="pa-preview-question-card">
-                        <div className="pa-question-header">
-                          <div className="pa-question-metadata">
-                            <span className="pa-question-num">Question {index + 1}</span>
-                            <span className="pa-question-type">
+                      <div key={index} className="ap-question-card">
+                        <div className="ap-question-header">
+                          <div className="ap-question-metadata">
+                            <span className="ap-question-num">Question {index + 1}</span>
+                            <span className="ap-question-type">
                               <FontAwesomeIcon
                                 icon={
                                   question.questionType === "patinig" || question.questionType === "katinig"
@@ -2785,122 +2796,216 @@ const MainAssessment = ({ templates }) => {
                                         ? faBook
                                         : faFileAlt
                                 }
-                                className="pa-question-type-icon"
+                                className="ap-question-type-icon"
                               />
                               {getQuestionTypeDisplay(question.questionType, question.questionSubtype)}
                             </span>
                           </div>
                         </div>
 
-                        <div className="pa-question-content">
-                          <div className="pa-question-prompt">
-                            {question.questionImage && (
-                              <div className="pa-question-image-container">
-                                <img
-                                  src={question.questionImage}
-                                  alt="Question visual"
-                                  className="pa-question-image"
-                                />
-                              </div>
-                            )}
+                        <div className="ap-question-body">
+                          <div className="ap-question-text">{question.questionText}</div>
 
-                            <div className="pa-question-text-container">
-                              <p className="pa-question-text">{question.questionText}</p>
-                              {question.questionValue && (
-                                <div className="pa-question-value">
-                                  <strong>Value:</strong> {question.questionValue}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {question.questionType === 'sentence' && question.passages ? (
-                            <div className="pa-passage-preview">
+                          {/* Reading Comprehension */}
+                          {selectedAssessment.category === 'Reading Comprehension' && question.passages && (
+                            <div className="ap-passage-preview">
                               <h5><FontAwesomeIcon icon={faBook} /> Reading Passage</h5>
 
-                              <div className="pa-passage-navigation">
-                                <button
-                                  className="pa-page-nav-btn"
-                                  onClick={() => handlePreviewPageChange('prev')}
-                                  disabled={previewPage === 0}
-                                >
-                                  <FontAwesomeIcon icon={faArrowLeft} /> Previous
-                                </button>
+                              {(() => {
+                                const currentPage = previewPages[index] || 0;
+                                return (
+                                  <>
+                                    <div className="ap-passage-navigation">
+                                      <button
+                                        className="ap-page-nav-btn"
+                                        onClick={() => handlePreviewPageChange('prev', index)}
+                                        disabled={currentPage === 0}
+                                      >
+                                        <FontAwesomeIcon icon={faArrowLeft} /> Previous
+                                      </button>
 
-                                <span className="pa-page-indicator">
-                                  Page {previewPage + 1} of {question.passages.length}
-                                </span>
+                                      <span className="ap-page-indicator">
+                                        Page {currentPage + 1} of {question.passages.length}
+                                      </span>
 
-                                <button
-                                  className="pa-page-nav-btn"
-                                  onClick={() => handlePreviewPageChange('next')}
-                                  disabled={previewPage >= question.passages.length - 1}
-                                >
-                                  Next <FontAwesomeIcon icon={faArrowRight} />
-                                </button>
-                              </div>
+                                      <button
+                                        className="ap-page-nav-btn"
+                                        onClick={() => handlePreviewPageChange('next', index)}
+                                        disabled={currentPage >= question.passages.length - 1}
+                                      >
+                                        Next <FontAwesomeIcon icon={faArrowRight} />
+                                      </button>
+                                    </div>
 
-                              <div className="pa-passage-container">
-                                {question.passages[previewPage]?.pageImage && (
-                                  <div className="pa-passage-image-container">
-                                    <img
-                                      src={question.passages[previewPage].pageImage}
-                                      alt={`Page ${previewPage + 1} illustration`}
-                                      className="pa-passage-image"
-                                    />
-                                  </div>
-                                )}
+                                    <div className="ap-passage-container">
+                                      {question.passages[currentPage]?.pageImage && (
+                                        <div className="ap-passage-image-container">
+                                          <img
+                                            src={question.passages[currentPage].pageImage}
+                                            alt={`Page ${currentPage + 1} illustration`}
+                                            className="ap-passage-image"
+                                          />
+                                        </div>
+                                      )}
 
-                                <div className="pa-passage-text-container">
-                                  <p className="pa-passage-text">{question.passages[previewPage]?.pageText}</p>
-                                </div>
-                              </div>
+                                      <div className="ap-passage-text-container">
+                                        <p className="ap-passage-text">{question.passages[currentPage]?.pageText}</p>
+                                      </div>
+                                    </div>
+                                  </>
+                                );
+                              })()}
 
-                              <div className="pa-comprehension-questions">
+                              <div className="ap-comprehension-questions">
                                 <h5><FontAwesomeIcon icon={faQuestion} /> Comprehension Questions</h5>
                                 {question.sentenceQuestions && question.sentenceQuestions.length > 0 ? (
                                   question.sentenceQuestions.map((sq, sqIndex) => (
-                                    <div key={sqIndex} className="pa-comprehension-question">
-                                      <div className="pa-comprehension-q-header">
-                                        <span className="pa-comprehension-q-number">Q{sqIndex + 1}:</span>
-                                        <span className="pa-comprehension-q-text">{sq.questionText}</span>
-                                      </div>
-
-                                      <div className="pa-comprehension-options">
-                                        <div className="pa-option pa-option-correct">
-                                          <FontAwesomeIcon icon={faCheckCircle} className="pa-option-icon" />
-                                          {sq.correctAnswer}
+                                    <div key={sqIndex} className="ap-sentence-question">
+                                      <div className="ap-sentence-question-text">{sq.questionText}</div>
+                                      <div className="ap-correct-answer">Correct Answer: {sq.correctAnswer}</div>
+                                      {sq.acceptableAnswers && sq.acceptableAnswers.length > 0 && (
+                                        <div className="ap-acceptable-answers">
+                                          <div className="ap-acceptable-answers-label">Acceptable Answers:</div>
+                                          {sq.acceptableAnswers.map((answer, ansIndex) => (
+                                            <span key={ansIndex} className="ap-acceptable-answer">{answer}</span>
+                                          ))}
                                         </div>
-                                        <div className="pa-option">
-                                          {sq.incorrectAnswer}
-                                        </div>
-                                      </div>
+                                      )}
                                     </div>
                                   ))
                                 ) : (
-                                  <div className="pa-no-questions">
+                                  <div className="ap-no-questions">
                                     <p>No comprehension questions added yet.</p>
                                   </div>
                                 )}
                               </div>
                             </div>
-                          ) : (
-                            <div className="pa-choice-options">
-                              <h5><FontAwesomeIcon icon={faCheckDouble} /> Answer Options</h5>
+                          )}
 
-                              <div className="pa-options-list">
-                                {question.choiceOptions && question.choiceOptions.map((option, optIndex) => (
-                                  <div
-                                    key={optIndex}
-                                    className={`pa-option ${option.isCorrect ? 'pa-option-correct' : ''}`}
-                                  >
-                                    <div className="pa-option-header">
-                                      {option.isCorrect && (
-                                        <FontAwesomeIcon icon={faCheckCircle} className="pa-option-icon" />
-                                      )}
-                                      {option.optionText}
+                          {/* Decoding */}
+                          {selectedAssessment.category === 'Decoding' && (
+                            <div className="ap-decoding-preview">
+                              {question.questionImage && (
+                                <div className="ap-decoding-image-container">
+                                  <img
+                                    src={question.questionImage}
+                                    alt="Question visual"
+                                    className="ap-decoding-image"
+                                  />
+                                        </div>
+                              )}
+
+                              <div className="ap-decoding-content">
+                                {question.dragElements && question.dragElements.length > 0 && (
+                                  <div className="ap-drag-elements">
+                                    <h6>Available Letters:</h6>
+                                    {question.dragElements.map((element, elemIndex) => (
+                                      <span key={elemIndex} className="ap-drag-element">{element}</span>
+                                    ))}
+                                        </div>
+                                )}
+
+                                {question.correctSequence && question.correctSequence.length > 0 && (
+                                  <div className="ap-correct-sequence">
+                                    <span className="ap-correct-sequence-label">Correct Answer:</span>
+                                    {question.correctSequence.map((element, elemIndex) => (
+                                      <span key={elemIndex} className="ap-sequence-element">{element}</span>
+                                    ))}
+                                      </div>
+                                )}
                                     </div>
+                                  </div>
+                                )}
 
+                          {/* Phonological Awareness */}
+                          {selectedAssessment.category === 'Phonological Awareness' && question.questionSet && (
+                            <div className="ap-matching-preview">
+                              {question.questionSet.map((set, setIndex) => (
+                                <div key={setIndex} className="ap-matching-section">
+                                  {set.audioTexts && set.audioTexts.length > 0 && (
+                                    <div className="ap-audio-texts">
+                                      <h6>Audio Texts:</h6>
+                                      {set.audioTexts.map((text, textIndex) => (
+                                        <span key={textIndex} className="ap-audio-text">{text}</span>
+                                      ))}
+                              </div>
+                                  )}
+
+                                  {set.matchingOptions && set.matchingOptions.length > 0 && (
+                                    <div className="ap-matching-options">
+                                      <h6>Matching Options:</h6>
+                                      {set.matchingOptions.map((option, optIndex) => (
+                                        <span key={optIndex} className="ap-matching-option">{option}</span>
+                                      ))}
+                            </div>
+                                  )}
+
+                                  {set.correctPairs && set.correctPairs.length > 0 && (
+                                    <div className="ap-correct-pairs">
+                                      <h6>Correct Pairs:</h6>
+                                      {set.correctPairs.map((pair, pairIndex) => (
+                                        <div key={pairIndex} className="ap-correct-pair">
+                                          {Object.entries(pair).map(([key, value]) => (
+                                            <span key={key}>{key} → {value}</span>
+                                          ))}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                    </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Word Recognition */}
+                          {selectedAssessment.category === 'Word Recognition' && (
+                            <div className="ap-word-recognition-preview">
+                              {question.displayWord && (
+                                <div className="ap-display-word">{question.displayWord}</div>
+                              )}
+
+                              {question.blankOptions && question.blankOptions.length > 0 && (
+                                <div className="ap-blank-options">
+                                  <h6>Answer Options:</h6>
+                                  {question.blankOptions.map((option, optIndex) => (
+                                    <span key={optIndex} className="ap-blank-option">{option}</span>
+                                  ))}
+                                </div>
+                              )}
+
+                              {question.correctAnswer && question.correctAnswer.length > 0 && (
+                                <div className="ap-correct-answer">
+                                  Correct Answer: {question.correctAnswer.join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Alphabet Knowledge */}
+                          {selectedAssessment.category === 'Alphabet Knowledge' && question.choiceOptions && (
+                            <div className="ap-multiple-choice-preview">
+                              {question.questionImage && (
+                                <div className="ap-decoding-image-container">
+                                  <img
+                                    src={question.questionImage}
+                                    alt="Question visual"
+                                    className="ap-decoding-image"
+                                  />
+                                </div>
+                              )}
+                              
+                              {question.questionValue && (
+                                <div className="ap-question-value">
+                                  <strong>Question Value:</strong> {question.questionValue}
+                                </div>
+                              )}
+                              
+                              <h6>Answer Options:</h6>
+                              <div className="ap-options-list">
+                                {question.choiceOptions.map((option, optIndex) => (
+                                  <div key={optIndex} className={`ap-option ${option.isCorrect ? 'correct' : ''}`}>
+                                    <div className="ap-option-label">{String.fromCharCode(65 + optIndex)}</div>
+                                    <div className="ap-option-text">{option.optionText}</div>
                                   </div>
                                 ))}
                               </div>
@@ -5327,7 +5432,7 @@ const MainAssessment = ({ templates }) => {
               )}
             </div>
 
-            <div className="pa-modal-footer">
+            <div className={modalType === 'preview' ? 'ap-modal-footer' : 'pa-modal-footer'}>
               {modalType === 'delete' ? (
                 <>
                   <button
@@ -5345,7 +5450,7 @@ const MainAssessment = ({ templates }) => {
                 </>
               ) : modalType === 'preview' ? (
                 <button
-                  className="pa-modal-close-btn"
+                  className="ap-close-btn"
                   onClick={() => setShowModal(false)}
                 >
                   <FontAwesomeIcon icon={faTimes} /> Close Preview

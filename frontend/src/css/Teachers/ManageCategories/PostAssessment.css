@@ -434,19 +434,6 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.pa-step-number {
-  width: 30px;
-  height: 30px;
-  background-color: #4e5c93 important;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-
 .pa-step-content {
   text-align: center;
 }
