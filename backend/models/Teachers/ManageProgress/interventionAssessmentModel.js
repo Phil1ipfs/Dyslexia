@@ -465,27 +465,57 @@ interventionAssessmentSchema.methods.isReadyForCompletion = function() {
 
 // NEW: Teacher re-editing methods
 interventionAssessmentSchema.methods.createRevision = function(teacherId, changes, newQuestions) {
-  const newRevision = this.revisionNumber + 1;
+  console.log(`[INTERVENTION MODEL] 🔄 CREATING REVISION:`);
+  console.log(`[INTERVENTION MODEL] - Current revisionNumber: ${this.revisionNumber || 1}`);
+  console.log(`[INTERVENTION MODEL] - teacherId: ${teacherId}`);
+  console.log(`[INTERVENTION MODEL] - changes: ${changes}`);
+  console.log(`[INTERVENTION MODEL] - newQuestions count: ${newQuestions?.length || 0}`);
 
-  // Add to revision history
-  this.revisionHistory.push({
-    version: this.revisionNumber,
+  const currentRevision = this.revisionNumber || 1;
+  const newRevision = currentRevision + 1;
+
+  console.log(`[INTERVENTION MODEL] - Calculated newRevision: ${newRevision}`);
+
+  // Initialize revisionHistory if it doesn't exist
+  if (!this.revisionHistory) {
+    this.revisionHistory = [];
+  }
+
+  // Add to revision history (record the NEW revision being created)
+  const historyEntry = {
+    version: newRevision,  // Fixed: should be newRevision, not this.revisionNumber
     editedBy: teacherId,
     editedAt: new Date(),
     changes: changes
-  });
+  };
+
+  this.revisionHistory.push(historyEntry);
+  console.log(`[INTERVENTION MODEL] - Added history entry:`, historyEntry);
+  console.log(`[INTERVENTION MODEL] - Revision history length: ${this.revisionHistory.length}`);
 
   // Update current revision info
   this.revisionNumber = newRevision;
   this.lastEditedBy = teacherId;
   this.lastEditedAt = new Date();
 
+  console.log(`[INTERVENTION MODEL] - Updated revisionNumber to: ${this.revisionNumber}`);
+
   // Update questions if provided
   if (newQuestions && newQuestions.length > 0) {
     this.questions = newQuestions;
+    console.log(`[INTERVENTION MODEL] - Updated questions (${newQuestions.length} questions)`);
   }
 
-  return this.save();
+  console.log(`[INTERVENTION MODEL] - Saving intervention with revision ${this.revisionNumber}...`);
+  return this.save().then(saved => {
+    console.log(`[INTERVENTION MODEL] ✅ REVISION SAVED SUCCESSFULLY:`);
+    console.log(`[INTERVENTION MODEL] - Final revisionNumber: ${saved.revisionNumber}`);
+    console.log(`[INTERVENTION MODEL] - Final revision history length: ${saved.revisionHistory?.length || 0}`);
+    return saved;
+  }).catch(error => {
+    console.error(`[INTERVENTION MODEL] ❌ ERROR SAVING REVISION:`, error);
+    throw error;
+  });
 };
 
 // Check if assessment has been revised

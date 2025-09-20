@@ -337,6 +337,20 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     }
   }, [analysis]);
   
+  // Add a useEffect to track questionTemplates state changes
+  useEffect(() => {
+    console.log('🔄 [TEMPLATE STATE CHANGE] questionTemplates state changed:', {
+      length: questionTemplates.length,
+      isArray: Array.isArray(questionTemplates),
+      firstTemplate: questionTemplates[0] ? {
+        _id: questionTemplates[0]._id,
+        category: questionTemplates[0].category,
+        questionType: questionTemplates[0].questionType,
+        questionText: questionTemplates[0].questionText
+      } : null
+    });
+  }, [questionTemplates]);
+
   // Add a useEffect to clean up object URLs when component unmounts
   useEffect(() => {
     // Cleanup function to revoke object URLs when component unmounts
@@ -665,13 +679,24 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         const currentResponse = await api.interventions.getById(interventionId);
         currentIntervention = currentResponse.data;
         console.log(`[INTERVENTION REVISION] Current intervention:`, currentIntervention);
+        console.log(`[INTERVENTION REVISION] 🔍 DEBUGGING REVISION DATA:`);
+        console.log(`[INTERVENTION REVISION] - Response success:`, currentResponse.success);
+        console.log(`[INTERVENTION REVISION] - Current revisionNumber:`, currentIntervention.revisionNumber);
+        console.log(`[INTERVENTION REVISION] - Current revisionHistory:`, currentIntervention.revisionHistory);
+        console.log(`[INTERVENTION REVISION] - RevisionHistory length:`, currentIntervention.revisionHistory?.length || 0);
+        console.log(`[INTERVENTION REVISION] - Last revision entry:`, currentIntervention.revisionHistory?.[currentIntervention.revisionHistory.length - 1]);
+        console.log(`[INTERVENTION REVISION] - Expected next revision should be:`, (currentIntervention.revisionNumber || 1) + 1);
       } catch (error) {
         console.error(`[INTERVENTION REVISION] Could not fetch current intervention:`, error);
         throw new Error('Cannot create revision - unable to fetch current intervention');
       }
 
       // Step 2: Calculate next revision number
-      const newRevisionNumber = (currentIntervention.revisionNumber || 1) + 1;
+      const currentRevision = currentIntervention.data.revisionNumber;
+      const newRevisionNumber = currentRevision + 1;
+      console.log(`[INTERVENTION REVISION] 🔍 REVISION CALCULATION:`);
+      console.log(`[INTERVENTION REVISION] - currentIntervention.data.revisionNumber:`, currentIntervention.data.revisionNumber);
+      console.log(`[INTERVENTION REVISION] - Calculated newRevisionNumber:`, newRevisionNumber);
       console.log(`[INTERVENTION REVISION] Creating revision number: ${newRevisionNumber}`);
 
       // Step 3: Prepare revision data
@@ -955,6 +980,32 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       console.log('🔄 [TEMPLATE LOADING] Response data:', response.data);
       console.log('🔄 [TEMPLATE LOADING] Response data.data:', response.data?.data);
       console.log('🔄 [TEMPLATE LOADING] Templates array length:', response.data?.data?.length || 0);
+      console.log('🔄 [TEMPLATE LOADING] API Success:', response.data?.success);
+      console.log('🔄 [TEMPLATE LOADING] API Count:', response.data?.count);
+      console.log('🔄 [TEMPLATE LOADING] API Message:', response.data?.message);
+
+      // Additional debugging for empty responses
+      if (!response.data?.data || response.data.data.length === 0) {
+        console.warn('⚠️ [TEMPLATE LOADING] No templates returned for category:', category);
+        console.warn('⚠️ [TEMPLATE LOADING] This could mean:');
+        console.warn('⚠️ [TEMPLATE LOADING] 1. No templates exist for this category in database');
+        console.warn('⚠️ [TEMPLATE LOADING] 2. API endpoint is not working correctly');
+        console.warn('⚠️ [TEMPLATE LOADING] 3. Category name mismatch between frontend and backend');
+
+        // Test with a direct API call to see what's in the database
+        console.log('🔍 [TEMPLATE LOADING] Testing direct API call...');
+        try {
+          const testResponse = await fetch(`/api/interventions/templates/questions?category=${encodeURIComponent(category)}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          const testData = await testResponse.json();
+          console.log('🔍 [TEMPLATE LOADING] Direct fetch result:', testData);
+        } catch (testError) {
+          console.error('🔍 [TEMPLATE LOADING] Direct fetch failed:', testError);
+        }
+      }
 
       // Log each template for debugging
       if (response.data?.data && Array.isArray(response.data.data)) {
@@ -971,12 +1022,34 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       // Update state with the fetched templates
       const templates = response.data.data || [];
       console.log('🔄 [TEMPLATE LOADING] Setting questionTemplates state to:', templates);
+      console.log('🔄 [TEMPLATE LOADING] Templates array details:', {
+        isArray: Array.isArray(templates),
+        length: templates.length,
+        firstTemplate: templates[0] ? {
+          _id: templates[0]._id,
+          category: templates[0].category,
+          questionType: templates[0].questionType,
+          questionText: templates[0].questionText
+        } : null
+      });
+
       setQuestionTemplates(templates);
 
-      // Log state after setting
+      // Immediate verification that state was set
+      console.log('🔄 [TEMPLATE LOADING] State update initiated with:', templates.length, 'templates');
+
+      // Add a more thorough check after React state update
       setTimeout(() => {
-        console.log('🔄 [TEMPLATE LOADING] questionTemplates state after setting:', questionTemplates);
-      }, 100);
+        console.log('🔄 [TEMPLATE LOADING] questionTemplates state after React update:', questionTemplates);
+        console.log('🔄 [TEMPLATE LOADING] questionTemplates.length after update:', questionTemplates.length);
+        if (questionTemplates.length === 0 && templates.length > 0) {
+          console.warn('⚠️ [TEMPLATE LOADING] State update failed! Templates were provided but state is empty');
+          console.warn('⚠️ [TEMPLATE LOADING] This suggests a React state update issue');
+          // Force re-set the state
+          console.log('🔄 [TEMPLATE LOADING] Force re-setting state...');
+          setQuestionTemplates([...templates]);
+        }
+      }, 200);
 
     } catch (error) {
       console.error('❌ [TEMPLATE LOADING] Error loading question templates:', error);
@@ -2864,11 +2937,22 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
     const template = questionTemplates.find(t => t._id === templateId);
     if (!template) {
-      console.warn(`Template not found: ${templateId}`);
+      console.warn(`[TEMPLATE] Template not found: ${templateId}`);
+      console.warn(`[TEMPLATE] Available templates:`, questionTemplates.map(t => ({ id: t._id, text: t.questionText || t.templateText })));
       return;
     }
 
-    console.log(`[TEMPLATE] Applying template "${template.templateText}" to question ${pairId}`);
+    const templateDisplayName = template.questionText || template.templateText || 'Unknown Template';
+    console.log(`[TEMPLATE] Applying template "${templateDisplayName}" to question ${pairId}`);
+    console.log(`[TEMPLATE] Full template data:`, {
+      _id: template._id,
+      category: template.category,
+      questionType: template.questionType,
+      questionText: template.questionText,
+      templateText: template.templateText,
+      questionValue: template.questionValue,
+      choiceOptions: template.choiceOptions
+    });
 
     // Prepare template choices for Alphabet Knowledge (exactly 3 choices)
     let templateChoices = [];

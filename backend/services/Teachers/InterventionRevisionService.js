@@ -489,6 +489,13 @@ class InterventionRevisionService {
   }
 
   static async enableInterventionRetake(interventionAssessmentId, reason) {
+    // Get intervention assessment details
+    const intervention = await InterventionAssessment.findById(interventionAssessmentId);
+    if (!intervention) {
+      throw new Error(`Intervention assessment not found: ${interventionAssessmentId}`);
+    }
+
+    // Update intervention_assessment status for retake
     await InterventionAssessment.findByIdAndUpdate(
       interventionAssessmentId,
       {
@@ -501,6 +508,173 @@ class InterventionRevisionService {
     );
 
     console.log(`[INTERVENTION REVISION] ✅ Intervention enabled for retake (${reason})`);
+
+    // CRITICAL FIX: Also restore category_results currentInterventionId for revision retakes
+    if (reason === 'teacher_revision') {
+      console.log(`[INTERVENTION REVISION] 🔄 Restoring category_results currentInterventionId for teacher revision...`);
+
+      const CategoryResult = require('../../models/Teachers/ManageProgress/categoryResultModel');
+
+      // Find and update the category_results
+      const updateResult = await CategoryResult.updateOne(
+        {
+          studentId: intervention.studentId,
+          'categories.categoryName': intervention.category
+        },
+        {
+          $set: {
+            'categories.$.currentInterventionId': interventionAssessmentId,
+            'categories.$.interventionCompleted': false,  // Reset completion status for revision
+            'categories.$.lastUpdated': new Date()
+          }
+        }
+      );
+
+      if (updateResult.modifiedCount > 0) {
+        console.log(`[INTERVENTION REVISION] ✅ Restored currentInterventionId ${interventionAssessmentId} for student ${intervention.studentId} category ${intervention.category}`);
+      } else {
+        console.warn(`[INTERVENTION REVISION] ⚠️ No category_results found to update for student ${intervention.studentId} category ${intervention.category}`);
+
+        // Additional attempt: Try to find any category_results for this student to debug
+        const debugCategoryResults = await CategoryResult.find({ studentId: intervention.studentId });
+        console.log(`[INTERVENTION REVISION] DEBUG: Found ${debugCategoryResults.length} category_results for student ${intervention.studentId}`);
+
+        for (const result of debugCategoryResults) {
+          const categoryData = result.categories?.find(cat => cat.categoryName === intervention.category);
+          if (categoryData) {
+            console.log(`[INTERVENTION REVISION] DEBUG: Found category ${intervention.category} data:`, {
+              currentInterventionId: categoryData.currentInterventionId,
+              interventionCompleted: categoryData.interventionCompleted,
+              isPassed: categoryData.isPassed,
+              score: categoryData.score
+            });
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Data consistency repair utility - Fix corrupted currentInterventionId states
+   * Repairs cases where active interventions have null currentInterventionId
+   */
+  static async repairDataConsistency(studentId = null, interventionAssessmentId = null) {
+    console.log(`[INTERVENTION REVISION] 🔧 STARTING DATA CONSISTENCY REPAIR...`);
+
+    const CategoryResult = require('../../models/Teachers/ManageProgress/categoryResultModel');
+    const InterventionAssessment = require('../../models/Teachers/ManageProgress/interventionAssessmentModel');
+
+    let repairResults = {
+      scanned: 0,
+      corrupted: 0,
+      repaired: 0,
+      errors: [],
+      details: []
+    };
+
+    try {
+      // Build query filters
+      let interventionQuery = { status: 'active' };
+      if (interventionAssessmentId) {
+        interventionQuery._id = interventionAssessmentId;
+      }
+      if (studentId) {
+        interventionQuery.studentId = studentId;
+      }
+
+      // Find all active interventions
+      const activeInterventions = await InterventionAssessment.find(interventionQuery);
+      console.log(`[INTERVENTION REVISION] Found ${activeInterventions.length} active interventions to check`);
+
+      for (const intervention of activeInterventions) {
+        repairResults.scanned++;
+
+        // Find corresponding category_results
+        const categoryResults = await CategoryResult.findOne({
+          studentId: intervention.studentId,
+          'categories.categoryName': intervention.category
+        });
+
+        if (!categoryResults) {
+          repairResults.errors.push(`No category_results found for student ${intervention.studentId} category ${intervention.category}`);
+          continue;
+        }
+
+        const categoryData = categoryResults.categories?.find(cat => cat.categoryName === intervention.category);
+        if (!categoryData) {
+          repairResults.errors.push(`Category ${intervention.category} not found in category_results for student ${intervention.studentId}`);
+          continue;
+        }
+
+        // Check for corruption patterns
+        const isCorrupted = (
+          // Pattern 1: currentInterventionId is null but intervention is active
+          (categoryData.currentInterventionId === null && intervention.status === 'active') ||
+          // Pattern 2: interventionCompleted is true but intervention is still active
+          (categoryData.interventionCompleted === true && intervention.status === 'active' && !categoryData.isPassed) ||
+          // Pattern 3: currentInterventionId points to wrong intervention
+          (categoryData.currentInterventionId && categoryData.currentInterventionId.toString() !== intervention._id.toString())
+        );
+
+        if (isCorrupted) {
+          repairResults.corrupted++;
+          console.log(`[INTERVENTION REVISION] 🚨 CORRUPTION DETECTED:`, {
+            studentId: intervention.studentId,
+            category: intervention.category,
+            interventionId: intervention._id.toString(),
+            currentInterventionId: categoryData.currentInterventionId?.toString() || 'null',
+            interventionCompleted: categoryData.interventionCompleted,
+            isPassed: categoryData.isPassed,
+            interventionStatus: intervention.status
+          });
+
+          // Repair the corruption
+          const updateResult = await CategoryResult.updateOne(
+            {
+              studentId: intervention.studentId,
+              'categories.categoryName': intervention.category
+            },
+            {
+              $set: {
+                'categories.$.currentInterventionId': intervention._id,
+                'categories.$.interventionCompleted': false,  // Reset since intervention is still active
+                'categories.$.lastUpdated': new Date()
+              }
+            }
+          );
+
+          if (updateResult.modifiedCount > 0) {
+            repairResults.repaired++;
+            const repairDetail = {
+              studentId: intervention.studentId,
+              category: intervention.category,
+              interventionId: intervention._id.toString(),
+              action: 'restored_currentInterventionId',
+              previousValue: categoryData.currentInterventionId?.toString() || 'null',
+              newValue: intervention._id.toString()
+            };
+            repairResults.details.push(repairDetail);
+            console.log(`[INTERVENTION REVISION] ✅ REPAIRED:`, repairDetail);
+          } else {
+            repairResults.errors.push(`Failed to update category_results for student ${intervention.studentId} category ${intervention.category}`);
+          }
+        }
+      }
+
+      console.log(`[INTERVENTION REVISION] 🔧 DATA CONSISTENCY REPAIR COMPLETED:`, {
+        scanned: repairResults.scanned,
+        corrupted: repairResults.corrupted,
+        repaired: repairResults.repaired,
+        errors: repairResults.errors.length
+      });
+
+      return repairResults;
+
+    } catch (error) {
+      console.error(`[INTERVENTION REVISION] ❌ DATA CONSISTENCY REPAIR ERROR:`, error);
+      repairResults.errors.push(error.message);
+      return repairResults;
+    }
   }
 
   static async markCategoryForIntensiveSupport(studentId, category, escalationRecord) {

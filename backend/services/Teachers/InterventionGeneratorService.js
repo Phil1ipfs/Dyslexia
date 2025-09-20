@@ -2444,10 +2444,6 @@ class InterventionGeneratorService {
 
       for (const cat of categoryResult.categories) {
         if (cat.categoryName === category && cat.currentInterventionId?.toString() === interventionId.toString()) {
-          // Clear the current intervention ID
-          cat.currentInterventionId = null;
-          cat.interventionCompleted = true;
-
           // Update intervention history
           const historyEntry = cat.interventionHistory?.find(h => h.interventionId?.toString() === interventionId.toString());
           if (historyEntry) {
@@ -2455,11 +2451,18 @@ class InterventionGeneratorService {
             historyEntry.completedAt = new Date();
           }
 
-          // If intervention passed, update the category as passed
+          // If intervention passed, clear current intervention and mark as completed
           if (passed) {
+            cat.currentInterventionId = null;  // Only clear if passed
+            cat.interventionCompleted = true;  // Only mark completed if passed
             cat.isPassed = true;
             cat.interventionRequired = false;
-            console.log(`[INTERVENTION GENERATOR] ✅ Category ${category} marked as passed via intervention`);
+            console.log(`[INTERVENTION GENERATOR] ✅ Category ${category} marked as passed via intervention - currentInterventionId cleared`);
+          } else {
+            // If intervention failed, keep currentInterventionId active for teacher revision
+            console.log(`[INTERVENTION GENERATOR] ⚠️ Category ${category} intervention failed - keeping currentInterventionId active for teacher revision`);
+            // Keep cat.currentInterventionId unchanged so teacher can revise
+            // Keep cat.interventionCompleted = false so it's still active
           }
 
           updated = true;

@@ -3166,7 +3166,7 @@
 }
 
 .literexia-response-indicator.literexia-correct {
-  background: #10b981;
+  background: #3b82f6;
 }
 
 .literexia-response-indicator.literexia-incorrect {
@@ -3204,7 +3204,7 @@
 }
 
 .literexia-trend.improving {
-  color: #059669;
+  color: #2563eb;
   font-weight: 500;
 }
 
@@ -3255,7 +3255,7 @@
 
 .literexia-irt-track {
   height: 8px;
-  background: linear-gradient(to right, #dc2626 0%, #f59e0b 25%, #eab308 50%, #22c55e 75%, #059669 100%);
+  background: linear-gradient(to right, #dc2626 0%, #f59e0b 25%, #eab308 50%, #22c55e 75%, #3b82f6 100%);
   border-radius: 4px;
   position: relative;
 }
@@ -3497,7 +3497,7 @@
 
 .literexia-mathematical-analysis-section .literexia-priority-indicator.low {
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(255, 255, 255, 0.8) 100%);
-  color: #059669;
+  color: #2563eb;
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
@@ -3786,12 +3786,12 @@
 }
 
 .literexia-strategy-card.maintenance {
-  border-color: #10b981;
+  border-color: #3b82f6;
   background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
 }
 
 .literexia-mathematical-analysis-section .literexia-strategy-card.maintenance {
-  border-color: #10b981;
+  border-color: #3b82f6;
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(240, 253, 244, 0.95) 100%);
 }
 
@@ -3832,7 +3832,7 @@
 }
 
 .literexia-strategy-card.maintenance .literexia-strategy-type {
-  background: #10b981;
+  background: #3b82f6;
   color: white;
 }
 
@@ -4309,11 +4309,11 @@
 }
 
 .literexia-math-analysis-bkt-percent.high {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
 }
 
 .literexia-mastery-percent.high {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
 }
 
 .literexia-mastery-percent.medium {
@@ -4442,7 +4442,7 @@
 }
 
 .literexia-math-analysis-bkt-indicator.correct {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
   box-shadow: 0 1px 4px rgba(16, 185, 129, 0.2) !important;
 }
 
@@ -4496,7 +4496,7 @@
 }
 
 .literexia-math-analysis-bkt-trend .improving {
-  color: #059669 !important;
+  color: #2563eb !important;
   display: flex !important;
   align-items: center !important;
   gap: 0.25rem !important;
@@ -5294,7 +5294,7 @@
 }
 
 .revision-badge {
-  background: linear-gradient(135deg, #166534 0%, #14532d 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: white;
   padding: 0.5rem 1rem;
   border-radius: 20px;
@@ -5357,7 +5357,7 @@
 }
 
 .stat-value.score.passed {
-  color: #059669;
+  color: #2563eb;
 }
 
 .stat-value.score.failed {
@@ -5434,7 +5434,7 @@
 }
 
 .response-card.correct {
-  border-left: 4px solid #059669;
+  border-left: 4px solid #3b82f6;
 }
 
 .response-card.incorrect {
@@ -6511,7 +6511,7 @@
 }
 
 .literexia-score-value.target {
-  color: #059669;
+  color: #2563eb;
 }
 
 .literexia-score-value.gap {
@@ -6576,7 +6576,7 @@
 }
 
 .literexia-mastery-percent.high {
-  color: #059669;
+  color: #2563eb;
 }
 
 .literexia-mastery-percent.medium {
@@ -6629,7 +6629,7 @@
 }
 
 .literexia-ability-score.excellent {
-  color: #059669;
+  color: #2563eb;
 }
 
 .literexia-ability-score.above-average {
@@ -7414,7 +7414,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
   border-radius: 8px;
   font-weight: 600;

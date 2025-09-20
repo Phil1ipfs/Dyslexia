@@ -347,6 +347,12 @@ router.get('/:interventionId/completion-status',
   interventionAssessmentController.getInterventionCompletionStatus
 );
 
+// POST /api/intervention-assessment/repair-data-consistency
+// Repair data consistency for currentInterventionId fields
+router.post('/repair-data-consistency',
+  interventionAssessmentController.repairDataConsistency
+);
+
 // Error handling middleware
 router.use((error, req, res, next) => {
   console.error('Intervention Assessment Route Error:', error);

@@ -39,13 +39,84 @@ class InterventionAssessmentController {
         });
       }
 
-      // Save custom questions to templates_questions collection for future reuse
+      // Save ONLY truly custom questions to templates_questions collection for future reuse
       if (interventionData.questions && interventionData.questions.length > 0) {
-        console.log(`[INTERVENTION CONTROLLER] Saving ${interventionData.questions.length} custom questions to templates_questions for future reuse`);
+        console.log(`[INTERVENTION CONTROLLER] Processing ${interventionData.questions.length} questions for template validation`);
 
         for (const question of interventionData.questions) {
-          if (question.source === 'custom') {
+          // BULLETPROOF VALIDATION: Determine if question should be saved to templates
+          const shouldSaveToTemplates = (
+            question.source === 'custom' &&
+            !question.sourceTemplateId &&
+            !question.sourceQuestionId &&
+            question.questionText &&
+            question.questionText.trim() !== '' &&
+            // EDGE CASE: Check if question might have been modified from template/main_assessment
+            question.source !== 'template_question' &&
+            question.source !== 'main_assessment'
+          );
+
+          if (shouldSaveToTemplates) {
+            console.log(`[INTERVENTION CONTROLLER] 🆕 Found truly custom question ${question.questionId} - validating for template save`);
             try {
+              // BULLETPROOF DUPLICATE CHECK: Multiple validation layers to prevent duplicates
+              const TemplateQuestion = require('../../models/Teachers/ManageProgress/templatesQuestionsModel');
+
+              // Normalize question text to handle case/whitespace variations
+              const normalizedQuestionText = question.questionText.trim().toLowerCase();
+
+              const duplicateCheckQuery = {
+                category: interventionData.category,
+                questionType: question.questionType,
+                isActive: true,
+                // Use regex for case-insensitive exact match with normalized whitespace
+                questionText: { $regex: `^${normalizedQuestionText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' }
+              };
+
+              // Add category-specific duplicate checks with enhanced validation
+              if (interventionData.category === 'Alphabet Knowledge' && question.questionValue) {
+                duplicateCheckQuery.questionValue = question.questionValue.trim();
+              } else if (interventionData.category === 'Phonological Awareness' && question.questionSet?.audioTexts) {
+                // Check audio text arrays for exact match (order-independent)
+                duplicateCheckQuery['questionSet.audioTexts'] = { $all: question.questionSet.audioTexts };
+              } else if (interventionData.category === 'Decoding' && question.correctSequence) {
+                // Check correct sequence for decoding questions
+                duplicateCheckQuery.correctSequence = question.correctSequence;
+              } else if (interventionData.category === 'Word Recognition' && question.correctAnswer) {
+                // Check correct answer for word recognition
+                duplicateCheckQuery.correctAnswer = question.correctAnswer;
+              }
+
+              // BULLETPROOF RACE CONDITION PROTECTION: Use findOneAndUpdate to prevent race conditions
+              const existingTemplate = await TemplateQuestion.findOne(duplicateCheckQuery);
+
+              if (existingTemplate) {
+                console.log(`[INTERVENTION CONTROLLER] 📋 DUPLICATE PREVENTED: Found existing template for question ${question.questionId}`);
+                console.log(`[INTERVENTION CONTROLLER] 📋 - Existing template ID: ${existingTemplate._id}`);
+                console.log(`[INTERVENTION CONTROLLER] 📋 - Duplicate check query:`, JSON.stringify(duplicateCheckQuery, null, 2));
+                console.log(`[INTERVENTION CONTROLLER] 📋 - Using existing template instead of creating duplicate`);
+
+                question.sourceTemplateId = existingTemplate._id.toString();
+                question.source = 'template_question';
+                continue; // Skip creating duplicate
+              }
+
+              // FINAL SAFETY CHECK: Double-check for exact text match to catch any edge cases
+              const exactTextCheck = await TemplateQuestion.findOne({
+                category: interventionData.category,
+                questionType: question.questionType,
+                questionText: question.questionText.trim(),
+                isActive: true
+              });
+
+              if (exactTextCheck) {
+                console.log(`[INTERVENTION CONTROLLER] 📋 DUPLICATE PREVENTED (exact text): Found existing template for question ${question.questionId}`);
+                console.log(`[INTERVENTION CONTROLLER] 📋 - Existing template ID: ${exactTextCheck._id}`);
+                question.sourceTemplateId = exactTextCheck._id.toString();
+                question.source = 'template_question';
+                continue; // Skip creating duplicate
+              }
+
               // Create template following exact CLAUDE.md schema per category
               // Map any invalid difficulty levels to valid ones
               let mappedDifficultyLevel = 'medium'; // default
@@ -96,7 +167,28 @@ class InterventionAssessmentController {
               const templateQuestion = new (require('../../models/Teachers/ManageProgress/templatesQuestionsModel'))(templateData);
 
               await templateQuestion.save();
-              console.log(`[INTERVENTION CONTROLLER] ✅ Saved custom question ${question.questionId} to templates_questions`);
+              console.log(`[INTERVENTION CONTROLLER] ✅ TEMPLATE CREATED: Saved custom question ${question.questionId} to templates_questions`);
+              console.log(`[INTERVENTION CONTROLLER] ✅ - New template ID: ${templateQuestion._id}`);
+              console.log(`[INTERVENTION CONTROLLER] ✅ - Template data:`, {
+                category: templateQuestion.category,
+                questionType: templateQuestion.questionType,
+                questionText: templateQuestion.questionText,
+                createdBy: templateQuestion.createdBy
+              });
+
+              // VERIFICATION: Confirm template was created and is unique
+              const verificationCount = await TemplateQuestion.countDocuments({
+                category: interventionData.category,
+                questionType: question.questionType,
+                questionText: { $regex: `^${normalizedQuestionText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' },
+                isActive: true
+              });
+
+              if (verificationCount > 1) {
+                console.warn(`[INTERVENTION CONTROLLER] ⚠️ POTENTIAL DUPLICATE: Found ${verificationCount} templates with similar text`);
+              } else {
+                console.log(`[INTERVENTION CONTROLLER] ✅ UNIQUENESS VERIFIED: Template is unique (count: ${verificationCount})`);
+              }
 
               // Update the question to reference the saved template
               question.sourceTemplateId = templateQuestion._id.toString();
@@ -105,6 +197,27 @@ class InterventionAssessmentController {
               console.warn(`[INTERVENTION CONTROLLER] ⚠️ Failed to save question ${question.questionId} to templates:`, templateError.message);
               // Continue anyway - this is just for future reuse
             }
+          } else {
+            // COMPREHENSIVE LOGGING: Handle all other cases with detailed reasoning
+            let skipReason = '';
+
+            if (question.sourceTemplateId) {
+              skipReason = `has sourceTemplateId ${question.sourceTemplateId} (from template)`;
+            } else if (question.sourceQuestionId) {
+              skipReason = `has sourceQuestionId ${question.sourceQuestionId} (from main assessment)`;
+            } else if (question.source === 'template_question') {
+              skipReason = `source is template_question`;
+            } else if (question.source === 'main_assessment') {
+              skipReason = `source is main_assessment`;
+            } else if (!question.questionText || question.questionText.trim() === '') {
+              skipReason = `empty or missing questionText`;
+            } else if (question.source !== 'custom') {
+              skipReason = `source is ${question.source} (not custom)`;
+            } else {
+              skipReason = `unknown reason - data may be inconsistent`;
+            }
+
+            console.log(`[INTERVENTION CONTROLLER] 📋 Question ${question.questionId} skipped - ${skipReason}`);
           }
         }
       }
@@ -368,6 +481,14 @@ class InterventionAssessmentController {
           message: 'Intervention not found'
         });
       }
+
+      console.log(`[INTERVENTION CONTROLLER] 🔍 getInterventionById DEBUG:`);
+      console.log(`[INTERVENTION CONTROLLER] - Intervention ID: ${interventionId}`);
+      console.log(`[INTERVENTION CONTROLLER] - Current revisionNumber: ${intervention.revisionNumber}`);
+      console.log(`[INTERVENTION CONTROLLER] - RevisionHistory length: ${intervention.revisionHistory?.length || 0}`);
+      console.log(`[INTERVENTION CONTROLLER] - Latest revision entry:`, intervention.revisionHistory?.[intervention.revisionHistory.length - 1]);
+      console.log(`[INTERVENTION CONTROLLER] - Last edited: ${intervention.lastEditedAt}`);
+      console.log(`[INTERVENTION CONTROLLER] - Status: ${intervention.status}`);
 
       res.json({
         success: true,
@@ -1058,22 +1179,93 @@ class InterventionAssessmentController {
         });
       }
 
-      // Log revision information if present
+      // CRITICAL FIX: Handle revisions properly using createRevision method
+      let isRevisionUpdate = false;
       if (updateData.revisionNumber && updateData.revisionNumber > (intervention.revisionNumber || 1)) {
-        console.log(`[INTERVENTION CONTROLLER] 🔄 REVISION DETECTED:`);
+        console.log(`[INTERVENTION CONTROLLER] 🔄 REVISION DETECTED - Using createRevision method:`);
         console.log(`[INTERVENTION CONTROLLER] - Previous version: ${intervention.revisionNumber || 1}`);
-        console.log(`[INTERVENTION CONTROLLER] - New version: ${updateData.revisionNumber}`);
-        console.log(`[INTERVENTION CONTROLLER] - Revision history entries: ${updateData.revisionHistory?.length || 0}`);
-        console.log(`[INTERVENTION CONTROLLER] - Mobile will detect version change: YES`);
+        console.log(`[INTERVENTION CONTROLLER] - Expected new version: ${updateData.revisionNumber}`);
+        console.log(`[INTERVENTION CONTROLLER] - Revision history entries from frontend: ${updateData.revisionHistory?.length || 0}`);
+        isRevisionUpdate = true;
       }
 
-      // Save custom questions to templates_questions collection for future reuse
+      // Save ONLY truly custom questions to templates_questions collection for future reuse
       if (updateData.questions && updateData.questions.length > 0) {
-        console.log(`[INTERVENTION CONTROLLER] Processing ${updateData.questions.length} questions for template auto-save`);
+        console.log(`[INTERVENTION CONTROLLER] Processing ${updateData.questions.length} questions for template validation (update)`);
         for (const question of updateData.questions) {
-          if (question.source === 'custom') {
+          // BULLETPROOF VALIDATION: Determine if question should be saved to templates (UPDATE)
+          const shouldSaveToTemplates = (
+            question.source === 'custom' &&
+            !question.sourceTemplateId &&
+            !question.sourceQuestionId &&
+            question.questionText &&
+            question.questionText.trim() !== '' &&
+            // EDGE CASE: Check if question might have been modified from template/main_assessment
+            question.source !== 'template_question' &&
+            question.source !== 'main_assessment'
+          );
+
+          if (shouldSaveToTemplates) {
             try {
-              console.log(`[INTERVENTION CONTROLLER] Saving custom question ${question.questionId} to templates_questions for future reuse`);
+              console.log(`[INTERVENTION CONTROLLER] 🆕 Found truly custom question ${question.questionId} - validating for template save (update)`);
+
+              // BULLETPROOF DUPLICATE CHECK: Multiple validation layers to prevent duplicates (UPDATE)
+              const TemplateQuestion = require('../../models/Teachers/ManageProgress/templatesQuestionsModel');
+
+              // Normalize question text to handle case/whitespace variations
+              const normalizedQuestionText = question.questionText.trim().toLowerCase();
+
+              const duplicateCheckQuery = {
+                category: updateData.category,
+                questionType: question.questionType,
+                isActive: true,
+                // Use regex for case-insensitive exact match with normalized whitespace
+                questionText: { $regex: `^${normalizedQuestionText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' }
+              };
+
+              // Add category-specific duplicate checks with enhanced validation (UPDATE)
+              if (updateData.category === 'Alphabet Knowledge' && question.questionValue) {
+                duplicateCheckQuery.questionValue = question.questionValue.trim();
+              } else if (updateData.category === 'Phonological Awareness' && question.questionSet?.audioTexts) {
+                // Check audio text arrays for exact match (order-independent)
+                duplicateCheckQuery['questionSet.audioTexts'] = { $all: question.questionSet.audioTexts };
+              } else if (updateData.category === 'Decoding' && question.correctSequence) {
+                // Check correct sequence for decoding questions
+                duplicateCheckQuery.correctSequence = question.correctSequence;
+              } else if (updateData.category === 'Word Recognition' && question.correctAnswer) {
+                // Check correct answer for word recognition
+                duplicateCheckQuery.correctAnswer = question.correctAnswer;
+              }
+
+              // BULLETPROOF RACE CONDITION PROTECTION: Use findOneAndUpdate to prevent race conditions (UPDATE)
+              const existingTemplate = await TemplateQuestion.findOne(duplicateCheckQuery);
+
+              if (existingTemplate) {
+                console.log(`[INTERVENTION CONTROLLER] 📋 DUPLICATE PREVENTED (update): Found existing template for question ${question.questionId}`);
+                console.log(`[INTERVENTION CONTROLLER] 📋 - Existing template ID: ${existingTemplate._id}`);
+                console.log(`[INTERVENTION CONTROLLER] 📋 - Duplicate check query:`, JSON.stringify(duplicateCheckQuery, null, 2));
+                console.log(`[INTERVENTION CONTROLLER] 📋 - Using existing template instead of creating duplicate`);
+
+                question.sourceTemplateId = existingTemplate._id.toString();
+                question.source = 'template_question';
+                continue; // Skip creating duplicate
+              }
+
+              // FINAL SAFETY CHECK: Double-check for exact text match to catch any edge cases (UPDATE)
+              const exactTextCheck = await TemplateQuestion.findOne({
+                category: updateData.category,
+                questionType: question.questionType,
+                questionText: question.questionText.trim(),
+                isActive: true
+              });
+
+              if (exactTextCheck) {
+                console.log(`[INTERVENTION CONTROLLER] 📋 DUPLICATE PREVENTED (exact text update): Found existing template for question ${question.questionId}`);
+                console.log(`[INTERVENTION CONTROLLER] 📋 - Existing template ID: ${exactTextCheck._id}`);
+                question.sourceTemplateId = exactTextCheck._id.toString();
+                question.source = 'template_question';
+                continue; // Skip creating duplicate
+              }
 
               // Create template following exact CLAUDE.md schema per category
               // Map any invalid difficulty levels to valid ones
@@ -1120,7 +1312,28 @@ class InterventionAssessmentController {
 
               const templateQuestion = new (require('../../models/Teachers/ManageProgress/templatesQuestionsModel'))(templateData);
               await templateQuestion.save();
-              console.log(`[INTERVENTION CONTROLLER] ✅ Saved custom question ${question.questionId} to templates_questions`);
+              console.log(`[INTERVENTION CONTROLLER] ✅ TEMPLATE CREATED (update): Saved custom question ${question.questionId} to templates_questions`);
+              console.log(`[INTERVENTION CONTROLLER] ✅ - New template ID: ${templateQuestion._id}`);
+              console.log(`[INTERVENTION CONTROLLER] ✅ - Template data:`, {
+                category: templateQuestion.category,
+                questionType: templateQuestion.questionType,
+                questionText: templateQuestion.questionText,
+                createdBy: templateQuestion.createdBy
+              });
+
+              // VERIFICATION: Confirm template was created and is unique (UPDATE)
+              const verificationCount = await TemplateQuestion.countDocuments({
+                category: updateData.category,
+                questionType: question.questionType,
+                questionText: { $regex: `^${normalizedQuestionText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' },
+                isActive: true
+              });
+
+              if (verificationCount > 1) {
+                console.warn(`[INTERVENTION CONTROLLER] ⚠️ POTENTIAL DUPLICATE (update): Found ${verificationCount} templates with similar text`);
+              } else {
+                console.log(`[INTERVENTION CONTROLLER] ✅ UNIQUENESS VERIFIED (update): Template is unique (count: ${verificationCount})`);
+              }
 
               // Update the question to reference the saved template
               question.sourceTemplateId = templateQuestion._id.toString();
@@ -1129,45 +1342,95 @@ class InterventionAssessmentController {
               console.warn(`[INTERVENTION CONTROLLER] ⚠️ Failed to save question ${question.questionId} to templates:`, templateError.message);
               // Continue anyway - this is just for future reuse
             }
+          } else if (question.source === 'template_question' || question.sourceTemplateId) {
+            // This question is from a template - DO NOT re-save
+            console.log(`[INTERVENTION CONTROLLER] 📋 Question ${question.questionId} is from template ${question.sourceTemplateId} - skipping template save (update)`);
           } else {
-            console.log(`[INTERVENTION CONTROLLER] Question ${question.questionId} source: ${question.source} - no template auto-save needed`);
+            // Log other question sources for debugging
+            console.log(`[INTERVENTION CONTROLLER] ℹ️ Question ${question.questionId} source: ${question.source} - no template save needed (update)`);
           }
         }
       }
 
-      // Update timestamps
-      updateData.updatedAt = new Date();
-      if (!updateData.lastEditedAt) {
-        updateData.lastEditedAt = new Date();
-      }
+      let updatedIntervention;
 
-      // Perform the update
-      const updatedIntervention = await InterventionAssessment.findByIdAndUpdate(
-        interventionId,
-        updateData,
-        {
-          new: true, // Return updated document
-          runValidators: true // Run mongoose validation
+      if (isRevisionUpdate) {
+        // CRITICAL FIX: Use createRevision method for proper revision increment
+        console.log(`[INTERVENTION CONTROLLER] 🔄 USING createRevision METHOD TO PROPERLY INCREMENT VERSION`);
+
+        // Extract revision-specific data
+        const latestRevisionEntry = updateData.revisionHistory && updateData.revisionHistory.length > 0
+          ? updateData.revisionHistory[updateData.revisionHistory.length - 1]
+          : null;
+
+        const revisionChanges = latestRevisionEntry?.changes || 'Teacher revision - Intervention customization';
+        const teacherId = updateData.lastEditedBy || latestRevisionEntry?.editedBy;
+
+        // Remove revision-related fields from updateData to avoid conflicts
+        const cleanUpdateData = { ...updateData };
+        delete cleanUpdateData.revisionNumber;
+        delete cleanUpdateData.revisionHistory;
+        delete cleanUpdateData.lastEditedBy;
+        delete cleanUpdateData.lastEditedAt;
+
+        // First, update non-revision fields
+        cleanUpdateData.updatedAt = new Date();
+        Object.assign(intervention, cleanUpdateData);
+
+        // Then use createRevision method to properly handle version increment
+        await intervention.createRevision(
+          teacherId,
+          revisionChanges,
+          updateData.questions
+        );
+
+        updatedIntervention = intervention; // intervention object is now updated with proper revision
+
+        console.log(`[INTERVENTION CONTROLLER] ✅ REVISION CREATED SUCCESSFULLY:`);
+        console.log(`[INTERVENTION CONTROLLER] - Previous version was: ${(intervention.revisionNumber || 1) - 1}`);
+        console.log(`[INTERVENTION CONTROLLER] - New version is: ${intervention.revisionNumber}`);
+        console.log(`[INTERVENTION CONTROLLER] - Revision history length: ${intervention.revisionHistory?.length || 0}`);
+        console.log(`[INTERVENTION CONTROLLER] - Ready for student retake: YES`);
+
+        // CRITICAL FIX: Restore currentInterventionId in category_results for teacher revision
+        try {
+          const InterventionRevisionService = require('../../services/Teachers/InterventionRevisionService');
+          await InterventionRevisionService.enableInterventionRetake(intervention._id, 'teacher_revision');
+          console.log(`[INTERVENTION CONTROLLER] ✅ currentInterventionId restored in category_results for revision ${intervention.revisionNumber}`);
+        } catch (restoreError) {
+          console.error(`[INTERVENTION CONTROLLER] ⚠️ Failed to restore currentInterventionId:`, restoreError.message);
+          // Don't throw - revision creation succeeded, this is just category_results sync
         }
-      );
 
-      if (!updatedIntervention) {
-        return res.status(404).json({
-          success: false,
-          message: 'Intervention assessment not found after update',
-          interventionId: interventionId
-        });
-      }
+      } else {
+        // NON-REVISION UPDATE: Use standard update method
+        console.log(`[INTERVENTION CONTROLLER] 📝 STANDARD UPDATE (no revision)`);
 
-      console.log(`[INTERVENTION CONTROLLER] ✅ Successfully updated intervention ${interventionId}`);
+        // Update timestamps
+        updateData.updatedAt = new Date();
+        if (!updateData.lastEditedAt) {
+          updateData.lastEditedAt = new Date();
+        }
 
-      // Log revision completion if applicable
-      if (updateData.revisionNumber && updateData.revisionNumber > (intervention.revisionNumber || 1)) {
-        console.log(`[INTERVENTION CONTROLLER] 🎯 REVISION UPDATE COMPLETE:`);
-        console.log(`[INTERVENTION CONTROLLER] - Updated to version: ${updatedIntervention.revisionNumber}`);
-        console.log(`[INTERVENTION CONTROLLER] - Status: ${updatedIntervention.status}`);
-        console.log(`[INTERVENTION CONTROLLER] - Ready for student retake: ${updatedIntervention.status === 'active' ? 'YES' : 'NO'}`);
-        console.log(`[INTERVENTION CONTROLLER] - Revision history length: ${updatedIntervention.revisionHistory?.length || 0}`);
+        // Perform the update
+        updatedIntervention = await InterventionAssessment.findByIdAndUpdate(
+          interventionId,
+          updateData,
+          {
+            new: true, // Return updated document
+            runValidators: true // Run mongoose validation
+          }
+        );
+
+        if (!updatedIntervention) {
+          return res.status(404).json({
+            success: false,
+            message: 'Intervention assessment not found after update',
+            interventionId: interventionId
+          });
+        }
+
+        console.log(`[INTERVENTION CONTROLLER] ✅ Successfully updated intervention ${interventionId} (standard update)`);
       }
 
       res.json({
@@ -1203,6 +1466,54 @@ class InterventionAssessmentController {
         message: 'Error updating intervention assessment',
         error: error.message,
         interventionId: req.params.interventionId
+      });
+    }
+  }
+
+  /**
+   * Repair data consistency for currentInterventionId fields
+   * POST /api/teachers/interventions/repair-data-consistency
+   */
+  async repairDataConsistency(req, res) {
+    try {
+      console.log(`[INTERVENTION CONTROLLER] 🔧 Data consistency repair requested...`);
+
+      const { studentId, interventionAssessmentId } = req.body;
+
+      // Import the revision service
+      const InterventionRevisionService = require('../../services/Teachers/InterventionRevisionService');
+
+      // Run the repair utility
+      const repairResults = await InterventionRevisionService.repairDataConsistency(
+        studentId || null,
+        interventionAssessmentId || null
+      );
+
+      console.log(`[INTERVENTION CONTROLLER] ✅ Data consistency repair completed:`, {
+        scanned: repairResults.scanned,
+        corrupted: repairResults.corrupted,
+        repaired: repairResults.repaired,
+        errors: repairResults.errors.length
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Data consistency repair completed',
+        results: {
+          scanned: repairResults.scanned,
+          corrupted: repairResults.corrupted,
+          repaired: repairResults.repaired,
+          errors: repairResults.errors,
+          details: repairResults.details
+        }
+      });
+
+    } catch (error) {
+      console.error(`[INTERVENTION CONTROLLER] ❌ Data consistency repair error:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Error during data consistency repair',
+        error: error.message
       });
     }
   }
