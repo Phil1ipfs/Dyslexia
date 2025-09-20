@@ -2806,7 +2806,7 @@ const PrescriptiveAnalysis = ({
    * Render comprehensive research-based prescriptions for intervention results
    * Fetches data from intervention_results.json
    */
-  const renderInterventionResearchPrescriptions = (interventionData, categoryName) => {
+  const renderInterventionResearchComprehensivePrescriptions = (interventionData, categoryName) => {
     console.log('🔬 [INTERVENTION RESEARCH] Rendering intervention research prescriptions for:', categoryName);
     console.log('🔬 [INTERVENTION RESEARCH] Available intervention data:', interventionData);
     console.log('🔬 [INTERVENTION RESEARCH] Research prescriptions data:', interventionData?.researchBasedPrescriptions);
