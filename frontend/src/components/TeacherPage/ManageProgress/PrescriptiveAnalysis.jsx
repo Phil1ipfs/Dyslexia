@@ -4752,7 +4752,23 @@ const PrescriptiveAnalysis = ({
         
         <div className="literexia-tabs-containerr">
           {(liveCategoryResults?.categories || [])
-            .filter(cat => !showNeedingInterventionOnly || (Number(cat.score) || 0) < 75 || allCategoriesPassed)
+            .filter((cat, catIndex) => {
+              if (!showNeedingInterventionOnly || allCategoriesPassed) {
+                return true; // Show all categories when filter is off or all passed
+              }
+
+              const score = Number(cat.score) || 0;
+              const isPassed = score >= 75;
+
+              // Always show passed categories (to show progress)
+              if (isPassed) {
+                return true;
+              }
+
+              // For unpassed categories, only show if it's accessible/unlocked
+              const isUnlocked = isCategoryUnlocked(cat.categoryName, catIndex);
+              return isUnlocked;
+            })
             .map((category, index) => {
               const categoryName = category.categoryName;
               const displayName = formatCategoryName(categoryName);
@@ -4786,6 +4802,10 @@ const PrescriptiveAnalysis = ({
               } else if (progressionStatus.status === 'needs_revision') {
                 statusLabel = "NEEDS REVISION";
                 statusClass = "needs-revision";
+              } else if (!isCompleted) {
+                // If category hasn't been completed yet, show "NOT ANSWERED YET"
+                statusLabel = "NOT ANSWERED YET";
+                statusClass = "not-started";
               } else if (progressionStatus.status === 'needs_intervention') {
                 statusLabel = "NEEDS INTERVENTION";
                 statusClass = "needs-attention";

@@ -1784,11 +1784,14 @@ class InterventionResultsAnalysisService {
       categoryResults.categories[categoryIndex].interventionRequired = false;
       categoryResults.categories[categoryIndex].interventionCompleted = true; // ✅ Only set to true when intervention passed
 
-      // 🔒 DATA NORMALIZATION: Preserve original assessment score
-      // Intervention scores are tracked separately in interventionHistory
-      console.log(`[INTERVENTION ANALYSIS] 🔒 Preserving original assessment score: ${categoryData.score}%`);
-      console.log(`[INTERVENTION ANALYSIS] 📊 Intervention score (${interventionResults.score}%) tracked in history only`);
-      // Note: categoryResults.categories[categoryIndex].score remains unchanged (original assessment score)
+      // 🔄 SCORE UPDATE: Use the higher score between original assessment and intervention
+      const originalScore = categoryData.score || 0;
+      const interventionScore = interventionResults.score || 0;
+      const newScore = Math.max(originalScore, interventionScore);
+      categoryResults.categories[categoryIndex].score = newScore;
+
+      console.log(`[INTERVENTION ANALYSIS] 📊 Score updated: original ${originalScore}% → intervention ${interventionScore}% → final ${newScore}%`);
+      console.log(`[INTERVENTION ANALYSIS] ✅ Using higher score between original assessment and successful intervention`);
 
     } else {
       console.log(`[INTERVENTION ANALYSIS] 📝 Intervention failed. Category needs teacher revision.`);
