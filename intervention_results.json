@@ -328,7 +328,34 @@
     "overallReadiness": "Developing skills steadily",
     "recommendedAction": "teacher_revision",
     "interventionImpact": "Moderately effective with measurable progress",
-    "nextStepsRationale": "Student showing progress - minor adjustments recommended"
+    "nextStepsRationale": "Student showing progress - minor adjustments recommended",
+    "versionTracking": {
+      "interventionAssessmentId": {
+        "$oid": "68cbb0975a26e73b61e061d3"
+      },
+      "revisionNumber": 1,
+      "isRevisedIntervention": false,
+      "hasRevisionHistory": false,
+      "attemptNumber": 1,
+      "attemptReason": "initial_attempt",
+      "lastModifiedBy": null,
+      "lastModifiedAt": null,
+      "assessmentVersionInfo": {
+        "canAccessPreviousResults": false,
+        "canTrackRevisionEffectiveness": false,
+        "totalAttemptsOnThisIntervention": 1,
+        "bidirectionalTrackingEnabled": true
+      }
+    },
+    "prescriptionAnalysisAccuracy": {
+      "accuracy": 75,
+      "versionAwareAccuracy": 75,
+      "revisionBasedConfidence": "moderate",
+      "longitudinalDataAvailable": false,
+      "crossReferenceCapable": true,
+      "methodology": "research_baseline",
+      "dataPoints": 1
+    }
   },
   "strengths": [],
   "weaknesses": [
