@@ -3486,7 +3486,7 @@ const MainAssessment = ({ templates }) => {
                                     const formattedWord = cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1).toLowerCase();
                                     const letters = formattedWord.split('');
                                     // Add mixed case distractors instead of all capitals
-                                    const distractors = ['a', 'E', 'i', 'O', 'u', 'n', 't', 'r'];
+                                    const distractors = ['a', 'e', 'i', 'o', 'u', 'n', 't', 'r'];
                                     const selectedDistractors = distractors.slice(0, 2); // Take 2 distractors
                                     setQuestionFormData(prev => ({
                                       ...prev,
@@ -3536,13 +3536,91 @@ const MainAssessment = ({ templates }) => {
                                     type="button"
                                     className="pa-add-letter"
                                     onClick={() => {
-                                      const letter = prompt('Add distractor letter:');
-                                      if (letter && letter.trim()) {
-                                        setQuestionFormData(prev => ({
-                                          ...prev,
-                                          dragElements: [...(prev.dragElements || []), letter.toUpperCase().trim()]
-                                        }));
-                                      }
+                                      // Show custom modal instead of browser prompt
+                                      const modal = document.createElement('div');
+                                      modal.style.cssText = `
+                                        position: fixed;
+                                        top: 0;
+                                        left: 0;
+                                        width: 100%;
+                                        height: 100%;
+                                        background: rgba(0,0,0,0.5);
+                                        display: flex;
+                                        justify-content: center;
+                                        align-items: center;
+                                        z-index: 10000;
+                                      `;
+                                      
+                                      const modalContent = document.createElement('div');
+                                      modalContent.style.cssText = `
+                                        background: white;
+                                        padding: 20px;
+                                        border-radius: 8px;
+                                        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                                        min-width: 300px;
+                                        max-width: 500px;
+                                      `;
+                                      
+                                      modalContent.innerHTML = `
+                                        <h3 style="margin: 0 0 15px 0; color: #333;">Add Distractor Letter</h3>
+                                        <p style="margin: 0 0 15px 0; color: #666; font-size: 14px;">Enter a letter to add as a distractor option for students</p>
+                                        <input 
+                                          type="text" 
+                                          id="letterInput" 
+                                          placeholder="Enter letter (e.g., a, B, c)"
+                                          style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 15px;"
+                                          maxlength="1"
+                                        />
+                                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                                          <button id="cancelBtn" style="padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>
+                                          <button id="addBtn" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Add Letter</button>
+                                        </div>
+                                      `;
+                                      
+                                      modal.appendChild(modalContent);
+                                      document.body.appendChild(modal);
+                                      
+                                      const input = modalContent.querySelector('#letterInput');
+                                      const cancelBtn = modalContent.querySelector('#cancelBtn');
+                                      const addBtn = modalContent.querySelector('#addBtn');
+                                      
+                                      input.focus();
+                                      
+                                      const cleanup = () => {
+                                        document.body.removeChild(modal);
+                                      };
+                                      
+                                      cancelBtn.onclick = cleanup;
+                                      addBtn.onclick = () => {
+                                        const letter = input.value.trim();
+                                        if (letter && /^[a-zA-Z]$/.test(letter)) {
+                                          // Keep original case, don't force uppercase
+                                          setQuestionFormData(prev => ({
+                                            ...prev,
+                                            dragElements: [...(prev.dragElements || []), letter]
+                                          }));
+                                          cleanup();
+                                        } else {
+                                          alert('Please enter a single letter (a-z or A-Z)');
+                                        }
+                                      };
+                                      
+                                      // Close on escape key
+                                      const handleKeyPress = (e) => {
+                                        if (e.key === 'Escape') cleanup();
+                                        if (e.key === 'Enter') addBtn.click();
+                                      };
+                                      document.addEventListener('keydown', handleKeyPress);
+                                      modal.addEventListener('click', (e) => {
+                                        if (e.target === modal) cleanup();
+                                      });
+                                      
+                                      // Clean up event listener when modal is removed
+                                      const originalCleanup = cleanup;
+                                      cleanup = () => {
+                                        document.removeEventListener('keydown', handleKeyPress);
+                                        originalCleanup();
+                                      };
                                     }}
                                   >
                                     <FontAwesomeIcon icon={faPlus} /> Add Option
@@ -3664,8 +3742,27 @@ const MainAssessment = ({ templates }) => {
                                   className="pa-auto-populate-btn"
                                   onClick={() => {
                                     const correctLetter = questionFormData.correctSequence?.[0] || '';
-                                    const distractors = ['A', 'E', 'I', 'O'];
-                                    const availableLetters = [correctLetter, ...distractors.filter(d => d !== correctLetter)].slice(0, 4);
+                                    
+                                    // Create a diverse mix of patinig (vowels) and katinig (consonants) in different cases
+                                    const patinig = ['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U'];
+                                    const katinig = ['b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z',
+                                                    'B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'];
+                                    
+                                    // Mix patinig and katinig for variety
+                                    const allLetters = [...patinig, ...katinig];
+                                    
+                                    // Filter out the correct letter and get 3 random distractors
+                                    const possibleDistractors = allLetters.filter(letter => 
+                                      letter.toLowerCase() !== correctLetter.toLowerCase()
+                                    );
+                                    
+                                    // Shuffle and pick 3 random distractors
+                                    const shuffled = possibleDistractors.sort(() => 0.5 - Math.random());
+                                    const selectedDistractors = shuffled.slice(0, 3);
+                                    
+                                    // Combine correct letter with distractors
+                                    const availableLetters = [correctLetter, ...selectedDistractors];
+                                    
                                     setQuestionFormData(prev => ({
                                       ...prev,
                                       dragElements: availableLetters
@@ -3693,6 +3790,99 @@ const MainAssessment = ({ templates }) => {
                                       </button>
                                     </div>
                                   ))}
+                                  <button
+                                    type="button"
+                                    className="pa-add-letter"
+                                    onClick={() => {
+                                      // Show custom modal instead of browser prompt
+                                      const modal = document.createElement('div');
+                                      modal.style.cssText = `
+                                        position: fixed;
+                                        top: 0;
+                                        left: 0;
+                                        width: 100%;
+                                        height: 100%;
+                                        background: rgba(0,0,0,0.5);
+                                        display: flex;
+                                        justify-content: center;
+                                        align-items: center;
+                                        z-index: 10000;
+                                      `;
+                                      
+                                      const modalContent = document.createElement('div');
+                                      modalContent.style.cssText = `
+                                        background: white;
+                                        padding: 20px;
+                                        border-radius: 8px;
+                                        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                                        min-width: 300px;
+                                        max-width: 500px;
+                                      `;
+                                      
+                                      modalContent.innerHTML = `
+                                        <h3 style="margin: 0 0 15px 0; color: #333;">Add Distractor Letter</h3>
+                                        <p style="margin: 0 0 15px 0; color: #666; font-size: 14px;">Enter a letter to add as a distractor option for students</p>
+                                        <input 
+                                          type="text" 
+                                          id="letterInput" 
+                                          placeholder="Enter letter (e.g., a, B, c)"
+                                          style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 15px;"
+                                          maxlength="1"
+                                        />
+                                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                                          <button id="cancelBtn" style="padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>
+                                          <button id="addBtn" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Add Letter</button>
+                                        </div>
+                                      `;
+                                      
+                                      modal.appendChild(modalContent);
+                                      document.body.appendChild(modal);
+                                      
+                                      const input = modalContent.querySelector('#letterInput');
+                                      const cancelBtn = modalContent.querySelector('#cancelBtn');
+                                      const addBtn = modalContent.querySelector('#addBtn');
+                                      
+                                      input.focus();
+                                      
+                                      const cleanup = () => {
+                                        document.body.removeChild(modal);
+                                      };
+                                      
+                                      cancelBtn.onclick = cleanup;
+                                      addBtn.onclick = () => {
+                                        const letter = input.value.trim();
+                                        if (letter && /^[a-zA-Z]$/.test(letter)) {
+                                          // Keep original case, don't force uppercase
+                                          setQuestionFormData(prev => ({
+                                            ...prev,
+                                            dragElements: [...(prev.dragElements || []), letter]
+                                          }));
+                                          cleanup();
+                                        } else {
+                                          alert('Please enter a single letter (a-z or A-Z)');
+                                        }
+                                      };
+                                      
+                                      // Close on escape key
+                                      const handleKeyPress = (e) => {
+                                        if (e.key === 'Escape') cleanup();
+                                        if (e.key === 'Enter') addBtn.click();
+                                      };
+                                      document.addEventListener('keydown', handleKeyPress);
+                                      modal.addEventListener('click', (e) => {
+                                        if (e.target === modal) cleanup();
+                                      });
+                                      
+                                      // Clean up event listener when modal is removed
+                                      const originalCleanup = cleanup;
+                                      cleanup = () => {
+                                        document.removeEventListener('keydown', handleKeyPress);
+                                        originalCleanup();
+                                      };
+                                    }}
+                                  >
+                                    <FontAwesomeIcon icon={faPlus} /> Add Option
+                                  </button>
                                 </div>
                               </div>
 
