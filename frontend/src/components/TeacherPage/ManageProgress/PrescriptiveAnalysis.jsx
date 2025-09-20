@@ -277,7 +277,7 @@ const PrescriptiveAnalysis = ({
         status: 'needs_intervention',
         score: category.score,
         source: 'original_assessment',
-        message: 'Needs intervention - original score below threshold'
+        message: ''
       };
     }
     
