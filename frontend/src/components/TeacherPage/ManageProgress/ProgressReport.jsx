@@ -110,11 +110,11 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
 
       // Check if student responses are already included in progressData (for post-assessment)
       if (progressData.studentResponses && progressData.studentResponses.length > 0) {
-        console.log('📊 Using student responses from progressData:', progressData.studentResponses.length);
+        console.log('Using student responses from progressData:', progressData.studentResponses.length);
         setStudentResponses(progressData.studentResponses);
       } else {
         // Fallback: Fetch student responses separately (for pre-assessment or when not included)
-        console.log('📊 Fetching student responses separately...');
+        console.log('Fetching student responses separately...');
         const responsesResult = await ProgressApiService.getStudentResponses(studentId);
         if (responsesResult.success && responsesResult.data) {
           setStudentResponses(responsesResult.data);
@@ -162,7 +162,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
   };
   
   // Enhanced debugging for ProgressReport rendering issues
-  console.log('🔍 [PROGRESS REPORT] Component rendering with data:');
+  console.log('[PROGRESS REPORT] Component rendering with data:');
   console.log('  - progressData exists:', !!progressData);
   console.log('  - progressData structure:', progressData ? Object.keys(progressData) : 'null');
   console.log('  - progressData.categories exists:', !!(progressData && progressData.categories));
@@ -177,12 +177,12 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     Array.isArray(progressData.categories) &&
     progressData.categories.length > 0;
 
-  console.log('🔍 [PROGRESS REPORT] Validation results:');
+  console.log('[PROGRESS REPORT] Validation results:');
   console.log('  - hasCategoryResults:', hasCategoryResults);
   console.log('  - Will render main content:', hasCategoryResults);
 
   if (!progressData) {
-    console.log('❌ [PROGRESS REPORT] Early return: No progressData');
+    console.log('[PROGRESS REPORT] Early return: No progressData');
     return (
       <div className="student-progress-empty-state">
         <FaInfoCircle size={48} />
@@ -193,7 +193,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
   }
 
   // Implement robust conditional rendering with multiple fallbacks
-  console.log('🔍 [PROGRESS REPORT] Implementing robust conditional rendering...');
+  console.log('[PROGRESS REPORT] Implementing robust conditional rendering...');
 
   // Try to extract categories from different possible structures
   let categoriesData = null;
@@ -203,19 +203,19 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     // Standard structure: progressData.categories
     if (progressData.categories && Array.isArray(progressData.categories) && progressData.categories.length > 0) {
       categoriesData = progressData.categories;
-      console.log('✅ Found categories in standard structure:', categoriesData.length);
+      console.log('Found categories in standard structure:', categoriesData.length);
     }
     // Alternative structure: progressData.data.categories (API wrapper)
     else if (progressData.data && progressData.data.categories && Array.isArray(progressData.data.categories) && progressData.data.categories.length > 0) {
       categoriesData = progressData.data.categories;
-      console.log('✅ Found categories in data wrapper structure:', categoriesData.length);
+      console.log('Found categories in data wrapper structure:', categoriesData.length);
       // Lift other properties to top level
       fallbackData = { ...progressData.data };
     }
     // Alternative structure: direct array (just in case)
     else if (Array.isArray(progressData) && progressData.length > 0) {
       categoriesData = progressData;
-      console.log('✅ Found categories as direct array:', categoriesData.length);
+      console.log('Found categories as direct array:', categoriesData.length);
     }
   }
 
@@ -228,18 +228,18 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
         <h3>Assessment Data Structure Issue</h3>
         <p>Unable to locate category results in the expected data structure.</p>
         <div style={{marginTop: '20px', textAlign: 'left', fontSize: '12px', background: '#f8f9fa', padding: '15px', borderRadius: '5px', fontFamily: 'monospace'}}>
-          <strong>🔍 Data Structure Analysis:</strong><br/>
+          <strong>Data Structure Analysis:</strong><br/>
           <br/>
-          <strong>progressData exists:</strong> {progressData ? 'Yes ✅' : 'No ❌'}<br/>
+          <strong>progressData exists:</strong> {progressData ? 'Yes' : 'No'}<br/>
           <strong>progressData type:</strong> {typeof progressData}<br/>
           <strong>progressData keys:</strong> {progressData ? Object.keys(progressData).join(', ') : 'N/A'}<br/>
           <br/>
-          <strong>categories property:</strong> {progressData && progressData.categories ? 'Present ✅' : 'Missing ❌'}<br/>
+          <strong>categories property:</strong> {progressData && progressData.categories ? 'Present' : 'Missing'}<br/>
           <strong>categories type:</strong> {progressData && progressData.categories ? typeof progressData.categories : 'undefined'}<br/>
-          <strong>categories is array:</strong> {progressData && progressData.categories && Array.isArray(progressData.categories) ? 'Yes ✅' : 'No ❌'}<br/>
+          <strong>categories is array:</strong> {progressData && progressData.categories && Array.isArray(progressData.categories) ? 'Yes' : 'No'}<br/>
           <strong>categories length:</strong> {progressData && progressData.categories && Array.isArray(progressData.categories) ? progressData.categories.length : 'N/A'}<br/>
           <br/>
-          <strong>data.categories exists:</strong> {progressData && progressData.data && progressData.data.categories ? 'Yes ✅' : 'No ❌'}<br/>
+          <strong>data.categories exists:</strong> {progressData && progressData.data && progressData.data.categories ? 'Yes' : 'No'}<br/>
           <strong>studentResponses count:</strong> {progressData && progressData.studentResponses ? progressData.studentResponses.length : 'N/A'}<br/>
           <br/>
           <strong>Full progressData structure:</strong><br/>
@@ -266,7 +266,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     categories: categoriesData
   };
 
-  console.log('✅ [PROGRESS REPORT] Successfully normalized data structure');
+  console.log('[PROGRESS REPORT] Successfully normalized data structure');
   console.log('  - Categories count:', categoriesData.length);
   console.log('  - First category:', categoriesData[0]);
 
@@ -331,13 +331,13 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
         totalQuestions += totalMatches;
         correctAnswers += correctMatches;
         
-        console.log(`📊 PA Calculation: ${correctMatches}/${totalMatches} matches from ${responses.length} questions`);
+        console.log(`PA Calculation: ${correctMatches}/${totalMatches} matches from ${responses.length} questions`);
       } else {
         // For other categories: count individual responses
         totalQuestions += responses.length;
         correctAnswers += responses.filter(resp => resp.isCorrect).length;
         
-        console.log(`📊 ${category} Calculation: ${responses.filter(resp => resp.isCorrect).length}/${responses.length} questions`);
+        console.log(`${category} Calculation: ${responses.filter(resp => resp.isCorrect).length}/${responses.length} questions`);
       }
     });
 
@@ -362,7 +362,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
   const categoriesNeedingAttention = hasValidCategoryData ?
     categoriesData.filter(cat => (Number(cat.score) || 0) < 75) : [];
 
-  console.log('📊 [PROGRESS REPORT] Calculated metrics:');
+  console.log('[PROGRESS REPORT] Calculated metrics:');
   console.log('  - completionRate:', completionRate);
   console.log('  - totalQuestions:', totalQuestions);
   console.log('  - correctAnswers:', correctAnswers);
@@ -469,9 +469,115 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     }
   };
 
+  // NEW: Get latest intervention attempt for a category
+  const getLatestInterventionAttempt = (category) => {
+    if (!category.interventionHistory || category.interventionHistory.length === 0) {
+      return null;
+    }
+    
+    // Sort by attempt number and get the latest
+    const sortedHistory = [...category.interventionHistory].sort((a, b) => b.attemptNumber - a.attemptNumber);
+    return sortedHistory[0];
+  };
+
+  // NEW: Determine if category is unlocked based on intervention progression
+  const isCategoryUnlocked = (categoryName, categoryIndex) => {
+    // First category (Alphabet Knowledge) is always unlocked
+    if (categoryIndex === 0) return true;
+    
+    // Check if all previous categories have passed (either original assessment or latest intervention)
+    for (let i = 0; i < categoryIndex; i++) {
+      const prevCategory = categoriesData[i];
+      const latestAttempt = getLatestInterventionAttempt(prevCategory);
+      
+      // Check if previous category passed either in original assessment or latest intervention
+      const prevCategoryPassed = prevCategory.isPassed || 
+        (latestAttempt && latestAttempt.isPassed && latestAttempt.score >= 75);
+      
+      if (!prevCategoryPassed) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
+  // NEW: Get the current display score for a category (latest intervention or original)
+  const getCurrentDisplayScore = (category) => {
+    const latestAttempt = getLatestInterventionAttempt(category);
+    
+    // If there's a latest intervention attempt, use that score
+    if (latestAttempt) {
+      return latestAttempt.score;
+    }
+    
+    // Otherwise, use the original category score
+    return Number(category.score) || 0;
+  };
+
+  // NEW: Get the current display status for a category
+  const getCurrentDisplayStatus = (category) => {
+    const latestAttempt = getLatestInterventionAttempt(category);
+    
+    // If there's a latest intervention attempt, use that status
+    if (latestAttempt) {
+      return latestAttempt.isPassed ? 'passed' : 'needs_revision';
+    }
+    
+    // Otherwise, use the original category status
+    const score = Number(category.score) || 0;
+    if (score >= 75) return 'passed';
+    if (score > 0) return 'needs_intervention';
+    return 'not_attempted';
+  };
+
+  // NEW: Get category status based on intervention progression
+  const getCategoryProgressionStatus = (category) => {
+    const latestAttempt = getLatestInterventionAttempt(category);
+    
+    // If category originally passed, it's passed
+    if (category.isPassed) {
+      return {
+        status: 'passed',
+        score: category.score,
+        source: 'original_assessment',
+        message: 'Category passed in original assessment'
+      };
+    }
+    
+    // If no intervention attempts yet, show as needs intervention
+    if (!latestAttempt) {
+      return {
+        status: 'needs_intervention',
+        score: category.score,
+        source: 'original_assessment',
+        message: 'Needs intervention - original score below threshold'
+      };
+    }
+    
+    // Check latest intervention attempt
+    if (latestAttempt.isPassed && latestAttempt.score >= 75) {
+      return {
+        status: 'passed',
+        score: latestAttempt.score,
+        source: 'intervention',
+        attemptNumber: latestAttempt.attemptNumber,
+        message: `Passed on intervention attempt ${latestAttempt.attemptNumber}`
+      };
+    } else {
+      return {
+        status: 'needs_revision',
+        score: latestAttempt.score,
+        source: 'intervention',
+        attemptNumber: latestAttempt.attemptNumber,
+        message: `Failed on intervention attempt ${latestAttempt.attemptNumber} - needs revision`
+      };
+    }
+  };
+
   // Get detailed questions for a category
   const getCategoryQuestions = (categoryName) => {
-    console.log('🔍 getCategoryQuestions called for:', categoryName);
+    console.log('getCategoryQuestions called for:', categoryName);
     console.log('studentResponses available:', !!studentResponses, studentResponses?.length);
     console.log('assessmentQuestions available:', !!assessmentQuestions, assessmentQuestions?.length);
     
@@ -492,7 +598,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
       // Find the assessment question details
       const assessmentQuestion = findAssessmentQuestion(response.questionId, categoryName);
       
-      console.log('🔍 Question details for', response.questionId, ':', assessmentQuestion);
+      console.log('Question details for', response.questionId, ':', assessmentQuestion);
       
       return {
         ...response,
@@ -509,7 +615,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
       return aId.localeCompare(bId);
     });
     
-    console.log('✅ Final questions with details:', questionsWithDetails);
+    console.log('Final questions with details:', questionsWithDetails);
     return questionsWithDetails;
   };
 
@@ -636,7 +742,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
 
   // Debug function to check data - keep for database troubleshooting
   const debugData = () => {
-    console.log('🔍 Debug Progress Report Data:');
+    console.log('Debug Progress Report Data:');
     console.log('progressData:', progressData);
     console.log('studentResponses:', studentResponses);
     console.log('assessmentQuestions:', assessmentQuestions);
@@ -769,7 +875,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
       </div>
 
       {/* Combined Category Progress & Performance Section */}
-      {console.log('🔍 [PROGRESS REPORT] About to render main content section, hasValidCategoryData:', hasValidCategoryData)}
+      {console.log('[PROGRESS REPORT] About to render main content section, hasValidCategoryData:', hasValidCategoryData)}
       {hasValidCategoryData && (
         <div className="student-progress-category-section">
           <div className="student-progress-section-header">
@@ -824,9 +930,9 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
             </div>
           )}
 
-          {/* Enhanced Category Cards - Individual Row Layout like Pre Assessment */}
+          {/* Enhanced Category Cards - Individual Row Layout with Dynamic Intervention Progression */}
           <div className="student-progress-categories-list">
-            {console.log('🔍 [PROGRESS REPORT] About to render categories list, categoriesData:', categoriesData)}
+            {console.log('[PROGRESS REPORT] About to render categories list, categoriesData:', categoriesData)}
             {categoriesData.map((category, index) => {
               const categoryName = category.categoryName || `Category ${index + 1}`;
               const displayName = typeof categoryName === 'string' ?
@@ -838,81 +944,43 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
               const correctCount = actualCounts.correct || Number(category.correctAnswers) || 0;
               const totalCount = actualCounts.total || Number(category.totalQuestions) || 0;
               
-              // Recalculate score based on actual data if available
-              const score = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : Number(category.score) || 0;
-              const isPassed = score >= 75;
+              // NEW: Get current display score (latest intervention or original)
+              const score = getCurrentDisplayScore(category);
+              
+              // NEW: Get dynamic progression status based on intervention history
+              const progressionStatus = getCategoryProgressionStatus(category);
+              const isUnlocked = isCategoryUnlocked(categoryName, index);
+              const latestAttempt = getLatestInterventionAttempt(category);
 
-              // Enhanced logic for Post Assessment Progress Report with Prerequisite Blocking
-              // Distinguish between completed/attempted vs blocked vs not attempted categories
-              console.log(`🔍 [CATEGORY STATUS] Analyzing ${categoryName}:`);
-              console.log(`  - Category object:`, category);
-              console.log(`  - Score:`, score);
-              console.log(`  - isPassed:`, isPassed);
-              console.log(`  - correctCount:`, correctCount);
-              console.log(`  - totalCount:`, totalCount);
+              console.log(`[DYNAMIC PROGRESSION] Analyzing ${categoryName}:`);
+              console.log(`  - Progression Status:`, progressionStatus);
+              console.log(`  - Is Unlocked:`, isUnlocked);
+              console.log(`  - Latest Attempt:`, latestAttempt);
 
-              // Check if this category has any assessment data at all
-              const hasAssessmentData = (
-                (totalCount > 0) ||                          // Has question attempts
-                (correctCount > 0) ||                        // Has some correct answers
-                (score > 0) ||                              // Has a recorded score
-                (category.totalQuestions && category.totalQuestions > 0) || // Has questions metadata
-                (category.isCompleted === true)              // Explicitly marked as completed
-              );
-
-              console.log(`  - hasAssessmentData:`, hasAssessmentData);
-
-              // PREREQUISITE BLOCKING LOGIC - Check if this category should be blocked
-              // Define prerequisite order for "At Grade Level" reading level
-              const categoryOrder = [
-                "Alphabet Knowledge",     // Position 0 - foundational (no prerequisites)
-                "Phonological Awareness", // Position 1 - requires Alphabet Knowledge
-                "Decoding",               // Position 2 - requires Alphabet + Phonological
-                "Word Recognition",       // Position 3 - requires Alphabet + Phonological + Decoding
-                "Reading Comprehension"   // Position 4 - requires all previous categories
-              ];
-
-              const currentCategoryIndex = categoryOrder.indexOf(categoryName);
-              let isBlocked = false;
-              let blockingCategory = null;
-              const prerequisiteInfo = [];
-
-              // Check prerequisites for this category
-              if (currentCategoryIndex > 0) {
-                const prerequisiteCategories = categoryOrder.slice(0, currentCategoryIndex);
-
-                for (const prereqCategory of prerequisiteCategories) {
-                  const prereqCategoryData = categoriesData.find(cat => cat.categoryName === prereqCategory);
-
-                  if (!prereqCategoryData || !prereqCategoryData.isPassed) {
-                    isBlocked = true;
-                    blockingCategory = prereqCategory;
-                    console.log(`  - BLOCKED by prerequisite: ${prereqCategory}`);
-                    break;
-                  } else {
-                    console.log(`  - Prerequisite satisfied: ${prereqCategory} (passed: ${prereqCategoryData.isPassed})`);
-                  }
-                }
-              }
-
-              console.log(`  - isBlocked:`, isBlocked);
-              console.log(`  - blockingCategory:`, blockingCategory);
-
-              // Determine category status for display
+              // Determine category status for display based on dynamic progression
               let categoryStatus = '';
-              if (isBlocked) {
+              let statusMessage = '';
+              let displayScore = score; // Use the current display score (latest intervention or original)
+              let isPassed = progressionStatus.status === 'passed';
+
+              if (!isUnlocked) {
                 categoryStatus = 'blocked';
-                console.log(`  - Status: BLOCKED (prerequisite not met: ${blockingCategory})`);
-              } else if (!hasAssessmentData) {
-                categoryStatus = 'not_attempted';
-                console.log(`  - Status: NOT_ATTEMPTED (no assessment data found)`);
-              } else if (isPassed) {
+                statusMessage = 'Prerequisites not met - previous categories need to pass';
+              } else if (progressionStatus.status === 'passed') {
                 categoryStatus = 'passed';
-                console.log(`  - Status: PASSED (${score}% >= 75%)`);
+                statusMessage = progressionStatus.message;
+              } else if (progressionStatus.status === 'needs_revision') {
+                categoryStatus = 'needs_revision';
+                statusMessage = progressionStatus.message;
+              } else if (progressionStatus.status === 'needs_intervention') {
+                categoryStatus = 'needs_intervention';
+                statusMessage = progressionStatus.message;
               } else {
-                categoryStatus = 'needs_attention';
-                console.log(`  - Status: NEEDS_ATTENTION (${score}% < 75%)`);
+                categoryStatus = 'not_attempted';
+                statusMessage = 'Not attempted yet';
               }
+
+              console.log(`  - Final Status: ${categoryStatus} - ${statusMessage}`);
 
               // Get questions for this category
               const categoryQuestions = getCategoryQuestions(categoryName);
@@ -922,6 +990,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                 <div key={index} className={`student-progress-category-item ${
                   categoryStatus === 'passed' ? 'student-progress-category-passed' :
                   categoryStatus === 'blocked' ? 'student-progress-category-blocked' :
+                  categoryStatus === 'needs_revision' ? 'student-progress-category-needs-revision' :
                   'student-progress-category-needs-attention'
                 }`}>
                   {/* Category Main Row */}
@@ -943,8 +1012,15 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                               NOT ATTEMPTED
                             </span>
                           )}
-                          {categoryStatus === 'needs_attention' && (
-                            <span className="student-progress-needs-attention-badge">NEEDS ATTENTION</span>
+                          {categoryStatus === 'needs_intervention' && (
+                            <span className="student-progress-needs-attention-badge" style={{ backgroundColor: '#ffc107', color: '#000' }}>
+                              NEEDS INTERVENTION
+                            </span>
+                          )}
+                          {categoryStatus === 'needs_revision' && (
+                            <span className="student-progress-needs-attention-badge" style={{ backgroundColor: '#fd7e14', color: 'white' }}>
+                              NEEDS REVISION
+                            </span>
                           )}
                           {categoryStatus === 'passed' && (
                             <span className="student-progress-needs-attention-badge" style={{ backgroundColor: '#28a745', color: 'white' }}>
@@ -957,20 +1033,25 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                             <>
                               <span className="student-progress-score-display" style={{ color: '#dc3545' }}>Blocked</span>
                               <span className="student-progress-score-fraction" style={{ color: '#dc3545' }}>
-                                Must complete: {blockingCategory}
+                                {statusMessage}
                               </span>
                             </>
                           ) : categoryStatus === 'not_attempted' ? (
                             <>
                               <span className="student-progress-score-display" style={{ color: '#6c757d' }}>Not Attempted</span>
                               <span className="student-progress-score-fraction" style={{ color: '#6c757d' }}>
-                                Student has not completed this category yet
+                                {statusMessage}
                               </span>
                             </>
                           ) : (
                             <>
-                              <span className="student-progress-score-display">{score}%</span>
-                              <span className="student-progress-score-fraction">{correctCount}/{totalCount} correct</span>
+                              <span className="student-progress-score-display">{displayScore}%</span>
+                              <span className="student-progress-score-fraction">
+                                {progressionStatus.source === 'intervention' ? 
+                                  `Intervention Attempt ${progressionStatus.attemptNumber}` : 
+                                  `${correctCount}/${totalCount} correct`
+                                }
+                              </span>
                             </>
                           )}
                         </div>
@@ -1008,19 +1089,44 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                     ))}
                   </div>
                   
-                  {/* Status Message */}
+                  {/* Status Message with Dynamic Intervention Progression */}
                   <div className="student-progress-status-summary">
                     {categoryStatus === 'not_attempted' ? (
                       <div className="student-progress-need-more-message" style={{ color: '#6c757d' }}>
-                        <FaInfoCircle /> Not Attempted - Student has not completed this category yet
+                        <FaInfoCircle /> {statusMessage}
+                      </div>
+                    ) : categoryStatus === 'blocked' ? (
+                      <div className="student-progress-need-more-message" style={{ color: '#dc3545' }}>
+                        <FaTimesCircle /> {statusMessage}
                       </div>
                     ) : categoryStatus === 'passed' ? (
                       <div className="student-progress-success-message">
-                        <FaCheckCircle /> Category Mastered - Score: {score}%
+                        <FaCheckCircle /> {statusMessage} - Score: {displayScore}%
+                        {progressionStatus.source === 'intervention' && (
+                          <div className="intervention-success-details" style={{ fontSize: '0.8em', marginTop: '4px', opacity: 0.8 }}>
+                            Intervention Success! Student improved from {category.score}% to {displayScore}%
+                          </div>
+                        )}
+                      </div>
+                    ) : categoryStatus === 'needs_revision' ? (
+                      <div className="student-progress-need-more-message" style={{ color: '#fd7e14' }}>
+                        <FaEdit /> {statusMessage} - Score: {displayScore}%
+                        {latestAttempt && (
+                          <div className="intervention-revision-details" style={{ fontSize: '0.8em', marginTop: '4px', opacity: 0.8 }}>
+                            📝 Teacher can revise intervention for attempt {latestAttempt.attemptNumber + 1}
+                          </div>
+                        )}
+                      </div>
+                    ) : categoryStatus === 'needs_intervention' ? (
+                      <div className="student-progress-need-more-message" style={{ color: '#ffc107' }}>
+                        <FaExclamationTriangle /> {statusMessage} - Score: {displayScore}%
+                        <div className="intervention-needed-details" style={{ fontSize: '0.8em', marginTop: '4px', opacity: 0.8 }}>
+                          Teacher can create intervention activity
+                        </div>
                       </div>
                     ) : (
                       <div className="student-progress-need-more-message">
-                        <FaExclamationTriangle /> Needs Intervention - Score: {score}% (Need {Math.ceil(totalCount * 0.75) - correctCount} more to pass)
+                        <FaExclamationTriangle /> Needs Intervention - Score: {displayScore}% (Need {Math.ceil(totalCount * 0.75) - correctCount} more to pass)
                       </div>
                     )}
                   </div>
@@ -1275,7 +1381,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                                                 <div className="student-progress-rc-scoring-header">
                                                   <h5>Question Status:</h5>
                                                   <div className={`student-progress-rc-overall-result ${question.allSentenceQuestionsCorrect ? 'passed' : 'failed'}`}>
-                                                    {question.allSentenceQuestionsCorrect ? '✅ PASSED' : '❌ FAILED'}
+                                                    {question.allSentenceQuestionsCorrect ? 'PASSED' : 'FAILED'}
                                                     ({question.sentenceQAPairs.filter(pair => pair.isCorrect).length}/{question.sentenceQAPairs.length} questions correct)
                                                   </div>
                                                 </div>

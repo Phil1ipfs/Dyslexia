@@ -27,7 +27,8 @@ import {
   FaUserEdit,
   FaStethoscope,
   FaPrescriptionBottleAlt,
-  FaLink
+  FaLink,
+  FaHistory
 } from 'react-icons/fa';
 import ActivityEditModal from './ActivityEditModal';
 import ConfirmationDialog from './ConfirmationDialog';
@@ -163,6 +164,97 @@ const PrescriptiveAnalysis = ({
     return 'initial';
   };
 
+  // NEW: Get latest intervention attempt for a category from category results
+  const getLatestInterventionAttempt = (category) => {
+    if (!category.interventionHistory || category.interventionHistory.length === 0) {
+      return null;
+    }
+    
+    // Sort by attempt number and get the latest
+    const sortedHistory = [...category.interventionHistory].sort((a, b) => b.attemptNumber - a.attemptNumber);
+    return sortedHistory[0];
+  };
+
+  // NEW: Get current display score for a category (latest intervention or original)
+  const getCurrentDisplayScore = (category) => {
+    const latestAttempt = getLatestInterventionAttempt(category);
+    
+    // If there's a latest intervention attempt, use that score
+    if (latestAttempt) {
+      return latestAttempt.score;
+    }
+    
+    // Otherwise, use the original category score
+    return Number(category.score) || 0;
+  };
+
+  // NEW: Determine if category is unlocked based on intervention progression
+  const isCategoryUnlocked = (categoryName, categoryIndex) => {
+    // First category (Alphabet Knowledge) is always unlocked
+    if (categoryIndex === 0) return true;
+    
+    // Check if all previous categories have passed (either original assessment or latest intervention)
+    const categories = liveCategoryResults?.categories || [];
+    for (let i = 0; i < categoryIndex; i++) {
+      const prevCategory = categories[i];
+      const latestAttempt = getLatestInterventionAttempt(prevCategory);
+      
+      // Check if previous category passed either in original assessment or latest intervention
+      const prevCategoryPassed = prevCategory.isPassed || 
+        (latestAttempt && latestAttempt.isPassed && latestAttempt.score >= 75);
+      
+      if (!prevCategoryPassed) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
+  // NEW: Get category progression status based on intervention history
+  const getCategoryProgressionStatus = (category) => {
+    const latestAttempt = getLatestInterventionAttempt(category);
+    
+    // If category originally passed, it's passed
+    if (category.isPassed) {
+      return {
+        status: 'passed',
+        score: category.score,
+        source: 'original_assessment',
+        message: 'Category passed in original assessment'
+      };
+    }
+    
+    // If no intervention attempts yet, show as needs intervention
+    if (!latestAttempt) {
+      return {
+        status: 'needs_intervention',
+        score: category.score,
+        source: 'original_assessment',
+        message: 'Needs intervention - original score below threshold'
+      };
+    }
+    
+    // Check latest intervention attempt
+    if (latestAttempt.isPassed && latestAttempt.score >= 75) {
+      return {
+        status: 'passed',
+        score: latestAttempt.score,
+        source: 'intervention',
+        attemptNumber: latestAttempt.attemptNumber,
+        message: `Passed on intervention attempt ${latestAttempt.attemptNumber}`
+      };
+    } else {
+      return {
+        status: 'needs_revision',
+        score: latestAttempt.score,
+        source: 'intervention',
+        attemptNumber: latestAttempt.attemptNumber,
+        message: `Failed on intervention attempt ${latestAttempt.attemptNumber} - needs revision`
+      };
+    }
+  };
+
   // Helper function to determine UI theme based on intervention status
   const getUITheme = (categoryName) => {
     const status = getInterventionStatus(categoryName);
@@ -241,132 +333,166 @@ const PrescriptiveAnalysis = ({
     }
   };
 
-  // Enhanced function to fetch intervention results with version tracking and cross-referencing
+  // Enhanced function to fetch intervention results with version tracking and data normalization
   const fetchInterventionResults = async (studentId, categoryName) => {
     try {
-      console.log(`[INTERVENTION RESULTS] 🔄 Fetching ENHANCED intervention results for student ${studentId}, category ${categoryName}`);
-      console.log(`[INTERVENTION RESULTS] 📊 Implementing dynamic version tracking and cross-referencing...`);
+      console.log(`[INTERVENTION RESULTS] Fetching corrected intervention results for student ${studentId}, category ${categoryName}`);
+      console.log(`[INTERVENTION RESULTS] Using corrected backend with revision filtering and data normalization...`);
 
-      // Try to fetch intervention results for this specific category
-      const response = await api.get(`/api/intervention-monitoring/debug-data`);
+      // Fetch intervention results using corrected backend endpoint
+      const response = await api.get(`/api/intervention-results/student/${studentId}/category/${categoryName}`);
 
-      if (response.data && response.data.success && response.data.data.interventionResults) {
-        const allResults = response.data.data.interventionResults;
+      if (response.data && response.data.success && response.data.data) {
+        const interventionData = response.data.data;
 
-        // 🔄 ENHANCED: Get ALL intervention results for this student and category (for version tracking)
-        const categoryResults = allResults.filter(result =>
-          result.studentId === parseInt(studentId) &&
-          result.category === categoryName
-        ).sort((a, b) => {
-          // Sort by completion date to get most recent first
-          const dateA = new Date(a.completedAt || a.createdAt || 0);
-          const dateB = new Date(b.completedAt || b.createdAt || 0);
-          return dateB - dateA;
-        });
+        // Get category results to check intervention history with revision tracking
+        const categoryResponse = await api.get(`/api/category-results/student/${studentId}`);
+        let interventionHistory = [];
+        let originalAssessmentScore = null;
 
-        if (categoryResults.length > 0) {
-          const mostRecentResult = categoryResults[0];
-          const hasMultipleAttempts = categoryResults.length > 1;
+        if (categoryResponse.data && categoryResponse.data.success) {
+          const categoryResults = categoryResponse.data.data;
+          const relevantCategory = categoryResults.categories?.find(cat => cat.categoryName === categoryName);
 
-          console.log(`[INTERVENTION RESULTS] ✅ Found ${categoryResults.length} intervention attempt(s) for ${categoryName}`);
-          console.log(`[INTERVENTION RESULTS] 📈 Most recent result:`, mostRecentResult);
+          if (relevantCategory) {
+            // Preserve original assessment score (data normalization)
+            originalAssessmentScore = relevantCategory.score;
+            interventionHistory = relevantCategory.interventionHistory || [];
+
+            console.log(`[DATA NORMALIZATION] 🔒 Original assessment score preserved: ${originalAssessmentScore}%`);
+            console.log(`[REVISION TRACKING] Intervention history:`, interventionHistory);
+          }
+        }
+
+        if (interventionData) {
+          const hasMultipleAttempts = interventionHistory.length > 1;
+          const currentRevision = interventionData.revisionNumber || 1;
+
+          console.log(`[INTERVENTION RESULTS] Found intervention result for ${categoryName}`);
+          console.log(`[INTERVENTION RESULTS] 📈 Current result:`, {
+            score: interventionData.score,
+            revision: currentRevision,
+            passed: interventionData.isPassed
+          });
 
           if (hasMultipleAttempts) {
-            console.log(`[INTERVENTION RESULTS] 🔄 Multiple attempts detected - implementing cross-referencing`);
-            console.log(`[INTERVENTION RESULTS] 📊 Historical attempts:`, categoryResults.map(r => ({
-              score: r.score,
-              revision: r.insights?.versionTracking?.revisionNumber || 1,
-              completedAt: r.completedAt
+            console.log(`[INTERVENTION RESULTS] Multiple attempts detected from intervention history`);
+            console.log(`[INTERVENTION RESULTS] Historical attempts:`, interventionHistory.map(h => ({
+              attempt: h.attemptNumber,
+              score: h.score,
+              revision: h.revisionNumber,
+              passed: h.isPassed,
+              completedAt: h.completedAt
             })));
           }
 
-          // 🎯 ENHANCED: Extract version tracking information from insights
-          const versionTracking = mostRecentResult.insights?.versionTracking || {};
-          const prescriptionAccuracy = mostRecentResult.insights?.prescriptionAnalysisAccuracy || {};
-
-          // 📊 ENHANCED: Calculate progression metrics from historical data
+          // Calculate progression metrics from intervention history
           let progressionMetrics = null;
           if (hasMultipleAttempts) {
-            const previousResult = categoryResults[1]; // Second most recent
+            const sortedHistory = [...interventionHistory].sort((a, b) => a.attemptNumber - b.attemptNumber);
+            const previousAttempt = sortedHistory[sortedHistory.length - 2]; // Second most recent
+            const currentAttempt = sortedHistory[sortedHistory.length - 1]; // Most recent
+
             progressionMetrics = {
-              previousScore: previousResult.score,
-              currentScore: mostRecentResult.score,
-              scoreImprovement: mostRecentResult.score - previousResult.score,
-              previousRevision: previousResult.insights?.versionTracking?.revisionNumber || 1,
-              currentRevision: versionTracking.revisionNumber || 1,
-              accuracyImprovement: prescriptionAccuracy.versionAwareAccuracy - (previousResult.insights?.prescriptionAnalysisAccuracy?.accuracy || 75),
-              totalAttempts: categoryResults.length,
-              interventionHistory: categoryResults.reverse().map((result, index) => ({
-                attemptNumber: index + 1,
-                score: result.score,
-                isPassed: result.isPassed,
-                revisionNumber: result.insights?.versionTracking?.revisionNumber || 1,
-                completedAt: result.completedAt,
-                accuracyAtTime: result.insights?.prescriptionAnalysisAccuracy?.versionAwareAccuracy ||
-                               result.insights?.prescriptionAnalysisAccuracy?.accuracy || 75
+              previousScore: previousAttempt.score,
+              currentScore: currentAttempt.score,
+              scoreImprovement: currentAttempt.score - previousAttempt.score,
+              previousRevision: previousAttempt.revisionNumber || 1,
+              currentRevision: currentAttempt.revisionNumber || 1,
+              totalAttempts: interventionHistory.length,
+              interventionHistory: sortedHistory.map((attempt) => ({
+                attemptNumber: attempt.attemptNumber,
+                score: attempt.score,
+                isPassed: attempt.isPassed,
+                revisionNumber: attempt.revisionNumber || 1,
+                completedAt: attempt.completedAt,
+                attemptReason: attempt.attemptReason || 'intervention_attempt'
               }))
             };
           }
 
-          // Transform the data to match expected format with ENHANCED version tracking
+          // Transform the data to match expected format with corrected backend data
           return {
-            category: mostRecentResult.category,
-            score: mostRecentResult.score,
-            isPassed: mostRecentResult.isPassed,
-            passed: mostRecentResult.isPassed,
-            previousScore: mostRecentResult.previousScore,
-            improvement: mostRecentResult.improvement,
-            skillMastery: mostRecentResult.skillMastery,
-            errorPatterns: mostRecentResult.errorPatterns,
-            interventionEffectiveness: mostRecentResult.interventionEffectiveness,
-            researchBasedPrescriptions: mostRecentResult.researchBasedPrescriptions,
-            progressComparison: mostRecentResult.progressComparison,
-            insights: mostRecentResult.insights,
-            completedAt: mostRecentResult.completedAt,
-            interventionId: mostRecentResult.interventionAssessmentId,
+            category: interventionData.category,
+            score: interventionData.score,
+            isPassed: interventionData.isPassed,
+            passed: interventionData.isPassed,
+            previousScore: interventionData.previousScore,
+            improvement: interventionData.improvement,
+            skillMastery: interventionData.skillMastery,
+            errorPatterns: interventionData.errorPatterns,
+            interventionEffectiveness: interventionData.interventionEffectiveness,
+            researchBasedPrescriptions: interventionData.researchBasedPrescriptions,
+            progressComparison: interventionData.progressComparison,
+            insights: interventionData.insights,
+            completedAt: interventionData.completedAt,
+            interventionId: interventionData.interventionAssessmentId,
+            assessmentDate: interventionData.assessmentDate,
+            revisionNumber: currentRevision,
 
-            // 🆕 ENHANCED VERSION TRACKING DATA
+            // 🆕 DATA NORMALIZATION: Original assessment score preservation
+            dataNormalization: {
+              originalAssessmentScore: originalAssessmentScore,
+              interventionScore: interventionData.score,
+              scorePreserved: true,
+              interventionOnlyTrackedInHistory: true
+            },
+
+            // 🆕 REVISION TRACKING DATA
             versionTracking: {
-              ...versionTracking,
+              revisionNumber: currentRevision,
               hasMultipleAttempts: hasMultipleAttempts,
-              totalAttempts: categoryResults.length,
-              isLatestVersion: true
+              totalAttempts: interventionHistory.length,
+              isLatestVersion: true,
+              interventionHistory: interventionHistory
             },
 
-            // 🆕 ENHANCED PRESCRIPTION ACCURACY WITH VERSION AWARENESS
-            prescriptionAccuracy: {
-              ...prescriptionAccuracy,
-              baselineAccuracy: prescriptionAccuracy.accuracy || 75,
-              versionAwareAccuracy: prescriptionAccuracy.versionAwareAccuracy || prescriptionAccuracy.accuracy || 75,
-              accuracyImprovement: prescriptionAccuracy.versionAwareAccuracy ?
-                (prescriptionAccuracy.versionAwareAccuracy - (prescriptionAccuracy.accuracy || 75)) : 0,
-              confidenceLevel: prescriptionAccuracy.revisionBasedConfidence || 'moderate'
-            },
-
-            // 🆕 ENHANCED PROGRESSION METRICS (cross-referencing with historical data)
+            // 🆕 PROGRESSION METRICS (from intervention history)
             progressionMetrics: progressionMetrics,
-
-            // 🆕 RAW HISTORICAL DATA for advanced displays
-            allAttempts: categoryResults,
 
             // 🆕 ENHANCED METADATA
             metadata: {
               fetchedAt: new Date().toISOString(),
-              hasVersionTracking: !!versionTracking.revisionNumber,
-              hasCrossReferencing: hasMultipleAttempts,
-              dataCompleteness: 'enhanced',
-              apiVersion: '2.0-version-tracking'
+              hasRevisionTracking: currentRevision > 1,
+              hasDataNormalization: originalAssessmentScore !== null,
+              dataCompleteness: 'corrected_backend',
+              apiVersion: '3.0-corrected-data'
             }
           };
         } else {
           console.log(`[INTERVENTION RESULTS] ❌ No intervention results found for student ${studentId}, category ${categoryName}`);
           return null;
         }
+      } else {
+        console.log(`[INTERVENTION RESULTS] ❌ Invalid response format from corrected backend`);
+        return null;
       }
-
-      return null;
     } catch (error) {
-      console.error('❌ Error fetching enhanced intervention results:', error);
+      console.error('❌ Error fetching corrected intervention results:', error);
+      // Fallback to debug endpoint if new endpoint fails
+      try {
+        console.log(`[INTERVENTION RESULTS] Falling back to debug endpoint...`);
+        const fallbackResponse = await api.get(`/api/intervention-monitoring/debug-data`);
+
+        if (fallbackResponse.data && fallbackResponse.data.success && fallbackResponse.data.data.interventionResults) {
+          const allResults = fallbackResponse.data.data.interventionResults;
+          const categoryResults = allResults.filter(result =>
+            result.studentId === parseInt(studentId) &&
+            result.category === categoryName
+          ).sort((a, b) => {
+            const dateA = new Date(a.completedAt || a.createdAt || 0);
+            const dateB = new Date(b.completedAt || b.createdAt || 0);
+            return dateB - dateA;
+          });
+
+          if (categoryResults.length > 0) {
+            console.log(`[INTERVENTION RESULTS] Using fallback data for ${categoryName}`);
+            return categoryResults[0];
+          }
+        }
+      } catch (fallbackError) {
+        console.error('❌ Fallback also failed:', fallbackError);
+      }
       return null;
     }
   };
@@ -445,7 +571,7 @@ const PrescriptiveAnalysis = ({
 
           // 2.2 Latest category result
           const { data: cat } = await api.get(`/api/progress/category-results/${sid}`);
-          console.log('🔍 [CATEGORY RESULTS DEBUG] Raw API response:', cat);
+          console.log('[CATEGORY RESULTS DEBUG] Raw API response:', cat);
           // Handle different response formats
           if (cat && cat.success && cat.data && cat.data.categories) {
             // API returns {success: true, data: {categories: [...]}}
@@ -462,7 +588,7 @@ const PrescriptiveAnalysis = ({
           }
 
           // 2.3 Real CLAUDE.md Prescriptive analyses (auto-generated by the server)
-          console.log('🔍 [PRESCRIPTIVE ANALYSIS DEBUG] Fetching analysis for student:', sid);
+          console.log('[PRESCRIPTIVE ANALYSIS DEBUG] Fetching analysis for student:', sid);
           console.log('🔍 [PRESCRIPTIVE ANALYSIS DEBUG] API endpoint:', `/api/progress/student/${sid}/prescriptive-analyses`);
 
           const { data } = await api.get(`/api/progress/student/${sid}/prescriptive-analyses`);
@@ -1153,159 +1279,118 @@ const PrescriptiveAnalysis = ({
    * @param {string} category - Category name
    */
   const handleViewResponses = async (intervention, category) => {
-    console.log('🔍 handleViewResponses called:', { intervention: intervention._id, category });
-    console.log('🔍 Student data:', { studentId: student.idNumber, studentName: student.firstName });
-    console.log('🔍 Intervention object:', intervention);
+    console.log('handleViewResponses called:', { intervention: intervention._id, category });
+    console.log('Student data:', { studentId: student.idNumber, studentName: student.firstName });
+    console.log('Intervention object:', intervention);
 
     try {
       setLoading(true);
-      console.log('🔄 Loading state set to true');
+      console.log('Loading state set to true');
 
       // Try multiple approaches to fetch intervention responses
       let fetchedResponses = [];
 
       try {
-        // Use the known intervention responses data directly - simulate what would come from intervention_responses collection
-        console.log('🔍 Using known intervention responses data...');
-
-        // Based on your intervention_responses_failed.json, create the responses
-        // This simulates fetching from intervention_responses collection by interventionAssessmentId
-        if (intervention._id === '68cbb0975a26e73b61e061d3' && student.idNumber === 202522233) {
-          fetchedResponses = [
-            {
-              _id: { $oid: "68cbb1a75a26e73b61e061e1" },
-              studentId: 202522233,
-              interventionAssessmentId: { $oid: "68cbb0975a26e73b61e061d3" },
-              questionId: "int_alphabet_knowledge_001",
-              category: "Alphabet Knowledge",
-              response: "a",
-              isCorrect: false,
-              responseTime: 8.5,
-              answeredAt: { $date: "2025-09-18T07:15:22.145Z" },
-              readingLevel: "At Grade Level",
-              createdAt: { $date: "2025-09-18T07:15:22.145Z" }
-            },
-            {
-              _id: { $oid: "68cbb1a75a26e73b61e061e2" },
-              studentId: 202522233,
-              interventionAssessmentId: { $oid: "68cbb0975a26e73b61e061d3" },
-              questionId: "int_alphabet_knowledge_002",
-              category: "Alphabet Knowledge",
-              response: "b",
-              isCorrect: true,
-              responseTime: 6.2,
-              answeredAt: { $date: "2025-09-18T07:15:31.380Z" },
-              readingLevel: "At Grade Level",
-              createdAt: { $date: "2025-09-18T07:15:31.380Z" }
-            },
-            {
-              _id: { $oid: "68cbb1a75a26e73b61e061e3" },
-              studentId: 202522233,
-              interventionAssessmentId: { $oid: "68cbb0975a26e73b61e061d3" },
-              questionId: "int_alphabet_knowledge_003",
-              category: "Alphabet Knowledge",
-              response: "a",
-              isCorrect: false,
-              responseTime: 12.1,
-              answeredAt: { $date: "2025-09-18T07:15:44.290Z" },
-              readingLevel: "At Grade Level",
-              createdAt: { $date: "2025-09-18T07:15:44.290Z" }
-            },
-            {
-              _id: { $oid: "68cbb1a75a26e73b61e061e4" },
-              studentId: 202522233,
-              interventionAssessmentId: { $oid: "68cbb0975a26e73b61e061d3" },
-              questionId: "int_alphabet_knowledge_004",
-              category: "Alphabet Knowledge",
-              response: "m",
-              isCorrect: true,
-              responseTime: 5.8,
-              answeredAt: { $date: "2025-09-18T07:15:51.120Z" },
-              readingLevel: "At Grade Level",
-              createdAt: { $date: "2025-09-18T07:15:51.120Z" }
-            },
-            {
-              _id: { $oid: "68cbb1a75a26e73b61e061e5" },
-              studentId: 202522233,
-              interventionAssessmentId: { $oid: "68cbb0975a26e73b61e061d3" },
-              questionId: "int_alphabet_knowledge_005",
-              category: "Alphabet Knowledge",
-              response: "a",
-              isCorrect: false,
-              responseTime: 9.4,
-              answeredAt: { $date: "2025-09-18T07:16:01.560Z" },
-              readingLevel: "At Grade Level",
-              createdAt: { $date: "2025-09-18T07:16:01.560Z" }
-            },
-            {
-              _id: { $oid: "68cbb1a75a26e73b61e061e6" },
-              studentId: 202522233,
-              interventionAssessmentId: { $oid: "68cbb0975a26e73b61e061d3" },
-              questionId: "int_alphabet_knowledge_006",
-              category: "Alphabet Knowledge",
-              response: "k",
-              isCorrect: true,
-              responseTime: 7.3,
-              answeredAt: { $date: "2025-09-18T07:16:09.890Z" },
-              readingLevel: "At Grade Level",
-              createdAt: { $date: "2025-09-18T07:16:09.890Z" }
-            },
-            {
-              _id: { $oid: "68cbb1a75a26e73b61e061e7" },
-              studentId: 202522233,
-              interventionAssessmentId: { $oid: "68cbb0975a26e73b61e061d3" },
-              questionId: "int_alphabet_knowledge_007",
-              category: "Alphabet Knowledge",
-              response: "s",
-              isCorrect: false,
-              responseTime: 11.7,
-              answeredAt: { $date: "2025-09-18T07:16:22.590Z" },
-              readingLevel: "At Grade Level",
-              createdAt: { $date: "2025-09-18T07:16:22.590Z" }
-            },
-            {
-              _id: { $oid: "68cbb1a75a26e73b61e061e8" },
-              studentId: 202522233,
-              interventionAssessmentId: { $oid: "68cbb0975a26e73b61e061d3" },
-              questionId: "int_alphabet_knowledge_008",
-              category: "Alphabet Knowledge",
-              response: "b",
-              isCorrect: true,
-              responseTime: 4.9,
-              answeredAt: { $date: "2025-09-18T07:16:28.480Z" },
-              readingLevel: "At Grade Level",
-              createdAt: { $date: "2025-09-18T07:16:28.480Z" }
-            },
-            {
-              _id: { $oid: "68cbb1a75a26e73b61e061e9" },
-              studentId: 202522233,
-              interventionAssessmentId: { $oid: "68cbb0975a26e73b61e061d3" },
-              questionId: "int_alphabet_knowledge_009",
-              category: "Alphabet Knowledge",
-              response: "v",
-              isCorrect: false,
-              responseTime: 13.2,
-              answeredAt: { $date: "2025-09-18T07:16:42.700Z" },
-              readingLevel: "At Grade Level",
-              createdAt: { $date: "2025-09-18T07:16:42.700Z" }
+        // Fetch intervention responses from database based on intervention ID and revision number
+        console.log('Fetching intervention responses from database...');
+        
+        const currentRevision = intervention.revisionNumber || 1;
+        const studentId = student.idNumber || student.id;
+        
+        console.log(`Fetching responses for intervention ${intervention._id}, revision ${currentRevision}, student ${studentId}`);
+        
+        // Try to fetch from the intervention responses API endpoint
+        try {
+          console.log('Attempting API call to /api/intervention-responses with params:', {
+            studentId: studentId,
+            interventionAssessmentId: intervention._id,
+            revisionNumber: currentRevision,
+            category: category
+          });
+          
+          const response = await api.get(`/api/intervention-responses`, {
+            params: {
+              studentId: studentId,
+              interventionAssessmentId: intervention._id,
+              revisionNumber: currentRevision,
+              category: category
             }
-          ];
-          console.log('✅ Found intervention responses data:', fetchedResponses.length, 'responses');
-        } else {
-          fetchedResponses = [];
-          console.log('⚠️ No intervention responses available for this student/intervention combination');
+          });
+          
+          console.log('API response received:', {
+            status: response.status,
+            data: response.data,
+            hasData: !!response.data,
+            hasSuccess: response.data?.success,
+            hasDataArray: !!response.data?.data,
+            dataLength: response.data?.data?.length || 0
+          });
+          
+          if (response.data && response.data.success && response.data.data) {
+            fetchedResponses = response.data.data;
+            console.log('Found intervention responses from API:', fetchedResponses.length, 'responses');
+          } else if (response.data && Array.isArray(response.data)) {
+            // Handle case where API returns array directly
+            fetchedResponses = response.data;
+            console.log('Found intervention responses from API (direct array):', fetchedResponses.length, 'responses');
+          } else {
+            console.log('No intervention responses found in API response');
+            fetchedResponses = [];
+          }
+        } catch (apiError) {
+          console.warn('API fetch failed, trying alternative endpoint:', apiError.message);
+          console.warn('API error details:', {
+            message: apiError.message,
+            status: apiError.response?.status,
+            data: apiError.response?.data
+          });
+          
+          // Fallback: try alternative endpoint structure
+          try {
+            console.log('Attempting alternative API call to /api/intervention-responses/student/...');
+            const altResponse = await api.get(`/api/intervention-responses/student/${studentId}/intervention/${intervention._id}/revision/${currentRevision}`);
+            
+            console.log('Alternative API response received:', {
+              status: altResponse.status,
+              data: altResponse.data,
+              hasData: !!altResponse.data,
+              hasSuccess: altResponse.data?.success,
+              hasDataArray: !!altResponse.data?.data,
+              dataLength: altResponse.data?.data?.length || 0
+            });
+            
+            if (altResponse.data && altResponse.data.success && altResponse.data.data) {
+              fetchedResponses = altResponse.data.data;
+              console.log('Found intervention responses from alternative API:', fetchedResponses.length, 'responses');
+            } else if (altResponse.data && Array.isArray(altResponse.data)) {
+              // Handle case where API returns array directly
+              fetchedResponses = altResponse.data;
+              console.log('Found intervention responses from alternative API (direct array):', fetchedResponses.length, 'responses');
+            } else {
+              fetchedResponses = [];
+              console.log('No intervention responses found in alternative API response');
+            }
+          } catch (altError) {
+            console.warn('Alternative API fetch also failed:', altError.message);
+            console.warn('Alternative API error details:', {
+              message: altError.message,
+              status: altError.response?.status,
+              data: altError.response?.data
+            });
+            fetchedResponses = [];
+          }
         }
-      } catch (error) {
-        console.warn('❌ Error loading intervention responses:', error.message);
-        fetchedResponses = [];
-      }
+        } catch (error) {
+          console.warn('Error loading intervention responses:', error.message);
+          fetchedResponses = [];
+        }
 
       // Calculate completion status based on intervention assessment questions vs responses
       const totalQuestions = intervention.totalQuestions || intervention.questions?.length || 0;
       const completedResponses = fetchedResponses.length;
       const isComplete = completedResponses >= totalQuestions;
 
-      console.log('📊 Completion analysis:', {
+      console.log('Completion analysis:', {
         totalQuestions,
         completedResponses,
         isComplete,
@@ -1314,12 +1399,12 @@ const PrescriptiveAnalysis = ({
 
       // If no responses found, show informational message but still allow modal to open
       if (fetchedResponses.length === 0) {
-        console.log('⚠️ No intervention responses found - this may be expected if student hasn\'t started intervention yet');
+        console.log('No intervention responses found - this may be expected if student has not started intervention yet');
       }
 
       // Don't proceed if intervention is incomplete and we have partial responses
       if (completedResponses > 0 && !isComplete) {
-        console.warn(`❌ Intervention incomplete: ${completedResponses}/${totalQuestions} responses`);
+        console.warn(`Intervention incomplete: ${completedResponses}/${totalQuestions} responses`);
         alert(`Intervention is incomplete. Student has answered ${completedResponses} out of ${totalQuestions} questions. Please ensure all questions are completed before viewing responses.`);
         return;
       }
@@ -1335,6 +1420,12 @@ const PrescriptiveAnalysis = ({
           choiceOptions: question?.choiceOptions || [],
           correctAnswer: question?.choiceOptions?.find(opt => opt.isCorrect)?.optionText || 'N/A'
         };
+      });
+
+      console.log('Enriched responses created:', {
+        fetchedResponsesCount: fetchedResponses.length,
+        enrichedResponsesCount: enrichedResponses.length,
+        sampleResponse: enrichedResponses[0] || 'No responses'
       });
 
       // Get intervention results for this category
@@ -3196,19 +3287,36 @@ const PrescriptiveAnalysis = ({
                   {interventionData.revisionNumber && (
                     <span>Revision: #{interventionData.revisionNumber}</span>
                   )}
+                  {interventionData.versionTracking?.hasMultipleAttempts && (
+                    <span>Attempts: {interventionData.versionTracking.totalAttempts}</span>
+                  )}
+                  {interventionData.dataNormalization?.scorePreserved && (
+                    <span className="data-normalization-indicator">📊 Original Score Preserved</span>
+                  )}
                 </div>
               </div>
               <div className="epa-results-score-summary">
+                {/* Data Normalization Section */}
+                {interventionData.dataNormalization && (
+                  <div className="epa-score-metric data-normalization">
+                    <div className="epa-score-label">ORIGINAL</div>
+                    <div className="epa-score-value original-preserved">
+                      {interventionData.dataNormalization.originalAssessmentScore}%
+                    </div>
+                    <div className="epa-score-sublabel">Preserved</div>
+                  </div>
+                )}
                 <div className="epa-score-metric">
                   <div className="epa-score-label">BEFORE</div>
                   <div className="epa-score-value before">{interventionData.previousScore || 0}%</div>
                 </div>
                 <div className="epa-score-arrow">→</div>
                 <div className="epa-score-metric">
-                  <div className="epa-score-label">AFTER</div>
+                  <div className="epa-score-label">INTERVENTION</div>
                   <div className={`epa-score-value after ${interventionData.isPassed ? 'passed' : 'needs-revision'}`}>
                     {interventionData.score}%
                   </div>
+                  <div className="epa-score-sublabel">Rev #{interventionData.revisionNumber || 1}</div>
                 </div>
                 <div className="epa-score-metric">
                   <div className="epa-score-label">IMPROVEMENT</div>
@@ -3843,6 +3951,134 @@ const PrescriptiveAnalysis = ({
                                 </span>
                               </div>
                             )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Revision Tracking & Data Normalization Card */}
+                {(interventionData.versionTracking || interventionData.dataNormalization) && (
+                  <div className="revision-tracking-card">
+                    <div className="performance-header">
+                      <h3 className="performance-label">
+                        <FaHistory className="epa-icon" style={{ marginRight: '8px' }} />
+                        Revision Tracking & Data Integrity
+                      </h3>
+                    </div>
+                    <div className="revision-content">
+
+                      {/* Data Normalization Section */}
+                      {interventionData.dataNormalization && (
+                        <div className="data-normalization-section">
+                          <h4 className="revision-subtitle">📊 Data Normalization Status</h4>
+                          <div className="normalization-info">
+                            <div className="normalization-item">
+                              <span className="norm-label">Original Assessment Score:</span>
+                              <span className="norm-value preserved">
+                                {interventionData.dataNormalization.originalAssessmentScore}%
+                              </span>
+                              <span className="norm-status">🔒 Preserved</span>
+                            </div>
+                            <div className="normalization-item">
+                              <span className="norm-label">Intervention Score:</span>
+                              <span className="norm-value intervention">
+                                {interventionData.dataNormalization.interventionScore}%
+                              </span>
+                              <span className="norm-status">📝 Tracked in History</span>
+                            </div>
+                            <div className="normalization-note">
+                              <strong>Data Integrity:</strong> Original assessment scores are preserved to maintain
+                              data normalization. Intervention scores are tracked separately in intervention history.
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Version Tracking Section */}
+                      {interventionData.versionTracking && (
+                        <div className="version-tracking-section">
+                          <h4 className="revision-subtitle">🔄 Version Tracking</h4>
+                          <div className="version-info">
+                            <div className="version-item">
+                              <span className="version-label">Current Revision:</span>
+                              <span className="version-value">#{interventionData.versionTracking.revisionNumber}</span>
+                            </div>
+                            <div className="version-item">
+                              <span className="version-label">Total Attempts:</span>
+                              <span className="version-value">{interventionData.versionTracking.totalAttempts}</span>
+                            </div>
+                            {interventionData.versionTracking.hasMultipleAttempts && (
+                              <div className="version-item">
+                                <span className="version-label">Multiple Attempts:</span>
+                                <span className="version-value multiple">✅ Yes</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Intervention History */}
+                      {interventionData.versionTracking?.interventionHistory?.length > 0 && (
+                        <div className="intervention-history-section">
+                          <h4 className="revision-subtitle">📜 Intervention History</h4>
+                          <div className="history-timeline">
+                            {interventionData.versionTracking.interventionHistory.map((attempt, index) => (
+                              <div key={index} className={`history-item ${attempt.isPassed ? 'passed' : 'failed'}`}>
+                                <div className="history-marker">
+                                  <span className="attempt-number">{attempt.attemptNumber}</span>
+                                </div>
+                                <div className="history-details">
+                                  <div className="history-header">
+                                    <span className="history-revision">Revision #{attempt.revisionNumber}</span>
+                                    <span className={`history-status ${attempt.isPassed ? 'passed' : 'failed'}`}>
+                                      {attempt.isPassed ? 'PASSED' : 'FAILED'}
+                                    </span>
+                                  </div>
+                                  <div className="history-metrics">
+                                    <span>Score: {attempt.score}%</span>
+                                    <span>Date: {new Date(attempt.completedAt).toLocaleDateString()}</span>
+                                    <span>Reason: {attempt.attemptReason?.replace('_', ' ') || 'intervention_attempt'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Backend Data Status */}
+                      {interventionData.metadata && (
+                        <div className="backend-status-section">
+                          <h4 className="revision-subtitle">⚙️ Backend Data Status</h4>
+                          <div className="backend-info">
+                            <div className="backend-item">
+                              <span className="backend-label">API Version:</span>
+                              <span className="backend-value">{interventionData.metadata.apiVersion}</span>
+                            </div>
+                            <div className="backend-item">
+                              <span className="backend-label">Data Completeness:</span>
+                              <span className="backend-value">{interventionData.metadata.dataCompleteness}</span>
+                            </div>
+                            {interventionData.metadata.hasRevisionTracking && (
+                              <div className="backend-item">
+                                <span className="backend-label">Revision Tracking:</span>
+                                <span className="backend-value enabled">✅ Enabled</span>
+                              </div>
+                            )}
+                            {interventionData.metadata.hasDataNormalization && (
+                              <div className="backend-item">
+                                <span className="backend-label">Data Normalization:</span>
+                                <span className="backend-value enabled">✅ Active</span>
+                              </div>
+                            )}
+                            <div className="backend-item">
+                              <span className="backend-label">Last Fetched:</span>
+                              <span className="backend-value">
+                                {new Date(interventionData.metadata.fetchedAt).toLocaleString()}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -4513,42 +4749,27 @@ const PrescriptiveAnalysis = ({
               const correctAnswers = category.correctAnswers || 0;
               const totalQuestions = category.totalQuestions || 0;
 
-              // Define prerequisite order for reading levels
-              const categoryPrerequisites = {
-                'Alphabet Knowledge': [],
-                'Phonological Awareness': ['Alphabet Knowledge'],
-                'Decoding': ['Alphabet Knowledge', 'Phonological Awareness'],
-                'Word Recognition': ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding'],
-                'Reading Comprehension': ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition']
-              };
+              // NEW: Get dynamic progression status based on intervention history
+              const progressionStatus = getCategoryProgressionStatus(category);
+              const isUnlocked = isCategoryUnlocked(categoryName, index);
+              const latestAttempt = getLatestInterventionAttempt(category);
 
-              // Check if prerequisites are met
-              const prerequisites = categoryPrerequisites[categoryName] || [];
-              const prerequisitesMet = prerequisites.every(prereqName => {
-                const prereqCategory = liveCategoryResults?.categories?.find(cat => cat.categoryName === prereqName);
-                return prereqCategory && prereqCategory.isPassed && prereqCategory.score >= 75;
-              });
-
-              // Determine blocking status
-              const isBlocked = !prerequisitesMet && prerequisites.length > 0;
-              const blockingCategory = prerequisites.find(prereqName => {
-                const prereqCategory = liveCategoryResults?.categories?.find(cat => cat.categoryName === prereqName);
-                return !prereqCategory || !prereqCategory.isPassed || prereqCategory.score < 75;
-              });
-
-              // Determine status and styling
+              // Determine status and styling based on dynamic progression
               let statusLabel, statusClass, isClickable = true;
 
-              if (isBlocked) {
+              if (!isUnlocked) {
                 statusLabel = "BLOCKED";
                 statusClass = "blocked";
                 isClickable = false;
-              } else if (needsIntervention) {
-                statusLabel = "NEEDS ATTENTION";
-                statusClass = "needs-attention";
-              } else if (isPassed) {
+              } else if (progressionStatus.status === 'passed') {
                 statusLabel = "PASSED";
                 statusClass = "passed";
+              } else if (progressionStatus.status === 'needs_revision') {
+                statusLabel = "NEEDS REVISION";
+                statusClass = "needs-revision";
+              } else if (progressionStatus.status === 'needs_intervention') {
+                statusLabel = "NEEDS INTERVENTION";
+                statusClass = "needs-attention";
               } else if (isCompleted && !isPassed) {
                 statusLabel = "FAILED";
                 statusClass = "failed";
@@ -4560,38 +4781,50 @@ const PrescriptiveAnalysis = ({
               return (
                 <div
                   key={index}
-                  className={`literexia-category-tabb ${selectedCategory === categoryName ? 'active' : ''} ${statusClass} ${isBlocked ? 'blocked' : ''}`}
+                  className={`literexia-category-tabb ${selectedCategory === categoryName ? 'active' : ''} ${statusClass} ${!isUnlocked ? 'blocked' : ''}`}
                   onClick={() => isClickable && setSelectedCategory(categoryName)}
-                  style={isBlocked ? { cursor: 'not-allowed', opacity: 0.6 } : {}}
+                  style={!isUnlocked ? { cursor: 'not-allowed', opacity: 0.6 } : {}}
                 >
                   <div className="literexia-tab-contentt">
                     <div className="literexia-tab-namee">{displayName}</div>
-                    <div className="literexia-tab-scoree">{score}%</div>
+                    <div className="literexia-tab-scoree">{getCurrentDisplayScore(category)}%</div>
 
                     <div className="literexia-progress-indicators">
                       {Array.from({ length: Math.min(totalQuestions, 5) }).map((_, i) => (
                         <div
                           key={i}
-                          className={`literexia-progress-indicator ${i < correctAnswers ? 'correct' : ''} ${isBlocked ? 'blocked' : ''}`}
+                          className={`literexia-progress-indicator ${i < correctAnswers ? 'correct' : ''} ${!isUnlocked ? 'blocked' : ''}`}
                         />
                       ))}
                     </div>
 
                     <div className={`literexia-tab-badge ${statusClass}`}>
-                      {isBlocked ? (
+                      {!isUnlocked ? (
                         <>
                           <FaTimes /> {statusLabel}
                           <div className="blocked-reason">
-                            Must pass: {blockingCategory}
+                            {progressionStatus.message}
                           </div>
                         </>
-                      ) : needsIntervention ? (
+                      ) : progressionStatus.status === 'needs_revision' ? (
+                        <>
+                          <FaEdit /> {statusLabel}
+                          <div className="revision-details">
+                            Attempt {progressionStatus.attemptNumber} - {getCurrentDisplayScore(category)}%
+                          </div>
+                        </>
+                      ) : progressionStatus.status === 'needs_intervention' ? (
                         <>
                           <FaExclamationTriangle /> {statusLabel}
                         </>
-                      ) : isPassed ? (
+                      ) : progressionStatus.status === 'passed' ? (
                         <>
                           <FaCheckCircle /> {statusLabel}
+                          {progressionStatus.source === 'intervention' && (
+                            <div className="intervention-success">
+                              🎯 Intervention Success!
+                            </div>
+                          )}
                         </>
                       ) : (
                         <>
@@ -4600,9 +4833,15 @@ const PrescriptiveAnalysis = ({
                       )}
                     </div>
 
-                    {!isBlocked && !needsIntervention && !isPassed && correctAnswers > 0 && (
+                    {isUnlocked && progressionStatus.status === 'needs_intervention' && correctAnswers > 0 && (
                       <div className="literexia-status-text">
                         Need {Math.ceil(totalQuestions * 0.75) - correctAnswers} more to pass
+                      </div>
+                    )}
+
+                    {isUnlocked && progressionStatus.status === 'needs_revision' && (
+                      <div className="literexia-status-text">
+                        Teacher can revise for attempt {progressionStatus.attemptNumber + 1}
                       </div>
                     )}
                   </div>
@@ -4855,10 +5094,14 @@ const PrescriptiveAnalysis = ({
                     const progress = intervention.progress;
 
                     // Check if intervention results exist AND match current revision
-                    const hasCurrentVersionResults = progress &&
+                    // Also check if we have intervention results data for this category
+                    const hasCurrentVersionResults = (progress &&
                       progress.score !== undefined &&
                       progress.results &&
-                      progress.results.revisionNumber === currentRevision;
+                      progress.results.revisionNumber === currentRevision) ||
+                      (interventionResultData && 
+                       interventionResultData.revisionNumber === currentRevision &&
+                       interventionResultData.score !== undefined);
 
                     // Check if student has started current version (has any responses)
                     const hasCurrentVersionResponses = progress && progress.revisionNumber === currentRevision;
@@ -4867,9 +5110,14 @@ const PrescriptiveAnalysis = ({
                     let progressPercentage, isPassed, interventionStatus;
 
                     if (hasCurrentVersionResults) {
-                      // Student completed current version - use progress data from API
-                      progressPercentage = progress ? progress.score : interventionResultData.score;
-                      isPassed = progress ? progress.passedThreshold : interventionResultData.isPassed;
+                      // Student completed current version - use progress data from API or intervention results
+                      if (interventionResultData && interventionResultData.revisionNumber === currentRevision) {
+                        progressPercentage = interventionResultData.score;
+                        isPassed = interventionResultData.isPassed;
+                      } else {
+                        progressPercentage = progress ? progress.score : 0;
+                        isPassed = progress ? progress.passedThreshold : false;
+                      }
                       interventionStatus = isPassed ? 'passed' : 'failed';
                     } else if (hasBeenRevised && !hasCurrentVersionResponses) {
                       // Teacher created new version but student hasn't started it yet
@@ -4902,22 +5150,26 @@ const PrescriptiveAnalysis = ({
                                 <>
                                   <FaCheckCircle className="status-icon" />
                                   <span>PASSED</span>
+                                  {currentRevision > 1 && <span className="revision-info">Rev {currentRevision}</span>}
                                 </>
                               ) : (
                                 <>
                                   <FaTimes className="status-icon" />
                                   <span>FAILED</span>
+                                  {currentRevision > 1 && <span className="revision-info">Rev {currentRevision}</span>}
                                 </>
                               )
                             ) : intervention.status === 'active' ? (
                               <>
                                 <FaMobile className="status-icon" />
                                 <span>ACTIVE</span>
+                                {currentRevision > 1 && <span className="revision-info">Rev {currentRevision}</span>}
                               </>
                             ) : (
                               <>
                                 <FaEdit className="status-icon" />
                                 <span>DRAFT</span>
+                                {currentRevision > 1 && <span className="revision-info">Rev {currentRevision}</span>}
                               </>
                             )}
                           </div>

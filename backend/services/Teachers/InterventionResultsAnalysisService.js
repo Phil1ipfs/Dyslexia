@@ -1768,20 +1768,27 @@ class InterventionResultsAnalysisService {
     }
     categoryResults.categories[categoryIndex].interventionHistory.push(interventionHistoryEntry);
 
-    // If intervention passed, update category status
+    // If intervention passed, update category status (but preserve original score)
     if (interventionResults.isPassed) {
       console.log(`[INTERVENTION ANALYSIS] 🎉 Intervention passed! Updating category to passed status`);
       categoryResults.categories[categoryIndex].isPassed = true;
       categoryResults.categories[categoryIndex].interventionRequired = false;
       categoryResults.categories[categoryIndex].interventionCompleted = true; // ✅ Only set to true when intervention passed
-      categoryResults.categories[categoryIndex].score = Math.max(
-        categoryData.score || 0,
-        interventionResults.score
-      );
+
+      // 🔒 DATA NORMALIZATION: Preserve original assessment score
+      // Intervention scores are tracked separately in interventionHistory
+      console.log(`[INTERVENTION ANALYSIS] 🔒 Preserving original assessment score: ${categoryData.score}%`);
+      console.log(`[INTERVENTION ANALYSIS] 📊 Intervention score (${interventionResults.score}%) tracked in history only`);
+      // Note: categoryResults.categories[categoryIndex].score remains unchanged (original assessment score)
+
     } else {
       console.log(`[INTERVENTION ANALYSIS] 📝 Intervention failed. Category needs teacher revision.`);
       categoryResults.categories[categoryIndex].interventionRequired = true;
       // interventionCompleted remains false when intervention fails
+
+      // 🔒 DATA NORMALIZATION: Original score remains unchanged regardless of intervention result
+      console.log(`[INTERVENTION ANALYSIS] 🔒 Original assessment score preserved: ${categoryData.score}%`);
+      console.log(`[INTERVENTION ANALYSIS] 📊 Failed intervention score (${interventionResults.score}%) tracked in history only`);
     }
 
     // Update timestamps
