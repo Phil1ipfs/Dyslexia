@@ -11,7 +11,6 @@ import {
   faExclamationTriangle,
   faSearch,
   faCheckCircle,
-  faLock,
   faUpload,
   faBook,
   faFont,
@@ -46,7 +45,6 @@ import MainAssessmentService from '../../../services/Teachers/MainAssessmentServ
 import { toast } from 'react-toastify';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import UnifiedTemplatePreview from "./UnifiedTemplatePreview.jsx";
 
 // Add import for file helpers
 import { dataURLtoFile, validateFileForUpload } from '../../../utils/fileHelpers';
@@ -132,10 +130,6 @@ const MainAssessment = ({ templates }) => {
   const [duplicateRestrictionDialog, setDuplicateRestrictionDialog] = useState(false);
   const [restrictionReason, setRestrictionReason] = useState("");
   const [apiMessage, setApiMessage] = useState(null);
-  // Preview All state variables
-  const [isPreviewAllDialogOpen, setIsPreviewAllDialogOpen] = useState(false);
-  const [previewAllTemplates, setPreviewAllTemplates] = useState([]);
-  const [previewAllCurrentIndex, setPreviewAllCurrentIndex] = useState(0);
   
   // State for add option inputs
   const [showAddAnswerInput, setShowAddAnswerInput] = useState(false);
@@ -853,12 +847,6 @@ const MainAssessment = ({ templates }) => {
     setShowModal(true);
   };
 
-  const handlePreviewAllAssessments = () => {
-    // Use filtered assessments for preview all
-    setPreviewAllTemplates(filteredAssessments);
-    setPreviewAllCurrentIndex(0);
-    setIsPreviewAllDialogOpen(true);
-  };
 
   const handleDeleteConfirm = (assessment) => {
     setModalType("delete");
@@ -2164,27 +2152,6 @@ const MainAssessment = ({ templates }) => {
     }
   };
 
-  // Handle status toggle
-  const handleToggleStatus = async (assessment) => {
-    try {
-      const newStatus = assessment.status === 'active' ? 'inactive' : 'active';
-      const newIsActive = newStatus === 'active';
-
-      const response = await MainAssessmentService.toggleAssessmentStatus(assessment._id, newStatus);
-
-      if (response && response.success) {
-        // Update local state
-        setAssessments(prev =>
-          prev.map(a => a._id === assessment._id ?
-            { ...a, status: newStatus, isActive: newIsActive } : a
-          )
-        );
-      }
-    } catch (error) {
-      console.error('Error toggling assessment status:', error);
-      alert(handleApiError(error, "Failed to update status. Please try again."));
-    }
-  };
 
   const handleImageUpload = async (e, field) => {
     const file = e.target.files[0];
@@ -2572,15 +2539,6 @@ const MainAssessment = ({ templates }) => {
           </select>
         </div>
 
-        {filteredAssessments.length > 0 && (
-          <button
-            className="pa-preview-all-btn"
-            onClick={handlePreviewAllAssessments}
-            title="Preview all assessments"
-          >
-            <FontAwesomeIcon icon={faEye} /> Preview All
-          </button>
-        )}
       </div>
 
       {apiMessage && (
@@ -2696,15 +2654,9 @@ const MainAssessment = ({ templates }) => {
                 </div>
                 <div className="pa-cell">{assessment.questions.length}</div>
                 <div className="pa-cell">
-                  {assessment.isActive ? (
-                    <span className="pa-status pa-active">
-                      <FontAwesomeIcon icon={faCheckCircle} /> Active
-                    </span>
-                  ) : (
-                    <span className="pa-status pa-inactive">
-                      <FontAwesomeIcon icon={faExclamationTriangle} /> Inactive
-                    </span>
-                  )}
+                  <span className="pa-status pa-active">
+                    <FontAwesomeIcon icon={faCheckCircle} /> Active
+                  </span>
                 </div>
                 <div className="pa-cell pa-actions">
                   <button
@@ -2723,13 +2675,6 @@ const MainAssessment = ({ templates }) => {
                     <FontAwesomeIcon icon={faEye} />
                   </button>
 
-                  <button
-                    className={`pa-status-toggle-btn ${assessment.isActive ? 'active' : 'inactive'}`}
-                    onClick={() => handleToggleStatus(assessment)}
-                    title={assessment.isActive ? "Deactivate assessment" : "Activate assessment"}
-                  >
-                    <FontAwesomeIcon icon={assessment.isActive ? faLock : faCheckCircle} />
-                  </button>
 
                   <button
                     className="pa-delete-btn"
@@ -3595,8 +3540,8 @@ const MainAssessment = ({ templates }) => {
                                         const letter = input.value.trim();
                                         if (letter && /^[a-zA-Z]$/.test(letter)) {
                                           // Keep original case, don't force uppercase
-                                          setQuestionFormData(prev => ({
-                                            ...prev,
+                                        setQuestionFormData(prev => ({
+                                          ...prev,
                                             dragElements: [...(prev.dragElements || []), letter]
                                           }));
                                           cleanup();
@@ -5593,17 +5538,6 @@ const MainAssessment = ({ templates }) => {
         </div>
       )}
 
-      {/* Unified Template Preview for Preview All functionality */}
-      <UnifiedTemplatePreview
-        isOpen={isPreviewAllDialogOpen}
-        onClose={() => setIsPreviewAllDialogOpen(false)}
-        templates={previewAllTemplates}
-        templateType="assessment"
-        onEditTemplate={(assessment) => {
-          setIsPreviewAllDialogOpen(false);
-          handleEditAssessment(assessment);
-        }}
-      />
 
       <ToastContainer position="top-center" />
     </div>
