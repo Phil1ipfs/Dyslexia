@@ -936,9 +936,9 @@
   border-radius: 4px;
   font-size: 0.875rem;
   color: #475569;
-}
   hyphens: auto;
 }
+
 
 /* Prevent text overflow in all content areas */
 .epa-column-content *,
@@ -2848,6 +2848,10 @@
   background: #ea580c;
 }
 
+.epa-error-type-badge--sound {
+  background: #3B4F81;
+}
+
 .epa-error-type-badge--other {
   background: #6366f1;
 }
@@ -3484,8 +3488,171 @@
   background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
 }
 
+.epa-error-letter-badge--sound {
+  background: linear-gradient(135deg, #3B4F81 0%, #2C3E6B 100%);
+}
+
 .epa-error-letter-badge--other {
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+}
+
+/* Sound Discrimination Error Specific Styles - Blue & White Theme */
+.epa-error-type-badge--sound {
+  background: #3B4F81;
+  color: white;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(59, 79, 129, 0.2);
+}
+
+.epa-error-letter-badge--sound {
+  background: linear-gradient(135deg, #3B4F81 0%, #2C3E6B 100%);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(59, 79, 129, 0.3);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  min-width: 2.5rem;
+  text-align: center;
+}
+
+.epa-error-letter-badge--sound:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 79, 129, 0.4);
+}
+
+/* Sound Error Group Styling */
+.epa-error-group:has(.epa-error-type-badge--sound) {
+  border-left: 4px solid #3B4F81;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.1);
+}
+
+.epa-error-group:has(.epa-error-type-badge--sound) .epa-error-group-title {
+  color: #3B4F81;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+/* Sound Error Item Specific Styling */
+.epa-error-item:has(.epa-error-letter-badge--sound) {
+  border: 1px solid #e2e8f0;
+  background: white;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.epa-error-item:has(.epa-error-letter-badge--sound):hover {
+  border-color: #3B4F81;
+  box-shadow: 0 4px 12px rgba(59, 79, 129, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Sound Error Confusion Rate Styling */
+.epa-error-question:contains("Confusion Rate") {
+  color: #3B4F81;
+  font-weight: 600;
+  background: #f1f5f9;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  display: inline-block;
+  border: 1px solid #e2e8f0;
+}
+
+/* Sound Discrimination Section Header Enhancement */
+.epa-error-group:has(.epa-error-type-badge--sound) .epa-error-group-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 2px solid #e2e8f0;
+  padding: 1.25rem 1.5rem;
+  border-radius: 8px 8px 0 0;
+  margin-bottom: 0;
+}
+
+/* Sound Error Items Grid Enhancement */
+.epa-error-group:has(.epa-error-type-badge--sound) .epa-error-items {
+  background: white;
+  border-radius: 0 0 8px 8px;
+  padding: 1.5rem;
+  gap: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+/* Sound Error Cognitive Implications Styling */
+.epa-error-item:has(.epa-error-letter-badge--sound) .epa-error-cognitive {
+  background: #f8fafc;
+  border-left: 4px solid #3B4F81;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 0.75rem;
+  border: 1px solid #e2e8f0;
+}
+
+.epa-error-item:has(.epa-error-letter-badge--sound) .epa-error-cognitive strong {
+  color: #3B4F81;
+  font-weight: 700;
+}
+
+/* Sound Error Intervention Focus Styling */
+.epa-error-item:has(.epa-error-letter-badge--sound) .epa-error-intervention {
+  background: #f1f5f9;
+  border-left: 4px solid #3B4F81;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 0.75rem;
+  border: 1px solid #e2e8f0;
+}
+
+.epa-error-item:has(.epa-error-letter-badge--sound) .epa-error-intervention strong {
+  color: #3B4F81;
+  font-weight: 700;
+}
+
+/* Sound Error Pattern Styling */
+.epa-error-item:has(.epa-error-letter-badge--sound) .epa-error-pattern {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+}
+
+.epa-error-item:has(.epa-error-letter-badge--sound) .epa-error-pattern strong {
+  color: #3B4F81;
+  font-weight: 600;
+}
+
+/* Sound Error Description Styling */
+.epa-error-item:has(.epa-error-letter-badge--sound) .epa-error-description {
+  color: #1e293b;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+/* Responsive Design for Sound Errors */
+@media (max-width: 768px) {
+  .epa-error-group:has(.epa-error-type-badge--sound) .epa-error-items {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+  
+  .epa-error-item:has(.epa-error-letter-badge--sound) {
+    padding: 0.75rem;
+  }
+  
+  .epa-error-group:has(.epa-error-type-badge--sound) .epa-error-group-header {
+    padding: 1rem;
+  }
 }
 
 /* Error Details */

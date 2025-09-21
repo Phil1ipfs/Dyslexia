@@ -1016,7 +1016,22 @@ const PrescriptiveAnalysis = ({
     // Extract detailed error analysis - individual letter/question level analysis
     // It's nested in errorPatterns.[categoryName].detailedErrorAnalysis
     const categoryErrorPatterns = studentAnalysis.errorPatterns?.[categoryName] || studentAnalysis.errorPatterns?.[normalizedCategory];
-    const detailedErrorAnalysis = categoryErrorPatterns?.detailedErrorAnalysis || [];
+    
+    // For Phonological Awareness, use matching_errors data instead of detailedErrorAnalysis
+    let detailedErrorAnalysis = [];
+    if (categoryName === 'Phonological Awareness' && categoryErrorPatterns?.matching_errors) {
+      // Convert matching_errors to detailedErrorAnalysis format
+      const matchingErrors = categoryErrorPatterns.matching_errors;
+      detailedErrorAnalysis = matchingErrors.confusionPairs?.map(pair => ({
+        errorPattern: `Sound discrimination difficulty with ${pair.sounds.join(' ↔ ')}`,
+        specificPairs: pair.sounds,
+        interventionFocus: pair.interventionFocus,
+        confusionRate: pair.confusionRate,
+        errorType: 'sound_discrimination'
+      })) || [];
+    } else {
+      detailedErrorAnalysis = categoryErrorPatterns?.detailedErrorAnalysis || [];
+    }
 
     console.log('🔍 [DEBUG] Detailed error analysis extraction for', categoryName, ':');
     console.log('🔍 [DEBUG] Category error patterns:', categoryErrorPatterns);
@@ -2192,18 +2207,20 @@ const PrescriptiveAnalysis = ({
       const letterMatch = error.errorPattern?.match(/with (.+)$/);
       const letter = letterMatch ? letterMatch[1] : 'Unknown';
 
-      // Determine if it's vowel or consonant based on errorPattern
+      // Determine if it's vowel, consonant, or sound discrimination based on errorPattern
       const isVowel = error.errorPattern?.toLowerCase().includes('vowel');
       const isConsonant = error.errorPattern?.toLowerCase().includes('consonant');
+      const isSoundDiscrimination = error.errorPattern?.toLowerCase().includes('sound discrimination');
 
       return {
         ...error,
         letter: letter,
-        letterType: isVowel ? 'vowel' : (isConsonant ? 'consonant' : 'other'),
+        letterType: isVowel ? 'vowel' : (isConsonant ? 'consonant' : (isSoundDiscrimination ? 'sound' : 'other')),
         specificError: error.errorPattern,
         cognitiveImplication: isVowel ?
           'Visual-auditory vowel processing difficulty' :
-          'Consonant-sound correspondence weakness',
+          (isConsonant ? 'Consonant-sound correspondence weakness' : 
+           (isSoundDiscrimination ? 'Auditory discrimination and working memory limitations' : 'General processing difficulty')),
         questionId: `Pattern Analysis` // Since we don't have specific questionId in this structure
       };
     });
@@ -2213,6 +2230,7 @@ const PrescriptiveAnalysis = ({
     // Group errors by letter type for better organization
     const vowelErrors = transformedErrors.filter(error => error.letterType === 'vowel');
     const consonantErrors = transformedErrors.filter(error => error.letterType === 'consonant');
+    const soundErrors = transformedErrors.filter(error => error.letterType === 'sound');
     const otherErrors = transformedErrors.filter(error => error.letterType === 'other');
 
     return (
@@ -2281,6 +2299,52 @@ const PrescriptiveAnalysis = ({
                           <div className="epa-error-intervention-compact">
                             <strong>Focus:</strong> {error.interventionFocus?.replace('Consonant-sound correspondence practice for ' + error.letter, 'Consonant training')}
                           </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Sound Discrimination Errors Section */}
+              {soundErrors.length > 0 && (
+                <div className="epa-error-group">
+                  <div className="epa-error-group-header">
+                    <h5 className="epa-error-group-title">
+                      <span className="epa-error-type-badge epa-error-type-badge--sound">Sound Errors</span>
+                      Sound Discrimination Difficulties ({soundErrors.length} errors)
+                    </h5>
+                  </div>
+                  <div className="epa-error-items">
+                    {soundErrors.map((error, index) => (
+                      <div key={index} className="epa-error-item">
+                        <div className="epa-error-letter">
+                          <span className="epa-error-letter-badge epa-error-letter-badge--sound">
+                            {error.letter || error.questionId}
+                          </span>
+                        </div>
+                        <div className="epa-error-details">
+                          <div className="epa-error-primary">
+                            <span className="epa-error-description">{error.specificError}</span>
+                            <span className="epa-error-question">Confusion Rate: {error.confusionRate}%</span>
+                          </div>
+                          <div className="epa-error-secondary">
+                            {error.errorPattern && (
+                              <div className="epa-error-pattern">
+                                <strong>Pattern:</strong> {error.errorPattern}
+                              </div>
+                            )}
+                            {error.cognitiveImplication && (
+                              <div className="epa-error-cognitive">
+                                <strong>Cognitive Issue:</strong> {error.cognitiveImplication}
+                              </div>
+                            )}
+                          </div>
+                          {error.interventionFocus && (
+                            <div className="epa-error-intervention">
+                              <strong>Intervention Focus:</strong> {error.interventionFocus}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}

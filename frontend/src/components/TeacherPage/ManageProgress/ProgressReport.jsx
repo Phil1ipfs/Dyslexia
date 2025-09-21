@@ -109,13 +109,20 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     try {
       setLoadingDetails(true);
 
-      // Check if student responses are already included in progressData (for post-assessment)
-      if (progressData.studentResponses && progressData.studentResponses.length > 0) {
-        console.log('Using student responses from progressData:', progressData.studentResponses.length);
+      // Dynamic student response detection and extraction
+      if (progressData.studentResponses && Array.isArray(progressData.studentResponses) && progressData.studentResponses.length > 0) {
+        console.log('✅ Using student responses from progressData:', progressData.studentResponses.length);
         setStudentResponses(progressData.studentResponses);
+      } else if (progressData.skillMastery && typeof progressData.skillMastery === 'object') {
+        console.log('✅ Extracting student responses from skillMastery data...');
+        const extractedResponses = extractStudentResponsesFromSkillMastery(progressData.skillMastery);
+        console.log('✅ Extracted student responses:', extractedResponses.length);
+        setStudentResponses(extractedResponses);
+      } else if (progressData.data && progressData.data.studentResponses && Array.isArray(progressData.data.studentResponses) && progressData.data.studentResponses.length > 0) {
+        console.log('✅ Using student responses from data.studentResponses:', progressData.data.studentResponses.length);
+        setStudentResponses(progressData.data.studentResponses);
       } else {
-        // Fallback: Fetch student responses separately (for pre-assessment or when not included)
-        console.log('Fetching student responses separately...');
+        console.log('No student responses found in progressData, fetching separately...');
         const responsesResult = await ProgressApiService.getStudentResponses(studentId);
         if (responsesResult.success && responsesResult.data) {
           setStudentResponses(responsesResult.data);
@@ -490,6 +497,58 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     return categoryName
       .replace(/_/g, ' ')
       .replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+
+  // Extract student responses from prescriptive analysis skillMastery data
+  const extractStudentResponsesFromSkillMastery = (skillMastery) => {
+    const responses = [];
+    
+    if (!skillMastery || typeof skillMastery !== 'object') {
+      console.log('No skillMastery data available for extraction');
+      return responses;
+    }
+    
+    Object.keys(skillMastery).forEach(categoryName => {
+      const categoryData = skillMastery[categoryName];
+      
+      // Check if category has response history
+      if (categoryData && categoryData.responseHistory && Array.isArray(categoryData.responseHistory)) {
+        console.log(`Extracting responses for ${categoryName}: ${categoryData.responseHistory.length} responses`);
+        
+        categoryData.responseHistory.forEach((response, index) => {
+          try {
+            // Convert responseHistory format to expected student response format
+            const studentResponse = {
+              questionId: response.questionId || `Q${index + 1}`,
+              category: categoryName,
+              isCorrect: Boolean(response.correct),
+              responseTime: response.responseTime || 0,
+              answeredAt: response.timestamp ? 
+                new Date(response.timestamp.$date || response.timestamp) : 
+                new Date(),
+              createdAt: response.timestamp ? 
+                new Date(response.timestamp.$date || response.timestamp) : 
+                new Date(),
+              // Add additional fields that might be expected
+              correctAnswers: response.correct ? 1 : 0,
+              totalAnswers: 1,
+              score: response.correct ? 100 : 0,
+              // Preserve original data for debugging
+              originalResponse: response
+            };
+            responses.push(studentResponse);
+          } catch (error) {
+            console.error(`Error processing response ${index} for ${categoryName}:`, error);
+          }
+        });
+      } else {
+        console.log(`No response history found for ${categoryName}`);
+      }
+    });
+    
+    console.log(`Extracted ${responses.length} total responses from skillMastery`);
+    return responses;
   };
 
   // Get category icon based on category name
@@ -1109,9 +1168,8 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
               let displayScore = getCurrentDisplayScore(category); // Use the current display score (latest intervention or original)
               let isPassed = progressionStatus.status === 'passed';
 
-              // ✅ FIX: Check if student has actually attempted any questions
-              // For Phonological Awareness: check correctMatches and totalPossibleMatches
-              // For other categories: check correctAnswers and totalQuestions
+              // ✅ DYNAMIC: Check if student has actually attempted any questions
+              // Check multiple data sources dynamically
               const hasAttemptedQuestions = (() => {
                 console.log(`[DEBUG ATTEMPTED] Checking ${categoryName}:`);
                 console.log(`[DEBUG ATTEMPTED] Category data:`, {
@@ -1119,18 +1177,51 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                   totalPossibleMatches: category.totalPossibleMatches,
                   correctAnswers: category.correctAnswers,
                   totalQuestions: category.totalQuestions,
-                  isCompleted: category.isCompleted
+                  isCompleted: category.isCompleted,
+                  score: category.score,
+                  isPassed: category.isPassed
                 });
 
+                // Method 1: Check if there are student responses for this category
+                const hasStudentResponses = studentResponses && studentResponses.length > 0 && 
+                  studentResponses.some(response => {
+                    const responseCategory = response.category || '';
+                    const categoryMatch = responseCategory.toLowerCase().includes(categoryName.toLowerCase()) ||
+                                        categoryName.toLowerCase().includes(responseCategory.toLowerCase());
+                    return categoryMatch;
+                  });
+                
+                console.log(`[DEBUG ATTEMPTED] Has student responses:`, hasStudentResponses);
+
+                // Method 2: Check category data for evidence of attempts
+                let hasCategoryData = false;
                 if (categoryName === 'Phonological Awareness') {
-                  const result = (category.correctMatches > 0 || category.totalPossibleMatches > 0);
-                  console.log(`[DEBUG ATTEMPTED] PA Result:`, result);
-                  return result;
+                  hasCategoryData = (category.correctMatches > 0 || category.totalPossibleMatches > 0);
                 } else {
-                  const result = (category.correctAnswers > 0 || category.totalQuestions > 0);
-                  console.log(`[DEBUG ATTEMPTED] Other category result:`, result);
-                  return result;
+                  hasCategoryData = (category.correctAnswers > 0 || category.totalQuestions > 0);
                 }
+                
+                // Method 3: Check if category has any score (indicates attempt)
+                const hasScore = category.score !== undefined && category.score !== null && category.score > 0;
+                
+                // Method 4: Check if category has intervention history (indicates attempt)
+                const hasInterventionHistory = category.interventionHistory && 
+                  Array.isArray(category.interventionHistory) && 
+                  category.interventionHistory.length > 0;
+                
+                // Method 5: Check if category has response history in skillMastery
+                const hasResponseHistory = category.responseHistory && 
+                  Array.isArray(category.responseHistory) && 
+                  category.responseHistory.length > 0;
+                
+                console.log(`[DEBUG ATTEMPTED] Has category data:`, hasCategoryData);
+                console.log(`[DEBUG ATTEMPTED] Has score:`, hasScore);
+                console.log(`[DEBUG ATTEMPTED] Has intervention history:`, hasInterventionHistory);
+                console.log(`[DEBUG ATTEMPTED] Has response history:`, hasResponseHistory);
+                
+                const result = hasStudentResponses || hasCategoryData || hasScore || hasInterventionHistory || hasResponseHistory;
+                console.log(`[DEBUG ATTEMPTED] Final result:`, result);
+                return result;
               })();
 
               if (!isUnlocked) {
