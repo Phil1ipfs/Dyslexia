@@ -8,7 +8,7 @@ import "../../../css/Teachers/ManageCategories/ManageCategories.css";
 // Import FontAwesome 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { fas } from '@fortawesome/free-solid-svg-icons';
-import AuthService from '../../../services/authService';
+import AuthService from '../../../services/AuthService';
 
 // Add all FontAwesome solid icons to the library
 library.add(fas);
