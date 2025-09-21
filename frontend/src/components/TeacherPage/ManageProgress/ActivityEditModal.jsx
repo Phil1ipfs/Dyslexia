@@ -576,13 +576,53 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             break;
 
           case 'reading_comprehension':
-            // Reading Comprehension uses sentenceQuestions structure
+            // Reading Comprehension uses sentenceQuestions structure with CLAUDE.md specifications
             if (!question.sentenceQuestions || !Array.isArray(question.sentenceQuestions) || question.sentenceQuestions.length === 0) {
               console.error(`[SAVE] ❌ Question ${index} sentenceQuestions validation failed:`, {
                 question: question,
                 sentenceQuestions: question.sentenceQuestions
               });
               throw new Error(`Question ${index} has invalid sentenceQuestions for Reading Comprehension`);
+            }
+
+            // Validate storyTitle if present (CLAUDE.md specification)
+            if (question.storyTitle && typeof question.storyTitle !== 'string') {
+              console.error(`[SAVE] ❌ Question ${index} invalid storyTitle:`, question.storyTitle);
+              throw new Error(`Question ${index} has invalid storyTitle - must be string`);
+            }
+
+            // Validate passages structure if present (CLAUDE.md specification)
+            if (question.passages) {
+              if (!Array.isArray(question.passages)) {
+                console.error(`[SAVE] ❌ Question ${index} passages must be array:`, question.passages);
+                throw new Error(`Question ${index} passages must be an array`);
+              }
+
+              question.passages.forEach((passage, passageIndex) => {
+                if (!passage.pageNumber || typeof passage.pageNumber !== 'number') {
+                  console.error(`[SAVE] ❌ Question ${index}, passage ${passageIndex} invalid pageNumber:`, passage);
+                  throw new Error(`Question ${index}, passage ${passageIndex} must have valid pageNumber`);
+                }
+                if (!passage.pageText && !passage.text) {
+                  console.error(`[SAVE] ❌ Question ${index}, passage ${passageIndex} missing text:`, passage);
+                  throw new Error(`Question ${index}, passage ${passageIndex} must have pageText or text`);
+                }
+              });
+            }
+
+            // Validate responseStructure if present (array response format specification)
+            if (question.responseStructure) {
+              if (question.responseStructure.format === 'array') {
+                if (!question.responseStructure.expectedResponseCount ||
+                    typeof question.responseStructure.expectedResponseCount !== 'number' ||
+                    question.responseStructure.expectedResponseCount !== question.sentenceQuestions.length) {
+                  console.error(`[SAVE] ❌ Question ${index} responseStructure expectedResponseCount mismatch:`, {
+                    expected: question.responseStructure.expectedResponseCount,
+                    actual: question.sentenceQuestions.length
+                  });
+                  throw new Error(`Question ${index} responseStructure expectedResponseCount must match sentenceQuestions length`);
+                }
+              }
             }
 
             // Validate each sentence question has required fields
@@ -595,9 +635,21 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                 console.error(`[SAVE] ❌ Question ${index}, sentence ${sentenceIndex} missing sentenceCorrectAnswer:`, sentenceQ);
                 throw new Error(`Question ${index}, sentence ${sentenceIndex} has invalid sentenceCorrectAnswer`);
               }
+
+              // Validate sentenceAcceptableAnswer if present (CLAUDE.md specification)
+              if (sentenceQ.sentenceAcceptableAnswer && !Array.isArray(sentenceQ.sentenceAcceptableAnswer)) {
+                console.error(`[SAVE] ❌ Question ${index}, sentence ${sentenceIndex} sentenceAcceptableAnswer must be array:`, sentenceQ);
+                throw new Error(`Question ${index}, sentence ${sentenceIndex} sentenceAcceptableAnswer must be an array`);
+              }
+
+              // Validate sentenceOptionAnswers if present
+              if (sentenceQ.sentenceOptionAnswers && !Array.isArray(sentenceQ.sentenceOptionAnswers)) {
+                console.error(`[SAVE] ❌ Question ${index}, sentence ${sentenceIndex} sentenceOptionAnswers must be array:`, sentenceQ);
+                throw new Error(`Question ${index}, sentence ${sentenceIndex} sentenceOptionAnswers must be an array`);
+              }
             });
 
-            console.log(`✅ Question ${index} has valid Reading Comprehension structure with ${question.sentenceQuestions.length} sentence questions`);
+            console.log(`✅ Question ${index} has valid Reading Comprehension structure with ${question.sentenceQuestions.length} sentence questions, array response format: ${question.responseStructure?.format === 'array' ? 'YES' : 'NO'}`);
             break;
 
           case 'alphabet_knowledge':
@@ -2514,47 +2566,107 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         // Total questions count
         totalQuestions: selectedSentenceTemplate.sentenceQuestions?.length || 1,
 
-        // Questions array
-        questions: selectedSentenceTemplate.sentenceQuestions.map((q, index) => ({
-          questionId: `int_reading_comprehension_${String(index + 1).padStart(3, '0')}`,
-          source: 'sentence_template',
-          sourceTemplateId: selectedSentenceTemplate._id,
-          sourceQuestionId: selectedSentenceTemplate._id,
-          questionIndex: index,
-          questionType: 'sentence',
-          questionText: q.questionText,
-          questionImage: sanitizeImageUrl(q.image),
-          questionValue: null,
+        // Questions array - Updated to match CLAUDE.md Reading Comprehension structure
+        questions: selectedSentenceTemplate.sentenceText ?
+          // If sentenceText exists (from sentence_templates collection)
+          [{
+            questionId: `int_reading_comprehension_001`,
+            source: 'sentence_template',
+            sourceTemplateId: selectedSentenceTemplate._id,
+            sourceQuestionId: selectedSentenceTemplate._id,
+            questionIndex: 0,
+            questionType: 'sentence',
+            questionText: selectedSentenceTemplate.title || "Reading Comprehension",
+            questionImage: null,
+            questionValue: null,
 
-          // Reading Comprehension specific structure
-          sentenceQuestions: [{
-            questionNumber: 1,
+            // Proper Reading Comprehension structure matching CLAUDE.md
+            storyTitle: selectedSentenceTemplate.title,
+            passages: selectedSentenceTemplate.sentenceText,
+            sentenceQuestions: selectedSentenceTemplate.sentenceQuestions.map((q, qIndex) => ({
+              questionNumber: qIndex + 1,
+              questionText: q.questionText,
+              sentenceCorrectAnswer: q.sentenceCorrectAnswer,
+              sentenceOptionAnswers: q.sentenceOptionAnswers || [],
+              // Add acceptableAnswers if available (CLAUDE.md specification)
+              ...(q.acceptableAnswers && { sentenceAcceptableAnswer: q.acceptableAnswers })
+            })),
+
+            // Response structure: Array format for multiple sentence questions
+            // If 3 sentence questions → response: ['answer1', 'answer2', 'answer3']
+            responseStructure: {
+              format: 'array',
+              expectedResponseCount: selectedSentenceTemplate.sentenceQuestions.length,
+              allOrNothingScoring: true,
+              description: `Student must provide ${selectedSentenceTemplate.sentenceQuestions.length} answers in array format`
+            },
+
+            // Choices for compatibility (flatten all sentence options)
+            choices: selectedSentenceTemplate.sentenceQuestions.flatMap((q, qIndex) =>
+              (q.sentenceOptionAnswers || []).map((option, optIndex) => ({
+                optionId: `${qIndex + 1}_${optIndex + 1}`,
+                optionText: option,
+                isCorrect: option === q.sentenceCorrectAnswer,
+                questionNumber: qIndex + 1,
+                description: option === q.sentenceCorrectAnswer ?
+                  'Correct! You understood the passage well.' :
+                  'Incorrect. Try reading the passage again carefully.'
+              }))
+            ),
+
+            // Prescription alignment
+            prescriptionAlignment: {
+              targetSkill: "reading_comprehension",
+              technique: "Systematic reading comprehension instruction",
+              difficultyLevel: "standard",
+              multisensoryElements: ["visual", "cognitive", "linguistic"]
+            },
+
+            createdBy: getValidTeacherId(),
+            createdAt: getFormattedDate()
+          }]
+          :
+          // Fallback for older format
+          selectedSentenceTemplate.sentenceQuestions.map((q, index) => ({
+            questionId: `int_reading_comprehension_${String(index + 1).padStart(3, '0')}`,
+            source: 'sentence_template',
+            sourceTemplateId: selectedSentenceTemplate._id,
+            sourceQuestionId: selectedSentenceTemplate._id,
+            questionIndex: index,
+            questionType: 'sentence',
             questionText: q.questionText,
-            sentenceCorrectAnswer: q.sentenceCorrectAnswer,
-            sentenceOptionAnswers: q.sentenceOptionAnswers
-          }],
+            questionImage: sanitizeImageUrl(q.image),
+            questionValue: null,
 
-          // Choices for compatibility
-          choices: q.sentenceOptionAnswers.map((option, optIndex) => ({
-            optionId: String(optIndex + 1),
-            optionText: option,
-            isCorrect: option === q.sentenceCorrectAnswer,
-            description: option === q.sentenceCorrectAnswer ?
-              'Correct! You understood the passage well.' :
-              'Incorrect. Try reading the passage again carefully.'
+            // Basic structure for single question
+            sentenceQuestions: [{
+              questionNumber: 1,
+              questionText: q.questionText,
+              sentenceCorrectAnswer: q.sentenceCorrectAnswer,
+              sentenceOptionAnswers: q.sentenceOptionAnswers || []
+            }],
+
+            // Choices for compatibility
+            choices: (q.sentenceOptionAnswers || []).map((option, optIndex) => ({
+              optionId: String(optIndex + 1),
+              optionText: option,
+              isCorrect: option === q.sentenceCorrectAnswer,
+              description: option === q.sentenceCorrectAnswer ?
+                'Correct! You understood the passage well.' :
+                'Incorrect. Try reading the passage again carefully.'
+            })),
+
+            // Prescription alignment
+            prescriptionAlignment: {
+              targetSkill: "reading_comprehension",
+              technique: "Systematic reading comprehension instruction",
+              difficultyLevel: "standard",
+              multisensoryElements: ["visual", "cognitive", "linguistic"]
+            },
+
+            createdBy: getValidTeacherId(),
+            createdAt: getFormattedDate()
           })),
-
-          // Prescription alignment
-          prescriptionAlignment: {
-            targetSkill: "reading_comprehension",
-            technique: "Systematic reading comprehension instruction",
-            difficultyLevel: "standard",
-            multisensoryElements: ["visual", "cognitive", "linguistic"]
-          },
-
-          createdBy: getValidTeacherId(),
-          createdAt: getFormattedDate()
-        })),
 
         // Include the full sentence template for reference
         sentenceTemplate: selectedSentenceTemplate,
