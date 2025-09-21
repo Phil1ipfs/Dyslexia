@@ -615,10 +615,11 @@ class InterventionResultsAnalysisService {
       console.log(`[METRICS CALCULATION] Phonological Awareness scoring: ${correctMatches}/${totalPossibleMatches} = ${score}%`);
     } else if (category === 'Reading Comprehension') {
       // Reading Comprehension uses all-or-nothing scoring per questionId
+      // Each response represents one questionId with multiple sentence questions in the response array
       const questionIds = [...new Set(interventionResponses.map(r => r.questionId))];
       const passedQuestionIds = questionIds.filter(qId => {
-        const responsesForQuestion = interventionResponses.filter(r => r.questionId === qId);
-        return responsesForQuestion.every(r => r.isCorrect);
+        const responseForQuestion = interventionResponses.find(r => r.questionId === qId);
+        return responseForQuestion && responseForQuestion.isCorrect;
       });
       score = questionIds.length > 0 ? Math.round((passedQuestionIds.length / questionIds.length) * 100) : 0;
       console.log(`[METRICS CALCULATION] Reading Comprehension scoring: ${passedQuestionIds.length}/${questionIds.length} questionIds passed = ${score}%`);

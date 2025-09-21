@@ -70,6 +70,14 @@ const interventionResultsSchema = new mongoose.Schema({
     type: Number,
     default: 0 // For Phonological Awareness matching questions
   },
+  totalSentenceQuestions: {
+    type: Number,
+    default: 0 // For Reading Comprehension sentence questions
+  },
+  correctSentenceQuestions: {
+    type: Number,
+    default: 0 // For Reading Comprehension sentence questions
+  },
   score: {
     type: Number,
     required: true,

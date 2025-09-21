@@ -1600,13 +1600,69 @@ class InterventionGeneratorService {
 
       // CRITICAL FIX: Cap correct answers to not exceed total questions (for revision scenarios)
       const cappedCorrectAnswers = Math.min(correctAnswers, totalQuestions);
-      const finalScore = Math.round((cappedCorrectAnswers / totalQuestions) * 100);
+
+      // CATEGORY-SPECIFIC SCORING: Handle different scoring methods per category
+      let totalPossibleMatches = 0;
+      let correctMatches = 0;
+      let totalSentenceQuestions = 0;
+      let correctSentenceQuestions = 0;
+      let finalScore = 0;
+
+      if (intervention.category === 'Phonological Awareness') {
+        // PHONOLOGICAL AWARENESS: Matching-based scoring
+        responses.forEach(response => {
+          if (response.totalMatches && response.correctMatches !== undefined) {
+            totalPossibleMatches += response.totalMatches;
+            correctMatches += response.correctMatches;
+          }
+        });
+
+        if (totalPossibleMatches > 0) {
+          finalScore = Math.round((correctMatches / totalPossibleMatches) * 100);
+          console.log(`[INTERVENTION GENERATOR] Phonological Awareness scoring: ${correctMatches}/${totalPossibleMatches} = ${finalScore}%`);
+        } else {
+          finalScore = 0;
+          console.log(`[INTERVENTION GENERATOR] No matching data found for Phonological Awareness`);
+        }
+      } else if (intervention.category === 'Reading Comprehension') {
+        // READING COMPREHENSION: All-or-nothing scoring per questionId
+        // Each response represents one questionId with multiple sentence questions in the response array
+        const questionIds = [...new Set(responses.map(r => r.questionId))];
+        const passedQuestionIds = questionIds.filter(qId => {
+          const responseForQuestion = responses.find(r => r.questionId === qId);
+          return responseForQuestion && responseForQuestion.isCorrect;
+        });
+
+        // Also calculate sentence question metrics for detailed analysis
+        responses.forEach(response => {
+          if (response.totalSentenceQuestions && response.correctSentenceQuestions !== undefined) {
+            totalSentenceQuestions += response.totalSentenceQuestions;
+            correctSentenceQuestions += response.correctSentenceQuestions;
+          }
+        });
+
+        finalScore = questionIds.length > 0 ? Math.round((passedQuestionIds.length / questionIds.length) * 100) : 0;
+        console.log(`[INTERVENTION GENERATOR] Reading Comprehension scoring: ${passedQuestionIds.length}/${questionIds.length} questionIds passed = ${finalScore}%`);
+        console.log(`[INTERVENTION GENERATOR] Sentence questions: ${correctSentenceQuestions}/${totalSentenceQuestions} correct`);
+      } else {
+        // STANDARD CATEGORIES: Alphabet Knowledge, Decoding, Word Recognition - Question-based scoring
+        finalScore = Math.round((cappedCorrectAnswers / totalQuestions) * 100);
+        console.log(`[INTERVENTION GENERATOR] Standard scoring for ${intervention.category}: ${cappedCorrectAnswers}/${totalQuestions} = ${finalScore}%`);
+      }
 
       console.log(`[INTERVENTION GENERATOR] Score calculation:`);
+      console.log(`[INTERVENTION GENERATOR] - Category: ${intervention.category}`);
       console.log(`[INTERVENTION GENERATOR] - Total questions in intervention: ${totalQuestions}`);
       console.log(`[INTERVENTION GENERATOR] - Responses received: ${answeredQuestions}`);
       console.log(`[INTERVENTION GENERATOR] - Correct answers (raw): ${correctAnswers}`);
       console.log(`[INTERVENTION GENERATOR] - Correct answers (capped): ${cappedCorrectAnswers}`);
+      if (intervention.category === 'Phonological Awareness') {
+        console.log(`[INTERVENTION GENERATOR] - Total possible matches: ${totalPossibleMatches}`);
+        console.log(`[INTERVENTION GENERATOR] - Correct matches: ${correctMatches}`);
+      } else if (intervention.category === 'Reading Comprehension') {
+        console.log(`[INTERVENTION GENERATOR] - Total sentence questions: ${totalSentenceQuestions}`);
+        console.log(`[INTERVENTION GENERATOR] - Correct sentence questions: ${correctSentenceQuestions}`);
+      }
       console.log(`[INTERVENTION GENERATOR] - Final score: ${finalScore}%`);
       const isPassed = finalScore >= 75; // 75% pass threshold
 
@@ -1688,6 +1744,10 @@ class InterventionGeneratorService {
         // CORE PERFORMANCE METRICS
         totalQuestions,
         correctAnswers: cappedCorrectAnswers,  // FIXED: Use capped value instead of raw count
+        totalPossibleMatches,  // For Phonological Awareness matching questions
+        correctMatches,        // For Phonological Awareness matching questions
+        totalSentenceQuestions,  // For Reading Comprehension sentence questions
+        correctSentenceQuestions, // For Reading Comprehension sentence questions
         score: finalScore,
         isPassed,
         passThreshold: 75,
