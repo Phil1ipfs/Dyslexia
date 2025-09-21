@@ -415,11 +415,16 @@ class InterventionController {
       const templateData = req.body;
       
       // Validate required fields
-      if (!templateData.category || !templateData.questionType || !templateData.templateText) {
+      if (!templateData.category || !templateData.questionType || (!templateData.templateText && !templateData.questionText)) {
         return res.status(400).json({
           success: false,
-          message: 'Category, question type, and template text are required'
+          message: 'Category, question type, and template text (or question text) are required'
         });
+      }
+
+      // Normalize templateText field - use questionText if templateText is not provided
+      if (!templateData.templateText && templateData.questionText) {
+        templateData.templateText = templateData.questionText;
       }
       
       // Add user ID from auth middleware

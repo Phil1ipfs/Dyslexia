@@ -1701,9 +1701,11 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     try {
       console.log('[TEMPLATE AUTO-SAVE] Starting auto-save of custom questions as templates');
 
-      // Process Alphabet Knowledge and Phonological Awareness questions
+      // Process all supported categories for template saving
       const normCategory = normalizeCategory(category);
-      if (normCategory !== 'alphabet_knowledge' && normCategory !== 'phonological_awareness') {
+      const supportedCategories = ['alphabet_knowledge', 'phonological_awareness', 'decoding', 'word_recognition'];
+
+      if (!supportedCategories.includes(normCategory)) {
         console.log(`[TEMPLATE AUTO-SAVE] Skipping - category "${category}" not supported for auto-save yet`);
         return;
       }
@@ -1751,6 +1753,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
       // Save each custom question as a template with duplicate validation
       for (const pair of customQuestions) {
+        let templateData = null; // Declare at loop level for proper scope
+
         try {
           // Check for duplicate templates based on questionText and category
           const isDuplicate = existingTemplates.some(template =>
@@ -1763,53 +1767,65 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             continue;
           }
 
-          let templateData;
-
           // Handle different category structures
           if (normCategory === 'phonological_awareness') {
             // Phonological Awareness template structure (CLAUDE.md compliant)
             const audioTexts = pair.audioTexts || ['', '', ''];
+            const validAudioTexts = audioTexts.filter(text => text && text.trim());
             const matchingOptions = [];
             const correctPairs = [];
 
             // Generate matching options and correct pairs from audioTexts
-            audioTexts.forEach(audioText => {
-              if (audioText && audioText.trim()) {
-                let matchingText;
-                if (audioText.length === 1) {
-                  // Single letter: create uppercase + lowercase format (L → Ll)
-                  matchingText = audioText.toUpperCase() + audioText.toLowerCase();
-                } else {
-                  // Multi-character: use as-is
-                  matchingText = audioText;
-                }
-                matchingOptions.push(matchingText);
-                correctPairs.push({ [audioText]: matchingText });
+            validAudioTexts.forEach(audioText => {
+              let matchingText;
+              if (audioText.length === 1) {
+                // Single letter: create uppercase + lowercase format (L → Ll)
+                matchingText = audioText.toUpperCase() + audioText.toLowerCase();
+              } else {
+                // Multi-character: use as-is
+                matchingText = audioText;
               }
+              matchingOptions.push(matchingText);
+
+              // Use the same format as main_assessment: {"H": "Hh"}
+              const pairObj = {};
+              pairObj[audioText] = matchingText;
+              correctPairs.push(pairObj);
             });
 
             templateData = {
               category: category,
               questionType: pair.questionType || 'malapantig',
               questionText: pair.questionText,
+              templateText: pair.questionText, // Add templateText for backend compatibility
               questionSet: {
-                audioTexts: audioTexts.filter(text => text && text.trim()),
+                audioTexts: validAudioTexts,
                 matchingOptions: matchingOptions,
                 correctPairs: correctPairs
               },
-              matchCount: audioTexts.filter(text => text && text.trim()).length,
+              matchCount: validAudioTexts.length,
               targetSkills: ["sound_discrimination", "custom_teacher_created"],
               difficultyLevel: "medium",
               isActive: true
             };
-          } else {
-            // Alphabet Knowledge template structure (existing logic)
+
+            console.log(`[TEMPLATE AUTO-SAVE] Phonological Awareness template data:`, {
+              category: templateData.category,
+              questionType: templateData.questionType,
+              questionText: templateData.questionText,
+              audioTexts: templateData.questionSet.audioTexts,
+              matchingOptions: templateData.questionSet.matchingOptions,
+              correctPairs: templateData.questionSet.correctPairs,
+              matchCount: templateData.matchCount
+            });
+          } else if (normCategory === 'alphabet_knowledge') {
+            // Alphabet Knowledge template structure
             templateData = {
               category: category,
               questionType: pair.questionType || 'patinig',
               questionText: pair.questionText,
               questionImage: pair.questionImage,
-              choiceOptions: pair.choices.map((choice, index) => ({
+              choiceOptions: (pair.choices || []).map((choice, index) => ({
                 optionId: (index + 1).toString(),
                 optionText: choice.optionText,
                 isCorrect: choice.isCorrect
@@ -1818,22 +1834,56 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               difficultyLevel: "medium",
               isActive: true
             };
+          } else if (normCategory === 'decoding' || normCategory === 'word_recognition') {
+            // Decoding and Word Recognition template structure (choice-based)
+            const choices = pair.choices || [];
+            const validChoices = choices.filter(choice => choice && choice.optionText);
+
+            templateData = {
+              category: category,
+              questionType: pair.questionType || 'multiple_choice',
+              questionText: pair.questionText,
+              questionImage: pair.questionImage,
+              choiceOptions: validChoices.map((choice, index) => ({
+                optionId: (index + 1).toString(),
+                optionText: choice.optionText,
+                isCorrect: choice.isCorrect
+              })),
+              targetSkills: [normCategory.replace('_', ' '), "custom_teacher_created"],
+              difficultyLevel: "medium",
+              isActive: true
+            };
+          } else {
+            // Fallback for unsupported categories
+            console.warn(`[TEMPLATE AUTO-SAVE] Unsupported category for template creation: ${normCategory}`);
+            continue;
           }
 
           console.log(`[TEMPLATE AUTO-SAVE] Saving NEW custom question as template: "${pair.questionText}"`);
+          console.log(`[TEMPLATE AUTO-SAVE] Template data being sent:`, JSON.stringify(templateData, null, 2));
 
           const response = await api.interventions.createTemplateQuestion(templateData);
+          console.log(`[TEMPLATE AUTO-SAVE] API response:`, response);
 
           if (response.success) {
             console.log(`[TEMPLATE AUTO-SAVE] ✅ Successfully saved template: ${response.data._id}`);
             // Add to existing templates list to prevent duplicates within this save session
             existingTemplates.push(response.data);
           } else {
-            console.warn(`[TEMPLATE AUTO-SAVE] ⚠️ Failed to save template: ${response.message}`);
+            console.error(`[TEMPLATE AUTO-SAVE] ❌ Failed to save template:`, {
+              message: response.message,
+              error: response.error,
+              templateData: templateData
+            });
           }
 
         } catch (templateError) {
-          console.error(`[TEMPLATE AUTO-SAVE] Error saving individual template:`, templateError);
+          console.error(`[TEMPLATE AUTO-SAVE] Error saving individual template:`, {
+            error: templateError,
+            templateData: templateData,
+            questionText: pair.questionText,
+            category: category
+          });
           // Continue with other questions even if one fails
         }
       }
@@ -2675,7 +2725,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           const questionId = `int_${category.toLowerCase().replace(/\s+/g, '_')}_${String(index + 1).padStart(3, '0')}`;
           const isTemplateQuestion = pair.sourceType === 'template_question';
 
-          return {
+          // Base question structure
+          const baseQuestion = {
             questionId: questionId,
             source: pair.sourceType || 'custom',
             sourceTemplateId: isTemplateQuestion ? pair.sourceId : null,
@@ -2685,100 +2736,102 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             questionText: pair.questionText,
             questionImage: processedImageUrl,
             questionValue: pair.questionValue || (pair.questionImage ? pair.questionText?.split(' ').pop() || '' : ''),
+          };
 
-            // Use choiceOptions for all categories (CLAUDE.md format)
-            choiceOptions: selectedChoices.map((choice, choiceIdx) => {
-              if (isAlphabetKnowledge) {
-                // Alphabet Knowledge choice structure
-                return {
-                  optionId: String(choiceIdx + 1),
-                  optionText: choice.optionText || '',
-                  isCorrect: choice.isCorrect || false,
-                  imageUrl: choice.imageUrl || null
-                };
-              } else if (isPhonologicalAwareness) {
-                // Phonological Awareness choice structure - generated from audioTexts
-                const audioText = choice.audioText || choice.optionText || '';
-                let matchingText;
-                if (audioText.length === 1) {
-                  // Single letter: L → Ll (uppercase + lowercase)
-                  matchingText = audioText.toUpperCase() + audioText.toLowerCase();
-                } else {
-                  // Word: Keep as is
-                  matchingText = audioText;
-                }
-                
-                return {
-                  optionId: String(choiceIdx + 1),
-                  optionText: `${audioText} → ${matchingText}`,
-                  isCorrect: true, // All audio-visual pairs are correct for PA
-                  imageUrl: null,
-                  audioText: audioText,
-                  visualText: matchingText
-                };
-              } else {
-                // Other categories choice structure
-                const choiceDescription = choice.description || '';
-                console.log(`Saving choice for question ${index}:`, {
-                  optionText: choice.choiceValue || choice.soundText || '',
-                  isCorrect: choice._id === pair.correctChoiceId,
-                  description: choiceDescription
-                });
-                return {
-                  optionId: String(choiceIdx + 1),
-                  optionText: choice.choiceValue || choice.soundText || '',
-                  isCorrect: choice._id === pair.correctChoiceId,
-                  imageUrl: null
-                };
-              }
-            }),
+          // Category-specific structure
+          if (isPhonologicalAwareness) {
+            // Phonological Awareness uses questionSet structure (NOT choiceOptions)
+            const audioTexts = pair.audioTexts || [];
+            const validAudioTexts = audioTexts.filter(text => text && text.trim());
 
-            // For other categories, include additional identification fields
-            ...(!isAlphabetKnowledge ? {
-              choiceIds: pair.choiceIds,
-              correctChoiceId: pair.correctChoiceId
-            } : {}),
+            const matchingOptions = validAudioTexts.map(audioText => {
+              return audioText.length === 1
+                ? audioText.toUpperCase() + audioText.toLowerCase()
+                : audioText;
+            });
 
-            // For Phonological Awareness, include audio-visual specific fields
-            ...(isPhonologicalAwareness ? {
-              audioTexts: pair.audioTexts || [],
-              matchingOptions: (pair.audioTexts || []).map(audioText => {
-                if (audioText && audioText.trim()) {
-                  return audioText.length === 1 
-                    ? audioText.toUpperCase() + audioText.toLowerCase()
-                    : audioText;
-                }
-                return '';
-              }).filter(text => text),
-              correctPairs: (pair.audioTexts || []).map(audioText => {
-                if (audioText && audioText.trim()) {
-                  const matchingText = audioText.length === 1 
-                    ? audioText.toUpperCase() + audioText.toLowerCase()
-                    : audioText;
+            const correctPairs = validAudioTexts.map(audioText => {
+              const matchingText = audioText.length === 1
+                ? audioText.toUpperCase() + audioText.toLowerCase()
+                : audioText;
+
+              // Format matching main_assessment structure: {"H": "Hh"}
+              const pairObj = {};
+              pairObj[audioText] = matchingText;
+              return pairObj;
+            });
+
+            return {
+              ...baseQuestion,
+              // Phonological Awareness specific structure matching main_assessment
+              questionSet: [{
+                audioTexts: validAudioTexts,
+                matchingOptions: matchingOptions,
+                correctPairs: correctPairs
+              }],
+              // Add prescription alignment
+              prescriptionAlignment: {
+                targetSkill: "sound_discrimination",
+                technique: mongoDbAnalysis?.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.[0]?.technique || "Auditory Discrimination Training",
+                difficultyLevel: "standard",
+                multisensoryElements: ["audio", "visual"]
+              },
+              createdBy: localStorage.getItem('userId') || 'teacher_default',
+              createdAt: getFormattedDate()
+            };
+          } else {
+            // Other categories use choiceOptions structure
+            return {
+              ...baseQuestion,
+              // Use choiceOptions for non-Phonological Awareness categories
+              choiceOptions: selectedChoices.map((choice, choiceIdx) => {
+                if (isAlphabetKnowledge) {
+                  // Alphabet Knowledge choice structure
                   return {
-                    audio: audioText,
-                    visual: matchingText
+                    optionId: String(choiceIdx + 1),
+                    optionText: choice.optionText || '',
+                    isCorrect: choice.isCorrect || false,
+                    imageUrl: choice.imageUrl || null
+                  };
+                } else {
+                  // Other categories choice structure
+                  const choiceDescription = choice.description || '';
+                  console.log(`Saving choice for question ${index}:`, {
+                    optionText: choice.choiceValue || choice.soundText || '',
+                    isCorrect: choice._id === pair.correctChoiceId,
+                    description: choiceDescription
+                  });
+                  return {
+                    optionId: String(choiceIdx + 1),
+                    optionText: choice.choiceValue || choice.soundText || '',
+                    isCorrect: choice._id === pair.correctChoiceId,
+                    imageUrl: null
                   };
                 }
-                return null;
-              }).filter(pair => pair)
-            } : {}),
+              }),
 
-            // Add prescription alignment per CLAUDE.md
-            prescriptionAlignment: {
-              targetSkill: isTemplateQuestion ? category.toLowerCase().replace(/\s+/g, '_') : "general_practice",
-              technique: mongoDbAnalysis?.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.[0]?.technique ||
-                        mongoDbAnalysis?.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.[0] ||
-                        mongoDbAnalysis?.interventionPlan?.specificFocus?.[category]?.recommendedActivities?.[0] ||
-                        "Systematic, explicit instruction",
-              difficultyLevel: "standard",
-              multisensoryElements: ["visual", "cognitive"]
-            },
+              // For other categories, include additional identification fields
+              ...(!isAlphabetKnowledge ? {
+                choiceIds: pair.choiceIds,
+                correctChoiceId: pair.correctChoiceId
+              } : {}),
 
-            // Track who created this question
-            createdBy: localStorage.getItem('userId') || 'teacher_default',
-            createdAt: getFormattedDate()
-          };
+              // Add prescription alignment per CLAUDE.md
+              prescriptionAlignment: {
+                targetSkill: isTemplateQuestion ? category.toLowerCase().replace(/\s+/g, '_') : "general_practice",
+                technique: mongoDbAnalysis?.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.[0]?.technique ||
+                          mongoDbAnalysis?.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.[0] ||
+                          mongoDbAnalysis?.interventionPlan?.specificFocus?.[category]?.recommendedActivities?.[0] ||
+                          "Systematic, explicit instruction",
+                difficultyLevel: "standard",
+                multisensoryElements: ["visual", "cognitive"]
+              },
+
+              // Track who created this question
+              createdBy: localStorage.getItem('userId') || 'teacher_default',
+              createdAt: getFormattedDate()
+            };
+          }
         }),
 
         // Versioning System (required by CLAUDE.md)
