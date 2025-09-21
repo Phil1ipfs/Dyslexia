@@ -491,37 +491,173 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       // Log the number of questions
       console.log(`Number of questions: ${interventionData.questions.length}`);
       
-      // Check for valid choices in each question (using choiceOptions for CLAUDE.md format)
+      // Check for valid data structure in each question (category-specific validation per CLAUDE.md)
       interventionData.questions.forEach((question, index) => {
-        if (!question.choiceOptions || !Array.isArray(question.choiceOptions)) {
-          console.error(`[SAVE] ❌ Question ${index} choiceOptions validation failed:`, {
-            question: question,
-            choiceOptions: question.choiceOptions,
-            choiceOptionsType: typeof question.choiceOptions,
-            isArray: Array.isArray(question.choiceOptions)
-          });
-          throw new Error(`Question ${index} has invalid choiceOptions`);
+        const normCategory = normalizeCategory(category);
+
+        switch (normCategory) {
+          case 'phonological_awareness':
+            // Phonological Awareness uses questionSet structure
+            if (!question.questionSet || !Array.isArray(question.questionSet) || question.questionSet.length === 0) {
+              console.error(`[SAVE] ❌ Question ${index} questionSet validation failed:`, {
+                question: question,
+                questionSet: question.questionSet,
+                questionSetType: typeof question.questionSet,
+                isArray: Array.isArray(question.questionSet)
+              });
+              throw new Error(`Question ${index} has invalid questionSet for Phonological Awareness`);
+            }
+
+            // Validate questionSet structure
+            const questionSetData = question.questionSet[0]; // First element contains the data
+            if (!questionSetData.audioTexts || !Array.isArray(questionSetData.audioTexts) || questionSetData.audioTexts.length === 0) {
+              console.error(`[SAVE] ❌ Question ${index} audioTexts validation failed:`, questionSetData);
+              throw new Error(`Question ${index} has invalid audioTexts`);
+            }
+
+            // Validate audio texts are not empty
+            const validAudioTexts = questionSetData.audioTexts.filter(text => text && text.trim());
+            if (validAudioTexts.length === 0) {
+              console.error(`[SAVE] ❌ Question ${index} has no valid audio texts:`, questionSetData.audioTexts);
+              throw new Error(`Question ${index} has no valid audio texts`);
+            }
+
+            console.log(`✅ Question ${index} has ${validAudioTexts.length} valid audio texts for Phonological Awareness`);
+            break;
+
+          case 'decoding':
+            // Decoding uses dragElements and correctSequence structure
+            if (!question.dragElements || !Array.isArray(question.dragElements) || question.dragElements.length === 0) {
+              console.error(`[SAVE] ❌ Question ${index} dragElements validation failed:`, {
+                question: question,
+                dragElements: question.dragElements
+              });
+              throw new Error(`Question ${index} has invalid dragElements for Decoding`);
+            }
+
+            if (!question.correctSequence || !Array.isArray(question.correctSequence) || question.correctSequence.length === 0) {
+              console.error(`[SAVE] ❌ Question ${index} correctSequence validation failed:`, {
+                question: question,
+                correctSequence: question.correctSequence
+              });
+              throw new Error(`Question ${index} has invalid correctSequence for Decoding`);
+            }
+
+            console.log(`✅ Question ${index} has valid Decoding structure with ${question.dragElements.length} drag elements`);
+            break;
+
+          case 'word_recognition':
+            // Word Recognition uses displayWord, blankOptions, correctAnswer structure
+            if (!question.displayWord || typeof question.displayWord !== 'string') {
+              console.error(`[SAVE] ❌ Question ${index} displayWord validation failed:`, {
+                question: question,
+                displayWord: question.displayWord
+              });
+              throw new Error(`Question ${index} has invalid displayWord for Word Recognition`);
+            }
+
+            if (!question.blankOptions || !Array.isArray(question.blankOptions) || question.blankOptions.length === 0) {
+              console.error(`[SAVE] ❌ Question ${index} blankOptions validation failed:`, {
+                question: question,
+                blankOptions: question.blankOptions
+              });
+              throw new Error(`Question ${index} has invalid blankOptions for Word Recognition`);
+            }
+
+            if (!question.correctAnswer || !Array.isArray(question.correctAnswer) || question.correctAnswer.length === 0) {
+              console.error(`[SAVE] ❌ Question ${index} correctAnswer validation failed:`, {
+                question: question,
+                correctAnswer: question.correctAnswer
+              });
+              throw new Error(`Question ${index} has invalid correctAnswer for Word Recognition`);
+            }
+
+            console.log(`✅ Question ${index} has valid Word Recognition structure with ${question.blankOptions.length} options`);
+            break;
+
+          case 'reading_comprehension':
+            // Reading Comprehension uses sentenceQuestions structure
+            if (!question.sentenceQuestions || !Array.isArray(question.sentenceQuestions) || question.sentenceQuestions.length === 0) {
+              console.error(`[SAVE] ❌ Question ${index} sentenceQuestions validation failed:`, {
+                question: question,
+                sentenceQuestions: question.sentenceQuestions
+              });
+              throw new Error(`Question ${index} has invalid sentenceQuestions for Reading Comprehension`);
+            }
+
+            // Validate each sentence question has required fields
+            question.sentenceQuestions.forEach((sentenceQ, sentenceIndex) => {
+              if (!sentenceQ.questionText || typeof sentenceQ.questionText !== 'string') {
+                console.error(`[SAVE] ❌ Question ${index}, sentence ${sentenceIndex} missing questionText:`, sentenceQ);
+                throw new Error(`Question ${index}, sentence ${sentenceIndex} has invalid questionText`);
+              }
+              if (!sentenceQ.sentenceCorrectAnswer || typeof sentenceQ.sentenceCorrectAnswer !== 'string') {
+                console.error(`[SAVE] ❌ Question ${index}, sentence ${sentenceIndex} missing sentenceCorrectAnswer:`, sentenceQ);
+                throw new Error(`Question ${index}, sentence ${sentenceIndex} has invalid sentenceCorrectAnswer`);
+              }
+            });
+
+            console.log(`✅ Question ${index} has valid Reading Comprehension structure with ${question.sentenceQuestions.length} sentence questions`);
+            break;
+
+          case 'alphabet_knowledge':
+          default:
+            // Alphabet Knowledge and other categories use choiceOptions structure
+            if (!question.choiceOptions || !Array.isArray(question.choiceOptions)) {
+              console.error(`[SAVE] ❌ Question ${index} choiceOptions validation failed:`, {
+                question: question,
+                choiceOptions: question.choiceOptions,
+                choiceOptionsType: typeof question.choiceOptions,
+                isArray: Array.isArray(question.choiceOptions)
+              });
+              throw new Error(`Question ${index} has invalid choiceOptions for ${category}`);
+            }
+
+            // Validate each choice has required fields
+            question.choiceOptions.forEach((choice, choiceIndex) => {
+              if (!choice.optionText && choice.optionText !== '') {
+                console.error(`[SAVE] ❌ Question ${index}, choice ${choiceIndex} missing optionText:`, choice);
+                throw new Error(`Question ${index}, choice ${choiceIndex} has invalid optionText`);
+              }
+              if (typeof choice.isCorrect !== 'boolean') {
+                console.error(`[SAVE] ❌ Question ${index}, choice ${choiceIndex} invalid isCorrect:`, choice);
+                throw new Error(`Question ${index}, choice ${choiceIndex} has invalid isCorrect field`);
+              }
+            });
+
+            console.log(`✅ Question ${index} has ${question.choiceOptions.length} valid choices for ${category}`);
+            break;
         }
-
-        // Validate each choice has required fields
-        question.choiceOptions.forEach((choice, choiceIndex) => {
-          if (!choice.optionText && choice.optionText !== '') {
-            console.error(`[SAVE] ❌ Question ${index}, choice ${choiceIndex} missing optionText:`, choice);
-            throw new Error(`Question ${index}, choice ${choiceIndex} has invalid optionText`);
-          }
-          if (typeof choice.isCorrect !== 'boolean') {
-            console.error(`[SAVE] ❌ Question ${index}, choice ${choiceIndex} invalid isCorrect:`, choice);
-            throw new Error(`Question ${index}, choice ${choiceIndex} has invalid isCorrect field`);
-          }
-        });
-
-        console.log(`✅ Question ${index} has ${safe(question.choices).length} valid choices`);
       });
       
+      // Log the complete intervention data being sent to backend
+      console.log('🚀 [SAVE] Complete intervention data being sent to backend:', {
+        url: '/api/intervention-assessment',
+        method: 'POST',
+        category: category,
+        studentId: interventionData.studentId,
+        totalQuestions: interventionData.totalQuestions,
+        questionsStructure: interventionData.questions.map((q, index) => ({
+          questionIndex: index,
+          questionId: q.questionId,
+          questionType: q.questionType,
+          hasQuestionSet: !!q.questionSet,
+          hasChoiceOptions: !!q.choiceOptions,
+          hasDragElements: !!q.dragElements,
+          hasDisplayWord: !!q.displayWord,
+          hasSentenceQuestions: !!q.sentenceQuestions,
+          structure: Object.keys(q).filter(key =>
+            ['questionSet', 'choiceOptions', 'dragElements', 'displayWord', 'blankOptions', 'correctAnswer', 'sentenceQuestions'].includes(key)
+          )
+        })),
+        fullData: JSON.stringify(interventionData, null, 2)
+      });
+
       // Make the API call
       try {
+        console.log('🔄 [SAVE] Making API call to create intervention...');
         const response = await api.interventions.create(interventionData);
-        console.log('Intervention creation response:', response.data);
+        console.log('✅ [SAVE] Intervention creation response:', response.data);
         return response.data.data;
       } catch (apiError) {
         console.error('API error creating intervention:', apiError);
@@ -603,7 +739,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         // Create revision history entry
         const revisionEntry = {
           version: newRevisionNumber,
-          editedBy: localStorage.getItem('userId') || 'teacher_default',
+          editedBy: getValidTeacherId(),
           editedAt: new Date().toISOString(),
           changes: "Teacher revision after intervention failure - questions modified per student needs",
           prescriptionCompliance: "revised_for_student_needs"
@@ -624,7 +760,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         interventionData.interventionResults = []; // Clear results array but keep historical record
 
         // Update last edited metadata
-        interventionData.lastEditedBy = localStorage.getItem('userId') || 'teacher_default';
+        interventionData.lastEditedBy = getValidTeacherId();
         interventionData.lastEditedAt = new Date().toISOString();
         interventionData.updatedAt = new Date().toISOString();
 
@@ -710,7 +846,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           ...(currentIntervention.revisionHistory || []),
           {
             version: newRevisionNumber,
-            editedBy: localStorage.getItem('userId') || 'teacher_default',
+            editedBy: getValidTeacherId(),
             editedAt: new Date().toISOString(),
             changes: `Teacher revision ${newRevisionNumber} - Intervention customization for improved student outcomes`,
             previousVersion: currentIntervention.revisionNumber || 1
@@ -722,7 +858,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         interventionResultsId: null,
         interventionResults: currentIntervention.interventionResults || [], // Preserve previous results
         // Update metadata
-        lastEditedBy: localStorage.getItem('userId') || 'teacher_default',
+        lastEditedBy: getValidTeacherId(),
         lastEditedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         status: 'active'
@@ -1770,7 +1906,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           // Handle different category structures
           if (normCategory === 'phonological_awareness') {
             // Phonological Awareness template structure (CLAUDE.md compliant)
-            const audioTexts = pair.audioTexts || ['', '', ''];
+            const audioTexts = pair.audioTexts || [''];
             const validAudioTexts = audioTexts.filter(text => text && text.trim());
             const matchingOptions = [];
             const correctPairs = [];
@@ -2060,7 +2196,21 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     
     // Keep studentId as number to match database format
     console.log("[SAVE] Final studentId:", studentId, "Type:", typeof studentId);
-    
+
+    // Helper function to get a valid ObjectId for teacher implementation
+    const getValidTeacherId = () => {
+      const userId = localStorage.getItem('userId');
+      if (userId && userId.length === 24 && /^[a-fA-F0-9]{24}$/.test(userId)) {
+        // Valid 24-character hex ObjectId format
+        console.log("[SAVE] Using valid ObjectId from localStorage:", userId);
+        return userId;
+      }
+      // Return a valid default ObjectId (can be a system/default teacher ID)
+      const defaultTeacherId = '507f1f77bcf86cd799439011';
+      console.log("[SAVE] Using default teacher ObjectId:", defaultTeacherId);
+      return defaultTeacherId;
+    };
+
     // Get prescriptive analysis ID - ONLY from real database data
     let prescriptiveAnalysisId = null;
     let realAnalysisData = null;
@@ -2352,7 +2502,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
         // Teacher Implementation
         teacherImplementation: {
-          implementedBy: localStorage.getItem('userId') || 'teacher_default',
+          implementedBy: getValidTeacherId(),
           implementationDate: getFormattedDate(),
           prescriptionFollowed: true,
           questionDistribution: {
@@ -2402,7 +2552,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             multisensoryElements: ["visual", "cognitive", "linguistic"]
           },
 
-          createdBy: localStorage.getItem('userId') || 'teacher_default',
+          createdBy: getValidTeacherId(),
           createdAt: getFormattedDate()
         })),
 
@@ -2413,12 +2563,12 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         revisionNumber: activity?.revisionNumber || 1,
         revisionHistory: activity?.revisionHistory || [{
           version: 1,
-          editedBy: localStorage.getItem('userId') || 'teacher_default',
+          editedBy: getValidTeacherId(),
           editedAt: getFormattedDate(),
           changes: "Initial implementation of doctor's prescription",
           prescriptionCompliance: "full"
         }],
-        lastEditedBy: localStorage.getItem('userId') || 'teacher_default',
+        lastEditedBy: getValidTeacherId(),
         lastEditedAt: getFormattedDate(),
 
         // Intervention Parameters
@@ -2458,7 +2608,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
         // Status tracking
         status: 'active',
-        createdBy: localStorage.getItem('userId') || 'teacher_default',
+        createdBy: getValidTeacherId(),
         createdAt: activity?.createdAt || getFormattedDate(),
         updatedAt: getFormattedDate(),
 
@@ -2643,7 +2793,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
         // Teacher Implementation
         teacherImplementation: {
-          implementedBy: localStorage.getItem('userId') || 'teacher_default',
+          implementedBy: getValidTeacherId(),
           implementationDate: getFormattedDate(),
           prescriptionFollowed: true,
           questionDistribution: {
@@ -2776,7 +2926,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                 difficultyLevel: "standard",
                 multisensoryElements: ["audio", "visual"]
               },
-              createdBy: localStorage.getItem('userId') || 'teacher_default',
+              createdBy: getValidTeacherId(),
               createdAt: getFormattedDate()
             };
           } else {
@@ -2828,7 +2978,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               },
 
               // Track who created this question
-              createdBy: localStorage.getItem('userId') || 'teacher_default',
+              createdBy: getValidTeacherId(),
               createdAt: getFormattedDate()
             };
           }
@@ -2838,12 +2988,12 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         revisionNumber: activity?.revisionNumber || 1,
         revisionHistory: activity?.revisionHistory || [{
           version: 1,
-          editedBy: localStorage.getItem('userId') || 'teacher_default',
+          editedBy: getValidTeacherId(),
           editedAt: getFormattedDate(),
           changes: "Initial implementation of doctor's prescription",
           prescriptionCompliance: "full"
         }],
-        lastEditedBy: localStorage.getItem('userId') || 'teacher_default',
+        lastEditedBy: getValidTeacherId(),
         lastEditedAt: getFormattedDate(),
 
         // Intervention Parameters
@@ -2890,7 +3040,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
         // Status tracking
         status: 'active',
-        createdBy: localStorage.getItem('userId') || 'teacher_default',
+        createdBy: getValidTeacherId(),
         createdAt: activity?.createdAt || getFormattedDate(),
         updatedAt: getFormattedDate(),
 
@@ -2953,6 +3103,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       { optionText: '', isCorrect: false }
     ] : [];
 
+    // Create audio texts array for Phonological Awareness (start with 1, can add up to 4)
+    const defaultAudioTexts = normCategory === 'phonological_awareness' ? [''] : undefined;
+
     const newPair = {
       id: generateUniqueId(),
       sourceType: 'custom',
@@ -2963,7 +3116,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       questionValue: null,
       choiceIds: [],
       correctChoiceId: null,
-      choices: defaultChoices  // Add choices array for Alphabet Knowledge
+      choices: defaultChoices,  // Add choices array for Alphabet Knowledge
+      // Add audioTexts for Phonological Awareness
+      ...(defaultAudioTexts && { audioTexts: defaultAudioTexts })
     };
 
     setQuestionChoicePairs(prev => [...prev, newPair]);
@@ -3195,7 +3350,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                 sourceType: 'custom',
                 sourceId: null,
                 questionText: '',
-                audioTexts: ['', '', ''],
+                audioTexts: [''], // Start with just 1 audio text - teacher can add more
                 matchingOptions: [],
                 correctPairs: []
               };
@@ -3215,7 +3370,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             const questionSet = template.questionSet;
 
             // Generate matching options and correct pairs from audioTexts
-            const audioTexts = questionSet.audioTexts || ['', '', ''];
+            const audioTexts = questionSet.audioTexts || [''];
             const matchingOptions = [];
             const correctPairs = [];
 
@@ -5058,15 +5213,33 @@ const renderPhonologicalAwarenessStep = () => {
           <div className="phonological-awareness-audio-section">
             <h5>Audio Texts</h5>
             <p className="phonological-awareness-description">
-              Enter the sounds/letters that students will hear (e.g., H, T, N)
+              Enter the sounds/letters that students will hear (e.g., H, T, N) - Up to 4 audio texts
             </p>
             <div className="phonological-awareness-audio-inputs">
-              {[0, 1, 2].map(audioIndex => (
+              {/* Ensure we have at least 1 audio text, maximum 4 */}
+              {(pair.audioTexts && pair.audioTexts.length > 0 ? pair.audioTexts : ['']).map((audioText, audioIndex) => (
                 <div key={audioIndex} className="phonological-awareness-audio-input-group">
-                  <label>Audio {audioIndex + 1}</label>
+                  <div className="phonological-awareness-audio-input-header">
+                    <label>Audio {audioIndex + 1}</label>
+                    {/* Show remove button if more than 1 audio text */}
+                    {(pair.audioTexts?.length || 1) > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentAudioTexts = pair.audioTexts || [''];
+                          const newAudioTexts = currentAudioTexts.filter((_, index) => index !== audioIndex);
+                          updateQuestionChoicePair(pair.id, 'audioTexts', newAudioTexts);
+                        }}
+                        className="phonological-awareness-remove-audio-btn"
+                        title="Remove this audio text"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="text"
-                    value={pair.audioTexts?.[audioIndex] || ''}
+                    value={audioText || ''}
                     onChange={(e) => {
                       // Only allow letters (no numbers, symbols, or special characters)
                       const lettersOnly = e.target.value.replace(/[^a-zA-Z\s]/g, '');
@@ -5077,7 +5250,8 @@ const renderPhonologicalAwarenessStep = () => {
                         .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                         .join(' ');
 
-                      const newAudioTexts = [...(pair.audioTexts || ['', '', ''])];
+                      const currentAudioTexts = pair.audioTexts || [''];
+                      const newAudioTexts = [...currentAudioTexts];
                       newAudioTexts[audioIndex] = capitalizedValue;
                       updateQuestionChoicePair(pair.id, 'audioTexts', newAudioTexts);
                     }}
@@ -5087,6 +5261,23 @@ const renderPhonologicalAwarenessStep = () => {
                   />
                 </div>
               ))}
+
+              {/* Add Audio button - show if less than 4 audio texts */}
+              {(pair.audioTexts?.length || 1) < 4 && (
+                <div className="phonological-awareness-add-audio-section">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentAudioTexts = pair.audioTexts || [''];
+                      const newAudioTexts = [...currentAudioTexts, ''];
+                      updateQuestionChoicePair(pair.id, 'audioTexts', newAudioTexts);
+                    }}
+                    className="phonological-awareness-add-audio-btn"
+                  >
+                    + Add Audio Text
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
