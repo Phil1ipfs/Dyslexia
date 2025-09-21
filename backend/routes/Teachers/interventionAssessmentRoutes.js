@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const interventionAssessmentController = require('../../controllers/Teachers/interventionAssessmentController');
+const { authenticateToken, authorize } = require('../../middleware/auth');
 
 // Validation middleware functions
 const validateAnalysisId = (req, res, next) => {
@@ -123,6 +124,8 @@ const validateEligibilityCheck = (req, res, next) => {
 // POST /api/intervention-assessment
 // Create new teacher-created intervention assessment
 router.post('/',
+  authenticateToken,
+  authorize('teacher', 'guro', 'admin'),
   (req, res, next) => {
     // Validate required fields for teacher-created interventions
     const errors = [];
@@ -140,10 +143,8 @@ router.post('/',
       errors.push({ field: 'questions', message: 'At least one question is required' });
     }
 
-    // Check if teacherImplementation.implementedBy is provided
-    if (!req.body.teacherImplementation?.implementedBy) {
-      errors.push({ field: 'teacherImplementation.implementedBy', message: 'Teacher implementation implementedBy is required' });
-    }
+    // 🔧 AUTHENTICATION FIX: No longer require teacherImplementation.implementedBy from request
+    // This will be automatically populated from req.user.id in the controller
 
     if (errors.length > 0) {
       return res.status(400).json({
@@ -161,6 +162,8 @@ router.post('/',
 // POST /api/intervention-assessment/generate
 // Generate one-time intervention based on prescriptive analysis
 router.post('/generate',
+  authenticateToken,
+  authorize('teacher', 'guro', 'admin'),
   validateInterventionGeneration,
   interventionAssessmentController.generateIntervention
 );
@@ -184,6 +187,14 @@ router.post('/validate-generation',
 // Health check for intervention assessment service
 router.get('/health',
   interventionAssessmentController.getServiceHealth
+);
+
+// GET /api/intervention-assessment/verify-teacher-profile
+// 🔧 AUTHENTICATION VERIFICATION: Verify teacher profile linking
+router.get('/verify-teacher-profile',
+  authenticateToken,
+  authorize('teacher', 'guro', 'admin'),
+  interventionAssessmentController.verifyTeacherProfileLinking
 );
 
 // GET /api/intervention-assessment/:interventionId
@@ -288,6 +299,8 @@ router.get('/:interventionId/progress',
 // PUT /api/intervention-assessment/:interventionId
 // Update intervention assessment (for revisions/versioning)
 router.put('/:interventionId',
+  authenticateToken,
+  authorize('teacher', 'guro', 'admin'),
   validateInterventionId,
   (req, res, next) => {
     // Validate update data

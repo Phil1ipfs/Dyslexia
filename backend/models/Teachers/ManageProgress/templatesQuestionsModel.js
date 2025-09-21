@@ -164,7 +164,7 @@ templateQuestionSchema.methods.toInterventionQuestion = function() {
       baseQuestion.choiceOptions = this.choiceOptions;
       break;
     case 'Phonological Awareness':
-      baseQuestion.questionSet = [this.questionSet];
+      baseQuestion.questionSet = this.questionSet;
       break;
     case 'Decoding':
       baseQuestion.displaySequence = this.displaySequence;

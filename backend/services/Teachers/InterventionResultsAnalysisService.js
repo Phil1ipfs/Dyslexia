@@ -585,14 +585,23 @@ class InterventionResultsAnalysisService {
       throw new Error(`Invalid category in intervention assessment: "${category}"`);
     }
 
-    // Calculate matches for categories that use matching (like Phonological Awareness)
+    // Calculate category-specific metrics for different assessment types
     let totalPossibleMatches = 0;
     let correctMatches = 0;
+    let totalSentenceQuestions = 0;
+    let correctSentenceQuestions = 0;
 
     interventionResponses.forEach(response => {
+      // Phonological Awareness: Aggregate matching data
       if (response.totalMatches && response.correctMatches !== undefined) {
         totalPossibleMatches += response.totalMatches;
         correctMatches += response.correctMatches;
+      }
+
+      // Reading Comprehension: Aggregate sentence question data
+      if (response.totalSentenceQuestions && response.correctSentenceQuestions !== undefined) {
+        totalSentenceQuestions += response.totalSentenceQuestions;
+        correctSentenceQuestions += response.correctSentenceQuestions;
       }
     });
 
@@ -652,6 +661,8 @@ class InterventionResultsAnalysisService {
       cappedCorrectAnswers, // Include capped value for accurate score calculations
       totalPossibleMatches,
       correctMatches,
+      totalSentenceQuestions, // ✅ READING COMPREHENSION: Total sentence questions across all questionIds
+      correctSentenceQuestions, // ✅ READING COMPREHENSION: Correct sentence questions across all questionIds
       score,
       isPassed,
       passThreshold: interventionAssessment.passThreshold || 75,
@@ -681,7 +692,43 @@ class InterventionResultsAnalysisService {
     const rawCorrectAnswers = interventionResponses.filter(r => r.isCorrect).length;
     const cappedCorrectAnswers = Math.min(rawCorrectAnswers, totalQuestions);
 
-    console.log(`[BKT ANALYSIS] Initial metrics: totalQuestions=${totalQuestions}, rawCorrect=${rawCorrectAnswers}, cappedCorrect=${cappedCorrectAnswers}`);
+    // ✅ CATEGORY-SPECIFIC METRICS: Calculate accurate metrics based on category type
+    let categorySpecificScore = 0;
+    let totalPossibleMatches = 0;
+    let correctMatches = 0;
+    let totalSentenceQuestions = 0;
+    let correctSentenceQuestions = 0;
+
+    // Aggregate category-specific data
+    interventionResponses.forEach(response => {
+      if (response.totalMatches && response.correctMatches !== undefined) {
+        totalPossibleMatches += response.totalMatches;
+        correctMatches += response.correctMatches;
+      }
+      if (response.totalSentenceQuestions && response.correctSentenceQuestions !== undefined) {
+        totalSentenceQuestions += response.totalSentenceQuestions;
+        correctSentenceQuestions += response.correctSentenceQuestions;
+      }
+    });
+
+    // Calculate category-specific score using the same logic as calculateBasicMetrics
+    if (category === 'Phonological Awareness' && totalPossibleMatches > 0) {
+      categorySpecificScore = Math.round((correctMatches / totalPossibleMatches) * 100);
+      console.log(`[BKT ANALYSIS] Phonological Awareness scoring: ${correctMatches}/${totalPossibleMatches} = ${categorySpecificScore}%`);
+    } else if (category === 'Reading Comprehension') {
+      const questionIds = [...new Set(interventionResponses.map(r => r.questionId))];
+      const passedQuestionIds = questionIds.filter(qId => {
+        const responsesForQuestion = interventionResponses.filter(r => r.questionId === qId);
+        return responsesForQuestion.every(r => r.isCorrect);
+      });
+      categorySpecificScore = questionIds.length > 0 ? Math.round((passedQuestionIds.length / questionIds.length) * 100) : 0;
+      console.log(`[BKT ANALYSIS] Reading Comprehension scoring: ${passedQuestionIds.length}/${questionIds.length} questionIds passed = ${categorySpecificScore}%`);
+    } else {
+      categorySpecificScore = totalQuestions > 0 ? Math.round((cappedCorrectAnswers / totalQuestions) * 100) : 0;
+      console.log(`[BKT ANALYSIS] Standard scoring for ${category}: ${cappedCorrectAnswers}/${totalQuestions} = ${categorySpecificScore}%`);
+    }
+
+    console.log(`[BKT ANALYSIS] Category-specific metrics: score=${categorySpecificScore}%, totalQuestions=${totalQuestions}, correct=${cappedCorrectAnswers}`);
 
     // Get original mastery probability
     const originalMastery = originalPrescriptiveAnalysis.skillMastery?.[category]?.masteryProbability || 0.5;
@@ -695,14 +742,7 @@ class InterventionResultsAnalysisService {
     const P_GUESS = 0.3;  // 30% chance of guessing correct answer
     const P_SLIP = 0.1;   // 10% chance of making careless mistake
 
-    // Note: interventionResponses are already strictly filtered by gatherAnalysisContext
     console.log(`[BKT ANALYSIS] Processing ${interventionResponses.length} pre-filtered responses for BKT calculation`);
-
-    // RECALCULATE metrics based on clean responses
-    const correctAnswers = interventionResponses.filter(r => r.isCorrect).length;
-    const finalCappedCorrectAnswers = Math.min(correctAnswers, totalQuestions);
-
-    console.log(`[BKT ANALYSIS] CORRECTED metrics: totalQuestions=${totalQuestions}, correct=${correctAnswers}, capped=${finalCappedCorrectAnswers}`);
 
     // Process each response chronologically to track mastery evolution
     interventionResponses.forEach(response => {
@@ -718,12 +758,30 @@ class InterventionResultsAnalysisService {
         currentMastery = posterior + (1 - posterior) * P_LEARN;
       }
 
-      responseHistory.push({
+      // ✅ CATEGORY-SPECIFIC RESPONSE HISTORY: Include category-specific data
+      const historyEntry = {
         questionId: response.questionId,
         correct: response.isCorrect,
         timestamp: response.answeredAt,
-        masteryAfter: Math.round(currentMastery * 1000) / 1000 // Round to 3 decimal places
-      });
+        masteryAfter: Math.round(currentMastery * 1000) / 1000
+      };
+
+      // Add category-specific fields to response history
+      if (category === 'Phonological Awareness' && response.totalMatches) {
+        historyEntry.categorySpecific = {
+          correctMatches: response.correctMatches || 0,
+          totalMatches: response.totalMatches || 0,
+          partialSuccess: response.totalMatches > 0 ? response.correctMatches / response.totalMatches : 0
+        };
+      } else if (category === 'Reading Comprehension' && response.totalSentenceQuestions) {
+        historyEntry.categorySpecific = {
+          correctSentenceQuestions: response.correctSentenceQuestions || 0,
+          totalSentenceQuestions: response.totalSentenceQuestions || 0,
+          allOrNothingResult: response.isCorrect
+        };
+      }
+
+      responseHistory.push(historyEntry);
     });
 
     const masteryGrowth = currentMastery - originalMastery;
@@ -740,20 +798,31 @@ class InterventionResultsAnalysisService {
 
     console.log(`[INTERVENTION ANALYSIS] ✅ Creating skillMastery object with safe category key: "${safeCategory}"`);
 
-    skillMasteryResult[safeCategory] = {
+    // ✅ BUILD CATEGORY-SPECIFIC SKILL MASTERY RESULT
+    const skillMasteryData = {
       masteryProbability: Math.round(currentMastery * 1000) / 1000,
       previousMastery: Math.round(originalMastery * 1000) / 1000,
       currentMastery: Math.round(currentMastery * 1000) / 1000,
       masteryGrowth: Math.round(masteryGrowth * 1000) / 1000,
       lastUpdated: new Date(),
-      totalQuestions: totalQuestions, // Use the corrected totalQuestions from intervention assessment
-      correctAnswers: finalCappedCorrectAnswers, // FIXED: Use clean correct answers
-      score: Math.round((finalCappedCorrectAnswers / totalQuestions) * 100),
-      isPassed: currentMastery >= 0.75, // BKT confidence threshold
+      totalQuestions: totalQuestions,
+      correctAnswers: cappedCorrectAnswers,
+      score: categorySpecificScore, // ✅ Use category-specific score calculation
+      isPassed: categorySpecificScore >= 75, // ✅ Use actual score threshold, not BKT
       status: status,
       responseHistory: responseHistory
     };
 
+    // Add category-specific fields to skill mastery
+    if (category === 'Phonological Awareness') {
+      skillMasteryData.totalPossibleMatches = totalPossibleMatches;
+      skillMasteryData.correctMatches = correctMatches;
+    } else if (category === 'Reading Comprehension') {
+      skillMasteryData.totalSentenceQuestions = totalSentenceQuestions;
+      skillMasteryData.correctSentenceQuestions = correctSentenceQuestions;
+    }
+
+    skillMasteryResult[safeCategory] = skillMasteryData;
     skillMasteryResult.masteryGrowth = Math.round(masteryGrowth * 1000) / 1000;
 
     return skillMasteryResult;
@@ -995,8 +1064,21 @@ class InterventionResultsAnalysisService {
   }
 
   static calculatePartialSuccess(incorrectResponses) {
-    // For phonological awareness - calculate average partial success rate
-    return Math.round(Math.random() * 0.5 * 100) / 100; // Simplified calculation
+    // For phonological awareness - calculate REAL average partial success rate from actual data
+    if (!incorrectResponses || incorrectResponses.length === 0) return 0;
+
+    let totalPartialSuccess = 0;
+    let validResponses = 0;
+
+    incorrectResponses.forEach(response => {
+      if (response.totalMatches && response.totalMatches > 0) {
+        const partialSuccess = (response.correctMatches || 0) / response.totalMatches;
+        totalPartialSuccess += partialSuccess;
+        validResponses++;
+      }
+    });
+
+    return validResponses > 0 ? Math.round((totalPartialSuccess / validResponses) * 100) / 100 : 0;
   }
 
   static identifyConfusionPairs(incorrectResponses) {
@@ -1100,10 +1182,13 @@ class InterventionResultsAnalysisService {
     };
 
     // Skill progression analysis
+    const responseTimeImprovement = this.calculateResponseTimeImprovement(skillMasteryAnalysis, originalPrescriptiveAnalysis, category);
+    const consistencyImprovement = this.calculateConsistencyImprovement(scoreImprovement, masteryGrowth);
+
     const skillProgression = {
       masteryGrowth: masteryGrowth,
-      responseTimeImprovement: Math.round(Math.random() * 20), // Simplified
-      consistencyImprovement: Math.round(scoreImprovement * 0.5) / 100
+      responseTimeImprovement: responseTimeImprovement,
+      consistencyImprovement: consistencyImprovement
     };
 
     // Intervention insights
@@ -1291,7 +1376,7 @@ class InterventionResultsAnalysisService {
       totalQuestions: basicMetrics.totalQuestions,
       totalCorrect: basicMetrics.correctAnswers,
       averageResponseTime: Math.round(avgResponseTime * 10) / 10,
-      consistencyIndex: Math.round(Math.random() * 100) / 100,
+      consistencyIndex: this.calculateConsistencyIndex(interventionResponses),
       improvementTrajectory
     };
   }
@@ -1350,7 +1435,7 @@ class InterventionResultsAnalysisService {
       progressIndicators: {
         scoreImprovement: basicMetrics.improvement,
         masteryGrowth: skillMasteryAnalysis.masteryGrowth,
-        errorReduction: Math.max(0, Math.round(Math.random() * basicMetrics.improvement)),
+        errorReduction: this.calculateErrorReduction(basicMetrics, errorPatternAnalysis),
         skillTransfer: this.determineSkillTransfer(basicMetrics.improvement)
       }
     };
@@ -4357,6 +4442,149 @@ class InterventionResultsAnalysisService {
 
     console.log(`[REVISION DETECTION] ✅ Using revision ${mostRecentCompletedRevision} (most recent completed)`);
     return mostRecentCompletedRevision;
+  }
+
+  // ===== HELPER FUNCTIONS FOR GENUINE DATA-DRIVEN ANALYSIS =====
+  // These functions eliminate hardcoded values and provide real calculations
+
+  /**
+   * Calculate response time improvement based on intervention data
+   */
+  static calculateResponseTimeImprovement(skillMasteryAnalysis, originalPrescriptiveAnalysis, category) {
+    try {
+      // Get response times from skill mastery analysis response history
+      const responseHistory = skillMasteryAnalysis && skillMasteryAnalysis[category]
+        ? skillMasteryAnalysis[category].responseHistory || []
+        : [];
+
+      if (responseHistory.length < 2) {
+        console.log(`[RESPONSE TIME] Insufficient response history for ${category} - returning 0%`);
+        return 0;
+      }
+
+      // Calculate average response time for first half vs second half of intervention
+      const midpoint = Math.floor(responseHistory.length / 2);
+      const firstHalf = responseHistory.slice(0, midpoint);
+      const secondHalf = responseHistory.slice(midpoint);
+
+      const firstHalfAvg = firstHalf.reduce((sum, r) => sum + (r.responseTime || 15), 0) / firstHalf.length;
+      const secondHalfAvg = secondHalf.reduce((sum, r) => sum + (r.responseTime || 15), 0) / secondHalf.length;
+
+      // Calculate improvement percentage (faster response time = positive improvement)
+      const improvement = firstHalfAvg > 0 ? Math.round(((firstHalfAvg - secondHalfAvg) / firstHalfAvg) * 100) : 0;
+
+      console.log(`[RESPONSE TIME] ${category}: First half avg: ${firstHalfAvg.toFixed(1)}s, Second half avg: ${secondHalfAvg.toFixed(1)}s, Improvement: ${improvement}%`);
+      return Math.max(0, Math.min(50, improvement)); // Cap between 0-50%
+    } catch (error) {
+      console.error(`[RESPONSE TIME] Calculation error:`, error);
+      return 0;
+    }
+  }
+
+  /**
+   * Calculate consistency improvement based on score change and mastery growth
+   */
+  static calculateConsistencyImprovement(scoreImprovement, masteryGrowth) {
+    try {
+      // Consistency improvement is based on how steady the learning progress was
+      // Higher score improvement + higher mastery growth = more consistent learning
+      const scoreWeight = 0.6;
+      const masteryWeight = 0.4;
+
+      // Normalize score improvement (0-100 scale to 0-1 scale)
+      const normalizedScore = Math.min(scoreImprovement / 50, 1); // 50% improvement = perfect score consistency
+
+      // Normalize mastery growth (0-1 scale already)
+      const normalizedMastery = Math.min(masteryGrowth / 0.5, 1); // 0.5 mastery growth = perfect mastery consistency
+
+      // Calculate weighted consistency improvement
+      const consistencyImprovement = (normalizedScore * scoreWeight + normalizedMastery * masteryWeight) * 100;
+
+      console.log(`[CONSISTENCY] Score improvement: ${scoreImprovement}%, Mastery growth: ${masteryGrowth}, Consistency: ${Math.round(consistencyImprovement)}%`);
+      return Math.round(consistencyImprovement);
+    } catch (error) {
+      console.error(`[CONSISTENCY] Calculation error:`, error);
+      return 0;
+    }
+  }
+
+  /**
+   * Calculate consistency index from intervention responses
+   */
+  static calculateConsistencyIndex(interventionResponses) {
+    try {
+      if (!interventionResponses || interventionResponses.length < 3) {
+        console.log(`[CONSISTENCY INDEX] Insufficient responses for analysis - returning 0.5`);
+        return 0.5; // Default middle consistency
+      }
+
+      // Calculate consistency based on performance variation
+      const correctRates = [];
+      const windowSize = Math.max(2, Math.floor(interventionResponses.length / 3)); // Split into 3 windows
+
+      for (let i = 0; i <= interventionResponses.length - windowSize; i += windowSize) {
+        const window = interventionResponses.slice(i, i + windowSize);
+        const correctCount = window.filter(r => r.isCorrect).length;
+        const correctRate = correctCount / window.length;
+        correctRates.push(correctRate);
+      }
+
+      // Calculate standard deviation of correct rates
+      const mean = correctRates.reduce((sum, rate) => sum + rate, 0) / correctRates.length;
+      const variance = correctRates.reduce((sum, rate) => sum + Math.pow(rate - mean, 2), 0) / correctRates.length;
+      const standardDeviation = Math.sqrt(variance);
+
+      // Convert to consistency index (lower standard deviation = higher consistency)
+      const consistencyIndex = Math.max(0, Math.min(1, 1 - (standardDeviation * 2)));
+
+      console.log(`[CONSISTENCY INDEX] Windows: ${correctRates.length}, Mean: ${mean.toFixed(2)}, SD: ${standardDeviation.toFixed(3)}, Index: ${consistencyIndex.toFixed(2)}`);
+      return Math.round(consistencyIndex * 100) / 100; // Round to 2 decimal places
+    } catch (error) {
+      console.error(`[CONSISTENCY INDEX] Calculation error:`, error);
+      return 0.5;
+    }
+  }
+
+  /**
+   * Calculate error reduction from basic metrics and error pattern analysis
+   */
+  static calculateErrorReduction(basicMetrics, errorPatternAnalysis) {
+    try {
+      const category = basicMetrics.category;
+
+      if (!errorPatternAnalysis || !errorPatternAnalysis[category]) {
+        console.log(`[ERROR REDUCTION] No error pattern data for ${category} - returning 0%`);
+        return 0;
+      }
+
+      const categoryErrors = errorPatternAnalysis[category];
+
+      // Calculate error reduction based on current vs expected error rate
+      let currentErrorRate = 0;
+      let expectedErrorRate = 50; // Baseline 50% error rate for comparison
+
+      // Category-specific error rate calculation
+      if (category === 'Phonological Awareness' && categoryErrors.matching_errors) {
+        currentErrorRate = categoryErrors.matching_errors.percentage || 0;
+      } else if (category === 'Reading Comprehension' && categoryErrors.comprehension_errors) {
+        currentErrorRate = categoryErrors.comprehension_errors.percentage || 0;
+      } else if (category === 'Alphabet Knowledge' && categoryErrors.choice_errors) {
+        currentErrorRate = categoryErrors.choice_errors.percentage || 0;
+      } else if (category === 'Decoding' && categoryErrors.decoding_errors) {
+        currentErrorRate = categoryErrors.decoding_errors.percentage || 0;
+      } else if (category === 'Word Recognition' && categoryErrors.recognition_errors) {
+        currentErrorRate = categoryErrors.recognition_errors.percentage || 0;
+      }
+
+      // Calculate error reduction percentage
+      const errorReduction = Math.max(0, ((expectedErrorRate - currentErrorRate) / expectedErrorRate) * 100);
+
+      console.log(`[ERROR REDUCTION] ${category}: Current error rate: ${currentErrorRate}%, Expected: ${expectedErrorRate}%, Reduction: ${Math.round(errorReduction)}%`);
+      return Math.round(errorReduction);
+    } catch (error) {
+      console.error(`[ERROR REDUCTION] Calculation error:`, error);
+      return 0;
+    }
   }
 
   // These helper methods provide the foundation for comprehensive longitudinal analysis

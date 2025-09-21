@@ -21,9 +21,10 @@ class InterventionGeneratorService {
    * Generate one-time intervention assessment based on prescriptive analysis
    * @param {string} analysisId - Prescriptive analysis ID
    * @param {string} category - Category for intervention
+   * @param {string} teacherId - ID of authenticated teacher creating the intervention
    * @returns {Object} Generated intervention assessment
    */
-  async generateIntervention(analysisId, category) {
+  async generateIntervention(analysisId, category, teacherId = null) {
     try {
       console.log(`[INTERVENTION GENERATOR] Generating intervention for analysis ${analysisId}, category: ${category}`);
 
@@ -105,7 +106,8 @@ class InterventionGeneratorService {
       // Generate teacher implementation data (prescription-based)
       const teacherImplementation = this.generateTeacherImplementation(
         null, // No auto-generated questions - teacher will create all questions
-        optimalQuestionCount
+        optimalQuestionCount,
+        teacherId // Pass authenticated teacher ID
       );
 
       // Generate question count calculation details
@@ -144,7 +146,7 @@ class InterventionGeneratorService {
           immediateFeeback: false
         },
         status: 'draft', // Start as draft until teacher creates questions
-        createdBy: null, // Will be set when teacher creates questions
+        createdBy: teacherId, // 🔧 AUTHENTICATION FIX: Set from authenticated teacher
         templateMetadata: {
           templateCount: 0, // Teacher will add questions using templates
           mainAssessmentCount: 0,
@@ -2260,7 +2262,7 @@ class InterventionGeneratorService {
    * @param {number} optimalQuestionCount - Calculated question count
    * @returns {Object} Teacher implementation data
    */
-  generateTeacherImplementation(questionGeneration, optimalQuestionCount) {
+  generateTeacherImplementation(questionGeneration, optimalQuestionCount, teacherId = null) {
     // CLAUDE.md Doctor-Teacher-Student Model: Teacher will implement the prescription
     const questionDistribution = new Map();
 
@@ -2268,9 +2270,9 @@ class InterventionGeneratorService {
     questionDistribution.set('teacher_to_create', optimalQuestionCount);
 
     return {
-      implementedBy: null, // REQUIRED FIELD - Will be set when teacher implements
-      implementationDate: null, // Will be set when teacher implements
-      prescriptionFollowed: null, // Will be set when teacher implements
+      implementedBy: teacherId, // 🔧 AUTHENTICATION FIX: Set from authenticated teacher
+      implementationDate: teacherId ? new Date() : null, // Set current date if teacher provided
+      prescriptionFollowed: teacherId ? true : null, // Set to true if teacher provided
       questionDistribution: questionDistribution
     };
   }

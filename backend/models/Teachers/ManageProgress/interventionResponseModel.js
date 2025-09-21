@@ -40,7 +40,15 @@ const interventionResponseSchema = new mongoose.Schema({
     type: Number
   },
   totalMatches: {
-    type: Number  
+    type: Number
+  },
+
+  // For Reading Comprehension questions only
+  correctSentenceQuestions: {
+    type: Number
+  },
+  totalSentenceQuestions: {
+    type: Number
   },
   isCorrect: {
     type: Boolean,
