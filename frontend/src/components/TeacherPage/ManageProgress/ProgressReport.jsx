@@ -32,7 +32,8 @@ import {
   FaFilePdf,
   FaDownload,
   FaSpinner,
-  FaLock
+  FaLock,
+  FaEdit
 } from 'react-icons/fa';
 
 import './css/ProgressReport.css';
@@ -280,9 +281,13 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     // ✅ ENHANCED: Count passed categories INCLUDING intervention successes
     const passedCategories = categoriesData.filter(cat => {
       // Check if passed via intervention first
-      const latestAttempt = getLatestInterventionAttempt(cat);
-      if (latestAttempt && latestAttempt.isPassed && latestAttempt.score >= 75) {
-        return true;
+      if (cat.interventionHistory && cat.interventionHistory.length > 0) {
+        const passedAttempts = cat.interventionHistory.filter(attempt => 
+          attempt.isPassed === true && attempt.score >= 75
+        );
+        if (passedAttempts.length > 0) {
+          return true;
+        }
       }
       // Otherwise check original assessment
       return cat.isPassed;
@@ -390,9 +395,13 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
       categoriesData.filter(cat => {
         try {
           // Check if passed via intervention first
-          const latestAttempt = getLatestInterventionAttempt(cat);
-          if (latestAttempt && latestAttempt.isPassed && latestAttempt.score >= 75) {
-            return true;
+          if (cat.interventionHistory && cat.interventionHistory.length > 0) {
+            const passedAttempts = cat.interventionHistory.filter(attempt => 
+              attempt.isPassed === true && attempt.score >= 75
+            );
+            if (passedAttempts.length > 0) {
+              return true;
+            }
           }
           // Otherwise check original assessment
           return cat.isPassed;
@@ -973,7 +982,6 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
 
   return (
     <div className="student-progress-container">
-      {console.log('[PROGRESS REPORT] 🎯 RENDERING MAIN CONTAINER')}
       {/* Progress info section */}
       <div className="student-progress-info">
         <FaInfoCircle className="student-progress-info-icon" />
@@ -1029,10 +1037,8 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
       </div>
 
       {/* Combined Category Progress & Performance Section */}
-      {console.log('[PROGRESS REPORT] About to render main content section, hasValidCategoryData:', hasValidCategoryData)}
       {hasValidCategoryData && (
         <div className="student-progress-category-section">
-          {console.log('[PROGRESS REPORT] 🎯 RENDERING CATEGORIES SECTION!')}
           <div className="student-progress-section-header">
             <h3 className="student-progress-section-title">
               <FaChartLine className="student-progress-section-icon" /> 
@@ -1073,7 +1079,6 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
 
           {/* Enhanced Category Cards - Individual Row Layout with Dynamic Intervention Progression */}
           <div className="student-progress-categories-list">
-            {console.log('[PROGRESS REPORT] About to render categories list, categoriesData:', categoriesData)}
             {categoriesData.map((category, index) => {
               const categoryName = category.categoryName || `Category ${index + 1}`;
               const displayName = typeof categoryName === 'string' ?
