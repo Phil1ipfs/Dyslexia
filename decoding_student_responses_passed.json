@@ -32,8 +32,8 @@
     "questionId": "DC_002",
     "category": "Decoding",
     "questionType": "drag_drop",
-    "response": ["A", "R", "A", "W"],
-    "isCorrect": true,
+    "response": ["A", "R", "W", "A"],
+    "isCorrect": false,
     "responseTime": 7.2,
     "answeredAt": {
       "$date": "2025-09-21T17:15:45.000Z"
@@ -76,8 +76,8 @@
     "questionId": "DC_004",
     "category": "Decoding",
     "questionType": "drag_drop",
-    "response": ["E", "R", "O", "P", "L", "A", "N", "O"],
-    "isCorrect": true,
+    "response": ["E", "R", "P", "L", "A", "N", "O"],
+    "isCorrect": false,
     "responseTime": 15.8,
     "answeredAt": {
       "$date": "2025-09-21T17:16:20.000Z"
@@ -120,8 +120,8 @@
     "questionId": "DC_006",
     "category": "Decoding",
     "questionType": "drag_drop",
-    "response": ["K", "A", "M", "A", "Y"],
-    "isCorrect": true,
+    "response": ["K", "M", "A", "A", "Y"],
+    "isCorrect": false,
     "responseTime": 8.7,
     "answeredAt": {
       "$date": "2025-09-21T17:16:50.000Z"
@@ -164,8 +164,8 @@
     "questionId": "DC_008",
     "category": "Decoding",
     "questionType": "drag_drop",
-    "response": ["P", "A", "L", "A", "K", "A"],
-    "isCorrect": true,
+    "response": ["P", "L", "A", "A", "K", "A"],
+    "isCorrect": false,
     "responseTime": 11.2,
     "answeredAt": {
       "$date": "2025-09-21T17:17:20.000Z"
@@ -208,8 +208,8 @@
     "questionId": "DC_010",
     "category": "Decoding",
     "questionType": "drag_drop",
-    "response": ["O"],
-    "isCorrect": true,
+    "response": ["A"],
+    "isCorrect": false,
     "responseTime": 5.8,
     "answeredAt": {
       "$date": "2025-09-21T17:17:50.000Z"
@@ -252,8 +252,8 @@
     "questionId": "DC_012",
     "category": "Decoding",
     "questionType": "drag_drop",
-    "response": ["D"],
-    "isCorrect": true,
+    "response": ["B"],
+    "isCorrect": false,
     "responseTime": 7.1,
     "answeredAt": {
       "$date": "2025-09-21T17:18:20.000Z"
@@ -274,8 +274,8 @@
     "questionId": "DC_013",
     "category": "Decoding",
     "questionType": "drag_drop",
-    "response": ["H"],
-    "isCorrect": true,
+    "response": ["W"],
+    "isCorrect": false,
     "responseTime": 6.8,
     "answeredAt": {
       "$date": "2025-09-21T17:18:35.000Z"

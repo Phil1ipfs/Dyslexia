@@ -45,9 +45,13 @@ class PdfReportService {
       // Add post-assessment specific sections
       currentY = this.addInterventionAnalysisSection(pdf, progressData, responsesData, pageWidth, pageHeight, margin, bottomMargin, currentY);
       
+      onProgress('Adding detailed intervention results...', 85);
+      // Add detailed intervention results section
+      currentY = await this.addDetailedInterventionResults(pdf, studentData, progressData, pageWidth, pageHeight, margin, bottomMargin, currentY);
+      
       onProgress('Adding prescriptive analysis...', 90);
       // Add prescriptive analysis section
-      currentY = this.addPrescriptiveAnalysisSection(pdf, progressData, responsesData, pageWidth, pageHeight, margin, bottomMargin, currentY);
+      currentY = await this.addPrescriptiveAnalysisSection(pdf, studentData, progressData, responsesData, pageWidth, pageHeight, margin, bottomMargin, currentY);
       
       onProgress('Finalizing report...', 95);
       // Add professional footer
@@ -853,7 +857,7 @@ class PdfReportService {
   /**
    * Add prescriptive analysis section  
    */
-  static addPrescriptiveAnalysisSection(pdf, progressData, responsesData, pageWidth, pageHeight, margin, bottomMargin, currentY) {
+  static async addPrescriptiveAnalysisSection(pdf, studentData, progressData, responsesData, pageWidth, pageHeight, margin, bottomMargin, currentY) {
     let yPos = currentY;
     
     // Check if we need a new page
@@ -874,6 +878,23 @@ class PdfReportService {
     yPos += 18;
     pdf.setTextColor(0, 0, 0);
     
+    // Try to fetch prescriptive analysis from database
+    let prescriptiveData = null;
+    try {
+      const categories = progressData.categories || [];
+      const categoriesWithInterventions = categories.filter(cat => 
+        cat.interventionHistory && cat.interventionHistory.length > 0
+      );
+      
+      if (categoriesWithInterventions.length > 0) {
+        // Fetch prescriptive analysis for the first category with interventions
+        const categoryName = categoriesWithInterventions[0].categoryName;
+        prescriptiveData = await this.fetchPrescriptiveAnalysis(studentData.idNumber, categoryName);
+      }
+    } catch (error) {
+      console.warn('Could not fetch prescriptive analysis:', error);
+    }
+    
     // Calculate overall performance
     const totalQuestions = responsesData.length;
     const correctAnswers = responsesData.filter(r => r.isCorrect).length;
@@ -888,7 +909,10 @@ class PdfReportService {
     pdf.setFont('helvetica', 'normal');
     
     let strategies = [];
-    if (overallPercentage >= 85) {
+    if (prescriptiveData && prescriptiveData.recommendations && prescriptiveData.recommendations.length > 0) {
+      // Use database recommendations
+      strategies = prescriptiveData.recommendations.map(rec => `• ${rec}`);
+    } else if (overallPercentage >= 85) {
       strategies = [
         '• Continue with grade-level reading materials and challenging texts',
         '• Introduce advanced comprehension strategies and critical thinking',
@@ -1121,6 +1145,430 @@ class PdfReportService {
     }
     
     return lines;
+  }
+
+  /**
+   * Add detailed intervention results section
+   */
+  static async addDetailedInterventionResults(pdf, studentData, progressData, pageWidth, pageHeight, margin, bottomMargin, currentY) {
+    let yPos = currentY;
+    
+    // Check if we need a new page
+    if (yPos + 80 > pageHeight - bottomMargin) {
+      pdf.addPage();
+      yPos = margin;
+    }
+    
+    // Section header
+    pdf.setFillColor(156, 39, 176);
+    pdf.rect(margin, yPos, pageWidth - (margin * 2), 12, 'F');
+    
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('DETAILED INTERVENTION RESULTS', margin + 8, yPos + 8);
+    
+    yPos += 18;
+    pdf.setTextColor(0, 0, 0);
+    
+    // Get categories with intervention results
+    const categories = progressData.categories || [];
+    const interventionCategories = categories.filter(cat => 
+      cat.interventionHistory && cat.interventionHistory.length > 0
+    );
+    
+    if (interventionCategories.length === 0) {
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('No intervention results available for this assessment.', margin + 6, yPos);
+      yPos += 15;
+      return yPos;
+    }
+    
+    // Process each category with intervention results
+    for (const category of interventionCategories) {
+      yPos = await this.addCategoryInterventionResults(pdf, studentData, category, pageWidth, pageHeight, margin, bottomMargin, yPos);
+      yPos += 10;
+    }
+    
+    return yPos;
+  }
+
+  /**
+   * Add intervention results for a specific category
+   */
+  static async addCategoryInterventionResults(pdf, studentData, category, pageWidth, pageHeight, margin, bottomMargin, currentY) {
+    let yPos = currentY;
+    
+    // Check if we need a new page
+    if (yPos + 100 > pageHeight - bottomMargin) {
+      pdf.addPage();
+      yPos = margin;
+    }
+    
+    // Category header
+    pdf.setFillColor(240, 240, 240);
+    pdf.rect(margin, yPos, pageWidth - (margin * 2), 8, 'F');
+    
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${category.categoryName} - Intervention Results`, margin + 6, yPos + 5);
+    
+    yPos += 12;
+    
+    // Get the latest intervention result
+    const latestIntervention = category.interventionHistory[category.interventionHistory.length - 1];
+    if (!latestIntervention) {
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('No intervention data available.', margin + 6, yPos);
+      yPos += 10;
+      return yPos;
+    }
+    
+    // Intervention metadata
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    
+    const originalScore = category.score || 0;
+    const interventionScore = latestIntervention.score || 0;
+    const improvement = interventionScore - originalScore;
+    
+    pdf.text(`Original Score: ${originalScore}%`, margin + 6, yPos);
+    yPos += 6;
+    pdf.text(`Intervention Score: ${interventionScore}%`, margin + 6, yPos);
+    yPos += 6;
+    pdf.text(`Improvement: ${improvement > 0 ? '+' : ''}${improvement}%`, margin + 6, yPos);
+    yPos += 6;
+    pdf.text(`Attempt: ${latestIntervention.attemptNumber || 1}`, margin + 6, yPos);
+    yPos += 6;
+    pdf.text(`Status: ${interventionScore >= 75 ? 'PASSED' : 'NEEDS MORE WORK'}`, margin + 6, yPos);
+    yPos += 10;
+    
+    // Try to fetch detailed intervention data
+    try {
+      const interventionData = await this.fetchInterventionData(studentData.idNumber, category.categoryName, latestIntervention.interventionId);
+      
+      if (interventionData && interventionData.assessmentData && interventionData.assessmentData.questions) {
+        yPos = this.addInterventionQuestions(pdf, interventionData.assessmentData.questions, category.categoryName, pageWidth, pageHeight, margin, bottomMargin, yPos);
+        
+        // Add student responses if available
+        if (interventionData.responsesData) {
+          yPos = this.addStudentResponses(pdf, interventionData.responsesData, interventionData.assessmentData.questions, category.categoryName, pageWidth, pageHeight, margin, bottomMargin, yPos);
+        }
+      }
+    } catch (error) {
+      console.warn('Could not fetch detailed intervention data:', error);
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'italic');
+      pdf.text('Detailed intervention questions not available.', margin + 6, yPos);
+      yPos += 8;
+    }
+    
+    return yPos;
+  }
+
+  /**
+   * Fetch intervention data from API
+   */
+  static async fetchInterventionData(studentId, categoryName, interventionId) {
+    try {
+      // Fetch intervention results
+      const resultsResponse = await fetch(`/api/intervention-results/student/${studentId}/category/${categoryName}`);
+      if (!resultsResponse.ok) return null;
+      
+      const resultsData = await resultsResponse.json();
+      if (!resultsData.success) return null;
+      
+      const interventionResult = resultsData.data;
+      
+      // Fetch intervention assessment details
+      let assessmentData = null;
+      if (interventionId) {
+        try {
+          const assessmentResponse = await fetch(`/api/intervention-assessment/${interventionId}`);
+          if (assessmentResponse.ok) {
+            const assessment = await assessmentResponse.json();
+            if (assessment.success) {
+              assessmentData = assessment.data;
+            }
+          }
+        } catch (error) {
+          console.warn('Could not fetch assessment data:', error);
+        }
+      }
+      
+      return {
+        interventionResult,
+        assessmentData
+      };
+    } catch (error) {
+      console.error('Error fetching intervention data:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Add intervention questions to PDF
+   */
+  static addInterventionQuestions(pdf, questions, categoryName, pageWidth, pageHeight, margin, bottomMargin, currentY) {
+    let yPos = currentY;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Intervention Questions:', margin + 6, yPos);
+    yPos += 8;
+    
+    questions.forEach((question, index) => {
+      // Check if we need a new page
+      if (yPos + 60 > pageHeight - bottomMargin) {
+        pdf.addPage();
+        yPos = margin;
+      }
+      
+      // Question header
+      pdf.setFillColor(250, 250, 250);
+      pdf.rect(margin + 4, yPos, pageWidth - (margin * 2) - 8, 6, 'F');
+      
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Question ${index + 1}: ${question.questionText}`, margin + 8, yPos + 4);
+      yPos += 8;
+      
+      // Question content based on category
+      if (categoryName.toLowerCase().includes('alphabet') && question.questionValue) {
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`Value: ${question.questionValue}`, margin + 8, yPos);
+        yPos += 6;
+      } else if (question.questionImage) {
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`Image: ${question.questionImage}`, margin + 8, yPos);
+        yPos += 6;
+      }
+      
+      // For Phonological Awareness - show audio elements and matching options
+      if (categoryName.toLowerCase().includes('phonological') && question.questionSet) {
+        if (question.questionSet.audioTexts && question.questionSet.audioTexts.length > 0) {
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'normal');
+          pdf.text('Audio Elements:', margin + 8, yPos);
+          yPos += 4;
+          question.questionSet.audioTexts.forEach(audio => {
+            pdf.text(`• ${audio}`, margin + 12, yPos);
+            yPos += 4;
+          });
+        }
+        
+        if (question.questionSet.matchingOptions && question.questionSet.matchingOptions.length > 0) {
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'normal');
+          pdf.text('Matching Options:', margin + 8, yPos);
+          yPos += 4;
+          question.questionSet.matchingOptions.forEach(option => {
+            pdf.text(`• ${option}`, margin + 12, yPos);
+            yPos += 4;
+          });
+        }
+        
+        if (question.questionSet.correctPairs && question.questionSet.correctPairs.length > 0) {
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'normal');
+          pdf.text('Correct Pairs:', margin + 8, yPos);
+          yPos += 4;
+          question.questionSet.correctPairs.forEach(pair => {
+            const [key, value] = Object.entries(pair)[0];
+            pdf.text(`• ${key} → ${value}`, margin + 12, yPos);
+            yPos += 4;
+          });
+        }
+      }
+      
+      // Choice options for other question types
+      if (question.choiceOptions && question.choiceOptions.length > 0) {
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text('Answer Options:', margin + 8, yPos);
+        yPos += 4;
+        question.choiceOptions.forEach(option => {
+          const isCorrect = option.isCorrect ? ' (CORRECT)' : '';
+          pdf.text(`• ${option.optionId}. ${option.optionText}${isCorrect}`, margin + 12, yPos);
+          yPos += 4;
+        });
+      }
+      
+      yPos += 8;
+    });
+    
+    return yPos;
+  }
+
+  /**
+   * Add student responses to PDF
+   */
+  static addStudentResponses(pdf, responsesData, questions, categoryName, pageWidth, pageHeight, margin, bottomMargin, currentY) {
+    let yPos = currentY;
+    
+    // Check if we need a new page
+    if (yPos + 60 > pageHeight - bottomMargin) {
+      pdf.addPage();
+      yPos = margin;
+    }
+    
+    // Student responses header
+    pdf.setFillColor(33, 150, 243);
+    pdf.rect(margin, yPos, pageWidth - (margin * 2), 8, 'F');
+    
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('STUDENT RESPONSES', margin + 6, yPos + 5);
+    
+    yPos += 12;
+    pdf.setTextColor(0, 0, 0);
+    
+    if (!responsesData || responsesData.length === 0) {
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('No student responses available.', margin + 6, yPos);
+      yPos += 8;
+      return yPos;
+    }
+    
+    // Process each response
+    responsesData.forEach((response, index) => {
+      // Check if we need a new page
+      if (yPos + 40 > pageHeight - bottomMargin) {
+        pdf.addPage();
+        yPos = margin;
+      }
+      
+      // Find the corresponding question
+      const question = questions.find(q => q.questionId === response.questionId);
+      if (!question) return;
+      
+      // Response header
+      pdf.setFillColor(245, 245, 245);
+      pdf.rect(margin + 2, yPos, pageWidth - (margin * 2) - 4, 6, 'F');
+      
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Response ${index + 1}: Question ${question.questionId}`, margin + 6, yPos + 4);
+      yPos += 8;
+      
+      // Question text
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      const questionText = question.questionText || 'No question text available';
+      const wrappedQuestion = this.wrapText(pdf, questionText, pageWidth - (margin * 2) - 12, 7);
+      wrappedQuestion.forEach(line => {
+        pdf.text(line, margin + 6, yPos);
+        yPos += 4;
+      });
+      yPos += 2;
+      
+      // Student answer
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Student Answer:', margin + 6, yPos);
+      yPos += 4;
+      
+      pdf.setFont('helvetica', 'normal');
+      const studentAnswer = response.studentAnswer || 'No answer provided';
+      const wrappedStudentAnswer = this.wrapText(pdf, studentAnswer, pageWidth - (margin * 2) - 12, 7);
+      wrappedStudentAnswer.forEach(line => {
+        pdf.text(line, margin + 8, yPos);
+        yPos += 4;
+      });
+      yPos += 2;
+      
+      // Correct answer
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Correct Answer:', margin + 6, yPos);
+      yPos += 4;
+      
+      pdf.setFont('helvetica', 'normal');
+      let correctAnswer = 'Not available';
+      
+      // Get correct answer based on question type
+      if (question.choiceOptions) {
+        const correctOption = question.choiceOptions.find(opt => opt.isCorrect);
+        if (correctOption) {
+          correctAnswer = `${correctOption.optionId}. ${correctOption.optionText}`;
+        }
+      } else if (question.questionSet && question.questionSet.correctPairs) {
+        correctAnswer = question.questionSet.correctPairs.map(pair => {
+          const [key, value] = Object.entries(pair)[0];
+          return `${key} → ${value}`;
+        }).join(', ');
+      } else if (question.questionValue) {
+        correctAnswer = question.questionValue;
+      }
+      
+      const wrappedCorrectAnswer = this.wrapText(pdf, correctAnswer, pageWidth - (margin * 2) - 12, 7);
+      wrappedCorrectAnswer.forEach(line => {
+        pdf.text(line, margin + 8, yPos);
+        yPos += 4;
+      });
+      yPos += 2;
+      
+      // Response status and time
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'bold');
+      const status = response.isCorrect ? 'CORRECT' : 'INCORRECT';
+      const statusColor = response.isCorrect ? [76, 175, 80] : [244, 67, 54];
+      
+      pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+      pdf.text(`Status: ${status}`, margin + 6, yPos);
+      
+      if (response.responseTime) {
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(`Response Time: ${this.formatTime(response.responseTime)}`, margin + 50, yPos);
+      }
+      
+      yPos += 6;
+      
+      // Add separator line
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(margin + 4, yPos, pageWidth - margin - 4, yPos);
+      yPos += 4;
+    });
+    
+    return yPos;
+  }
+
+  /**
+   * Format time in seconds to readable format
+   */
+  static formatTime(seconds) {
+    if (!seconds) return 'N/A';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}m ${remainingSeconds}s`;
+  }
+
+  /**
+   * Fetch prescriptive analysis from API
+   */
+  static async fetchPrescriptiveAnalysis(studentId, categoryName) {
+    try {
+      const response = await fetch(`/api/prescriptive-analysis/student/${studentId}/category/${categoryName}`);
+      if (!response.ok) return null;
+      
+      const data = await response.json();
+      if (data.success) {
+        return data.data;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching prescriptive analysis:', error);
+      return null;
+    }
   }
 }
 
