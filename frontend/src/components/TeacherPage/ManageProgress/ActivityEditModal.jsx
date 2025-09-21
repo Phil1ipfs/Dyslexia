@@ -1701,10 +1701,10 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     try {
       console.log('[TEMPLATE AUTO-SAVE] Starting auto-save of custom questions as templates');
 
-      // Only process Alphabet Knowledge questions for now
+      // Process Alphabet Knowledge and Phonological Awareness questions
       const normCategory = normalizeCategory(category);
-      if (normCategory !== 'alphabet_knowledge') {
-        console.log('[TEMPLATE AUTO-SAVE] Skipping - not Alphabet Knowledge category');
+      if (normCategory !== 'alphabet_knowledge' && normCategory !== 'phonological_awareness') {
+        console.log(`[TEMPLATE AUTO-SAVE] Skipping - category "${category}" not supported for auto-save yet`);
         return;
       }
 
@@ -1763,20 +1763,62 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             continue;
           }
 
-          const templateData = {
-            category: category,
-            questionType: pair.questionType || 'patinig',
-            questionText: pair.questionText,
-            questionImage: pair.questionImage,
-            choiceOptions: pair.choices.map((choice, index) => ({
-              optionId: (index + 1).toString(),
-              optionText: choice.optionText,
-              isCorrect: choice.isCorrect
-            })),
-            targetSkills: ["custom_teacher_created"],
-            difficultyLevel: "medium",
-            isActive: true
-          };
+          let templateData;
+
+          // Handle different category structures
+          if (normCategory === 'phonological_awareness') {
+            // Phonological Awareness template structure (CLAUDE.md compliant)
+            const audioTexts = pair.audioTexts || ['', '', ''];
+            const matchingOptions = [];
+            const correctPairs = [];
+
+            // Generate matching options and correct pairs from audioTexts
+            audioTexts.forEach(audioText => {
+              if (audioText && audioText.trim()) {
+                let matchingText;
+                if (audioText.length === 1) {
+                  // Single letter: create uppercase + lowercase format (L → Ll)
+                  matchingText = audioText.toUpperCase() + audioText.toLowerCase();
+                } else {
+                  // Multi-character: use as-is
+                  matchingText = audioText;
+                }
+                matchingOptions.push(matchingText);
+                correctPairs.push({ [audioText]: matchingText });
+              }
+            });
+
+            templateData = {
+              category: category,
+              questionType: pair.questionType || 'malapantig',
+              questionText: pair.questionText,
+              questionSet: {
+                audioTexts: audioTexts.filter(text => text && text.trim()),
+                matchingOptions: matchingOptions,
+                correctPairs: correctPairs
+              },
+              matchCount: audioTexts.filter(text => text && text.trim()).length,
+              targetSkills: ["sound_discrimination", "custom_teacher_created"],
+              difficultyLevel: "medium",
+              isActive: true
+            };
+          } else {
+            // Alphabet Knowledge template structure (existing logic)
+            templateData = {
+              category: category,
+              questionType: pair.questionType || 'patinig',
+              questionText: pair.questionText,
+              questionImage: pair.questionImage,
+              choiceOptions: pair.choices.map((choice, index) => ({
+                optionId: (index + 1).toString(),
+                optionText: choice.optionText,
+                isCorrect: choice.isCorrect
+              })),
+              targetSkills: ["custom_teacher_created"],
+              difficultyLevel: "medium",
+              isActive: true
+            };
+          }
 
           console.log(`[TEMPLATE AUTO-SAVE] Saving NEW custom question as template: "${pair.questionText}"`);
 
@@ -3017,23 +3059,90 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         if (pair.id === pairId) {
           // Find the selected template
           const template = questionTemplates.find(t => t._id === templateId);
-          
+
           if (!template) {
+            // If clearing template (empty templateId), reset to custom
+            if (!templateId) {
+              return {
+                ...pair,
+                sourceType: 'custom',
+                sourceId: null,
+                questionText: '',
+                audioTexts: ['', '', ''],
+                matchingOptions: [],
+                correctPairs: []
+              };
+            }
             return pair;
           }
-          
-          // Reset choices when template changes
-          return {
-            ...pair,
-            sourceType: 'template_question',
-            sourceId: template._id,
-            questionType: template.questionType,
-            questionText: template.templateText,
-            questionImage: null, // Templates don't have images
-            questionValue: null, // Reset question value
-            choiceIds: [], // Reset choices
-            correctChoiceId: null // Reset correct choice
-          };
+
+          console.log(`[TEMPLATE POPULATION] Populating template for Phonological Awareness:`, {
+            templateId: template._id,
+            questionText: template.questionText || template.templateText,
+            questionSet: template.questionSet,
+            category: template.category
+          });
+
+          // For Phonological Awareness templates, populate all template fields
+          if (template.category === 'Phonological Awareness' && template.questionSet) {
+            const questionSet = template.questionSet;
+
+            // Generate matching options and correct pairs from audioTexts
+            const audioTexts = questionSet.audioTexts || ['', '', ''];
+            const matchingOptions = [];
+            const correctPairs = [];
+
+            // Generate matching options for each audio text
+            audioTexts.forEach(audioText => {
+              if (audioText.trim()) {
+                let matchingText;
+                if (audioText.length === 1) {
+                  // Single letter: create uppercase + lowercase format (L → Ll)
+                  matchingText = audioText.toUpperCase() + audioText.toLowerCase();
+                } else {
+                  // Multi-character: use as-is
+                  matchingText = audioText;
+                }
+                matchingOptions.push(matchingText);
+                correctPairs.push({
+                  audio: audioText,
+                  match: matchingText
+                });
+              }
+            });
+
+            return {
+              ...pair,
+              sourceType: 'template_question',
+              sourceId: template._id,
+              sourceTemplateId: template._id, // For proper CLAUDE.md compliance
+              questionType: template.questionType,
+              questionText: template.questionText || template.templateText,
+              // Phonological Awareness specific fields from template
+              audioTexts: [...audioTexts], // Make a copy to allow editing
+              matchingOptions: [...matchingOptions], // Auto-generated but editable
+              correctPairs: [...correctPairs], // Auto-generated but editable
+              // Reset other fields not applicable to PA
+              questionImage: null,
+              questionValue: null,
+              choiceIds: [],
+              correctChoiceId: null
+            };
+          } else {
+            // For other categories (non-PA), use original logic
+            return {
+              ...pair,
+              sourceType: 'template_question',
+              sourceId: template._id,
+              sourceTemplateId: template._id,
+              questionType: template.questionType,
+              questionText: template.templateText || template.questionText,
+              questionImage: null,
+              questionValue: null,
+              choiceIds: [],
+              correctChoiceId: null
+            };
+          }
         }
         return pair;
       });
@@ -3333,7 +3442,114 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   };
  
   // ===== VALIDATION FUNCTIONS =====
- 
+
+  /**
+   * Dynamic validation based on category requirements
+   */
+  const validateCategorySpecificRequirements = (normCategory, questionChoicePairs) => {
+    const errors = {};
+
+    switch (normCategory) {
+      case 'alphabet_knowledge':
+        // Alphabet Knowledge: 3 choices with 1 correct + question value + question text
+        const invalidAlphabetPairs = questionChoicePairs.filter(pair => {
+          if (!pair.choices || pair.choices.length !== 3) {
+            return true; // Must have exactly 3 choices
+          }
+          const correctChoices = pair.choices.filter(choice => choice.isCorrect);
+          return correctChoices.length !== 1; // Must have exactly 1 correct choice
+        });
+
+        if (invalidAlphabetPairs.length > 0) {
+          errors.pairs = "All Alphabet Knowledge questions must have exactly 3 choices with one marked as correct";
+        }
+
+        // Validate Question Value is required
+        const missingQuestionValue = questionChoicePairs.filter(pair =>
+          !pair.sourceTemplateId && (!pair.questionValue || pair.questionValue.trim() === '')
+        );
+
+        if (missingQuestionValue.length > 0) {
+          errors.questionValue = "Question Value is required for all Alphabet Knowledge questions";
+        }
+
+        // Validate Question Text is required
+        const missingAlphabetQuestionText = questionChoicePairs.filter(pair =>
+          !pair.sourceTemplateId && (!pair.questionText || pair.questionText.trim() === '')
+        );
+
+        if (missingAlphabetQuestionText.length > 0) {
+          errors.questionText = "Question Text is required for all Alphabet Knowledge questions";
+        }
+        break;
+
+      case 'phonological_awareness':
+        // Phonological Awareness: audio-visual matching (audioTexts)
+        const missingAudioTexts = questionChoicePairs.filter(pair => {
+          const audioTexts = pair.audioTexts || [];
+          const hasValidAudio = audioTexts.some(text => text && text.trim());
+          return !hasValidAudio;
+        });
+
+        if (missingAudioTexts.length > 0) {
+          errors.pairs = "All Phonological Awareness questions must have at least one audio text";
+        }
+
+        // Validate Question Text is required
+        const missingPAQuestionText = questionChoicePairs.filter(pair =>
+          !pair.sourceTemplateId && (!pair.questionText || pair.questionText.trim() === '')
+        );
+
+        if (missingPAQuestionText.length > 0) {
+          errors.questionText = "Question Text is required for all Phonological Awareness questions";
+        }
+        break;
+
+      case 'decoding':
+        // Decoding: depends on question type (drag_drop, fill_blank, etc.)
+        const invalidDecodingPairs = questionChoicePairs.filter(pair => {
+          // Check if it has either dragElements or choiceIds
+          const hasDragElements = pair.dragElements && pair.dragElements.length > 0;
+          const hasChoices = safe(pair.choiceIds).length >= 2 && pair.correctChoiceId;
+          return !hasDragElements && !hasChoices;
+        });
+
+        if (invalidDecodingPairs.length > 0) {
+          errors.pairs = "All Decoding questions must have either drag elements or at least 2 choices with one marked as correct";
+        }
+        break;
+
+      case 'word_recognition':
+        // Word Recognition: similar to decoding, context-based choices
+        const invalidWordRecognitionPairs = questionChoicePairs.filter(pair =>
+          safe(pair.choiceIds).length < 2 || !pair.correctChoiceId
+        );
+
+        if (invalidWordRecognitionPairs.length > 0) {
+          errors.pairs = "All Word Recognition questions must have at least 2 choices with one marked as correct";
+        }
+        break;
+
+      case 'reading_comprehension':
+        // Reading Comprehension: handled separately (sentence-based)
+        // No validation needed here as it uses sentence templates
+        break;
+
+      default:
+        // Default validation for unknown categories
+        const invalidDefaultPairs = questionChoicePairs.filter(pair =>
+          safe(pair.choiceIds).length !== 2 || !pair.correctChoiceId
+        );
+
+        if (invalidDefaultPairs.length > 0) {
+          errors.pairs = `All ${category} questions must have exactly 2 choices with one marked as correct`;
+        }
+        break;
+    }
+
+    return errors;
+  };
+
   const validateCurrentStep = () => {
     const newErrors = {};
     
@@ -3355,50 +3571,10 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           newErrors.pairs = "At least one question must be added";
         }
 
-        // Check if this is Alphabet Knowledge for specific validation
+        // Dynamic category-specific validation
         const normCategory = normalizeCategory(category);
-
-        if (normCategory === 'alphabet_knowledge') {
-          // Validate Alphabet Knowledge questions
-          const invalidPairs = questionChoicePairs.filter(pair => {
-            if (!pair.choices || pair.choices.length !== 3) {
-              return true; // Must have exactly 3 choices
-            }
-            const correctChoices = pair.choices.filter(choice => choice.isCorrect);
-            return correctChoices.length !== 1; // Must have exactly 1 correct choice
-          });
-
-          if (invalidPairs.length > 0) {
-            newErrors.pairs = "All questions must have exactly 3 choices with one marked as correct";
-          }
-
-          // Validate Question Value is required for Alphabet Knowledge
-          const missingQuestionValue = questionChoicePairs.filter(pair =>
-            !pair.sourceTemplateId && (!pair.questionValue || pair.questionValue.trim() === '')
-          );
-
-          if (missingQuestionValue.length > 0) {
-            newErrors.questionValue = "Question Value is required for all Alphabet Knowledge questions";
-          }
-
-          // Validate Question Text is required for Alphabet Knowledge
-          const missingQuestionText = questionChoicePairs.filter(pair =>
-            !pair.sourceTemplateId && (!pair.questionText || pair.questionText.trim() === '')
-          );
-
-          if (missingQuestionText.length > 0) {
-            newErrors.questionText = "Question Text is required for all Alphabet Knowledge questions";
-          }
-        } else {
-          // Original validation for other categories
-          const invalidPairs = questionChoicePairs.filter(pair =>
-            safe(pair.choiceIds).length !== 2 || !pair.correctChoiceId
-          );
-
-          if (invalidPairs.length > 0) {
-            newErrors.pairs = "All questions must have exactly 2 choices with one marked as correct";
-          }
-        }
+        const categoryValidationErrors = validateCategorySpecificRequirements(normCategory, questionChoicePairs);
+        Object.assign(newErrors, categoryValidationErrors);
         
         // Remove validation that prevents both value and image
         // const invalidValueImagePairs = questionChoicePairs.filter(pair => 
@@ -3437,63 +3613,10 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         allErrors.pairs = "At least one question must be added";
       }
 
-      // Check if this is Alphabet Knowledge for specific validation
+      // Dynamic category-specific validation
       const normCategory = normalizeCategory(category);
-
-      if (normCategory === 'alphabet_knowledge') {
-        // Validate Alphabet Knowledge questions
-        const invalidPairs = questionChoicePairs.filter(pair => {
-          if (!pair.choices || pair.choices.length !== 3) {
-            console.log(`[VALIDATION] Question ${pair.id}: Invalid choice count - has ${pair.choices?.length || 0}, needs 3`);
-            return true; // Must have exactly 3 choices
-          }
-
-          // Check both isCorrect flags and correctChoiceId for validation
-          const correctChoices = pair.choices.filter(choice => choice.isCorrect);
-          const hasCorrectChoiceId = pair.correctChoiceId !== null && pair.correctChoiceId !== undefined;
-
-          const isValid = correctChoices.length === 1 || hasCorrectChoiceId;
-
-          if (!isValid) {
-            console.log(`[VALIDATION] Question ${pair.id}: No correct answer - correctChoices: ${correctChoices.length}, correctChoiceId: ${pair.correctChoiceId}`);
-          }
-
-          // Valid if either has exactly 1 correct choice OR has a correctChoiceId
-          return !isValid;
-        });
-
-        if (invalidPairs.length > 0) {
-          console.log(`[VALIDATION] Found ${invalidPairs.length} invalid pairs for Alphabet Knowledge`);
-          allErrors.pairs = "All questions must have exactly 3 choices with one marked as correct";
-        }
-
-        // Validate Question Value is required for Alphabet Knowledge
-        const missingQuestionValue = questionChoicePairs.filter(pair =>
-          !pair.sourceTemplateId && (!pair.questionValue || pair.questionValue.trim() === '')
-        );
-
-        if (missingQuestionValue.length > 0) {
-          allErrors.questionValue = "Question Value is required for all Alphabet Knowledge questions";
-        }
-
-        // Validate Question Text is required for Alphabet Knowledge
-        const missingQuestionText = questionChoicePairs.filter(pair =>
-          !pair.sourceTemplateId && (!pair.questionText || pair.questionText.trim() === '')
-        );
-
-        if (missingQuestionText.length > 0) {
-          allErrors.questionText = "Question Text is required for all Alphabet Knowledge questions";
-        }
-      } else {
-        // Original validation for other categories
-        const invalidPairs = questionChoicePairs.filter(pair =>
-          pair.choiceIds.length !== 2 || !pair.correctChoiceId
-        );
-
-        if (invalidPairs.length > 0) {
-          allErrors.pairs = "All questions must have exactly 2 choices with one marked as correct";
-        }
-      }
+      const categoryValidationErrors = validateCategorySpecificRequirements(normCategory, questionChoicePairs);
+      Object.assign(allErrors, categoryValidationErrors);
       
       // Remove validation that prevents both value and image
       // const invalidValueImagePairs = questionChoicePairs.filter(pair => 
@@ -4760,12 +4883,35 @@ const renderPhonologicalAwarenessStep = () => {
               className="phonological-awareness-select"
             >
               <option value="">-- Select Template --</option>
-              {safe(questionTemplates).map(template => (
-                <option key={template._id} value={template._id}>
-                  {template.templateText || template.questionText || 'Untitled Template'} ({template.questionType})
-                  {template.questionValue ? ` - Value: "${template.questionValue}"` : ''}
-                </option>
-              ))}
+              {safe(questionTemplates).map(template => {
+                // For Phonological Awareness, show audio-visual pairs instead of question text
+                if (template.category === 'Phonological Awareness' && template.questionSet && template.questionSet.audioTexts) {
+                  const audioTexts = template.questionSet.audioTexts || [];
+                  const pairsDisplay = audioTexts
+                    .filter(audio => audio && audio.trim())
+                    .map(audio => {
+                      const match = audio.length === 1
+                        ? audio.toUpperCase() + audio.toLowerCase()
+                        : audio;
+                      return `${audio}→${match}`;
+                    })
+                    .join(', ');
+
+                  return (
+                    <option key={template._id} value={template._id}>
+                      {pairsDisplay || 'No pairs'} ({template.questionType})
+                    </option>
+                  );
+                } else {
+                  // For other categories, show original format
+                  return (
+                    <option key={template._id} value={template._id}>
+                      {template.templateText || template.questionText || 'Untitled Template'} ({template.questionType})
+                      {template.questionValue ? ` - Value: "${template.questionValue}"` : ''}
+                    </option>
+                  );
+                }
+              })}
             </select>
           </div>
 
@@ -4778,7 +4924,6 @@ const renderPhonologicalAwarenessStep = () => {
               onChange={(e) => updateQuestionChoicePair(pair.id, 'questionText', e.target.value)}
               placeholder="E.g., Pakinggan ang audio. Itugma ito sa katumbas na letra."
               className="phonological-awareness-input"
-              readOnly={pair.sourceType === 'template_question'}
             />
           </div>
 
@@ -5490,20 +5635,9 @@ const renderReviewStep = () => {
            
            <div className="literexia-questions-summary">
              {safe(questionChoicePairs).map((pair, index) => {
-               // Check if this is Alphabet Knowledge (uses pair.choices) or other categories (uses choiceIds)
-              const normCategory = normalizeCategory(category);
-              const isAlphabetKnowledge = normCategory === 'alphabet_knowledge';
+               // Dynamic rendering based on category type
+               const normCategory = normalizeCategory(category);
 
-              let choices;
-
-              if (isAlphabetKnowledge) {
-                // For Alphabet Knowledge, choices are in pair.choices array
-                choices = pair.choices || [];
-              } else {
-                // For other categories, use the old choiceIds system
-                choices = getChoicesByIds(pair.choiceIds || []);
-              }
-               
                return (
                  <div key={index} className="literexia-question-summary">
                    <p className="literexia-question-summary-text">
@@ -5515,53 +5649,78 @@ const renderReviewStep = () => {
                        </span>
                      )}
                    </p>
-                   <div className="literexia-choices-summary">
-                     <p><strong>Choices:</strong></p>
-                     <ul>
-                       {safe(choices).map((choice, choiceIndex) => {
-                         if (!choice) return null;
-                         
-                         // Check if this is Alphabet Knowledge
-                         const normCategory = normalizeCategory(category);
-                         const isAlphabetKnowledge = normCategory === 'alphabet_knowledge';
 
-                         if (isAlphabetKnowledge) {
-                           // Alphabet Knowledge choice rendering
+                   {/* Category-specific content rendering */}
+                   {normCategory === 'phonological_awareness' ? (
+                     <div className="literexia-audio-visual-summary">
+                       <p><strong>Audio-Visual Matching Pairs:</strong></p>
+                       <div className="literexia-matching-pairs-review">
+                         {pair.audioTexts?.filter(text => text && text.trim()).map((audioText, audioIndex) => {
+                           // Generate matching text based on whether it's a single letter or word
+                           let matchingText;
+                           if (audioText.length === 1) {
+                             // Single letter: L → Ll (uppercase + lowercase)
+                             matchingText = audioText.toUpperCase() + audioText.toLowerCase();
+                           } else {
+                             // Word: Keep as is
+                             matchingText = audioText;
+                           }
+
+                           return (
+                             <div key={audioIndex} className="literexia-pair-review">
+                               <span className="literexia-audio-text">
+                                 <FaVolumeUp /> {audioText}
+                               </span>
+                               <span className="literexia-arrow">→</span>
+                               <span className="literexia-visual-text">{matchingText}</span>
+                             </div>
+                           );
+                         })}
+                       </div>
+                       {(!pair.audioTexts || pair.audioTexts.filter(text => text && text.trim()).length === 0) && (
+                         <p className="literexia-no-content">No audio texts configured</p>
+                       )}
+                     </div>
+                   ) : normCategory === 'alphabet_knowledge' ? (
+                     <div className="literexia-choices-summary">
+                       <p><strong>Choices:</strong></p>
+                       <ul>
+                         {safe(pair.choices || []).map((choice, choiceIndex) => (
+                           <li
+                             key={choiceIndex}
+                             className={choice.isCorrect ? 'correct-choice' : ''}
+                           >
+                             {choice.optionText || '(No text)'}
+                             {choice.isCorrect && ' (Correct)'}
+                           </li>
+                         ))}
+                       </ul>
+                     </div>
+                   ) : (
+                     <div className="literexia-choices-summary">
+                       <p><strong>Choices:</strong></p>
+                       <ul>
+                         {safe(getChoicesByIds(pair.choiceIds || [])).map((choice, choiceIndex) => {
+                           if (!choice) return null;
+
+                           const choiceDescription = choice.description || 'Default feedback will be provided';
+
                            return (
                              <li
-                               key={choiceIndex}
-                               className={choice.isCorrect ? 'correct-choice' : ''}
+                               key={choice._id}
+                               className={choice._id === pair.correctChoiceId ? 'correct-choice' : ''}
                              >
-                               {choice.optionText || '(No text)'}
-                               {choice.isCorrect && ' (Correct)'}
+                               {choice.choiceValue || choice.soundText || '(No text)'}
+                               {choice._id === pair.correctChoiceId && ' (Correct)'}
+                               <div className="literexia-choice-description-review">
+                                 <span className="literexia-description-label">Feedback:</span> {choiceDescription}
+                               </div>
                              </li>
                            );
-                         }
-
-                         // Make sure we correctly extract and display the description
-                         const choiceDescription = choice.description || 'Default feedback will be provided';
-                         
-                         console.log(`Rendering choice ${choiceIndex} for Q${index+1}:`, { 
-                           choiceValue: choice.choiceValue || choice.soundText, 
-                           isCorrect: choice._id === pair.correctChoiceId,
-                           description: choice.description ? choice.description : '(using default)'
-                         });
-                         
-                         return (
-                           <li 
-                             key={choice._id} 
-                             className={choice._id === pair.correctChoiceId ? 'correct-choice' : ''}
-                           >
-                             {choice.choiceValue || choice.soundText || '(No text)'} 
-                             {choice._id === pair.correctChoiceId && ' (Correct)'}
-                             <div className="literexia-choice-description-review">
-                               <span className="literexia-description-label">Feedback:</span> {choiceDescription}
-                             </div>
-                           </li>
-                         );
-                       })}
-                     </ul>
-                   </div>
+                         })}
+                       </ul>
+                     </div>
+                   )}
                  </div>
                );
              })}
