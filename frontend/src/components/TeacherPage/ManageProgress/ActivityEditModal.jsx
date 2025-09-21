@@ -498,18 +498,18 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         switch (normCategory) {
           case 'phonological_awareness':
             // Phonological Awareness uses questionSet structure
-            if (!question.questionSet || !Array.isArray(question.questionSet) || question.questionSet.length === 0) {
+            if (!question.questionSet || typeof question.questionSet !== 'object') {
               console.error(`[SAVE] ❌ Question ${index} questionSet validation failed:`, {
                 question: question,
                 questionSet: question.questionSet,
                 questionSetType: typeof question.questionSet,
-                isArray: Array.isArray(question.questionSet)
+                isObject: typeof question.questionSet === 'object'
               });
               throw new Error(`Question ${index} has invalid questionSet for Phonological Awareness`);
             }
 
             // Validate questionSet structure
-            const questionSetData = question.questionSet[0]; // First element contains the data
+            const questionSetData = question.questionSet; // Direct object access
             if (!questionSetData.audioTexts || !Array.isArray(questionSetData.audioTexts) || questionSetData.audioTexts.length === 0) {
               console.error(`[SAVE] ❌ Question ${index} audioTexts validation failed:`, questionSetData);
               throw new Error(`Question ${index} has invalid audioTexts`);
@@ -2914,11 +2914,11 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             return {
               ...baseQuestion,
               // Phonological Awareness specific structure matching main_assessment
-              questionSet: [{
+              questionSet: {
                 audioTexts: validAudioTexts,
                 matchingOptions: matchingOptions,
                 correctPairs: correctPairs
-              }],
+              },
               // Add prescription alignment
               prescriptionAlignment: {
                 targetSkill: "sound_discrimination",

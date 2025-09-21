@@ -303,6 +303,44 @@
   font-weight: 700;
 }
 
+.phonological-awareness-audio-input-group:nth-child(4) label {
+  background: #fce7f3;
+  color: #be185d;
+  border: 2px solid #ec4899;
+  font-weight: 700;
+}
+
+/* Audio input header with label and remove button */
+.phonological-awareness-audio-input-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+/* Remove button styles */
+.phonological-awareness-remove-audio-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.phonological-awareness-remove-audio-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
 /* Different border colors for the input fields to match labels */
 .phonological-awareness-audio-input-group:nth-child(1) .phonological-awareness-input {
   border-color: #f59e0b;
@@ -316,6 +354,11 @@
 
 .phonological-awareness-audio-input-group:nth-child(3) .phonological-awareness-input {
   border-color: #4A608A;
+  border-width: 2px;
+}
+
+.phonological-awareness-audio-input-group:nth-child(4) .phonological-awareness-input {
+  border-color: #ec4899;
   border-width: 2px;
 }
 
@@ -333,6 +376,42 @@
 .phonological-awareness-audio-input-group:nth-child(3) .phonological-awareness-input:focus {
   border-color: #4A608A;
   box-shadow: 0 0 0 4px rgba(74, 96, 138, 0.1);
+}
+
+.phonological-awareness-audio-input-group:nth-child(4) .phonological-awareness-input:focus {
+  border-color: #ec4899;
+  box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.1);
+}
+
+/* Add Audio button section */
+.phonological-awareness-add-audio-section {
+  grid-column: span 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+}
+
+.phonological-awareness-add-audio-btn {
+  background: #22c55e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(34, 197, 94, 0.2);
+}
+
+.phonological-awareness-add-audio-btn:hover {
+  background: #16a34a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(34, 197, 94, 0.3);
 }
 
 /* ===== MATCHING SECTION STYLES ===== */
