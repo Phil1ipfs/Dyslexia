@@ -704,13 +704,23 @@ class CategoryResultsService {
               isPassed: score >= 75,
               isCompleted: isComplete, // ✅ FIX: Use actual completeness status
               interventionRequired: score < 75,
-              responseDetails: categoryResponses.map(r => ({
-                questionId: r.questionId,
-                isCorrect: r.isCorrect,
-                totalMatches: r.totalMatches || 0,
-                correctMatches: r.correctMatches || 0,
-                answeredAt: r.answeredAt
-              }))
+              responseDetails: categoryResponses.map(r => {
+                // ✅ FIX: Recalculate isCorrect for Phonological Awareness based on matches
+                let isCorrect = r.isCorrect;
+                if (r.totalMatches !== undefined && r.correctMatches !== undefined) {
+                  const matchPercentage = r.totalMatches > 0 ? 
+                    (r.correctMatches / r.totalMatches) * 100 : 0;
+                  isCorrect = matchPercentage === 100; // Only correct if ALL matches are correct
+                }
+                
+                return {
+                  questionId: r.questionId,
+                  isCorrect: isCorrect,
+                  totalMatches: r.totalMatches || 0,
+                  correctMatches: r.correctMatches || 0,
+                  answeredAt: r.answeredAt
+                };
+              })
             });
           } else {
             // Fallback calculation
@@ -723,11 +733,23 @@ class CategoryResultsService {
               isPassed: score >= 75,
               isCompleted: isComplete, // ✅ FIX: Use actual completeness status
               interventionRequired: score < 75,
-              responseDetails: categoryResponses.map(r => ({
-                questionId: r.questionId,
-                isCorrect: r.isCorrect,
-                answeredAt: r.answeredAt
-              }))
+              responseDetails: categoryResponses.map(r => {
+                // ✅ FIX: Recalculate isCorrect for Phonological Awareness based on matches
+                let isCorrect = r.isCorrect;
+                if (r.totalMatches !== undefined && r.correctMatches !== undefined) {
+                  const matchPercentage = r.totalMatches > 0 ? 
+                    (r.correctMatches / r.totalMatches) * 100 : 0;
+                  isCorrect = matchPercentage === 100; // Only correct if ALL matches are correct
+                }
+                
+                return {
+                  questionId: r.questionId,
+                  isCorrect: isCorrect,
+                  totalMatches: r.totalMatches || 0,
+                  correctMatches: r.correctMatches || 0,
+                  answeredAt: r.answeredAt
+                };
+              })
             });
           }
         } else {

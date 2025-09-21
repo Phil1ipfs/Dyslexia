@@ -502,6 +502,14 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load intervention responses routes:', error.message);
     }
 
+    // Load intervention results routes
+    try {
+      app.use('/api/intervention-results', require('./routes/Teachers/interventionResultsRoutes'));
+      console.log('✅ Loaded intervention results routes at /api/intervention-results/*');
+    } catch (error) {
+      console.warn('⚠️ Could not load intervention results routes:', error.message);
+    }
+
     // Load dashboard routes
     try {
       const dashboardRoutes = require('./routes/Teachers/dashboardRoutes');
