@@ -2525,9 +2525,9 @@ class InterventionGeneratorService {
             break;
 
           case 'Phonological Awareness':
-            if (question.questionSet && question.questionSet.length > 0) {
-              templateData.questionSet = question.questionSet[0]; // Extract first questionSet
-              templateData.matchCount = question.questionSet[0]?.correctPairs?.length || 3;
+            if (question.questionSet) {
+              templateData.questionSet = question.questionSet; // Use questionSet directly
+              templateData.matchCount = question.questionSet?.correctPairs?.length || 3;
             }
             break;
 
@@ -2607,8 +2607,8 @@ class InterventionGeneratorService {
 
       case 'Phonological Awareness':
         skills.push('sound_discrimination');
-        if (question.questionSet && question.questionSet[0]?.audioTexts) {
-          const sounds = question.questionSet[0].audioTexts;
+        if (question.questionSet && question.questionSet.audioTexts) {
+          const sounds = question.questionSet.audioTexts;
           if (sounds.includes('B') && sounds.includes('P')) {
             skills.push('B_P_discrimination');
           }

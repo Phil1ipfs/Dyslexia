@@ -29,7 +29,7 @@ class IntegrationTriggerService {
       const existingAnalysis = await this.checkExistingAnalysis(categoryResult._id);
       if (existingAnalysis) {
         // Check if the existing analysis contains complete data for all expected categories
-        const isComplete = await this.verifyAnalysisCompleteness(existingAnalysis, categoryResult);
+        const isComplete = await IntegrationTriggerService.verifyAnalysisCompleteness(existingAnalysis, categoryResult);
 
         if (isComplete) {
           console.log(`[INTEGRATION TRIGGER] Complete prescriptive analysis already exists for category result ${categoryResult._id}`);

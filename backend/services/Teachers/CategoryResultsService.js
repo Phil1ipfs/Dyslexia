@@ -132,7 +132,12 @@ class CategoryResultsService {
         readingLevel: categoryResultData.readingLevel || 'Low Emerging',
         categories: normalizedCategories,
         overallScore: overallStats.overallScore,
-        completedCategories: normalizedCategories.filter(cat => cat.isPassed || cat.interventionCompleted).length,
+        completedCategories: normalizedCategories.filter(cat => {
+          // Category is completed if main assessment passed OR any intervention was successful
+          const mainAssessmentPassed = cat.isPassed === true;
+          const hasSuccessfulIntervention = cat.interventionHistory && cat.interventionHistory.some(intervention => intervention.isPassed === true);
+          return mainAssessmentPassed || hasSuccessfulIntervention;
+        }).length,
         totalCategories: normalizedCategories.length,
         allCategoriesPassed: overallStats.passedCategories === normalizedCategories.length,
         readingLevelUpdated: false
@@ -194,7 +199,12 @@ class CategoryResultsService {
         // Recalculate overall stats
         const overallStats = this.calculateOverallStats(updateData.categories);
         updateData.overallScore = overallStats.overallScore;
-        updateData.completedCategories = updateData.categories.filter(cat => cat.isPassed || cat.interventionCompleted).length;
+        updateData.completedCategories = updateData.categories.filter(cat => {
+          // Category is completed if main assessment passed OR any intervention was successful
+          const mainAssessmentPassed = cat.isPassed === true;
+          const hasSuccessfulIntervention = cat.interventionHistory && cat.interventionHistory.some(intervention => intervention.isPassed === true);
+          return mainAssessmentPassed || hasSuccessfulIntervention;
+        }).length;
         updateData.totalCategories = updateData.categories.length;
         updateData.allCategoriesPassed = overallStats.passedCategories === updateData.categories.length;
 
@@ -888,42 +898,64 @@ class CategoryResultsService {
       };
     }
 
-    // ✅ FIX: Calculate effective score for each category (use intervention if higher)
-    const effectiveScores = categories.map(cat => {
-      let effectiveScore = cat.score || 0;
-
-      // Check if category has intervention history with passed attempts
-      if (cat.interventionHistory && cat.interventionHistory.length > 0) {
-        // Find the highest scoring passed intervention
-        const passedInterventions = cat.interventionHistory.filter(attempt => attempt.isPassed === true);
-        if (passedInterventions.length > 0) {
-          const highestInterventionScore = Math.max(...passedInterventions.map(attempt => attempt.score || 0));
-
-          // Use intervention score if higher than original
-          if (highestInterventionScore > effectiveScore) {
-            console.log(`[OVERALL STATS] Using intervention score for ${cat.categoryName}: ${highestInterventionScore}% (original: ${effectiveScore}%)`);
-            effectiveScore = highestInterventionScore;
-          }
-        }
-      }
-
-      return effectiveScore;
+    // ✅ DYNAMIC FIX: Only calculate overall score for PASSED categories
+    // (main assessment passed OR successful intervention)
+    // This works across all reading levels: High Emerging (2 categories), Developing (3), etc.
+    const passedCategoriesData = categories.filter(cat => {
+      // Category is passed if main assessment passed OR any intervention was successful
+      const mainAssessmentPassed = cat.isPassed === true;
+      const hasSuccessfulIntervention = cat.interventionHistory && cat.interventionHistory.some(intervention => intervention.isPassed === true);
+      return mainAssessmentPassed || hasSuccessfulIntervention;
+    });
+    const failedCategoriesData = categories.filter(cat => {
+      const mainAssessmentPassed = cat.isPassed === true;
+      const hasSuccessfulIntervention = cat.interventionHistory && cat.interventionHistory.some(intervention => intervention.isPassed === true);
+      return !(mainAssessmentPassed || hasSuccessfulIntervention);
     });
 
-    const totalScore = effectiveScores.reduce((sum, score) => sum + score, 0);
-    const overallScore = Math.round(totalScore / categories.length);
+    let overallScore = 0;
 
-    const passedCategories = categories.filter(cat => cat.isPassed).length;
-    const failedCategories = categories.length - passedCategories;
+    if (passedCategoriesData.length > 0) {
+      // Calculate effective score for each PASSED category (use intervention if higher)
+      const effectiveScores = passedCategoriesData.map(cat => {
+        let effectiveScore = cat.score || 0;
 
-    const interventionRequired = failedCategories > 0;
+        // Check if category has intervention history with passed attempts
+        if (cat.interventionHistory && cat.interventionHistory.length > 0) {
+          // Find the highest scoring passed intervention
+          const passedInterventions = cat.interventionHistory.filter(attempt => attempt.isPassed === true);
+          if (passedInterventions.length > 0) {
+            const highestInterventionScore = Math.max(...passedInterventions.map(attempt => attempt.score || 0));
 
-    console.log(`[OVERALL STATS] Calculated overall score: ${overallScore}% (effective scores: [${effectiveScores.join(', ')}])`);
+            // Use intervention score if higher than original
+            if (highestInterventionScore > effectiveScore) {
+              console.log(`[OVERALL STATS] Using intervention score for ${cat.categoryName}: ${highestInterventionScore}% (original: ${effectiveScore}%)`);
+              effectiveScore = highestInterventionScore;
+            }
+          }
+        }
+
+        return effectiveScore;
+      });
+
+      // ✅ CRITICAL FIX: Include passed category scores, but divide by TOTAL categories for reading level
+      // Example: At Grade Level with 1 passed (100%) out of 5 total: 100/5 = 20%
+      // Example: High Emerging with 2 passed (85%, 90%) out of 2 total: (85+90)/2 = 87.5%
+      const totalScore = effectiveScores.reduce((sum, score) => sum + score, 0);
+      overallScore = Math.round(totalScore / categories.length);
+
+      console.log(`[OVERALL STATS] ✅ FIXED - Calculated overall score: ${overallScore}% (${passedCategoriesData.length} passed out of ${categories.length} total: [${effectiveScores.join(', ')}])`);
+      console.log(`[OVERALL STATS] Passed: ${passedCategoriesData.length}, Failed: ${failedCategoriesData.length}, Total: ${categories.length}`);
+    } else {
+      console.log(`[OVERALL STATS] No passed categories - overall score remains 0%`);
+    }
+
+    const interventionRequired = failedCategoriesData.length > 0;
 
     return {
       overallScore,
-      passedCategories,
-      failedCategories,
+      passedCategories: passedCategoriesData.length,
+      failedCategories: failedCategoriesData.length,
       interventionRequired
     };
   }
