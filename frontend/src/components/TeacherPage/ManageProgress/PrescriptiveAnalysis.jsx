@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import api from '../../../services/Teachers/api';
+import './css/InterventionResponseModal.css';
 import {
   FaInfoCircle,
   FaExclamationTriangle,
@@ -50,6 +51,95 @@ const inlineStyles = {
     fontStyle: 'italic',
     color: '#666',
   }
+};
+
+/**
+ * DYNAMIC CORRECT ANSWER EXTRACTION FOR ALL READING CATEGORIES
+ * Handles different question formats for each category
+ */
+const extractCorrectAnswerForCategory = (question, category) => {
+  console.log('🔍 [EXTRACT] Category:', category, 'Question:', question);
+
+  switch (category) {
+    case 'Phonological Awareness':
+      // Format: [{"S": "Ss"}, {"A": "Aa"}, {"V": "Vv"}]
+      if (question?.questionSet?.correctPairs && Array.isArray(question.questionSet.correctPairs)) {
+        return question.questionSet.correctPairs.map(pair => {
+          const audio = Object.keys(pair)[0];
+          const visual = pair[audio];
+          return `${audio} → ${visual}`;
+        }).join(', ');
+      }
+      break;
+
+    case 'Alphabet Knowledge':
+      // Format: choiceOptions with isCorrect flags
+      if (question?.choiceOptions && Array.isArray(question.choiceOptions)) {
+        const correctOptions = question.choiceOptions.filter(option => option.isCorrect);
+        if (correctOptions.length > 0) {
+          return correctOptions.map(option => option.optionText).join(', ');
+        }
+      }
+      break;
+
+    case 'Decoding':
+      // Format: correctSequence array
+      if (question?.correctSequence && Array.isArray(question.correctSequence)) {
+        return question.correctSequence.join('-');
+      }
+      // Alternative format: displaySequence with fill-in-the-blank
+      if (question?.displaySequence && question?.blankPosition !== undefined) {
+        const sequence = [...question.displaySequence];
+        if (question.correctSequence && question.correctSequence[0]) {
+          sequence[question.blankPosition] = question.correctSequence[0];
+          return sequence.join('');
+        }
+      }
+      break;
+
+    case 'Word Recognition':
+      // Format: correctAnswer array
+      if (question?.correctAnswer && Array.isArray(question.correctAnswer)) {
+        return question.correctAnswer.join(', ');
+      }
+      break;
+
+    case 'Reading Comprehension':
+      // Format: sentenceQuestions with sentenceCorrectAnswer
+      if (question?.sentenceQuestions && Array.isArray(question.sentenceQuestions)) {
+        return question.sentenceQuestions.map((sentenceQ, index) =>
+          `Q${index + 1}: ${sentenceQ.sentenceCorrectAnswer}`
+        ).join('; ');
+      }
+      // Alternative format: single sentenceCorrectAnswer
+      if (question?.sentenceCorrectAnswer) {
+        return question.sentenceCorrectAnswer;
+      }
+      break;
+
+    default:
+      console.warn('🔍 [EXTRACT] Unknown category:', category);
+      break;
+  }
+
+  // Fallback: try to find any correct answer field
+  console.log('🔍 [EXTRACT] No specific format found, trying fallbacks...');
+
+  // Try common fallback fields
+  if (question?.correctAnswer) {
+    return Array.isArray(question.correctAnswer) ? question.correctAnswer.join(', ') : question.correctAnswer;
+  }
+
+  if (question?.correctSequence) {
+    return Array.isArray(question.correctSequence) ? question.correctSequence.join('-') : question.correctSequence;
+  }
+
+  if (question?.sentenceCorrectAnswer) {
+    return question.sentenceCorrectAnswer;
+  }
+
+  console.warn('🔍 [EXTRACT] No correct answer format found for category:', category);
+  return `N/A - No correct answer format found for ${category}`;
 };
 
 /**
@@ -1022,13 +1112,45 @@ const PrescriptiveAnalysis = ({
     if (categoryName === 'Phonological Awareness' && categoryErrorPatterns?.matching_errors) {
       // Convert matching_errors to detailedErrorAnalysis format
       const matchingErrors = categoryErrorPatterns.matching_errors;
-      detailedErrorAnalysis = matchingErrors.confusionPairs?.map(pair => ({
-        errorPattern: `Sound discrimination difficulty with ${pair.sounds.join(' ↔ ')}`,
-        specificPairs: pair.sounds,
-        interventionFocus: pair.interventionFocus,
-        confusionRate: pair.confusionRate,
+      detailedErrorAnalysis = matchingErrors.confusionPairs?.map(pair => {
+        // Handle different data structures for confusion pairs
+        let soundsArray = [];
+        let displayText = 'Unknown';
+        
+        if (pair && typeof pair === 'object') {
+          // Check if it's the new format with audio/match keys
+          if (pair.audio && pair.match) {
+            soundsArray = [pair.audio, pair.match];
+            displayText = `${pair.audio} ↔ ${pair.match}`;
+          }
+          // Check if it's the old format with sounds array
+          else if (pair.sounds && Array.isArray(pair.sounds)) {
+            soundsArray = pair.sounds;
+            displayText = pair.sounds.join(' ↔ ');
+          }
+          // Check if it's a string format
+          else if (typeof pair === 'string') {
+            soundsArray = [pair];
+            displayText = pair;
+          }
+          // Fallback for other object structures
+          else {
+            soundsArray = Object.values(pair).filter(val => typeof val === 'string');
+            displayText = soundsArray.join(' ↔ ') || 'Unknown';
+          }
+        } else if (typeof pair === 'string') {
+          soundsArray = [pair];
+          displayText = pair;
+        }
+        
+        return {
+          errorPattern: `Sound discrimination difficulty with ${displayText}`,
+          specificPairs: soundsArray,
+          interventionFocus: pair.interventionFocus || 'Focus on sound discrimination training',
+          confusionRate: pair.confusionRate || pair.confusion_rate || pair.rate || 0,
         errorType: 'sound_discrimination'
-      })) || [];
+        };
+      }) || [];
     } else {
       detailedErrorAnalysis = categoryErrorPatterns?.detailedErrorAnalysis || [];
     }
@@ -1541,8 +1663,25 @@ const PrescriptiveAnalysis = ({
         isPassed: categoryInterventionResults?.isPassed
       });
 
+      // Fetch complete intervention assessment data with questions and correctPairs
+      let interventionAssessment = null;
+      try {
+        console.log('🔍 Fetching intervention assessment data for modal:', intervention._id);
+        const assessmentResponse = await api.get(`/api/intervention-assessment/${intervention._id}`);
+
+        if (assessmentResponse.data && assessmentResponse.data.success) {
+          interventionAssessment = assessmentResponse.data.data;
+          console.log('✅ [MODAL DATA] Intervention assessment loaded successfully');
+        } else {
+          console.warn('⚠️ [MODAL DATA] Intervention assessment API response invalid');
+        }
+      } catch (assessmentError) {
+        console.error('❌ [MODAL DATA] Failed to fetch intervention assessment:', assessmentError.message);
+      }
+
       const modalData = {
         intervention,
+        interventionAssessment, // Include complete intervention assessment with questions and correctPairs
         category,
         interventionResults: categoryInterventionResults,
         totalQuestions,
@@ -3727,11 +3866,40 @@ const PrescriptiveAnalysis = ({
                           <div className="epa-confusion-pairs">
                             <div className="confusion-pairs-label">Confusion Pairs:</div>
                             <div className="epa-confusion-tags">
-                              {interventionData.errorPatterns[categoryName].matching_errors.confusion_pairs.map((pair, index) => (
+                              {interventionData.errorPatterns[categoryName].matching_errors.confusion_pairs.map((pair, index) => {
+                                // Handle different data structures for confusion pairs
+                                let displayText = 'N/A';
+                                let confusionRate = 0;
+                                
+                                if (pair && typeof pair === 'object') {
+                                  // Check if it's the new format with audio/match keys
+                                  if (pair.audio && pair.match) {
+                                    displayText = `${pair.audio}-${pair.match}`;
+                                    confusionRate = pair.confusion_rate || pair.rate || 0;
+                                  }
+                                  // Check if it's the old format with sounds array
+                                  else if (pair.sounds && Array.isArray(pair.sounds)) {
+                                    displayText = pair.sounds.join('-');
+                                    confusionRate = pair.confusion_rate || 0;
+                                  }
+                                  // Check if it's a string format
+                                  else if (typeof pair === 'string') {
+                                    displayText = pair;
+                                  }
+                                  // Fallback for other object structures
+                                  else {
+                                    displayText = JSON.stringify(pair);
+                                  }
+                                } else if (typeof pair === 'string') {
+                                  displayText = pair;
+                                }
+                                
+                                return (
                                 <span key={index} className="epa-confusion-tag">
-                                  {pair.sounds?.join('-') || 'N/A'} ({pair.confusion_rate}%)
+                                    {displayText} ({confusionRate}%)
                                 </span>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         )}
@@ -5621,75 +5789,77 @@ const PrescriptiveAnalysis = ({
 
       {/* Intervention Responses Modal */}
       {showResponseModal && selectedInterventionData && (
-        <div className="literexia-modal-overlay" onClick={handleCloseResponseModal}>
-          <div className="literexia-response-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="intervention-response-modal-overlay" onClick={handleCloseResponseModal}>
+          <div className="intervention-response-modal-container" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
-            <div className="literexia-modal-header">
-              <div className="literexia-modal-title">
+            <div className="intervention-response-modal-header">
+              <div className="intervention-response-modal-title">
                 <FaEye className="modal-icon" />
                 <div className="title-content">
                   <h3>Intervention Responses</h3>
                   <span className="category-badge">{selectedInterventionData.category}</span>
                 </div>
               </div>
+              <div className="intervention-response-revision-info">
+                <span className={`intervention-response-revision-badge ${(selectedInterventionData.interventionResults?.isPassed || (selectedInterventionData.interventionResults?.score || 0) >= 75) ? 'passed' : 'failed'}`}>
+                  {(selectedInterventionData.interventionResults?.isPassed || (selectedInterventionData.interventionResults?.score || 0) >= 75) ? 'PASSED' : 'FAILED'} REV {selectedInterventionData.interventionResults?.revisionNumber || selectedInterventionData.interventionAssessment?.revisionNumber || 1}
+                </span>
               <button
-                className="literexia-modal-close"
+                  className="intervention-response-modal-close"
                 onClick={handleCloseResponseModal}
                 title="Close modal"
               >
                 <FaTimes />
               </button>
+              </div>
             </div>
 
-            <div className="literexia-modal-content">
+            <div className="intervention-response-modal-content">
               {/* Intervention Overview */}
-              <div className="literexia-intervention-overview">
-                <div className="overview-header">
+              <div className="intervention-response-overview">
+                <div className="intervention-response-overview-header">
                   <h4>Intervention Overview</h4>
-                  <div className="revision-info">
-                    <span className="revision-badge">Revision {selectedInterventionData.interventionAssessment?.revisionNumber || 1}</span>
-                  </div>
                 </div>
                 
-                <div className="overview-stats-grid">
-                  <div className="stat-card">
-                    <div className="stat-icon">
+                <div className="intervention-response-stats-grid">
+                  <div className="intervention-response-stat-card">
+                    <div className="intervention-response-stat-icon">
                       <FaQuestionCircle />
                     </div>
-                    <div className="stat-content">
-                      <span className="stat-label">Total Questions</span>
-                      <span className="stat-value">{selectedInterventionData.totalQuestions}</span>
+                    <div className="intervention-response-stat-content">
+                      <span className="intervention-response-stat-label">Total Questions</span>
+                      <span className="intervention-response-stat-value">{selectedInterventionData.totalQuestions}</span>
                     </div>
                   </div>
                   
-                  <div className="stat-card">
-                    <div className="stat-icon">
+                  <div className="intervention-response-stat-card">
+                    <div className="intervention-response-stat-icon">
                       <FaCheckCircle />
                     </div>
-                    <div className="stat-content">
-                      <span className="stat-label">Completed</span>
-                      <span className="stat-value">{selectedInterventionData.completedResponses}</span>
+                    <div className="intervention-response-stat-content">
+                      <span className="intervention-response-stat-label">Completed</span>
+                      <span className="intervention-response-stat-value">{selectedInterventionData.completedResponses}</span>
                     </div>
                   </div>
                   
-                  <div className="stat-card score-card">
-                    <div className="stat-icon">
+                  <div className="intervention-response-stat-card intervention-response-score-card">
+                    <div className="intervention-response-stat-icon">
                       <FaChartLine />
                     </div>
-                    <div className="stat-content">
-                      <span className="stat-label">Score</span>
-                      <span className={`stat-value score ${selectedInterventionData.interventionResults?.isPassed ? 'passed' : 'failed'}`}>
+                    <div className="intervention-response-stat-content">
+                      <span className="intervention-response-stat-label">Score</span>
+                      <span className={`intervention-response-stat-value score ${selectedInterventionData.interventionResults?.isPassed ? 'passed' : 'failed'}`}>
                         {selectedInterventionData.interventionResults?.score || 0}%
                       </span>
                     </div>
                   </div>
                   
-                    <div className="stat-card status-card">
-                      <div className="stat-icon">
+                    <div className="intervention-response-stat-card intervention-response-status-card">
+                      <div className="intervention-response-stat-icon">
                         <FaFlag />
                       </div>
-                      <div className="stat-content">
-                        <span className="stat-label">Status</span>
+                      <div className="intervention-response-stat-content">
+                        <span className="intervention-response-stat-label">Status</span>
                         <span className={`status-badge ${(selectedInterventionData.interventionResults?.score || 0) >= 75 ? 'passed' : 'failed'}`}>
                           {(selectedInterventionData.interventionResults?.score || 0) >= 75 ? 'PASSED' : 'FAILED'}
                         </span>
@@ -5699,57 +5869,115 @@ const PrescriptiveAnalysis = ({
               </div>
 
               {/* Student Responses Section */}
-              <div className="literexia-responses-section">
-                <div className="responses-header">
+              <div className="intervention-response-responses-section">
+                <div className="intervention-response-responses-header">
                   <h4>Student Responses</h4>
-                  <div className="responses-count">
+                  <div className="intervention-response-responses-count">
                     {interventionResponses.length} response{interventionResponses.length !== 1 ? 's' : ''}
                   </div>
                 </div>
 
-                <div className="responses-list">
+                <div className="intervention-response-responses-list">
                   {interventionResponses.length > 0 ? (
                     interventionResponses.map((response, index) => (
-                      <div key={index} className={`response-card ${response.isCorrect ? 'correct' : 'incorrect'}`}>
-                        <div className="response-card-header">
-                          <div className="question-info">
-                            <div className="question-number">
+                      <div key={index} className={`intervention-response-response-card ${response.isCorrect ? 'correct' : 'incorrect'}`}>
+                        <div className="intervention-response-response-card-header">
+                          <div className="intervention-response-question-info">
+                            <div className="intervention-response-question-number">
                               <span>Q{index + 1}</span>
                             </div>
-                            <div className={`response-statuss ${response.isCorrect ? 'correct' : 'incorrect'}`}>
+                            <div className={`intervention-response-response-status ${response.isCorrect ? 'correct' : 'incorrect'}`}>
                               {response.isCorrect ? <FaCheck /> : <FaTimes />}
                             </div>
                           </div>
-                          <div className="response-meta">
-                            <div className="response-time">
+                          <div className="intervention-response-response-meta">
+                            <div className="intervention-response-response-time">
                               <FaClock />
                               <span>{response.responseTime}s</span>
                             </div>
-                            <div className="response-date">
+                            <div className="intervention-response-response-date">
                               <FaCalendarAlt />
                               <span>{new Date(response.answeredAt).toLocaleDateString()}</span>
                             </div>
                           </div>
                         </div>
 
-                        <div className="response-card-content">
-                          <div className="question-section">
+                        <div className="intervention-response-response-card-content">
+                          <div className="intervention-response-question-section">
                             <h5>Question</h5>
-                            <p className="question-text">{response.questionText || 'Question text not available'}</p>
+                            <p className="intervention-response-question-text">{response.questionText || 'Question text not available'}</p>
+                            {response.questionImage && (
+                              <div className="intervention-response-question-image">
+                                <img 
+                                  src={response.questionImage} 
+                                  alt="Question image" 
+                                  className="intervention-response-image"
+                                />
+                              </div>
+                            )}
                           </div>
 
-                          <div className="answers-section">
-                            <div className="answer-row">
-                              <div className="answer-item student-answer">
-                                <span className="answer-label">Student Answer</span>
-                                <span className={`answer-value ${response.isCorrect ? 'correct' : 'incorrect'}`}>
-                                  {response.response || 'No response'}
+                          <div className="intervention-response-answers-section">
+                            <div className="intervention-response-answer-row">
+                              <div className="intervention-response-answer-item student-answer">
+                                <span className="intervention-response-answer-label">Student Answer</span>
+                                <span className={`intervention-response-answer-value ${response.isCorrect ? 'correct' : 'incorrect'}`}>
+                                  {(() => {
+                                    if (!response.response) return 'No response';
+
+                                    // Handle Phonological Awareness audio-visual pairs
+                                    if (typeof response.response === 'object' && Array.isArray(response.response)) {
+                                      // Format: [{"audio": "S", "match": "Aa"}, {"audio": "A", "match": "Ss"}, {"audio": "V", "match": "Vv"}]
+                                      return response.response.map(item => {
+                                        if (typeof item === 'object' && item.audio && item.match) {
+                                          return `${item.audio} → ${item.match}`;
+                                        } else if (typeof item === 'object' && item.audio && item.visual) {
+                                          return `${item.audio} → ${item.visual}`;
+                                        } else if (typeof item === 'object') {
+                                          // Handle any other object format
+                                          const keys = Object.keys(item);
+                                          if (keys.length === 2) {
+                                            return `${keys[0]} → ${item[keys[0]]}`;
+                                          }
+                                          return JSON.stringify(item);
+                                        }
+                                        return String(item);
+                                      }).join(', ');
+                                    } else if (typeof response.response === 'object' && response.response.audio && response.response.match) {
+                                      return `${response.response.audio} → ${response.response.match}`;
+                                    } else if (typeof response.response === 'object' && response.response.audio && response.response.visual) {
+                                      return `${response.response.audio} → ${response.response.visual}`;
+                                    } else if (typeof response.response === 'object') {
+                                      return JSON.stringify(response.response);
+                                    }
+
+                                    return String(response.response);
+                                  })()}
                                 </span>
                               </div>
-                              <div className="answer-item correct-answer">
-                                <span className="answer-label">Correct Answer</span>
-                                <span className="answer-value correct">
-                                  {response.correctAnswer || 'N/A'}
+                              <div className="intervention-response-answer-item correct-answer">
+                                <span className="intervention-response-answer-label">Correct Answer</span>
+                                <span className="intervention-response-answer-value correct">
+                                  {(() => {
+                                    // Find the corresponding question in the intervention assessment
+                                    if (selectedInterventionData?.interventionAssessment?.questions) {
+                                      const question = selectedInterventionData.interventionAssessment.questions.find(
+                                        q => q.questionId === response.questionId
+                                      );
+
+                                      console.log('🔍 [CORRECT ANSWER] Found question for', response.questionId, ':', question);
+
+                                      if (question) {
+                                        // DYNAMIC CORRECT ANSWER EXTRACTION FOR ALL CATEGORIES
+                                        return extractCorrectAnswerForCategory(question, selectedInterventionData.category);
+                                      }
+
+                                      console.log('🔍 [CORRECT ANSWER] Question not found');
+                                    }
+
+                                    console.log('🔍 [CORRECT ANSWER] No intervention assessment or questions found');
+                                    return 'N/A - No intervention assessment data';
+                                  })()}
                                 </span>
                               </div>
                             </div>
@@ -5758,7 +5986,7 @@ const PrescriptiveAnalysis = ({
                       </div>
                     ))
                   ) : (
-                    <div className="no-responses">
+                    <div className="intervention-response-no-responses">
                       <FaInfoCircle />
                       <p>No responses found for this intervention.</p>
                     </div>
