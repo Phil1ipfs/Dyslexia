@@ -7456,6 +7456,218 @@
   .literexia-intervention-card {
     padding: 1rem;
   }
+}
+
+/* ===== DECODING PERFORMANCE ANALYSIS STYLES ===== */
+
+.epa-performance-summary {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.epa-performance-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.epa-performance-item:last-child {
+  border-bottom: none;
+}
+
+.epa-label {
+  font-weight: 600;
+  color: #495057;
+}
+
+.epa-value {
+  font-weight: 500;
+}
+
+.epa-value.success {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.epa-maintenance-info {
+  margin-top: 1rem;
+}
+
+.epa-maintenance-info h5 {
+  color: #495057;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.epa-maintenance-info ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.epa-maintenance-info li {
+  margin-bottom: 0.25rem;
+  color: #6c757d;
+}
+
+.epa-acceleration-section,
+.epa-bridging-section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.epa-skill-item {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.epa-skill-name {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.25rem;
+}
+
+.epa-skill-target,
+.epa-skill-timeframe,
+.epa-skill-prerequisite {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-bottom: 0.125rem;
+}
+
+.epa-skill-target {
+  color: #007bff;
+}
+
+.epa-skill-timeframe {
+  color: #fd7e14;
+}
+
+.epa-skill-prerequisite {
+  color: #6f42c1;
+}
+
+.epa-value.warning {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.epa-maintenance-activities {
+  margin-top: 0.5rem;
+}
+
+.epa-maintenance-activity {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.epa-activity-name {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.25rem;
+}
+
+.epa-activity-purpose,
+.epa-activity-frequency,
+.epa-activity-implementation,
+.epa-activity-rationale {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-bottom: 0.125rem;
+}
+
+.epa-activity-purpose {
+  color: #007bff;
+  font-style: italic;
+}
+
+.epa-activity-frequency {
+  color: #fd7e14;
+}
+
+.epa-activity-implementation {
+  color: #28a745;
+}
+
+.epa-activity-rationale {
+  color: #6f42c1;
+}
+
+.epa-deficit-info {
+  margin-top: 1rem;
+}
+
+.epa-deficit-info h5 {
+  color: #dc3545;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.epa-deficit-list {
+  margin-top: 0.5rem;
+}
+
+.epa-deficit-item {
+  background: #fff5f5;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.epa-deficit-name {
+  font-weight: 600;
+  color: #dc3545;
+  margin-bottom: 0.25rem;
+}
+
+.epa-deficit-severity {
+  font-size: 0.9rem;
+  color: #dc3545;
+  font-weight: 500;
+  margin-bottom: 0.125rem;
+}
+
+.epa-deficit-manifestation {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.epa-skill-indicators {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.epa-skill-indicators-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.25rem;
+}
+
+.epa-skill-indicator-list {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.epa-skill-indicator-item {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-bottom: 0.125rem;
+}
 
   .literexia-intervention-progress-section {
     padding: 0.75rem;
@@ -7464,4 +7676,4 @@
   .literexia-detail-item {
     padding: 0.5rem;
   }
-}
+

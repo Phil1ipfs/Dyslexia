@@ -910,8 +910,16 @@ class PdfReportService {
     
     let strategies = [];
     if (prescriptiveData && prescriptiveData.recommendations && prescriptiveData.recommendations.length > 0) {
-      // Use database recommendations
-      strategies = prescriptiveData.recommendations.map(rec => `• ${rec}`);
+      // Use database recommendations - format objects properly
+      strategies = prescriptiveData.recommendations.map(rec => {
+        if (typeof rec === 'string') {
+          return `• ${rec}`;
+        } else if (typeof rec === 'object' && rec.skill) {
+          return `• ${rec.skill}: ${rec.targetMastery || 'Focus on skill development'}`;
+        } else {
+          return `• ${JSON.stringify(rec)}`;
+        }
+      });
     } else if (overallPercentage >= 85) {
       strategies = [
         '• Continue with grade-level reading materials and challenging texts',
@@ -938,6 +946,61 @@ class PdfReportService {
     });
     
     yPos += 5;
+    
+    // Add detailed recommendations if available
+    if (prescriptiveData && prescriptiveData.recommendations && prescriptiveData.recommendations.length > 0) {
+      const detailedRecommendations = prescriptiveData.recommendations.filter(rec => 
+        typeof rec === 'object' && rec.skill
+      );
+      
+      if (detailedRecommendations.length > 0) {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Detailed Recommendations:', margin + 6, yPos);
+        yPos += 8;
+        
+        detailedRecommendations.forEach((rec, index) => {
+          // Check if we need a new page
+          if (yPos + 30 > pageHeight - bottomMargin) {
+            pdf.addPage();
+            yPos = margin;
+          }
+          
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(`${index + 1}. ${rec.skill}`, margin + 6, yPos);
+          yPos += 6;
+          
+          if (rec.targetMastery) {
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`   Target: ${rec.targetMastery}`, margin + 6, yPos);
+            yPos += 5;
+          }
+          
+          if (rec.timeframe) {
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`   Timeline: ${rec.timeframe}`, margin + 6, yPos);
+            yPos += 5;
+          }
+          
+          if (rec.prerequisiteCheck) {
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`   Prerequisites: ${rec.prerequisiteCheck}`, margin + 6, yPos);
+            yPos += 5;
+          }
+          
+          if (rec.progressIndicators && Array.isArray(rec.progressIndicators)) {
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`   Progress Indicators:`, margin + 6, yPos);
+            yPos += 5;
+            rec.progressIndicators.forEach(indicator => {
+              pdf.text(`   • ${indicator}`, margin + 8, yPos);
+              yPos += 4;
+            });
+          }
+          
+          yPos += 5;
+        });
+      }
+    }
     
     // Next assessment timeline
     pdf.setFont('helvetica', 'bold');

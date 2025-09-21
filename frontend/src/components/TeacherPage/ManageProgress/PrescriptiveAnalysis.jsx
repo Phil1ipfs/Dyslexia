@@ -2144,7 +2144,12 @@ const PrescriptiveAnalysis = ({
                             <div className="epa-technique-header">
                               <h7 className="epa-technique-name">{index + 1}</h7>
                             </div>
-                            <div className="epa-technique-description">{activity.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                            <div className="epa-technique-description">
+                              {typeof activity === 'string' ? 
+                                activity.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+                                (activity.skill || activity.activity || activity.description || JSON.stringify(activity))
+                              }
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -2290,7 +2295,32 @@ const PrescriptiveAnalysis = ({
                       <h6>Next Level Skills</h6>
                       <ul>
                         {accelerationRecommendations.nextLevelSkills.map((skill, index) => (
-                          <li key={index}>{skill}</li>
+                          <li key={index}>
+                            {typeof skill === 'string' ? skill : (
+                              <div>
+                                <div className="epa-skill-name">{skill.skill || 'Next Level Skill'}</div>
+                                {skill.targetMastery && (
+                                  <div className="epa-skill-target">Target: {skill.targetMastery}</div>
+                                )}
+                                {skill.timeframe && (
+                                  <div className="epa-skill-timeframe">Timeline: {skill.timeframe}</div>
+                                )}
+                                {skill.prerequisiteCheck && (
+                                  <div className="epa-skill-prerequisite">Prerequisites: {skill.prerequisiteCheck}</div>
+                                )}
+                                {skill.progressIndicators && Array.isArray(skill.progressIndicators) && (
+                                  <div className="epa-skill-indicators">
+                                    Progress Indicators:
+                                    <ul className="epa-skill-indicator-list">
+                                      {skill.progressIndicators.map((indicator, idx) => (
+                                        <li key={idx} className="epa-skill-indicator-item">{indicator}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </li>
                         ))}
                       </ul>
                     </div>
@@ -2320,17 +2350,184 @@ const PrescriptiveAnalysis = ({
 
     if (!detailedErrorAnalysis || detailedErrorAnalysis.length === 0) {
       console.log('🔍 [RENDER] No detailed error analysis data, returning fallback display');
-      // Return a placeholder to show this function is being called
+      
+      // Get the analysis data for this category to show dynamic performance info
+      const selectedAnalysis = getAnalysisForCategory(categoryName);
+      const categoryData = selectedAnalysis?.skillMastery?.[categoryName];
+      const researchPrescriptions = selectedAnalysis?.researchBasedPrescriptions?.[categoryName];
+      
+      console.log('🔍 [DEBUG] Category data for', categoryName, ':', categoryData);
+      console.log('🔍 [DEBUG] Selected analysis:', selectedAnalysis);
+      console.log('🔍 [DEBUG] Available skillMastery keys:', selectedAnalysis?.skillMastery ? Object.keys(selectedAnalysis.skillMastery) : 'No skillMastery');
+      
+      // Try to get data from liveCategoryResults as fallback
+      const liveCategoryData = liveCategoryResults?.categories?.find(cat => 
+        cat.categoryName === categoryName || cat.category === categoryName
+      );
+      
+      console.log('🔍 [DEBUG] Live category data for', categoryName, ':', liveCategoryData);
+      
+      // Use the most accurate data source
+      const finalCategoryData = categoryData || liveCategoryData;
+      
+      // Determine if this is a passed or failed category - use the actual data from the analysis
+      const isPassed = finalCategoryData?.isPassed === true || finalCategoryData?.score >= 75;
+      const score = finalCategoryData?.score || 0;
+      const correctAnswers = finalCategoryData?.correctAnswers || 0;
+      const totalQuestions = finalCategoryData?.totalQuestions || 0;
+      const status = finalCategoryData?.status || (isPassed ? 'ADEQUATE' : 'NEEDS IMPROVEMENT');
+      
+      console.log('🔍 [DEBUG] Final calculated values:', { isPassed, score, correctAnswers, totalQuestions, status, finalCategoryData });
+      
       return (
         <div className="literexia-analysis-card literexia-full-width">
           <div className="literexia-card-content">
-            <div className={`epa-container theme-${getUITheme(categoryName)}`}>
+            <div className={`epa-container theme-${isPassed ? 'success' : 'initial'}`}>
               <div className="epa-header">
-                <FaExclamationTriangle className="epa-icon" />
+                {isPassed ? (
+                  <FaCheckCircle className="epa-icon" />
+                ) : (
+                  <FaExclamationTriangle className="epa-icon" />
+                )}
                 <div>
-                  <h4 className="epa-title">Individual Letter Analysis</h4>
-                  <p className="epa-subtitle">No detailed letter-level analysis available from database</p>
+                  <h4 className="epa-title">{categoryName} Performance Analysis</h4>
                 </div>
+              </div>
+              <div className="epa-content">
+                <div className="epa-metrics">
+                  <div className="epa-metric-card">
+                    <div className="epa-metric-label">Mastery Level</div>
+                    <div className={`epa-metric-value ${isPassed ? 'positive' : 'negative'}`}>
+                      {score}% - {isPassed ? 'MASTERED' : 'NEEDS WORK'}
+                    </div>
+                  </div>
+                  <div className="epa-metric-card">
+                    <div className="epa-metric-label">Questions Answered</div>
+                    <div className="epa-metric-value">
+                      {correctAnswers}/{totalQuestions} correct
+                    </div>
+                  </div>
+                  <div className="epa-metric-card">
+                    <div className="epa-metric-label">Status</div>
+                    <div className={`epa-metric-value ${isPassed ? 'positive' : 'negative'}`}>
+                      {status} - {isPassed ? 'No intervention needed' : 'Intervention required'}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Show maintenance recommendations for passed categories */}
+                {isPassed && researchPrescriptions?.maintenanceRecommendations && (
+                  <div className="epa-section">
+                    <div className="epa-section-header">
+                      <h5 className="epa-subsection-title">Maintenance Recommendations</h5>
+                    </div>
+                    <div className="epa-section-content">
+                      {researchPrescriptions.maintenanceRecommendations.activities && researchPrescriptions.maintenanceRecommendations.activities.length > 0 ? (
+                        <div className="epa-maintenance-activities">
+                          {researchPrescriptions.maintenanceRecommendations.activities.map((activity, index) => (
+                            <div key={index} className="epa-maintenance-activity">
+                              {typeof activity === 'string' ? activity : (
+                                <div>
+                                  <div className="epa-activity-name">{activity.activity}</div>
+                                  {activity.purpose && <div className="epa-activity-purpose">{activity.purpose}</div>}
+                                  {activity.frequency && <div className="epa-activity-frequency">Frequency: {activity.frequency}</div>}
+                                  {activity.implementation && <div className="epa-activity-implementation">{activity.implementation}</div>}
+                                  {activity.rationale && <div className="epa-activity-rationale">{activity.rationale}</div>}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p>Continue practice to maintain mastery while building advanced skills.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Show acceleration recommendations */}
+                {isPassed && researchPrescriptions?.accelerationRecommendations && (
+                  <>
+                    {researchPrescriptions.accelerationRecommendations.nextLevelSkills && researchPrescriptions.accelerationRecommendations.nextLevelSkills.length > 0 && (
+                      <div className="epa-section">
+                        <div className="epa-section-header">
+                          <h5 className="epa-subsection-title">Next Level Skills</h5>
+                        </div>
+                        <div className="epa-section-content">
+                          {researchPrescriptions.accelerationRecommendations.nextLevelSkills.map((skill, index) => (
+                            <div key={index} className="epa-skill-item">
+                              {typeof skill === 'string' ? (
+                                <div className="epa-skill-name">{skill}</div>
+                              ) : (
+                                <div>
+                                  <div className="epa-skill-name">{skill.skill || 'Next Level Skill'}</div>
+                                  {skill.targetMastery && <div className="epa-skill-target">Target: {skill.targetMastery}</div>}
+                                  {skill.timeframe && <div className="epa-skill-timeframe">Timeline: {skill.timeframe}</div>}
+                                  {skill.prerequisiteCheck && <div className="epa-skill-prerequisite">Prerequisites: {skill.prerequisiteCheck}</div>}
+                                  {skill.progressIndicators && Array.isArray(skill.progressIndicators) && skill.progressIndicators.length > 0 && (
+                                    <div className="epa-skill-indicators">
+                                      <div className="epa-skill-indicators-label">Progress Indicators:</div>
+                                      <ul className="epa-skill-indicator-list">
+                                        {skill.progressIndicators.map((indicator, idx) => (
+                                          <li key={idx} className="epa-skill-indicator-item">{indicator}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {researchPrescriptions.accelerationRecommendations.bridgingActivities && researchPrescriptions.accelerationRecommendations.bridgingActivities.length > 0 && (
+                      <div className="epa-section">
+                        <div className="epa-section-header">
+                          <h5 className="epa-subsection-title">Bridging Activities</h5>
+                        </div>
+                        <div className="epa-section-content">
+                          <ul>
+                            {researchPrescriptions.accelerationRecommendations.bridgingActivities.map((activity, index) => (
+                              <li key={index}>{activity}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+                
+                {/* Show deficit analysis for failed categories */}
+                {!isPassed && researchPrescriptions?.deficitAnalysis && (
+                  <div className="epa-section">
+                    <div className="epa-section-header">
+                      <h5 className="epa-subsection-title">Areas for Improvement</h5>
+                    </div>
+                    <div className="epa-section-content">
+                      {researchPrescriptions.deficitAnalysis.specificDeficits && researchPrescriptions.deficitAnalysis.specificDeficits.length > 0 ? (
+                        <div className="epa-deficit-list">
+                          {researchPrescriptions.deficitAnalysis.specificDeficits.map((deficit, index) => (
+                            <div key={index} className="epa-deficit-item">
+                              <div className="epa-deficit-header">
+                                <div className="epa-deficit-name">{deficit.deficit}</div>
+                                <div className={`epa-severity-badge severity-${deficit.severity?.toLowerCase() || 'moderate'}`}>
+                                  {deficit.severity || 'Moderate'}
+                                </div>
+                              </div>
+                              <div className="epa-deficit-details">
+                                <div className="epa-deficit-manifestation">{deficit.manifestation}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p>Focus on fundamental skill development in this category.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -2838,7 +3035,12 @@ const PrescriptiveAnalysis = ({
                   <strong>Recommended Activities:</strong>
                   <ul className="literexia-activity-list">
                     {interventionPlan.recommendedActivities.map((activity, idx) => (
-                      <li key={idx}>{activity.replace(/_/g, ' ')}</li>
+                      <li key={idx}>
+                        {typeof activity === 'string' ? 
+                          activity.replace(/_/g, ' ') : 
+                          (activity.skill || activity.activity || activity.description || JSON.stringify(activity))
+                        }
+                      </li>
                     ))}
                   </ul>
                 </div>

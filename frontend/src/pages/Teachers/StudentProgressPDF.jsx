@@ -526,7 +526,32 @@ const StudentProgressPDF = () => {
           ) : (
             <ul className="sdx-report-rec-list">
               {progressReport.recommendations.map((rec, index) => (
-                <li key={index} className="sdx-report-rec-item">{rec}</li>
+                <li key={index} className="sdx-report-rec-item">
+                  {typeof rec === 'string' ? rec : (
+                    <div>
+                      <div className="sdx-rec-skill">{rec.skill || 'Recommendation'}</div>
+                      {rec.targetMastery && (
+                        <div className="sdx-rec-target">Target: {rec.targetMastery}</div>
+                      )}
+                      {rec.timeframe && (
+                        <div className="sdx-rec-timeframe">Timeline: {rec.timeframe}</div>
+                      )}
+                      {rec.prerequisiteCheck && (
+                        <div className="sdx-rec-prerequisite">Prerequisites: {rec.prerequisiteCheck}</div>
+                      )}
+                      {rec.progressIndicators && Array.isArray(rec.progressIndicators) && (
+                        <div className="sdx-rec-indicators">
+                          Progress Indicators:
+                          <ul className="sdx-rec-indicator-list">
+                            {rec.progressIndicators.map((indicator, idx) => (
+                              <li key={idx} className="sdx-rec-indicator-item">{indicator}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </li>
               ))}
             </ul>
           )}
