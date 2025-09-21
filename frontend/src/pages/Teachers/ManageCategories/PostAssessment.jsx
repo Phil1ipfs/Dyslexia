@@ -86,6 +86,9 @@ const handleApiError = (error, defaultMessage = "An error occurred. Please try a
 };
 
 const MainAssessment = ({ templates }) => {
+  console.log('🔧 [DEBUG] MainAssessment component initializing...');
+  console.log('🔧 [DEBUG] Templates prop:', templates);
+  
   // State variables
   const [assessments, setAssessments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -131,6 +134,16 @@ const MainAssessment = ({ templates }) => {
   const [duplicateRestrictionDialog, setDuplicateRestrictionDialog] = useState(false);
   const [restrictionReason, setRestrictionReason] = useState("");
   const [apiMessage, setApiMessage] = useState(null);
+  
+  console.log('🔧 [DEBUG] Initial state values:', {
+    loading,
+    error,
+    showModal,
+    modalType,
+    showQuestionForm,
+    formData,
+    questionFormData
+  });
   
   // State for add option inputs
   const [showAddAnswerInput, setShowAddAnswerInput] = useState(false);
@@ -499,6 +512,7 @@ const MainAssessment = ({ templates }) => {
     // Fetch assessments data from the backend
     const fetchAssessments = async () => {
       try {
+        console.log('🔧 [DEBUG] useEffect - fetchAssessments starting...');
         setLoading(true);
         console.log("Attempting to fetch assessments...");
 
@@ -681,9 +695,9 @@ const MainAssessment = ({ templates }) => {
   // Helper functions for managing comprehension questions
   const addComprehensionQuestion = () => {
     const newQuestion = {
-      questionText: questionFormData.tempComprehensionQuestion.questionText,
-      correctAnswer: questionFormData.tempComprehensionQuestion.correctAnswer,
-      acceptableAnswers: [...questionFormData.tempComprehensionQuestion.acceptableAnswers]
+      questionText: questionFormData.sentenceQuestions[0]?.questionText || "",
+      correctAnswer: questionFormData.sentenceQuestions[0]?.correctAnswer || "",
+      acceptableAnswers: [...(questionFormData.sentenceQuestions[0]?.acceptableAnswers || [])]
     };
 
     const updatedQuestions = [...questionFormData.comprehensionQuestions, newQuestion];
@@ -691,11 +705,11 @@ const MainAssessment = ({ templates }) => {
     setQuestionFormData(prev => ({
       ...prev,
       comprehensionQuestions: updatedQuestions,
-      tempComprehensionQuestion: {
+      sentenceQuestions: [{
         questionText: "",
         correctAnswer: "",
         acceptableAnswers: []
-      },
+      }],
       currentComprehensionIndex: -1
     }));
   };
@@ -705,30 +719,30 @@ const MainAssessment = ({ templates }) => {
     setQuestionFormData(prev => ({
       ...prev,
       currentComprehensionIndex: index,
-      tempComprehensionQuestion: {
+      sentenceQuestions: [{
         questionText: questionToEdit.questionText,
         correctAnswer: questionToEdit.correctAnswer,
         acceptableAnswers: [...questionToEdit.acceptableAnswers]
-      }
+      }]
     }));
   };
 
   const saveComprehensionQuestion = () => {
     const updatedQuestions = [...questionFormData.comprehensionQuestions];
     updatedQuestions[questionFormData.currentComprehensionIndex] = {
-      questionText: questionFormData.tempComprehensionQuestion.questionText,
-      correctAnswer: questionFormData.tempComprehensionQuestion.correctAnswer,
-      acceptableAnswers: [...questionFormData.tempComprehensionQuestion.acceptableAnswers]
+      questionText: questionFormData.sentenceQuestions[0]?.questionText || "",
+      correctAnswer: questionFormData.sentenceQuestions[0]?.correctAnswer || "",
+      acceptableAnswers: [...(questionFormData.sentenceQuestions[0]?.acceptableAnswers || [])]
     };
     
     setQuestionFormData(prev => ({
       ...prev,
       comprehensionQuestions: updatedQuestions,
-      tempComprehensionQuestion: {
+      sentenceQuestions: [{
         questionText: "",
         correctAnswer: "",
         acceptableAnswers: []
-      },
+      }],
       currentComprehensionIndex: -1
     }));
   };
@@ -760,13 +774,15 @@ const MainAssessment = ({ templates }) => {
   };
 
   const addAcceptableAnswer = (answer) => {
-    if (answer.trim() && !questionFormData.tempComprehensionQuestion.acceptableAnswers.includes(answer.trim())) {
+    // Allow adding empty answers for user to fill in
+    const trimmedAnswer = answer.trim();
+    if (!questionFormData.sentenceQuestions[0]?.acceptableAnswers?.includes(trimmedAnswer)) {
       setQuestionFormData(prev => ({
         ...prev,
-        tempComprehensionQuestion: {
-          ...prev.tempComprehensionQuestion,
-          acceptableAnswers: [...prev.tempComprehensionQuestion.acceptableAnswers, answer.trim()]
-        }
+        sentenceQuestions: [{
+          ...prev.sentenceQuestions[0],
+          acceptableAnswers: [...(prev.sentenceQuestions[0]?.acceptableAnswers || []), trimmedAnswer]
+        }]
       }));
     }
   };
@@ -774,10 +790,10 @@ const MainAssessment = ({ templates }) => {
   const removeAcceptableAnswer = (index) => {
     setQuestionFormData(prev => ({
       ...prev,
-      tempComprehensionQuestion: {
-        ...prev.tempComprehensionQuestion,
-        acceptableAnswers: prev.tempComprehensionQuestion.acceptableAnswers.filter((_, i) => i !== index)
-      }
+      sentenceQuestions: [{
+        ...prev.sentenceQuestions[0],
+        acceptableAnswers: (prev.sentenceQuestions[0]?.acceptableAnswers || []).filter((_, i) => i !== index)
+      }]
     }));
   };
 
@@ -881,11 +897,16 @@ const MainAssessment = ({ templates }) => {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
+    console.log('🔧 [DEBUG] handleFormChange called - name:', name, 'value:', value);
 
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => {
+      const newFormData = {
+        ...prev,
+        [name]: value
+      };
+      console.log('🔧 [DEBUG] handleFormChange - new formData:', newFormData);
+      return newFormData;
+    });
 
     // When both readingLevel and category are set, check for existing assessments
     if (modalType === 'create' && name === 'category' && formData.readingLevel) {
@@ -962,8 +983,10 @@ const MainAssessment = ({ templates }) => {
   };
 
   const handleAddQuestion = () => {
+    console.log('🔧 [DEBUG] handleAddQuestion called - formData.category:', formData.category);
     setShowQuestionForm(true);
     setCurrentQuestion(null);
+    console.log('🔧 [DEBUG] handleAddQuestion - showQuestionForm set to true');
 
     const initialQuestionType =
       formData.category === "Alphabet Knowledge" ? "multiple_choice" :
@@ -1050,11 +1073,21 @@ const MainAssessment = ({ templates }) => {
         { pageNumber: 1, pageText: "", pageImage: null }
       ] : [],
       correctAnswer: initialQuestionType === "text_input" ? "" : [],
-      acceptableAnswers: []
+      acceptableAnswers: [],
+          // Reading Comprehension specific fields for multiple questions
+          comprehensionQuestions: [],
+          currentComprehensionIndex: -1, // -1 means adding new, >=0 means editing existing
+          // Use sentenceQuestions directly to match database structure
+          sentenceQuestions: [{
+            questionText: "",
+            correctAnswer: "",
+            acceptableAnswers: []
+          }]
     });
   };
 
   const handleEditQuestion = (question, index) => {
+    console.log('🔧 [DEBUG] handleEditQuestion called');
     console.log('=== EDIT QUESTION DEBUG START ===');
     console.log('handleEditQuestion called with:');
     console.log('- question:', JSON.stringify(question, null, 2));
@@ -1064,6 +1097,7 @@ const MainAssessment = ({ templates }) => {
     
     setShowQuestionForm(true);
     setCurrentQuestion(index);
+    console.log('🔧 [DEBUG] handleEditQuestion - showQuestionForm set to true, currentQuestion set to:', index);
     
     // Create base question data
     const baseQuestionData = {
@@ -1082,39 +1116,88 @@ const MainAssessment = ({ templates }) => {
     if (formData.category === "Reading Comprehension") {
       console.log('Processing Reading Comprehension question');
       
-      // Ensure storyTitle exists
-      if (!baseQuestionData.storyTitle) {
-        baseQuestionData.storyTitle = "";
-      }
-      
+      // CRITICAL FIX: Preserve existing storyTitle
+      console.log('🔧 [DEBUG] Original storyTitle:', baseQuestionData.storyTitle);
+      baseQuestionData.storyTitle = baseQuestionData.storyTitle || "";
+      console.log('🔧 [DEBUG] Preserved storyTitle:', baseQuestionData.storyTitle);
+
       // Handle the direct question format from the database
       baseQuestionData.questionText = baseQuestionData.questionText || "";
       baseQuestionData.correctAnswer = baseQuestionData.correctAnswer || "";
       baseQuestionData.acceptableAnswers = baseQuestionData.acceptableAnswers || [];
       
-      // Handle passages: if null, this question references a previous story's passages
-      if (baseQuestionData.passages === null) {
-        console.log('This question has passages: null (references previous story)');
-        baseQuestionData.passages = []; // Set to empty array for form compatibility
-      } else if (!baseQuestionData.passages || !Array.isArray(baseQuestionData.passages)) {
-        console.log('Creating default passages array');
+      // CRITICAL FIX: ALWAYS ensure Reading Comprehension questions have editable passages
+      console.log('🔧 [DEBUG] Original passages data:', baseQuestionData.passages);
+      console.log('🔧 [DEBUG] Type of passages:', typeof baseQuestionData.passages);
+      console.log('🔧 [DEBUG] Is array?', Array.isArray(baseQuestionData.passages));
+
+      // ALWAYS provide passages for editing - never null or empty!
+      if (Array.isArray(baseQuestionData.passages) && baseQuestionData.passages.length > 0) {
+        console.log('🔧 [DEBUG] Found existing passages:', baseQuestionData.passages.length);
+        // PRESERVE existing passages data - don't overwrite with empty values
+        baseQuestionData.passages = baseQuestionData.passages.map((passage, idx) => ({
+          pageNumber: passage.pageNumber || idx + 1,
+          pageText: passage.pageText || "", // Preserve existing text
+          pageImage: passage.pageImage || null // Preserve existing image URLs
+        }));
+        console.log('🔧 [DEBUG] Preserved passages after mapping:', baseQuestionData.passages);
+      } else {
+        console.log('🔧 [DEBUG] Creating default passages array for missing/empty/null passages');
+        // ALWAYS create at least one page for editing - no more null or empty arrays!
         baseQuestionData.passages = [
           { pageNumber: 1, pageText: "", pageImage: null }
         ];
-      } else {
-        console.log('Found existing passages:', baseQuestionData.passages.length);
-        // Ensure each passage has required fields
-        baseQuestionData.passages = baseQuestionData.passages.map((passage, idx) => ({
-          pageNumber: passage.pageNumber || idx + 1,
-          pageText: passage.pageText || "",
-          pageImage: passage.pageImage || null
-        }));
       }
     }
     
     console.log('Final baseQuestionData:', baseQuestionData);
     
-    setQuestionFormData(baseQuestionData);
+    // For Reading Comprehension, set sentenceQuestions fields
+    if (formData.category === "Reading Comprehension") {
+      console.log('🔧 [DEBUG] Loading Reading Comprehension data for editing');
+      console.log('baseQuestionData.sentenceQuestions:', baseQuestionData.sentenceQuestions);
+
+      // CRITICAL FIX: Properly load existing sentenceQuestions data with acceptableAnswers
+      let existingSentenceQuestions = [];
+
+      if (baseQuestionData.sentenceQuestions && Array.isArray(baseQuestionData.sentenceQuestions)) {
+        // Load existing sentenceQuestions with their acceptableAnswers
+        existingSentenceQuestions = baseQuestionData.sentenceQuestions.map(sq => ({
+          questionText: sq.questionText || "",
+          correctAnswer: sq.correctAnswer || "",
+          acceptableAnswers: Array.isArray(sq.acceptableAnswers) ? sq.acceptableAnswers : []
+        }));
+        console.log('🔧 [DEBUG] Loaded existing sentenceQuestions:', existingSentenceQuestions);
+      } else {
+        // Fallback: create single question structure
+        existingSentenceQuestions = [{
+          questionText: baseQuestionData.questionText || "",
+          correctAnswer: baseQuestionData.correctAnswer || "",
+          acceptableAnswers: Array.isArray(baseQuestionData.acceptableAnswers) ? baseQuestionData.acceptableAnswers : []
+        }];
+        console.log('🔧 [DEBUG] Created fallback sentenceQuestions:', existingSentenceQuestions);
+      }
+
+      // CRITICAL FIX: For Reading Comprehension editing, load existing questions for display
+      const existingComprehensionQuestions = existingSentenceQuestions.map((sq) => ({
+        questionText: sq.questionText,
+        correctAnswer: sq.correctAnswer,
+        acceptableAnswers: sq.acceptableAnswers || []
+      }));
+
+      console.log('🔧 [DEBUG] Loading existing comprehension questions for editing:', existingComprehensionQuestions);
+
+      setQuestionFormData({
+        ...baseQuestionData,
+        // Use properly loaded sentenceQuestions to preserve acceptableAnswers
+        sentenceQuestions: existingSentenceQuestions,
+        // LOAD existing questions for editing instead of empty array
+        comprehensionQuestions: existingComprehensionQuestions,
+        currentComprehensionIndex: -1 // Start in "view all questions" mode
+      });
+    } else {
+      setQuestionFormData(baseQuestionData);
+    }
   };
 
   const handleRemoveQuestion = (index) => {
@@ -1300,7 +1383,12 @@ const MainAssessment = ({ templates }) => {
         return;
       }
       
-      if (!questionFormData.correctAnswer || !questionFormData.correctAnswer.trim()) {
+      // For Reading Comprehension, check sentenceQuestions fields
+      if (!questionFormData.sentenceQuestions[0]?.questionText || !questionFormData.sentenceQuestions[0].questionText.trim()) {
+        toast.error("Please enter a question text.");
+        return;
+      }
+      if (!questionFormData.sentenceQuestions[0]?.correctAnswer || !questionFormData.sentenceQuestions[0].correctAnswer.trim()) {
         toast.error("Please enter a correct answer.");
         return;
       }
@@ -1450,25 +1538,40 @@ const MainAssessment = ({ templates }) => {
             sanitized.questionValue = null;
             sanitized.questionImage = null;
             
-            // Ensure required fields exist
-            sanitized.questionText = sanitized.questionText || "";
-            sanitized.correctAnswer = sanitized.correctAnswer || "";
+          // For Reading Comprehension, we need to create the proper structure
+          // sentenceQuestions is the ACTUAL database field that gets saved
+          // Ensure sentenceQuestions exists and has valid data
+          if (!sanitized.sentenceQuestions || sanitized.sentenceQuestions.length === 0) {
+            // Fallback: create sentenceQuestions from main question fields
+            sanitized.sentenceQuestions = [{
+              questionText: sanitized.questionText || "",
+              correctAnswer: sanitized.correctAnswer || "",
+              acceptableAnswers: sanitized.acceptableAnswers || []
+            }];
+          }
+          
+          // Remove tempComprehensionQuestion as it's not needed in the database
+          delete sanitized.tempComprehensionQuestion;
             
-            // Clean and normalize acceptableAnswers array
-            sanitized.acceptableAnswers = sanitized.acceptableAnswers || [];
-            // Filter out empty strings and normalize whitespace
-            sanitized.acceptableAnswers = sanitized.acceptableAnswers
-              .map(answer => answer ? answer.toString().trim() : '')
-              .filter(answer => answer.length > 0);
-            
-            // Ensure primary answer is included in acceptableAnswers if not already present
-            if (sanitized.correctAnswer && !sanitized.acceptableAnswers.includes(sanitized.correctAnswer)) {
-              sanitized.acceptableAnswers.unshift(sanitized.correctAnswer);
-            }
-            
-            // If no acceptable answers provided, use the correct answer
-            if (sanitized.acceptableAnswers.length === 0 && sanitized.correctAnswer) {
-              sanitized.acceptableAnswers = [sanitized.correctAnswer];
+            // Clean and normalize acceptableAnswers array in sentenceQuestions
+            if (sanitized.sentenceQuestions && sanitized.sentenceQuestions.length > 0) {
+              sanitized.sentenceQuestions.forEach(sq => {
+                if (sq.acceptableAnswers) {
+                  sq.acceptableAnswers = sq.acceptableAnswers
+                    .map(answer => answer ? answer.toString().trim() : '')
+                    .filter(answer => answer.length > 0);
+                  
+                  // Ensure primary answer is included in acceptableAnswers if not already present
+                  if (sq.correctAnswer && !sq.acceptableAnswers.includes(sq.correctAnswer)) {
+                    sq.acceptableAnswers.unshift(sq.correctAnswer);
+                  }
+                  
+                  // If no acceptable answers provided, use the correct answer
+                  if (sq.acceptableAnswers.length === 0 && sq.correctAnswer) {
+                    sq.acceptableAnswers = [sq.correctAnswer];
+                  }
+                }
+              });
             }
             
             sanitized.storyTitle = sanitized.storyTitle || "";
@@ -1494,7 +1597,13 @@ const MainAssessment = ({ templates }) => {
             delete sanitized.correctSequence;
             delete sanitized.displayWord;
             delete sanitized.blankOptions;
-            delete sanitized.sentenceQuestions;
+            delete sanitized.comprehensionQuestions;
+            delete sanitized.currentComprehensionIndex;
+            
+            // Remove main question fields as they're now in sentenceQuestions
+            delete sanitized.questionText;
+            delete sanitized.correctAnswer;
+            delete sanitized.acceptableAnswers;
             break;
 
           default:
@@ -1660,16 +1769,26 @@ const MainAssessment = ({ templates }) => {
             };
           });
 
-          // Reset for a new question and keep the form open
-          setCurrentQuestion(null);
           console.log('Question update completed successfully');
+          
+          // For Reading Comprehension, close the question form and return to assessment modal
+          if (formData.category === "Reading Comprehension") {
+            // Close the question form and return to the main assessment modal
+            console.log('Closing question form and returning to assessment modal for Reading Comprehension');
+            setShowQuestionForm(false);
+            setCurrentQuestion(null);
+            toast.success("Question updated successfully!");
+            return; // Exit early to return to assessment modal
+          } else {
+            // For other categories, reset for a new question
+            setCurrentQuestion(null);
+            
+            // Generate temporary questionId for the next question
+            const nextQuestionNumber = String(formData.questions.length + 2).padStart(3, '0'); // +2 because we just added one
+            const nextTempQuestionId = `${getCategoryPrefix(formData.category)}_${nextQuestionNumber}`;
+            const nextParentId = formData.category === "Reading Comprehension" ? nextTempQuestionId : null;
 
-        // Generate temporary questionId for the next question
-        const nextQuestionNumber = String(formData.questions.length + 2).padStart(3, '0'); // +2 because we just added one
-        const nextTempQuestionId = `${getCategoryPrefix(formData.category)}_${nextQuestionNumber}`;
-        const nextParentId = formData.category === "Reading Comprehension" ? nextTempQuestionId : null;
-
-        setQuestionFormData({
+            setQuestionFormData({
           questionType: categoryToQuestionTypeMap[formData.category],
           questionText: "",
           questionImage: null,
@@ -1691,16 +1810,24 @@ const MainAssessment = ({ templates }) => {
             {
               questionText: "",
               correctAnswer: "",
-              incorrectAnswer: "",
-              correctDescription: "",
-              incorrectDescription: "",
-              questionId: nextParentId ? `${nextParentId}_SQ01` : null
+              // CRITICAL FIX: Use acceptableAnswers array instead of wrong field names
+              acceptableAnswers: []
+              // REMOVED: questionId - Reading Comprehension sentenceQuestions should not have questionId
             }
           ] : [],
           // Question added successfully
+          comprehensionQuestions: [],
+          currentComprehensionIndex: -1, // -1 means adding new, >=0 means editing existing
+          // Use sentenceQuestions directly to match database structure
+          sentenceQuestions: [{
+            questionText: "",
+            correctAnswer: "",
+            acceptableAnswers: []
+          }]
         });
 
         toast.success("Question updated! You can add another or click Back to return to the assessment.");
+            } // Close the else block for non-Reading Comprehension categories
         } else {
         // Ensure questionValue is at least null if it's empty string or undefined
         finalQuestionData.questionValue = finalQuestionData.questionValue || null;
@@ -1739,13 +1866,20 @@ const MainAssessment = ({ templates }) => {
             {
               questionText: "",
               correctAnswer: "",
-              incorrectAnswer: "",
-              correctDescription: "",
-              incorrectDescription: "",
-              questionId: nextParentId ? `${nextParentId}_SQ01` : null
+              // CRITICAL FIX: Use acceptableAnswers array instead of wrong field names
+              acceptableAnswers: []
+              // REMOVED: questionId - Reading Comprehension sentenceQuestions should not have questionId
             }
           ] : [],
           // Question added successfully
+          comprehensionQuestions: [],
+          currentComprehensionIndex: -1, // -1 means adding new, >=0 means editing existing
+          // Use sentenceQuestions directly to match database structure
+          sentenceQuestions: [{
+            questionText: "",
+            correctAnswer: "",
+            acceptableAnswers: []
+          }]
         });
 
         console.log('Question successfully added to form! Total questions now:', formData.questions.length + 1);
@@ -1839,11 +1973,27 @@ const MainAssessment = ({ templates }) => {
 
     // Special validation for Reading Comprehension
     if (formData.category === "Reading Comprehension") {
-      if (questionFormData.comprehensionQuestions.length === 0) {
+      // Check if we have questions in the main questions array (for existing assessments)
+      // or in questionFormData (for new questions being added)
+      const hasExistingQuestions = formData.questions && formData.questions.length > 0;
+      const hasNewQuestion = questionFormData.sentenceQuestions && 
+                            questionFormData.sentenceQuestions.length > 0 && 
+                            questionFormData.sentenceQuestions[0]?.questionText && 
+                            questionFormData.sentenceQuestions[0].questionText.trim();
+      const hasComprehensionQuestions = questionFormData.comprehensionQuestions && 
+                                       questionFormData.comprehensionQuestions.length > 0;
+      
+      if (!hasExistingQuestions && !hasNewQuestion && !hasComprehensionQuestions) {
         alert("Please add at least one comprehension question for the story.");
         return;
       }
-      if (!questionFormData.storyTitle || !questionFormData.storyTitle.trim()) {
+      
+      // Check story title - use the first question's story title if available
+      const storyTitle = formData.questions.length > 0 ? 
+                        formData.questions[0].storyTitle : 
+                        questionFormData.storyTitle;
+      
+      if (!storyTitle || !storyTitle.trim()) {
         alert("Please enter a story title.");
         return;
       }
@@ -1902,36 +2052,49 @@ const MainAssessment = ({ templates }) => {
         // Prepare sentenceQuestions with proper field names for backend
         let formattedSentenceQuestions;
         if (isSentenceType && question.sentenceQuestions) {
-          formattedSentenceQuestions = question.sentenceQuestions.map((sq, sqIndex) => {
-            // If there's no questionId, generate one
-            const subQuestionNumber = String(sqIndex + 1).padStart(2, '0');
-            // Get a base ID for generating subQuestionIds if needed
-            const categoryPrefix = getCategoryPrefix(modalType === 'edit' ? selectedAssessment.category : formData.category);
-            const questionNumber = String(index + 1).padStart(3, '0');
-            const baseId = `${categoryPrefix}_${questionNumber}`;
-            // Use existing questionId, or generate a new one based on baseId
-            const subQuestionId = sq.questionId || `${baseId}_SQ${subQuestionNumber}`;
+          formattedSentenceQuestions = question.sentenceQuestions.map((sq) => {
+            // CRITICAL FIX: Preserve acceptableAnswers structure for Reading Comprehension
+            console.log('🔧 [DEBUG] Formatting sentenceQuestion - original sq:', sq);
 
             return {
               questionText: sq.questionText,
               correctAnswer: sq.correctAnswer,
-              incorrectAnswer: sq.incorrectAnswer,
-              correctDescription: sq.correctDescription || "",
-              incorrectDescription: sq.incorrectDescription || "",
-              questionImage: sq.questionImage || null,
-              questionId: subQuestionId
+              // PRESERVE acceptableAnswers array instead of wrong field names
+              acceptableAnswers: Array.isArray(sq.acceptableAnswers) ? sq.acceptableAnswers : [],
+              questionImage: sq.questionImage || null
+              // REMOVED: questionId generation - Reading Comprehension sentenceQuestions should not have questionId
             };
           });
+        }
+
+        // DEBUGGING: Log the question data before formatting
+        if (isSentenceType) {
+          console.log('🔧 [DEBUG] Formatting Reading Comprehension question for save:');
+          console.log('- Original question.passages:', question.passages);
+          console.log('- Type of passages:', typeof question.passages);
+          console.log('- Is array?', Array.isArray(question.passages));
+          console.log('- Length?', question.passages?.length);
+        }
+
+        // CRITICAL FIX: NEVER allow null or empty passages for Reading Comprehension
+        const formattedPassages = isSentenceType ? (
+          Array.isArray(question.passages) && question.passages.length > 0
+            ? question.passages // Use actual passages if they exist
+            : [{ pageNumber: 1, pageText: "", pageImage: null }] // ALWAYS provide at least one page
+        ) : undefined;
+
+        if (isSentenceType) {
+          console.log('🔧 [DEBUG] Formatted passages result (NEVER null or empty):', formattedPassages);
         }
 
         return {
           ...question,
           // Include questionId for all question types
           questionId,
-          // Set questionValue directly 
+          // Set questionValue directly
           questionValue: isSentenceType ? null : questionValue,
-          // Ensure passages exist for sentence type
-          passages: isSentenceType ? (question.passages || []) : undefined,
+          // CRITICAL FIX: Preserve passages data correctly - null means reference existing story
+          passages: formattedPassages,
           // Ensure sentenceQuestions exist for sentence type
           sentenceQuestions: isSentenceType ? formattedSentenceQuestions : undefined,
           // Ensure choiceOptions only exist for Alphabet Knowledge
@@ -1968,50 +2131,52 @@ const MainAssessment = ({ templates }) => {
         // Create new assessment - include all fields
         // Get the questionType based on category (using global mapping)
 
-        // Special handling for Reading Comprehension with multiple questions
-        if (formData.category === "Reading Comprehension" && questionFormData.comprehensionQuestions.length > 0) {
-          // Create multiple assessments, one for each comprehension question
-          const responses = [];
+        // Special handling for Reading Comprehension
+        if (formData.category === "Reading Comprehension") {
+          // For Reading Comprehension, create a single assessment with all questions
           const storyTitle = questionFormData.storyTitle;
           const passages = questionFormData.passages;
           
-          for (let i = 0; i < questionFormData.comprehensionQuestions.length; i++) {
-            const comprQuestion = questionFormData.comprehensionQuestions[i];
-            const questionId = `RC_${String(i + 1).padStart(3, '0')}`;
-            
-            const singleQuestionData = {
-              questionId: questionId,
-              category: formData.category,
-              questionText: comprQuestion.questionText,
-              questionImage: null,
-              questionValue: null,
-              storyTitle: storyTitle,
-              passages: i === 0 ? passages : null, // First question gets passages, others get null
-              correctAnswer: comprQuestion.correctAnswer,
-              acceptableAnswers: comprQuestion.acceptableAnswers
-            };
-
-            const assessmentData = {
-              readingLevel: formData.readingLevel,
-              category: formData.category,
-              questionType: categoryToQuestionTypeMap[formData.category],
-              questions: [singleQuestionData], // Single question per assessment
-              isActive: formData.isActive,
-              status: formData.status
-            };
-
-            console.log(`Creating Reading Comprehension assessment ${i + 1}:`, JSON.stringify(assessmentData, null, 2));
-            
-            try {
-              const singleResponse = await MainAssessmentService.createAssessment(assessmentData);
-              responses.push(singleResponse);
-            } catch (error) {
-              console.error(`Error creating assessment ${i + 1}:`, error);
-              throw error;
-            }
+          // Build sentenceQuestions array from form data
+          let sentenceQuestions = [];
+          
+          // Check if we have multiple questions in comprehensionQuestions
+          if (questionFormData.comprehensionQuestions && questionFormData.comprehensionQuestions.length > 0) {
+            sentenceQuestions = questionFormData.comprehensionQuestions.map((q, index) => ({
+              questionText: q.questionText,
+              correctAnswer: q.correctAnswer,
+              acceptableAnswers: q.acceptableAnswers || []
+            }));
+          } 
+          // Check if we have a single question in sentenceQuestions
+          else if (questionFormData.sentenceQuestions && questionFormData.sentenceQuestions.length > 0) {
+            sentenceQuestions = questionFormData.sentenceQuestions;
           }
           
-          response = responses[0]; // Use first response for success checking
+          if (sentenceQuestions.length === 0) {
+            throw new Error("No Reading Comprehension questions to save");
+          }
+          
+          // Create the question data with proper structure
+          const questionData = {
+            questionId: questionFormData.questionId,
+            storyTitle: storyTitle,
+            passages: passages,
+            sentenceQuestions: sentenceQuestions,
+            questionValue: null
+          };
+
+          const assessmentData = {
+            readingLevel: formData.readingLevel,
+            category: formData.category,
+            questionType: categoryToQuestionTypeMap[formData.category],
+            questions: [questionData],
+            isActive: formData.isActive,
+            status: formData.status
+          };
+
+          console.log("Creating Reading Comprehension assessment:", JSON.stringify(assessmentData, null, 2));
+          response = await MainAssessmentService.createAssessment(assessmentData);
         } else {
           // Original logic for other categories
           const assessmentData = {
@@ -2164,6 +2329,7 @@ const MainAssessment = ({ templates }) => {
   };
 
 
+
   const handleImageUpload = async (e, field) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -2209,7 +2375,10 @@ const MainAssessment = ({ templates }) => {
     return folderMap[category] || '';
   };
 
+  console.log('🔧 [DEBUG] Main render - loading:', loading, 'error:', error, 'assessments.length:', assessments.length);
+
   if (loading) {
+    console.log('🔧 [DEBUG] Rendering loading state');
     return (
       <div className="post-assessment-container">
         <div className="pa-loading">
@@ -2221,6 +2390,7 @@ const MainAssessment = ({ templates }) => {
   }
 
   if (error) {
+    console.log('🔧 [DEBUG] Rendering error state:', error);
     return (
       <div className="post-assessment-container">
         <div className="pa-error">
@@ -2262,6 +2432,8 @@ const MainAssessment = ({ templates }) => {
       transition: 'all 0.2s ease'
     }
   };
+
+  console.log('🔧 [DEBUG] About to render main component - showModal:', showModal, 'showQuestionForm:', showQuestionForm, 'formData.category:', formData.category);
 
   return (
     <div className="post-assessment-container">
@@ -2703,6 +2875,7 @@ const MainAssessment = ({ templates }) => {
 
       {showModal && (
         <div className={modalType === 'preview' ? 'ap-modal-overlay' : 'pa-modal-overlay'}>
+          {console.log('🔧 [DEBUG] Modal rendering - showModal:', showModal, 'modalType:', modalType, 'showQuestionForm:', showQuestionForm)}
           <div className={modalType === 'preview' ? 'ap-modal' : `pa-modal ${modalType === 'preview' || showQuestionForm ? 'pa-modal-enhanced' : ''} ${modalType === 'delete' ? 'pa-modal-narrow' : ''}`}>
             <div className={modalType === 'preview' ? 'ap-modal-header' : 'pa-modal-header'}>
               <h3>
@@ -3018,6 +3191,7 @@ const MainAssessment = ({ templates }) => {
                 </div>
               ) : showQuestionForm ? (
                 <div className="pa-question-form">
+                  {console.log('🔧 [DEBUG] Question form rendering - showQuestionForm:', showQuestionForm, 'currentQuestion:', currentQuestion, 'formData.category:', formData.category)}
                   <div className="pa-question-form-header">
                     <h4>
                       {currentQuestion !== null ? (
@@ -3036,6 +3210,7 @@ const MainAssessment = ({ templates }) => {
                   </div>
 
                   <div className="pa-question-form-content">
+                    {console.log('🔧 [DEBUG] Question form content rendering - formData.category:', formData.category, 'questionFormData:', questionFormData)}
                     {/* Question types are now automatically determined by category */}
 
                     {/* Question Content Section - Two Column Layout */}
@@ -3636,7 +3811,7 @@ const MainAssessment = ({ templates }) => {
                                       
                                       input.focus();
                                       
-                                      const cleanup = () => {
+                                      let cleanup = () => {
                                         document.body.removeChild(modal);
                                       };
                                       
@@ -3894,7 +4069,7 @@ const MainAssessment = ({ templates }) => {
                                       
                                       input.focus();
                                       
-                                      const cleanup = () => {
+                                      let cleanup = () => {
                                         document.body.removeChild(modal);
                                       };
                                       
@@ -4542,9 +4717,23 @@ const MainAssessment = ({ templates }) => {
                         </div>
                       )}
 
-                      {/* Reading Comprehension - Simplified Text Input */}
+                      {/* Reading Comprehension - Proper Grid Positioning */}
                       {formData.category === "Reading Comprehension" && (
-                        <div className="pa-passage-form pa-full-width" style={{ backgroundColor: '#f8fafe', border: '1px solid #e1effe', borderRadius: '8px', padding: '24px' }}>
+                        <div
+                          className="pa-full-width"
+                          style={{
+                            gridColumn: '1 / -1',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '20px',
+                            padding: '20px',
+                            backgroundColor: '#f8fafc',
+                            borderRadius: '8px',
+                            border: '1px solid #e2e8f0'
+                          }}
+                        >
+                          {console.log('🔧 [DEBUG] Reading Comprehension form rendering - questionFormData:', questionFormData)}
+                       
                           {/* Show story context for subsequent questions */}
                           {questionFormData.passages === null && questionFormData.storyTitle && (
                             <div style={{
@@ -4564,9 +4753,8 @@ const MainAssessment = ({ templates }) => {
                             </div>
                           )}
 
-                          {/* Story Title Section - Hide if adding subsequent question with passages: null */}
-                          {questionFormData.passages !== null && (
-                            <div className="pa-form-section" style={{ marginBottom: '24px' }}>
+                          {/* Story Title Section - ALWAYS show for Reading Comprehension */}
+                          <div className="pa-form-section" style={{ marginBottom: '24px' }}>
                             <h5 style={{ color: '#1e40af', marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>
                               <FontAwesomeIcon icon={faBook} style={{ marginRight: '8px', color: '#3b82f6' }} /> 
                               Story Information
@@ -4635,34 +4823,32 @@ const MainAssessment = ({ templates }) => {
                               )}
                             </div>
                           </div>
-                          )}
 
-                          {/* Story Pages Section - Hide if adding subsequent question with passages: null */}
-                          {questionFormData.storyTitle && questionFormData.passages !== null && (
+                          {/* Story Pages Section - ALWAYS show for Reading Comprehension to ensure proper passages */}
+                          {questionFormData.storyTitle && (
                             <div className="pa-form-section" style={{ marginBottom: '24px' }}>
                               <h5 style={{ color: '#1e40af', marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>
                                 <FontAwesomeIcon icon={faBook} style={{ marginRight: '8px', color: '#3b82f6' }} /> 
                                 Story Pages
                               </h5>
                               
-                              <div style={{ 
-                                marginBottom: '16px', 
-                                padding: '12px', 
-                                backgroundColor: '#fef3c7', 
-                                border: '1px solid #f59e0b', 
-                                borderRadius: '6px', 
-                                fontSize: '14px', 
-                                color: '#92400e' 
+                              <div style={{
+                                marginBottom: '16px',
+                                padding: '12px',
+                                backgroundColor: '#fef3c7',
+                                border: '1px solid #f59e0b',
+                                borderRadius: '6px',
+                                fontSize: '14px',
+                                color: '#92400e'
                               }}>
                                 <FontAwesomeIcon icon={faInfoCircle} style={{ marginRight: '8px' }} />
-                                {!hasExistingPassages(questionFormData.storyTitle) 
-                                  ? "This is a new story. Please add the reading passages below (required for first question of this story)."
-                                  : "This story already has passages. You can add passages here for this specific question, or leave empty to reference the existing story passages (will be set to null in database)."}
+                                Please add the reading passages below. All Reading Comprehension questions must have proper story content.
                               </div>
                               
-                              {(questionFormData.passages && questionFormData.passages.length > 0 
-                                ? questionFormData.passages 
-                                : [{ pageNumber: 1, pageText: "", pageImage: null }]
+                              {/* CRITICAL FIX: ALWAYS provide editable passages - no null or empty arrays allowed */}
+                              {(Array.isArray(questionFormData.passages) && questionFormData.passages.length > 0
+                                ? questionFormData.passages
+                                : [{ pageNumber: 1, pageText: "", pageImage: null }] // ALWAYS create at least one editable page
                               ).map((page, index) => (
                                 <div key={index} style={{ 
                                   border: '1px solid #e5e7eb', 
@@ -4679,7 +4865,8 @@ const MainAssessment = ({ templates }) => {
                                         onClick={() => {
                                           setQuestionFormData(prev => ({
                                             ...prev,
-                                            passages: prev.passages.filter((_, i) => i !== index)
+                                            // CRITICAL FIX: Handle null passages properly in filter
+                                            passages: Array.isArray(prev.passages) ? prev.passages.filter((_, i) => i !== index) : []
                                           }));
                                         }}
                                         style={{
@@ -4705,7 +4892,9 @@ const MainAssessment = ({ templates }) => {
                                     <textarea
                                       value={page?.pageText || ""}
                                       onChange={(e) => {
-                                        const updatedPassages = [...questionFormData.passages];
+                                        // CRITICAL FIX: Handle null passages properly in text update
+                                        const currentPassages = Array.isArray(questionFormData.passages) ? questionFormData.passages : [];
+                                        const updatedPassages = [...currentPassages];
                                         updatedPassages[index] = {
                                           ...updatedPassages[index],
                                           pageText: e.target.value
@@ -4776,9 +4965,10 @@ const MainAssessment = ({ templates }) => {
                                   setQuestionFormData(prev => ({
                                     ...prev,
                                     passages: [
-                                      ...prev.passages,
+                                      // CRITICAL FIX: Handle null passages properly
+                                      ...(Array.isArray(prev.passages) ? prev.passages : []),
                                       {
-                                        pageNumber: prev.passages.length + 1,
+                                        pageNumber: (Array.isArray(prev.passages) ? prev.passages.length : 0) + 1,
                                         pageText: "",
                                         pageImage: null
                                       }
@@ -4933,14 +5123,14 @@ const MainAssessment = ({ templates }) => {
                                 </label>
                                 <input
                                   type="text"
-                                  value={questionFormData.tempComprehensionQuestion.questionText}
+                                  value={questionFormData.sentenceQuestions[0]?.questionText || ""}
                                   onChange={(e) => {
                                     setQuestionFormData(prev => ({
                                       ...prev,
-                                      tempComprehensionQuestion: {
-                                        ...prev.tempComprehensionQuestion,
+                                      sentenceQuestions: [{
+                                        ...prev.sentenceQuestions[0],
                                         questionText: e.target.value
-                                      }
+                                      }]
                                     }));
                                   }}
                                   placeholder="Enter your question (e.g., 'Sino ang pangunahing tauhan?')"
@@ -4973,14 +5163,14 @@ const MainAssessment = ({ templates }) => {
                                 </label>
                                 <input
                                   type="text"
-                                  value={questionFormData.tempComprehensionQuestion.correctAnswer}
+                                  value={questionFormData.sentenceQuestions[0]?.correctAnswer || ""}
                                   onChange={(e) => {
                                     setQuestionFormData(prev => ({
                                       ...prev,
-                                      tempComprehensionQuestion: {
-                                        ...prev.tempComprehensionQuestion,
+                                      sentenceQuestions: [{
+                                        ...prev.sentenceQuestions[0],
                                         correctAnswer: e.target.value
-                                      }
+                                      }]
                                     }));
                                   }}
                                   placeholder="Enter the main correct answer (e.g., 'Juan')"
@@ -5019,7 +5209,7 @@ const MainAssessment = ({ templates }) => {
                                 </div>
                                 
                                 {/* Display existing acceptable answers */}
-                                {questionFormData.tempComprehensionQuestion.acceptableAnswers.map((answer, index) => (
+                                {(questionFormData.sentenceQuestions[0]?.acceptableAnswers || []).map((answer, index) => (
                                   <div key={index} style={{ 
                                     display: 'flex', 
                                     alignItems: 'center', 
@@ -5029,14 +5219,14 @@ const MainAssessment = ({ templates }) => {
                                       type="text"
                                       value={answer}
                                       onChange={(e) => {
-                                        const updatedAnswers = [...questionFormData.tempComprehensionQuestion.acceptableAnswers];
+                                        const updatedAnswers = [...(questionFormData.sentenceQuestions[0]?.acceptableAnswers || [])];
                                         updatedAnswers[index] = e.target.value;
                                         setQuestionFormData(prev => ({
                                           ...prev,
-                                          tempComprehensionQuestion: {
-                                            ...prev.tempComprehensionQuestion,
+                                          sentenceQuestions: [{
+                                            ...prev.sentenceQuestions[0],
                                             acceptableAnswers: updatedAnswers
-                                          }
+                                          }]
                                         }));
                                       }}
                                       placeholder={`Variation ${index + 1}`}
@@ -5124,11 +5314,11 @@ const MainAssessment = ({ templates }) => {
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    if (!questionFormData.tempComprehensionQuestion.questionText.trim()) {
+                                    if (!questionFormData.sentenceQuestions[0]?.questionText?.trim()) {
                                       toast.error('Please enter a question text.');
                                       return;
                                     }
-                                    if (!questionFormData.tempComprehensionQuestion.correctAnswer.trim()) {
+                                    if (!questionFormData.sentenceQuestions[0]?.correctAnswer?.trim()) {
                                       toast.error('Please enter a correct answer.');
                                       return;
                                     }
@@ -5265,7 +5455,10 @@ const MainAssessment = ({ templates }) => {
                           id="category"
                           name="category"
                           value={formData.category}
-                          onChange={handleFormChange}
+                          onChange={(e) => {
+                            console.log('🔧 [DEBUG] Category dropdown changed - value:', e.target.value);
+                            handleFormChange(e);
+                          }}
                           required
                           disabled={modalType === 'edit'}
                           className={`pa-select-input ${modalType === 'edit' ? 'pa-disabled-input' : ''} ${modalType === 'create' && formData.readingLevel && formData.category && !canCreateAssessment(formData.readingLevel, formData.category).canCreate ? 'pa-select-error' : ''}`}
@@ -5338,7 +5531,12 @@ const MainAssessment = ({ templates }) => {
                         <button
                           type="button"
                           className="pa-add-question-btn"
-                          onClick={handleAddQuestion}
+                          onClick={() => {
+                            console.log('🔧 [DEBUG] Add Question button clicked - formData:', formData);
+                            console.log('🔧 [DEBUG] Add Question button - formData.category:', formData.category);
+                            console.log('🔧 [DEBUG] Add Question button - formData.readingLevel:', formData.readingLevel);
+                            handleAddQuestion();
+                          }}
                           disabled={!formData.category || (modalType === 'create' && formData.readingLevel && formData.category && !canCreateAssessment(formData.readingLevel, formData.category).canCreate)}
                         >
                           <FontAwesomeIcon icon={faPlus} /> Add Question
