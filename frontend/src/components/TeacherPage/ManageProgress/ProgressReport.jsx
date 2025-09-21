@@ -277,9 +277,20 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
   const calculateCompletionRate = () => {
     if (!hasValidCategoryData) return 0;
 
-    // Count passed categories
-    const passedCategories = categoriesData.filter(cat => cat.isPassed).length;
-    return Math.round((passedCategories / categoriesData.length) * 100);
+    // ✅ ENHANCED: Count passed categories INCLUDING intervention successes
+    const passedCategories = categoriesData.filter(cat => {
+      // Check if passed via intervention first
+      const latestAttempt = getLatestInterventionAttempt(cat);
+      if (latestAttempt && latestAttempt.isPassed && latestAttempt.score >= 75) {
+        return true;
+      }
+      // Otherwise check original assessment
+      return cat.isPassed;
+    }).length;
+
+    const completionRate = Math.round((passedCategories / categoriesData.length) * 100);
+    console.log(`[COMPLETION RATE] Enhanced calculation: ${passedCategories}/${categoriesData.length} = ${completionRate}%`);
+    return completionRate;
   };
   
   // Format date for display
@@ -344,23 +355,101 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     return { totalQuestions, correctAnswers };
   };
 
-  // Calculate completion rate and other metrics using normalized data
-  const completionRate = calculateCompletionRate();
-  const { totalQuestions, correctAnswers } = recalculateMetricsFromResponses();
-  const passedCategories = hasValidCategoryData ?
-    categoriesData.filter(cat => cat.isPassed).length : 0;
-  const totalCategories = hasValidCategoryData ?
-    categoriesData.length : 0;
-  const assessmentDate = formatDate(normalizedProgressData.assessmentDate || normalizedProgressData.createdAt);
-  const readingLevel = normalizedProgressData.readingLevel || "Not Assessed";
+  // Calculate completion rate and other metrics using normalized data with error handling
+  console.log('[PROGRESS REPORT] 🔧 Starting calculations...');
 
-  // Calculate overall score - either use the one from the API or calculate
-  const overallScore = normalizedProgressData.overallScore || (hasValidCategoryData ?
-    Math.round(categoriesData.reduce((total, category) => total + (Number(category.score) || 0), 0) / totalCategories) : 0);
+  let completionRate = 0;
+  let totalQuestions = 0;
+  let correctAnswers = 0;
+  let passedCategories = 0;
+  let totalCategories = 0;
+  let assessmentDate = "Not available";
+  let readingLevel = "Not Assessed";
+  let overallScore = 0;
+  let categoriesNeedingAttention = [];
 
-  // Determine if any categories need attention (below 75% threshold)
-  const categoriesNeedingAttention = hasValidCategoryData ?
-    categoriesData.filter(cat => (Number(cat.score) || 0) < 75) : [];
+  try {
+    completionRate = calculateCompletionRate();
+    console.log('[PROGRESS REPORT] ✅ Completion rate calculated:', completionRate);
+  } catch (error) {
+    console.error('[PROGRESS REPORT] ❌ Error calculating completion rate:', error);
+  }
+
+  try {
+    const metricsResult = recalculateMetricsFromResponses();
+    totalQuestions = metricsResult.totalQuestions;
+    correctAnswers = metricsResult.correctAnswers;
+    console.log('[PROGRESS REPORT] ✅ Metrics recalculated:', { totalQuestions, correctAnswers });
+  } catch (error) {
+    console.error('[PROGRESS REPORT] ❌ Error recalculating metrics:', error);
+  }
+
+  try {
+    // ✅ ENHANCED: Calculate passed categories using intervention scores when higher
+    passedCategories = hasValidCategoryData ?
+      categoriesData.filter(cat => {
+        try {
+          // Check if passed via intervention first
+          const latestAttempt = getLatestInterventionAttempt(cat);
+          if (latestAttempt && latestAttempt.isPassed && latestAttempt.score >= 75) {
+            return true;
+          }
+          // Otherwise check original assessment
+          return cat.isPassed;
+        } catch (catError) {
+          console.error('[PROGRESS REPORT] ❌ Error checking category:', cat.categoryName, catError);
+          return false;
+        }
+      }).length : 0;
+    console.log('[PROGRESS REPORT] ✅ Passed categories calculated:', passedCategories);
+  } catch (error) {
+    console.error('[PROGRESS REPORT] ❌ Error calculating passed categories:', error);
+  }
+
+  try {
+    totalCategories = hasValidCategoryData ? categoriesData.length : 0;
+    assessmentDate = formatDate(normalizedProgressData.assessmentDate || normalizedProgressData.createdAt);
+    readingLevel = normalizedProgressData.readingLevel || "Not Assessed";
+    console.log('[PROGRESS REPORT] ✅ Basic values set:', { totalCategories, assessmentDate, readingLevel });
+  } catch (error) {
+    console.error('[PROGRESS REPORT] ❌ Error setting basic values:', error);
+  }
+
+  try {
+    // ✅ ENHANCED: Calculate overall score using intervention scores when higher
+    overallScore = normalizedProgressData.overallScore || (hasValidCategoryData ?
+      Math.round(categoriesData.reduce((total, category) => {
+        try {
+          // Use intervention score if higher than original score
+          const currentDisplayScore = getCurrentDisplayScore(category);
+          console.log(`[OVERALL SCORE] ${category.categoryName}: using ${currentDisplayScore}% (original: ${category.score}%)`);
+          return total + currentDisplayScore;
+        } catch (catError) {
+          console.error('[PROGRESS REPORT] ❌ Error calculating display score for:', category.categoryName, catError);
+          return total + (category.score || 0);
+        }
+      }, 0) / totalCategories) : 0);
+    console.log('[PROGRESS REPORT] ✅ Overall score calculated:', overallScore);
+  } catch (error) {
+    console.error('[PROGRESS REPORT] ❌ Error calculating overall score:', error);
+  }
+
+  try {
+    // ✅ ENHANCED: Determine if any categories need attention using intervention scores when higher
+    categoriesNeedingAttention = hasValidCategoryData ?
+      categoriesData.filter(cat => {
+        try {
+          const currentDisplayScore = getCurrentDisplayScore(cat);
+          return currentDisplayScore < 75;
+        } catch (catError) {
+          console.error('[PROGRESS REPORT] ❌ Error checking attention for:', cat.categoryName, catError);
+          return (cat.score || 0) < 75;
+        }
+      }) : [];
+    console.log('[PROGRESS REPORT] ✅ Categories needing attention calculated:', categoriesNeedingAttention.length);
+  } catch (error) {
+    console.error('[PROGRESS REPORT] ❌ Error calculating categories needing attention:', error);
+  }
 
   console.log('[PROGRESS REPORT] Calculated metrics:');
   console.log('  - completionRate:', completionRate);
@@ -500,48 +589,61 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
 
   // NEW: Determine if category is unlocked based on intervention progression
   const isCategoryUnlocked = (categoryName, categoryIndex) => {
+    console.log(`[DEBUG UNLOCK] Checking unlock for ${categoryName} (index ${categoryIndex})`);
+
     // First category (Alphabet Knowledge) is always unlocked
-    if (categoryIndex === 0) return true;
-    
+    if (categoryIndex === 0) {
+      console.log(`[DEBUG UNLOCK] First category - always unlocked`);
+      return true;
+    }
+
     // Check if all previous categories have passed (either original assessment or latest intervention)
     for (let i = 0; i < categoryIndex; i++) {
       const prevCategory = categoriesData[i];
       const latestAttempt = getLatestInterventionAttempt(prevCategory);
-      
+
+      console.log(`[DEBUG UNLOCK] Checking prerequisite ${prevCategory.categoryName}:`);
+      console.log(`  - isPassed: ${prevCategory.isPassed}`);
+      console.log(`  - latestAttempt:`, latestAttempt);
+
       // Check if previous category passed either in original assessment or latest intervention
-      const prevCategoryPassed = prevCategory.isPassed || 
+      const prevCategoryPassed = prevCategory.isPassed ||
         (latestAttempt && latestAttempt.isPassed && latestAttempt.score >= 75);
-      
+
+      console.log(`  - prevCategoryPassed: ${prevCategoryPassed}`);
+
       if (!prevCategoryPassed) {
+        console.log(`[DEBUG UNLOCK] BLOCKED by ${prevCategory.categoryName}`);
         return false;
       }
     }
-    
+
+    console.log(`[DEBUG UNLOCK] All prerequisites met - UNLOCKED`);
     return true;
   };
 
   // NEW: Get the current display score for a category (prioritizes passed intervention scores)
   const getCurrentDisplayScore = (category) => {
     const latestAttempt = getLatestInterventionAttempt(category);
-    
+
     console.log(`[DISPLAY SCORE] Category: ${category.categoryName}`);
     console.log(`[DISPLAY SCORE] Original score: ${category.score}`);
     console.log(`[DISPLAY SCORE] Latest attempt:`, latestAttempt);
-    
-    // If there's a passed intervention attempt, use that score
-    if (latestAttempt && latestAttempt.isPassed) {
-      console.log(`[DISPLAY SCORE] Using passed intervention score: ${latestAttempt.score}`);
+
+    // ✅ ENHANCED: If there's a passed intervention attempt, use that score
+    if (latestAttempt && latestAttempt.isPassed && latestAttempt.score >= 75) {
+      console.log(`[DISPLAY SCORE] ✅ Using passed intervention score: ${latestAttempt.score}%`);
       return latestAttempt.score;
     }
-    
-    // If there's any intervention attempt (even failed), use that score
+
+    // If there's any intervention attempt (even failed), use the latest score
     if (latestAttempt) {
-      console.log(`[DISPLAY SCORE] Using intervention score: ${latestAttempt.score}`);
+      console.log(`[DISPLAY SCORE] Using latest intervention score: ${latestAttempt.score}%`);
       return latestAttempt.score;
     }
-    
+
     // Otherwise, use the original category score
-    console.log(`[DISPLAY SCORE] Using original score: ${category.score}`);
+    console.log(`[DISPLAY SCORE] Using original score: ${category.score}%`);
     return Number(category.score) || 0;
   };
 
@@ -569,36 +671,24 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     const hasAttemptedCategory = (Number(category.totalQuestions) || 0) > 0 &&
                                  (Number(category.correctAnswers) || 0) >= 0;
 
-    // If category passed, check if it was via intervention or original assessment
-    if (category.isPassed) {
-      // Check if passed via intervention
-      if (category.interventionCompleted && latestAttempt && latestAttempt.isPassed) {
-        return {
-          status: 'passed',
-          score: latestAttempt.score,
-          source: 'intervention',
-          attemptNumber: latestAttempt.attemptNumber,
-          message: `Passed via intervention on attempt ${latestAttempt.attemptNumber} (Score: ${latestAttempt.score}%)`
-        };
-      }
-
-      // Check if there's a passed intervention (even if not marked as interventionCompleted)
-      if (latestAttempt && latestAttempt.isPassed) {
-        return {
-          status: 'passed',
-          score: latestAttempt.score,
-          source: 'intervention',
-          attemptNumber: latestAttempt.attemptNumber,
-          message: 'Category passed via intervention'
-        };
-      }
-
-      // Otherwise, passed via original assessment
+    // ✅ ENHANCED: Check if passed via intervention FIRST (takes priority over category.isPassed)
+    if (latestAttempt && latestAttempt.isPassed && latestAttempt.score >= 75) {
       return {
         status: 'passed',
-        score: getCurrentDisplayScore(category), // Use the display score (intervention if available)
+        score: latestAttempt.score,
+        source: 'intervention',
+        attemptNumber: latestAttempt.attemptNumber,
+        message: `Passed via intervention attempt ${latestAttempt.attemptNumber} (Score: ${latestAttempt.score}%)`
+      };
+    }
+
+    // If category passed via original assessment (and no intervention override)
+    if (category.isPassed) {
+      return {
+        status: 'passed',
+        score: getCurrentDisplayScore(category), // Use the display score
         source: 'original_assessment',
-        message: 'Category passed via intervention'
+        message: 'Category passed via original assessment'
       };
     }
 
@@ -873,8 +963,17 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     }
   };
   
+  console.log('[PROGRESS REPORT] ✅ About to render - Final validation:', {
+    hasValidCategoryData,
+    totalCategories,
+    passedCategories,
+    overallScore,
+    completionRate
+  });
+
   return (
     <div className="student-progress-container">
+      {console.log('[PROGRESS REPORT] 🎯 RENDERING MAIN CONTAINER')}
       {/* Progress info section */}
       <div className="student-progress-info">
         <FaInfoCircle className="student-progress-info-icon" />
@@ -933,6 +1032,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
       {console.log('[PROGRESS REPORT] About to render main content section, hasValidCategoryData:', hasValidCategoryData)}
       {hasValidCategoryData && (
         <div className="student-progress-category-section">
+          {console.log('[PROGRESS REPORT] 🎯 RENDERING CATEGORIES SECTION!')}
           <div className="student-progress-section-header">
             <h3 className="student-progress-section-title">
               <FaChartLine className="student-progress-section-icon" /> 
@@ -1008,10 +1108,23 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
               // For Phonological Awareness: check correctMatches and totalPossibleMatches
               // For other categories: check correctAnswers and totalQuestions
               const hasAttemptedQuestions = (() => {
+                console.log(`[DEBUG ATTEMPTED] Checking ${categoryName}:`);
+                console.log(`[DEBUG ATTEMPTED] Category data:`, {
+                  correctMatches: category.correctMatches,
+                  totalPossibleMatches: category.totalPossibleMatches,
+                  correctAnswers: category.correctAnswers,
+                  totalQuestions: category.totalQuestions,
+                  isCompleted: category.isCompleted
+                });
+
                 if (categoryName === 'Phonological Awareness') {
-                  return (category.correctMatches > 0 || category.totalPossibleMatches > 0);
+                  const result = (category.correctMatches > 0 || category.totalPossibleMatches > 0);
+                  console.log(`[DEBUG ATTEMPTED] PA Result:`, result);
+                  return result;
                 } else {
-                  return (category.correctAnswers > 0 || category.totalQuestions > 0);
+                  const result = (category.correctAnswers > 0 || category.totalQuestions > 0);
+                  console.log(`[DEBUG ATTEMPTED] Other category result:`, result);
+                  return result;
                 }
               })();
 
@@ -1036,6 +1149,10 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                 statusMessage = 'Not attempted yet';
               }
 
+              console.log(`[DEBUG STATUS] ${categoryName} Status Determination:`);
+              console.log(`  - isUnlocked: ${isUnlocked}`);
+              console.log(`  - hasAttemptedQuestions: ${hasAttemptedQuestions}`);
+              console.log(`  - progressionStatus:`, progressionStatus);
               console.log(`  - Final Status: ${categoryStatus} - ${statusMessage}`);
 
               // Get questions for this category

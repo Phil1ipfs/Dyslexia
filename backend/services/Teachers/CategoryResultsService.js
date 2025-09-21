@@ -873,7 +873,8 @@ class CategoryResultsService {
 
   /**
    * Calculate overall statistics from categories
-   * 
+   * ✅ FIX: Updated to use intervention scores when higher than original scores
+   *
    * @param {Array} categories - Array of category data
    * @returns {Object} - Overall statistics
    */
@@ -887,13 +888,37 @@ class CategoryResultsService {
       };
     }
 
-    const totalScore = categories.reduce((sum, cat) => sum + (cat.score || 0), 0);
+    // ✅ FIX: Calculate effective score for each category (use intervention if higher)
+    const effectiveScores = categories.map(cat => {
+      let effectiveScore = cat.score || 0;
+
+      // Check if category has intervention history with passed attempts
+      if (cat.interventionHistory && cat.interventionHistory.length > 0) {
+        // Find the highest scoring passed intervention
+        const passedInterventions = cat.interventionHistory.filter(attempt => attempt.isPassed === true);
+        if (passedInterventions.length > 0) {
+          const highestInterventionScore = Math.max(...passedInterventions.map(attempt => attempt.score || 0));
+
+          // Use intervention score if higher than original
+          if (highestInterventionScore > effectiveScore) {
+            console.log(`[OVERALL STATS] Using intervention score for ${cat.categoryName}: ${highestInterventionScore}% (original: ${effectiveScore}%)`);
+            effectiveScore = highestInterventionScore;
+          }
+        }
+      }
+
+      return effectiveScore;
+    });
+
+    const totalScore = effectiveScores.reduce((sum, score) => sum + score, 0);
     const overallScore = Math.round(totalScore / categories.length);
-    
+
     const passedCategories = categories.filter(cat => cat.isPassed).length;
     const failedCategories = categories.length - passedCategories;
-    
+
     const interventionRequired = failedCategories > 0;
+
+    console.log(`[OVERALL STATS] Calculated overall score: ${overallScore}% (effective scores: [${effectiveScores.join(', ')}])`);
 
     return {
       overallScore,

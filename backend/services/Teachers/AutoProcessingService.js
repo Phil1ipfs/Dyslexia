@@ -150,18 +150,40 @@ class AutoProcessingService {
         }
 
         if (categoryData && categoryData.isCompleted) {
-          return {
-            action: 'skipped',
-            category: category,
-            reason: 'already_processed',
-            score: categoryData.score,
-            passed: categoryData.isPassed
-          };
+          // ✅ ENHANCED CHECK: Also verify prescriptive analysis includes this category
+          const PrescriptiveAnalysis = require('../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
+          const existingAnalysis = await PrescriptiveAnalysis.findOne({
+            studentId: parseInt(studentId),
+            'skillMastery': { $exists: true }
+          }).sort({ createdAt: -1 });
+
+          if (existingAnalysis && existingAnalysis.skillMastery && existingAnalysis.skillMastery[category]) {
+            const categoryAnalysis = existingAnalysis.skillMastery[category];
+            // Check if prescriptive analysis has actual data for this category (not just empty defaults)
+            const hasRealData = categoryAnalysis.totalQuestions > 0 || categoryAnalysis.responseHistory.length > 0;
+
+            if (hasRealData) {
+              console.log(`[AUTO PROCESSOR] ✅ ${category}: VERIFIED - Category complete AND has prescriptive analysis`);
+              return {
+                action: 'skipped',
+                category: category,
+                reason: 'already_processed',
+                score: categoryData.score,
+                passed: categoryData.isPassed
+              };
+            } else {
+              console.log(`[AUTO PROCESSOR] ⚠️  ${category}: INCOMPLETE ANALYSIS - Category complete but prescriptive analysis has no data, regenerating...`);
+            }
+          } else {
+            console.log(`[AUTO PROCESSOR] ⚠️  ${category}: NO ANALYSIS FOUND - Category complete but no prescriptive analysis exists, generating...`);
+          }
         }
       }
 
       // Check prerequisites (CLAUDE.md prerequisite blocking)
       if (prerequisiteCategories.length > 0) {
+        console.log(`[AUTO PROCESSOR] 🔍 Checking prerequisites for ${category}: [${prerequisiteCategories.join(', ')}]`);
+
         for (const prereq of prerequisiteCategories) {
           const prereqResult = await CategoryResult.findOne({
             studentId: parseInt(studentId),
@@ -169,6 +191,7 @@ class AutoProcessingService {
           });
 
           if (!prereqResult) {
+            console.log(`[AUTO PROCESSOR] ❌ ${prereq}: No category result found for prerequisite`);
             return {
               action: 'blocked',
               category: category,
@@ -178,14 +201,65 @@ class AutoProcessingService {
           }
 
           const prereqData = prereqResult.categories.find(cat => cat.categoryName === prereq);
-          if (!prereqData || !prereqData.isPassed) {
+          if (!prereqData) {
+            console.log(`[AUTO PROCESSOR] ❌ ${prereq}: No category data found in result`);
+            return {
+              action: 'blocked',
+              category: category,
+              reason: 'prerequisite_not_completed',
+              blockingCategory: prereq
+            };
+          }
+
+          // ✅ ENHANCED PREREQUISITE CHECK: Consider intervention scores
+          let effectivePassed = prereqData.isPassed;
+          let effectiveScore = prereqData.score || 0;
+
+          console.log(`[AUTO PROCESSOR] 🔍 ${prereq} prerequisite check:`, {
+            originalPassed: prereqData.isPassed,
+            originalScore: prereqData.score,
+            hasInterventionHistory: !!(prereqData.interventionHistory && prereqData.interventionHistory.length > 0),
+            interventionCount: prereqData.interventionHistory ? prereqData.interventionHistory.length : 0
+          });
+
+          // Check if category has intervention history with passed attempts
+          if (prereqData.interventionHistory && prereqData.interventionHistory.length > 0) {
+            console.log(`[AUTO PROCESSOR] 🔍 ${prereq}: Found ${prereqData.interventionHistory.length} intervention attempts`);
+            const passedInterventions = prereqData.interventionHistory.filter(attempt => attempt.isPassed === true);
+            console.log(`[AUTO PROCESSOR] 🔍 ${prereq}: ${passedInterventions.length} passed interventions`);
+
+            if (passedInterventions.length > 0) {
+              const highestInterventionScore = Math.max(...passedInterventions.map(attempt => attempt.score || 0));
+              console.log(`[AUTO PROCESSOR] 🔍 ${prereq}: Highest intervention score: ${highestInterventionScore}%`);
+
+              // Use intervention results for prerequisite check
+              if (highestInterventionScore >= 75) {
+                effectivePassed = true;
+                effectiveScore = highestInterventionScore;
+                console.log(`[AUTO PROCESSOR] ✅ ${prereq}: Prerequisite satisfied via intervention (${highestInterventionScore}%)`);
+              } else {
+                console.log(`[AUTO PROCESSOR] ⚠️  ${prereq}: Intervention score ${highestInterventionScore}% < 75% - not sufficient`);
+              }
+            } else {
+              console.log(`[AUTO PROCESSOR] ⚠️  ${prereq}: No passed interventions found`);
+            }
+          } else {
+            console.log(`[AUTO PROCESSOR] ⚠️  ${prereq}: No intervention history found`);
+          }
+
+          console.log(`[AUTO PROCESSOR] 🔍 ${prereq} final result: effectivePassed=${effectivePassed}, effectiveScore=${effectiveScore}`);
+
+          if (!effectivePassed) {
+            console.log(`[AUTO PROCESSOR] ❌ ${prereq}: Prerequisite failed - blocking ${category}`);
             return {
               action: 'blocked',
               category: category,
               reason: 'prerequisite_failed',
               blockingCategory: prereq,
-              prereqScore: prereqData ? prereqData.score : 0
+              prereqScore: effectiveScore
             };
+          } else {
+            console.log(`[AUTO PROCESSOR] ✅ ${prereq}: Prerequisite satisfied - allowing ${category}`);
           }
         }
       }

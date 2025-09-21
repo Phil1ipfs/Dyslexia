@@ -4,7 +4,8 @@ const { auth, authorize } = require('../../middleware/auth');
 const {
   processAllCompleteAssessments,
   processSpecificStudent,
-  getProcessingStatus
+  getProcessingStatus,
+  fixInterventionSuccess
 } = require('../../controllers/Teachers/autoProcessingController');
 
 // Manual trigger to process all complete assessments
@@ -26,6 +27,18 @@ router.get('/status',
   auth,
   authorize('teacher', 'guro'),
   getProcessingStatus
+);
+
+// Fix intervention success not reflected in category_results
+router.post('/fix-intervention-success/:studentId',
+  auth,
+  authorize('teacher', 'guro'),
+  fixInterventionSuccess
+);
+
+// TEMPORARY: Fix intervention success without auth (for urgent fixes)
+router.post('/fix-intervention-success-temp/:studentId',
+  fixInterventionSuccess
 );
 
 module.exports = router;

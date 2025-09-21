@@ -25,11 +25,22 @@ class IntegrationTriggerService {
         return null;
       }
       
-      // Check if prescriptive analysis already exists for this category result
+      // ✅ ENHANCED CHECK: Verify if prescriptive analysis is COMPLETE for all categories
       const existingAnalysis = await this.checkExistingAnalysis(categoryResult._id);
       if (existingAnalysis) {
-        console.log(`[INTEGRATION TRIGGER] Prescriptive analysis already exists for category result ${categoryResult._id}`);
-        return existingAnalysis;
+        // Check if the existing analysis contains complete data for all expected categories
+        const isComplete = await this.verifyAnalysisCompleteness(existingAnalysis, categoryResult);
+
+        if (isComplete) {
+          console.log(`[INTEGRATION TRIGGER] Complete prescriptive analysis already exists for category result ${categoryResult._id}`);
+          return existingAnalysis;
+        } else {
+          console.log(`[INTEGRATION TRIGGER] ⚠️  Existing prescriptive analysis is INCOMPLETE - will regenerate with all category data`);
+
+          // Delete incomplete analysis so we can regenerate a complete one
+          await PrescriptiveAnalysis.deleteOne({ _id: existingAnalysis._id });
+          console.log(`[INTEGRATION TRIGGER] Deleted incomplete analysis ${existingAnalysis._id} for regeneration`);
+        }
       }
       
       // NEW: Generate prescription-only analysis (Doctor-Teacher-Student Model)
@@ -55,7 +66,7 @@ class IntegrationTriggerService {
   
   /**
    * Check if prescriptive analysis already exists for this category result
-   * 
+   *
    * @param {ObjectId} categoryResultId - Category result ID
    * @returns {Object|null} Existing analysis or null
    */
@@ -64,11 +75,68 @@ class IntegrationTriggerService {
       const existingAnalysis = await PrescriptiveAnalysis.findOne({
         categoryResultId: categoryResultId
       }).lean();
-      
+
       return existingAnalysis;
     } catch (error) {
       console.error('[INTEGRATION TRIGGER] Error checking existing analysis:', error);
       return null;
+    }
+  }
+
+  /**
+   * Verify if existing prescriptive analysis contains complete data for all categories
+   *
+   * @param {Object} existingAnalysis - Existing prescriptive analysis
+   * @param {Object} categoryResult - Category result with all completed categories
+   * @returns {boolean} True if analysis is complete, false if missing data
+   */
+  static async verifyAnalysisCompleteness(existingAnalysis, categoryResult) {
+    try {
+      console.log(`[INTEGRATION TRIGGER] Verifying completeness of analysis ${existingAnalysis._id}`);
+
+      // Get all completed categories from category_results
+      const completedCategories = categoryResult.categories
+        .filter(cat => cat.isCompleted === true)
+        .map(cat => cat.categoryName);
+
+      console.log(`[INTEGRATION TRIGGER] Completed categories: [${completedCategories.join(', ')}]`);
+
+      // Check if skillMastery exists and has data for each completed category
+      if (!existingAnalysis.skillMastery) {
+        console.log(`[INTEGRATION TRIGGER] ❌ No skillMastery data found`);
+        return false;
+      }
+
+      for (const category of completedCategories) {
+        const categoryData = existingAnalysis.skillMastery[category];
+
+        if (!categoryData) {
+          console.log(`[INTEGRATION TRIGGER] ❌ Missing skillMastery data for: ${category}`);
+          return false;
+        }
+
+        // Check if this category has real data (not just defaults)
+        const hasRealData = (
+          categoryData.totalQuestions > 0 ||
+          categoryData.responseHistory?.length > 0 ||
+          categoryData.correctAnswers > 0 ||
+          categoryData.correctMatches > 0
+        );
+
+        if (!hasRealData) {
+          console.log(`[INTEGRATION TRIGGER] ❌ Category ${category} has empty/default data - totalQuestions: ${categoryData.totalQuestions}, responseHistory: ${categoryData.responseHistory?.length || 0}`);
+          return false;
+        }
+
+        console.log(`[INTEGRATION TRIGGER] ✅ Category ${category} has complete data - totalQuestions: ${categoryData.totalQuestions}, responseHistory: ${categoryData.responseHistory?.length || 0}`);
+      }
+
+      console.log(`[INTEGRATION TRIGGER] ✅ Analysis is complete for all ${completedCategories.length} categories`);
+      return true;
+
+    } catch (error) {
+      console.error('[INTEGRATION TRIGGER] Error verifying analysis completeness:', error);
+      return false; // Assume incomplete if we can't verify
     }
   }
   

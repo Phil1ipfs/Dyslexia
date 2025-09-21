@@ -838,14 +838,24 @@ const StudentApiService = {
       
       // Check if we have meaningful data
       if (actualData && actualData.categories && actualData.categories.length > 0) {
-        // Make sure all category objects have required properties
+        // Make sure all category objects have required properties including intervention history
         actualData.categories = actualData.categories.map(category => ({
           categoryName: category.categoryName || 'Unknown Category',
           totalQuestions: category.totalQuestions || 0,
           correctAnswers: category.correctAnswers || 0,
           score: category.score || 0,
           isPassed: category.isPassed || (category.score >= 75),
-          passingThreshold: category.passingThreshold || 75
+          passingThreshold: category.passingThreshold || 75,
+          // ✅ CRITICAL FIX: Preserve intervention history data
+          interventionHistory: category.interventionHistory || [],
+          interventionRequired: category.interventionRequired || false,
+          interventionCompleted: category.interventionCompleted || false,
+          currentInterventionId: category.currentInterventionId || null,
+          interventionAttempts: category.interventionAttempts || 0,
+          // Preserve any other fields that might be important
+          isCompleted: category.isCompleted,
+          lastQuestionAnswered: category.lastQuestionAnswered,
+          errorQuestions: category.errorQuestions || []
         }));
         
         console.log("✅ Valid post-assessment data found with", actualData.categories.length, "categories");
