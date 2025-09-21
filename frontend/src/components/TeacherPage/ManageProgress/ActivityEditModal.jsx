@@ -41,13 +41,13 @@
  *                            - Mock: { id: number, category: "string", ... }
  */
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  FaInfoCircle, 
+import {
+  FaInfoCircle,
   FaExclamationTriangle,
   FaChartLine,
   FaEdit,
   FaCheckCircle,
-  FaPlus, 
+  FaPlus,
   FaSpinner,
   FaTimes,
   FaUser,
@@ -60,13 +60,15 @@ import {
   FaChalkboardTeacher,
   FaBookOpen,
   FaUpload,
-  FaImage
+  FaImage,
+  FaVolumeUp
 } from 'react-icons/fa';
 import api from '../../../services/Teachers/api';
 import { toast } from '../../../utils/toastHelper';
 
 import './css/ActivityEditModal.css';
 import './css/AlphabetKnowledgeActivityEdit.css';
+import './css/PhonologicalAwarenessActivityEdit.css';
 
 // Utility function to safely handle arrays that might be undefined
 const safe = (arr) => Array.isArray(arr) ? arr : [];
@@ -3616,6 +3618,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           return renderSentenceSelectionStep();
         } else if (category === 'Alphabet Knowledge') {
           return renderAlphabetKnowledgeStep();
+        } else if (category === 'Phonological Awareness') {
+          return renderPhonologicalAwarenessStep();
         } else {
           return renderQuestionChoicesStepWithTemplates();
         }
@@ -4698,6 +4702,192 @@ const renderQuestionChoicesStepWithTemplates = () => {
         <button
           type="button"
           className="literexia-add-pair-btn"
+          onClick={() => addQuestionChoicePair()}
+        >
+          <FaPlus /> Add Question
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Phonological Awareness Specific Form (Audio-Visual Matching Structure)
+ */
+const renderPhonologicalAwarenessStep = () => {
+  return (
+    <div className="phonological-awareness-container">
+      <h3>Create Questions and Choices</h3>
+      <br></br>
+      <br></br>
+
+      <div className="phonological-awareness-info-banner">
+        <FaInfoCircle className="info-icon" />
+        <p>
+          You can select from existing templates or create new questions. Templates help you create consistent questions for
+          Phonological Awareness.
+        </p>
+      </div>
+
+
+      {errors.pairs && (
+        <div className="literexia-error-banner">
+          <FaExclamationTriangle />
+          <p>{errors.pairs}</p>
+        </div>
+      )}
+
+      {/* Questions Section */}
+      {safe(questionChoicePairs).map((pair, index) => (
+        <div key={pair.id} className="phonological-awareness-question-card">
+          <div className="phonological-awareness-question-header">
+            <h4>Question {index + 1}</h4>
+            <button
+              type="button"
+              className="phonological-awareness-remove-btn"
+              onClick={() => removeQuestionChoicePair(pair.id)}
+            >
+              <FaTrash /> Remove
+            </button>
+          </div>
+
+          {/* Template Selection */}
+          <div className="phonological-awareness-template-selection">
+            <label>Question Template</label>
+            <select
+              value={pair.sourceId || ''}
+              onChange={(e) => setTemplateForPair(pair.id, e.target.value)}
+              className="phonological-awareness-select"
+            >
+              <option value="">-- Select Template --</option>
+              {safe(questionTemplates).map(template => (
+                <option key={template._id} value={template._id}>
+                  {template.templateText || template.questionText || 'Untitled Template'} ({template.questionType})
+                  {template.questionValue ? ` - Value: "${template.questionValue}"` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Question Text Section */}
+          <div className="phonological-awareness-question-section">
+            <h5>Question Text</h5>
+            <input
+              type="text"
+              value={pair.questionText || ''}
+              onChange={(e) => updateQuestionChoicePair(pair.id, 'questionText', e.target.value)}
+              placeholder="E.g., Pakinggan ang audio. Itugma ito sa katumbas na letra."
+              className="phonological-awareness-input"
+              readOnly={pair.sourceType === 'template_question'}
+            />
+          </div>
+
+          {/* Audio Texts Section */}
+          <div className="phonological-awareness-audio-section">
+            <h5>Audio Texts</h5>
+            <p className="phonological-awareness-description">
+              Enter the sounds/letters that students will hear (e.g., H, T, N)
+            </p>
+            <div className="phonological-awareness-audio-inputs">
+              {[0, 1, 2].map(audioIndex => (
+                <div key={audioIndex} className="phonological-awareness-audio-input-group">
+                  <label>Audio {audioIndex + 1}</label>
+                  <input
+                    type="text"
+                    value={pair.audioTexts?.[audioIndex] || ''}
+                    onChange={(e) => {
+                      // Only allow letters (no numbers, symbols, or special characters)
+                      const lettersOnly = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+
+                      // Capitalize first letter of each word
+                      const capitalizedValue = lettersOnly
+                        .split(' ')
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                        .join(' ');
+
+                      const newAudioTexts = [...(pair.audioTexts || ['', '', ''])];
+                      newAudioTexts[audioIndex] = capitalizedValue;
+                      updateQuestionChoicePair(pair.id, 'audioTexts', newAudioTexts);
+                    }}
+                    placeholder={`Audio ${audioIndex + 1}`}
+                    className="phonological-awareness-input"
+                    maxLength="20"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Matching Options Section */}
+          <div className="phonological-awareness-matching-section">
+            <h5>Matching Options</h5>
+            <p className="phonological-awareness-description">
+              These are automatically generated based on your audio texts and will be randomly shuffled for students
+            </p>
+            <div className="phonological-awareness-matching-preview">
+              {pair.audioTexts?.filter(text => text.trim()).map((audioText, index) => {
+                // Generate correct matching text based on whether it's a single letter or word
+                let matchingText;
+                if (audioText.length === 1) {
+                  // Single letter: L → Ll (uppercase + lowercase)
+                  matchingText = audioText.toUpperCase() + audioText.toLowerCase();
+                } else {
+                  // Word: Keep as is
+                  matchingText = audioText;
+                }
+
+                return (
+                  <div key={index} className="phonological-awareness-matching-item">
+                    <span className="audio-text">{audioText}</span>
+                    <span className="arrow">→</span>
+                    <span className="visual-text">{matchingText}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Correct Audio-Visual Pairs Section */}
+          <div className="phonological-awareness-pairs-section">
+            <h5>Correct Audio-Visual Pairs</h5>
+            <p className="phonological-awareness-description">
+              Pairs are automatically created from your audio texts
+            </p>
+            <div className="phonological-awareness-pairs-preview">
+              {pair.audioTexts?.filter(text => text.trim()).map((audioText, index) => {
+                // Generate correct matching text based on whether it's a single letter or word
+                let matchingText;
+                if (audioText.length === 1) {
+                  // Single letter: L → Ll (uppercase + lowercase)
+                  matchingText = audioText.toUpperCase() + audioText.toLowerCase();
+                } else {
+                  // Word: Keep as is
+                  matchingText = audioText;
+                }
+
+                return (
+                  <div key={index} className="phonological-awareness-pair-item">
+                    <div className="pair-audio">
+                      <FaVolumeUp />
+                      <span>"{audioText}"</span>
+                    </div>
+                    <FaArrowRight className="pair-arrow" />
+                    <div className="pair-visual">
+                      <span>"{matchingText}"</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Add Question Button */}
+      <div className="phonological-awareness-add-section">
+        <button
+          type="button"
+          className="phonological-awareness-add-question-btn"
           onClick={() => addQuestionChoicePair()}
         >
           <FaPlus /> Add Question

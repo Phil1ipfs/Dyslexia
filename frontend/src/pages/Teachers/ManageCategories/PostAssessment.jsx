@@ -1116,10 +1116,10 @@ const MainAssessment = ({ templates }) => {
     if (formData.category === "Reading Comprehension") {
       console.log('Processing Reading Comprehension question');
       
-      // CRITICAL FIX: Preserve existing storyTitle
+      // CRITICAL FIX: Preserve existing storyTitle or provide default
       console.log('🔧 [DEBUG] Original storyTitle:', baseQuestionData.storyTitle);
-      baseQuestionData.storyTitle = baseQuestionData.storyTitle || "";
-      console.log('🔧 [DEBUG] Preserved storyTitle:', baseQuestionData.storyTitle);
+      baseQuestionData.storyTitle = baseQuestionData.storyTitle || "Untitled Story";
+      console.log('🔧 [DEBUG] Preserved/Default storyTitle:', baseQuestionData.storyTitle);
 
       // Handle the direct question format from the database
       baseQuestionData.questionText = baseQuestionData.questionText || "";
@@ -1576,10 +1576,17 @@ const MainAssessment = ({ templates }) => {
             
             sanitized.storyTitle = sanitized.storyTitle || "";
             
-            // Smart passages handling: if this story already has passages in the database,
-            // set passages to null (meaning this question references the existing story)
+            // Smart passages handling: preserve passages data when editing
             if (sanitized.storyTitle && hasExistingPassages(sanitized.storyTitle)) {
-              sanitized.passages = null;
+              // If this story already has passages in the database, check if we're editing
+              // If we have passages data in the form (meaning we're editing), preserve it
+              if (sanitized.passages && Array.isArray(sanitized.passages) && sanitized.passages.length > 0) {
+                // We're editing and have passages data - preserve it
+                sanitized.passages = sanitized.passages.filter(p => p.pageText && p.pageText.trim());
+              } else {
+                // No passages data in form - set to null to reference existing story
+                sanitized.passages = null;
+              }
             } else {
               // This is a new story or the first question for this story
               sanitized.passages = sanitized.passages || [];
@@ -1771,8 +1778,17 @@ const MainAssessment = ({ templates }) => {
 
           console.log('Question update completed successfully');
           
-          // For Reading Comprehension, close the question form and return to assessment modal
+          // For Reading Comprehension, update the form data and close the question form
           if (formData.category === "Reading Comprehension") {
+            // Update the form data with the updated question to preserve passages
+            console.log('Updating form data with updated Reading Comprehension question');
+            setFormData(prev => ({
+              ...prev,
+              questions: prev.questions.map((q, index) => 
+                index === currentQuestion ? finalQuestionData : q
+              )
+            }));
+            
             // Close the question form and return to the main assessment modal
             console.log('Closing question form and returning to assessment modal for Reading Comprehension');
             setShowQuestionForm(false);
@@ -4735,7 +4751,7 @@ const MainAssessment = ({ templates }) => {
                           {console.log('🔧 [DEBUG] Reading Comprehension form rendering - questionFormData:', questionFormData)}
                        
                           {/* Show story context for subsequent questions */}
-                          {questionFormData.passages === null && questionFormData.storyTitle && (
+                          {questionFormData.passages === null && formData.category === "Reading Comprehension" && (
                             <div style={{
                               marginBottom: '24px',
                               padding: '16px',
@@ -4807,7 +4823,7 @@ const MainAssessment = ({ templates }) => {
                                 );
                               })()}
                               
-                              {questionFormData.storyTitle && hasExistingPassages(questionFormData.storyTitle) && (
+                              {formData.category === "Reading Comprehension" && questionFormData.storyTitle && hasExistingPassages(questionFormData.storyTitle) && (
                                 <div style={{ 
                                   marginTop: '8px', 
                                   padding: '8px 12px', 
@@ -4825,7 +4841,7 @@ const MainAssessment = ({ templates }) => {
                           </div>
 
                           {/* Story Pages Section - ALWAYS show for Reading Comprehension to ensure proper passages */}
-                          {questionFormData.storyTitle && (
+                          {formData.category === "Reading Comprehension" && (
                             <div className="pa-form-section" style={{ marginBottom: '24px' }}>
                               <h5 style={{ color: '#1e40af', marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>
                                 <FontAwesomeIcon icon={faBook} style={{ marginRight: '8px', color: '#3b82f6' }} /> 

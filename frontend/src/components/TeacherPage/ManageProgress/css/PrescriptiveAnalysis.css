@@ -7414,12 +7414,12 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #5470a8 0%, #3d5285 100%);
   color: white;
   border-radius: 8px;
   font-weight: 600;
   font-size: 0.875rem;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 2px 8px rgba(84, 112, 168, 0.3);
 }
 
 .action-icon {

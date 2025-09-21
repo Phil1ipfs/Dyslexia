@@ -11,8 +11,8 @@
 
 /* Base styles similar to Alphabet Knowledge but with Phonological Awareness specific colors */
 .phonological-awareness-info-banner {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border: 1px solid #f59e0b;
+  background: linear-gradient(135deg, #e8f1ff 0%, #dde9ff 100%);
+  border: 1px solid #4a67d6;
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 24px;
@@ -22,20 +22,20 @@
 }
 
 .phonological-awareness-info-banner .info-icon {
-  color: #f59e0b;
+  color: #4a67d6;
   font-size: 18px;
   margin-top: 2px;
   flex-shrink: 0;
 }
 
 .phonological-awareness-add-question-btn {
-  background: #f59e0b;
+  background: #4a67d6;
   color: white;
   border: none;
   border-radius: 6px;
   padding: 10px 16px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -44,9 +44,418 @@
 }
 
 .phonological-awareness-add-question-btn:hover {
-  background: #d97706;
+  background: #3754c4;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 4px 8px rgba(74, 103, 214, 0.3);
 }
 
-/* Will add more specific styles for matching questions later */
+/* ===== QUESTION CARD STYLES ===== */
+.phonological-awareness-question-card {
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.phonological-awareness-question-card:hover {
+  border-color: #4a67d6;
+  box-shadow: 0 4px 12px rgba(74, 103, 214, 0.1);
+}
+
+.phonological-awareness-question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.phonological-awareness-question-header h4 {
+  margin: 0;
+  color: #4a67d6;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.phonological-awareness-remove-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.phonological-awareness-remove-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+/* ===== TEMPLATE SELECTION STYLES ===== */
+.phonological-awareness-template-selection {
+  margin-bottom: 16px;
+}
+
+.phonological-awareness-template-selection label {
+  display: block;
+  margin-bottom: 8px;
+  color: #374151;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.phonological-awareness-select {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.phonological-awareness-select:focus {
+  outline: none;
+  border-color: #4a67d6;
+  box-shadow: 0 0 0 3px rgba(74, 103, 214, 0.1);
+}
+
+/* ===== QUESTION SECTION STYLES ===== */
+.phonological-awareness-question-section {
+  margin-bottom: 18px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #4a67d6;
+}
+
+.phonological-awareness-question-section h5 {
+  margin: 0 0 10px 0;
+  color: #4a67d6;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.phonological-awareness-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.phonological-awareness-input:focus {
+  outline: none;
+  border-color: #4a67d6;
+  box-shadow: 0 0 0 3px rgba(74, 103, 214, 0.1);
+}
+
+.phonological-awareness-input:read-only {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* ===== AUDIO SECTION STYLES ===== */
+.phonological-awareness-audio-section {
+  margin-bottom: 18px;
+  padding: 16px;
+  background: #e8f4fd;
+  border-radius: 8px;
+  border-left: 4px solid #4a67d6;
+}
+
+.phonological-awareness-audio-section h5 {
+  margin: 0 0 8px 0;
+  color: #4a67d6;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.phonological-awareness-description {
+  margin: 0 0 14px 0;
+  color: #6b7280;
+  font-size: 14px;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.phonological-awareness-audio-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.phonological-awareness-audio-input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.phonological-awareness-audio-input-group label {
+  margin-bottom: 6px;
+  color: #4a67d6;
+  font-weight: 500;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+
+/* Different colors for each audio input */
+.phonological-awareness-audio-input-group:nth-child(1) label {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+.phonological-awareness-audio-input-group:nth-child(2) label {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #22c55e;
+}
+
+.phonological-awareness-audio-input-group:nth-child(3) label {
+  background: #ddd6fe;
+  color: #5b21b6;
+  border: 1px solid #8b5cf6;
+}
+
+/* Different border colors for the input fields to match labels */
+.phonological-awareness-audio-input-group:nth-child(1) .phonological-awareness-input {
+  border-color: #f59e0b;
+}
+
+.phonological-awareness-audio-input-group:nth-child(2) .phonological-awareness-input {
+  border-color: #22c55e;
+}
+
+.phonological-awareness-audio-input-group:nth-child(3) .phonological-awareness-input {
+  border-color: #8b5cf6;
+}
+
+/* Focus states with matching colors */
+.phonological-awareness-audio-input-group:nth-child(1) .phonological-awareness-input:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.phonological-awareness-audio-input-group:nth-child(2) .phonological-awareness-input:focus {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.phonological-awareness-audio-input-group:nth-child(3) .phonological-awareness-input:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* ===== MATCHING SECTION STYLES ===== */
+.phonological-awareness-matching-section {
+  margin-bottom: 18px;
+  padding: 16px;
+  background: #eff6ff;
+  border-radius: 8px;
+  border-left: 4px solid #4a67d6;
+}
+
+.phonological-awareness-matching-section h5 {
+  margin: 0 0 8px 0;
+  color: #4a67d6;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.phonological-awareness-matching-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.phonological-awareness-matching-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: white;
+  border: 2px solid #4a67d6;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  box-shadow: 0 1px 4px rgba(74, 103, 214, 0.1);
+}
+
+.phonological-awareness-matching-item.distractor {
+  border-color: #6b7280;
+  opacity: 0.7;
+}
+
+.phonological-awareness-matching-item .audio-text {
+  color: #92400e;
+  font-weight: 700;
+  background: #fef3c7;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #f59e0b;
+}
+
+.phonological-awareness-matching-item .arrow {
+  color: #6b7280;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.phonological-awareness-matching-item .visual-text {
+  color: #166534;
+  font-weight: 700;
+  background: #dcfce7;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #22c55e;
+}
+
+/* ===== PAIRS SECTION STYLES ===== */
+.phonological-awareness-pairs-section {
+  margin-bottom: 18px;
+  padding: 16px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  border-left: 4px solid #4a67d6;
+}
+
+.phonological-awareness-pairs-section h5 {
+  margin: 0 0 8px 0;
+  color: #4a67d6;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.phonological-awareness-pairs-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.phonological-awareness-pair-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: white;
+  border: 2px solid #4a67d6;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 4px rgba(74, 103, 214, 0.1);
+}
+
+.phonological-awareness-pair-item:hover {
+  transform: translateX(3px);
+  box-shadow: 0 2px 8px rgba(74, 103, 214, 0.15);
+}
+
+.pair-audio, .pair-visual {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.pair-audio {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+.pair-visual {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #22c55e;
+}
+
+.pair-arrow {
+  color: #4a67d6;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* ===== ADD SECTION STYLES ===== */
+.phonological-awareness-add-section {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  margin-top: 20px;
+  border-top: 2px solid #f1f5f9;
+}
+
+/* ===== RESPONSIVE STYLES ===== */
+@media (max-width: 768px) {
+  .phonological-awareness-container {
+    padding: 16px;
+  }
+
+  .phonological-awareness-question-card {
+    padding: 16px;
+  }
+
+  .phonological-awareness-audio-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .phonological-awareness-matching-preview {
+    flex-direction: column;
+  }
+
+  .phonological-awareness-pair-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .pair-arrow {
+    transform: rotate(90deg);
+  }
+}
+
+/* ===== ANIMATION STYLES ===== */
+.phonological-awareness-question-card {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== ACCESSIBILITY STYLES ===== */
+.phonological-awareness-input:focus,
+.phonological-awareness-select:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.phonological-awareness-add-question-btn:focus,
+.phonological-awareness-remove-btn:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
