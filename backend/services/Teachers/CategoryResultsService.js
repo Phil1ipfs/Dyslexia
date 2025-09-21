@@ -133,10 +133,16 @@ class CategoryResultsService {
         categories: normalizedCategories,
         overallScore: overallStats.overallScore,
         completedCategories: normalizedCategories.filter(cat => {
-          // Category is completed if main assessment passed OR any intervention was successful
-          const mainAssessmentPassed = cat.isPassed === true;
+          // ✅ CONSISTENT COMPLETION LOGIC: Category is completed if main assessment passed (≥75%) OR any intervention was successful
+          const mainAssessmentPassed = (cat.score || 0) >= 75;
           const hasSuccessfulIntervention = cat.interventionHistory && cat.interventionHistory.some(intervention => intervention.isPassed === true);
-          return mainAssessmentPassed || hasSuccessfulIntervention;
+          const isCompleted = mainAssessmentPassed || hasSuccessfulIntervention;
+
+          if (isCompleted) {
+            console.log(`[CREATE] ✅ Counting ${cat.categoryName} as completed: ${mainAssessmentPassed ? 'MAIN PASSED' : 'INTERVENTION PASSED'} (${cat.score}%)`);
+          }
+
+          return isCompleted;
         }).length,
         totalCategories: normalizedCategories.length,
         allCategoriesPassed: overallStats.passedCategories === normalizedCategories.length,
@@ -200,10 +206,16 @@ class CategoryResultsService {
         const overallStats = this.calculateOverallStats(updateData.categories);
         updateData.overallScore = overallStats.overallScore;
         updateData.completedCategories = updateData.categories.filter(cat => {
-          // Category is completed if main assessment passed OR any intervention was successful
-          const mainAssessmentPassed = cat.isPassed === true;
+          // ✅ CONSISTENT COMPLETION LOGIC: Category is completed if main assessment passed (≥75%) OR any intervention was successful
+          const mainAssessmentPassed = (cat.score || 0) >= 75;
           const hasSuccessfulIntervention = cat.interventionHistory && cat.interventionHistory.some(intervention => intervention.isPassed === true);
-          return mainAssessmentPassed || hasSuccessfulIntervention;
+          const isCompleted = mainAssessmentPassed || hasSuccessfulIntervention;
+
+          if (isCompleted) {
+            console.log(`[UPDATE] ✅ Counting ${cat.categoryName} as completed: ${mainAssessmentPassed ? 'MAIN PASSED' : 'INTERVENTION PASSED'} (${cat.score}%)`);
+          }
+
+          return isCompleted;
         }).length;
         updateData.totalCategories = updateData.categories.length;
         updateData.allCategoriesPassed = overallStats.passedCategories === updateData.categories.length;
@@ -444,6 +456,44 @@ class CategoryResultsService {
       console.log(`[INTERVENTION COMPLETENESS] 🎯 Expected questions: [${expectedQuestionIds.join(', ')}]`);
       console.log(`[INTERVENTION COMPLETENESS] ✅ Answered questions: [${answeredQuestionIds.join(', ')}]`);
 
+      // CRITICAL FIX: Check for duplicate responses to same question
+      const duplicateQuestions = answeredQuestionIds.filter((qId, index) =>
+        answeredQuestionIds.indexOf(qId) !== index
+      );
+
+      if (duplicateQuestions.length > 0) {
+        console.error(`[INTERVENTION COMPLETENESS] ❌ DUPLICATE RESPONSES DETECTED for revision ${currentRevision}: [${duplicateQuestions.join(', ')}]`);
+        return {
+          isComplete: false,
+          category: intervention.category,
+          revisionNumber: currentRevision,
+          required: totalQuestionsInIntervention,
+          answered: versionAwareResponses.length,
+          duplicateQuestions: duplicateQuestions,
+          interventionId: interventionAssessmentId,
+          reason: 'duplicate_responses',
+          details: `Revision ${currentRevision} has duplicate responses for questions: ${duplicateQuestions.join(', ')}. Each question should be answered exactly once.`
+        };
+      }
+
+      // CRITICAL FIX: Check for extra responses (questions not in assessment)
+      const extraQuestions = answeredQuestionIds.filter(qId => !expectedQuestionIds.includes(qId));
+
+      if (extraQuestions.length > 0) {
+        console.error(`[INTERVENTION COMPLETENESS] ❌ EXTRA RESPONSES DETECTED for revision ${currentRevision}: [${extraQuestions.join(', ')}]`);
+        return {
+          isComplete: false,
+          category: intervention.category,
+          revisionNumber: currentRevision,
+          required: totalQuestionsInIntervention,
+          answered: versionAwareResponses.length,
+          extraQuestions: extraQuestions,
+          interventionId: interventionAssessmentId,
+          reason: 'extra_responses',
+          details: `Revision ${currentRevision} has ${extraQuestions.length} extra responses for questions not in assessment: ${extraQuestions.join(', ')}. Remove these responses.`
+        };
+      }
+
       const missingQuestions = expectedQuestionIds.filter(qId => !answeredQuestionIds.includes(qId));
 
       if (missingQuestions.length > 0) {
@@ -462,9 +512,9 @@ class CategoryResultsService {
         };
       }
 
-      // CRITICAL FIX: Use version-aware responses for final validation
+      // CRITICAL FIX: EXACT COUNT VALIDATION - Must be exactly the right number, not "at least"
       const validAnsweredQuestions = versionAwareResponses.length;
-      const isComplete = validAnsweredQuestions >= totalQuestionsInIntervention;
+      const isComplete = validAnsweredQuestions === totalQuestionsInIntervention; // Changed from >= to ===
 
       // Enhanced logging for revision tracking (ALL VERSIONS)
       console.log(`[INTERVENTION COMPLETENESS] ✅ REVISION ${currentRevision} COMPLETENESS CHECK:`);
@@ -883,7 +933,7 @@ class CategoryResultsService {
 
   /**
    * Calculate overall statistics from categories
-   * ✅ FIX: Updated to use intervention scores when higher than original scores
+   * ✅ FIX: Updated to properly detect categories that pass without intervention
    *
    * @param {Array} categories - Array of category data
    * @returns {Object} - Overall statistics
@@ -898,26 +948,33 @@ class CategoryResultsService {
       };
     }
 
-    // ✅ DYNAMIC FIX: Only calculate overall score for PASSED categories
-    // (main assessment passed OR successful intervention)
-    // This works across all reading levels: High Emerging (2 categories), Developing (3), etc.
-    const passedCategoriesData = categories.filter(cat => {
-      // Category is passed if main assessment passed OR any intervention was successful
-      const mainAssessmentPassed = cat.isPassed === true;
+    // ✅ DYNAMIC FIX: Categories are "effectively completed" if they pass main assessment (≥75%) OR successful intervention
+    const effectivelyCompletedCategories = categories.filter(cat => {
+      const mainAssessmentPassed = (cat.score || 0) >= 75; // Direct score check for main assessment
       const hasSuccessfulIntervention = cat.interventionHistory && cat.interventionHistory.some(intervention => intervention.isPassed === true);
-      return mainAssessmentPassed || hasSuccessfulIntervention;
+      const isCompleted = mainAssessmentPassed || hasSuccessfulIntervention;
+
+      // Debug logging for completion detection
+      if (isCompleted) {
+        console.log(`[COMPLETION DETECTION] ✅ ${cat.categoryName}: ${mainAssessmentPassed ? 'PASSED MAIN' : 'PASSED INTERVENTION'} (score: ${cat.score}%)`);
+      } else {
+        console.log(`[COMPLETION DETECTION] ❌ ${cat.categoryName}: INCOMPLETE (score: ${cat.score}%, interventions: ${cat.interventionHistory?.length || 0})`);
+      }
+
+      return isCompleted;
     });
-    const failedCategoriesData = categories.filter(cat => {
-      const mainAssessmentPassed = cat.isPassed === true;
+
+    const incompleteCategories = categories.filter(cat => {
+      const mainAssessmentPassed = (cat.score || 0) >= 75;
       const hasSuccessfulIntervention = cat.interventionHistory && cat.interventionHistory.some(intervention => intervention.isPassed === true);
       return !(mainAssessmentPassed || hasSuccessfulIntervention);
     });
 
     let overallScore = 0;
 
-    if (passedCategoriesData.length > 0) {
-      // Calculate effective score for each PASSED category (use intervention if higher)
-      const effectiveScores = passedCategoriesData.map(cat => {
+    if (effectivelyCompletedCategories.length > 0) {
+      // Calculate effective score for each COMPLETED category (use intervention if higher)
+      const effectiveScores = effectivelyCompletedCategories.map(cat => {
         let effectiveScore = cat.score || 0;
 
         // Check if category has intervention history with passed attempts
@@ -938,24 +995,24 @@ class CategoryResultsService {
         return effectiveScore;
       });
 
-      // ✅ CRITICAL FIX: Include passed category scores, but divide by TOTAL categories for reading level
-      // Example: At Grade Level with 1 passed (100%) out of 5 total: 100/5 = 20%
-      // Example: High Emerging with 2 passed (85%, 90%) out of 2 total: (85+90)/2 = 87.5%
+      // ✅ CRITICAL FIX: Include completed category scores, divided by TOTAL categories for reading level
+      // This properly reflects partial completion across all reading levels
       const totalScore = effectiveScores.reduce((sum, score) => sum + score, 0);
       overallScore = Math.round(totalScore / categories.length);
 
-      console.log(`[OVERALL STATS] ✅ FIXED - Calculated overall score: ${overallScore}% (${passedCategoriesData.length} passed out of ${categories.length} total: [${effectiveScores.join(', ')}])`);
-      console.log(`[OVERALL STATS] Passed: ${passedCategoriesData.length}, Failed: ${failedCategoriesData.length}, Total: ${categories.length}`);
+      console.log(`[OVERALL STATS] ✅ COMPLETION-AWARE CALCULATION: ${overallScore}% (${effectivelyCompletedCategories.length} completed out of ${categories.length} total)`);
+      console.log(`[OVERALL STATS] Completed scores: [${effectiveScores.join(', ')}]`);
+      console.log(`[OVERALL STATS] Completed: ${effectivelyCompletedCategories.length}, Incomplete: ${incompleteCategories.length}, Total: ${categories.length}`);
     } else {
-      console.log(`[OVERALL STATS] No passed categories - overall score remains 0%`);
+      console.log(`[OVERALL STATS] No completed categories - overall score remains 0%`);
     }
 
-    const interventionRequired = failedCategoriesData.length > 0;
+    const interventionRequired = incompleteCategories.length > 0;
 
     return {
       overallScore,
-      passedCategories: passedCategoriesData.length,
-      failedCategories: failedCategoriesData.length,
+      passedCategories: effectivelyCompletedCategories.length,
+      failedCategories: incompleteCategories.length,
       interventionRequired
     };
   }
@@ -1247,29 +1304,51 @@ class CategoryResultsService {
     }
   }
 
-  // Helper function to normalize category data format
+  // Helper function to normalize category data format with dynamic completion detection
   static normalizeCategories(categories) {
     if (!categories || !Array.isArray(categories) || categories.length === 0) {
       return [];
     }
 
-    return categories.map(category => ({
-      categoryName: category.categoryName || 'Unknown Category',
-      totalQuestions: category.totalQuestions || 0,
-      correctAnswers: category.correctAnswers || 0,
-      totalPossibleMatches: category.totalPossibleMatches || 0,
-      correctMatches: category.correctMatches || 0,
-      score: category.score || 0,
-      isPassed: (category.score || 0) >= 75, // Enforce 75% threshold
-      passingThreshold: 75, // Always 75%
-      isCompleted: category.isCompleted || false,
-      lastQuestionAnswered: category.lastQuestionAnswered || '',
-      interventionRequired: (category.score || 0) < 75, // Based on 75% threshold
-      interventionAttempts: category.interventionAttempts || 0,
-      interventionCompleted: category.interventionCompleted || false,
-      currentInterventionId: category.currentInterventionId || null,
-      interventionHistory: category.interventionHistory || []
-    }));
+    return categories.map(category => {
+      const score = category.score || 0;
+      const mainAssessmentPassed = score >= 75;
+      const hasSuccessfulIntervention = category.interventionHistory &&
+        category.interventionHistory.some(intervention => intervention.isPassed === true);
+
+      // ✅ DYNAMIC COMPLETION DETECTION: Category is completed if passed main OR successful intervention
+      const effectivelyCompleted = mainAssessmentPassed || hasSuccessfulIntervention;
+
+      // ✅ INTERVENTION REQUIREMENT: Only require intervention if main assessment failed AND no successful intervention
+      const needsIntervention = !effectivelyCompleted;
+
+      // Debug logging for intervention requirement setting
+      if (mainAssessmentPassed) {
+        console.log(`[NORMALIZE] ✅ ${category.categoryName}: PASSED MAIN (${score}%) - interventionRequired: false`);
+      } else if (hasSuccessfulIntervention) {
+        console.log(`[NORMALIZE] ✅ ${category.categoryName}: PASSED INTERVENTION - interventionRequired: false`);
+      } else {
+        console.log(`[NORMALIZE] ❌ ${category.categoryName}: NEEDS INTERVENTION (${score}%) - interventionRequired: true`);
+      }
+
+      return {
+        categoryName: category.categoryName || 'Unknown Category',
+        totalQuestions: category.totalQuestions || 0,
+        correctAnswers: category.correctAnswers || 0,
+        totalPossibleMatches: category.totalPossibleMatches || 0,
+        correctMatches: category.correctMatches || 0,
+        score: score,
+        isPassed: mainAssessmentPassed, // Main assessment pass status (preserve original for data integrity)
+        passingThreshold: 75, // Always 75%
+        isCompleted: category.isCompleted || false,
+        lastQuestionAnswered: category.lastQuestionAnswered || '',
+        interventionRequired: needsIntervention, // ✅ DYNAMIC: false if passed main OR intervention
+        interventionAttempts: category.interventionAttempts || 0,
+        interventionCompleted: category.interventionCompleted || false,
+        currentInterventionId: category.currentInterventionId || null,
+        interventionHistory: category.interventionHistory || []
+      };
+    });
   }
 
   /**
@@ -1515,12 +1594,21 @@ class CategoryResultsService {
       }
 
       // Update the category with intervention success
-      // NOTE: Original assessment score is preserved - intervention success tracked via flags
-      categoryResult.categories[categoryIndex].isPassed = true;
+      // ✅ PRESERVE ORIGINAL ASSESSMENT DATA - Do NOT overwrite isPassed or score
+      console.log(`[INTERVENTION UPDATE] 🔒 PRESERVING original assessment data:`);
+      console.log(`[INTERVENTION UPDATE] 🔒 - Original score: ${categoryResult.categories[categoryIndex].score}% (PRESERVED)`);
+      console.log(`[INTERVENTION UPDATE] 🔒 - Original isPassed: ${categoryResult.categories[categoryIndex].isPassed} (PRESERVED)`);
+      
+      // ✅ ONLY update intervention status flags - DO NOT touch original assessment results
       categoryResult.categories[categoryIndex].interventionRequired = false;
       categoryResult.categories[categoryIndex].interventionCompleted = true;
       categoryResult.categories[categoryIndex].interventionResultId = interventionResultId;
       categoryResult.categories[categoryIndex].lastUpdated = new Date();
+      
+      // ❌ REMOVED: Do NOT overwrite original isPassed or score
+      // ❌ categoryResult.categories[categoryIndex].isPassed = true;  // REMOVED - preserves original false
+      
+      console.log(`[INTERVENTION UPDATE] ✅ Category completion status updated without overwriting original assessment data`);
 
       // Update overall category result metadata
       categoryResult.updatedAt = new Date();
@@ -1557,6 +1645,114 @@ class CategoryResultsService {
         success: false,
         error: error.message,
         reason: 'Failed to update category_results from intervention success'
+      };
+    }
+  }
+
+  /**
+   * ✅ DYNAMIC COMPLETION FIX: Update category results to reflect categories that pass without intervention
+   * This method fixes categories scoring ≥75% that should have interventionRequired: false
+   * and ensures they are counted in overall statistics
+   *
+   * @param {number} studentId - Student ID to fix (optional, fixes all if not provided)
+   * @returns {Object} Fix summary
+   */
+  static async fixDynamicCategoryCompletion(studentId = null) {
+    try {
+      console.log(`[DYNAMIC COMPLETION FIX] 🔧 Starting dynamic category completion fix${studentId ? ` for student ${studentId}` : ' for all students'}`);
+
+      // Build query for category results to fix
+      const query = {};
+      if (studentId) {
+        query.studentId = parseInt(studentId);
+      }
+
+      const categoryResults = await CategoryResult.find(query);
+
+      console.log(`[DYNAMIC COMPLETION FIX] 📋 Found ${categoryResults.length} category results to analyze`);
+
+      let fixedCount = 0;
+      let analysisCount = 0;
+
+      for (const categoryResult of categoryResults) {
+        analysisCount++;
+        let categoryFixed = false;
+
+        console.log(`[DYNAMIC COMPLETION FIX] 🔍 Analyzing student ${categoryResult.studentId} (${analysisCount}/${categoryResults.length})`);
+
+        // Check each category for completion status
+        for (const category of categoryResult.categories) {
+          const score = category.score || 0;
+          const mainAssessmentPassed = score >= 75;
+          const hasSuccessfulIntervention = category.interventionHistory &&
+            category.interventionHistory.some(intervention => intervention.isPassed === true);
+          const shouldBeCompleted = mainAssessmentPassed || hasSuccessfulIntervention;
+
+          // Check if intervention requirement is incorrectly set
+          const currentInterventionRequired = category.interventionRequired;
+          const correctInterventionRequired = !shouldBeCompleted;
+
+          // Debug logging for each category
+          console.log(`[DYNAMIC COMPLETION FIX] 🔍 Analyzing ${category.categoryName}:`);
+          console.log(`[DYNAMIC COMPLETION FIX]   - Score: ${score}%`);
+          console.log(`[DYNAMIC COMPLETION FIX]   - Main assessment passed: ${mainAssessmentPassed}`);
+          console.log(`[DYNAMIC COMPLETION FIX]   - Has successful intervention: ${hasSuccessfulIntervention}`);
+          console.log(`[DYNAMIC COMPLETION FIX]   - Should be completed: ${shouldBeCompleted}`);
+          console.log(`[DYNAMIC COMPLETION FIX]   - Current interventionRequired: ${currentInterventionRequired}`);
+          console.log(`[DYNAMIC COMPLETION FIX]   - Correct interventionRequired: ${correctInterventionRequired}`);
+          console.log(`[DYNAMIC COMPLETION FIX]   - Needs fixing: ${currentInterventionRequired !== correctInterventionRequired}`);
+
+          if (currentInterventionRequired !== correctInterventionRequired) {
+            console.log(`[DYNAMIC COMPLETION FIX] 🔧 Fixing ${category.categoryName} for student ${categoryResult.studentId}:`);
+            console.log(`[DYNAMIC COMPLETION FIX]   - Score: ${score}%`);
+            console.log(`[DYNAMIC COMPLETION FIX]   - Should be completed: ${shouldBeCompleted}`);
+            console.log(`[DYNAMIC COMPLETION FIX]   - Current interventionRequired: ${currentInterventionRequired}`);
+            console.log(`[DYNAMIC COMPLETION FIX]   - Correct interventionRequired: ${correctInterventionRequired}`);
+
+            // Fix the intervention requirement flag
+            category.interventionRequired = correctInterventionRequired;
+            categoryFixed = true;
+          }
+        }
+
+        // If any categories were fixed, recalculate overall statistics
+        if (categoryFixed) {
+          const normalizedCategories = this.normalizeCategories(categoryResult.categories);
+          const overallStats = this.calculateOverallStats(normalizedCategories);
+
+          // Update category result with corrected statistics
+          categoryResult.categories = normalizedCategories;
+          categoryResult.overallScore = overallStats.overallScore;
+          categoryResult.completedCategories = overallStats.passedCategories;
+          categoryResult.totalCategories = normalizedCategories.length;
+          categoryResult.allCategoriesPassed = overallStats.passedCategories === normalizedCategories.length;
+          categoryResult.updatedAt = new Date();
+
+          await categoryResult.save();
+
+          console.log(`[DYNAMIC COMPLETION FIX] ✅ Fixed student ${categoryResult.studentId}: ${overallStats.passedCategories}/${normalizedCategories.length} completed, overall: ${overallStats.overallScore}%`);
+          fixedCount++;
+        } else {
+          console.log(`[DYNAMIC COMPLETION FIX] ⏭️  Student ${categoryResult.studentId}: No fixes needed`);
+        }
+      }
+
+      console.log(`[DYNAMIC COMPLETION FIX] ✅ Completion fix summary: ${fixedCount} fixed out of ${analysisCount} analyzed`);
+
+      return {
+        success: true,
+        message: `Dynamic completion fix completed`,
+        analyzed: analysisCount,
+        fixed: fixedCount,
+        skipped: analysisCount - fixedCount
+      };
+
+    } catch (error) {
+      console.error('[DYNAMIC COMPLETION FIX] ❌ Error during dynamic completion fix:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: 'Dynamic completion fix failed'
       };
     }
   }

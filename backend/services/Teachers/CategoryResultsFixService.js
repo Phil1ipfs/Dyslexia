@@ -64,50 +64,61 @@ class CategoryResultsFixService {
       // First, fix any categories that have passed interventions but still have isPassed: false
       let categoriesFixed = 0;
       for (const category of categoryResult.categories) {
-        if (!category.isPassed && category.interventionHistory && category.interventionHistory.length > 0) {
+        if (category.interventionHistory && category.interventionHistory.length > 0) {
           // Check if any intervention in history passed
           const hasPassedIntervention = category.interventionHistory.some(history => history.isPassed === true);
-          if (hasPassedIntervention) {
-            console.log(`[CATEGORY FIX] 🔧 Student ${studentId}: Fixing category ${category.categoryName} - intervention passed but isPassed was false`);
-            category.isPassed = true;
+          if (hasPassedIntervention && !category.interventionCompleted) {
+            console.log(`[CATEGORY FIX] 🔧 Student ${studentId}: Fixing category ${category.categoryName} - marking intervention as completed`);
+
+            // ✅ PRESERVE ORIGINAL ASSESSMENT DATA - Do NOT overwrite isPassed or score
+            console.log(`[CATEGORY FIX] 🔒 PRESERVING original assessment data for ${category.categoryName}:`);
+            console.log(`[CATEGORY FIX] 🔒 - Original score: ${category.score}% (PRESERVED)`);
+            console.log(`[CATEGORY FIX] 🔒 - Original isPassed: ${category.isPassed} (PRESERVED)`);
+
+            // ✅ ONLY update intervention status flags - DO NOT touch original assessment results
+            // ❌ REMOVED: category.isPassed = true; // REMOVED - preserves original assessment result
             category.interventionRequired = false;
-            category.interventionCompleted = true;
+            category.interventionCompleted = true; // Mark as completed via intervention
             categoriesFixed++;
           }
         }
       }
 
-      // Calculate current statistics
-      const passedCategories = categoryResult.categories.filter(cat => cat.isPassed === true);
+      // CRITICAL FIX: Calculate statistics based on effectively completed categories
+      const effectivelyCompletedCategories = categoryResult.categories.filter(cat => {
+        const passedOriginally = cat.isPassed === true;
+        const completedViaIntervention = cat.interventionCompleted === true;
+        return passedOriginally || completedViaIntervention;
+      });
+
       const currentCompletedCategories = categoryResult.completedCategories || 0;
-      const expectedCompletedCategories = passedCategories.length;
+      const expectedCompletedCategories = effectivelyCompletedCategories.length;
 
       const totalCategories = categoryResult.categories.length;
       
       // Calculate overall score based on total possible points across all categories
+      // CRITICAL FIX: Use original assessment scores only, count completion via intervention separately
       let totalPointsEarned = 0;
       let totalPossiblePoints = 0;
-      
+
       for (const category of categoryResult.categories) {
         // Each category has a maximum of 100 points (100%)
         totalPossiblePoints += 100;
-        
-        if (category.isPassed) {
-          // Use the highest score between original assessment and intervention
-          let categoryScore = category.score || 0;
-          
-          // Check if there's a higher intervention score
-          if (category.interventionHistory && category.interventionHistory.length > 0) {
-            const passedInterventions = category.interventionHistory.filter(h => h.isPassed === true);
-            if (passedInterventions.length > 0) {
-              const highestInterventionScore = Math.max(...passedInterventions.map(h => h.score));
-              categoryScore = Math.max(categoryScore, highestInterventionScore);
-            }
-          }
-          
-          totalPointsEarned += categoryScore;
+
+        // CRITICAL FIX: Count category as contributing points if passed originally OR completed via intervention
+        const passedOriginally = category.isPassed === true;
+        const completedViaIntervention = category.interventionCompleted === true;
+        const effectivelyCompleted = passedOriginally || completedViaIntervention;
+
+        if (effectivelyCompleted) {
+          // ✅ ALWAYS use original assessment score - DO NOT use intervention scores for overall calculation
+          const originalScore = category.score || 0;
+          totalPointsEarned += originalScore;
+
+          console.log(`[CATEGORY FIX] 📊 ${category.categoryName}: original=${category.isPassed}, intervention=${category.interventionCompleted}, contributing=${originalScore}%`);
+        } else {
+          console.log(`[CATEGORY FIX] 📊 ${category.categoryName}: not completed, contributing=0%`);
         }
-        // If category not passed, it contributes 0 points
       }
       
       const expectedOverallScore = totalPossiblePoints > 0 ? Math.round((totalPointsEarned / totalPossiblePoints) * 100) : 0;

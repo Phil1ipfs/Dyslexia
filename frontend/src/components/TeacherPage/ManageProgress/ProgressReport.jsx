@@ -602,28 +602,54 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     }
   };
 
-  // Get actual counts for a category from student responses
-  const getCategoryActualCounts = (categoryName) => {
-    if (!studentResponses || studentResponses.length === 0) {
-      // Fallback to category metadata if no responses
-      return { correct: 0, total: 0 };
+  // Get actual counts for a category from student responses or category metadata
+  const getCategoryActualCounts = (categoryName, categoryData = null) => {
+    // First try to get data from student responses
+    if (studentResponses && studentResponses.length > 0) {
+      const categoryResponses = studentResponses.filter(response => 
+        response.category && response.category.toLowerCase().includes(categoryName.toLowerCase())
+      );
+
+      if (categoryName.toLowerCase().includes('phonological')) {
+        // For Phonological Awareness: aggregate matches from responses
+        const totalMatches = categoryResponses.reduce((sum, resp) => sum + (resp.totalMatches || 0), 0);
+        const correctMatches = categoryResponses.reduce((sum, resp) => sum + (resp.correctMatches || 0), 0);
+        
+        // If we have response data, use it
+        if (totalMatches > 0) {
+          return { correct: correctMatches, total: totalMatches };
+        }
+      } else {
+        // For other categories: count individual questions from responses
+        const totalQuestions = categoryResponses.length;
+        const correctQuestions = categoryResponses.filter(resp => resp.isCorrect).length;
+        
+        // If we have response data, use it
+        if (totalQuestions > 0) {
+          return { correct: correctQuestions, total: totalQuestions };
+        }
+      }
     }
 
-    const categoryResponses = studentResponses.filter(response => 
-      response.category && response.category.toLowerCase().includes(categoryName.toLowerCase())
-    );
-
-    if (categoryName.toLowerCase().includes('phonological')) {
-      // For Phonological Awareness: aggregate matches
-      const totalMatches = categoryResponses.reduce((sum, resp) => sum + (resp.totalMatches || 0), 0);
-      const correctMatches = categoryResponses.reduce((sum, resp) => sum + (resp.correctMatches || 0), 0);
-      return { correct: correctMatches, total: totalMatches };
-    } else {
-      // For other categories: count individual questions
-      const totalQuestions = categoryResponses.length;
-      const correctQuestions = categoryResponses.filter(resp => resp.isCorrect).length;
-      return { correct: correctQuestions, total: totalQuestions };
+    // Fallback to category metadata if no student responses or no data in responses
+    if (categoryData) {
+      if (categoryName.toLowerCase().includes('phonological')) {
+        // For Phonological Awareness: use correctMatches and totalPossibleMatches
+        return { 
+          correct: categoryData.correctMatches || 0, 
+          total: categoryData.totalPossibleMatches || 0 
+        };
+      } else {
+        // For other categories: use correctAnswers and totalQuestions
+        return { 
+          correct: categoryData.correctAnswers || 0, 
+          total: categoryData.totalQuestions || 0 
+        };
+      }
     }
+
+    // Final fallback
+    return { correct: 0, total: 0 };
   };
 
   // NEW: Get latest intervention attempt for a category
@@ -1144,10 +1170,10 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                 formatCategoryName(categoryName) : 
                 `Category ${index + 1}`;
               
-              // Get actual counts from student responses data
-              const actualCounts = getCategoryActualCounts(categoryName);
-              const correctCount = actualCounts.correct || Number(category.correctAnswers) || 0;
-              const totalCount = actualCounts.total || Number(category.totalQuestions) || 0;
+              // Get actual counts from student responses data or category metadata
+              const actualCounts = getCategoryActualCounts(categoryName, category);
+              const correctCount = actualCounts.correct;
+              const totalCount = actualCounts.total;
               
               // NEW: Get current display score (latest intervention or original)
               const score = getCurrentDisplayScore(category);
@@ -1374,12 +1400,12 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                         {progressionStatus.source === 'intervention' && (
                           <div className="intervention-success-details" style={{ fontSize: '0.8em', marginTop: '4px', opacity: 0.8 }}>
                             <div>Intervention Success! Student improved from {category.score}% to {displayScore}%</div>
-                            <div style={{ marginTop: '2px' }}>Original Post Assessment: {category.score}% ({category.correctAnswers || 0}/{category.totalQuestions || 0} correct)</div>
+                            <div style={{ marginTop: '2px' }}>Original Post Assessment: {category.score}% ({correctCount}/{totalCount} correct)</div>
                           </div>
                         )}
                         {progressionStatus.source === 'original_assessment' && (
                           <div className="original-assessment-details" style={{ fontSize: '0.8em', marginTop: '4px', opacity: 0.8 }}>
-                            Original Post Assessment: {category.score}% ({category.correctAnswers || 0}/{category.totalQuestions || 0} correct)
+                            Original Post Assessment: {category.score}% ({correctCount}/{totalCount} correct)
                           </div>
                         )}
                       </div>

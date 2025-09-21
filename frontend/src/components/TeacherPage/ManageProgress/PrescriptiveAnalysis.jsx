@@ -5389,6 +5389,27 @@ const PrescriptiveAnalysis = ({
   // Safe access to the category data and analysis
   const selectedCategoryData = selectedCategory && liveCategoryResults?.categories ? 
     liveCategoryResults.categories.find(cat => cat && cat.categoryName === selectedCategory) || null : null;
+
+  // Helper function to determine if a category should be considered "passed"
+  const isCategoryPassed = (categoryData, categoryName) => {
+    // Check if category is marked as passed in the category data
+    if (categoryData?.isPassed) {
+      return true;
+    }
+    
+    // Check if there are intervention results that indicate the category has passed
+    const interventionResultData = interventionResults[categoryName];
+    if (interventionResultData && interventionResultData.isPassed && interventionResultData.score >= 75) {
+      return true;
+    }
+    
+    // Check if there's a successful intervention attempt in the category's intervention history
+    if (categoryData?.interventionHistory?.some(attempt => attempt.isPassed && attempt.score >= 75)) {
+      return true;
+    }
+    
+    return false;
+  };
     
   // Use a try-catch block to handle any potential errors in getAnalysisForCategory
   let selectedAnalysis = null;
@@ -5457,17 +5478,24 @@ const PrescriptiveAnalysis = ({
           <div className="literexia-category-analysis">
           
           {/* Show success banner for passed categories */}
-          {selectedCategoryData?.isPassed && (
+          {isCategoryPassed(selectedCategoryData, selectedCategory) && (
             <div className="literexia-success-banner">
               <FaCheckCircle style={{color: '#4CAF50'}} />
               <p>
-                The student has mastered {formatCategoryName(selectedCategory)} with a score of {selectedCategoryData.score}% (above the 75% threshold). No intervention is needed for this category.
+                The student has mastered {formatCategoryName(selectedCategory)} with a score of {(() => {
+                  // Get the most recent score - either from intervention results or category data
+                  const interventionResultData = interventionResults[selectedCategory];
+                  if (interventionResultData && interventionResultData.isPassed) {
+                    return interventionResultData.score;
+                  }
+                  return selectedCategoryData?.score || 0;
+                })()}% (above the 75% threshold). No intervention is needed for this category.
               </p>
             </div>
           )}
 
           {/* Show processing message when no analysis is available */}
-          {!selectedAnalysis && !selectedCategoryData?.isPassed && (
+          {!selectedAnalysis && !isCategoryPassed(selectedCategoryData, selectedCategory) && (
             <div className="literexia-empty-analysis">
               <FaInfoCircle />
               <div>
@@ -5482,12 +5510,18 @@ const PrescriptiveAnalysis = ({
           {renderMathematicalAnalysis(selectedCategory, selectedAnalysis)}       
           <br></br> <br></br>
 
-          {/* Current interventions - only show if the selected category has not passed */}
-          {selectedCategoryData && !selectedCategoryData.isPassed && (
+          {/* Current interventions - always show, but with different functionality for passed categories */}
+          {selectedCategoryData && (
             <div className="literexia-current-interventions">
               <div className="literexia-interventions-header">
                 <h3>Current Interventions</h3>
-                {selectedInterventions.length === 0 && (
+                {isCategoryPassed(selectedCategoryData, selectedCategory) && (
+                  <div className="literexia-category-passed-badge">
+                    <FaCheckCircle style={{color: '#4CAF50', marginRight: '6px'}} />
+                    <span>Category Passed - View Only</span>
+                  </div>
+                )}
+                {selectedInterventions.length === 0 && !isCategoryPassed(selectedCategoryData, selectedCategory) && (
                   <button 
                     className="literexia-create-activity-btn" 
                     onClick={() => handleCreateActivity(selectedCategory, selectedAnalysis)}
@@ -5496,6 +5530,12 @@ const PrescriptiveAnalysis = ({
                   >
                     <FaPlus /> Create New Intervention Activity
                   </button>
+                )}
+                {selectedInterventions.length === 0 && isCategoryPassed(selectedCategoryData, selectedCategory) && (
+                  <div className="literexia-category-passed-notice">
+                    <FaCheckCircle style={{color: '#4CAF50', marginRight: '8px'}} />
+                    <span>Category passed - no new interventions needed</span>
+                  </div>
                 )}
               </div>
               
@@ -5664,15 +5704,18 @@ const PrescriptiveAnalysis = ({
                         {/* Action Buttons with version-aware logic */}
                         <div className="literexia-intervention-actions">
                           <button
-                            className={`literexia-edit-activity-btn ${hasCurrentVersionResults && !isPassed ? 'version-two' : ''}`}
+                            className={`literexia-edit-activity-btn ${hasCurrentVersionResults && !isPassed ? 'version-two' : ''} ${isCategoryPassed(selectedCategoryData, selectedCategory) ? 'disabled-passed' : ''}`}
                             onClick={() => handleCreateActivity(selectedCategory, selectedAnalysis, intervention)}
                             disabled={
                               loading ||
                               (hasBeenRevised && !hasCurrentVersionResults) || // VERSION 2+ without results - disable edit
-                              (intervention.status === 'active' && !(hasCurrentVersionResults && !isPassed))
+                              (intervention.status === 'active' && !(hasCurrentVersionResults && !isPassed)) ||
+                              isCategoryPassed(selectedCategoryData, selectedCategory) // Disable edit when category is passed
                             }
                             title={
-                              hasBeenRevised && !hasCurrentVersionResults
+                              isCategoryPassed(selectedCategoryData, selectedCategory)
+                                ? "Cannot edit - category has been passed"
+                                : hasBeenRevised && !hasCurrentVersionResults
                                 ? "Cannot edit - student hasn't attempted this version yet"
                                 : hasCurrentVersionResults && !isPassed
                                 ? "Create version 3 of this intervention (score below 75%)"

@@ -170,14 +170,23 @@ class InterventionSyncService {
 
     // If intervention passed, update category status
     if (interventionPassed) {
-      console.log(`   🎉 Intervention passed! Updating category to passed status`);
-      categoryResults.categories[categoryIndex].isPassed = true;
+      console.log(`   🎉 Intervention passed! Marking category as completed via intervention`);
+      
+      // ✅ PRESERVE ORIGINAL ASSESSMENT DATA - Do NOT overwrite isPassed or score
+      console.log(`   🔒 PRESERVING original assessment data:`);
+      console.log(`   🔒 - Original score: ${categoryData.score}% (PRESERVED)`);
+      console.log(`   🔒 - Original isPassed: ${categoryData.isPassed} (PRESERVED)`);
+      console.log(`   📊 - Intervention score: ${interventionScore}% (tracked in history only)`);
+      
+      // ✅ ONLY update intervention status flags - DO NOT touch original assessment results
       categoryResults.categories[categoryIndex].interventionRequired = false;
-      // Use the higher score between original and intervention
-      categoryResults.categories[categoryIndex].score = Math.max(
-        categoryData.score || 0,
-        interventionScore
-      );
+      categoryResults.categories[categoryIndex].interventionCompleted = true;
+      
+      // ❌ REMOVED: Do NOT overwrite original isPassed or score
+      // ❌ categoryResults.categories[categoryIndex].isPassed = true;  // REMOVED - preserves original false
+      // ❌ categoryResults.categories[categoryIndex].score = Math.max(...); // REMOVED - preserves original score
+      
+      console.log(`   ✅ Category completion status updated without overwriting original assessment data`);
     } else {
       console.log(`   📝 Intervention failed. Category needs teacher revision.`);
       // Keep interventionRequired as true for teacher revision

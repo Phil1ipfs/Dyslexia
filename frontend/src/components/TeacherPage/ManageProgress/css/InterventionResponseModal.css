@@ -228,6 +228,7 @@
   font-size: 18px;
   color: white;
   flex-shrink: 0;
+  background: linear-gradient(135deg, #4A608A 0%, #5B6B8A 100%);
 }
 
 .intervention-response-stat-content {
@@ -252,6 +253,15 @@
   line-height: 1.2;
   display: block;
 }
+  
+  /* Total Questions and Completed Cards */
+  .intervention-response-stat-card:first-child .intervention-response-stat-icon {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  }
+  
+  .intervention-response-stat-card:nth-child(2) .intervention-response-stat-icon {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  }
   
   /* Score and Status Cards */
   .intervention-response-score-card .intervention-response-stat-icon {

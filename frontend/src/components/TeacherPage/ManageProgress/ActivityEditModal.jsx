@@ -125,6 +125,23 @@ const debounce = (func, delay) => {
 };
 
 const ActivityEditModal = ({ activity, onClose, onSave, student, category, analysis }) => {
+  // ===== UTILITY FUNCTIONS (COMPONENT LEVEL) =====
+
+  // Helper function to get a valid ObjectId for teacher implementation
+  // Available globally in this component for all functions to use
+  const getValidTeacherId = () => {
+    const userId = localStorage.getItem('userId');
+    if (userId && userId.length === 24 && /^[a-fA-F0-9]{24}$/.test(userId)) {
+      // Valid 24-character hex ObjectId format
+      console.log("[UTILITY] Using valid ObjectId from localStorage:", userId);
+      return userId;
+    }
+    // Return a valid default ObjectId (can be a system/default teacher ID)
+    const defaultTeacherId = '507f1f77bcf86cd799439011';
+    console.log("[UTILITY] Using default teacher ObjectId:", defaultTeacherId);
+    return defaultTeacherId;
+  };
+
   // ===== STATE MANAGEMENT =====
   
   /** quick map: { choiceId: displayText }  */
@@ -867,7 +884,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       let currentIntervention = null;
       try {
         const currentResponse = await api.interventions.getById(interventionId);
-        currentIntervention = currentResponse.data;
+        // Fix data access - use response.data.data for the actual intervention data
+        currentIntervention = currentResponse.data?.data || currentResponse.data;
         console.log(`[INTERVENTION REVISION] Current intervention:`, currentIntervention);
         console.log(`[INTERVENTION REVISION] 🔍 DEBUGGING REVISION DATA:`);
         console.log(`[INTERVENTION REVISION] - Response success:`, currentResponse.success);
@@ -882,10 +900,10 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       }
 
       // Step 2: Calculate next revision number
-      const currentRevision = currentIntervention.data.revisionNumber;
+      const currentRevision = currentIntervention.revisionNumber || 1; // Fixed property access
       const newRevisionNumber = currentRevision + 1;
       console.log(`[INTERVENTION REVISION] 🔍 REVISION CALCULATION:`);
-      console.log(`[INTERVENTION REVISION] - currentIntervention.data.revisionNumber:`, currentIntervention.data.revisionNumber);
+      console.log(`[INTERVENTION REVISION] - currentIntervention.revisionNumber:`, currentIntervention.revisionNumber);
       console.log(`[INTERVENTION REVISION] - Calculated newRevisionNumber:`, newRevisionNumber);
       console.log(`[INTERVENTION REVISION] Creating revision number: ${newRevisionNumber}`);
 
@@ -2249,19 +2267,6 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     // Keep studentId as number to match database format
     console.log("[SAVE] Final studentId:", studentId, "Type:", typeof studentId);
 
-    // Helper function to get a valid ObjectId for teacher implementation
-    const getValidTeacherId = () => {
-      const userId = localStorage.getItem('userId');
-      if (userId && userId.length === 24 && /^[a-fA-F0-9]{24}$/.test(userId)) {
-        // Valid 24-character hex ObjectId format
-        console.log("[SAVE] Using valid ObjectId from localStorage:", userId);
-        return userId;
-      }
-      // Return a valid default ObjectId (can be a system/default teacher ID)
-      const defaultTeacherId = '507f1f77bcf86cd799439011';
-      console.log("[SAVE] Using default teacher ObjectId:", defaultTeacherId);
-      return defaultTeacherId;
-    };
 
     // Get prescriptive analysis ID - ONLY from real database data
     let prescriptiveAnalysisId = null;
@@ -2406,7 +2411,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       const now = new Date();
       return now.toISOString();
     };
-    
+
     // Helper function to sanitize image URLs (handle blob URLs and ensure correct S3 paths)
     const sanitizeImageUrl = (url) => {
       if (!url) return null;

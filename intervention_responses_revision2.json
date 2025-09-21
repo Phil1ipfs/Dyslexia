@@ -1,0 +1,248 @@
+[
+  {
+    "_id": {
+      "$oid": "68d02bd32cbb187b880d2516"
+    },
+    "studentId": 202522233,
+    "interventionAssessmentId": {
+      "$oid": "68cfb473415711aaa5744732"
+    },
+    "questionId": "int_phonological_awareness_001",
+    "category": "Phonological Awareness",
+    "response": [
+      {
+        "audio": "Q",
+        "match": "Qq"
+      },
+      {
+        "audio": "A",
+        "match": "Aa"
+      },
+      {
+        "audio": "V",
+        "match": "Vv"
+      },
+      {
+        "audio": "R",
+        "match": "Rr"
+      }
+    ],
+    "isCorrect": true,
+    "correctMatches": 4,
+    "totalMatches": 4,
+    "responseTime": 12.1,
+    "answeredAt": {
+      "$date": "2025-09-21T16:46:15.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "revisionNumber": 2,
+    "createdAt": {
+      "$date": "2025-09-21T16:46:15.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68d02bd32cbb187b880d2517"
+    },
+    "studentId": 202522233,
+    "interventionAssessmentId": {
+      "$oid": "68cfb473415711aaa5744732"
+    },
+    "questionId": "int_phonological_awareness_002",
+    "category": "Phonological Awareness",
+    "response": [
+      {
+        "audio": "R",
+        "match": "Rr"
+      },
+      {
+        "audio": "Wep",
+        "match": "Wep"
+      },
+      {
+        "audio": "Det",
+        "match": "Det"
+      },
+      {
+        "audio": "Kit",
+        "match": "Kit"
+      }
+    ],
+    "isCorrect": true,
+    "correctMatches": 4,
+    "totalMatches": 4,
+    "responseTime": 16.3,
+    "answeredAt": {
+      "$date": "2025-09-21T16:46:30.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "revisionNumber": 2,
+    "createdAt": {
+      "$date": "2025-09-21T16:46:30.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68d02bd32cbb187b880d2518"
+    },
+    "studentId": 202522233,
+    "interventionAssessmentId": {
+      "$oid": "68cfb473415711aaa5744732"
+    },
+    "questionId": "int_phonological_awareness_003",
+    "category": "Phonological Awareness",
+    "response": [
+      {
+        "audio": "Q",
+        "match": "Qq"
+      },
+      {
+        "audio": "A",
+        "match": "Aa"
+      },
+      {
+        "audio": "V",
+        "match": "Vv"
+      },
+      {
+        "audio": "R",
+        "match": "Rr"
+      }
+    ],
+    "isCorrect": true,
+    "correctMatches": 4,
+    "totalMatches": 4,
+    "responseTime": 11.8,
+    "answeredAt": {
+      "$date": "2025-09-21T16:46:50.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "revisionNumber": 2,
+    "createdAt": {
+      "$date": "2025-09-21T16:46:50.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68d02bd32cbb187b880d2519"
+    },
+    "studentId": 202522233,
+    "interventionAssessmentId": {
+      "$oid": "68cfb473415711aaa5744732"
+    },
+    "questionId": "int_phonological_awareness_004",
+    "category": "Phonological Awareness",
+    "response": [
+      {
+        "audio": "R",
+        "match": "Rr"
+      },
+      {
+        "audio": "Wep",
+        "match": "Wep"
+      },
+      {
+        "audio": "Det",
+        "match": "Det"
+      },
+      {
+        "audio": "Kit",
+        "match": "Kit"
+      }
+    ],
+    "isCorrect": true,
+    "correctMatches": 4,
+    "totalMatches": 4,
+    "responseTime": 15.2,
+    "answeredAt": {
+      "$date": "2025-09-21T16:47:15.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "revisionNumber": 2,
+    "createdAt": {
+      "$date": "2025-09-21T16:47:15.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68d02bd32cbb187b880d251a"
+    },
+    "studentId": 202522233,
+    "interventionAssessmentId": {
+      "$oid": "68cfb473415711aaa5744732"
+    },
+    "questionId": "int_phonological_awareness_005",
+    "category": "Phonological Awareness",
+    "response": [
+      {
+        "audio": "Y",
+        "match": "Yy"
+      },
+      {
+        "audio": "T",
+        "match": "Tt"
+      },
+      {
+        "audio": "F",
+        "match": "Ff"
+      },
+      {
+        "audio": "S",
+        "match": "Ss"
+      }
+    ],
+    "isCorrect": true,
+    "correctMatches": 4,
+    "totalMatches": 4,
+    "responseTime": 13.7,
+    "answeredAt": {
+      "$date": "2025-09-21T16:47:40.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "revisionNumber": 2,
+    "createdAt": {
+      "$date": "2025-09-21T16:47:40.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "68d02bd32cbb187b880d251b"
+    },
+    "studentId": 202522233,
+    "interventionAssessmentId": {
+      "$oid": "68cfb473415711aaa5744732"
+    },
+    "questionId": "int_phonological_awareness_006",
+    "category": "Phonological Awareness",
+    "response": [
+      {
+        "audio": "Q",
+        "match": "Qq"
+      },
+      {
+        "audio": "A",
+        "match": "Aa"
+      },
+      {
+        "audio": "V",
+        "match": "Vv"
+      },
+      {
+        "audio": "R",
+        "match": "Rr"
+      }
+    ],
+    "isCorrect": true,
+    "correctMatches": 4,
+    "totalMatches": 4,
+    "responseTime": 10.5,
+    "answeredAt": {
+      "$date": "2025-09-21T16:48:00.000Z"
+    },
+    "readingLevel": "At Grade Level",
+    "revisionNumber": 2,
+    "createdAt": {
+      "$date": "2025-09-21T16:48:00.000Z"
+    }
+  }
+]

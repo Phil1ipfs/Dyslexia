@@ -4,7 +4,7 @@
   },
   "studentId": 202522233,
   "assessmentDate": {
-    "$date": "2025-09-17T00:10:23.583Z"
+    "$date": "2025-09-21T20:23:30.624Z"
   },
   "categories": [
     {
@@ -18,10 +18,12 @@
       "passingThreshold": 75,
       "isCompleted": true,
       "lastQuestionAnswered": "",
-      "interventionRequired": false,
+      "interventionRequired": true,
       "interventionAttempts": 3,
       "interventionCompleted": true,
-      "currentInterventionId": null,
+      "currentInterventionId": {
+        "$oid": "68cbb0975a26e73b61e061d3"
+      },
       "interventionHistory": [
         {
           "attemptNumber": 1,
@@ -85,39 +87,80 @@
         }
       ],
       "_id": {
-        "$oid": "68c9fc6fd26632a89f218edf"
+        "$oid": "68d05ec2337858a8e1ba2b1e"
       }
     },
     {
       "categoryName": "Phonological Awareness",
       "totalQuestions": 6,
       "correctAnswers": 0,
-      "totalPossibleMatches": 0,
-      "correctMatches": 0,
-      "score": 0,
+      "totalPossibleMatches": 15,
+      "correctMatches": 1,
+      "score": 7,
       "isPassed": false,
       "passingThreshold": 75,
-      "isCompleted": false,
+      "isCompleted": true,
       "lastQuestionAnswered": "",
       "interventionRequired": true,
-      "interventionAttempts": 0,
-      "interventionCompleted": false,
+      "interventionAttempts": 2,
+      "interventionCompleted": true,
       "currentInterventionId": null,
-      "interventionHistory": [],
+      "interventionHistory": [
+        {
+          "attemptNumber": 1,
+          "interventionId": {
+            "$oid": "68cfb473415711aaa5744732"
+          },
+          "interventionResultId": {
+            "$oid": "68d02bc32cbb187b880d2515"
+          },
+          "score": 17,
+          "isPassed": false,
+          "attemptedAt": {
+            "$date": "2025-09-21T16:45:55.947Z"
+          },
+          "completedAt": {
+            "$date": "2025-09-21T20:03:57.998Z"
+          },
+          "_id": {
+            "$oid": "68d02bc42cbb187b880d2520"
+          }
+        },
+        {
+          "attemptNumber": 2,
+          "interventionId": {
+            "$oid": "68cfb473415711aaa5744732"
+          },
+          "interventionResultId": {
+            "$oid": "68d05a2d337858a8e1ba22f4"
+          },
+          "score": 100,
+          "isPassed": true,
+          "attemptedAt": {
+            "$date": "2025-09-21T20:03:57.707Z"
+          },
+          "completedAt": {
+            "$date": "2025-09-21T20:03:57.707Z"
+          },
+          "_id": {
+            "$oid": "68d05a2d337858a8e1ba230c"
+          }
+        }
+      ],
       "_id": {
-        "$oid": "68c9fc6fd26632a89f218ee0"
+        "$oid": "68d05ec2337858a8e1ba2b22"
       }
     },
     {
       "categoryName": "Decoding",
       "totalQuestions": 15,
-      "correctAnswers": 0,
+      "correctAnswers": 15,
       "totalPossibleMatches": 0,
       "correctMatches": 0,
-      "score": 0,
-      "isPassed": false,
+      "score": 100,
+      "isPassed": true,
       "passingThreshold": 75,
-      "isCompleted": false,
+      "isCompleted": true,
       "lastQuestionAnswered": "",
       "interventionRequired": true,
       "interventionAttempts": 0,
@@ -125,7 +168,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68c9fc6fd26632a89f218ee1"
+        "$oid": "68d05ec2337858a8e1ba2b25"
       }
     },
     {
@@ -145,7 +188,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68c9fc6fd26632a89f218ee2"
+        "$oid": "68d05ec2337858a8e1ba2b26"
       }
     },
     {
@@ -165,12 +208,12 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68c9fc6fd26632a89f218ee3"
+        "$oid": "68d05ec2337858a8e1ba2b27"
       }
     }
   ],
-  "overallScore": 20,
-  "completedCategories": 1,
+  "overallScore": 60,
+  "completedCategories": 3,
   "totalCategories": 5,
   "allCategoriesPassed": false,
   "readingLevel": "At Grade Level",
@@ -179,7 +222,7 @@
     "$date": "2025-09-17T00:10:23.643Z"
   },
   "updatedAt": {
-    "$date": "2025-09-20T18:16:48.631Z"
+    "$date": "2025-09-21T20:19:55.130Z"
   },
-  "__v": 7
+  "__v": 16
 }

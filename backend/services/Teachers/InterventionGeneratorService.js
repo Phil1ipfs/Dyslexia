@@ -2517,9 +2517,18 @@ class InterventionGeneratorService {
           if (passed) {
             cat.currentInterventionId = null;  // Only clear if passed
             cat.interventionCompleted = true;  // Only mark completed if passed
-            cat.isPassed = true;
+            
+            // ✅ PRESERVE ORIGINAL ASSESSMENT DATA - Do NOT overwrite isPassed
+            console.log(`[INTERVENTION GENERATOR] 🔒 PRESERVING original assessment data for ${category}:`);
+            console.log(`[INTERVENTION GENERATOR] 🔒 - Original isPassed: ${cat.isPassed} (PRESERVED)`);
+            
+            // ✅ ONLY update intervention status flags - DO NOT touch original assessment results
             cat.interventionRequired = false;
-            console.log(`[INTERVENTION GENERATOR] ✅ Category ${category} marked as passed via intervention - currentInterventionId cleared`);
+            
+            // ❌ REMOVED: Do NOT overwrite original isPassed
+            // ❌ cat.isPassed = true;  // REMOVED - preserves original false
+            
+            console.log(`[INTERVENTION GENERATOR] ✅ Category ${category} marked as completed via intervention - currentInterventionId cleared`);
           } else {
             // If intervention failed, keep currentInterventionId active for teacher revision
             console.log(`[INTERVENTION GENERATOR] ⚠️ Category ${category} intervention failed - keeping currentInterventionId active for teacher revision`);
