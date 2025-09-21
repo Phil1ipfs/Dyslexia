@@ -2607,21 +2607,50 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
         // Questions array
         questions: questionChoicePairs.map((pair, index) => {
-          // Check if this is Alphabet Knowledge (uses pair.choices) or other categories (uses choiceIds)
+          // Check category type for proper validation
           const normCategory = normalizeCategory(category);
           const isAlphabetKnowledge = normCategory === 'alphabet_knowledge';
+          const isPhonologicalAwareness = normCategory === 'phonological_awareness';
 
           // Get full choice objects for the selected choices
-          const selectedChoices = isAlphabetKnowledge
-            ? (pair.choices || [])  // Alphabet Knowledge uses pair.choices array
-            : getChoicesByIds(pair.choiceIds); // Other categories use pair.choiceIds
+          let selectedChoices = [];
+          
+          if (isAlphabetKnowledge) {
+            // Alphabet Knowledge uses pair.choices array
+            selectedChoices = pair.choices || [];
+          } else if (isPhonologicalAwareness) {
+            // Phonological Awareness uses audioTexts - generate choices from audioTexts
+            const audioTexts = pair.audioTexts || [];
+            const validAudioTexts = audioTexts.filter(text => text && text.trim());
+            
+            if (validAudioTexts.length === 0) {
+              console.error(`[SAVE] ❌ Question ${index} has no valid audio texts:`, {
+                audioTexts: pair.audioTexts,
+                validAudioTexts
+              });
+              throw new Error(`Question ${index} has no valid audio texts configured`);
+            }
+            
+            // Generate choice options from audioTexts for validation
+            selectedChoices = validAudioTexts.map((audioText, idx) => ({
+              optionId: String(idx + 1),
+              optionText: audioText,
+              isCorrect: true, // All audio texts are correct for PA
+              audioText: audioText
+            }));
+          } else {
+            // Other categories use pair.choiceIds
+            selectedChoices = getChoicesByIds(pair.choiceIds);
+          }
 
-          // Validate selectedChoices is not empty
-          if (!selectedChoices || selectedChoices.length === 0) {
+          // Validate selectedChoices is not empty (except for Phonological Awareness which is validated above)
+          if (!isPhonologicalAwareness && (!selectedChoices || selectedChoices.length === 0)) {
             console.error(`[SAVE] ❌ Question ${index} has no choices:`, {
               isAlphabetKnowledge,
+              isPhonologicalAwareness,
               pairChoices: pair.choices,
               pairChoiceIds: pair.choiceIds,
+              audioTexts: pair.audioTexts,
               selectedChoices
             });
             throw new Error(`Question ${index} has no valid choices available`);
@@ -2667,6 +2696,26 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                   isCorrect: choice.isCorrect || false,
                   imageUrl: choice.imageUrl || null
                 };
+              } else if (isPhonologicalAwareness) {
+                // Phonological Awareness choice structure - generated from audioTexts
+                const audioText = choice.audioText || choice.optionText || '';
+                let matchingText;
+                if (audioText.length === 1) {
+                  // Single letter: L → Ll (uppercase + lowercase)
+                  matchingText = audioText.toUpperCase() + audioText.toLowerCase();
+                } else {
+                  // Word: Keep as is
+                  matchingText = audioText;
+                }
+                
+                return {
+                  optionId: String(choiceIdx + 1),
+                  optionText: `${audioText} → ${matchingText}`,
+                  isCorrect: true, // All audio-visual pairs are correct for PA
+                  imageUrl: null,
+                  audioText: audioText,
+                  visualText: matchingText
+                };
               } else {
                 // Other categories choice structure
                 const choiceDescription = choice.description || '';
@@ -2688,6 +2737,31 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             ...(!isAlphabetKnowledge ? {
               choiceIds: pair.choiceIds,
               correctChoiceId: pair.correctChoiceId
+            } : {}),
+
+            // For Phonological Awareness, include audio-visual specific fields
+            ...(isPhonologicalAwareness ? {
+              audioTexts: pair.audioTexts || [],
+              matchingOptions: (pair.audioTexts || []).map(audioText => {
+                if (audioText && audioText.trim()) {
+                  return audioText.length === 1 
+                    ? audioText.toUpperCase() + audioText.toLowerCase()
+                    : audioText;
+                }
+                return '';
+              }).filter(text => text),
+              correctPairs: (pair.audioTexts || []).map(audioText => {
+                if (audioText && audioText.trim()) {
+                  const matchingText = audioText.length === 1 
+                    ? audioText.toUpperCase() + audioText.toLowerCase()
+                    : audioText;
+                  return {
+                    audio: audioText,
+                    visual: matchingText
+                  };
+                }
+                return null;
+              }).filter(pair => pair)
             } : {}),
 
             // Add prescription alignment per CLAUDE.md
