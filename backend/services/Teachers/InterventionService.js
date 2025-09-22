@@ -1160,7 +1160,7 @@ class InterventionService {
   }
   
   /**
-   * Create a new template question
+   * Create a new template question with duplicate prevention
    * @param {Object} templateData - The template data
    * @returns {Promise<Object>} - The created template
    */
@@ -1171,12 +1171,68 @@ class InterventionService {
       // Ensure the category is properly normalized
       templateData.category = this.normalizeCategoryName(templateData.category);
       
+      // DUPLICATE PREVENTION: Check if template already exists
+      let duplicateCheckQuery = {
+        category: templateData.category,
+        questionType: templateData.questionType,
+        isActive: true
+      };
+
+      // Category-specific duplicate checks based on actual content, not just question text
+      if (templateData.category === 'Decoding') {
+        // For Decoding, check by the actual word AND the choices/distractors
+        if (templateData.correctSequence && templateData.correctSequence.length > 0) {
+          duplicateCheckQuery.correctSequence = templateData.correctSequence;
+        }
+        
+        if (templateData.questionType === 'complete_word_identification') {
+          // For Type A, include dragElements (the letter choices) in duplicate check
+          if (templateData.dragElements && templateData.dragElements.length > 0) {
+            // Sort the dragElements to ensure consistent comparison regardless of order
+            const sortedDragElements = [...templateData.dragElements].sort();
+            duplicateCheckQuery.dragElements = sortedDragElements;
+          }
+        } else if (templateData.questionType === 'fill_missing_letter') {
+          // For Type B, include both displaySequence AND dragElements (the letter choices)
+          if (templateData.displaySequence && templateData.displaySequence.length > 0) {
+            duplicateCheckQuery.displaySequence = templateData.displaySequence;
+          }
+          if (templateData.dragElements && templateData.dragElements.length > 0) {
+            // Sort the dragElements to ensure consistent comparison
+            const sortedDragElements = [...templateData.dragElements].sort();
+            duplicateCheckQuery.dragElements = sortedDragElements;
+          }
+        }
+      } else {
+        // For non-Decoding categories, include questionText in duplicate check
+        duplicateCheckQuery.questionText = templateData.questionText;
+        
+        if (templateData.category === 'Alphabet Knowledge' && templateData.questionValue) {
+          duplicateCheckQuery.questionValue = templateData.questionValue;
+        } else if (templateData.category === 'Phonological Awareness' && templateData.questionSet?.audioTexts) {
+          duplicateCheckQuery['questionSet.audioTexts'] = { $all: templateData.questionSet.audioTexts };
+        } else if (templateData.category === 'Word Recognition' && templateData.correctAnswer) {
+          duplicateCheckQuery.correctAnswer = templateData.correctAnswer;
+        }
+      }
+
+      // Check for existing duplicate template
+      const existingTemplate = await mongoose.connection.db
+        .collection('templates_questions')
+        .findOne(duplicateCheckQuery);
+
+      if (existingTemplate) {
+        console.log(`[DEBUG] ⚠️ Template already exists - returning existing template: ${existingTemplate._id}`);
+        console.log(`[DEBUG] Duplicate found for: "${templateData.questionText}" in category: ${templateData.category}`);
+        return existingTemplate;
+      }
+      
       // Set default values for required fields if not provided
       if (!templateData.isActive) templateData.isActive = true;
       if (!templateData.createdAt) templateData.createdAt = new Date();
       if (!templateData.updatedAt) templateData.updatedAt = new Date();
       
-      // Insert directly into the collection
+      // Insert the new template (no duplicate found)
       const result = await mongoose.connection.db
         .collection('templates_questions')
         .insertOne(templateData);
@@ -1185,7 +1241,7 @@ class InterventionService {
         throw new Error('Failed to insert template question');
       }
       
-      console.log(`[DEBUG] Successfully created template question with ID: ${result.insertedId}`);
+      console.log(`[DEBUG] ✅ Successfully created NEW template question with ID: ${result.insertedId}`);
       
       return { ...templateData, _id: result.insertedId };
     } catch (error) {

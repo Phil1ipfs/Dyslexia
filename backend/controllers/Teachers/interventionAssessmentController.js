@@ -101,9 +101,31 @@ class InterventionAssessmentController {
               } else if (interventionData.category === 'Phonological Awareness' && question.questionSet?.audioTexts) {
                 // Check audio text arrays for exact match (order-independent)
                 duplicateCheckQuery['questionSet.audioTexts'] = { $all: question.questionSet.audioTexts };
-              } else if (interventionData.category === 'Decoding' && question.correctSequence) {
-                // Check correct sequence for decoding questions
-                duplicateCheckQuery.correctSequence = question.correctSequence;
+              } else if (interventionData.category === 'Decoding') {
+                // For Decoding, check by actual word content AND choices/distractors
+                if (question.correctSequence) {
+                  duplicateCheckQuery.correctSequence = question.correctSequence;
+                }
+                
+                if (question.questionType === 'complete_word_identification') {
+                  // For Type A, include dragElements (letter choices) in duplicate check
+                  if (question.dragElements && question.dragElements.length > 0) {
+                    const sortedDragElements = [...question.dragElements].sort();
+                    duplicateCheckQuery.dragElements = sortedDragElements;
+                  }
+                } else if (question.questionType === 'fill_missing_letter') {
+                  // For Type B, include both displaySequence AND dragElements
+                  if (question.displaySequence) {
+                    duplicateCheckQuery.displaySequence = question.displaySequence;
+                  }
+                  if (question.dragElements && question.dragElements.length > 0) {
+                    const sortedDragElements = [...question.dragElements].sort();
+                    duplicateCheckQuery.dragElements = sortedDragElements;
+                  }
+                }
+                
+                // Remove questionText from Decoding duplicate check since both types use same text
+                delete duplicateCheckQuery.questionText;
               } else if (interventionData.category === 'Word Recognition' && question.correctAnswer) {
                 // Check correct answer for word recognition
                 duplicateCheckQuery.correctAnswer = question.correctAnswer;

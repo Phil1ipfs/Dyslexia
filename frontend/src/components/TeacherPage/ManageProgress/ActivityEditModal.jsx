@@ -61,7 +61,8 @@ import {
   FaBookOpen,
   FaUpload,
   FaImage,
-  FaVolumeUp
+  FaVolumeUp,
+  FaLock
 } from 'react-icons/fa';
 import api from '../../../services/Teachers/api';
 import { toast } from '../../../utils/toastHelper';
@@ -2156,11 +2157,51 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         let templateData = null; // Declare at loop level for proper scope
 
         try {
-          // Check for duplicate templates based on questionText and category
-          const isDuplicate = existingTemplates.some(template =>
-            template.questionText === pair.questionText &&
-            template.category === category
-          );
+          // Check for duplicate templates based on content, not just question text
+          let isDuplicate = false;
+          
+          if (normCategory === 'decoding') {
+            // For Decoding, check by actual word content AND choices/distractors
+            isDuplicate = existingTemplates.some(template => {
+              if (template.category !== category || template.questionType !== pair.questionType) return false;
+              
+              // Check by correctSequence (the actual word being decoded)
+              if (pair.correctSequence && template.correctSequence) {
+                const pairWord = Array.isArray(pair.correctSequence) ? pair.correctSequence.join('') : pair.correctSequence;
+                const templateWord = Array.isArray(template.correctSequence) ? template.correctSequence.join('') : template.correctSequence;
+                
+                if (pairWord !== templateWord) return false;
+                
+                // Same word, now check the choices/distractors
+                if (pair.questionType === 'complete_word_identification') {
+                  // For Type A, compare dragElements (letter choices)
+                  if (pair.dragElements && template.dragElements) {
+                    const pairChoices = [...pair.dragElements].sort();
+                    const templateChoices = [...template.dragElements].sort();
+                    return JSON.stringify(pairChoices) === JSON.stringify(templateChoices);
+                  }
+                } else if (pair.questionType === 'fill_missing_letter') {
+                  // For Type B, compare both displaySequence and dragElements
+                  const displayMatch = JSON.stringify(pair.displaySequence) === JSON.stringify(template.displaySequence);
+                  if (!displayMatch) return false;
+                  
+                  if (pair.dragElements && template.dragElements) {
+                    const pairChoices = [...pair.dragElements].sort();
+                    const templateChoices = [...template.dragElements].sort();
+                    return JSON.stringify(pairChoices) === JSON.stringify(templateChoices);
+                  }
+                }
+              }
+              
+              return false;
+            });
+          } else {
+            // For other categories, use questionText + category as before
+            isDuplicate = existingTemplates.some(template =>
+              template.questionText === pair.questionText &&
+              template.category === category
+            );
+          }
 
           if (isDuplicate) {
             console.log(`[TEMPLATE AUTO-SAVE] ⚠️ Skipping duplicate template: "${pair.questionText}" already exists`);
@@ -6012,12 +6053,13 @@ const renderDecodingStep = () => {
             >
               <option value="">-- Create Custom Question --</option>
               {safe(questionTemplates)
-                .filter(template =>
-                  template.category === 'Decoding' &&
-                  (!pair.questionType || template.questionType === pair.questionType ||
-                   (pair.questionType === 'complete_word_identification' && template.questionType === 'complete_word_identification') ||
-                   (pair.questionType === 'fill_missing_letter' && template.questionType === 'fill_missing_letter'))
-                )
+                .filter(template => {
+                  // Only show Decoding templates
+                  if (template.category !== 'Decoding') return false;
+                  
+                  // Always show ALL Decoding templates regardless of question type
+                  return true;
+                })
                 .map((template) => {
                   // Extract the word being decoded for better display
                   let wordBeingDecoded = '';
@@ -6071,7 +6113,14 @@ const renderDecodingStep = () => {
 
           {/* Image Upload Section */}
           <div className="decoding-image-section">
-            <h5>Upload Image of the Word <span className="required">*</span></h5>
+            <h5>
+              Upload Image of the Word <span className="required">*</span>
+              {pair.sourceTemplateId && (
+                <span style={{color: '#f59e0b', fontSize: '12px', fontWeight: 'normal', marginLeft: '8px'}}>
+                  (From Template - Cannot Delete)
+                </span>
+              )}
+            </h5>
             <div className="decoding-image-upload">
               {pair.questionImage ? (
                 <div className="decoding-image-preview">
@@ -6080,28 +6129,42 @@ const renderDecodingStep = () => {
                     alt="Question"
                     className="decoding-question-image"
                   />
-                  <button
-                    type="button"
-                    onClick={() => updateQuestionChoicePair(pair.id, 'questionImage', '')}
-                    className="decoding-remove-image-btn"
-                    title="Remove this image"
-                  >
-                    <FaTimes />
-                  </button>
+                  {!pair.sourceTemplateId && (
+                    <button
+                      type="button"
+                      onClick={() => updateQuestionChoicePair(pair.id, 'questionImage', '')}
+                      className="decoding-remove-image-btn"
+                      title="Remove this image"
+                    >
+                      <FaTimes />
+                    </button>
+                  )}
+                  {pair.sourceTemplateId && (
+                    <div className="template-lock-indicator" title="Image from template - cannot be deleted">
+                      <FaLock style={{color: '#f59e0b', fontSize: '16px'}} />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div
-                  className="decoding-image-upload-area"
-                  onClick={() => fileInputRefs.current[pair.id]?.click()}
+                  className={`decoding-image-upload-area ${pair.sourceTemplateId ? 'disabled' : ''}`}
+                  onClick={() => !pair.sourceTemplateId && fileInputRefs.current[pair.id]?.click()}
+                  style={{
+                    cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer',
+                    opacity: pair.sourceTemplateId ? 0.6 : 1
+                  }}
                 >
                   <FaUpload />
-                  <p>Click to upload image</p>
+                  <p>{pair.sourceTemplateId ? 'Template image will appear here' : 'Click to upload image'}</p>
                   <small>JPG, PNG files supported • Clear images work best for students</small>
                 </div>
               )}
             </div>
             <small style={{display: 'block', marginTop: '8px', color: '#6b7280', fontSize: '14px', fontStyle: 'italic'}}>
-              Tip: Use clear, simple images that clearly show what the word represents (e.g., a yellow object for "YELO")
+              {pair.sourceTemplateId 
+                ? 'When using a template, the image is pre-selected and cannot be changed. You can only modify the letter choices/distractors.'
+                : 'Tip: Use clear, simple images that clearly show what the word represents (e.g., a yellow object for "YELO")'
+              }
             </small>
 
             {/* Hidden file input for Decoding image upload */}
@@ -6137,11 +6200,20 @@ const renderDecodingStep = () => {
             <div className="decoding-complete-word-section">
               <h5>Type A: Complete Word Setup</h5>
               <div className="decoding-word-input">
-                <label>What word does the image show? <span className="required">*</span></label>
+                <label>
+                  What word does the image show? <span className="required">*</span>
+                  {pair.sourceTemplateId && (
+                    <span style={{color: '#f59e0b', fontSize: '12px', fontWeight: 'normal', marginLeft: '8px'}}>
+                      (From Template - Cannot Edit)
+                    </span>
+                  )}
+                </label>
                 <input
                   type="text"
                   value={pair.correctWord || ''}
                   onChange={(e) => {
+                    if (pair.sourceTemplateId) return; // Prevent editing when using template
+                    
                     const { cleanValue, error } = validateAndSanitizeWordInput(e.target.value);
 
                     // Set validation error if any
@@ -6156,8 +6228,14 @@ const renderDecodingStep = () => {
                       blankPosition: null
                     });
                   }}
-                  placeholder="Type the word here"
-                  className={`decoding-input ${getInputValidationError(pair.id, 'correctWord') ? 'error' : ''}`}
+                  placeholder={pair.sourceTemplateId ? "Word is set from template" : "Type the word here"}
+                  className={`decoding-input ${getInputValidationError(pair.id, 'correctWord') ? 'error' : ''} ${pair.sourceTemplateId ? 'template-locked' : ''}`}
+                  disabled={pair.sourceTemplateId}
+                  style={{
+                    backgroundColor: pair.sourceTemplateId ? '#f9fafb' : 'white',
+                    cursor: pair.sourceTemplateId ? 'not-allowed' : 'text',
+                    opacity: pair.sourceTemplateId ? 0.7 : 1
+                  }}
                 />
                 {getInputValidationError(pair.id, 'correctWord') && (
                   <div className="decoding-error-message">
@@ -6165,7 +6243,10 @@ const renderDecodingStep = () => {
                   </div>
                 )}
                 <small style={{display: 'block', marginTop: '8px', color: '#6b7280', fontSize: '14px', fontStyle: 'italic'}}>
-                  Type any word and only the first letter will be capitalized (e.g., "yelo" becomes "Yelo")! Numbers and symbols are automatically removed.
+                  {pair.sourceTemplateId 
+                    ? 'When using a template, the word is pre-set and cannot be changed. You can only modify the letter choices below.'
+                    : 'Type any word and only the first letter will be capitalized (e.g., "yelo" becomes "Yelo")! Numbers and symbols are automatically removed.'
+                  }
                 </small>
               </div>
 
@@ -6173,6 +6254,21 @@ const renderDecodingStep = () => {
                 <>
                   <div className="decoding-auto-generated">
                     <h6>Letter Options Configuration</h6>
+                    {pair.sourceTemplateId && (
+                      <div style={{
+                        backgroundColor: '#fef3c7',
+                        border: '1px solid #f59e0b',
+                        borderRadius: '6px',
+                        padding: '12px',
+                        marginBottom: '16px',
+                        fontSize: '14px'
+                      }}>
+                        <strong style={{color: '#92400e'}}>🔒 Template Mode:</strong>
+                        <span style={{color: '#92400e', marginLeft: '8px'}}>
+                          Word and image are locked. You can only add/remove letter choices below.
+                        </span>
+                      </div>
+                    )}
                     
                     {/* Quick Actions */}
                     <div className="quick-actions">
@@ -6351,11 +6447,20 @@ const renderDecodingStep = () => {
             <div className="decoding-fill-missing-section">
               <h5>Type B: Fill Missing Letter Setup</h5>
               <div className="decoding-word-input">
-                <label>What word does the image show? <span className="required">*</span></label>
+                <label>
+                  What word does the image show? <span className="required">*</span>
+                  {pair.sourceTemplateId && (
+                    <span style={{color: '#f59e0b', fontSize: '12px', fontWeight: 'normal', marginLeft: '8px'}}>
+                      (From Template - Cannot Edit)
+                    </span>
+                  )}
+                </label>
                 <input
                   type="text"
                   value={pair.completeWord || ''}
                   onChange={(e) => {
+                    if (pair.sourceTemplateId) return; // Prevent editing when using template
+                    
                     const { cleanValue, error } = validateAndSanitizeWordInput(e.target.value);
 
                     // Set validation error if any
@@ -6371,8 +6476,14 @@ const renderDecodingStep = () => {
                       dragElements: generateChoiceLetters(cleanValue[pair.blankPosition || 0])
                     });
                   }}
-                  placeholder="Type the word here"
-                  className={`decoding-input ${getInputValidationError(pair.id, 'completeWord') ? 'error' : ''}`}
+                  placeholder={pair.sourceTemplateId ? "Word is set from template" : "Type the word here"}
+                  className={`decoding-input ${getInputValidationError(pair.id, 'completeWord') ? 'error' : ''} ${pair.sourceTemplateId ? 'template-locked' : ''}`}
+                  disabled={pair.sourceTemplateId}
+                  style={{
+                    backgroundColor: pair.sourceTemplateId ? '#f9fafb' : 'white',
+                    cursor: pair.sourceTemplateId ? 'not-allowed' : 'text',
+                    opacity: pair.sourceTemplateId ? 0.7 : 1
+                  }}
                 />
                 {getInputValidationError(pair.id, 'completeWord') && (
                   <div className="decoding-error-message">
@@ -6380,20 +6491,32 @@ const renderDecodingStep = () => {
                   </div>
                 )}
                 <small style={{display: 'block', marginTop: '8px', color: '#6b7280', fontSize: '14px', fontStyle: 'italic'}}>
-                  Type any word and only the first letter will be capitalized (e.g., "yelo" becomes "Yelo")! Numbers and symbols are automatically removed.
+                  {pair.sourceTemplateId 
+                    ? 'When using a template, the word is pre-set and cannot be changed. You can only modify the letter choices below.'
+                    : 'Type any word and only the first letter will be capitalized (e.g., "yelo" becomes "Yelo")! Numbers and symbols are automatically removed.'
+                  }
                 </small>
               </div>
 
               {pair.completeWord && (
                 <>
                   <div className="decoding-blank-position">
-                    <label>Click on the letter you want to make blank <span className="required">*</span></label>
-                    <div className="position-selector">
+                    <label>
+                      Click on the letter you want to make blank <span className="required">*</span>
+                      {pair.sourceTemplateId && (
+                        <span style={{color: '#f59e0b', fontSize: '12px', fontWeight: 'normal', marginLeft: '8px'}}>
+                          (From Template - Cannot Change)
+                        </span>
+                      )}
+                    </label>
+                    <div className={`position-selector ${pair.sourceTemplateId ? 'template-locked' : ''}`}>
                       {pair.completeWord.split('').map((letter, idx) => (
                         <div
                           key={idx}
-                          className={`position-option ${(pair.blankPosition || 0) === idx ? 'selected' : ''}`}
+                          className={`position-option ${(pair.blankPosition || 0) === idx ? 'selected' : ''} ${pair.sourceTemplateId ? 'disabled' : ''}`}
                           onClick={() => {
+                            if (pair.sourceTemplateId) return; // Prevent changes when using template
+                            
                             updateQuestionChoicePair(pair.id, {
                               blankPosition: idx,
                               displaySequence: pair.completeWord.split('').map((l, i) => i === idx ? '_' : l),
@@ -6401,7 +6524,11 @@ const renderDecodingStep = () => {
                               dragElements: generateChoiceLetters(pair.completeWord[idx])
                             });
                           }}
-                          title={`Click to make "${letter}" the missing letter`}
+                          title={pair.sourceTemplateId ? "Position is set from template" : `Click to make "${letter}" the missing letter`}
+                          style={{
+                            cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer',
+                            opacity: pair.sourceTemplateId ? 0.6 : 1
+                          }}
                         >
                           <span className="position-number">#{idx + 1}</span>
                           <span className="position-letter">{letter}</span>
@@ -6409,12 +6536,30 @@ const renderDecodingStep = () => {
                       ))}
                     </div>
                     <small style={{display: 'block', marginTop: '12px', color: '#6b7280', fontSize: '14px', fontStyle: 'italic'}}>
-                      Students will need to fill in the letter you select. The selected position will show as a blank "_" in the question.
+                      {pair.sourceTemplateId 
+                        ? 'When using a template, the blank position is pre-set and cannot be changed. You can only modify the letter choices below.'
+                        : 'Students will need to fill in the letter you select. The selected position will show as a blank "_" in the question.'
+                      }
                     </small>
                   </div>
 
                   <div className="decoding-auto-generated">
                     <h6>Letter Options Configuration</h6>
+                    {pair.sourceTemplateId && (
+                      <div style={{
+                        backgroundColor: '#fef3c7',
+                        border: '1px solid #f59e0b',
+                        borderRadius: '6px',
+                        padding: '12px',
+                        marginBottom: '16px',
+                        fontSize: '14px'
+                      }}>
+                        <strong style={{color: '#92400e'}}>🔒 Template Mode:</strong>
+                        <span style={{color: '#92400e', marginLeft: '8px'}}>
+                          Word, blank position, and image are locked. You can only add/remove letter choices below.
+                        </span>
+                      </div>
+                    )}
                     
                     {/* Quick Actions */}
                     <div className="quick-actions">
