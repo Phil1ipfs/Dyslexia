@@ -946,7 +946,7 @@ class PrescriptionOnlyService {
               progressCriteria: 'Maintained 85%+ accuracy with skill transfer',
               researchBasis: 'Mastery learning and spaced practice principles'
             }],
-            intensityLevel: 'standard'
+            intensityLevel: 'moderate'
           }
         };
       } else {
@@ -977,7 +977,7 @@ class PrescriptionOnlyService {
                 progressCriteria: '75% accuracy on intervention assessment',
                 researchBasis: 'Systematic, explicit instruction principles'
               }],
-              intensityLevel: diagnosis.severityLevels[categoryName]?.level === 'severe' ? 'highly_intensive' : 'intensive',
+              intensityLevel: diagnosis.severityLevels[categoryName]?.level === 'severe' ? 'highly_intensive' : 'high',
               sessionStructure: {
                 optimalLength: '15-20 minutes',
                 sessionComponents: interventionDetails.teachingApproach || ['Systematic instruction', 'Guided practice'],

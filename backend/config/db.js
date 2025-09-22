@@ -11,7 +11,7 @@ const mainConnection = mongoose.createConnection(process.env.MONGO_URI, {
 const testConnection = mongoose.createConnection(process.env.MONGO_URI, {
   dbName: 'test',
   useNewUrlParser: true,
-  useUnifiedTopology
+  useUnifiedTopology: true
 });
 
 const mobileConnection = mongoose.createConnection(process.env.MONGO_URI, {

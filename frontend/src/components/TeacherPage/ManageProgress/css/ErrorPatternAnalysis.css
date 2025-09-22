@@ -2856,6 +2856,10 @@
   background: #6366f1;
 }
 
+.epa-error-type-badge--decoding {
+  background: #059669;
+}
+
 /* Error Items Container - 3 Cards per Row */
 .epa-error-items {
   padding: 1rem;
@@ -3494,6 +3498,24 @@
 
 .epa-error-letter-badge--other {
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+}
+
+.epa-error-letter-badge--decoding {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(5, 150, 105, 0.3);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.epa-error-letter-badge--decoding:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(5, 150, 105, 0.4);
 }
 
 /* Sound Discrimination Error Specific Styles - Blue & White Theme */

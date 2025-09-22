@@ -2539,24 +2539,44 @@ const PrescriptiveAnalysis = ({
 
     // Transform database structure to match our display needs
     const transformedErrors = detailedErrorAnalysis.map(error => {
-      // Extract letter from errorPattern (e.g., "Vowel recognition difficulty with E" -> "E")
+      // Extract letter/pattern from errorPattern (e.g., "Vowel recognition difficulty with E" -> "E", "Sound blending difficulty with CVC patterns" -> "CVC patterns")
       const letterMatch = error.errorPattern?.match(/with (.+)$/);
-      const letter = letterMatch ? letterMatch[1] : 'Unknown';
+      let letter = letterMatch ? letterMatch[1] : null;
+      
+      // If no "with" pattern found, try to extract meaningful identifier from the error pattern
+      if (!letter) {
+        if (error.errorPattern?.includes('CVC')) {
+          letter = 'CVC patterns';
+        } else if (error.errorPattern?.includes('sound recognition')) {
+          letter = 'Sound recognition';
+        } else if (error.errorPattern?.includes('sound blending')) {
+          letter = 'Sound blending';
+        } else {
+          // Extract first meaningful word or phrase
+          const words = error.errorPattern?.split(' ').filter(word => 
+            word.length > 2 && 
+            !['difficulty', 'recognition', 'challenges', 'with'].includes(word.toLowerCase())
+          );
+          letter = words?.[0] || 'Pattern';
+        }
+      }
 
       // Determine if it's vowel, consonant, or sound discrimination based on errorPattern
       const isVowel = error.errorPattern?.toLowerCase().includes('vowel');
       const isConsonant = error.errorPattern?.toLowerCase().includes('consonant');
       const isSoundDiscrimination = error.errorPattern?.toLowerCase().includes('sound discrimination');
+      const isDecoding = error.errorPattern?.toLowerCase().includes('sound blending') || error.errorPattern?.toLowerCase().includes('cvc') || error.errorPattern?.toLowerCase().includes('sound recognition');
 
       return {
         ...error,
         letter: letter,
-        letterType: isVowel ? 'vowel' : (isConsonant ? 'consonant' : (isSoundDiscrimination ? 'sound' : 'other')),
+        letterType: isVowel ? 'vowel' : (isConsonant ? 'consonant' : (isSoundDiscrimination ? 'sound' : (isDecoding ? 'decoding' : 'other'))),
         specificError: error.errorPattern,
         cognitiveImplication: isVowel ?
           'Visual-auditory vowel processing difficulty' :
           (isConsonant ? 'Consonant-sound correspondence weakness' : 
-           (isSoundDiscrimination ? 'Auditory discrimination and working memory limitations' : 'General processing difficulty')),
+           (isSoundDiscrimination ? 'Auditory discrimination and working memory limitations' :
+            (isDecoding ? 'Sound blending and word recognition difficulties' : 'General processing difficulty'))),
         questionId: `Pattern Analysis` // Since we don't have specific questionId in this structure
       };
     });
@@ -2567,6 +2587,7 @@ const PrescriptiveAnalysis = ({
     const vowelErrors = transformedErrors.filter(error => error.letterType === 'vowel');
     const consonantErrors = transformedErrors.filter(error => error.letterType === 'consonant');
     const soundErrors = transformedErrors.filter(error => error.letterType === 'sound');
+    const decodingErrors = transformedErrors.filter(error => error.letterType === 'decoding');
     const otherErrors = transformedErrors.filter(error => error.letterType === 'other');
 
     return (
@@ -2663,6 +2684,52 @@ const PrescriptiveAnalysis = ({
                           <div className="epa-error-primary">
                             <span className="epa-error-description">{error.specificError}</span>
                             <span className="epa-error-question">Confusion Rate: {error.confusionRate}%</span>
+                          </div>
+                          <div className="epa-error-secondary">
+                            {error.errorPattern && (
+                              <div className="epa-error-pattern">
+                                <strong>Pattern:</strong> {error.errorPattern}
+                              </div>
+                            )}
+                            {error.cognitiveImplication && (
+                              <div className="epa-error-cognitive">
+                                <strong>Cognitive Issue:</strong> {error.cognitiveImplication}
+                              </div>
+                            )}
+                          </div>
+                          {error.interventionFocus && (
+                            <div className="epa-error-intervention">
+                              <strong>Intervention Focus:</strong> {error.interventionFocus}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Decoding Errors Section */}
+              {decodingErrors.length > 0 && (
+                <div className="epa-error-group">
+                  <div className="epa-error-group-header">
+                    <h5 className="epa-error-group-title">
+                      <span className="epa-error-type-badge epa-error-type-badge--decoding">Decoding Errors</span>
+                      Decoding Pattern Difficulties ({decodingErrors.length} errors)
+                    </h5>
+                  </div>
+                  <div className="epa-error-items">
+                    {decodingErrors.map((error, index) => (
+                      <div key={index} className="epa-error-item">
+                        <div className="epa-error-letter">
+                          <span className="epa-error-letter-badge epa-error-letter-badge--decoding">
+                            {error.letter}
+                          </span>
+                        </div>
+                        <div className="epa-error-details">
+                          <div className="epa-error-primary">
+                            <span className="epa-error-description">{error.specificError}</span>
+                            <span className="epa-error-question">Question: {error.questionId}</span>
                           </div>
                           <div className="epa-error-secondary">
                             {error.errorPattern && (
@@ -5316,17 +5383,39 @@ const PrescriptiveAnalysis = ({
               const isUnlocked = isCategoryUnlocked(categoryName, index);
               const latestAttempt = getLatestInterventionAttempt(category);
 
-              // ✅ FIX: Check if there's prescriptive analysis data for this category
+              // ✅ FIX: Check if category has been answered based on multiple data sources
               const hasPrescriptiveAnalysis = (() => {
-                if (!liveAnalyses || liveAnalyses.length === 0) return false;
+                // First check if there's prescriptive analysis data for this category
+                const hasPrescriptiveData = liveAnalyses && liveAnalyses.length > 0 && 
+                  liveAnalyses.some(analysis =>
+                    analysis?.skillMastery &&
+                    analysis.skillMastery[categoryName] &&
+                    analysis.skillMastery[categoryName].responseHistory &&
+                    analysis.skillMastery[categoryName].responseHistory.length > 0
+                  );
 
-                // Check if any prescriptive analysis contains skillMastery data for this category
-                return liveAnalyses.some(analysis =>
-                  analysis?.skillMastery &&
-                  analysis.skillMastery[categoryName] &&
-                  analysis.skillMastery[categoryName].responseHistory &&
-                  analysis.skillMastery[categoryName].responseHistory.length > 0
-                );
+                // Also check if category has been completed based on category data
+                const hasCategoryData = (() => {
+                  // Check if category has been completed
+                  if (category.isCompleted) return true;
+                  
+                  // Check if there are answered questions
+                  if (categoryName === 'Phonological Awareness') {
+                    return (category.correctMatches > 0 || category.totalPossibleMatches > 0);
+                  } else {
+                    return (category.correctAnswers > 0 || category.totalQuestions > 0);
+                  }
+                })();
+
+                // Check if category has any score (indicates attempt)
+                const hasScore = category.score !== undefined && category.score !== null && category.score > 0;
+                
+                // Check if category has intervention history (indicates attempt)
+                const hasInterventionHistory = category.interventionHistory && 
+                  Array.isArray(category.interventionHistory) && 
+                  category.interventionHistory.length > 0;
+
+                return hasPrescriptiveData || hasCategoryData || hasScore || hasInterventionHistory;
               })();
 
               // Determine status and styling based on dynamic progression
@@ -5335,11 +5424,6 @@ const PrescriptiveAnalysis = ({
               if (!isUnlocked) {
                 statusLabel = "BLOCKED";
                 statusClass = "blocked";
-                isClickable = false;
-              } else if (!hasPrescriptiveAnalysis) {
-                // ✅ FIX: Block clicking for categories without prescriptive analysis
-                statusLabel = "NOT ANSWERED YET";
-                statusClass = "not-answered";
                 isClickable = false;
               } else if (progressionStatus.status === 'passed') {
                 // Show different labels based on how the category passed
@@ -5352,13 +5436,14 @@ const PrescriptiveAnalysis = ({
               } else if (progressionStatus.status === 'needs_revision') {
                 statusLabel = "NEEDS REVISION";
                 statusClass = "needs-revision";
-              } else if (!isCompleted) {
-                // If category hasn't been completed yet, show "NOT ANSWERED YET"
-                statusLabel = "NOT ANSWERED YET";
-                statusClass = "not-started";
               } else if (progressionStatus.status === 'needs_intervention') {
                 statusLabel = "NEEDS INTERVENTION";
                 statusClass = "needs-attention";
+              } else if (!hasPrescriptiveAnalysis) {
+                // ✅ FIX: Only show "NOT ANSWERED YET" if no evidence of any attempt
+                statusLabel = "NOT ANSWERED YET";
+                statusClass = "not-answered";
+                isClickable = false;
               } else if (isCompleted && !isPassed) {
                 statusLabel = "FAILED";
                 statusClass = "failed";

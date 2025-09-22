@@ -1764,7 +1764,7 @@ class InterventionResultsAnalysisService {
 
   static generateNextInterventionPrescription(basicMetrics, interventionEffectiveness, category) {
     const recommendedAction = basicMetrics.improvement > 10 ? 'failed_needs_revision' : 'failed_needs_escalation';
-    const intensityLevel = basicMetrics.score < 50 ? 'intensive' : 'moderate';
+    const intensityLevel = basicMetrics.score < 50 ? 'high' : 'moderate';
 
     return {
       recommendedAction: recommendedAction,

@@ -509,8 +509,8 @@ const prescriptiveAnalysisSchema = new mongoose.Schema({
         specificTechniques: [interventionTechniqueSchema],
         intensityLevel: {
           type: String,
-          enum: ['standard', 'intensive', 'highly_intensive'],
-          default: 'standard'
+          enum: ['low', 'moderate', 'high', 'highly_intensive'],
+          default: 'moderate'
         },
         sessionStructure: {
           optimalLength: { type: String },

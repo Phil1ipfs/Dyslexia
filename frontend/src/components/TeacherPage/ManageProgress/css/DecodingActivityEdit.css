@@ -510,6 +510,13 @@
   border-color: #f59e0b;
 }
 
+/* Correct letter (fixed, no delete) */
+.letter-chip-container.correct-letter {
+  background: #dcfce7;
+  border-color: #22c55e;
+  border-width: 2px;
+}
+
 /* Correct sequence display (read-only) */
 .sequence-letter-display {
   display: flex;
@@ -576,6 +583,14 @@
   box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
 }
 
+/* Correct letter input (disabled) */
+.correct-letter-input {
+  background: #dcfce7 !important;
+  border-color: #22c55e !important;
+  color: #15803d !important;
+  cursor: not-allowed;
+}
+
 .remove-letter-btn,
 .remove-sequence-btn {
   width: 20px;
@@ -634,6 +649,20 @@
   border-radius: 12px;
   padding: 20px;
   margin-top: 24px;
+  position: relative;
+  isolation: isolate;
+  contain: layout style;
+}
+
+/* Ensure each question pair has isolated preview */
+.decoding-question-card .decoding-student-preview {
+  margin-bottom: 24px;
+}
+
+/* Prevent preview interference between questions */
+.decoding-student-preview + .decoding-student-preview {
+  margin-top: 32px;
+  border-top: 3px solid #f59e0b;
 }
 
 .decoding-student-preview h6 {
@@ -658,6 +687,10 @@
   padding: 20px;
   border: 1px solid #f59e0b;
   text-transform: none !important;
+  position: relative;
+  isolation: isolate;
+  contain: layout style;
+  overflow: hidden;
 }
 
 .preview-image {
@@ -872,6 +905,105 @@
   .choice-letters-display {
     justify-content: center;
   }
+}
+
+/* ===== REVIEW STEP PREVIEW STYLES ===== */
+.literexia-decoding-summary {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 2px solid #0ea5e9;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 16px;
+}
+
+.literexia-type-a-summary,
+.literexia-type-b-summary {
+  margin: 16px 0;
+}
+
+.literexia-type-a-summary > p,
+.literexia-type-b-summary > p {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0c4a6e;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.literexia-type-a-summary > p::before,
+.literexia-type-b-summary > p::before {
+  content: "•";
+  font-size: 18px;
+  color: #0ea5e9;
+}
+
+.literexia-decoding-details {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #0ea5e9;
+}
+
+.literexia-target-word,
+.literexia-drag-elements,
+.literexia-complete-word,
+.literexia-display-sequence,
+.literexia-missing-letter,
+.literexia-letter-choices,
+.literexia-activity-description {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #e0f2fe;
+}
+
+.literexia-activity-description {
+  border-bottom: none;
+  padding-top: 12px;
+  margin-top: 8px;
+  border-top: 2px solid #e0f2fe;
+}
+
+.literexia-word-label,
+.literexia-elements-label,
+.literexia-display-label,
+.literexia-missing-label,
+.literexia-choices-label,
+.literexia-description-label {
+  font-weight: 600;
+  color: #374151;
+  flex-shrink: 0;
+  min-width: 120px;
+}
+
+.literexia-word-value,
+.literexia-elements-value,
+.literexia-display-value,
+.literexia-missing-value,
+.literexia-choices-value {
+  font-weight: 700;
+  color: #0c4a6e;
+  background: #f0f9ff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #0ea5e9;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+}
+
+.literexia-description-text {
+  font-weight: 500;
+  color: #059669;
+  font-style: italic;
+  background: #f0fdf4;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #22c55e;
+  flex: 1;
+  margin-left: 12px;
 }
 
 /* ===== ANIMATION EFFECTS ===== */

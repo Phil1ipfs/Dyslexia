@@ -1580,6 +1580,29 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   };
 
   /**
+   * Remove duplicate letters from choice letters array
+   */
+  const removeDuplicateLetters = (letters) => {
+    const seen = new Set();
+    const uniqueLetters = [];
+    
+    letters.forEach((letter) => {
+      if (letter && letter.trim() !== '') {
+        const normalizedLetter = letter.toLowerCase();
+        if (!seen.has(normalizedLetter)) {
+          seen.add(normalizedLetter);
+          uniqueLetters.push(letter);
+        }
+      } else if (letter === '') {
+        // Keep empty strings for new input fields
+        uniqueLetters.push(letter);
+      }
+    });
+    
+    return uniqueLetters;
+  };
+
+  /**
    * Generate drag elements for Type A (Complete Word) questions
    * Includes correct letters plus exactly 2 distractors in randomized order
    */
@@ -2195,8 +2218,67 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               difficultyLevel: "medium",
               isActive: true
             };
-          } else if (normCategory === 'decoding' || normCategory === 'word_recognition') {
-            // Decoding and Word Recognition template structure (choice-based)
+          } else if (normCategory === 'decoding') {
+            // Decoding template structure (matching main_assessment structure)
+            console.log(`[TEMPLATE AUTO-SAVE] Creating Decoding template for question type: ${pair.questionType}`);
+            console.log(`[TEMPLATE AUTO-SAVE] Decoding question data:`, {
+              questionType: pair.questionType,
+              dragElements: pair.dragElements,
+              correctSequence: pair.correctSequence,
+              displaySequence: pair.displaySequence,
+              blankPosition: pair.blankPosition
+            });
+
+            // Determine question type based on structure or explicit questionType
+            let questionType = pair.questionType || 'complete_word_identification';
+
+            // Auto-detect question type if not explicitly set
+            if (!pair.questionType) {
+              if (pair.displaySequence && pair.blankPosition !== undefined) {
+                questionType = 'fill_missing_letter';
+              } else {
+                questionType = 'complete_word_identification';
+              }
+            }
+
+            templateData = {
+              category: category,
+              questionType: questionType,
+              questionText: pair.questionText,
+              questionImage: pair.questionImage,
+              targetSkills: ["decoding", "custom_teacher_created"],
+              difficultyLevel: "medium",
+              isActive: true
+            };
+
+            // Add type-specific fields based on question type
+            if (questionType === 'complete_word_identification') {
+              // Type A: "Tukuyin ang nasa larawan?" - Complete word identification
+              templateData.dragElements = pair.dragElements || [];
+              templateData.correctSequence = pair.correctSequence || [];
+              templateData.displaySequence = null;
+              templateData.blankPosition = null;
+
+              console.log(`[TEMPLATE AUTO-SAVE] Type A template data:`, {
+                dragElements: templateData.dragElements,
+                correctSequence: templateData.correctSequence
+              });
+            } else if (questionType === 'fill_missing_letter') {
+              // Type B: "Buoin ang salita" - Fill in missing letter
+              templateData.dragElements = pair.dragElements || [];
+              templateData.correctSequence = pair.correctSequence || [];
+              templateData.displaySequence = pair.displaySequence || [];
+              templateData.blankPosition = pair.blankPosition !== undefined ? pair.blankPosition : 0;
+
+              console.log(`[TEMPLATE AUTO-SAVE] Type B template data:`, {
+                dragElements: templateData.dragElements,
+                correctSequence: templateData.correctSequence,
+                displaySequence: templateData.displaySequence,
+                blankPosition: templateData.blankPosition
+              });
+            }
+          } else if (normCategory === 'word_recognition') {
+            // Word Recognition template structure (choice-based)
             const choices = pair.choices || [];
             const validChoices = choices.filter(choice => choice && choice.optionText);
 
@@ -2210,7 +2292,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                 optionText: choice.optionText,
                 isCorrect: choice.isCorrect
               })),
-              targetSkills: [normCategory.replace('_', ' '), "custom_teacher_created"],
+              targetSkills: ["word recognition", "custom_teacher_created"],
               difficultyLevel: "medium",
               isActive: true
             };
@@ -2684,7 +2766,14 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           interventionPrescription: {
             primaryApproach: mongoDbAnalysis.researchBasedPrescriptions?.[category]?.interventionPrescription?.primaryApproach || "multisensory_structured",
             recommendedQuestionCount: selectedSentenceTemplate.sentenceQuestions?.length || 1,
-            intensityLevel: mongoDbAnalysis.researchBasedPrescriptions?.[category]?.interventionPrescription?.intensityLevel || "intensive",
+            intensityLevel: (() => {
+              const rawIntensity = mongoDbAnalysis.researchBasedPrescriptions?.[category]?.interventionPrescription?.intensityLevel;
+              // Normalize old enum values to new valid values
+              if (rawIntensity === "standard") return "moderate";
+              if (rawIntensity === "intensive") return "high";
+              if (["low", "moderate", "high", "highly_intensive"].includes(rawIntensity)) return rawIntensity;
+              return "highly_intensive"; // Default
+            })(),
             sessionStructure: mongoDbAnalysis.researchBasedPrescriptions?.[category]?.interventionPrescription?.sessionStructure || {
               optimalLength: "20-30 minutes",
               breakPattern: "Every 10 minutes"
@@ -2702,7 +2791,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           interventionPrescription: {
             primaryApproach: "multisensory_structured",
             recommendedQuestionCount: selectedSentenceTemplate.sentenceQuestions?.length || 1,
-            intensityLevel: "intensive",
+            intensityLevel: "highly_intensive",
             sessionStructure: {
               optimalLength: "20-30 minutes",
               breakPattern: "Every 10 minutes"
@@ -2848,7 +2937,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           fixedQuestions: selectedSentenceTemplate.sentenceQuestions?.length || 1,
           allowSkip: false,
           showProgress: true,
-          immediateFeeback: false
+          immediateFeedback: false
         },
 
         // Question Count Calculation
@@ -2963,10 +3052,19 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             recommendedQuestionCount: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.recommendedQuestionCount ||
                                     realAnalysisData.interventionPlan?.specificFocus?.[category]?.questionDistribution?.total ||
                                     questionChoicePairs.length,
-            intensityLevel: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.intensityLevel ||
-                          realAnalysisData.interventionPlan?.intensity ||
-                          (realAnalysisData.skillMastery?.[category]?.score < 40 ? "highly_intensive" :
-                           realAnalysisData.skillMastery?.[category]?.score < 60 ? "intensive" : "standard"),
+            intensityLevel: (() => {
+              const rawIntensity = realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.intensityLevel ||
+                                 realAnalysisData.interventionPlan?.intensity;
+
+              // Normalize old enum values to new valid values
+              if (rawIntensity === "standard") return "moderate";
+              if (rawIntensity === "intensive") return "high";
+              if (["low", "moderate", "high", "highly_intensive"].includes(rawIntensity)) return rawIntensity;
+
+              // Fallback based on skill mastery score if no valid intensity found
+              const score = realAnalysisData.skillMastery?.[category]?.score || 0;
+              return score < 40 ? "highly_intensive" : score < 60 ? "high" : "moderate";
+            })(),
             sessionStructure: realAnalysisData.researchBasedPrescriptions?.[category]?.interventionPrescription?.sessionStructure || {
               optimalLength: realAnalysisData.interventionPlan?.specificFocus?.[category]?.sessionLength || "15-20 minutes",
               breakPattern: "Every 10 minutes"
@@ -3053,7 +3151,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           interventionPrescription: {
             primaryApproach: "multisensory_structured",
             recommendedQuestionCount: questionChoicePairs.length,
-            intensityLevel: "standard",
+            intensityLevel: "moderate", // Valid enum value
             sessionStructure: {
               optimalLength: "15-20 minutes",
               breakPattern: "Every 10 minutes"
@@ -3083,6 +3181,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           const normCategory = normalizeCategory(category);
           const isAlphabetKnowledge = normCategory === 'alphabet_knowledge';
           const isPhonologicalAwareness = normCategory === 'phonological_awareness';
+          const isDecoding = normCategory === 'decoding';
 
           // Get full choice objects for the selected choices
           let selectedChoices = [];
@@ -3115,11 +3214,12 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             selectedChoices = getChoicesByIds(pair.choiceIds);
           }
 
-          // Validate selectedChoices is not empty (except for Phonological Awareness which is validated above)
-          if (!isPhonologicalAwareness && (!selectedChoices || selectedChoices.length === 0)) {
+          // Validate selectedChoices is not empty (except for Phonological Awareness and Decoding which have different structures)
+          if (!isPhonologicalAwareness && !isDecoding && (!selectedChoices || selectedChoices.length === 0)) {
             console.error(`[SAVE] ❌ Question ${index} has no choices:`, {
               isAlphabetKnowledge,
               isPhonologicalAwareness,
+              isDecoding,
               pairChoices: pair.choices,
               pairChoiceIds: pair.choiceIds,
               audioTexts: pair.audioTexts,
@@ -3157,7 +3257,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             questionType: pair.questionType,
             questionText: pair.questionText,
             questionImage: processedImageUrl,
-            questionValue: pair.questionValue || (pair.questionImage ? pair.questionText?.split(' ').pop() || '' : ''),
+            questionValue: isDecoding ? null : (pair.questionValue || (pair.questionImage ? pair.questionText?.split(' ').pop() || '' : '')),
           };
 
           // Category-specific structure
@@ -3197,6 +3297,25 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                 technique: mongoDbAnalysis?.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.[0]?.technique || "Auditory Discrimination Training",
                 difficultyLevel: "standard",
                 multisensoryElements: ["audio", "visual"]
+              },
+              createdBy: getValidTeacherId(),
+              createdAt: getFormattedDate()
+            };
+          } else if (isDecoding) {
+            // Decoding uses dragElements and correctSequence structure + intervention metadata
+            return {
+              ...baseQuestion,
+              // Decoding specific structure matching main_assessment
+              dragElements: pair.dragElements || [],
+              correctSequence: pair.correctSequence || [],
+              displaySequence: pair.displaySequence || null,
+              blankPosition: pair.blankPosition !== undefined ? pair.blankPosition : null,
+              // Add prescription alignment for intervention tracking
+              prescriptionAlignment: {
+                targetSkill: "decoding",
+                technique: mongoDbAnalysis?.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.[0]?.technique || "Word Building Practice",
+                difficultyLevel: "standard",
+                multisensoryElements: ["visual", "tactile"]
               },
               createdBy: getValidTeacherId(),
               createdAt: getFormattedDate()
@@ -3273,7 +3392,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           fixedQuestions: questionChoicePairs.length,
           allowSkip: false,
           showProgress: true,
-          immediateFeeback: false
+          immediateFeedback: false
         },
 
         // Question Count Calculation (dynamic, based on real data)
@@ -3671,13 +3790,16 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       blankPosition: template.blankPosition
     });
 
-    // Type A: Complete Word Identification
+    // Type A: Complete Word Identification ("Tukuyin ang nasa larawan?")
     if (template.questionType === 'complete_word_identification') {
-      const wordValue = template.questionValue || template.correctWord || '';
+      // Extract word from correctSequence (this is how main assessment stores it)
+      const wordFromCorrectSequence = template.correctSequence ? template.correctSequence.join('') : '';
+      const wordValue = template.correctWord || wordFromCorrectSequence || template.questionValue || '';
+
       templateData.correctWord = wordValue.charAt(0).toUpperCase() + wordValue.slice(1).toLowerCase(); // Proper capitalization
-      templateData.correctSequence = wordValue ? wordValue.split('').map((letter, index) => 
+      templateData.correctSequence = template.correctSequence || (wordValue ? wordValue.split('').map((letter, index) =>
         index === 0 ? letter.toUpperCase() : letter.toLowerCase()
-      ) : [];
+      ) : []);
       templateData.dragElements = template.dragElements || (wordValue ? generateDragElements(wordValue) : []);
       templateData.displaySequence = null;
       templateData.blankPosition = null;
@@ -3688,9 +3810,21 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         dragElements: templateData.dragElements
       });
     }
-    // Type B: Fill Missing Letter
+    // Type B: Fill Missing Letter ("Buoin ang salita")
     else if (template.questionType === 'fill_missing_letter') {
-      const wordValue = template.questionValue || template.completeWord || '';
+      // For Type B, reconstruct the complete word from displaySequence + correctSequence
+      let wordValue = '';
+      if (template.displaySequence && template.correctSequence && template.correctSequence.length > 0) {
+        const display = [...template.displaySequence];
+        const blankPos = template.blankPosition !== undefined ? template.blankPosition : 0;
+        if (display[blankPos] === '_') {
+          display[blankPos] = template.correctSequence[0];
+        }
+        wordValue = display.join('');
+      } else {
+        wordValue = template.completeWord || template.questionValue || '';
+      }
+
       templateData.completeWord = wordValue.charAt(0).toUpperCase() + wordValue.slice(1).toLowerCase(); // Proper capitalization
       templateData.blankPosition = template.blankPosition !== undefined ? template.blankPosition : 0;
       templateData.displaySequence = template.displaySequence || (wordValue ? wordValue.split('').map((letter, idx) =>
@@ -5868,12 +6002,35 @@ const renderDecodingStep = () => {
                    (pair.questionType === 'complete_word_identification' && template.questionType === 'complete_word_identification') ||
                    (pair.questionType === 'fill_missing_letter' && template.questionType === 'fill_missing_letter'))
                 )
-                .map((template) => (
+                .map((template) => {
+                  // Extract the word being decoded for better display
+                  let wordBeingDecoded = '';
+                  if (template.questionType === 'complete_word_identification') {
+                    // Type A: Get word from correctSequence
+                    wordBeingDecoded = template.correctSequence ? template.correctSequence.join('') : '';
+                  } else if (template.questionType === 'fill_missing_letter') {
+                    // Type B: Get word from displaySequence + correctSequence
+                    if (template.displaySequence && template.correctSequence) {
+                      const display = [...template.displaySequence];
+                      const blankPos = template.blankPosition || 0;
+                      if (display[blankPos] === '_') {
+                        display[blankPos] = template.correctSequence[0] || '';
+                      }
+                      wordBeingDecoded = display.join('');
+                    }
+                  }
+
+                  const questionTypeDisplay = template.questionType === 'complete_word_identification'
+                    ? 'Type A: Complete Word'
+                    : 'Type B: Fill Missing Letter';
+
+                  return (
                   <option key={template._id} value={template._id}>
-                    {template.questionText || 'Untitled Template'} - {template.questionType}
-                    {template.questionValue ? ` (${template.questionValue})` : ''}
+                      {template.questionText || 'Untitled Template'} - {questionTypeDisplay}
+                      {wordBeingDecoded ? ` (${wordBeingDecoded})` : ''}
                   </option>
-                ))
+                  );
+                })
               }
             </select>
             <small style={{display: 'block', marginTop: '8px', color: '#6b7280', fontSize: '14px', fontStyle: 'italic'}}>
@@ -5919,7 +6076,7 @@ const renderDecodingStep = () => {
               ) : (
                 <div
                   className="decoding-image-upload-area"
-                  onClick={() => handleImageUploadClick('questionImage', pair.id)}
+                  onClick={() => fileInputRefs.current[pair.id]?.click()}
                 >
                   <FaUpload />
                   <p>Click to upload image</p>
@@ -5930,6 +6087,15 @@ const renderDecodingStep = () => {
             <small style={{display: 'block', marginTop: '8px', color: '#6b7280', fontSize: '14px', fontStyle: 'italic'}}>
               Tip: Use clear, simple images that clearly show what the word represents (e.g., a yellow object for "YELO")
             </small>
+
+            {/* Hidden file input for Decoding image upload */}
+            <input
+              type="file"
+              ref={el => fileInputRefs.current[pair.id] = el}
+              onChange={(e) => handleFileChange(e, pair.id)}
+              accept="image/png,image/jpeg,image/jpg"
+              style={{ display: 'none' }}
+            />
           </div>
 
           {/* Show message when no question type is selected */}
@@ -6017,6 +6183,10 @@ const renderDecodingStep = () => {
                               .slice(0, 2);
                             
                             const allLetters = [...wordLetters, ...randomizedDistractors];
+                            
+                            // Clear any existing validation errors
+                            setInputValidationError(pair.id, 'dragElements', null);
+                            
                             updateQuestionChoicePair(pair.id, 'dragElements', allLetters);
                             updateQuestionChoicePair(pair.id, 'correctSequence', wordLetters);
                           }
@@ -6058,7 +6228,14 @@ const renderDecodingStep = () => {
                                   onChange={(e) => {
                                     const newDragElements = [...(pair.dragElements || [])];
                                     newDragElements[idx] = e.target.value;
-                                    updateQuestionChoicePair(pair.id, 'dragElements', newDragElements);
+                                    
+                                    // Automatically remove duplicates
+                                    const uniqueLetters = removeDuplicateLetters(newDragElements);
+                                    
+                                    updateQuestionChoicePair(pair.id, 'dragElements', uniqueLetters);
+                                    
+                                    // Clear any validation errors
+                                    setInputValidationError(pair.id, 'dragElements', null);
                                   }}
                                   className={`letter-input ${isWordLetter ? 'word-letter-input' : 'distractor-letter-input'}`}
                                   maxLength="1"
@@ -6070,7 +6247,14 @@ const renderDecodingStep = () => {
                                     type="button"
                                     onClick={() => {
                                       const newDragElements = (pair.dragElements || []).filter((_, i) => i !== idx);
-                                      updateQuestionChoicePair(pair.id, 'dragElements', newDragElements);
+                                      
+                                      // Automatically remove any remaining duplicates
+                                      const uniqueLetters = removeDuplicateLetters(newDragElements);
+                                      
+                                      updateQuestionChoicePair(pair.id, 'dragElements', uniqueLetters);
+                                      
+                                      // Clear any validation errors
+                                      setInputValidationError(pair.id, 'dragElements', null);
                                     }}
                                     className="remove-letter-btn"
                                     title="Remove distractor"
@@ -6078,10 +6262,10 @@ const renderDecodingStep = () => {
                                     ×
                                   </button>
                                 )}
-                              </div>
+                      </div>
                             );
                           })}
-                        </div>
+                    </div>
                         <button
                           type="button"
                           onClick={() => {
@@ -6111,28 +6295,28 @@ const renderDecodingStep = () => {
                     </div>
                   </div>
 
-                  <div className="decoding-student-preview">
-                    <h6>Student View Preview</h6>
-                    <div className="student-preview-container">
-                      <div className="preview-image">
+                  <div className="decoding-student-preview" key={`preview-a-${pair.id}`} data-question-id={pair.id} data-question-type="A">
+                    <h6>Student View Preview - Type A</h6>
+                    <div className="student-preview-container" key={`container-a-${pair.id}`}>
+                      <div className="preview-image" key={`image-a-${pair.id}`}>
                         {pair.questionImage && (
-                          <img src={pair.questionImage} alt="Preview" className="preview-img" />
+                          <img src={pair.questionImage} alt={`Preview for Question ${pair.id}`} className="preview-img" key={`img-a-${pair.id}`} />
                         )}
                       </div>
-                      <p className="preview-question">{pair.questionText}</p>
-                      <div className="preview-drag-area">
-                        <label>Drag letters here:</label>
-                        <div className="preview-drop-zone">
-                          {(pair.correctSequence || []).map((_, idx) => (
-                            <div key={idx} className="preview-drop-slot"></div>
+                      <p className="preview-question" key={`question-a-${pair.id}`}>{pair.questionText || 'Question text not set'}</p>
+                      <div className="preview-drag-area" key={`drag-area-a-${pair.id}`}>
+                        <label key={`drag-label-a-${pair.id}`}>Drag letters here to spell: {(pair.correctSequence || []).join('')}</label>
+                        <div className="preview-drop-zone" key={`drop-zone-a-${pair.id}`}>
+                          {(pair.correctSequence || []).map((letter, idx) => (
+                            <div key={`${pair.id}-drop-${idx}`} className="preview-drop-slot" title={`Position ${idx + 1}: ${letter}`}></div>
                           ))}
                         </div>
                       </div>
-                      <div className="preview-available-letters">
-                        <label>Available letters:</label>
-                        <div className="preview-letters-container">
+                      <div className="preview-available-letters" key={`available-a-${pair.id}`}>
+                        <label key={`available-label-a-${pair.id}`}>Available letters:</label>
+                        <div className="preview-letters-container" key={`letters-container-a-${pair.id}`}>
                           {(pair.dragElements || []).map((letter, idx) => (
-                            <div key={idx} className="preview-letter-option">{letter}</div>
+                            <div key={`${pair.id}-letter-${idx}-${letter}`} className="preview-letter-option">{letter}</div>
                           ))}
                         </div>
                       </div>
@@ -6211,9 +6395,42 @@ const renderDecodingStep = () => {
                   </div>
 
                   <div className="decoding-auto-generated">
-                    <h6>Auto-generated Elements</h6>
+                    <h6>Letter Options Configuration</h6>
+                    
+                    {/* Quick Actions */}
+                    <div className="quick-actions">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (pair.completeWord && pair.blankPosition !== undefined) {
+                            const correctLetter = pair.completeWord[pair.blankPosition];
+                            const choiceLetters = generateChoiceLetters(correctLetter);
+                            
+                            // Clear any existing validation errors
+                            setInputValidationError(pair.id, 'dragElements', null);
+                            
+                            updateQuestionChoicePair(pair.id, 'dragElements', choiceLetters);
+                          }
+                        }}
+                        className="generate-from-word-btn"
+                        disabled={!pair.completeWord || pair.blankPosition === undefined}
+                      >
+                        Generate from Word
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateQuestionChoicePair(pair.id, 'dragElements', []);
+                        }}
+                        className="clear-all-btn"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                    
+                    {/* Word with Blank Display */}
                     <div className="decoding-display-sequence">
-                      <label>Word with Blank:</label>
+                      <label>Word with Blank (read-only):</label>
                       <div className="display-sequence-preview">
                         {(pair.displaySequence || []).map((char, idx) => (
                           <span key={idx} className={`display-char ${char === '_' ? 'blank' : 'filled'}`}>
@@ -6221,41 +6438,109 @@ const renderDecodingStep = () => {
                           </span>
                         ))}
                       </div>
+                      <small className="sequence-help-text">
+                        This display is automatically generated from your word and selected blank position.
+                      </small>
                     </div>
+                    
+                    {/* Choice Letters Section */}
                     <div className="decoding-choice-letters">
                       <label>Choice Letters (includes distractors):</label>
-                      <div className="choice-letters-display">
-                        {(pair.dragElements || []).map((letter, idx) => (
-                          <span key={idx} className="choice-letter-chip">{letter}</span>
-                        ))}
+                      <div className="letters-control-container">
+                        <div className="letters-display">
+                          {(pair.dragElements || []).map((letter, idx) => {
+                            // Check if this letter is the correct answer
+                            const correctLetter = pair.completeWord && pair.blankPosition !== undefined ? 
+                              pair.completeWord[pair.blankPosition] : '';
+                            const isCorrectLetter = letter === correctLetter;
+                            
+                            return (
+                              <div key={idx} className={`letter-chip-container ${isCorrectLetter ? 'correct-letter' : 'distractor-letter'}`}>
+                                <input
+                                  type="text"
+                                  value={letter}
+                                  onChange={(e) => {
+                                    const newDragElements = [...(pair.dragElements || [])];
+                                    newDragElements[idx] = e.target.value;
+                                    
+                                    // Automatically remove duplicates
+                                    const uniqueLetters = removeDuplicateLetters(newDragElements);
+                                    
+                                    updateQuestionChoicePair(pair.id, 'dragElements', uniqueLetters);
+                                    
+                                    // Clear any validation errors
+                                    setInputValidationError(pair.id, 'dragElements', null);
+                                  }}
+                                  className={`letter-input ${isCorrectLetter ? 'correct-letter-input' : 'distractor-letter-input'}`}
+                                  maxLength="1"
+                                  placeholder="Letter"
+                                  disabled={isCorrectLetter}
+                                />
+                                {!isCorrectLetter && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newDragElements = (pair.dragElements || []).filter((_, i) => i !== idx);
+                                      
+                                      // Automatically remove any remaining duplicates
+                                      const uniqueLetters = removeDuplicateLetters(newDragElements);
+                                      
+                                      updateQuestionChoicePair(pair.id, 'dragElements', uniqueLetters);
+                                      
+                                      // Clear any validation errors
+                                      setInputValidationError(pair.id, 'dragElements', null);
+                                    }}
+                                    className="remove-letter-btn"
+                                    title="Remove distractor"
+                                  >
+                                    ×
+                                  </button>
+                                )}
+                      </div>
+                            );
+                          })}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newDragElements = [...(pair.dragElements || []), ''];
+                            updateQuestionChoicePair(pair.id, 'dragElements', newDragElements);
+                          }}
+                          className="add-letter-btn"
+                        >
+                          + Add Distractor
+                        </button>
                       </div>
                     </div>
                   </div>
 
-                  <div className="decoding-student-preview">
-                    <h6>Student View Preview</h6>
-                    <div className="student-preview-container">
-                      <div className="preview-image">
+                  <div className="decoding-student-preview" key={`preview-b-${pair.id}`}>
+                    <h6>Student View Preview - Type B</h6>
+                    <div className="student-preview-container" key={`container-b-${pair.id}`}>
+                      <div className="preview-image" key={`image-b-${pair.id}`}>
                         {pair.questionImage && (
-                          <img src={pair.questionImage} alt="Preview" className="preview-img" />
+                          <img src={pair.questionImage} alt={`Preview for Question ${pair.id}`} className="preview-img" key={`img-b-${pair.id}`} />
                         )}
                       </div>
-                      <p className="preview-question">{pair.questionText}</p>
-                      <div className="preview-word-display">
+                      <p className="preview-question" key={`question-b-${pair.id}`}>{pair.questionText || 'Question text not set'}</p>
+                      <div className="preview-word-display" key={`word-display-b-${pair.id}`}>
+                        <label key={`word-label-b-${pair.id}`}>Word to complete: {pair.completeWord || 'Complete word not set'}</label>
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', marginBottom: '16px' }} key={`word-container-b-${pair.id}`}>
                         {(pair.displaySequence || []).map((char, idx) => (
                           <div
-                            key={idx}
+                              key={`${pair.id}-display-${idx}`}
                             className={`preview-letter-position ${char === '_' ? 'blank clickable' : 'filled'}`}
                           >
                             {char === '_' ? '?' : char}
                           </div>
                         ))}
                       </div>
-                      <div className="preview-available-letters">
-                        <label>Available letters:</label>
-                        <div className="preview-letters-container">
+                      </div>
+                      <div className="preview-available-letters" key={`available-b-${pair.id}`}>
+                        <label key={`available-label-b-${pair.id}`}>Available letters to choose from:</label>
+                        <div className="preview-letters-container" key={`letters-container-b-${pair.id}`}>
                           {(pair.dragElements || []).map((letter, idx) => (
-                            <div key={idx} className="preview-letter-option">{letter}</div>
+                            <div key={`${pair.id}-choice-${idx}-${letter}`} className="preview-letter-option">{letter}</div>
                           ))}
                         </div>
                       </div>
@@ -6935,6 +7220,95 @@ const renderReviewStep = () => {
                            </li>
                          ))}
                        </ul>
+                     </div>
+                   ) : normCategory === 'decoding' ? (
+                     <div className="literexia-decoding-summary">
+                       {/* Determine question type for display */}
+                       {(() => {
+                         const isTypeB = pair.displaySequence && pair.blankPosition !== undefined;
+                         const questionType = isTypeB ? 'fill_missing_letter' : 'complete_word_identification';
+
+                         if (questionType === 'complete_word_identification') {
+                           // Type A: "Tukuyin ang nasa larawan?" - Complete word identification
+                           const targetWord = pair.correctSequence ? pair.correctSequence.join('') : '';
+
+                           return (
+                             <div className="literexia-type-a-summary">
+                               <p><strong>Type A - Complete Word Identification:</strong></p>
+                               <div className="literexia-decoding-details">
+                                 <div className="literexia-target-word">
+                                   <span className="literexia-word-label">Target Word:</span>
+                                   <span className="literexia-word-value">{targetWord || 'Not set'}</span>
+                                 </div>
+                                 <div className="literexia-drag-elements">
+                                   <span className="literexia-elements-label">Available Letters:</span>
+                                   <span className="literexia-elements-value">
+                                     {pair.dragElements && pair.dragElements.length > 0
+                                       ? pair.dragElements.join(', ')
+                                       : 'No drag elements set'}
+                                   </span>
+                                 </div>
+                                 <div className="literexia-activity-description">
+                                   <span className="literexia-description-label">Activity:</span>
+                                   <span className="literexia-description-text">
+                                     Student will arrange ALL letters to spell "{targetWord}"
+                                   </span>
+                                 </div>
+                               </div>
+                             </div>
+                           );
+                         } else {
+                           // Type B: "Buoin ang salita" - Fill in missing letter
+                           const completedWord = (() => {
+                             if (pair.displaySequence && pair.correctSequence && pair.correctSequence.length > 0) {
+                               const display = [...pair.displaySequence];
+                               const blankPos = pair.blankPosition !== undefined ? pair.blankPosition : 0;
+                               if (display[blankPos] === '_') {
+                                 display[blankPos] = pair.correctSequence[0];
+                               }
+                               return display.join('');
+                             }
+                             return 'Not configured';
+                           })();
+
+                           const blankDisplay = pair.displaySequence ? pair.displaySequence.join('') : 'Not set';
+                           const missingLetter = pair.correctSequence && pair.correctSequence.length > 0 ? pair.correctSequence[0] : 'Not set';
+
+                           return (
+                             <div className="literexia-type-b-summary">
+                               <p><strong>Type B - Fill Missing Letter:</strong></p>
+                               <div className="literexia-decoding-details">
+                                 <div className="literexia-complete-word">
+                                   <span className="literexia-word-label">Complete Word:</span>
+                                   <span className="literexia-word-value">{completedWord}</span>
+                                 </div>
+                                 <div className="literexia-display-sequence">
+                                   <span className="literexia-display-label">Shown to Student:</span>
+                                   <span className="literexia-display-value">{blankDisplay}</span>
+                                 </div>
+                                 <div className="literexia-missing-letter">
+                                   <span className="literexia-missing-label">Missing Letter:</span>
+                                   <span className="literexia-missing-value">{missingLetter}</span>
+                                 </div>
+                                 <div className="literexia-letter-choices">
+                                   <span className="literexia-choices-label">Letter Choices:</span>
+                                   <span className="literexia-choices-value">
+                                     {pair.dragElements && pair.dragElements.length > 0
+                                       ? pair.dragElements.join(', ')
+                                       : 'No choices set'}
+                                   </span>
+                                 </div>
+                                 <div className="literexia-activity-description">
+                                   <span className="literexia-description-label">Activity:</span>
+                                   <span className="literexia-description-text">
+                                     Student will fill in the missing letter "{missingLetter}" to complete "{completedWord}"
+                                   </span>
+                                 </div>
+                               </div>
+                             </div>
+                           );
+                         }
+                       })()}
                      </div>
                    ) : (
                      <div className="literexia-choices-summary">
