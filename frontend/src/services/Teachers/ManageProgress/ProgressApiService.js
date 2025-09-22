@@ -164,6 +164,46 @@ const ProgressApiService = {
         message: 'Failed to fetch students progress'
       };
     }
+  },
+
+  /**
+   * Fix Alphabet Knowledge data inconsistency
+   */
+  fixAlphabetKnowledgeData: async () => {
+    try {
+      const token = AuthService.getToken();
+      const response = await axios.post(`${API_BASE_URL}/api/student-responses/fix-alphabet-knowledge`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fixing Alphabet Knowledge data:', error);
+      return {
+        success: false,
+        message: 'Failed to fix Alphabet Knowledge data',
+        error: error.response?.data?.message || error.message
+      };
+    }
+  },
+
+  /**
+   * Fix all category data inconsistencies
+   */
+  fixAllCategoryData: async () => {
+    try {
+      const token = AuthService.getToken();
+      const response = await axios.post(`${API_BASE_URL}/api/student-responses/fix-all-categories`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fixing all category data:', error);
+      return {
+        success: false,
+        message: 'Failed to fix category data',
+        error: error.response?.data?.message || error.message
+      };
+    }
   }
 };
 

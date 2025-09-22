@@ -5,7 +5,9 @@ const { auth } = require('../../middleware/auth');
 const {
   getStudentResponses,
   getStudentResponsesByCategory,
-  getStudentResponseStats
+  getStudentResponseStats,
+  fixAlphabetKnowledgeData,
+  fixAllCategoryData
 } = require('../../controllers/Teachers/ManageProgress/studentResponseController');
 
 // Get response statistics for a student (must come before parameterized routes)
@@ -16,5 +18,11 @@ router.get('/:studentId', auth, getStudentResponses);
 
 // Get responses for a specific student and category
 router.get('/:studentId/:categoryName', auth, getStudentResponsesByCategory);
+
+// Fix Alphabet Knowledge data inconsistency
+router.post('/fix-alphabet-knowledge', auth, fixAlphabetKnowledgeData);
+
+// Fix all category data inconsistencies
+router.post('/fix-all-categories', auth, fixAllCategoryData);
 
 module.exports = router;

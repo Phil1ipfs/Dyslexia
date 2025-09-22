@@ -69,6 +69,7 @@ import { toast } from '../../../utils/toastHelper';
 import './css/ActivityEditModal.css';
 import './css/AlphabetKnowledgeActivityEdit.css';
 import './css/PhonologicalAwarenessActivityEdit.css';
+import './css/DecodingActivityEdit.css';
 
 // Utility function to safely handle arrays that might be undefined
 const safe = (arr) => Array.isArray(arr) ? arr : [];
@@ -1579,6 +1580,160 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   };
 
   /**
+   * Generate drag elements for Type A (Complete Word) questions
+   * Includes correct letters plus exactly 2 distractors in randomized order
+   */
+  const generateDragElements = (word) => {
+    if (!word || typeof word !== 'string') return [];
+
+    // Preserve proper capitalization: first letter uppercase, rest lowercase
+    const correctLetters = word.split('').map((letter, index) => 
+      index === 0 ? letter.toUpperCase() : letter.toLowerCase()
+    );
+    const uniqueCorrectLetters = [...new Set(correctLetters)]; // Remove duplicates
+
+    // Complete distractor pool with all consonants and vowels
+    // Use mixed case for distractors to match the correct letters style
+    const vowels = ['A', 'e', 'I', 'o', 'U', 'a', 'E', 'i', 'O', 'u'];
+    const consonants = ['B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z',
+                       'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z'];
+    const commonDistractors = [...vowels, ...consonants];
+
+    // Select distractors that are not in the correct word (case-insensitive comparison)
+    const availableDistractors = commonDistractors.filter(letter =>
+      !uniqueCorrectLetters.some(correctLetter => 
+        correctLetter.toLowerCase() === letter.toLowerCase()
+      )
+    );
+
+    // Add exactly 2 distractors to make it challenging but not overwhelming
+    const numDistractors = Math.min(2, availableDistractors.length);
+    const selectedDistractors = availableDistractors
+      .sort(() => Math.random() - 0.5) // Shuffle
+      .slice(0, numDistractors);
+
+    // Combine correct letters with distractors
+    const allElements = [...correctLetters, ...selectedDistractors];
+
+    // Shuffle the final array to randomize order
+    return allElements.sort(() => Math.random() - 0.5);
+  };
+
+  /**
+   * Generate choice letters for Type B (Fill Missing Letter) questions
+   * Includes correct letter plus exactly 2 distractors
+   */
+  const generateChoiceLetters = (correctLetter) => {
+    if (!correctLetter || typeof correctLetter !== 'string') return [];
+
+    const correct = correctLetter.toUpperCase();
+
+    // Define common confusion pairs and similar-looking letters
+    const confusionPairs = {
+      'B': ['P', 'D', 'R'],
+      'P': ['B', 'R', 'F'],
+      'D': ['B', 'G', 'O'],
+      'G': ['D', 'O', 'C'],
+      'M': ['N', 'W', 'H'],
+      'N': ['M', 'H', 'R'],
+      'T': ['F', 'I', 'L'],
+      'F': ['T', 'E', 'P'],
+      'C': ['O', 'G', 'S'],
+      'O': ['C', 'G', 'D'],
+      'A': ['O', 'E', 'U'],
+      'E': ['A', 'F', 'I'],
+      'I': ['T', 'L', 'J'],
+      'U': ['A', 'O', 'V'],
+      'L': ['I', 'T', 'J'],
+      'R': ['P', 'B', 'N'],
+      'S': ['C', 'G', 'Z'],
+      'H': ['N', 'M', 'R'],
+      'K': ['R', 'H', 'N'],
+      'V': ['U', 'Y', 'W'],
+      'W': ['M', 'V', 'Y'],
+      'X': ['K', 'Z', 'Y'],
+      'Y': ['V', 'T', 'X'],
+      'Z': ['S', 'X', 'N'],
+      'J': ['I', 'L', 'G'],
+      'Q': ['O', 'G', 'C']
+    };
+
+    // Get distractors for this letter
+    const possibleDistractors = confusionPairs[correct] || ['A', 'E', 'I'];
+
+    // Select exactly 2 distractors
+    const selectedDistractors = possibleDistractors.slice(0, 2);
+
+    // Combine correct letter with distractors
+    const allChoices = [correct, ...selectedDistractors];
+
+    // Shuffle to randomize order
+    return allChoices.sort(() => Math.random() - 0.5);
+  };
+
+  /**
+   * Validate and sanitize word input for decoding questions
+   * - Remove numbers and symbols
+   * - Auto-capitalize first letter
+   * - Keep only valid letters
+   */
+  const validateAndSanitizeWordInput = (input) => {
+    if (!input || typeof input !== 'string') return { cleanValue: '', error: null };
+
+    // Remove numbers, symbols, and special characters - keep only letters and spaces
+    let cleanValue = input.replace(/[^a-zA-Z\s]/g, '');
+
+    // Remove extra spaces and trim
+    cleanValue = cleanValue.replace(/\s+/g, ' ').trim();
+
+    // Auto-capitalize first letter of each word
+    cleanValue = cleanValue
+      .split(' ')
+      .map(word => {
+        if (word.length === 0) return word;
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
+      .join(' ');
+
+    // Keep first letter capitalized format for proper word display
+
+    // Validate minimum requirements
+    let error = null;
+    if (cleanValue.length === 0 && input.length > 0) {
+      error = 'Please enter only letters - no numbers or symbols allowed';
+    } else if (cleanValue.length < 2 && cleanValue.length > 0) {
+      error = 'Word must be at least 2 letters long';
+    } else if (cleanValue.length > 12) {
+      error = 'Word cannot be longer than 12 letters';
+    }
+
+    return { cleanValue, error };
+  };
+
+  /**
+   * Get error state for input validation
+   */
+  const getInputValidationError = (pairId, fieldName) => {
+    return errors[`${pairId}_${fieldName}`] || null;
+  };
+
+  /**
+   * Set input validation error
+   */
+  const setInputValidationError = (pairId, fieldName, error) => {
+    const errorKey = `${pairId}_${fieldName}`;
+    setErrors(prev => {
+      if (error) {
+        return { ...prev, [errorKey]: error };
+      } else {
+        const newErrors = { ...prev };
+        delete newErrors[errorKey];
+        return newErrors;
+      }
+    });
+  };
+
+  /**
    * Get applicable question types for category
    */
   const getApplicableQuestionTypes = (category) => {
@@ -1835,7 +1990,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     if (!file) return;
     
     try {
-      if (currentUploadTarget && currentUploadTarget.type === 'question') {
+      if (currentUploadTarget && (currentUploadTarget.type === 'question' || currentUploadTarget.type === 'questionImage')) {
         // Create a local preview
         const localUrl = URL.createObjectURL(file);
         
@@ -3203,9 +3358,11 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     const normCategory = normalizeCategory(category);
     
     // Get default question type based on category, not content type
+    // For decoding, don't set a default - let teachers choose
     const defaultQuestionType = normCategory === 'alphabet_knowledge' ? 'patinig' : 
                                 normCategory === 'phonological_awareness' ? 'malapantig' : 
-                                normCategory === 'word_recognition' || normCategory === 'decoding' ? 'word' : 'sentence';
+                                normCategory === 'word_recognition' ? 'word' : 
+                                normCategory === 'decoding' ? '' : 'sentence';
     
     // Generate a UUID-like id that doesn't rely on timestamps
     const generateUniqueId = () => {
@@ -3223,12 +3380,26 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     // Create audio texts array for Phonological Awareness (start with 1, can add up to 4)
     const defaultAudioTexts = normCategory === 'phonological_awareness' ? [''] : undefined;
 
+    // Set default question text based on category and question type
+    let defaultQuestionText = '';
+    if (normCategory === 'decoding') {
+      defaultQuestionText = ''; // No default text - will be set when type is selected
+    } else if (normCategory === 'alphabet_knowledge') {
+      defaultQuestionText = 'Anong titik ang nasa larawan?';
+    } else if (normCategory === 'phonological_awareness') {
+      defaultQuestionText = 'Anong tunog ang naririnig mo?';
+    } else if (normCategory === 'word_recognition') {
+      defaultQuestionText = 'Anong salita ang nasa larawan?';
+    } else if (normCategory === 'reading_comprehension') {
+      defaultQuestionText = 'Basahin ang pangungusap at sagutin ang tanong.';
+    }
+
     const newPair = {
       id: generateUniqueId(),
       sourceType: 'custom',
       sourceId: null,
       questionType: defaultQuestionType,
-      questionText: '',
+      questionText: defaultQuestionText,
       questionImage: null,
       questionValue: null,
       choiceIds: [],
@@ -3438,6 +3609,112 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     setErrors(prev => ({
       ...prev,
       success: `Applied template: "${templateName}" with choices`
+    }));
+
+    // Clear success message after 3 seconds
+    setTimeout(() => {
+      setErrors(prev => ({
+        ...prev,
+        success: ''
+      }));
+    }, 3000);
+  };
+
+  /**
+   * Apply Decoding Template - Populates Decoding-specific fields from template
+   */
+  const applyDecodingTemplate = (pairId, templateId) => {
+    if (!templateId) {
+      // Clear template - reset to custom question
+      updateQuestionChoicePair(pairId, {
+        sourceTemplateId: null,
+        questionText: 'Tukuyin ang nasa larawan?', // Default question text
+        questionImage: '',
+        correctWord: '',
+        completeWord: '',
+        dragElements: [],
+        correctSequence: [],
+        displaySequence: null,
+        blankPosition: null
+      });
+      return;
+    }
+
+    const template = questionTemplates.find(t => t._id === templateId);
+    if (!template) {
+      console.warn(`[DECODING TEMPLATE] Template not found: ${templateId}`);
+      return;
+    }
+
+    console.log(`[DECODING TEMPLATE] Applying template to question ${pairId}:`, {
+      templateId: template._id,
+      questionText: template.questionText,
+      questionType: template.questionType,
+      questionImage: template.questionImage
+    });
+
+    // Extract template data based on question type
+    const templateData = {
+      sourceTemplateId: template._id,
+      questionText: template.questionText || (template.questionType === 'complete_word_identification' ? 'Tukuyin ang nasa larawan?' : 'Buoin ang salita'),
+      questionType: template.questionType,
+      questionImage: template.questionImage || ''
+    };
+
+    console.log(`[DECODING TEMPLATE] Processing template data for ${template.questionType}:`, {
+      questionValue: template.questionValue,
+      correctWord: template.correctWord,
+      completeWord: template.completeWord,
+      dragElements: template.dragElements,
+      correctSequence: template.correctSequence,
+      displaySequence: template.displaySequence,
+      blankPosition: template.blankPosition
+    });
+
+    // Type A: Complete Word Identification
+    if (template.questionType === 'complete_word_identification') {
+      const wordValue = template.questionValue || template.correctWord || '';
+      templateData.correctWord = wordValue.charAt(0).toUpperCase() + wordValue.slice(1).toLowerCase(); // Proper capitalization
+      templateData.correctSequence = wordValue ? wordValue.split('').map((letter, index) => 
+        index === 0 ? letter.toUpperCase() : letter.toLowerCase()
+      ) : [];
+      templateData.dragElements = template.dragElements || (wordValue ? generateDragElements(wordValue) : []);
+      templateData.displaySequence = null;
+      templateData.blankPosition = null;
+
+      console.log(`[DECODING TEMPLATE] Type A populated:`, {
+        correctWord: templateData.correctWord,
+        correctSequence: templateData.correctSequence,
+        dragElements: templateData.dragElements
+      });
+    }
+    // Type B: Fill Missing Letter
+    else if (template.questionType === 'fill_missing_letter') {
+      const wordValue = template.questionValue || template.completeWord || '';
+      templateData.completeWord = wordValue.charAt(0).toUpperCase() + wordValue.slice(1).toLowerCase(); // Proper capitalization
+      templateData.blankPosition = template.blankPosition !== undefined ? template.blankPosition : 0;
+      templateData.displaySequence = template.displaySequence || (wordValue ? wordValue.split('').map((letter, idx) =>
+        idx === templateData.blankPosition ? '_' : letter
+      ) : []);
+      templateData.correctSequence = template.correctSequence || (wordValue ? [wordValue[templateData.blankPosition]] : []);
+      templateData.dragElements = template.dragElements || (wordValue ? generateChoiceLetters(wordValue[templateData.blankPosition]) : []);
+
+      console.log(`[DECODING TEMPLATE] Type B populated:`, {
+        completeWord: templateData.completeWord,
+        blankPosition: templateData.blankPosition,
+        displaySequence: templateData.displaySequence,
+        correctSequence: templateData.correctSequence,
+        dragElements: templateData.dragElements
+      });
+    }
+
+    // Apply the template data to the question
+    updateQuestionChoicePair(pairId, templateData);
+
+    // Show success message
+    setErrors(prev => ({
+      ...prev,
+      success: `Applied template: "${template.questionText}" for ${template.questionType}`
     }));
 
     // Clear success message after 3 seconds
@@ -4142,6 +4419,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           return renderAlphabetKnowledgeStep();
         } else if (category === 'Phonological Awareness') {
           return renderPhonologicalAwarenessStep();
+        } else if (category === 'Decoding') {
+          return renderDecodingStep();
         } else {
           return renderQuestionChoicesStepWithTemplates();
         }
@@ -5468,6 +5747,532 @@ const renderPhonologicalAwarenessStep = () => {
         <button
           type="button"
           className="phonological-awareness-add-question-btn"
+          onClick={() => addQuestionChoicePair()}
+        >
+          <FaPlus /> Add Question
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Step 2: Decoding Questions - Two Types Implementation
+ * Type A: "Tukuyin ang nasa larawan?" - Complete word identification where students arrange all letters
+ * Type B: "Buoin ang salita" - Fill missing letter(s) where students complete words with blanks
+ */
+const renderDecodingStep = () => {
+  return (
+    <div className="decoding-container">
+      <h3>Create Decoding Questions</h3>
+
+      <div className="decoding-info-banner">
+        <FaInfoCircle className="info-icon" />
+        <div>
+          <p style={{marginBottom: '12px', fontWeight: '600', fontSize: '18px'}}>
+            <strong>Decoding Activity Creator</strong> - Help Students Connect Images to Words
+          </p>
+          <p style={{marginBottom: '8px'}}>
+            <strong>How it works:</strong> Students see an image and work with letters to form or complete the word.
+          </p>
+          <div style={{display: 'flex', gap: '24px', marginTop: '12px', flexWrap: 'wrap'}}>
+            <div style={{minWidth: '280px'}}>
+              <strong>Type A - Complete Word:</strong>
+              <br />
+              <span style={{color: '#666'}}>Students arrange ALL letters to spell the word</span>
+            </div>
+            <div style={{minWidth: '280px'}}>
+              <strong>Type B - Fill Missing Letter:</strong>
+              <br />
+              <span style={{color: '#666'}}>Students fill in just ONE missing letter</span>
+            </div>
+          </div>
+          <p style={{marginTop: '12px', fontSize: '14px', color: '#666', fontStyle: 'italic'}}>
+            <strong>Teacher Tip:</strong> First letter automatically capitalizes and removes numbers/symbols - just type naturally!
+          </p>
+        </div>
+      </div>
+
+      {errors.pairs && (
+        <div className="literexia-error-banner">
+          <FaExclamationTriangle />
+          <p>{errors.pairs}</p>
+        </div>
+      )}
+
+      {/* Questions Section */}
+      {safe(questionChoicePairs).map((pair, index) => (
+        <div key={pair.id} className="decoding-question-card">
+          <div className="decoding-question-header">
+            <h4>Question {index + 1}</h4>
+            <button
+              type="button"
+              className="decoding-remove-btn"
+              onClick={() => removeQuestionChoicePair(pair.id)}
+            >
+              <FaTrash /> Remove
+            </button>
+          </div>
+
+          {/* Question Type Selection */}
+          <div className="decoding-question-type-selection">
+            <label>Choose Question Type <span className="required">*</span></label>
+            <select
+              value={pair.questionType || ''}
+              onChange={(e) => {
+                const newType = e.target.value;
+
+                // Clear any validation errors when switching types
+                setInputValidationError(pair.id, 'correctWord', null);
+                setInputValidationError(pair.id, 'completeWord', null);
+
+                updateQuestionChoicePair(pair.id, {
+                  questionType: newType,
+                  questionText: newType === 'complete_word_identification'
+                    ? 'Tukuyin ang nasa larawan?'
+                    : newType === 'fill_missing_letter'
+                    ? 'Buoin ang salita'
+                    : '',
+                  displaySequence: newType === 'fill_missing_letter' ? ['_'] : null,
+                  blankPosition: newType === 'fill_missing_letter' ? 0 : null,
+                  dragElements: [],
+                  correctSequence: [],
+                  correctWord: '',
+                  completeWord: ''
+                });
+              }}
+              className="decoding-select"
+            >
+              <option value="">-- Select Question Type --</option>
+              <option value="complete_word_identification">Type A: Complete Word ID - Students arrange ALL letters to spell the word</option>
+              <option value="fill_missing_letter">Type B: Fill Missing Letter - Students fill in ONE missing letter</option>
+            </select>
+            <small style={{display: 'block', marginTop: '8px', color: '#6b7280', fontSize: '14px', fontStyle: 'italic'}}>
+              <strong>Tip:</strong> Type A is harder (arrange all letters), Type B is easier (fill one blank). The question text will update automatically below.
+            </small>
+          </div>
+
+          {/* Template Selection Section */}
+          <div className="decoding-template-selection">
+            <label>Use Pre-Made Template (Optional)</label>
+            <select
+              value={pair.sourceTemplateId || ''}
+              onChange={(e) => applyDecodingTemplate(pair.id, e.target.value)}
+              className="decoding-select"
+            >
+              <option value="">-- Create Custom Question --</option>
+              {safe(questionTemplates)
+                .filter(template =>
+                  template.category === 'Decoding' &&
+                  (!pair.questionType || template.questionType === pair.questionType ||
+                   (pair.questionType === 'complete_word_identification' && template.questionType === 'complete_word_identification') ||
+                   (pair.questionType === 'fill_missing_letter' && template.questionType === 'fill_missing_letter'))
+                )
+                .map((template) => (
+                  <option key={template._id} value={template._id}>
+                    {template.questionText || 'Untitled Template'} - {template.questionType}
+                    {template.questionValue ? ` (${template.questionValue})` : ''}
+                  </option>
+                ))
+              }
+            </select>
+            <small style={{display: 'block', marginTop: '8px', color: '#6b7280', fontSize: '14px', fontStyle: 'italic'}}>
+              Select a template to auto-fill the question, or choose "Create Custom Question" to start fresh
+            </small>
+          </div>
+
+          {/* Question Text Section */}
+          <div className="decoding-question-section">
+            <h5>Question Text (Auto-Generated)</h5>
+            <input
+              type="text"
+              value={pair.questionText || ''}
+              onChange={(e) => updateQuestionChoicePair(pair.id, 'questionText', e.target.value)}
+              placeholder={pair.questionType ? "Question text is set automatically based on your chosen type" : "Please select a question type above first"}
+              className="decoding-input"
+            />
+            <small style={{display: 'block', marginTop: '8px', color: '#6b7280', fontSize: '14px', fontStyle: 'italic'}}>
+              This text appears as the question students will see. It changes automatically when you select Type A or B above, but you can edit it if needed.
+            </small>
+          </div>
+
+          {/* Image Upload Section */}
+          <div className="decoding-image-section">
+            <h5>Upload Image of the Word <span className="required">*</span></h5>
+            <div className="decoding-image-upload">
+              {pair.questionImage ? (
+                <div className="decoding-image-preview">
+                  <img
+                    src={pair.questionImage}
+                    alt="Question"
+                    className="decoding-question-image"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => updateQuestionChoicePair(pair.id, 'questionImage', '')}
+                    className="decoding-remove-image-btn"
+                    title="Remove this image"
+                  >
+                    <FaTimes />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className="decoding-image-upload-area"
+                  onClick={() => handleImageUploadClick('questionImage', pair.id)}
+                >
+                  <FaUpload />
+                  <p>Click to upload image</p>
+                  <small>JPG, PNG files supported • Clear images work best for students</small>
+                </div>
+              )}
+            </div>
+            <small style={{display: 'block', marginTop: '8px', color: '#6b7280', fontSize: '14px', fontStyle: 'italic'}}>
+              Tip: Use clear, simple images that clearly show what the word represents (e.g., a yellow object for "YELO")
+            </small>
+          </div>
+
+          {/* Show message when no question type is selected */}
+          {!pair.questionType && (
+            <div className="decoding-no-type-selected" style={{
+              padding: '20px',
+              textAlign: 'center',
+              backgroundColor: '#f8f9fa',
+              border: '2px dashed #dee2e6',
+              borderRadius: '8px',
+              margin: '20px 0',
+              color: '#6c757d'
+            }}>
+              <h5 style={{ margin: '0 0 10px 0', color: '#495057' }}>Please Select a Question Type</h5>
+              <p style={{ margin: '0', fontSize: '14px' }}>
+                Choose either Type A (Complete Word ID) or Type B (Fill Missing Letter) above to continue setting up your question.
+              </p>
+            </div>
+          )}
+
+          {/* Type A: Complete Word Identification */}
+          {pair.questionType === 'complete_word_identification' && (
+            <div className="decoding-complete-word-section">
+              <h5>Type A: Complete Word Setup</h5>
+              <div className="decoding-word-input">
+                <label>What word does the image show? <span className="required">*</span></label>
+                <input
+                  type="text"
+                  value={pair.correctWord || ''}
+                  onChange={(e) => {
+                    const { cleanValue, error } = validateAndSanitizeWordInput(e.target.value);
+
+                    // Set validation error if any
+                    setInputValidationError(pair.id, 'correctWord', error);
+
+                    // Update the question data
+                    updateQuestionChoicePair(pair.id, {
+                      correctWord: cleanValue,
+                      correctSequence: cleanValue.split(''), // Use proper capitalization for drag interface
+                      dragElements: generateDragElements(cleanValue), // Use proper capitalization for drag interface
+                      displaySequence: null,
+                      blankPosition: null
+                    });
+                  }}
+                  placeholder="Type the word here"
+                  className={`decoding-input ${getInputValidationError(pair.id, 'correctWord') ? 'error' : ''}`}
+                />
+                {getInputValidationError(pair.id, 'correctWord') && (
+                  <div className="decoding-error-message">
+                    {getInputValidationError(pair.id, 'correctWord')}
+                  </div>
+                )}
+                <small style={{display: 'block', marginTop: '8px', color: '#6b7280', fontSize: '14px', fontStyle: 'italic'}}>
+                  Type any word and only the first letter will be capitalized (e.g., "yelo" becomes "Yelo")! Numbers and symbols are automatically removed.
+                </small>
+              </div>
+
+              {pair.correctWord && (
+                <>
+                  <div className="decoding-auto-generated">
+                    <h6>Letter Options Configuration</h6>
+                    
+                    {/* Quick Actions */}
+                    <div className="quick-actions">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (pair.correctWord) {
+                            const wordLetters = pair.correctWord.split('').map((letter, index) => 
+                              index === 0 ? letter.toUpperCase() : letter.toLowerCase()
+                            );
+                            // Complete distractor pool with all consonants and vowels
+                            const vowels = ['A', 'e', 'I', 'o', 'U', 'a', 'E', 'i', 'O', 'u'];
+                            const consonants = ['B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z',
+                                               'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z'];
+                            const allDistractors = [...vowels, ...consonants];
+                            
+                            const availableDistractors = allDistractors.filter(d => 
+                              !wordLetters.some(w => w.toLowerCase() === d.toLowerCase())
+                            );
+                            
+                            // Randomize and limit distractors to only 2
+                            const randomizedDistractors = availableDistractors
+                              .sort(() => Math.random() - 0.5)
+                              .slice(0, 2);
+                            
+                            const allLetters = [...wordLetters, ...randomizedDistractors];
+                            updateQuestionChoicePair(pair.id, 'dragElements', allLetters);
+                            updateQuestionChoicePair(pair.id, 'correctSequence', wordLetters);
+                          }
+                        }}
+                        className="generate-from-word-btn"
+                        disabled={!pair.correctWord}
+                      >
+                        Generate from Word
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateQuestionChoicePair(pair.id, 'dragElements', []);
+                          updateQuestionChoicePair(pair.id, 'correctSequence', []);
+                        }}
+                        className="clear-all-btn"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                    
+                    {/* Available Letters Section */}
+                    <div className="decoding-drag-elements-preview">
+                      <label>Available Letters (includes distractors):</label>
+                      <div className="letters-control-container">
+                        <div className="letters-display">
+                          {(pair.dragElements || []).map((letter, idx) => {
+                            // Check if this letter is part of the word (first part of array)
+                            const wordLetters = pair.correctWord ? pair.correctWord.split('').map((l, i) => 
+                              i === 0 ? l.toUpperCase() : l.toLowerCase()
+                            ) : [];
+                            const isWordLetter = wordLetters.includes(letter);
+                            
+                            return (
+                              <div key={idx} className={`letter-chip-container ${isWordLetter ? 'word-letter' : 'distractor-letter'}`}>
+                                <input
+                                  type="text"
+                                  value={letter}
+                                  onChange={(e) => {
+                                    const newDragElements = [...(pair.dragElements || [])];
+                                    newDragElements[idx] = e.target.value;
+                                    updateQuestionChoicePair(pair.id, 'dragElements', newDragElements);
+                                  }}
+                                  className={`letter-input ${isWordLetter ? 'word-letter-input' : 'distractor-letter-input'}`}
+                                  maxLength="1"
+                                  placeholder="Letter"
+                                  disabled={isWordLetter}
+                                />
+                                {!isWordLetter && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newDragElements = (pair.dragElements || []).filter((_, i) => i !== idx);
+                                      updateQuestionChoicePair(pair.id, 'dragElements', newDragElements);
+                                    }}
+                                    className="remove-letter-btn"
+                                    title="Remove distractor"
+                                  >
+                                    ×
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newDragElements = [...(pair.dragElements || []), ''];
+                            updateQuestionChoicePair(pair.id, 'dragElements', newDragElements);
+                          }}
+                          className="add-letter-btn"
+                        >
+                          + Add Distractor
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Correct Sequence Section */}
+                    <div className="decoding-correct-sequence">
+                      <label>Correct Sequence (based on word):</label>
+                      <div className="sequence-display">
+                        {(pair.correctSequence || []).map((letter, idx) => (
+                          <div key={idx} className="sequence-letter-display">
+                            <span className="sequence-letter-text">{letter}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <small className="sequence-help-text">
+                        This sequence is automatically generated from the word you typed above.
+                      </small>
+                    </div>
+                  </div>
+
+                  <div className="decoding-student-preview">
+                    <h6>Student View Preview</h6>
+                    <div className="student-preview-container">
+                      <div className="preview-image">
+                        {pair.questionImage && (
+                          <img src={pair.questionImage} alt="Preview" className="preview-img" />
+                        )}
+                      </div>
+                      <p className="preview-question">{pair.questionText}</p>
+                      <div className="preview-drag-area">
+                        <label>Drag letters here:</label>
+                        <div className="preview-drop-zone">
+                          {(pair.correctSequence || []).map((_, idx) => (
+                            <div key={idx} className="preview-drop-slot"></div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="preview-available-letters">
+                        <label>Available letters:</label>
+                        <div className="preview-letters-container">
+                          {(pair.dragElements || []).map((letter, idx) => (
+                            <div key={idx} className="preview-letter-option">{letter}</div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Type B: Fill Missing Letter */}
+          {pair.questionType === 'fill_missing_letter' && (
+            <div className="decoding-fill-missing-section">
+              <h5>Type B: Fill Missing Letter Setup</h5>
+              <div className="decoding-word-input">
+                <label>What word does the image show? <span className="required">*</span></label>
+                <input
+                  type="text"
+                  value={pair.completeWord || ''}
+                  onChange={(e) => {
+                    const { cleanValue, error } = validateAndSanitizeWordInput(e.target.value);
+
+                    // Set validation error if any
+                    setInputValidationError(pair.id, 'completeWord', error);
+
+                    // Update the question data
+                    updateQuestionChoicePair(pair.id, {
+                      completeWord: cleanValue,
+                      displaySequence: cleanValue.split('').map((letter, idx) =>
+                        idx === (pair.blankPosition || 0) ? '_' : letter
+                      ),
+                      correctSequence: [cleanValue[pair.blankPosition || 0]],
+                      dragElements: generateChoiceLetters(cleanValue[pair.blankPosition || 0])
+                    });
+                  }}
+                  placeholder="Type the word here"
+                  className={`decoding-input ${getInputValidationError(pair.id, 'completeWord') ? 'error' : ''}`}
+                />
+                {getInputValidationError(pair.id, 'completeWord') && (
+                  <div className="decoding-error-message">
+                    {getInputValidationError(pair.id, 'completeWord')}
+                  </div>
+                )}
+                <small style={{display: 'block', marginTop: '8px', color: '#6b7280', fontSize: '14px', fontStyle: 'italic'}}>
+                  Type any word and only the first letter will be capitalized (e.g., "yelo" becomes "Yelo")! Numbers and symbols are automatically removed.
+                </small>
+              </div>
+
+              {pair.completeWord && (
+                <>
+                  <div className="decoding-blank-position">
+                    <label>Click on the letter you want to make blank <span className="required">*</span></label>
+                    <div className="position-selector">
+                      {pair.completeWord.split('').map((letter, idx) => (
+                        <div
+                          key={idx}
+                          className={`position-option ${(pair.blankPosition || 0) === idx ? 'selected' : ''}`}
+                          onClick={() => {
+                            updateQuestionChoicePair(pair.id, {
+                              blankPosition: idx,
+                              displaySequence: pair.completeWord.split('').map((l, i) => i === idx ? '_' : l),
+                              correctSequence: [pair.completeWord[idx]],
+                              dragElements: generateChoiceLetters(pair.completeWord[idx])
+                            });
+                          }}
+                          title={`Click to make "${letter}" the missing letter`}
+                        >
+                          <span className="position-number">#{idx + 1}</span>
+                          <span className="position-letter">{letter}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <small style={{display: 'block', marginTop: '12px', color: '#6b7280', fontSize: '14px', fontStyle: 'italic'}}>
+                      Students will need to fill in the letter you select. The selected position will show as a blank "_" in the question.
+                    </small>
+                  </div>
+
+                  <div className="decoding-auto-generated">
+                    <h6>Auto-generated Elements</h6>
+                    <div className="decoding-display-sequence">
+                      <label>Word with Blank:</label>
+                      <div className="display-sequence-preview">
+                        {(pair.displaySequence || []).map((char, idx) => (
+                          <span key={idx} className={`display-char ${char === '_' ? 'blank' : 'filled'}`}>
+                            {char}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="decoding-choice-letters">
+                      <label>Choice Letters (includes distractors):</label>
+                      <div className="choice-letters-display">
+                        {(pair.dragElements || []).map((letter, idx) => (
+                          <span key={idx} className="choice-letter-chip">{letter}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="decoding-student-preview">
+                    <h6>Student View Preview</h6>
+                    <div className="student-preview-container">
+                      <div className="preview-image">
+                        {pair.questionImage && (
+                          <img src={pair.questionImage} alt="Preview" className="preview-img" />
+                        )}
+                      </div>
+                      <p className="preview-question">{pair.questionText}</p>
+                      <div className="preview-word-display">
+                        {(pair.displaySequence || []).map((char, idx) => (
+                          <div
+                            key={idx}
+                            className={`preview-letter-position ${char === '_' ? 'blank clickable' : 'filled'}`}
+                          >
+                            {char === '_' ? '?' : char}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="preview-available-letters">
+                        <label>Available letters:</label>
+                        <div className="preview-letters-container">
+                          {(pair.dragElements || []).map((letter, idx) => (
+                            <div key={idx} className="preview-letter-option">{letter}</div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* Add Question Button */}
+      <div className="decoding-add-section">
+        <button
+          type="button"
+          className="decoding-add-question-btn"
           onClick={() => addQuestionChoicePair()}
         >
           <FaPlus /> Add Question

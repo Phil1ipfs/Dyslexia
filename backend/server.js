@@ -1115,6 +1115,16 @@ app.listen(PORT, async () => {
   console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`API URL: http://localhost:${PORT}`);
 
+  // Auto-fix existing data inconsistencies
+  try {
+    const CategoryResultsService = require('./services/Teachers/CategoryResultsService');
+    console.log('🔧 Starting automatic data consistency fix...');
+    await CategoryResultsService.autoFixExistingData();
+    console.log('✅ Automatic data consistency fix completed');
+  } catch (error) {
+    console.warn('⚠️ Could not run automatic data fix:', error.message);
+  }
+
   // Start automatic processing of complete assessments
   try {
     const AutoProcessingService = require('./services/Teachers/AutoProcessingService');

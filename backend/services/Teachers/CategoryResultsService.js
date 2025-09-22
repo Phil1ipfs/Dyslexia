@@ -9,6 +9,140 @@ const AssessmentFlowControlService = require('./AssessmentFlowControlService');
  */
 class CategoryResultsService {
 
+  /**
+   * Auto-fix existing data inconsistencies on service startup
+   * This ensures all existing student responses have correct totalQuestions
+   */
+  static async autoFixExistingData() {
+    try {
+      console.log('[AUTO-FIX] 🔧 Starting automatic data consistency fix...');
+      
+      const mainDb = mongoose.connection.useDb('dyslexia');
+      const studentResponsesCollection = mainDb.collection('studentresponses');
+      const mainAssessmentsCollection = mainDb.collection('mainassessments');
+      
+      // Get all active main assessments
+      const mainAssessments = await mainAssessmentsCollection.find({
+        isActive: true
+      }).toArray();
+      
+      if (!mainAssessments || mainAssessments.length === 0) {
+        console.log('[AUTO-FIX] ⚠️ No active main assessments found');
+        return;
+      }
+      
+      // Create a map of category to correct question count
+      const categoryQuestionCounts = {};
+      mainAssessments.forEach(assessment => {
+        if (assessment.questions && assessment.questions.length > 0) {
+          categoryQuestionCounts[assessment.category] = assessment.questions.length;
+          console.log(`[AUTO-FIX] 📋 ${assessment.category}: ${assessment.questions.length} questions`);
+        }
+      });
+      
+      let totalFixedCount = 0;
+      
+      // Process each category
+      for (const [categoryName, correctTotalQuestions] of Object.entries(categoryQuestionCounts)) {
+        console.log(`[AUTO-FIX] 🔧 Processing ${categoryName}...`);
+        
+        // Find student responses with incorrect question counts for this category
+        const studentResponses = await studentResponsesCollection.find({
+          [`categories.categoryName`]: categoryName,
+          [`categories.totalQuestions`]: { $ne: correctTotalQuestions }
+        }).toArray();
+        
+        console.log(`[AUTO-FIX] 📊 Found ${studentResponses.length} student responses with incorrect ${categoryName} data`);
+        
+        for (const studentResponse of studentResponses) {
+          const category = studentResponse.categories.find(
+            cat => cat.categoryName === categoryName
+          );
+          
+          if (category) {
+            const oldTotalQuestions = category.totalQuestions;
+            const oldScore = category.score;
+            
+            // Update the totalQuestions to the correct number from main assessment
+            category.totalQuestions = correctTotalQuestions;
+            
+            // Recalculate the score based on correct answers out of the correct total
+            const newScore = Math.round((category.correctAnswers / correctTotalQuestions) * 100);
+            category.score = newScore;
+            
+            // Update isPassed based on new score
+            category.isPassed = newScore >= category.passingThreshold;
+            
+            console.log(`[AUTO-FIX] Student ${studentResponse.studentId} - ${categoryName}: ${oldTotalQuestions} → ${correctTotalQuestions} questions, ${oldScore}% → ${newScore}%`);
+            
+            // Update the student response in the database
+            await studentResponsesCollection.updateOne(
+              { _id: studentResponse._id },
+              { 
+                $set: { 
+                  categories: studentResponse.categories,
+                  updatedAt: new Date()
+                }
+              }
+            );
+            
+            totalFixedCount++;
+          }
+        }
+      }
+      
+      console.log(`[AUTO-FIX] 🎉 Fixed ${totalFixedCount} student responses across all categories!`);
+      
+    } catch (error) {
+      console.error('[AUTO-FIX] ❌ Error during automatic data fix:', error);
+    }
+  }
+
+  /**
+   * Get correct total questions for a category from main assessment
+   * @param {string} categoryName - The category name
+   * @param {string} readingLevel - The reading level
+   * @returns {Promise<number>} - The correct total questions count
+   */
+  static async getCorrectTotalQuestions(categoryName, readingLevel) {
+    try {
+      const mainDb = mongoose.connection.useDb('dyslexia');
+      const mainAssessmentsCollection = mainDb.collection('mainassessments');
+      
+      // Find the main assessment for this category and reading level
+      const mainAssessment = await mainAssessmentsCollection.findOne({
+        category: categoryName,
+        readingLevel: readingLevel,
+        isActive: true
+      });
+      
+      if (mainAssessment && mainAssessment.questions) {
+        const correctCount = mainAssessment.questions.length;
+        console.log(`[AUTO-FIX] 📋 ${categoryName} (${readingLevel}): ${correctCount} questions from main assessment`);
+        return correctCount;
+      }
+      
+      // Fallback: try to find any active assessment for this category
+      const fallbackAssessment = await mainAssessmentsCollection.findOne({
+        category: categoryName,
+        isActive: true
+      });
+      
+      if (fallbackAssessment && fallbackAssessment.questions) {
+        const correctCount = fallbackAssessment.questions.length;
+        console.log(`[AUTO-FIX] 📋 ${categoryName} (fallback): ${correctCount} questions from main assessment`);
+        return correctCount;
+      }
+      
+      console.log(`[AUTO-FIX] ⚠️ No main assessment found for ${categoryName}, using response count`);
+      return 0; // Will be handled by the calling function
+      
+    } catch (error) {
+      console.error(`[AUTO-FIX] Error getting correct total questions for ${categoryName}:`, error);
+      return 0;
+    }
+  }
+
   // Get category results for a student
   static async getCategoryResults(studentId) {
     try {
@@ -649,9 +783,13 @@ class CategoryResultsService {
           // Category has no responses - create placeholder entry ONLY if processing all categories
           if (!category) {
             console.log(`[CATEGORY RESULTS] Creating placeholder for ${categoryName} (no responses yet)`);
+            // AUTO-FIX: Get correct total questions for placeholder
+            const correctTotalQuestions = await this.getCorrectTotalQuestions(categoryName, readingLevel);
+            const totalQuestions = correctTotalQuestions > 0 ? correctTotalQuestions : (categoryCompleteness[categoryName]?.required || 0);
+            
             categories.push({
               categoryName: categoryName,
-              totalQuestions: categoryCompleteness[categoryName]?.required || 0,
+              totalQuestions: totalQuestions,
               correctAnswers: 0,
               totalPossibleMatches: 0,
               correctMatches: 0,
@@ -673,11 +811,14 @@ class CategoryResultsService {
         }
         console.log(`[CATEGORY RESULTS] Processing ${categoryResponses.length} responses for ${categoryName}`);
 
-        // Calculate scores
-        let totalQuestions = categoryResponses.length;
+        // Calculate scores - AUTO-FIX: Get correct total questions from main assessment
+        const correctTotalQuestions = await this.getCorrectTotalQuestions(categoryName, readingLevel);
+        let totalQuestions = correctTotalQuestions > 0 ? correctTotalQuestions : categoryResponses.length;
         let correctAnswers = 0;
         let totalMatches = 0;
         let correctMatches = 0;
+        
+        console.log(`[AUTO-FIX] ${categoryName}: Using ${totalQuestions} total questions (${correctTotalQuestions} from main assessment, ${categoryResponses.length} responses)`);
 
         // Handle different question types
         if (categoryName === 'Phonological Awareness') {
