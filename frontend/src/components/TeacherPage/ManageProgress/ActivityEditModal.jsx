@@ -1603,6 +1603,22 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   };
 
   /**
+   * Validate and sanitize letter input for distractors
+   * Only allows uppercase and lowercase letters (A-Z, a-z)
+   * Filters out numbers, symbols, and special characters
+   */
+  const validateLetterInput = (input) => {
+    if (!input || typeof input !== 'string') return '';
+    
+    // Only allow uppercase and lowercase letters A-Z, a-z
+    // Remove any numbers, symbols, or special characters
+    const lettersOnly = input.replace(/[^A-Za-z]/g, '');
+    
+    // Return only the first character if multiple characters were entered
+    return lettersOnly.charAt(0);
+  };
+
+  /**
    * Generate drag elements for Type A (Complete Word) questions
    * Includes correct letters plus exactly 2 distractors in randomized order
    */
@@ -6226,8 +6242,11 @@ const renderDecodingStep = () => {
                                   type="text"
                                   value={letter}
                                   onChange={(e) => {
+                                    // Validate input to allow only letters (A-Z, a-z)
+                                    const validatedInput = validateLetterInput(e.target.value);
+                                    
                                     const newDragElements = [...(pair.dragElements || [])];
-                                    newDragElements[idx] = e.target.value;
+                                    newDragElements[idx] = validatedInput;
                                     
                                     // Automatically remove duplicates
                                     const uniqueLetters = removeDuplicateLetters(newDragElements);
@@ -6460,8 +6479,11 @@ const renderDecodingStep = () => {
                                   type="text"
                                   value={letter}
                                   onChange={(e) => {
+                                    // Validate input to allow only letters (A-Z, a-z)
+                                    const validatedInput = validateLetterInput(e.target.value);
+                                    
                                     const newDragElements = [...(pair.dragElements || [])];
-                                    newDragElements[idx] = e.target.value;
+                                    newDragElements[idx] = validatedInput;
                                     
                                     // Automatically remove duplicates
                                     const uniqueLetters = removeDuplicateLetters(newDragElements);

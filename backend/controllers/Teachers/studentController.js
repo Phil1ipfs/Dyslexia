@@ -460,20 +460,7 @@ exports.getProgressData = async (req, res) => {
   }
 };
 
-exports.getRecommendedLessons = async (req, res) => {
-  try {
-    const id = req.params.id;
-
-    // Return empty array instead of generating mock data
-    // This prevents unnecessary population of the lessons collection in test database
-    const recommendations = [];
-
-    res.json(recommendations);
-  } catch (error) {
-    console.error(`Error fetching recommended lessons for student ID ${req.params.id}:`, error);
-    res.status(500).json({ message: 'Error fetching recommended lessons', error: error.message });
-  }
-};
+// Removed getRecommendedLessons - lessons are not generated in this system
 
 exports.getPrescriptiveRecommendations = async function(req, res) {
   try {

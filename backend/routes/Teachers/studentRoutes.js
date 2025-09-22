@@ -62,8 +62,7 @@ router.get('/:id/assessment', auth, authorize('teacher', 'admin'), studentContro
 // Get student progress
 router.get('/:id/progress', auth, authorize('teacher', 'admin'), studentController.getProgressData);
 
-// Get recommended lessons
-router.get('/:id/recommended-lessons', auth, authorize('teacher', 'admin'), studentController.getRecommendedLessons);
+// Removed recommended lessons route - lessons are not generated in this system
 
 // Get prescriptive recommendations
 router.get('/:id/prescriptive-recommendations', auth, authorize('teacher', 'admin'), studentController.getPrescriptiveRecommendations);
