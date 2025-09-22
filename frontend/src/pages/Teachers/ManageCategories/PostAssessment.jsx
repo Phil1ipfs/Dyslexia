@@ -2486,15 +2486,6 @@ const MainAssessment = ({ templates }) => {
             </div>
           </div>
 
-          <div className="pa-stat-card inactive">
-            <div className="pa-stat-icon">
-              <FontAwesomeIcon icon={faExclamationTriangle} />
-            </div>
-            <div className="pa-stat-content">
-              <div className="pa-stat-number">{stats.inactive}</div>
-              <div className="pa-stat-label">Inactive</div>
-            </div>
-          </div>
         </div>
 
         <div className="pa-reading-level-overview">
