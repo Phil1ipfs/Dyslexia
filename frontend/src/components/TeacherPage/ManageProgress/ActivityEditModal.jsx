@@ -1626,40 +1626,40 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   const generateChoiceLetters = (correctLetter) => {
     if (!correctLetter || typeof correctLetter !== 'string') return [];
 
-    const correct = correctLetter.toUpperCase();
+    const correct = correctLetter; // Keep original case
 
-    // Define common confusion pairs and similar-looking letters
+    // Define common confusion pairs and similar-looking letters (case-sensitive)
     const confusionPairs = {
-      'B': ['P', 'D', 'R'],
-      'P': ['B', 'R', 'F'],
-      'D': ['B', 'G', 'O'],
-      'G': ['D', 'O', 'C'],
-      'M': ['N', 'W', 'H'],
-      'N': ['M', 'H', 'R'],
-      'T': ['F', 'I', 'L'],
-      'F': ['T', 'E', 'P'],
-      'C': ['O', 'G', 'S'],
-      'O': ['C', 'G', 'D'],
-      'A': ['O', 'E', 'U'],
-      'E': ['A', 'F', 'I'],
-      'I': ['T', 'L', 'J'],
-      'U': ['A', 'O', 'V'],
-      'L': ['I', 'T', 'J'],
-      'R': ['P', 'B', 'N'],
-      'S': ['C', 'G', 'Z'],
-      'H': ['N', 'M', 'R'],
-      'K': ['R', 'H', 'N'],
-      'V': ['U', 'Y', 'W'],
-      'W': ['M', 'V', 'Y'],
-      'X': ['K', 'Z', 'Y'],
-      'Y': ['V', 'T', 'X'],
-      'Z': ['S', 'X', 'N'],
-      'J': ['I', 'L', 'G'],
-      'Q': ['O', 'G', 'C']
+      'B': ['P', 'D', 'R'], 'b': ['p', 'd', 'r'],
+      'P': ['B', 'R', 'F'], 'p': ['b', 'r', 'f'],
+      'D': ['B', 'G', 'O'], 'd': ['b', 'g', 'o'],
+      'G': ['D', 'O', 'C'], 'g': ['d', 'o', 'c'],
+      'M': ['N', 'W', 'H'], 'm': ['n', 'w', 'h'],
+      'N': ['M', 'H', 'R'], 'n': ['m', 'h', 'r'],
+      'T': ['F', 'I', 'L'], 't': ['f', 'i', 'l'],
+      'F': ['T', 'E', 'P'], 'f': ['t', 'e', 'p'],
+      'C': ['O', 'G', 'S'], 'c': ['o', 'g', 's'],
+      'O': ['C', 'G', 'D'], 'o': ['c', 'g', 'd'],
+      'A': ['O', 'E', 'U'], 'a': ['o', 'e', 'u'],
+      'E': ['A', 'F', 'I'], 'e': ['a', 'f', 'i'],
+      'I': ['T', 'L', 'J'], 'i': ['t', 'l', 'j'],
+      'U': ['A', 'O', 'V'], 'u': ['a', 'o', 'v'],
+      'L': ['I', 'T', 'J'], 'l': ['i', 't', 'j'],
+      'R': ['P', 'B', 'N'], 'r': ['p', 'b', 'n'],
+      'S': ['C', 'G', 'Z'], 's': ['c', 'g', 'z'],
+      'H': ['N', 'M', 'R'], 'h': ['n', 'm', 'r'],
+      'K': ['R', 'H', 'N'], 'k': ['r', 'h', 'n'],
+      'V': ['U', 'Y', 'W'], 'v': ['u', 'y', 'w'],
+      'W': ['M', 'V', 'Y'], 'w': ['m', 'v', 'y'],
+      'X': ['K', 'Z', 'Y'], 'x': ['k', 'z', 'y'],
+      'Y': ['V', 'T', 'X'], 'y': ['v', 't', 'x'],
+      'Z': ['S', 'X', 'N'], 'z': ['s', 'x', 'n'],
+      'J': ['I', 'L', 'G'], 'j': ['i', 'l', 'g'],
+      'Q': ['O', 'G', 'C'], 'q': ['o', 'g', 'c']
     };
 
-    // Get distractors for this letter
-    const possibleDistractors = confusionPairs[correct] || ['A', 'E', 'I'];
+    // Get distractors for this letter (case-sensitive)
+    const possibleDistractors = confusionPairs[correct] || (correct === correct.toUpperCase() ? ['A', 'E', 'I'] : ['a', 'e', 'i']);
 
     // Select exactly 2 distractors
     const selectedDistractors = possibleDistractors.slice(0, 2);
@@ -6194,7 +6194,7 @@ const renderDecodingStep = () => {
                             updateQuestionChoicePair(pair.id, {
                               blankPosition: idx,
                               displaySequence: pair.completeWord.split('').map((l, i) => i === idx ? '_' : l),
-                              correctSequence: [pair.completeWord[idx]],
+                              correctSequence: [pair.completeWord[idx]], // Keep original case
                               dragElements: generateChoiceLetters(pair.completeWord[idx])
                             });
                           }}

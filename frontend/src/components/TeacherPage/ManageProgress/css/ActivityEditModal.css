@@ -1144,9 +1144,11 @@
 }
 
 .literexia-remove-image-btn {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
+  position: absolute !important;
+  top: 0.75rem !important;
+  right: 0.75rem !important;
+  bottom: auto !important;
+  left: auto !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1160,6 +1162,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
 }
 
 .literexia-remove-image-btn:hover {
