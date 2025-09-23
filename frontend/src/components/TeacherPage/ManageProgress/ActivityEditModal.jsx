@@ -4307,6 +4307,17 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     setQuestionChoicePairs(prev => 
       prev.map(pair => {
         if (pair.id === pairId) {
+          // Check if this is a template with locked correct answer
+          if (pair.sourceTemplateId && pair.correctChoiceId === choiceId) {
+            // Find the choice to check if it's the correct answer from template
+            const choiceToRemove = choiceTemplates.find(c => c._id === choiceId);
+            if (choiceToRemove && choiceToRemove.isCorrect) {
+              // Prevent deletion of correct answer from template
+              createModalToast('Cannot remove the correct answer from a template. The correct answer is locked.', 'warning');
+              return pair; // Return unchanged pair
+            }
+          }
+          
           const newChoiceIds = pair.choiceIds.filter(id => id !== choiceId);
           
           // Auto-select the first remaining choice if the removed choice was correct
@@ -7691,34 +7702,47 @@ const renderWordRecognitionStep = () => {
                 >
                   <FaPlus /> Add Option
                 </button>
-                {(pair.blankOptions || ['', '', '', '']).length > 2 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const currentOptions = pair.blankOptions || ['', '', '', ''];
-                      const newOptions = currentOptions.slice(0, -1);
-                      // Remove from correct answers if it was selected
-                      const removedOption = currentOptions[currentOptions.length - 1];
-                      const newCorrectAnswers = (pair.correctAnswer || []).filter(answer => answer !== removedOption);
-                      updateQuestionChoicePair(pair.id, {
-                        blankOptions: newOptions,
-                        correctAnswer: newCorrectAnswers
-                      });
-                    }}
-                    style={{
-                      padding: '4px 8px',
-                      fontSize: '12px',
-                      background: '#ef4444',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}
-                    title="Remove last option"
-                  >
-                    <FaMinus /> Remove Option
-                  </button>
-                )}
+                {(pair.blankOptions || ['', '', '', '']).length > 2 && (() => {
+                  const currentOptions = pair.blankOptions || ['', '', '', ''];
+                  const lastOption = currentOptions[currentOptions.length - 1];
+                  const isLastOptionCorrect = (pair.correctAnswer || []).includes(lastOption);
+                  const isTemplateLocked = pair.sourceTemplateId && pair.questionSubType === 'sound_matching' && isLastOptionCorrect;
+                  
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Check if this is a template with locked correct answer
+                        if (isTemplateLocked) {
+                          // Prevent deletion of correct answer from sound matching template
+                          createModalToast('Cannot remove the correct answer from a Sound Matching template. The correct answer is locked.', 'warning');
+                          return;
+                        }
+                        
+                        const newOptions = currentOptions.slice(0, -1);
+                        // Remove from correct answers if it was selected
+                        const newCorrectAnswers = (pair.correctAnswer || []).filter(answer => answer !== lastOption);
+                        updateQuestionChoicePair(pair.id, {
+                          blankOptions: newOptions,
+                          correctAnswer: newCorrectAnswers
+                        });
+                      }}
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: '12px',
+                        background: isTemplateLocked ? '#9ca3af' : '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: isTemplateLocked ? 'not-allowed' : 'pointer',
+                        opacity: isTemplateLocked ? 0.6 : 1
+                      }}
+                      title={isTemplateLocked ? 'Cannot remove correct answer from template' : 'Remove last option'}
+                    >
+                      <FaMinus /> Remove Option
+                    </button>
+                  );
+                })()}
               </div>
             </div>
 
@@ -8304,6 +8328,12 @@ const renderQuestionChoicesStep = () => {
                          type="button"
                          className="literexia-remove-choice-btn"
                          onClick={() => removeChoiceFromPair(pair.id, choice._id)}
+                         disabled={pair.sourceTemplateId && choice.isCorrect}
+                         style={{
+                           opacity: (pair.sourceTemplateId && choice.isCorrect) ? 0.5 : 1,
+                           cursor: (pair.sourceTemplateId && choice.isCorrect) ? 'not-allowed' : 'pointer'
+                         }}
+                         title={(pair.sourceTemplateId && choice.isCorrect) ? 'Cannot remove correct answer from template' : 'Remove choice'}
                        >
                          <FaTrash />
                        </button>

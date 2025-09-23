@@ -8024,3 +8024,540 @@
     padding: 0.5rem;
   }
 
+/* ===== INTERVENTION PERFORMANCE & ANALYSIS STYLING ===== */
+
+/* Two Column Layout for Intervention Results */
+.intervention-results-two-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.intervention-results-left-column,
+.intervention-results-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Column Headers */
+.after-intervention-column-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #4A608A 0%, #3B4F6B 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  font-weight: 600;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 8px rgba(74, 96, 138, 0.2);
+}
+
+.after-intervention-column-header .epa-icon {
+  font-size: 1.2rem;
+  color: #E8F4FD;
+}
+
+/* Column Content */
+.intervention-results-column-content {
+  background: #f8fafc;
+  border-radius: 0 0 12px 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  border-top: none;
+}
+
+/* Performance Cards */
+.intervention-performance-card,
+.progress-indicators-card,
+.revision-tracking-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.intervention-performance-card:hover,
+.progress-indicators-card:hover,
+.revision-tracking-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Performance Header */
+.performance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.performance-label {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.performance-label .epa-icon {
+  color: #4A608A;
+  font-size: 1.1rem;
+}
+
+/* Performance Status Badge */
+.performance-status {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.performance-status.passed {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.performance-status.needs-revision {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+/* Score Display */
+.score-display {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.score-value {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.score-value.intervention-passed {
+  color: #10b981;
+  text-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.score-value.intervention-failed {
+  color: #ef4444;
+  text-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.threshold-info,
+.mastery-probability {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+}
+
+.mastery-probability {
+  font-weight: 600;
+  color: #4A608A;
+}
+
+/* Progress Bar */
+.progress-bar-container {
+  margin-top: 1rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.8s ease;
+  position: relative;
+}
+
+.progress-fill.progress--passed {
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+.progress-fill.progress--failed {
+  background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.threshold-marker {
+  color: #4A608A;
+  font-weight: 600;
+}
+
+/* Progress Metrics Grid */
+.progress-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.progress-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.progress-metric:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.metric-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.metric-value.positive {
+  color: #10b981;
+}
+
+.metric-value.negative {
+  color: #ef4444;
+}
+
+.metric-value.moderate {
+  color: #f59e0b;
+}
+
+/* ===== REVISION TRACKING & DATA INTEGRITY STYLING ===== */
+
+.revision-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.revision-subtitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Data Normalization Section */
+.data-normalization-section {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 1.25rem;
+  border: 1px solid #e2e8f0;
+}
+
+.normalization-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.normalization-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.norm-label {
+  font-weight: 600;
+  color: #374151;
+  min-width: 180px;
+}
+
+.norm-value {
+  font-weight: 700;
+  font-size: 1.1rem;
+  min-width: 80px;
+}
+
+.norm-value.preserved {
+  color: #4A608A;
+}
+
+.norm-value.intervention {
+  color: #10b981;
+}
+
+.norm-status {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-left: auto;
+}
+
+.normalization-note {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: #92400e;
+  line-height: 1.5;
+}
+
+/* Version Tracking Section */
+.version-tracking-section {
+  background: #f0f9ff;
+  border-radius: 8px;
+  padding: 1.25rem;
+  border: 1px solid #bae6fd;
+}
+
+.version-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.version-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e0f2fe;
+}
+
+.version-label {
+  font-weight: 600;
+  color: #374151;
+  min-width: 140px;
+}
+
+.version-value {
+  font-weight: 700;
+  color: #0369a1;
+}
+
+.version-value.multiple {
+  color: #10b981;
+}
+
+/* Intervention History Timeline */
+.intervention-history-section {
+  background: #fefce8;
+  border-radius: 8px;
+  padding: 1.25rem;
+  border: 1px solid #fde047;
+}
+
+.history-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.history-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid;
+  transition: all 0.2s ease;
+}
+
+.history-item.passed {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.history-item.failed {
+  border-color: #ef4444;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+}
+
+.history-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.history-item.passed .history-marker {
+  background: #10b981;
+  color: white;
+}
+
+.history-item.failed .history-marker {
+  background: #ef4444;
+  color: white;
+}
+
+.history-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.history-revision {
+  font-weight: 600;
+  color: #374151;
+}
+
+.history-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.history-status.passed {
+  background: #10b981;
+  color: white;
+}
+
+.history-status.failed {
+  background: #ef4444;
+  color: white;
+}
+
+.history-metrics {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.history-metrics span {
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .intervention-results-two-column {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .progress-metrics {
+    grid-template-columns: 1fr;
+  }
+  
+  .normalization-item,
+  .version-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .norm-label,
+  .version-label {
+    min-width: auto;
+  }
+  
+  .norm-status {
+    margin-left: 0;
+  }
+  
+  .history-metrics {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .after-intervention-column-header {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+  
+  .intervention-results-column-content {
+    padding: 1rem;
+  }
+  
+  .intervention-performance-card,
+  .progress-indicators-card,
+  .revision-tracking-card {
+    padding: 1rem;
+  }
+  
+  .score-value {
+    font-size: 2.5rem;
+  }
+  
+  .performance-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .history-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+

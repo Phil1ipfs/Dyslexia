@@ -21,7 +21,10 @@ class CategoryResultsService {
       // Step 1: Fix question counts using main_assessment data
       await this.fixMainAssessmentQuestionCounts();
 
-      // Step 2: Repair ALL incomplete category records
+      // Step 2: COMPREHENSIVE FIX for all incorrect totalQuestions
+      await this.fixAllIncorrectTotalQuestions();
+
+      // Step 3: Repair ALL incomplete category records
       await this.repairAllIncompleteCategoryRecords();
 
       console.log('[AUTO-FIX] ✅ Comprehensive category repair completed successfully');
@@ -39,14 +42,13 @@ class CategoryResultsService {
     try {
       console.log('[AUTO-FIX] 📊 Step 1: Fixing question counts from main_assessment...');
 
-      const mainDb = mongoose.connection.useDb('dyslexia');
-      const studentResponsesCollection = mainDb.collection('studentresponses');
-      const mainAssessmentsCollection = mainDb.collection('mainassessments');
+      // Import the MainAssessment model
+      const MainAssessment = require('../../models/Teachers/mainAssessmentModel');
 
-      // Get all active main assessments
-      const mainAssessments = await mainAssessmentsCollection.find({
+      // Get all active main assessments using Mongoose model
+      const mainAssessments = await MainAssessment.find({
         isActive: true
-      }).toArray();
+      }).lean();
       
       if (!mainAssessments || mainAssessments.length === 0) {
         console.log('[AUTO-FIX] ⚠️ No active main assessments found');
@@ -64,20 +66,23 @@ class CategoryResultsService {
       
       let totalFixedCount = 0;
       
+      // Import the CategoryResult model
+      const CategoryResult = require('../../models/Teachers/ManageProgress/categoryResultModel');
+
       // Process each category
       for (const [categoryName, correctTotalQuestions] of Object.entries(categoryQuestionCounts)) {
         console.log(`[AUTO-FIX] 🔧 Processing ${categoryName}...`);
-        
-        // Find student responses with incorrect question counts for this category
-        const studentResponses = await studentResponsesCollection.find({
+
+        // Find category results with incorrect question counts for this category
+        const categoryResults = await CategoryResult.find({
           [`categories.categoryName`]: categoryName,
           [`categories.totalQuestions`]: { $ne: correctTotalQuestions }
-        }).toArray();
+        }).lean();
         
-        console.log(`[AUTO-FIX] 📊 Found ${studentResponses.length} student responses with incorrect ${categoryName} data`);
-        
-        for (const studentResponse of studentResponses) {
-          const category = studentResponse.categories.find(
+        console.log(`[AUTO-FIX] 📊 Found ${categoryResults.length} category results with incorrect ${categoryName} data`);
+
+        for (const categoryResult of categoryResults) {
+          const category = categoryResult.categories.find(
             cat => cat.categoryName === categoryName
           );
           
@@ -95,14 +100,14 @@ class CategoryResultsService {
             // Update isPassed based on new score
             category.isPassed = newScore >= category.passingThreshold;
             
-            console.log(`[AUTO-FIX] Student ${studentResponse.studentId} - ${categoryName}: ${oldTotalQuestions} → ${correctTotalQuestions} questions, ${oldScore}% → ${newScore}%`);
-            
-            // Update the student response in the database
-            await studentResponsesCollection.updateOne(
-              { _id: studentResponse._id },
-              { 
-                $set: { 
-                  categories: studentResponse.categories,
+            console.log(`[AUTO-FIX] Student ${categoryResult.studentId} - ${categoryName}: ${oldTotalQuestions} → ${correctTotalQuestions} questions, ${oldScore}% → ${newScore}%`);
+
+            // Update the category result in the database
+            await CategoryResult.updateOne(
+              { _id: categoryResult._id },
+              {
+                $set: {
+                  categories: categoryResult.categories,
                   updatedAt: new Date()
                 }
               }
@@ -113,10 +118,114 @@ class CategoryResultsService {
         }
       }
       
-      console.log(`[AUTO-FIX] 🎉 Fixed ${totalFixedCount} student responses across all categories!`);
+      console.log(`[AUTO-FIX] 🎉 Fixed ${totalFixedCount} category results across all categories!`);
 
     } catch (error) {
       console.error('[AUTO-FIX] ❌ Error during automatic data fix:', error);
+    }
+  }
+
+  /**
+   * 🔧 COMPREHENSIVE FIX: Fix all incorrect totalQuestions in category_results
+   * This DYNAMICALLY reads from main_assessment and fixes ALL records
+   */
+  static async fixAllIncorrectTotalQuestions() {
+    try {
+      console.log('[COMPREHENSIVE FIX] 🔧 Starting DYNAMIC totalQuestions correction for all category results...');
+
+      // Import required models
+      const MainAssessment = require('../../models/Teachers/mainAssessmentModel');
+      const CategoryResult = require('../../models/Teachers/ManageProgress/categoryResultModel');
+
+      // Get ALL main assessment records to see what we have
+      const allMainAssessments = await MainAssessment.find({}).lean();
+      console.log(`[COMPREHENSIVE FIX] 📚 Found ${allMainAssessments.length} main assessment records in database`);
+
+      // Get ACTIVE correct question counts from main_assessment (DYNAMIC)
+      const activeMainAssessments = await MainAssessment.find({ isActive: true }).lean();
+      const correctQuestionCounts = {};
+
+      console.log('[COMPREHENSIVE FIX] 📋 DYNAMIC question counts from main_assessment:');
+      activeMainAssessments.forEach(assessment => {
+        if (assessment.questions && assessment.questions.length > 0) {
+          correctQuestionCounts[assessment.category] = assessment.questions.length;
+          console.log(`[COMPREHENSIVE FIX]   📝 ${assessment.category}: ${assessment.questions.length} questions (Reading Level: ${assessment.readingLevel})`);
+        }
+      });
+
+      // Check if we have all required categories
+      const requiredCategories = ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'];
+      const missingCategories = requiredCategories.filter(cat => !correctQuestionCounts[cat]);
+
+      if (missingCategories.length > 0) {
+        console.warn(`[COMPREHENSIVE FIX] ⚠️ Missing main_assessment data for: ${missingCategories.join(', ')}`);
+      }
+
+      // Find ALL category results that need fixing
+      const allCategoryResults = await CategoryResult.find({}).lean();
+      console.log(`[COMPREHENSIVE FIX] 📊 Found ${allCategoryResults.length} total category result records to check`);
+
+      let totalFixed = 0;
+      let totalChecked = 0;
+
+      for (const categoryResult of allCategoryResults) {
+        totalChecked++;
+        let recordNeedsUpdate = false;
+        const updates = {};
+        const studentId = categoryResult.studentId;
+
+        console.log(`[COMPREHENSIVE FIX] 🔍 Checking student ${studentId} (${totalChecked}/${allCategoryResults.length})`);
+
+        for (let i = 0; i < categoryResult.categories.length; i++) {
+          const category = categoryResult.categories[i];
+          const correctCount = correctQuestionCounts[category.categoryName];
+
+          if (!correctCount) {
+            console.warn(`[COMPREHENSIVE FIX] ⚠️ No main_assessment data for ${category.categoryName} - skipping`);
+            continue;
+          }
+
+          if (category.totalQuestions !== correctCount) {
+            console.log(`[COMPREHENSIVE FIX] 🔧 Student ${studentId} - ${category.categoryName}: ${category.totalQuestions} → ${correctCount} (Dynamic from main_assessment)`);
+
+            // Calculate new score based on CORRECT total from main_assessment
+            const newScore = category.correctAnswers > 0 ?
+              Math.round((category.correctAnswers / correctCount) * 100) : 0;
+
+            // For Phonological Awareness, use correctMatches if available
+            let finalScore = newScore;
+            if (category.categoryName === 'Phonological Awareness' && category.correctMatches !== undefined && category.totalPossibleMatches > 0) {
+              finalScore = Math.round((category.correctMatches / category.totalPossibleMatches) * 100);
+              console.log(`[COMPREHENSIVE FIX]   📊 Using Phonological Awareness matching score: ${category.correctMatches}/${category.totalPossibleMatches} = ${finalScore}%`);
+            }
+
+            updates[`categories.${i}.totalQuestions`] = correctCount;
+            updates[`categories.${i}.score`] = finalScore;
+            updates[`categories.${i}.isPassed`] = finalScore >= 75;
+            updates[`updatedAt`] = new Date();
+
+            recordNeedsUpdate = true;
+          }
+        }
+
+        if (recordNeedsUpdate) {
+          await CategoryResult.updateOne(
+            { _id: categoryResult._id },
+            { $set: updates }
+          );
+          totalFixed++;
+          console.log(`[COMPREHENSIVE FIX] ✅ Fixed student ${studentId} record`);
+        } else {
+          console.log(`[COMPREHENSIVE FIX] ✅ Student ${studentId} record already correct`);
+        }
+      }
+
+      console.log(`[COMPREHENSIVE FIX] 🎉 Complete! Checked ${totalChecked} records, Fixed ${totalFixed} category result records`);
+      console.log(`[COMPREHENSIVE FIX] 📊 All totalQuestions now dynamically match main_assessment data`);
+
+    } catch (error) {
+      console.error('[COMPREHENSIVE FIX] ❌ Error during comprehensive fix:', error);
+      throw error;
     }
   }
 

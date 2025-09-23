@@ -4705,21 +4705,21 @@ const PrescriptiveAnalysis = ({
                       {/* Data Normalization Section */}
                       {interventionData.dataNormalization && (
                         <div className="data-normalization-section">
-                          <h4 className="revision-subtitle">📊 Data Normalization Status</h4>
+                          <h4 className="revision-subtitle">Data Normalization Status</h4>
                           <div className="normalization-info">
                             <div className="normalization-item">
                               <span className="norm-label">Original Assessment Score:</span>
                               <span className="norm-value preserved">
                                 {interventionData.dataNormalization.originalAssessmentScore}%
                               </span>
-                              <span className="norm-status">🔒 Preserved</span>
+                              <span className="norm-status">Preserved</span>
                             </div>
                             <div className="normalization-item">
                               <span className="norm-label">Intervention Score:</span>
                               <span className="norm-value intervention">
                                 {interventionData.dataNormalization.interventionScore}%
                               </span>
-                              <span className="norm-status">📝 Tracked in History</span>
+                              <span className="norm-status">Tracked in History</span>
                             </div>
                             <div className="normalization-note">
                               <strong>Data Integrity:</strong> Original assessment scores are preserved to maintain
@@ -4732,7 +4732,7 @@ const PrescriptiveAnalysis = ({
                       {/* Version Tracking Section */}
                       {interventionData.versionTracking && (
                         <div className="version-tracking-section">
-                          <h4 className="revision-subtitle">🔄 Version Tracking</h4>
+                          <h4 className="revision-subtitle">Version Tracking</h4>
                           <div className="version-info">
                             <div className="version-item">
                               <span className="version-label">Current Revision:</span>
@@ -4745,7 +4745,7 @@ const PrescriptiveAnalysis = ({
                             {interventionData.versionTracking.hasMultipleAttempts && (
                               <div className="version-item">
                                 <span className="version-label">Multiple Attempts:</span>
-                                <span className="version-value multiple">✅ Yes</span>
+                                <span className="version-value multiple">Yes</span>
                               </div>
                             )}
                           </div>
@@ -4755,7 +4755,7 @@ const PrescriptiveAnalysis = ({
                       {/* Intervention History */}
                       {interventionData.versionTracking?.interventionHistory?.length > 0 && (
                         <div className="intervention-history-section">
-                          <h4 className="revision-subtitle">📜 Intervention History</h4>
+                          <h4 className="revision-subtitle">Intervention History</h4>
                           <div className="history-timeline">
                             {interventionData.versionTracking.interventionHistory.map((attempt, index) => (
                               <div key={index} className={`history-item ${attempt.isPassed ? 'passed' : 'failed'}`}>
@@ -4781,40 +4781,6 @@ const PrescriptiveAnalysis = ({
                         </div>
                       )}
 
-                      {/* Backend Data Status */}
-                      {interventionData.metadata && (
-                        <div className="backend-status-section">
-                          <h4 className="revision-subtitle">⚙️ Backend Data Status</h4>
-                          <div className="backend-info">
-                            <div className="backend-item">
-                              <span className="backend-label">API Version:</span>
-                              <span className="backend-value">{interventionData.metadata.apiVersion}</span>
-                            </div>
-                            <div className="backend-item">
-                              <span className="backend-label">Data Completeness:</span>
-                              <span className="backend-value">{interventionData.metadata.dataCompleteness}</span>
-                            </div>
-                            {interventionData.metadata.hasRevisionTracking && (
-                              <div className="backend-item">
-                                <span className="backend-label">Revision Tracking:</span>
-                                <span className="backend-value enabled">✅ Enabled</span>
-                              </div>
-                            )}
-                            {interventionData.metadata.hasDataNormalization && (
-                              <div className="backend-item">
-                                <span className="backend-label">Data Normalization:</span>
-                                <span className="backend-value enabled">✅ Active</span>
-                              </div>
-                            )}
-                            <div className="backend-item">
-                              <span className="backend-label">Last Fetched:</span>
-                              <span className="backend-value">
-                                {new Date(interventionData.metadata.fetchedAt).toLocaleString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}
