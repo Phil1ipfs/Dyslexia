@@ -1215,6 +1215,165 @@ class InterventionService {
   
   
   /**
+   * Upload file directly to S3 with public-read ACL (RECOMMENDED)
+   * @param {Buffer} fileBuffer - The file buffer
+   * @param {string} fileName - The file name
+   * @param {string} fileType - The file type
+   * @param {string} targetFolder - The target folder in S3 bucket (default: 'mobile')
+   * @returns {Promise<Object>} - The uploaded file URL
+   */
+  async uploadFileToS3(fileBuffer, fileName, fileType, targetFolder = 'mobile') {
+    try {
+      if (!s3Client) {
+        throw new Error('S3 client not properly configured');
+      }
+
+      const bucketName = process.env.AWS_BUCKET_NAME || 'literexia-bucket';
+      const region = process.env.AWS_REGION || 'ap-southeast-2';
+
+      // COMPREHENSIVE sanitization to prevent corruption and special character issues
+      const sanitizedFileName = fileName
+        .replace(/[^\w\s.-]/g, '') // Remove special characters except word chars, spaces, dots, and dashes
+        .replace(/\s+/g, '-') // Replace spaces with dashes
+        .replace(/--+/g, '-') // Replace multiple dashes with single dash
+        .replace(/^-+|-+$/g, '') // Remove leading/trailing dashes
+        .replace(/\.(js|html|php|exe|bat|cmd|sh|ps1)$/i, '.txt') // Convert dangerous extensions to .txt
+        .substring(0, 100); // Limit filename length to prevent issues
+
+      // Additional security check: prevent JavaScript injection in filenames
+      if (sanitizedFileName.includes('javascript:') ||
+          sanitizedFileName.includes('async') ||
+          sanitizedFileName.includes('=>') ||
+          sanitizedFileName.includes('function') ||
+          sanitizedFileName.includes('<script')) {
+        throw new Error('Invalid filename: contains potentially dangerous content');
+      }
+
+      // Create a unique key for the file with the target folder
+      const key = `${targetFolder}/${Date.now()}_${sanitizedFileName}`;
+
+      console.log('🚀 Uploading file directly to S3 with params:', {
+        bucket: bucketName,
+        key: key,
+        contentType: fileType,
+        targetFolder,
+        size: fileBuffer.length
+      });
+
+      // Upload directly to S3 with public-read ACL
+      const { PutObjectCommand } = require('@aws-sdk/client-s3');
+      const uploadParams = {
+        Bucket: bucketName,
+        Key: key,
+        Body: fileBuffer,
+        ContentType: fileType,
+        ACL: 'public-read' // Make file publicly accessible for mobile
+      };
+
+      const command = new PutObjectCommand(uploadParams);
+      await s3Client.send(command);
+
+      console.log('✅ File uploaded successfully to S3 with public-read ACL');
+
+      // Create the public URL
+      const fileUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
+
+      // CRITICAL: Verify the file is actually accessible before returning
+      console.log(`🔍 VERIFYING URL accessibility: ${fileUrl}`);
+
+      let verificationAttempts = 0;
+      const maxVerificationAttempts = 5;
+      let isAccessible = false;
+
+      while (verificationAttempts < maxVerificationAttempts && !isAccessible) {
+        try {
+          verificationAttempts++;
+          console.log(`🔍 Verification attempt ${verificationAttempts}/${maxVerificationAttempts}`);
+
+          // Use fetch to test accessibility
+          const verifyResponse = await fetch(fileUrl, { method: 'HEAD' });
+
+          if (verifyResponse.ok) {
+            console.log(`✅ VERIFICATION SUCCESSFUL - File is accessible at: ${fileUrl}`);
+            isAccessible = true;
+          } else {
+            console.warn(`⚠️ Verification attempt ${verificationAttempts} failed with status: ${verifyResponse.status}`);
+
+            // Wait before retry (exponential backoff)
+            if (verificationAttempts < maxVerificationAttempts) {
+              const delay = Math.pow(2, verificationAttempts) * 1000; // 2s, 4s, 8s, 16s
+              console.log(`⏳ Waiting ${delay/1000}s before retry...`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+            }
+          }
+        } catch (verifyError) {
+          console.warn(`⚠️ Verification attempt ${verificationAttempts} error:`, verifyError.message);
+
+          // Wait before retry
+          if (verificationAttempts < maxVerificationAttempts) {
+            const delay = Math.pow(2, verificationAttempts) * 1000;
+            console.log(`⏳ Waiting ${delay/1000}s before retry...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
+      }
+
+      // If verification failed after all attempts, throw error
+      if (!isAccessible) {
+        console.error(`❌ VERIFICATION FAILED - File uploaded but not accessible after ${maxVerificationAttempts} attempts`);
+
+        // Try to clean up the uploaded file
+        try {
+          const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+          await s3Client.send(new DeleteObjectCommand({
+            Bucket: bucketName,
+            Key: key
+          }));
+          console.log(`🗑️ Cleaned up inaccessible file: ${key}`);
+        } catch (cleanupError) {
+          console.error(`❌ Failed to cleanup inaccessible file:`, cleanupError);
+        }
+
+        throw new Error(`File uploaded but verification failed - file is not accessible at ${fileUrl}`);
+      }
+
+      // Get file metadata for additional validation
+      let fileMetadata = {};
+      try {
+        const { HeadObjectCommand } = require('@aws-sdk/client-s3');
+        const headResult = await s3Client.send(new HeadObjectCommand({
+          Bucket: bucketName,
+          Key: key
+        }));
+
+        fileMetadata = {
+          size: headResult.ContentLength,
+          type: headResult.ContentType,
+          lastModified: headResult.LastModified,
+          etag: headResult.ETag
+        };
+
+        console.log(`📊 File metadata:`, fileMetadata);
+      } catch (metadataError) {
+        console.warn(`⚠️ Could not retrieve file metadata:`, metadataError.message);
+      }
+
+      return {
+        key: key,
+        fileUrl: fileUrl,
+        success: true,
+        isPublic: true,
+        verified: true,
+        metadata: fileMetadata,
+        uploadedAt: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('❌ Error uploading file to S3:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Generate a pre-signed URL for S3 uploads
    * @param {string} fileName - The file name
    * @param {string} fileType - The file type
@@ -1230,21 +1389,37 @@ class InterventionService {
       const bucketName = process.env.AWS_BUCKET_NAME || 'literexia-bucket';
       const region = process.env.AWS_REGION || 'ap-southeast-2';
       
-      // Sanitize the file name to avoid S3 issues
-      const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      // COMPREHENSIVE sanitization to prevent corruption and special character issues
+      // This matches the stronger sanitization used in frontend and uploadRoutes.js
+      const sanitizedFileName = fileName
+        .replace(/[^\w\s.-]/g, '') // Remove special characters except word chars, spaces, dots, and dashes
+        .replace(/\s+/g, '-') // Replace spaces with dashes
+        .replace(/--+/g, '-') // Replace multiple dashes with single dash
+        .replace(/^-+|-+$/g, '') // Remove leading/trailing dashes
+        .replace(/\.(js|html|php|exe|bat|cmd|sh|ps1)$/i, '.txt') // Convert dangerous extensions to .txt
+        .substring(0, 100); // Limit filename length to prevent issues
+
+      // Additional security check: prevent JavaScript injection in filenames
+      if (sanitizedFileName.includes('javascript:') ||
+          sanitizedFileName.includes('async') ||
+          sanitizedFileName.includes('=>') ||
+          sanitizedFileName.includes('function') ||
+          sanitizedFileName.includes('<script')) {
+        throw new Error('Invalid filename: contains potentially dangerous content');
+      }
       
       // Create a unique key for the file with the target folder
       const key = `${targetFolder}/${Date.now()}_${sanitizedFileName}`;
       
       // Set S3 parameters for pre-signed URL
-      // Note: We need to include ACL in the S3 params (not as a header)
-      // This ensures the ACL is signed with the URL and the file becomes public after upload
+      // Note: For AWS SDK v3, ACL cannot be included in pre-signed URLs
+      // Files will be uploaded as private, then we'll make them public via bucket policy
       const s3Params = {
         Bucket: bucketName,
         Key: key,
         ContentType: fileType,
         Expires: 300, // URL expires in 5 minutes
-        ACL: 'public-read' // Include ACL in pre-signed params, not as a separate header
+        // ACL is handled by bucket policy, not in pre-signed URL
       };
       
       console.log('Generating presigned URL with params:', {
@@ -1265,7 +1440,9 @@ class InterventionService {
       return {
         uploadUrl,
         key: s3Params.Key,
-        fileUrl
+        fileUrl,
+        // Add instruction for frontend to make file public after upload
+        makePublicRequired: true
       };
     } catch (error) {
       console.error('Error generating pre-signed URL:', error);

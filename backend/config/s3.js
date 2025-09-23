@@ -21,23 +21,25 @@ s3Client.getSignedUrlPromise = async (operation, params) => {
       Bucket: params.Bucket,
       Key: params.Key,
       ContentType: params.ContentType,
-      ACL: params.ACL || 'public-read', 
+      // NOTE: ACL is NOT supported in pre-signed URLs for SDK v3
+      // The object will be private by default, we'll set bucket policy for public access
     });
-    
+
     // Convert Expires from seconds to seconds
     const expiresIn = params.Expires || 3600;
-    
+
     try {
-      const url = await getSignedUrl(s3Client, command, { 
+      const url = await getSignedUrl(s3Client, command, {
         expiresIn,
       });
+      console.log(`✅ Generated pre-signed URL for ${params.Key} (expires in ${expiresIn}s)`);
       return url;
     } catch (error) {
-      console.error('Error generating signed URL:', error);
+      console.error('❌ Error generating signed URL:', error);
       throw error;
     }
   }
-  
+
   // Add other operations as needed
   throw new Error(`Unsupported operation: ${operation}`);
 };

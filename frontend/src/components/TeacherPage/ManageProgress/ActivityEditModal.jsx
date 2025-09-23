@@ -1495,138 +1495,50 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   const uploadImageToS3 = async (file, targetFolder = 'mobile') => {
     try {
       setUploading(true);
-      console.log(`[S3 UPLOAD] Starting upload process for file: ${file.name} (${file.type})`);
+      console.log(`[S3 UPLOAD] 🚀 Starting DIRECT upload process for file: ${file.name} (${file.type})`);
       console.log(`[S3 UPLOAD] Target folder: ${targetFolder}`);
-      
+
       // Check if file is an image (png, jpg, jpeg)
       if (!file.type.match(/^image\/(jpeg|jpg|png)$/i)) {
         console.warn(`[S3 UPLOAD] File type not supported: ${file.type}. Only PNG, JPG, JPEG are allowed.`);
         throw new Error(`File type not supported: ${file.type}. Only PNG, JPG, JPEG are allowed.`);
       }
-      
-      // For development: Use real S3 upload but with extensive logging
-      // Sanitize filename to prevent corruption and special character issues
-      const sanitizedFileName = file.name
-        .replace(/[^\w\s.-]/g, '') // Remove special characters except word chars, spaces, dots, and dashes
-        .replace(/\s+/g, '-') // Replace spaces with dashes
-        .replace(/--+/g, '-') // Replace multiple dashes with single dash
-        .replace(/^-+|-+$/g, ''); // Remove leading/trailing dashes
-      
+
+      console.log(`[S3 UPLOAD] Using NEW DIRECT UPLOAD method with public-read ACL`);
       console.log(`[S3 UPLOAD] Original filename: ${file.name}`);
-      console.log(`[S3 UPLOAD] Sanitized filename: ${sanitizedFileName}`);
-      console.log(`[S3 UPLOAD] Requesting pre-signed URL for ${sanitizedFileName}`);
-      const response = await api.interventions.getUploadUrl(sanitizedFileName, file.type, targetFolder);
-      console.log('[S3 UPLOAD] Upload URL response:', response.data);
-      
-      // Use the pre-signed URL to upload directly to S3
-      const { uploadUrl, fileUrl } = response.data.data; // Note: data is nested inside data
-      
-      console.log(`[S3 UPLOAD] Pre-signed URL obtained: ${uploadUrl}`);
-      console.log(`[S3 UPLOAD] Expected file URL after upload: ${fileUrl}`);
-      console.log(`[S3 UPLOAD] Starting direct upload to S3...`);
-      
-      try {
-        console.log(`[S3 UPLOAD] Sending PUT request to S3 with content type: ${file.type}`);
-        
-        // Implement a retry mechanism (max 3 attempts)
-        let uploadResponse;
-        let lastError;
-        let responseText = '';
-        
-        for (let attempt = 1; attempt <= 3; attempt++) {
-          try {
-            console.log(`[S3 UPLOAD] Attempt ${attempt} of 3...`);
-            
-            // The pre-signed URL already includes the necessary permissions (including ACL)
-            // Don't add any custom headers that aren't signed with the URL
-            uploadResponse = await fetch(uploadUrl, {
-              method: 'PUT',
-              body: file,
-              headers: {
-                'Content-Type': file.type
-                // No x-amz-acl header - it's included in the pre-signed URL
-              }
-            });
-            
-            if (uploadResponse.ok) {
-              console.log(`[S3 UPLOAD] Attempt ${attempt} successful!`);
-              break; // Success, exit the retry loop
-            }
-            
-            // If not successful, get the error response
-            responseText = await uploadResponse.text();
-            console.error(`[S3 UPLOAD] Attempt ${attempt} failed with status: ${uploadResponse.status}`);
-            console.error(`[S3 UPLOAD] Error response: `, responseText);
-            
-            lastError = new Error(`Upload failed with status: ${uploadResponse.status}`);
-            
-            // Wait before retry (exponential backoff)
-            if (attempt < 3) {
-              const delay = attempt * 1000; // 1s, 2s
-              console.log(`[S3 UPLOAD] Retrying in ${delay/1000} seconds...`);
-              await new Promise(resolve => setTimeout(resolve, delay));
-            }
-          } catch (fetchError) {
-            console.error(`[S3 UPLOAD] Fetch error on attempt ${attempt}:`, fetchError);
-            lastError = fetchError;
-            
-            // Wait before retry
-            if (attempt < 3) {
-              const delay = attempt * 1000;
-              console.log(`[S3 UPLOAD] Retrying in ${delay/1000} seconds...`);
-              await new Promise(resolve => setTimeout(resolve, delay));
-            }
-          }
-        }
-        
-        // After all retry attempts, check if we succeeded
-        if (!uploadResponse || !uploadResponse.ok) {
-          console.error(`[S3 UPLOAD] All upload attempts failed`);
-          console.error(`[S3 UPLOAD] Last error response: `, responseText);
-          
-          // If in development mode, provide more helpful error information
-          if (import.meta.env.DEV) {
-            console.log(`[S3 UPLOAD] Debug tips for S3 upload failures:`);
-            console.log(`1. Check that your S3 bucket CORS configuration allows PUT requests`);
-            console.log(`2. Verify the pre-signed URL includes the ACL parameter`);
-            console.log(`3. Check S3 bucket permissions and policies`);
-          }
-          
-          throw lastError || new Error('Upload failed after multiple attempts');
-        }
-        
-        console.log(`[S3 UPLOAD] ✅ File uploaded successfully to S3!`);
-        console.log(`[S3 UPLOAD] File URL: ${fileUrl}`);
-        
-        // Verify the file is accessible by making a HEAD request
-        try {
-          console.log(`[S3 UPLOAD] Verifying file accessibility...`);
-          const verifyResponse = await fetch(fileUrl, { method: 'HEAD' });
-          if (verifyResponse.ok) {
-            console.log(`[S3 UPLOAD] ✅ File verification successful - accessible at ${fileUrl}`);
-          } else {
-            console.warn(`[S3 UPLOAD] ⚠️ File verification failed - status: ${verifyResponse.status}`);
-          }
-        } catch (verifyError) {
-          console.warn(`[S3 UPLOAD] ⚠️ Could not verify file: ${verifyError.message}`);
-        }
-        
-        return fileUrl;
-      } catch (fetchError) {
-        console.error('[S3 UPLOAD] Error during file upload:', fetchError);
 
-        // Show error in UI and reject upload
-        setErrors(prev => ({
-          ...prev,
-          upload: `Failed to upload image: ${fetchError.message}`
-        }));
+      // Use the new direct upload method
+      const response = await api.interventions.uploadFile(file, targetFolder);
+      console.log('[S3 UPLOAD] Direct upload response:', response.data);
 
-        throw new Error(`Image upload failed: ${fetchError.message}`);
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Upload failed');
       }
-    } catch (error) {
-      console.error('[S3 UPLOAD] Error in uploadImageToS3:', error);
 
-      // Show error in UI and reject upload
+      const { fileUrl, isPublic } = response.data.data;
+
+      console.log(`[S3 UPLOAD] ✅ Direct upload successful!`);
+      console.log(`[S3 UPLOAD] File URL: ${fileUrl}`);
+      console.log(`[S3 UPLOAD] Is Public: ${isPublic}`);
+
+      // Test the URL immediately to verify it's accessible
+      try {
+        console.log(`[S3 UPLOAD] 🔍 Testing URL accessibility...`);
+        const testResponse = await fetch(fileUrl, { method: 'HEAD' });
+        if (testResponse.ok) {
+          console.log(`[S3 UPLOAD] ✅ URL is accessible! Status: ${testResponse.status}`);
+        } else {
+          console.warn(`[S3 UPLOAD] ⚠️ URL test returned status: ${testResponse.status} (file may still be uploading)`);
+        }
+      } catch (testError) {
+        console.warn(`[S3 UPLOAD] ⚠️ URL test failed (but upload was successful):`, testError.message);
+      }
+
+      return fileUrl;
+    } catch (error) {
+      console.error('[S3 UPLOAD] ❌ Direct upload process failed:', error);
+
+      // Show error in UI
       setErrors(prev => ({
         ...prev,
         upload: `Image upload failed: ${error.message}`

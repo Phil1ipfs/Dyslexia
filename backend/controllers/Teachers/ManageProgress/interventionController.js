@@ -423,6 +423,54 @@ class InterventionController {
 
 
   /**
+   * Upload file directly to S3 with public access (RECOMMENDED)
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async uploadFileToS3(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No file provided'
+        });
+      }
+
+      const { targetFolder = 'mobile' } = req.body;
+      const file = req.file;
+
+      console.log(`[INTERVENTION CONTROLLER] 🚀 Direct S3 upload request:`, {
+        fileName: file.originalname,
+        fileType: file.mimetype,
+        size: file.size,
+        targetFolder
+      });
+
+      const uploadResult = await InterventionService.uploadFileToS3(
+        file.buffer,
+        file.originalname,
+        file.mimetype,
+        targetFolder
+      );
+
+      console.log(`[INTERVENTION CONTROLLER] ✅ Upload successful:`, uploadResult);
+
+      return res.status(200).json({
+        success: true,
+        data: uploadResult,
+        message: 'File uploaded successfully with public access'
+      });
+    } catch (error) {
+      console.error('[INTERVENTION CONTROLLER] ❌ Upload error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error uploading file',
+        error: error.message
+      });
+    }
+  }
+
+  /**
    * Get a pre-signed URL for S3 uploads
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object

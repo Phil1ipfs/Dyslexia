@@ -14,21 +14,15 @@ import {
   FaRuler,
   FaEye,
   FaUserMd,
-  FaArrowUp,
   FaArrowRight,
   FaPlus,
   FaMobile,
-  FaHandsHelping,
   FaSpinner,
   FaTimes,
   FaGraduationCap,
   FaQuestionCircle,
   FaClock,
   FaCheck,
-  FaUserEdit,
-  FaStethoscope,
-  FaPrescriptionBottleAlt,
-  FaLink,
   FaFlag,
   FaCalendarAlt,
   FaHistory
@@ -51,6 +45,32 @@ const inlineStyles = {
     fontStyle: 'italic',
     color: '#666',
   }
+};
+
+/**
+ * Sanitizes the image URL by fixing any corrupted S3 URLs
+ * @param {string} url - The potentially corrupted image URL
+ * @returns {string} The sanitized image URL
+ */
+const sanitizeImageUrl = (url) => {
+  if (!url) return '';
+
+  // Check if the URL contains JavaScript code (a sign of corruption)
+  if (url.includes('async () =>') || url.includes('function(') || url.includes('=>')) {
+    // Extract the filename from the corrupted URL if possible
+    const filenameMatch = url.match(/main-assessment\/[^/]*\/([^/]+)/);
+    const filename = filenameMatch ? filenameMatch[1] : '';
+
+    if (filename) {
+      // Reconstruct a valid S3 URL with the extracted filename
+      return `https://literexia-bucket.s3.amazonaws.com/main-assessment/word-recognition/${filename}`;
+    } else {
+      console.error('Could not parse corrupted image URL:', url);
+      return '';
+    }
+  }
+
+  return url;
 };
 
 /**
@@ -209,7 +229,6 @@ const PrescriptiveAnalysis = ({
   categoryResults, 
   prescriptiveAnalyses, 
   interventions, 
-  interventionProgress,
   onCreateActivity,
   studentId 
 }) => {
@@ -228,7 +247,6 @@ const PrescriptiveAnalysis = ({
 
   // Intervention results states for dynamic UI
   const [interventionResults, setInterventionResults] = useState({});
-  const [interventionStatus, setInterventionStatus] = useState({}); // 'initial', 'success', 'revision_needed'
   const isLoadingInterventionsRef = useRef(false);
   const [notificationMessage, setNotificationMessage] = useState({
     title: 'Success!',
@@ -324,7 +342,7 @@ const PrescriptiveAnalysis = ({
   };
 
   // NEW: Determine if category is unlocked based on intervention progression
-  const isCategoryUnlocked = (categoryName, categoryIndex) => {
+  const isCategoryUnlocked = (categoryIndex) => {
     // First category (Alphabet Knowledge) is always unlocked
     if (categoryIndex === 0) return true;
     
@@ -683,7 +701,6 @@ const PrescriptiveAnalysis = ({
     if (!sid) return;                              // no ID? bail.
     
     // If parent supplied all data except interventions, we only need to fetch interventions
-    const needsInterventions = interventions?.length === 0 || interventions === undefined;
     
     // Skip fetches if we've already fetched for this student
     if (hasDataBeenFetched.current) {
@@ -1540,10 +1557,9 @@ const PrescriptiveAnalysis = ({
   /**
    * Handle creating new activity
    * @param {string} category - Category name
-   * @param {Object} analysis - Analysis object
    * @param {Object} existingActivity - Existing activity to edit (optional)
    */
-  const handleCreateActivity = (category, analysis, existingActivity = null) => {
+  const handleCreateActivity = (category, existingActivity = null) => {
     // Check if this is for creating version 2 based on failed intervention results
     const interventionResultData = interventionResults[category];
     const hasInterventionResults = interventionResultData && interventionResultData.score !== undefined;
@@ -2022,7 +2038,6 @@ const PrescriptiveAnalysis = ({
     console.log('🔍 [COMPREHENSIVE] Rendering comprehensive analysis for', categoryName, ':', researchBasedPrescriptions);
 
     const {
-      categoryStatus,
       deficitAnalysis,
       interventionPrescription,
       escalationProtocol,
@@ -3154,307 +3169,8 @@ const PrescriptiveAnalysis = ({
    * @return {JSX.Element} Teaching guide content
    */
 
-  /**
-   * Render IRT (Item Response Theory) ability estimate
-   */
-  const renderIRTAnalysis = (irtAbility, categoryName) => {
-    if (typeof irtAbility !== 'number') return null;
 
-    // Convert IRT scale (-3 to +3) to percentage (0 to 100)
-    const abilityPercentage = Math.round(((irtAbility + 3) / 6) * 100);
-    const abilityLevel = irtAbility >= 1.5 ? 'Very High' :
-                        irtAbility >= 0.5 ? 'High' :
-                        irtAbility >= -0.5 ? 'Average' :
-                        irtAbility >= -1.5 ? 'Below Average' : 'Very Low';
 
-    return (
-      <div className="literexia-irt-analysis">
-        <div className="literexia-analysis-section">
-          <h4><FaChartLine /> Item Response Theory (IRT) Ability</h4>
-          <div className="literexia-irt-content">
-            <div className="literexia-ability-thermometer">
-              <div className="literexia-thermometer-scale">
-                <div className="literexia-scale-marker" data-value="Very High">+3</div>
-                <div className="literexia-scale-marker" data-value="High">+1</div>
-                <div className="literexia-scale-marker" data-value="Average">0</div>
-                <div className="literexia-scale-marker" data-value="Below Average">-1</div>
-                <div className="literexia-scale-marker" data-value="Very Low">-3</div>
-              </div>
-              <div className="literexia-thermometer-fill">
-                <div
-                  className="literexia-ability-indicator"
-                  style={{ bottom: `${abilityPercentage}%` }}
-                >
-                  <span className="literexia-ability-value">{irtAbility.toFixed(1)}</span>
-                </div>
-              </div>
-            </div>
-            <div className="literexia-ability-info">
-              <div className="literexia-ability-level">{abilityLevel}</div>
-              <div className="literexia-ability-description">
-                {irtAbility >= 1 ?
-                  `Student shows above-average ability in ${formatCategoryName(categoryName)}` :
-                  irtAbility >= -0.5 ?
-                  `Student shows average ability in ${formatCategoryName(categoryName)}` :
-                  `Student needs additional support in ${formatCategoryName(categoryName)}`
-                }
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  /**
-   * Render sophisticated error pattern analysis based on CLAUDE.md specifications
-   */
-  const renderErrorPatternAnalysis = (errorPatterns, categoryName) => {
-    if (!errorPatterns) return null;
-
-    const renderCategorySpecificErrors = () => {
-      switch (categoryName) {
-        case 'Alphabet Knowledge':
-          return (
-            <div className="literexia-error-breakdown">
-              {errorPatterns.patinig_errors && (
-                <div className="literexia-error-group">
-                  <h6>Vowel (Patinig) Errors</h6>
-                  <div className="literexia-error-stats">
-                    <span className="literexia-error-rate">{errorPatterns.patinig_errors.percentage}% error rate</span>
-                    <span className="literexia-error-count">({errorPatterns.patinig_errors.count}/{errorPatterns.patinig_errors.total})</span>
-                  </div>
-                  {errorPatterns.patinig_errors.specific_letters && (
-                    <div className="literexia-confused-letters">
-                      <strong>Confused letters:</strong> {errorPatterns.patinig_errors.specific_letters.join(', ')}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {errorPatterns.katinig_errors && (
-                <div className="literexia-error-group">
-                  <h6>Consonant (Katinig) Errors</h6>
-                  <div className="literexia-error-stats">
-                    <span className="literexia-error-rate">{errorPatterns.katinig_errors.percentage}% error rate</span>
-                    <span className="literexia-error-count">({errorPatterns.katinig_errors.count}/{errorPatterns.katinig_errors.total})</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-
-        case 'Phonological Awareness':
-          return (
-            <div className="literexia-error-breakdown">
-              {errorPatterns.matching_errors && (
-                <div className="literexia-error-group">
-                  <h6>Sound-Symbol Matching Errors</h6>
-                  <div className="literexia-error-stats">
-                    <span className="literexia-error-rate">{errorPatterns.matching_errors.percentage}% error rate</span>
-                    <span className="literexia-partial-success">Avg. {Math.round((errorPatterns.matching_errors.avg_partial_success || 0) * 100)}% partial success</span>
-                  </div>
-                  <div className="literexia-error-type">
-                    <strong>Primary issue:</strong> {errorPatterns.matching_errors.error_type?.replace(/_/g, ' ')}
-                  </div>
-
-                  {/* Sound confusion analysis */}
-                  <div className="literexia-sound-confusions">
-                    <h6>Common Sound Confusions</h6>
-                    <div className="literexia-confusion-pairs">
-                      <div className="literexia-confusion-item">B-P sounds <span className="literexia-confusion-rate">High confusion</span></div>
-                      <div className="literexia-confusion-item">M-N sounds <span className="literexia-confusion-rate">Moderate confusion</span></div>
-                      <div className="literexia-confusion-item">D-T sounds <span className="literexia-confusion-rate">Low confusion</span></div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-
-        case 'Decoding':
-          return (
-            <div className="literexia-error-breakdown">
-              {errorPatterns.decoding_errors && (
-                <div className="literexia-error-group">
-                  <h6>Decoding Pattern Errors</h6>
-                  <div className="literexia-error-stats">
-                    <span className="literexia-error-rate">{errorPatterns.decoding_errors.percentage}% error rate</span>
-                  </div>
-                  <div className="literexia-error-position">
-                    <strong>Most errors at:</strong> {errorPatterns.decoding_errors.most_error_position === 0 ? 'Beginning of words' :
-                                                      errorPatterns.decoding_errors.most_error_position === 1 ? 'Middle of words' : 'End of words'}
-                  </div>
-                  <div className="literexia-error-type">
-                    <strong>Primary pattern:</strong> {errorPatterns.decoding_errors.error_type?.replace(/_/g, ' ')}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-
-        case 'Word Recognition':
-          return (
-            <div className="literexia-error-breakdown">
-              {errorPatterns.word_errors && (
-                <div className="literexia-error-group">
-                  <h6>Word Recognition Errors</h6>
-                  <div className="literexia-error-stats">
-                    <span className="literexia-error-rate">{errorPatterns.word_errors.percentage}% error rate</span>
-                    <span className="literexia-error-count">({errorPatterns.word_errors.count}/{errorPatterns.word_errors.total})</span>
-                  </div>
-                  <div className="literexia-error-type">
-                    <strong>Primary issue:</strong> {errorPatterns.word_errors.error_type?.replace(/_/g, ' ')}
-                  </div>
-                  {errorPatterns.word_errors.sentence_completion_errors > 0 && (
-                    <div className="literexia-error-breakdown">
-                      <div className="literexia-error-subgroup">
-                        <strong>Sentence Completion:</strong> {errorPatterns.word_errors.sentence_completion_errors} errors
-                      </div>
-                    </div>
-                  )}
-                  {errorPatterns.word_errors.rhyming_errors > 0 && (
-                    <div className="literexia-error-breakdown">
-                      <div className="literexia-error-subgroup">
-                        <strong>Rhyming Words:</strong> {errorPatterns.word_errors.rhyming_errors} errors
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-
-        case 'Reading Comprehension':
-          return (
-            <div className="literexia-error-breakdown">
-              {errorPatterns.comprehension_errors && (
-                <div className="literexia-error-group">
-                  <h6>Reading Comprehension Errors</h6>
-                  <div className="literexia-error-stats">
-                    <span className="literexia-error-rate">{errorPatterns.comprehension_errors.percentage}% error rate</span>
-                  </div>
-                  <div className="literexia-error-type">
-                    <strong>Primary issue:</strong> {errorPatterns.comprehension_errors.error_type?.replace(/_/g, ' ')}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-
-        default:
-          return (
-            <div className="literexia-general-errors">
-              <p>Error pattern analysis available for this category</p>
-            </div>
-          );
-      }
-    };
-
-    return (
-      <div className="literexia-error-analysis">
-        <div className="literexia-analysis-section">
-          <h4><FaExclamationTriangle /> Error Pattern Analysis</h4>
-          <div className="literexia-error-content">
-            {renderCategorySpecificErrors()}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  /**
-   * Render intervention analysis with history and recommendations
-   */
-  const renderInterventionAnalysis = (interventionHistory, interventionPlan, categoryName) => {
-    const hasInterventions = interventionHistory && interventionHistory.length > 0;
-    const hasInterventionPlan = interventionPlan && Object.keys(interventionPlan).length > 0;
-
-    if (!hasInterventions && !hasInterventionPlan) {
-      return null; // Hide container if no intervention data
-    }
-
-    return (
-      <div className="literexia-intervention-analysis">
-        <div className="literexia-interventions-header">
-          <h3><FaHandsHelping /> Intervention Analysis</h3>
-          <div className="literexia-one-time-rule-indicator">
-            <span className="literexia-rule-badge">One-Time Digital Rule</span>
-            <span className="literexia-rule-description">Each category gets one intervention attempt</span>
-          </div>
-        </div>
-
-        {hasInterventions && (
-          <div className="literexia-intervention-history">
-            <h4>Intervention History</h4>
-            <div className="literexia-history-timeline">
-              {interventionHistory.map((intervention, index) => (
-                <div key={index} className={`literexia-history-item ${intervention.passed ? 'passed' : 'failed'}`}>
-                  <div className="literexia-history-marker">
-                    {intervention.passed ? <FaCheckCircle /> : <FaTimes />}
-                  </div>
-                  <div className="literexia-history-content">
-                    <div className="literexia-history-title">
-                      Attempt #{intervention.attempt || index + 1} - {intervention.passed ? 'Passed' : 'Failed'}
-                    </div>
-                    <div className="literexia-history-details">
-                      <span>Score: {intervention.score}%</span>
-                      <span>Date: {new Date(intervention.dateTaken).toLocaleDateString()}</span>
-                    </div>
-                    {!intervention.passed && (
-                      <div className="literexia-revision-notice">
-                        <FaEdit /> Teacher revision recommended for next attempt
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {hasInterventionPlan && (
-          <div className="literexia-intervention-recommendations">
-            <h4>Intervention Recommendations</h4>
-            <div className="literexia-recommendation-content">
-              {interventionPlan.focus && (
-                <div className="literexia-focus-area">
-                  <strong>Primary Focus:</strong> {interventionPlan.focus.replace(/_/g, ' ')}
-                </div>
-              )}
-
-              {interventionPlan.targetSounds && interventionPlan.targetSounds.length > 0 && (
-                <div className="literexia-target-elements">
-                  <strong>Target Sound Pairs:</strong>
-                  <div className="literexia-sound-tags">
-                    {interventionPlan.targetSounds.map((sound, idx) => (
-                      <span key={idx} className="literexia-sound-tag">{sound}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {interventionPlan.recommendedActivities && interventionPlan.recommendedActivities.length > 0 && (
-                <div className="literexia-recommended-activities">
-                  <strong>Recommended Activities:</strong>
-                  <ul className="literexia-activity-list">
-                    {interventionPlan.recommendedActivities.map((activity, idx) => (
-                      <li key={idx}>
-                        {typeof activity === 'string' ? 
-                          activity.replace(/_/g, ' ') : 
-                          (activity.skill || activity.activity || activity.description || JSON.stringify(activity))
-                        }
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const renderMathematicalAnalysis = (categoryName, analysis) => {
     console.log('🎯 [RENDER MATHEMATICAL ANALYSIS] Starting with:', {
@@ -3512,7 +3228,6 @@ const PrescriptiveAnalysis = ({
       irtAbility,        // Item Response Theory ability estimate
       errorPatterns,     // Error pattern analysis
       detailedErrorAnalysis, // Individual letter/question level analysis from database
-      insights,          // Overall insights
       interventionPlan,  // Intervention recommendations
       researchBasedPrescriptions // Research-based prescriptions from database
     } = analysis;
@@ -4195,8 +3910,6 @@ const PrescriptiveAnalysis = ({
       );
     } else {
       // ===== AFTER INTERVENTION: Comprehensive Results Display =====
-      const interventionStatus = getInterventionStatus(categoryName);
-      const statusTheme = getUITheme(categoryName);
 
       return (
         <div className="epa-intervention-results-display">
@@ -5245,441 +4958,6 @@ const PrescriptiveAnalysis = ({
     fetchDynamicInterventionResults();
   }, [liveStudent?.idNumber, fetchEnhancedInterventionResults]);
 
-  // Render Comprehensive Research-Based Prescriptions for Intervention Results
-  const renderInterventionResearchPrescriptions = (interventionData, categoryName) => {
-    if (!interventionData?.researchBasedPrescriptions?.[categoryName]) {
-      return (
-        <div className="research-prescriptions-placeholder">
-          <div className="placeholder-icon">
-            <FaUserMd />
-          </div>
-          <div className="placeholder-content">
-            <h4>Research Prescriptions Processing</h4>
-            <p>Comprehensive research-based prescriptions are being generated for {categoryName}.</p>
-          </div>
-        </div>
-      );
-    }
-
-    const prescription = interventionData.researchBasedPrescriptions[categoryName];
-    const versionTracking = interventionData.versionTracking || {};
-    const accuracyProgression = interventionData.prescriptionAccuracyProgression || [75];
-    const currentAccuracy = interventionData.comprehensiveAccuracy?.currentAccuracy || 75;
-
-    return (
-      <div className="comprehensive-research-prescriptions">
-        {/* Version Tracking Header */}
-        <div className="version-tracking-header">
-          <div className="version-info">
-            <h3 className="prescription-title">
-              <FaUserMd className="epa-icon" />
-              Research-Based Prescriptions
-            </h3>
-            <div className="version-tracking-badges">
-              <div className={`version-badge version-${versionTracking.currentVersion || 1}`}>
-                VERSION {versionTracking.currentVersion || 1}
-              </div>
-              <div className="accuracy-badge">
-                {currentAccuracy}% ACCURACY
-              </div>
-              <div className="attempts-badge">
-                {versionTracking.totalAttempts || 1} ATTEMPT{(versionTracking.totalAttempts || 1) > 1 ? 'S' : ''}
-              </div>
-            </div>
-          </div>
-
-          {/* Prescription Accuracy Progression */}
-          <div className="accuracy-progression">
-            <h4 className="progression-title">Prescription Accuracy Evolution</h4>
-            <div className="progression-timeline">
-              {accuracyProgression.map((accuracy, index) => {
-                const version = accuracyProgression.length - index;
-                const isCurrentVersion = version === (versionTracking.currentVersion || 1);
-
-                return (
-                  <div key={version} className={`progression-step ${isCurrentVersion ? 'current' : ''}`}>
-                    <div className="step-marker">
-                      <div className="step-number">V{version}</div>
-                      <div className="step-accuracy">{accuracy}%</div>
-                    </div>
-                    {index < accuracyProgression.length - 1 && (
-                      <div className="step-connector"></div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="progression-description">
-              <span className="progression-label">Enhanced Cross-Referencing:</span>
-              <span className="progression-value">
-                {versionTracking.crossReferenceCapable ? 'ENABLED' : 'BASELINE'}
-                • {versionTracking.bidirectionalTrackingEnabled ? 'Bidirectional' : 'Unidirectional'} Tracking
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Deficit Analysis Section */}
-        {prescription.deficitAnalysis && (
-          <div className="research-prescription-section deficit-analysis">
-            <h4 className="after-intervention-section-title">
-              <FaStethoscope className="section-icon" />
-              Comprehensive Deficit Analysis
-            </h4>
-            <div className="deficit-content">
-              {prescription.deficitAnalysis.specificDeficits?.map((deficit, index) => (
-                <div key={index} className="deficit-item">
-                  <div className="deficit-header">
-                    <h5 className="deficit-title">{deficit.deficit}</h5>
-                    <div className={`severity-badge severity-${deficit.severity}`}>
-                      {deficit.severity?.toUpperCase()}
-                    </div>
-                  </div>
-                  <div className="deficit-details">
-                    <div className="deficit-detail">
-                      <span className="detail-label">Manifestation:</span>
-                      <span className="detail-value">{deficit.manifestation}</span>
-                    </div>
-                    <div className="deficit-detail">
-                      <span className="detail-label">Error Rate:</span>
-                      <span className="detail-value error-rate">{deficit.errorRate}</span>
-                    </div>
-                    <div className="deficit-detail">
-                      <span className="detail-label">Research Evidence:</span>
-                      <span className="detail-value research">{deficit.researchEvidence}</span>
-                    </div>
-                    <div className="deficit-detail">
-                      <span className="detail-label">Intervention Response:</span>
-                      <span className={`detail-value response-${deficit.interventionResponse?.replace('_', '-')}`}>
-                        {deficit.interventionResponse?.replace('_', ' ').toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {/* Root Cause Analysis */}
-              {prescription.deficitAnalysis.rootCauseAnalysis && (
-                <div className="root-cause-analysis">
-                  <h5 className="analysis-subtitle">Root Cause Analysis</h5>
-                  <p className="root-cause-text">{prescription.deficitAnalysis.rootCauseAnalysis}</p>
-
-                  {/* Cognitive Factors */}
-                  {prescription.deficitAnalysis.cognitiveFactors && (
-                    <div className="cognitive-factors">
-                      <span className="factors-label">Cognitive Factors:</span>
-                      <div className="factors-tags">
-                        {prescription.deficitAnalysis.cognitiveFactors.map((factor, index) => (
-                          <span key={index} className="factor-tag cognitive">
-                            {factor.replace('_', ' ')}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Linguistic Factors */}
-                  {prescription.deficitAnalysis.linguisticFactors && (
-                    <div className="linguistic-factors">
-                      <span className="factors-label">Linguistic Factors:</span>
-                      <div className="factors-tags">
-                        {prescription.deficitAnalysis.linguisticFactors.map((factor, index) => (
-                          <span key={index} className="factor-tag linguistic">
-                            {factor.replace('_', ' ')}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Next Intervention Prescription Section */}
-        {prescription.nextInterventionPrescription && (
-          <div className="research-prescription-section next-intervention">
-            <h4 className="after-intervention-section-title">
-              <FaPrescriptionBottleAlt className="section-icon" />
-              Next Intervention Prescription
-            </h4>
-            <div className="prescription-content">
-              <div className="prescription-overview">
-                <div className="prescription-metric">
-                  <span className="metric-label">Recommended Action:</span>
-                  <span className={`metric-value action-${prescription.nextInterventionPrescription.recommendedAction?.replace('_', '-')}`}>
-                    {prescription.nextInterventionPrescription.recommendedAction?.replace('_', ' ').toUpperCase()}
-                  </span>
-                </div>
-                <div className="prescription-metric">
-                  <span className="metric-label">Primary Approach:</span>
-                  <span className="metric-value approach">
-                    {prescription.nextInterventionPrescription.primaryApproach}
-                  </span>
-                </div>
-                <div className="prescription-metric">
-                  <span className="metric-label">Intensity Level:</span>
-                  <span className={`metric-value intensity-${prescription.nextInterventionPrescription.intensityLevel}`}>
-                    {prescription.nextInterventionPrescription.intensityLevel?.toUpperCase()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Specific Techniques */}
-              {prescription.nextInterventionPrescription.specificTechniques?.map((technique, index) => (
-                <div key={index} className="technique-item">
-                  <h5 className="technique-title">{technique.technique}</h5>
-                  <div className="technique-details">
-                    <div className="technique-detail">
-                      <span className="detail-label">Description:</span>
-                      <span className="detail-value">{technique.description}</span>
-                    </div>
-                    <div className="technique-detail">
-                      <span className="detail-label">Duration:</span>
-                      <span className="detail-value duration">{technique.duration}</span>
-                    </div>
-                    <div className="technique-detail">
-                      <span className="detail-label">Materials:</span>
-                      <span className="detail-value materials">{technique.materials}</span>
-                    </div>
-                    <div className="technique-detail">
-                      <span className="detail-label">Progress Criteria:</span>
-                      <span className="detail-value criteria">{technique.progressCriteria}</span>
-                    </div>
-                    <div className="technique-detail">
-                      <span className="detail-label">Research Basis:</span>
-                      <span className="detail-value research">{technique.researchBasis}</span>
-                    </div>
-                    {technique.modificationFromPrevious && (
-                      <div className="technique-detail modification">
-                        <span className="detail-label">Modification from Previous:</span>
-                        <span className="detail-value modification-value">{technique.modificationFromPrevious}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {/* Session Structure */}
-              {prescription.nextInterventionPrescription.sessionStructure && (
-                <div className="session-structure">
-                  <h5 className="structure-title">Session Structure</h5>
-                  <div className="structure-details">
-                    <div className="structure-item">
-                      <span className="structure-label">Optimal Length:</span>
-                      <span className="structure-value">{prescription.nextInterventionPrescription.sessionStructure.optimalLength}</span>
-                    </div>
-                    <div className="structure-item">
-                      <span className="structure-label">Break Pattern:</span>
-                      <span className="structure-value">{prescription.nextInterventionPrescription.sessionStructure.breakPattern}</span>
-                    </div>
-                    {prescription.nextInterventionPrescription.sessionStructure.sessionComponents && (
-                      <div className="structure-item components">
-                        <span className="structure-label">Session Components:</span>
-                        <div className="component-tags">
-                          {prescription.nextInterventionPrescription.sessionStructure.sessionComponents.map((component, index) => (
-                            <span key={index} className="component-tag">
-                              {component.replace('_', ' ')}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Progress Monitoring */}
-              {prescription.nextInterventionPrescription.progressMonitoring && (
-                <div className="progress-monitoring">
-                  <h5 className="monitoring-title">Progress Monitoring</h5>
-                  <div className="monitoring-details">
-                    <div className="monitoring-item">
-                      <span className="monitoring-label">Frequency:</span>
-                      <span className="monitoring-value">{prescription.nextInterventionPrescription.progressMonitoring.frequency}</span>
-                    </div>
-                    <div className="monitoring-item">
-                      <span className="monitoring-label">Data Collection:</span>
-                      <span className="monitoring-value">{prescription.nextInterventionPrescription.progressMonitoring.dataCollectionMethod}</span>
-                    </div>
-                    {prescription.nextInterventionPrescription.progressMonitoring.keyIndicators && (
-                      <div className="monitoring-item indicators">
-                        <span className="monitoring-label">Key Indicators:</span>
-                        <div className="indicator-tags">
-                          {prescription.nextInterventionPrescription.progressMonitoring.keyIndicators.map((indicator, index) => (
-                            <span key={index} className="indicator-tag">
-                              {indicator.replace('_', ' ')}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Teacher Revision Guidance Section */}
-        {prescription.teacherRevisionGuidance && (
-          <div className="research-prescription-section teacher-revision">
-            <h4 className="after-intervention-section-title">
-              <FaUserEdit className="section-icon" />
-              Teacher Revision Guidance
-            </h4>
-            <div className="revision-content">
-              <div className="revision-overview">
-                <div className="revision-status">
-                  <span className="status-label">Revision Recommended:</span>
-                  <span className={`status-value ${prescription.teacherRevisionGuidance.revisionRecommended ? 'recommended' : 'not-recommended'}`}>
-                    {prescription.teacherRevisionGuidance.revisionRecommended ? 'YES' : 'NO'}
-                  </span>
-                </div>
-                <div className="revision-priority">
-                  <span className="priority-label">Priority:</span>
-                  <span className={`priority-value priority-${prescription.teacherRevisionGuidance.revisionPriority}`}>
-                    {prescription.teacherRevisionGuidance.revisionPriority?.toUpperCase()}
-                  </span>
-                </div>
-                <div className="revision-impact">
-                  <span className="impact-label">Estimated Impact:</span>
-                  <span className="impact-value">{prescription.teacherRevisionGuidance.estimatedImpact}</span>
-                </div>
-              </div>
-
-              {/* Specific Changes */}
-              {prescription.teacherRevisionGuidance.specificChanges?.map((change, index) => (
-                <div key={index} className="revision-change">
-                  <h5 className="change-title">Recommended Change #{index + 1}</h5>
-                  <div className="change-details">
-                    <div className="change-detail">
-                      <span className="detail-label">Change:</span>
-                      <span className="detail-value">{change.change}</span>
-                    </div>
-                    <div className="change-detail">
-                      <span className="detail-label">Rationale:</span>
-                      <span className="detail-value rationale">{change.rationale}</span>
-                    </div>
-                    <div className="change-detail">
-                      <span className="detail-label">Expected Impact:</span>
-                      <span className="detail-value impact">{change.expectedImpact}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {/* Question Modifications */}
-              {prescription.teacherRevisionGuidance.questionModifications?.map((modification, index) => (
-                <div key={index} className="question-modification">
-                  <h5 className="modification-title">Question Modification #{index + 1}</h5>
-                  <div className="modification-details">
-                    <div className="modification-detail">
-                      <span className="detail-label">Question Type:</span>
-                      <span className="detail-value type">{modification.questionType}</span>
-                    </div>
-                    <div className="modification-detail">
-                      <span className="detail-label">Current Difficulty:</span>
-                      <span className="detail-value current">{modification.currentDifficulty}</span>
-                    </div>
-                    <div className="modification-detail">
-                      <span className="detail-label">Recommended Change:</span>
-                      <span className="detail-value recommended">{modification.recommendedChange}</span>
-                    </div>
-                    <div className="modification-detail">
-                      <span className="detail-label">Reason:</span>
-                      <span className="detail-value reason">{modification.reason}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {/* Support Features */}
-              {prescription.teacherRevisionGuidance.supportFeatures && (
-                <div className="support-features">
-                  <h5 className="features-title">Recommended Support Features</h5>
-                  <div className="feature-tags">
-                    {prescription.teacherRevisionGuidance.supportFeatures.map((feature, index) => (
-                      <span key={index} className="feature-tag">
-                        {feature}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Cross-Reference Analysis Section */}
-        {interventionData.crossReferenceAnalysis && (
-          <div className="research-prescription-section cross-reference">
-            <h4 className="after-intervention-section-title">
-              <FaLink className="section-icon" />
-              Cross-Reference Analysis
-            </h4>
-            <div className="cross-reference-content">
-              <div className="cross-reference-overview">
-                <div className="cross-reference-metric">
-                  <span className="metric-label">Previous Attempts:</span>
-                  <span className="metric-value">{interventionData.crossReferenceAnalysis.previousAttempts?.length || 0}</span>
-                </div>
-                <div className="cross-reference-metric">
-                  <span className="metric-label">Improvement Trajectory:</span>
-                  <span className={`metric-value trajectory-${interventionData.crossReferenceAnalysis.improvementTrajectory?.replace('_', '-')}`}>
-                    {interventionData.crossReferenceAnalysis.improvementTrajectory?.replace('_', ' ').toUpperCase()}
-                  </span>
-                </div>
-                <div className="cross-reference-metric">
-                  <span className="metric-label">Teacher Revision Effectiveness:</span>
-                  <span className={`metric-value effectiveness-${interventionData.crossReferenceAnalysis.teacherRevisionEffectiveness?.replace('_', '-')}`}>
-                    {interventionData.crossReferenceAnalysis.teacherRevisionEffectiveness?.replace('_', ' ').toUpperCase()}
-                  </span>
-                </div>
-                <div className="cross-reference-metric">
-                  <span className="metric-label">Learning Velocity:</span>
-                  <span className="metric-value velocity">
-                    {interventionData.crossReferenceAnalysis.learningVelocity?.toFixed(2) || '0.00'} pts/day
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Escalation Protocol Section */}
-        {prescription.escalationProtocol && (
-          <div className="research-prescription-section escalation-protocol">
-            <h4 className="after-intervention-section-title">
-              <FaExclamationTriangle className="section-icon" />
-              Escalation Protocol
-            </h4>
-            <div className="escalation-content">
-              <div className="escalation-status">
-                <span className="status-label">Escalation Triggered:</span>
-                <span className={`status-value ${prescription.escalationProtocol.escalationTriggered ? 'triggered' : 'not-triggered'}`}>
-                  {prescription.escalationProtocol.escalationTriggered ? 'YES' : 'NO'}
-                </span>
-              </div>
-              {prescription.escalationProtocol.triggers?.length > 0 && (
-                <div className="escalation-triggers">
-                  <span className="triggers-label">Triggers:</span>
-                  <div className="trigger-tags">
-                    {prescription.escalationProtocol.triggers.map((trigger, index) => (
-                      <span key={index} className="trigger-tag">
-                        {trigger}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const renderCategoryTabs = () => {
     return (
@@ -5716,23 +4994,20 @@ const PrescriptiveAnalysis = ({
               }
 
               // For unpassed categories, only show if it's accessible/unlocked
-              const isUnlocked = isCategoryUnlocked(cat.categoryName, catIndex);
+              const isUnlocked = isCategoryUnlocked(catIndex);
               return isUnlocked;
             })
             .map((category, index) => {
               const categoryName = category.categoryName;
               const displayName = formatCategoryName(categoryName);
-              const score = Number(category.score) || 0;
               const isCompleted = category.isCompleted || false;
               const isPassed = category.isPassed || false;
-              const needsIntervention = isCompleted && score < 75;
               const correctAnswers = category.correctAnswers || 0;
               const totalQuestions = category.totalQuestions || 0;
 
               // NEW: Get dynamic progression status based on intervention history
               const progressionStatus = getCategoryProgressionStatus(category);
-              const isUnlocked = isCategoryUnlocked(categoryName, index);
-              const latestAttempt = getLatestInterventionAttempt(category);
+              const isUnlocked = isCategoryUnlocked(index);
 
               // ✅ FIX: Check if category has been answered based on multiple data sources
               const hasPrescriptiveAnalysis = (() => {
@@ -6188,7 +5463,7 @@ const PrescriptiveAnalysis = ({
                 {selectedInterventions.length === 0 && !isCategoryPassed(selectedCategoryData, selectedCategory) && (
                   <button 
                     className="literexia-create-activity-btn" 
-                    onClick={() => handleCreateActivity(selectedCategory, selectedAnalysis)}
+                    onClick={() => handleCreateActivity(selectedCategory)}
                     disabled={loading}
                     title="Create a new intervention activity"
                   >
@@ -6228,7 +5503,7 @@ const PrescriptiveAnalysis = ({
                     const hasCurrentVersionResponses = progress && progress.revisionNumber === currentRevision;
 
                     // Determine display values based on current version status
-                    let progressPercentage, isPassed, interventionStatus;
+                    let progressPercentage, isPassed;
 
                     if (hasCurrentVersionResults) {
                       // Student completed current version - use progress data from API or intervention results
@@ -6239,22 +5514,18 @@ const PrescriptiveAnalysis = ({
                         progressPercentage = progress ? progress.score : 0;
                         isPassed = progress ? progress.passedThreshold : false;
                       }
-                      interventionStatus = isPassed ? 'passed' : 'failed';
                     } else if (hasBeenRevised && !hasCurrentVersionResponses) {
                       // Teacher created new version but student hasn't started it yet
                       progressPercentage = 0;
                       isPassed = false;
-                      interventionStatus = 'active'; // Show as active - waiting for student
                     } else if (hasCurrentVersionResponses) {
                       // Student started current version but hasn't finished
                       progressPercentage = progress.percentComplete || 0;
                       isPassed = progress.passedThreshold || false;
-                      interventionStatus = 'active';
                     } else {
                       // No responses yet for any version
                       progressPercentage = 0;
                       isPassed = false;
-                      interventionStatus = intervention.status || 'active';
                     }
                     
                     return (
@@ -6369,7 +5640,7 @@ const PrescriptiveAnalysis = ({
                         <div className="literexia-intervention-actions">
                           <button
                             className={`literexia-edit-activity-btn ${hasCurrentVersionResults && !isPassed ? 'version-two' : ''} ${isCategoryPassed(selectedCategoryData, selectedCategory) ? 'disabled-passed' : ''}`}
-                            onClick={() => handleCreateActivity(selectedCategory, selectedAnalysis, intervention)}
+                            onClick={() => handleCreateActivity(selectedCategory, intervention)}
                             disabled={
                               loading ||
                               (hasBeenRevised && !hasCurrentVersionResults) || // VERSION 2+ without results - disable edit
@@ -6615,25 +5886,50 @@ const PrescriptiveAnalysis = ({
                             <p className="intervention-response-question-text">{response.questionText || 'Question text not available'}</p>
                             {response.questionImage && response.questionImage.trim() !== '' ? (
                               <div className="intervention-response-question-image">
-                                <img 
-                                  src={response.questionImage} 
-                                  alt="Question image" 
+                                <img
+                                  src={sanitizeImageUrl(response.questionImage)}
+                                  alt="Question image"
                                   className="intervention-response-image"
                                   onError={(e) => {
-                                    console.error('Failed to load question image:', response.questionImage);
-                                    console.error('Image URL contains corrupted characters, likely due to filename encoding issues');
-                                    // Hide the broken image and show error message
-                                    e.target.style.display = 'none';
-                                    const errorDiv = document.createElement('div');
-                                    errorDiv.className = 'intervention-response-image-error';
-                                    errorDiv.innerHTML = `
-                                      <div style="padding: 20px; text-align: center; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #dc2626;">
-                                        <strong>Image Failed to Load</strong><br>
-                                        <small>URL contains corrupted characters</small><br>
-                                        <small style="word-break: break-all; font-family: monospace; font-size: 10px;">${response.questionImage}</small>
-                                      </div>
-                                    `;
-                                    e.target.parentNode.appendChild(errorDiv);
+                                    console.warn('Failed to load question image:', response.questionImage);
+                                    console.warn('This could be due to network issues, CORS settings, or temporary AWS issues');
+
+                                    // Check if this is actually a corrupted URL (contains JavaScript code)
+                                    const isActuallyCorrupted = response.questionImage.includes('async () =>') ||
+                                                              response.questionImage.includes('function(') ||
+                                                              response.questionImage.includes('=>') ||
+                                                              response.questionImage.includes('javascript:');
+
+                                    if (isActuallyCorrupted) {
+                                      // Only show corruption warning for truly corrupted URLs
+                                      e.target.style.display = 'none';
+                                      const errorDiv = document.createElement('div');
+                                      errorDiv.className = 'intervention-response-image-error';
+                                      errorDiv.innerHTML = `
+                                        <div style="padding: 20px; text-align: center; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #dc2626;">
+                                          <strong>Corrupted Image URL Detected</strong><br>
+                                          <small>URL contains invalid characters or code</small><br>
+                                          <small style="word-break: break-all; font-family: monospace; font-size: 10px;">${response.questionImage}</small>
+                                        </div>
+                                      `;
+                                      e.target.parentNode.appendChild(errorDiv);
+                                    } else {
+                                      // For valid S3 URLs that just failed to load, show a retry button
+                                      e.target.style.display = 'none';
+                                      const retryDiv = document.createElement('div');
+                                      retryDiv.className = 'intervention-response-image-retry';
+                                      retryDiv.innerHTML = `
+                                        <div style="padding: 15px; text-align: center; background: #fef3cd; border: 1px solid #fde68a; border-radius: 8px; color: #92400e;">
+                                          <strong>Image Loading Failed</strong><br>
+                                          <small>This may be temporary. Click to retry loading.</small><br>
+                                          <button style="margin-top: 8px; padding: 4px 12px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer;" onclick="this.parentNode.parentNode.previousElementSibling.style.display='block'; this.parentNode.parentNode.previousElementSibling.src='${response.questionImage}?t=' + Date.now(); this.parentNode.parentNode.remove();">
+                                            Retry Loading Image
+                                          </button><br>
+                                          <small style="word-break: break-all; font-family: monospace; font-size: 10px; margin-top: 8px; display: block;">${response.questionImage}</small>
+                                        </div>
+                                      `;
+                                      e.target.parentNode.appendChild(retryDiv);
+                                    }
                                   }}
                                 />
                               </div>

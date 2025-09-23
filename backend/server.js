@@ -1090,6 +1090,16 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load upload routes:', error.message);
     }
 
+    // Load database cleanup and monitoring routes
+    try {
+      const cleanupRoutes = require('./routes/cleanupRoutes');
+      app.use('/api/cleanup', cleanupRoutes);
+      console.log('✅ Loaded database cleanup routes at /api/cleanup/*');
+
+    } catch (error) {
+      console.warn('⚠️ Could not load cleanup routes:', error.message);
+    }
+
     // 404 handler
     app.use((req, res) => {
       console.log(`[404] Route not found: ${req.method} ${req.url}`);

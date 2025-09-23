@@ -149,8 +149,21 @@ export default {
     generateInterventionFromTemplates: (prescriptiveAnalysisId, category) =>
       api.post('/api/interventions/templates/generate-intervention', { prescriptiveAnalysisId, category }),
       
-    // Get upload URL
-    getUploadUrl: (fileName, fileType, targetFolder = 'mobile') => 
+    // Upload file directly to S3 with public access (RECOMMENDED)
+    uploadFile: (file, targetFolder = 'mobile') => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('targetFolder', targetFolder);
+
+      return api.post('/api/interventions/upload-file', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    },
+
+    // Get upload URL (DEPRECATED - use uploadFile instead)
+    getUploadUrl: (fileName, fileType, targetFolder = 'mobile') =>
       api.post('/api/interventions/upload-url', { fileName, fileType, targetFolder }),
       
     // Record intervention response

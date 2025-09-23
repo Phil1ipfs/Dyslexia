@@ -10,17 +10,39 @@ const AssessmentFlowControlService = require('./AssessmentFlowControlService');
 class CategoryResultsService {
 
   /**
+   * 🎯 COMPREHENSIVE CATEGORY REPAIR SYSTEM
    * Auto-fix existing data inconsistencies on service startup
-   * This ensures all existing student responses have correct totalQuestions
+   * This ensures ALL students have complete category records with correct question counts
    */
   static async autoFixExistingData() {
     try {
-      console.log('[AUTO-FIX] 🔧 Starting automatic data consistency fix...');
-      
+      console.log('[AUTO-FIX] 🔧 Starting comprehensive category repair system...');
+
+      // Step 1: Fix question counts using main_assessment data
+      await this.fixMainAssessmentQuestionCounts();
+
+      // Step 2: Repair ALL incomplete category records
+      await this.repairAllIncompleteCategoryRecords();
+
+      console.log('[AUTO-FIX] ✅ Comprehensive category repair completed successfully');
+
+    } catch (error) {
+      console.error('[AUTO-FIX] ❌ Error during comprehensive category repair:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 📊 Fix question counts using main_assessment data
+   */
+  static async fixMainAssessmentQuestionCounts() {
+    try {
+      console.log('[AUTO-FIX] 📊 Step 1: Fixing question counts from main_assessment...');
+
       const mainDb = mongoose.connection.useDb('dyslexia');
       const studentResponsesCollection = mainDb.collection('studentresponses');
       const mainAssessmentsCollection = mainDb.collection('mainassessments');
-      
+
       // Get all active main assessments
       const mainAssessments = await mainAssessmentsCollection.find({
         isActive: true
@@ -92,9 +114,177 @@ class CategoryResultsService {
       }
       
       console.log(`[AUTO-FIX] 🎉 Fixed ${totalFixedCount} student responses across all categories!`);
-      
+
     } catch (error) {
       console.error('[AUTO-FIX] ❌ Error during automatic data fix:', error);
+    }
+  }
+
+  /**
+   * 🔧 COMPREHENSIVE REPAIR: Ensure ALL students have complete category records
+   * This repairs incomplete category records for ALL students based on their reading levels
+   */
+  static async repairAllIncompleteCategoryRecords() {
+    try {
+      console.log('[COMPREHENSIVE REPAIR] 🔧 Step 2: Repairing ALL incomplete category records...');
+
+      // Get all students with reading levels
+      const allStudents = await User.find({
+        readingLevel: { $exists: true, $ne: null }
+      }).select('idNumber firstName lastName readingLevel');
+
+      console.log(`[COMPREHENSIVE REPAIR] 📊 Found ${allStudents.length} students with reading levels`);
+
+      let repairedCount = 0;
+      let alreadyCompleteCount = 0;
+
+      for (const student of allStudents) {
+        const studentId = student.idNumber;
+        const readingLevel = student.readingLevel;
+        const studentName = `${student.firstName} ${student.lastName}`;
+
+        console.log(`[COMPREHENSIVE REPAIR] 🔍 Checking ${studentName} (${studentId}) - ${readingLevel}`);
+
+        // Get required categories for this reading level
+        const requiredCategories = this.getCategoriesForReadingLevel(readingLevel);
+        console.log(`[COMPREHENSIVE REPAIR]   📚 Required categories for ${readingLevel}: ${requiredCategories.join(', ')}`);
+
+        // Check existing category results
+        const existingResults = await CategoryResult.find({ studentId: studentId });
+
+        if (existingResults.length === 0) {
+          // No category results exist - create placeholder record with all categories
+          console.log(`[COMPREHENSIVE REPAIR]   ❌ NO CATEGORY RESULTS FOUND - Creating placeholder record`);
+          await this.createPlaceholderCategoryRecord(studentId, readingLevel, requiredCategories);
+          repairedCount++;
+        } else {
+          // Check if all required categories are present
+          const existingResult = existingResults[0]; // Take the first (should be only one)
+          const existingCategoryNames = existingResult.categories.map(cat => cat.categoryName);
+          const missingCategories = requiredCategories.filter(cat => !existingCategoryNames.includes(cat));
+
+          if (missingCategories.length > 0) {
+            console.log(`[COMPREHENSIVE REPAIR]   🔧 INCOMPLETE RECORD - Missing ${missingCategories.length} categories: ${missingCategories.join(', ')}`);
+            await this.addMissingCategoriesToRecord(existingResult, missingCategories, readingLevel);
+            repairedCount++;
+          } else {
+            console.log(`[COMPREHENSIVE REPAIR]   ✅ COMPLETE RECORD - All ${requiredCategories.length} categories present`);
+            alreadyCompleteCount++;
+          }
+        }
+      }
+
+      console.log(`[COMPREHENSIVE REPAIR] ✅ Repair complete: ${repairedCount} fixed, ${alreadyCompleteCount} already complete`);
+
+    } catch (error) {
+      console.error('[COMPREHENSIVE REPAIR] ❌ Error during comprehensive repair:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 📝 Create placeholder category record with all required categories
+   */
+  static async createPlaceholderCategoryRecord(studentId, readingLevel, requiredCategories) {
+    try {
+      console.log(`[PLACEHOLDER CREATION] 📝 Creating placeholder record for student ${studentId}`);
+
+      const placeholderCategories = [];
+
+      for (const categoryName of requiredCategories) {
+        // Get correct question count from main_assessment
+        const correctQuestionCount = await this.getCorrectTotalQuestions(categoryName, readingLevel);
+
+        const placeholderCategory = {
+          categoryName: categoryName,
+          totalQuestions: correctQuestionCount || 0,
+          correctAnswers: 0,
+          totalPossibleMatches: categoryName === 'Phonological Awareness' ? 0 : 0,
+          correctMatches: 0,
+          score: 0,
+          isPassed: false,
+          passingThreshold: 75,
+          isCompleted: false,
+          lastQuestionAnswered: '',
+          interventionRequired: true,
+          interventionAttempts: 0,
+          interventionCompleted: false,
+          currentInterventionId: null,
+          interventionHistory: []
+        };
+
+        placeholderCategories.push(placeholderCategory);
+        console.log(`[PLACEHOLDER CREATION]   📋 Added ${categoryName}: ${correctQuestionCount} questions`);
+      }
+
+      // Create the category result record
+      const categoryResultData = {
+        studentId: studentId,
+        assessmentDate: new Date(),
+        categories: placeholderCategories,
+        overallScore: 0,
+        completedCategories: 0,
+        totalCategories: placeholderCategories.length,
+        allCategoriesPassed: false,
+        readingLevel: readingLevel,
+        readingLevelUpdated: false
+      };
+
+      const newCategoryResult = new CategoryResult(categoryResultData);
+      await newCategoryResult.save();
+
+      console.log(`[PLACEHOLDER CREATION] ✅ Created placeholder record ${newCategoryResult._id} for student ${studentId}`);
+
+    } catch (error) {
+      console.error(`[PLACEHOLDER CREATION] ❌ Error creating placeholder for student ${studentId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * ➕ Add missing categories to existing record
+   */
+  static async addMissingCategoriesToRecord(existingResult, missingCategories, readingLevel) {
+    try {
+      console.log(`[MISSING CATEGORIES] ➕ Adding ${missingCategories.length} missing categories to record ${existingResult._id}`);
+
+      for (const categoryName of missingCategories) {
+        // Get correct question count from main_assessment
+        const correctQuestionCount = await this.getCorrectTotalQuestions(categoryName, readingLevel);
+
+        const placeholderCategory = {
+          categoryName: categoryName,
+          totalQuestions: correctQuestionCount || 0,
+          correctAnswers: 0,
+          totalPossibleMatches: categoryName === 'Phonological Awareness' ? 0 : 0,
+          correctMatches: 0,
+          score: 0,
+          isPassed: false,
+          passingThreshold: 75,
+          isCompleted: false,
+          lastQuestionAnswered: '',
+          interventionRequired: true,
+          interventionAttempts: 0,
+          interventionCompleted: false,
+          currentInterventionId: null,
+          interventionHistory: []
+        };
+
+        existingResult.categories.push(placeholderCategory);
+        console.log(`[MISSING CATEGORIES]   📋 Added ${categoryName}: ${correctQuestionCount} questions`);
+      }
+
+      // Update total categories count
+      existingResult.totalCategories = existingResult.categories.length;
+
+      // Save the updated record
+      await existingResult.save();
+
+      console.log(`[MISSING CATEGORIES] ✅ Added ${missingCategories.length} categories to record ${existingResult._id}`);
+
+    } catch (error) {
+      console.error(`[MISSING CATEGORIES] ❌ Error adding missing categories:`, error);
+      throw error;
     }
   }
 
@@ -934,8 +1124,54 @@ class CategoryResultsService {
       if (existingResults && existingResults.length > 0) {
         console.log(`[CATEGORY RESULTS] ⚠️  EXISTING RECORD FOUND - UPDATING WITH INTERVENTION PRESERVATION`);
 
-        // CRITICAL FIX: Preserve existing intervention data when updating from responses
+        // 🎯 CRITICAL FIX: Detect and repair incomplete existing records
         const existingResult = existingResults[0]; // Get the first (most recent) record
+        const requiredCategories = this.getCategoriesForReadingLevel(readingLevel);
+        const existingCategoryNames = existingResult.categories.map(c => c.categoryName);
+        const missingCategories = requiredCategories.filter(cat => !existingCategoryNames.includes(cat));
+
+        if (missingCategories.length > 0) {
+          console.log(`[CATEGORY RESULTS] 🔧 INCOMPLETE RECORD DETECTED: Missing ${missingCategories.length} categories for ${readingLevel} level`);
+          console.log(`[CATEGORY RESULTS] 🔧 Missing categories: [${missingCategories.join(', ')}]`);
+
+          // Add missing categories as placeholders
+          for (const missingCategory of missingCategories) {
+            console.log(`[CATEGORY RESULTS] ➕ Adding missing placeholder for ${missingCategory}`);
+
+            // Get correct total questions for placeholder
+            const correctTotalQuestions = await this.getCorrectTotalQuestions(missingCategory, readingLevel);
+            const totalQuestions = correctTotalQuestions > 0 ? correctTotalQuestions : 0;
+
+            existingResult.categories.push({
+              categoryName: missingCategory,
+              totalQuestions: totalQuestions,
+              correctAnswers: 0,
+              totalPossibleMatches: 0,
+              correctMatches: 0,
+              score: 0,
+              isPassed: false,
+              passingThreshold: 75,
+              isCompleted: false,
+              lastQuestionAnswered: '',
+              interventionRequired: false,
+              interventionAttempts: 0,
+              interventionCompleted: false,
+              currentInterventionId: null,
+              interventionHistory: []
+            });
+          }
+
+          // Update the existing record with complete categories
+          await this.updateCategoryResult(existingResult._id, {
+            categories: existingResult.categories
+          });
+
+          console.log(`[CATEGORY RESULTS] ✅ REPAIRED INCOMPLETE RECORD: Added ${missingCategories.length} missing categories`);
+          console.log(`[CATEGORY RESULTS] ✅ Complete category set: ${existingResult.categories.map(c => c.categoryName).join(', ')}`);
+        }
+
+        // CRITICAL FIX: Preserve existing intervention data when updating from responses
+        const currentResult = existingResults[0]; // Get the first (most recent) record
 
         // CRITICAL FIX: Handle category-specific updates vs full updates
         let mergedCategories;
@@ -944,7 +1180,7 @@ class CategoryResultsService {
           // Category-specific update: Only update the specific category, preserve all others
           console.log(`[CATEGORY RESULTS] 🔄 Category-specific update for: ${category}`);
 
-          mergedCategories = existingResult.categories.map(existingCategory => {
+          mergedCategories = currentResult.categories.map(existingCategory => {
             if (existingCategory.categoryName === category) {
               // This is the category being updated
               const newCategory = categories.find(cat => cat.categoryName === category);
@@ -975,7 +1211,7 @@ class CategoryResultsService {
         } else {
           // Full update: Process all categories as before
           mergedCategories = categories.map(newCategory => {
-            const existingCategory = existingResult.categories.find(cat => cat.categoryName === newCategory.categoryName);
+            const existingCategory = currentResult.categories.find(cat => cat.categoryName === newCategory.categoryName);
 
             if (existingCategory && existingCategory.interventionHistory && existingCategory.interventionHistory.length > 0) {
               console.log(`[CATEGORY RESULTS] 🔄 Preserving intervention data for ${newCategory.categoryName}: ${existingCategory.interventionHistory.length} attempts, isPassed: ${existingCategory.isPassed}`);
@@ -1002,7 +1238,7 @@ class CategoryResultsService {
           });
         }
 
-        const updatedResult = await this.updateCategoryResult(existingResult._id, {
+        const updatedResult = await this.updateCategoryResult(currentResult._id, {
           categories: mergedCategories,
           assessmentDate: new Date()
         });
@@ -1016,6 +1252,49 @@ class CategoryResultsService {
 
       // No existing record found - create new one
       console.log(`[CATEGORY RESULTS] 🔒 NO EXISTING RECORD - CREATING NEW NORMALIZED RECORD`);
+
+      // 🎯 CRITICAL FIX: When creating NEW record, ensure ALL required categories for reading level are present
+      if (category) {
+        console.log(`[CATEGORY RESULTS] 🔧 FIRST-TIME CREATION: Adding missing categories for ${readingLevel} level`);
+
+        // Get all required categories for this reading level
+        const requiredCategories = this.getCategoriesForReadingLevel(readingLevel);
+        const existingCategoryNames = categories.map(c => c.categoryName);
+
+        // Create placeholders for missing categories
+        for (const requiredCategory of requiredCategories) {
+          if (!existingCategoryNames.includes(requiredCategory)) {
+            console.log(`[CATEGORY RESULTS] ➕ Adding placeholder for ${requiredCategory}`);
+
+            // Get correct total questions for placeholder
+            const correctTotalQuestions = await this.getCorrectTotalQuestions(requiredCategory, readingLevel);
+            const totalQuestions = correctTotalQuestions > 0 ? correctTotalQuestions : 0;
+
+            categories.push({
+              categoryName: requiredCategory,
+              totalQuestions: totalQuestions,
+              correctAnswers: 0,
+              totalPossibleMatches: 0,
+              correctMatches: 0,
+              score: 0,
+              isPassed: false,
+              passingThreshold: 75,
+              isCompleted: false,
+              lastQuestionAnswered: '',
+              interventionRequired: false,
+              interventionAttempts: 0,
+              interventionCompleted: false,
+              currentInterventionId: null,
+              interventionHistory: []
+            });
+          }
+        }
+
+        // Update categoryResultData with complete categories list
+        categoryResultData.categories = categories;
+        console.log(`[CATEGORY RESULTS] ✅ Complete category set created: ${categories.map(c => c.categoryName).join(', ')}`);
+      }
+
       const createdResult = await this.createCategoryResult(categoryResultData);
 
       console.log(`[CATEGORY RESULTS] ✅ Successfully generated COMPLETE category results for student ${studentId}`);

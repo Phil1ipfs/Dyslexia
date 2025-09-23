@@ -304,8 +304,28 @@ router.get('/student/:studentId', auth, authorize('teacher', 'admin'),
   }
 );
 
-// Get a pre-signed URL for S3 uploads
-router.post('/upload-url', auth, authorize('teacher', 'admin'), 
+// Upload file directly to S3 with public access (RECOMMENDED)
+router.post('/upload-file',
+  auth,
+  authorize('teacher', 'admin'),
+  upload.single('file'), // Add multer middleware for file upload
+  async (req, res) => {
+    try {
+      await interventionController.uploadFileToS3(req, res);
+      // Controller handles the response
+    } catch (error) {
+      console.error('Error in POST /upload-file route:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing file upload',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Get a pre-signed URL for S3 uploads (DEPRECATED - use /upload-file instead)
+router.post('/upload-url', auth, authorize('teacher', 'admin'),
   async (req, res) => {
     try {
       await interventionController.getUploadUrl(req, res);
