@@ -78,7 +78,7 @@ const sanitizeImageUrl = (url) => {
  * Handles different question formats for each category
  */
 const extractCorrectAnswerForCategory = (question, category) => {
-  console.log('🔍 [EXTRACT] Category:', category, 'Question:', question);
+  console.log('[EXTRACT] Category:', category, 'Question:', question);
 
   switch (category) {
     case 'Phonological Awareness':
@@ -140,7 +140,7 @@ const extractCorrectAnswerForCategory = (question, category) => {
   }
 
   // Fallback: try to find any correct answer field
-  console.log('🔍 [EXTRACT] No specific format found, trying fallbacks...');
+  console.log('[EXTRACT] No specific format found, trying fallbacks...');
 
   // Try common fallback fields
   if (question?.correctAnswer) {
@@ -266,7 +266,7 @@ const PrescriptiveAnalysis = ({
         cat.categoryName === categoryName || cat.category === categoryName
       );
       if (categoryData) {
-        console.log(`[INTERVENTION STATUS] 🔍 Auto-found categoryData for ${categoryName}:`, {
+        console.log(`[INTERVENTION STATUS] Auto-found categoryData for ${categoryName}:`, {
           interventionHistory: categoryData.interventionHistory?.length || 0,
           isPassed: categoryData.isPassed,
           interventionCompleted: categoryData.interventionCompleted
@@ -283,7 +283,7 @@ const PrescriptiveAnalysis = ({
       const passedViaIntervention = categoryData.isPassed && categoryData.interventionCompleted;
 
       if (hasSuccessfulIntervention || passedViaIntervention) {
-        console.log(`[INTERVENTION STATUS] ✅ ${categoryName} detected as intervention SUCCESS via:`, {
+        console.log(`[INTERVENTION STATUS] ${categoryName} detected as intervention SUCCESS via:`, {
           hasSuccessfulIntervention,
           passedViaIntervention,
           interventionAttempts: categoryData.interventionAttempts,
@@ -295,7 +295,7 @@ const PrescriptiveAnalysis = ({
       // Check if there are failed intervention attempts
       const hasFailedInterventions = categoryData.interventionHistory?.some(attempt => !attempt.isPassed);
       if (hasFailedInterventions && !hasSuccessfulIntervention) {
-        console.log(`[INTERVENTION STATUS] ❌ ${categoryName} needs revision:`, {
+        console.log(`[INTERVENTION STATUS] ${categoryName} needs revision:`, {
           hasFailedInterventions,
           hasSuccessfulIntervention
         });
@@ -306,14 +306,14 @@ const PrescriptiveAnalysis = ({
     // 🎯 PRIORITY 2: Check intervention results state (fallback)
     const results = interventionResults[categoryName];
     if (results?.passed && results?.score >= 75) {
-      console.log(`[INTERVENTION STATUS] ✅ ${categoryName} detected as intervention SUCCESS via results state`);
+      console.log(`[INTERVENTION STATUS] ${categoryName} detected as intervention SUCCESS via results state`);
       return 'success';
     } else if (results?.passed === false && results?.score < 75) {
-      console.log(`[INTERVENTION STATUS] ❌ ${categoryName} needs revision via results state`);
+      console.log(`[INTERVENTION STATUS] ${categoryName} needs revision via results state`);
       return 'revision_needed';
     }
 
-    console.log(`[INTERVENTION STATUS] 📊 ${categoryName} has no intervention attempts - using initial status`);
+    console.log(`[INTERVENTION STATUS] ${categoryName} has no intervention attempts - using initial status`);
     return 'initial';
   };
 
@@ -467,10 +467,10 @@ const PrescriptiveAnalysis = ({
 
         if (interventionData) {
           const hasMultipleAttempts = interventionHistory.length > 1;
-          const currentRevision = interventionData.revisionNumber || 1;
+          const currentRevision = interventionData.attemptNumber || interventionData.revisionNumber || 1;
 
           console.log(`[INTERVENTION RESULTS] Found intervention result for ${categoryName}`);
-          console.log(`[INTERVENTION RESULTS] 📈 Current result:`, {
+          console.log(`[INTERVENTION RESULTS] Current result:`, {
             score: interventionData.score,
             revision: currentRevision,
             passed: interventionData.isPassed
@@ -518,14 +518,14 @@ const PrescriptiveAnalysis = ({
             score: interventionData.score,
             isPassed: interventionData.isPassed,
             passed: interventionData.isPassed,
-            previousScore: interventionData.previousScore,
-            improvement: interventionData.improvement,
-            skillMastery: interventionData.skillMastery,
-            errorPatterns: interventionData.errorPatterns,
-            interventionEffectiveness: interventionData.interventionEffectiveness,
-            researchBasedPrescriptions: interventionData.researchBasedPrescriptions,
-            progressComparison: interventionData.progressComparison,
-            insights: interventionData.insights,
+            previousScore: interventionData.previousScore || (interventionHistory.length > 1 ? interventionHistory[interventionHistory.length - 2].score : interventionData.originalAssessmentScore),
+            improvement: interventionData.improvement || (interventionData.score - (interventionData.previousScore || interventionData.originalAssessmentScore)),
+            skillMastery: interventionData.interventionResult?.skillMastery,
+            errorPatterns: interventionData.interventionResult?.errorPatterns,
+            interventionEffectiveness: interventionData.interventionResult?.interventionEffectiveness,
+            researchBasedPrescriptions: interventionData.interventionResult?.researchBasedPrescriptions,
+            progressComparison: interventionData.interventionResult?.progressComparison,
+            insights: interventionData.interventionResult?.insights,
             completedAt: interventionData.completedAt,
             interventionId: interventionData.interventionAssessmentId,
             assessmentDate: interventionData.assessmentDate,
@@ -561,11 +561,11 @@ const PrescriptiveAnalysis = ({
             }
           };
         } else {
-          console.log(`[INTERVENTION RESULTS] ❌ No intervention results found for student ${studentId}, category ${categoryName}`);
+          console.log(`[INTERVENTION RESULTS] No intervention results found for student ${studentId}, category ${categoryName}`);
           return null;
         }
       } else {
-        console.log(`[INTERVENTION RESULTS] ❌ Invalid response format from corrected backend`);
+        console.log(`[INTERVENTION RESULTS] Invalid response format from corrected backend`);
         return null;
       }
     } catch (error) {
@@ -613,7 +613,7 @@ const PrescriptiveAnalysis = ({
                 const latestAttempt = sortedHistory[0];
 
                 if (latestAttempt.isPassed) {
-                  console.log(`[INTERVENTION HISTORY FALLBACK] ✅ Using intervention history data for ${categoryName} - Score: ${latestAttempt.score}%`);
+                  console.log(`[INTERVENTION HISTORY FALLBACK] Using intervention history data for ${categoryName} - Score: ${latestAttempt.score}%`);
 
                   // Create a synthetic intervention result from history data
                   return {
@@ -742,19 +742,19 @@ const PrescriptiveAnalysis = ({
 
           // 2.3 Real CLAUDE.md Prescriptive analyses (auto-generated by the server)
           console.log('[PRESCRIPTIVE ANALYSIS DEBUG] Fetching analysis for student:', sid);
-          console.log('🔍 [PRESCRIPTIVE ANALYSIS DEBUG] API endpoint:', `/api/progress/student/${sid}/prescriptive-analyses`);
+          console.log('[PRESCRIPTIVE ANALYSIS DEBUG] API endpoint:', `/api/progress/student/${sid}/prescriptive-analyses`);
 
           const { data } = await api.get(`/api/progress/student/${sid}/prescriptive-analyses`);
-          console.log('🔍 [PRESCRIPTIVE ANALYSIS DEBUG] API Response received:');
+          console.log('[PRESCRIPTIVE ANALYSIS DEBUG] API Response received:');
           console.log('  - Raw response:', data);
           console.log('  - Response type:', typeof data);
           console.log('  - Response is array:', Array.isArray(data));
           console.log('  - Response length:', data?.length);
 
           if (data === null || data === undefined) {
-            console.log('❌ [PRESCRIPTIVE ANALYSIS DEBUG] API returned null - no analysis generated yet');
-            console.log('❌ [PRESCRIPTIVE ANALYSIS DEBUG] This means the backend has not processed student_responses into prescriptive_analysis');
-            console.log('❌ [PRESCRIPTIVE ANALYSIS DEBUG] According to CLAUDE.md, prescriptive analysis should auto-generate when category_results is saved');
+            console.log('[PRESCRIPTIVE ANALYSIS DEBUG] API returned null - no analysis generated yet');
+            console.log('[PRESCRIPTIVE ANALYSIS DEBUG] This means the backend has not processed student_responses into prescriptive_analysis');
+            console.log('[PRESCRIPTIVE ANALYSIS DEBUG] According to CLAUDE.md, prescriptive analysis should auto-generate when category_results is saved');
           }
 
           // Handle different response formats for REAL data
@@ -882,7 +882,7 @@ const PrescriptiveAnalysis = ({
     const loadInterventionResults = async () => {
       const currentStudentId = liveStudent?.idNumber || liveStudent?.id || studentId;
 
-      console.log('[INTERVENTION RESULTS] 🎯 loadInterventionResults called with studentId:', currentStudentId);
+      console.log('[INTERVENTION RESULTS] loadInterventionResults called with studentId:', currentStudentId);
 
       // Skip if no student ID or already loading
       if (!currentStudentId || isLoadingInterventionsRef.current) {
@@ -891,7 +891,7 @@ const PrescriptiveAnalysis = ({
       }
 
       // Get ALL categories that have intervention history (not just ones needing intervention)
-      console.log('[INTERVENTION RESULTS] 🔍 Checking categories for intervention history:', liveCategoryResults?.categories?.map(cat => ({
+      console.log('[INTERVENTION RESULTS] Checking categories for intervention history:', liveCategoryResults?.categories?.map(cat => ({
         name: cat.categoryName,
         hasHistory: !!(cat.interventionHistory && cat.interventionHistory.length > 0),
         historyLength: cat.interventionHistory?.length || 0,
@@ -900,11 +900,11 @@ const PrescriptiveAnalysis = ({
 
       const categoriesWithInterventionHistory = liveCategoryResults?.categories?.filter(cat => {
         const hasHistory = cat.interventionHistory && cat.interventionHistory.length > 0;
-        console.log(`[INTERVENTION RESULTS] 🔍 ${cat.categoryName}: hasHistory=${hasHistory}, historyLength=${cat.interventionHistory?.length || 0}`);
+        console.log(`[INTERVENTION RESULTS] ${cat.categoryName}: hasHistory=${hasHistory}, historyLength=${cat.interventionHistory?.length || 0}`);
         return hasHistory;
       }) || [];
 
-      console.log('[INTERVENTION RESULTS] 📋 Categories WITH intervention history:', categoriesWithInterventionHistory.map(cat => cat.categoryName));
+      console.log('[INTERVENTION RESULTS] Categories WITH intervention history:', categoriesWithInterventionHistory.map(cat => cat.categoryName));
 
       // Skip if no categories have intervention history
       if (categoriesWithInterventionHistory.length === 0) {
@@ -913,8 +913,8 @@ const PrescriptiveAnalysis = ({
       }
 
       console.log('[INTERVENTION RESULTS] Loading intervention results for categories with history:', categoriesWithInterventionHistory.map(cat => cat.categoryName));
-      console.log('[INTERVENTION RESULTS] 🎯 Using student ID:', currentStudentId);
-      console.log('[INTERVENTION RESULTS] 🎯 Student data source:', {
+      console.log('[INTERVENTION RESULTS] Using student ID:', currentStudentId);
+      console.log('[INTERVENTION RESULTS] Student data source:', {
         liveStudent: !!liveStudent,
         studentId: studentId,
         liveStudentIdNumber: liveStudent?.idNumber,
@@ -927,15 +927,15 @@ const PrescriptiveAnalysis = ({
         const results = {};
         for (const category of categoriesWithInterventionHistory) {
           try {
-            console.log(`[INTERVENTION RESULTS] 🔍 Fetching results for: ${category.categoryName} (student: ${currentStudentId})`);
+            console.log(`[INTERVENTION RESULTS] Fetching results for: ${category.categoryName} (student: ${currentStudentId})`);
             const categoryResults = await fetchInterventionResults(currentStudentId, category.categoryName);
-            console.log(`[INTERVENTION RESULTS] 📊 Results for ${category.categoryName}:`, categoryResults);
+            console.log(`[INTERVENTION RESULTS] Results for ${category.categoryName}:`, categoryResults);
 
             if (categoryResults) {
               results[category.categoryName] = categoryResults;
-              console.log(`[INTERVENTION RESULTS] ✅ Added ${category.categoryName} to results`);
+              console.log(`[INTERVENTION RESULTS] Added ${category.categoryName} to results`);
             } else {
-              console.log(`[INTERVENTION RESULTS] ❌ No results returned for ${category.categoryName}`);
+              console.log(`[INTERVENTION RESULTS] No results returned for ${category.categoryName}`);
             }
           } catch (error) {
             console.error(`Error loading intervention results for ${category.categoryName}:`, error);
@@ -949,9 +949,9 @@ const PrescriptiveAnalysis = ({
 
         // Specific check for Alphabet Knowledge
         if (results['Alphabet Knowledge']) {
-          console.log('[INTERVENTION RESULTS] ✅ Alphabet Knowledge data found:', results['Alphabet Knowledge']);
+          console.log('[INTERVENTION RESULTS] Alphabet Knowledge data found:', results['Alphabet Knowledge']);
         } else {
-          console.log('[INTERVENTION RESULTS] ❌ Alphabet Knowledge NOT found in results');
+          console.log('[INTERVENTION RESULTS] Alphabet Knowledge NOT found in results');
           console.log('[INTERVENTION RESULTS] Available category keys:', Object.keys(results));
         }
       } finally {
@@ -1609,7 +1609,7 @@ const PrescriptiveAnalysis = ({
         // Fetch intervention responses from database based on intervention ID and revision number
         console.log('Fetching intervention responses from database...');
         
-        const currentRevision = intervention.revisionNumber || 1;
+        const currentRevision = intervention.attemptNumber || intervention.revisionNumber || 1;
         const studentId = student.idNumber || student.id;
         
         console.log(`Fetching responses for intervention ${intervention._id}, revision ${currentRevision}, student ${studentId}`);
@@ -3551,8 +3551,14 @@ const PrescriptiveAnalysis = ({
     console.log('🔬 [INTERVENTION RESEARCH] Rendering intervention research prescriptions for:', categoryName);
     console.log('🔬 [INTERVENTION RESEARCH] Available intervention data:', interventionData);
     console.log('🔬 [INTERVENTION RESEARCH] Research prescriptions data:', interventionData?.researchBasedPrescriptions);
+    console.log('🔬 [INTERVENTION RESEARCH] Intervention result data:', interventionData?.interventionResult);
 
-    if (!interventionData?.researchBasedPrescriptions?.[categoryName]) {
+    // Check if research prescriptions exist for this category
+    // The research prescriptions are now correctly extracted in fetchInterventionResults
+    const researchPrescriptions = interventionData?.researchBasedPrescriptions?.[categoryName];
+    console.log('🔬 [INTERVENTION RESEARCH] Research prescriptions for category:', researchPrescriptions);
+
+    if (!researchPrescriptions) {
       console.log('❌ [INTERVENTION RESEARCH] No research prescriptions found for category:', categoryName);
       return (
         <div className="comprehensive-research-container">
@@ -3572,7 +3578,7 @@ const PrescriptiveAnalysis = ({
       );
     }
 
-    const researchData = interventionData.researchBasedPrescriptions[categoryName];
+    const researchData = researchPrescriptions;
     console.log('✅ [INTERVENTION RESEARCH] Found research data:', researchData);
 
     return (
@@ -5482,7 +5488,7 @@ const PrescriptiveAnalysis = ({
                 <div className="literexia-interventions-list">
                   {selectedInterventions.map((intervention, index) => {
                     // VERSION-AWARE LOGIC: Check if student has responded to current version
-                    const currentRevision = intervention.revisionNumber || 1;
+                    const currentRevision = intervention.attemptNumber || intervention.revisionNumber || 1;
                     const hasBeenRevised = currentRevision > 1;
                     const interventionResultData = interventionResults[selectedCategory];
 

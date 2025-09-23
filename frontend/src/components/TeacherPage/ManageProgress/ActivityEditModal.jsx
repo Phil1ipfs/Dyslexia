@@ -7443,14 +7443,35 @@ const renderWordRecognitionStep = () => {
                         alt="Sentence illustration"
                         className="word-recognition-uploaded-image"
                       />
-                      <button
-                        type="button"
-                        className="word-recognition-remove-image-btn"
-                        onClick={() => updateQuestionChoicePair(pair.id, { questionImage: null })}
-                        title="Remove image"
-                      >
-                        <FaTimes />
-                      </button>
+                      <div className="word-recognition-image-controls">
+                        <button
+                          type="button"
+                          className="word-recognition-remove-image-btn"
+                          onClick={() => updateQuestionChoicePair(pair.id, { questionImage: null })}
+                          title={pair.sourceTemplateId ? "Image is from template - cannot remove" : "Remove image"}
+                          disabled={pair.sourceTemplateId}
+                          style={{
+                            opacity: pair.sourceTemplateId ? 0.5 : 1,
+                            cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          <FaTimes />
+                        </button>
+                        <button
+                          type="button"
+                          className="word-recognition-change-image-btn"
+                          onClick={() => triggerFileUpload(pair.id)}
+                          title={pair.sourceTemplateId ? "Image is from template - cannot change" : "Change image"}
+                          disabled={uploadingImage || pair.sourceTemplateId}
+                          style={{
+                            opacity: pair.sourceTemplateId ? 0.5 : 1,
+                            cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer',
+                            marginLeft: '8px'
+                          }}
+                        >
+                          <FaImage /> Change
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="word-recognition-image-upload-empty">
@@ -7462,7 +7483,11 @@ const renderWordRecognitionStep = () => {
                         type="button"
                         className="word-recognition-upload-btn"
                         onClick={() => triggerFileUpload(pair.id)}
-                        disabled={uploadingImage}
+                        disabled={uploadingImage || pair.sourceTemplateId}
+                        style={{
+                          opacity: pair.sourceTemplateId ? 0.5 : 1,
+                          cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer'
+                        }}
                       >
                         {uploadingImage ? (
                           <>
@@ -7479,7 +7504,10 @@ const renderWordRecognitionStep = () => {
                   )}
                 </div>
                 <small style={{color: '#047857', fontSize: '12px', marginTop: '8px', display: 'block', textAlign: 'center', fontStyle: 'italic'}}>
-                  Images help students understand the context better (optional but recommended)
+                  {pair.sourceTemplateId 
+                    ? 'Image is controlled by the selected template'
+                    : 'Images help students understand the context better (optional but recommended)'
+                  }
                 </small>
               </div>
 
@@ -7816,17 +7844,18 @@ const renderWordRecognitionStep = () => {
                             updateQuestionChoicePair(pair.id, { correctAnswer: [option] });
                           }
                         }}
-                        disabled={option === '' || pair.sourceTemplateId} // Disable if empty or using template
+                        disabled={option === '' || (pair.sourceTemplateId && pair.questionSubType === 'sound_matching')} // Disable if empty or sound matching template
                         style={{
-                          cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer'
+                          cursor: (pair.sourceTemplateId && pair.questionSubType === 'sound_matching') ? 'not-allowed' : 'pointer'
                         }}
                       />
                       <span style={{ 
-                        color: pair.sourceTemplateId ? '#6b7280' : 'inherit',
-                        fontStyle: pair.sourceTemplateId ? 'italic' : 'normal'
+                        color: (pair.sourceTemplateId && pair.questionSubType === 'sound_matching') ? '#6b7280' : 'inherit',
+                        fontStyle: (pair.sourceTemplateId && pair.questionSubType === 'sound_matching') ? 'italic' : 'normal'
                       }}>
                         Correct Answer (select only one)
-                        {pair.sourceTemplateId && ' (from template)'}
+                        {pair.sourceTemplateId && pair.questionSubType === 'sentence_completion' && ' (editable)'}
+                        {pair.sourceTemplateId && pair.questionSubType === 'sound_matching' && ' (from template)'}
                       </span>
                     </label>
                   </div>
@@ -7835,7 +7864,10 @@ const renderWordRecognitionStep = () => {
             </div>
             {pair.sourceTemplateId ? (
               <small style={{color: '#92400e', fontSize: '11px', marginTop: '8px', display: 'block', fontWeight: '500'}}>
-                Template provides base options - you can add/remove options and edit incorrect answers. Correct answer selection is locked from template.
+                {pair.questionSubType === 'sentence_completion' 
+                  ? 'Template provides base options - you can add/remove options, edit incorrect answers, and change the correct answer selection.'
+                  : 'Template provides base options - you can add/remove options and edit incorrect answers. Correct answer selection is locked from template.'
+                }
               </small>
             ) : (
               <small style={{color: '#92400e', fontSize: '11px', marginTop: '8px', display: 'block'}}>
