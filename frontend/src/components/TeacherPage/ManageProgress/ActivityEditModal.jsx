@@ -3425,12 +3425,13 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             selectedChoices = getChoicesByIds(pair.choiceIds);
           }
 
-          // Validate selectedChoices is not empty (except for Phonological Awareness and Decoding which have different structures)
-          if (!isPhonologicalAwareness && !isDecoding && (!selectedChoices || selectedChoices.length === 0)) {
+          // Validate selectedChoices is not empty (except for Phonological Awareness, Decoding, and Word Recognition which have different structures)
+          if (!isPhonologicalAwareness && !isDecoding && !isWordRecognition && (!selectedChoices || selectedChoices.length === 0)) {
             console.error(`[SAVE] ❌ Question ${index} has no choices:`, {
               isAlphabetKnowledge,
               isPhonologicalAwareness,
               isDecoding,
+              isWordRecognition,
               pairChoices: pair.choices,
               pairChoiceIds: pair.choiceIds,
               audioTexts: pair.audioTexts,
@@ -3527,6 +3528,24 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                 technique: mongoDbAnalysis?.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.[0]?.technique || "Word Building Practice",
                 difficultyLevel: "standard",
                 multisensoryElements: ["visual", "tactile"]
+              },
+              createdBy: getValidTeacherId(),
+              createdAt: getFormattedDate()
+            };
+          } else if (isWordRecognition) {
+            // Word Recognition uses displayWord, blankOptions, correctAnswer structure matching main_assessment
+            return {
+              ...baseQuestion,
+              // Word Recognition specific structure matching main_assessment exactly
+              displayWord: pair.displayWord || '',
+              blankOptions: pair.blankOptions || [],
+              correctAnswer: pair.correctAnswer || [],
+              // Add prescription alignment for intervention tracking
+              prescriptionAlignment: {
+                targetSkill: "word_recognition",
+                technique: mongoDbAnalysis?.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.[0]?.technique || "Word Recognition Practice",
+                difficultyLevel: "standard",
+                multisensoryElements: ["visual", "cognitive"]
               },
               createdBy: getValidTeacherId(),
               createdAt: getFormattedDate()
@@ -4730,17 +4749,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             return true;
           }
 
-          // For sentence completion, must have blankPosition set
-          if (pair.questionSubType === 'sentence_completion') {
-            if (pair.blankPosition === null || pair.blankPosition === undefined) {
-              return true;
-            }
-            // Sentence tokens should be present
-            if (!pair.sentenceTokens || !Array.isArray(pair.sentenceTokens) ||
-                pair.sentenceTokens.length === 0) {
-              return true;
-            }
-          }
+          // Word Recognition validation is complete - no additional fields needed
 
           return false;
         });
@@ -8645,6 +8654,101 @@ const renderReviewStep = () => {
                                      Student will fill in the missing letter "{missingLetter}" to complete "{completedWord}"
                                    </span>
                                  </div>
+                               </div>
+                             </div>
+                           );
+                         }
+                       })()}
+                     </div>
+                   ) : normCategory === 'word_recognition' ? (
+                     <div className="word-recognition-review-summary">
+                       {/* Determine question type for display */}
+                       {(() => {
+                         const isSoundMatching = pair.questionSubType === 'sound_matching' || 
+                           (pair.questionText && pair.questionText.toLowerCase().includes('kasing tunog'));
+                         const questionType = isSoundMatching ? 'sound_matching' : 'sentence_completion';
+
+                         if (questionType === 'sentence_completion') {
+                           // Sentence Completion: "Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay."
+                           const displayWord = pair.displayWord || 'Not set';
+                           const sentencePreview = pair.sentenceTokens && pair.blankPosition !== null 
+                             ? pair.sentenceTokens.map((token, index) => 
+                                 index === pair.blankPosition ? '_____' : token
+                               ).join(' ')
+                             : displayWord;
+
+                           return (
+                             <div className="word-recognition-sentence-completion-review">
+                               <p><strong>Type A - Sentence Completion:</strong></p>
+                               <div className="word-recognition-review-details">
+                                 <div className="word-recognition-sentence-display">
+                                   <span className="word-recognition-label">Sentence:</span>
+                                   <span className="word-recognition-sentence-text">{sentencePreview}</span>
+                                 </div>
+                                 <div className="word-recognition-answer-options">
+                                   <span className="word-recognition-label">Answer Options:</span>
+                                   <div className="word-recognition-options-list">
+                                     {safe(pair.blankOptions || []).filter(option => option && option.trim()).map((option, optionIndex) => (
+                                       <span 
+                                         key={optionIndex} 
+                                         className={`word-recognition-option ${(pair.correctAnswer || []).includes(option) ? 'correct-option' : ''}`}
+                                       >
+                                         {option}
+                                         {(pair.correctAnswer || []).includes(option) && ' ✓'}
+                                       </span>
+                                     ))}
+                                   </div>
+                                 </div>
+                                 <div className="word-recognition-activity-description">
+                                   <span className="word-recognition-label">Activity:</span>
+                                   <span className="word-recognition-description-text">
+                                     Student will choose the correct word to complete the sentence
+                                   </span>
+                                 </div>
+                               </div>
+                             </div>
+                           );
+                         } else {
+                           // Sound Matching: "Anong kasing tunog ng salitang nakikita?"
+                           const displayWord = pair.displayWord || 'Not set';
+                           const correctAnswer = pair.correctAnswer && pair.correctAnswer.length > 0 ? pair.correctAnswer[0] : 'Not set';
+
+                           return (
+                             <div className="word-recognition-sound-matching-review">
+                               <p><strong>Type B - Sound Matching:</strong></p>
+                               <div className="word-recognition-review-details">
+                                 <div className="word-recognition-display-word">
+                                   <span className="word-recognition-label">Display Word:</span>
+                                   <span className="word-recognition-word-value">{displayWord}</span>
+                                 </div>
+                                 <div className="word-recognition-answer-options">
+                                   <span className="word-recognition-label">Sound Options:</span>
+                                   <div className="word-recognition-options-list">
+                                     {safe(pair.blankOptions || []).filter(option => option && option.trim()).map((option, optionIndex) => (
+                                       <span 
+                                         key={optionIndex} 
+                                         className={`word-recognition-option ${(pair.correctAnswer || []).includes(option) ? 'correct-option' : ''}`}
+                                       >
+                                         {option}
+                                         {(pair.correctAnswer || []).includes(option) && ' ✓'}
+                                       </span>
+                                     ))}
+                                   </div>
+                                 </div>
+                                 <div className="word-recognition-activity-description">
+                                   <span className="word-recognition-label">Activity:</span>
+                                   <span className="word-recognition-description-text">
+                                     Student will match the sound of "{displayWord}" with the correct option
+                                   </span>
+                                 </div>
+                                 {pair.questionImage && (
+                                   <div className="word-recognition-image-info">
+                                     <span className="word-recognition-label">Image:</span>
+                                     <span className="word-recognition-image-status">
+                                       <FaImage /> Image will be displayed with the word
+                                     </span>
+                                   </div>
+                                 )}
                                </div>
                              </div>
                            );
