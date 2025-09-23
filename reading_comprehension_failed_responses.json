@@ -1,0 +1,242 @@
+[
+  {
+    "_id": {
+      "$oid": "684a1110988139e71b308f30"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68be35c466224f27838e0a42"
+    },
+    "questionId": "RC_001",
+    "category": "Reading Comprehension",
+    "response": [
+      "Juan",
+      "Parke",
+      "Naglalaro"
+    ],
+    "isCorrect": true,
+    "responseTime": 45.2,
+    "answeredAt": {
+      "$date": "2025-09-16T08:30:15.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-16T08:30:15.000Z"
+    },
+    "readingLevel": "At Grade Level"
+  },
+  {
+    "_id": {
+      "$oid": "684a1110988139e71b308f31"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68be35c466224f27838e0a42"
+    },
+    "questionId": "RC_002",
+    "category": "Reading Comprehension",
+    "response": [
+      "Ana",
+      "Tindahan",
+      "Saging"
+    ],
+    "isCorrect": false,
+    "responseTime": 71.2,
+    "answeredAt": {
+      "$date": "2025-09-16T08:39:30.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-16T08:39:30.000Z"
+    },
+    "readingLevel": "At Grade Level"
+  },
+  {
+    "_id": {
+      "$oid": "684a1110988139e71b308f32"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68be35c466224f27838e0a42"
+    },
+    "questionId": "RC_003",
+    "category": "Reading Comprehension",
+    "response": [
+      "Tatay",
+      "Kusina",
+      "Gulay"
+    ],
+    "isCorrect": false,
+    "responseTime": 74.5,
+    "answeredAt": {
+      "$date": "2025-09-16T08:41:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-16T08:41:00.000Z"
+    },
+    "readingLevel": "At Grade Level"
+  },
+  {
+    "_id": {
+      "$oid": "684a1110988139e71b308f33"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68be35c466224f27838e0a42"
+    },
+    "questionId": "RC_004",
+    "category": "Reading Comprehension",
+    "response": [
+      "Juan",
+      "Garahe",
+      "Nagbuhat"
+    ],
+    "isCorrect": false,
+    "responseTime": 82.3,
+    "answeredAt": {
+      "$date": "2025-09-16T08:42:30.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-16T08:42:30.000Z"
+    },
+    "readingLevel": "At Grade Level"
+  },
+  {
+    "_id": {
+      "$oid": "684a1110988139e71b308f34"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68be35c466224f27838e0a42"
+    },
+    "questionId": "RC_005",
+    "category": "Reading Comprehension",
+    "response": [
+      "Liza at Marco",
+      "Bakuran",
+      "Habulan"
+    ],
+    "isCorrect": false,
+    "responseTime": 65.8,
+    "answeredAt": {
+      "$date": "2025-09-16T08:44:15.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-16T08:44:15.000Z"
+    },
+    "readingLevel": "At Grade Level"
+  },
+  {
+    "_id": {
+      "$oid": "684a1110988139e71b308f35"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68be35c466224f27838e0a42"
+    },
+    "questionId": "RC_006",
+    "category": "Reading Comprehension",
+    "response": [
+      "Mansanas"
+    ],
+    "isCorrect": true,
+    "responseTime": 28.4,
+    "answeredAt": {
+      "$date": "2025-09-16T08:45:30.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-16T08:45:30.000Z"
+    },
+    "readingLevel": "At Grade Level"
+  },
+  {
+    "_id": {
+      "$oid": "684a1110988139e71b308f36"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68be35c466224f27838e0a42"
+    },
+    "questionId": "RC_007",
+    "category": "Reading Comprehension",
+    "response": [
+      "Bola"
+    ],
+    "isCorrect": false,
+    "responseTime": 22.1,
+    "answeredAt": {
+      "$date": "2025-09-16T08:46:45.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-16T08:46:45.000Z"
+    },
+    "readingLevel": "At Grade Level"
+  },
+  {
+    "_id": {
+      "$oid": "684a1110988139e71b308f37"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68be35c466224f27838e0a42"
+    },
+    "questionId": "RC_008",
+    "category": "Reading Comprehension",
+    "response": [
+      "Hardin"
+    ],
+    "isCorrect": false,
+    "responseTime": 19.7,
+    "answeredAt": {
+      "$date": "2025-09-16T08:47:30.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-16T08:47:30.000Z"
+    },
+    "readingLevel": "At Grade Level"
+  },
+  {
+    "_id": {
+      "$oid": "684a1110988139e71b308f38"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68be35c466224f27838e0a42"
+    },
+    "questionId": "RC_009",
+    "category": "Reading Comprehension",
+    "response": [
+      "Adobo"
+    ],
+    "isCorrect": false,
+    "responseTime": 25.3,
+    "answeredAt": {
+      "$date": "2025-09-16T08:48:15.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-16T08:48:15.000Z"
+    },
+    "readingLevel": "At Grade Level"
+  },
+  {
+    "_id": {
+      "$oid": "684a1110988139e71b308f39"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "68be35c466224f27838e0a42"
+    },
+    "questionId": "RC_010",
+    "category": "Reading Comprehension",
+    "response": [
+      "Nag-aaral"
+    ],
+    "isCorrect": false,
+    "responseTime": 31.8,
+    "answeredAt": {
+      "$date": "2025-09-16T08:49:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-16T08:49:00.000Z"
+    },
+    "readingLevel": "At Grade Level"
+  }
+]

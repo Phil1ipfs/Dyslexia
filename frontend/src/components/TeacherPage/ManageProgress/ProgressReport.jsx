@@ -854,7 +854,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
       return {
         ...response,
         questionDetails: assessmentQuestion,
-        questionText: assessmentQuestion?.questionText || 'Question text not available',
+        questionText: getQuestionText(assessmentQuestion, response.category),
         questionImage: assessmentQuestion?.questionImage,
         correctAnswer: getCorrectAnswer(assessmentQuestion, response.category),
         studentAnswer: formatStudentResponse(response, assessmentQuestion)
@@ -885,6 +885,24 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     return null;
   };
 
+  // Get question text based on question type
+  const getQuestionText = (questionDetails, category) => {
+    if (!questionDetails) return 'Question text not available';
+    
+    const categoryLower = category?.toLowerCase() || '';
+    
+    if (categoryLower.includes('comprehension')) {
+      // Reading Comprehension - show story title and instruction
+      if (questionDetails.storyTitle) {
+        return `Read the story "${questionDetails.storyTitle}" and answer the questions below.`;
+      }
+      return 'Read the story and answer the questions below.';
+    }
+    
+    // For other categories, use the standard question text
+    return questionDetails.questionText || 'Question text not available';
+  };
+
   // Get correct answer based on question type
   const getCorrectAnswer = (questionDetails, category) => {
     if (!questionDetails) return 'Not available';
@@ -913,7 +931,11 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
         return questionDetails.correctAnswer.join(', ');
       }
     } else if (categoryLower.includes('comprehension')) {
-      // Text input - show correct answer
+      // Reading Comprehension - show all correct answers from sentence questions
+      if (questionDetails.sentenceQuestions && Array.isArray(questionDetails.sentenceQuestions)) {
+        return questionDetails.sentenceQuestions.map(q => q.correctAnswer).join(', ');
+      }
+      // Fallback to single correct answer
       return questionDetails.correctAnswer || 'Expected answer';
     }
     
@@ -1669,83 +1691,104 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
                                       
                                       {question.questionDetails && (
                                         <div className="student-progress-comprehension-display">
+                                          {/* Story Title */}
                                           {question.questionDetails.storyTitle && (
                                             <div className="student-progress-story-title">
                                               <h5>Story: {question.questionDetails.storyTitle}</h5>
                                             </div>
                                           )}
                                           
-                                          <div className="student-progress-comprehension-answer">
-                                            {/* All-or-Nothing Scoring Display */}
-                                            {question.allOrNothingScoring && question.sentenceQAPairs && question.sentenceQAPairs.length > 0 ? (
-                                              <div className="student-progress-rc-all-or-nothing">
-                                                <div className="student-progress-rc-scoring-header">
-                                                  <h5>Question Status:</h5>
-                                                  <div className={`student-progress-rc-overall-result ${question.allSentenceQuestionsCorrect ? 'passed' : 'failed'}`}>
-                                                    {question.allSentenceQuestionsCorrect ? 'PASSED' : 'FAILED'}
-                                                    ({question.sentenceQAPairs.filter(pair => pair.isCorrect).length}/{question.sentenceQAPairs.length} questions correct)
-                                                  </div>
-                                                </div>
-
-                                                <div className="student-progress-rc-explanation">
-                                                  <small>All questions must be correct to pass</small>
-                                                </div>
-
-                                                <div className="student-progress-rc-question-pairs">
-                                                  {question.sentenceQAPairs.map(pair => (
-                                                    <div key={pair.questionNumber} className={`student-progress-rc-qa-pair ${pair.isCorrect ? 'correct' : 'incorrect'}`}>
-                                                      <div className="student-progress-rc-question">
-                                                        <div className="student-progress-rc-question-header">
-                                                          <span className="student-progress-rc-question-num">Q{pair.questionNumber}:</span>
-                                                          <span className={`student-progress-rc-status ${pair.isCorrect ? 'correct' : 'incorrect'}`}>
-                                                            {pair.isCorrect ? '✓' : '✗'}
-                                                          </span>
-                                                        </div>
-                                                        <div className="student-progress-rc-question-text">{pair.questionText}</div>
-                                                      </div>
-
-                                                      <div className="student-progress-rc-answers">
-                                                        <div className="student-progress-rc-student-answer">
-                                                          <strong>Student Answer:</strong> "{pair.studentAnswer}"
-                                                        </div>
-                                                        <div className="student-progress-rc-correct-answer">
-                                                          <strong>Expected Answer:</strong> "{pair.correctAnswer}"
-                                                          {pair.acceptableAnswers && pair.acceptableAnswers.length > 0 && (
-                                                            <div className="student-progress-rc-acceptable">
-                                                              <small>Also accepts: {pair.acceptableAnswers.join(', ')}</small>
-                                                            </div>
-                                                          )}
-                                                        </div>
-                                                      </div>
+                                          {/* Story Passages */}
+                                          {question.questionDetails.passages && Array.isArray(question.questionDetails.passages) && (
+                                            <div className="student-progress-story-passages">
+                                              <h5>Story Content:</h5>
+                                              <div className="student-progress-passages-container">
+                                                {question.questionDetails.passages.map((passage, passageIndex) => (
+                                                  <div key={passageIndex} className="student-progress-passage-item">
+                                                    <div className="student-progress-passage-text">
+                                                      {passage.pageText}
                                                     </div>
-                                                  ))}
+                                                    {passage.pageImage && (
+                                                      <div className="student-progress-passage-image">
+                                                        <button
+                                                          className="student-progress-image-preview-btn"
+                                                          onClick={() => handleImageClick(
+                                                            passage.pageImage,
+                                                            `Story Page ${passage.pageNumber}`,
+                                                            passage.pageText
+                                                          )}
+                                                          title="Click to view story image"
+                                                        >
+                                                          <FaEye /> View Story Image
+                                                        </button>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+                                          
+                                          {/* Sentence Questions */}
+                                          {question.questionDetails.sentenceQuestions && Array.isArray(question.questionDetails.sentenceQuestions) && (
+                                            <div className="student-progress-sentence-questions">
+                                              <h5>Questions:</h5>
+                                              <div className="student-progress-questions-container">
+                                                {question.questionDetails.sentenceQuestions.map((sentenceQ, qIndex) => (
+                                                  <div key={qIndex} className="student-progress-sentence-question">
+                                                    <div className="student-progress-question-text">
+                                                      <strong>Q{qIndex + 1}:</strong> {sentenceQ.questionText}
+                                                    </div>
+                                                    
+                                                    <div className="student-progress-answer-comparison">
+                                                      <div className="student-progress-answer-row">
+                                                        <span className="student-progress-answer-label">Student Answer:</span>
+                                                        <span className={`student-progress-answer-value ${question.isCorrect ? 'student-progress-answer-correct' : 'student-progress-answer-incorrect'}`}>
+                                                          {Array.isArray(question.response) && question.response[qIndex] ? question.response[qIndex] : 'No answer'}
+                                                        </span>
+                                                      </div>
+                                                      <div className="student-progress-answer-row">
+                                                        <span className="student-progress-answer-label">Expected Answer:</span>
+                                                        <span className="student-progress-answer-value student-progress-answer-correct">
+                                                          {sentenceQ.correctAnswer}
+                                                        </span>
+                                                      </div>
+                                                      {sentenceQ.acceptableAnswers && sentenceQ.acceptableAnswers.length > 0 && (
+                                                        <div className="student-progress-acceptable-answers">
+                                                          <small>Also accepts: {sentenceQ.acceptableAnswers.join(', ')}</small>
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+                                          
+                                          {/* Fallback for older data structure */}
+                                          {(!question.questionDetails.sentenceQuestions || !Array.isArray(question.questionDetails.sentenceQuestions)) && (
+                                            <div className="student-progress-comprehension-answer">
+                                              <div className="student-progress-comprehension-section">
+                                                <h5>Student's Answer:</h5>
+                                                <div className={`student-progress-comprehension-response ${question.isCorrect ? 'correct' : 'incorrect'}`}>
+                                                  {Array.isArray(question.response) ? question.response.join(', ') : question.response || 'No response'}
                                                 </div>
                                               </div>
-                                            ) : (
-                                              /* Fallback to original structure for older data */
-                                              <>
-                                                <div className="student-progress-comprehension-section">
-                                                  <h5>Student's Answer:</h5>
-                                                  <div className={`student-progress-comprehension-response ${question.isCorrect ? 'correct' : 'incorrect'}`}>
-                                                    {Array.isArray(question.response) ? question.response.join(', ') : question.response || 'No response'}
-                                                  </div>
+
+                                              <div className="student-progress-comprehension-section">
+                                                <h5>Expected Answer:</h5>
+                                                <div className="student-progress-comprehension-correct">
+                                                  {question.questionDetails.correctAnswer || 'Not available'}
                                                 </div>
 
-                                                <div className="student-progress-comprehension-section">
-                                                  <h5>Expected Answer:</h5>
-                                                  <div className="student-progress-comprehension-correct">
-                                                    {question.questionDetails.correctAnswer}
+                                                {question.questionDetails.acceptableAnswers && question.questionDetails.acceptableAnswers.length > 1 && (
+                                                  <div className="student-progress-acceptable-answers">
+                                                    <small>Acceptable answers: {question.questionDetails.acceptableAnswers.join(', ')}</small>
                                                   </div>
-
-                                                  {question.questionDetails.acceptableAnswers && question.questionDetails.acceptableAnswers.length > 1 && (
-                                                    <div className="student-progress-acceptable-answers">
-                                                      <small>Acceptable answers: {question.questionDetails.acceptableAnswers.join(', ')}</small>
-                                                    </div>
-                                                  )}
-                                                </div>
-                                              </>
-                                            )}
-                                          </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                          )}
                                         </div>
                                       )}
                                     </div>
