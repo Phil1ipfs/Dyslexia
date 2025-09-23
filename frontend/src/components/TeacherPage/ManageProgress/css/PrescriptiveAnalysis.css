@@ -377,7 +377,36 @@
 .literexia-tabs-containerr {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 0.75rem;
+  gap: 1rem;
+}
+
+/* Responsive grid adjustments for literexia-tabs-containerr */
+@media (max-width: 1200px) {
+  .literexia-tabs-containerr {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .literexia-tabs-containerr {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .literexia-tabs-containerr {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .literexia-tabs-containerr {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
 }
 
 /* Updated CSS for Reading Skill Categories - Fixed alignment and styling */
@@ -402,7 +431,7 @@
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
-  gap: 0.25rem;
+  gap: 1rem;
 }
 
 .literexia-tab-namee {
@@ -461,11 +490,13 @@
 
 /* Status text and badges - Fixed positioning */
 .literexia-status-text {
-  font-size: 0.65rem;
+  font-size: 0.85rem;
   color: #6b7280;
-  line-height: 1.2;
-  margin-top: auto;
+  line-height: 1.3;
+  margin-top: 0.25rem;
+  padding: 0.25rem 0;
   font-style: italic;
+  text-align: center;
 }
 
 /* Mastery level indicators based on BKT */

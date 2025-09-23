@@ -2354,7 +2354,13 @@ class InterventionResultsAnalysisService {
     });
 
     // Update intervention tracking
-    categoryResults.categories[categoryIndex].currentInterventionId = interventionResults.interventionAssessmentId;
+    // ✅ CONSISTENCY FIX: Only set currentInterventionId if intervention FAILED
+    // When intervention PASSES, clear currentInterventionId to null (no active intervention needed)
+    if (interventionResults.isPassed) {
+      categoryResults.categories[categoryIndex].currentInterventionId = null; // Clear when passed
+    } else {
+      categoryResults.categories[categoryIndex].currentInterventionId = interventionResults.interventionAssessmentId; // Keep for retries when failed
+    }
     categoryResults.categories[categoryIndex].interventionAttempts = attemptNumber;
 
     // Add to intervention history with revision tracking

@@ -141,7 +141,13 @@ class InterventionSyncService {
 
     // Update category data
     categoryResults.categories[categoryIndex].interventionCompleted = true;
-    categoryResults.categories[categoryIndex].currentInterventionId = interventionAssessment._id;
+    // ✅ CONSISTENCY FIX: Only set currentInterventionId if intervention FAILED
+    // When intervention PASSES, clear currentInterventionId to null (no active intervention needed)
+    if (interventionPassed) {
+      categoryResults.categories[categoryIndex].currentInterventionId = null; // Clear when passed
+    } else {
+      categoryResults.categories[categoryIndex].currentInterventionId = interventionAssessment._id; // Keep for retries when failed
+    }
     categoryResults.categories[categoryIndex].interventionAttempts = Math.max(
       categoryData.interventionAttempts || 0,
       1

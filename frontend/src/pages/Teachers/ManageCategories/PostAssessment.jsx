@@ -804,12 +804,10 @@ const MainAssessment = ({ templates }) => {
   const getAssessmentStats = () => {
     const totalAssessments = assessments.length;
     const activeAssessments = assessments.filter(a => a.isActive).length;
-    const inactiveAssessments = assessments.filter(a => !a.isActive).length;
 
     return {
       total: totalAssessments,
-      active: activeAssessments,
-      inactive: inactiveAssessments
+      active: activeAssessments
     };
   };
 
@@ -1833,13 +1831,7 @@ const MainAssessment = ({ templates }) => {
           ] : [],
           // Question added successfully
           comprehensionQuestions: [],
-          currentComprehensionIndex: -1, // -1 means adding new, >=0 means editing existing
-          // Use sentenceQuestions directly to match database structure
-          sentenceQuestions: [{
-            questionText: "",
-            correctAnswer: "",
-            acceptableAnswers: []
-          }]
+          currentComprehensionIndex: -1 // -1 means adding new, >=0 means editing existing
         });
 
         toast.success("Question updated! You can add another or click Back to return to the assessment.");
@@ -1889,13 +1881,7 @@ const MainAssessment = ({ templates }) => {
           ] : [],
           // Question added successfully
           comprehensionQuestions: [],
-          currentComprehensionIndex: -1, // -1 means adding new, >=0 means editing existing
-          // Use sentenceQuestions directly to match database structure
-          sentenceQuestions: [{
-            questionText: "",
-            correctAnswer: "",
-            acceptableAnswers: []
-          }]
+          currentComprehensionIndex: -1 // -1 means adding new, >=0 means editing existing
         });
 
         console.log('Question successfully added to form! Total questions now:', formData.questions.length + 1);
