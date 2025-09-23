@@ -120,34 +120,34 @@ export default {
 
     // Get template questions (CLAUDE.md system)
     getTemplateQuestions: (category) =>
-      api.get(`/api/interventions/templates/questions?category=${encodeURIComponent(category)}`),
+      api.get(`/api/templates/questions?category=${encodeURIComponent(category)}`),
 
     // Get template choices (CLAUDE.md system)
     getTemplateChoices: (choiceTypes = []) => {
       const queryParam = choiceTypes.length > 0 ?
         `?choiceTypes=${choiceTypes.join(',')}` : '';
-      return api.get(`/api/interventions/templates/choices${queryParam}`);
+      return api.get(`/api/templates/choices${queryParam}`);
     },
 
     // Get template choices by types (CLAUDE.md system)
     getTemplateChoicesByTypes: (choiceTypes) =>
-      api.post('/api/interventions/templates/choices/by-types', { choiceTypes }),
+      api.post('/api/templates/choices/by-types', { choiceTypes }),
 
     // Get sentence templates (CLAUDE.md system)
     getSentenceTemplates: (readingLevel) =>
-      api.get(`/api/interventions/templates/sentences/level/${encodeURIComponent(readingLevel)}`),
+      api.get(`/api/templates/sentences/level/${encodeURIComponent(readingLevel)}`),
 
     // Create template question (CLAUDE.md system)
     createTemplateQuestion: (templateData) =>
-      api.post('/api/interventions/templates/questions', templateData),
+      api.post('/api/templates/questions', templateData),
 
     // Create template choice (CLAUDE.md system)
     createTemplateChoice: (choiceData) =>
-      api.post('/api/interventions/templates/choices', choiceData),
+      api.post('/api/templates/choices', choiceData),
 
     // Generate intervention using templates (CLAUDE.md system)
     generateInterventionFromTemplates: (prescriptiveAnalysisId, category) =>
-      api.post('/api/interventions/templates/generate-intervention', { prescriptiveAnalysisId, category }),
+      api.post('/api/templates/generate-intervention', { prescriptiveAnalysisId, category }),
       
     // Upload file directly to S3 with public access (RECOMMENDED)
     uploadFile: (file, targetFolder = 'mobile') => {

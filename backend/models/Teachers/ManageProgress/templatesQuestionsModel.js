@@ -17,7 +17,7 @@ const templateQuestionSchema = new mongoose.Schema({
   questionType: {
     type: String,
     required: true,
-    enum: ['patinig', 'katinig', 'malapantig', 'complete_word_identification', 'fill_missing_letter', 'sentence_completion', 'rhyming_words']
+    enum: ['patinig', 'katinig', 'malapantig', 'complete_word_identification', 'fill_missing_letter', 'sentence_completion', 'rhyming_words', 'fill_blank', 'word']
   },
   questionText: {
     type: String,

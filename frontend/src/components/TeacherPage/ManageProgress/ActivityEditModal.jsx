@@ -1291,13 +1291,13 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
  
   /**
    * Load question templates for this category
-   * API: GET /api/interventions/templates/questions?category={category}
+   * API: GET /api/templates/questions?category={category}
    */
   const loadQuestionTemplates = async () => {
     try {
       // Make the API call with proper authentication
       console.log('🔄 [TEMPLATE LOADING] Starting template load for category:', category);
-      console.log('🔄 [TEMPLATE LOADING] API URL will be:', `/api/interventions/templates/questions?category=${category}`);
+      console.log('🔄 [TEMPLATE LOADING] API URL will be:', `/api/templates/questions?category=${category}`);
 
       const response = await api.interventions.getTemplateQuestions(category);
       console.log('🔄 [TEMPLATE LOADING] Raw API response:', response);
@@ -1319,7 +1319,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         // Test with a direct API call to see what's in the database
         console.log('🔍 [TEMPLATE LOADING] Testing direct API call...');
         try {
-          const testResponse = await fetch(`/api/interventions/templates/questions?category=${encodeURIComponent(category)}`, {
+          const testResponse = await fetch(`/api/templates/questions?category=${encodeURIComponent(category)}`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
@@ -1383,12 +1383,12 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
  
   /**
    * Load choice templates
-   * API: GET /api/interventions/templates/choices
+   * API: GET /api/templates/choices
    */
   const loadChoiceTemplates = async () => {
     try {
       // Make the API call with proper authentication
-      console.log('Loading choice templates:', `/api/interventions/templates/choices`);
+      console.log('Loading choice templates:', `/api/templates/choices`);
       
       const response = await api.interventions.getTemplateChoices();
       console.log('Choice templates response:', response.data);
@@ -1405,12 +1405,12 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
  
   /**
    * Load sentence templates for reading comprehension
-   * API: GET /api/interventions/templates/sentences?readingLevel={level}
+   * API: GET /api/templates/sentences?readingLevel={level}
    */
   const loadSentenceTemplates = async () => {
     try {
       // Make the API call with proper authentication
-      console.log('Loading sentence templates:', `/api/interventions/templates/sentences?readingLevel=${readingLevel}`);
+      console.log('Loading sentence templates:', `/api/templates/sentences?readingLevel=${readingLevel}`);
       
       const response = await api.interventions.getSentenceTemplates(readingLevel);
       console.log('Sentence templates response:', response.data);
@@ -1446,7 +1446,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
  
   /**
    * Create a new question template
-   * API: POST /api/interventions/templates/questions
+   * API: POST /api/templates/questions
    */
   const createNewQuestionTemplate = async (templateData) => {
     try {
@@ -1467,7 +1467,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   
   /**
    * Create a new choice template
-   * API: POST /api/interventions/templates/choices
+   * API: POST /api/templates/choices
    */
   const createNewChoiceTemplate = async (choiceData) => {
     try {

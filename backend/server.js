@@ -1068,6 +1068,10 @@ connectDB().then(async (connected) => {
       const teacherCategoryResultRoutes = require('./routes/Teachers/categoryResultRoutes');
       app.use('/api/teachers/category-results', teacherCategoryResultRoutes);
       console.log('✅ Loaded Teacher category result routes at /api/teachers/category-results/*');
+
+      // Frontend compatibility route - mount at expected path
+      app.use('/api/category-results', teacherCategoryResultRoutes);
+      console.log('✅ Loaded Frontend compatibility category result routes at /api/category-results/*');
     } catch (error) {
       console.warn('⚠️ Could not load Teacher category result routes:', error.message);
     }
