@@ -1219,10 +1219,10 @@ class InterventionService {
    * @param {Buffer} fileBuffer - The file buffer
    * @param {string} fileName - The file name
    * @param {string} fileType - The file type
-   * @param {string} targetFolder - The target folder in S3 bucket (default: 'mobile')
+   * @param {string} targetFolder - The target folder in S3 bucket (default: 'general')
    * @returns {Promise<Object>} - The uploaded file URL
    */
-  async uploadFileToS3(fileBuffer, fileName, fileType, targetFolder = 'mobile') {
+  async uploadFileToS3(fileBuffer, fileName, fileType, targetFolder = 'general') {
     try {
       if (!s3Client) {
         throw new Error('S3 client not properly configured');
@@ -1377,7 +1377,7 @@ class InterventionService {
    * Generate a pre-signed URL for S3 uploads
    * @param {string} fileName - The file name
    * @param {string} fileType - The file type
-   * @param {string} targetFolder - The target folder in S3 bucket (default: 'mobile')
+   * @param {string} targetFolder - The target folder in S3 bucket (default: 'general')
    * @returns {Promise<Object>} - The pre-signed URL
    */
   async getPresignedUploadUrl(fileName, fileType, targetFolder = 'mobile') {

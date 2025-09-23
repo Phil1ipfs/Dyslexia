@@ -70,7 +70,57 @@ const sanitizeImageUrl = (url) => {
     }
   }
 
+  // Handle valid S3 URLs - ensure they have proper format
+  if (url.includes('literexia-bucket.s3')) {
+    // If it's already a valid S3 URL, return as-is
+    return url;
+  }
+
+  // Handle path-style S3 URLs (when forcePathStyle is true)
+  if (url.includes('s3.ap-southeast-2.amazonaws.com/literexia-bucket')) {
+    return url;
+  }
+
+  // If it's a relative path or filename, construct full S3 URL
+  if (url.startsWith('/') || !url.includes('://')) {
+    // Handle different S3 path patterns
+    if (url.includes('mobile/')) {
+      return `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/${url.replace(/^\//, '')}`;
+    } else if (url.includes('general/')) {
+      return `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/${url.replace(/^\//, '')}`;
+    } else {
+      return `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/mobile/${url.replace(/^\//, '')}`;
+    }
+  }
+
+  // Handle URL path correction: if URL points to mobile/ but file is in general/
+  if (url.includes('literexia-bucket.s3.ap-southeast-2.amazonaws.com/mobile/')) {
+    // Extract filename from mobile/ path
+    const filename = url.split('/mobile/')[1];
+    if (filename) {
+      // Try general/ folder first (where files actually are)
+      const generalUrl = `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/general/${filename}`;
+      console.log(`🔄 Attempting to correct image path: ${url} -> ${generalUrl}`);
+      return generalUrl;
+    }
+  }
+
   return url;
+};
+
+/**
+ * Test if an image URL is accessible
+ * @param {string} url - The image URL to test
+ * @returns {Promise<boolean>} - Whether the URL is accessible
+ */
+const testImageAccessibility = async (url) => {
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    return response.ok;
+  } catch (error) {
+    console.warn('Image accessibility test failed:', url, error);
+    return false;
+  }
 };
 
 /**
@@ -5890,6 +5940,85 @@ const PrescriptiveAnalysis = ({
                           <div className="intervention-response-question-section">
                             <h5>Question</h5>
                             <p className="intervention-response-question-text">{response.questionText || 'Question text not available'}</p>
+                            
+                            {/* Display Word for Word Recognition questions */}
+                            {selectedInterventionData.category === 'Word Recognition' && (() => {
+                              // Find the corresponding question in the intervention assessment
+                              if (selectedInterventionData?.interventionAssessment?.questions) {
+                                const question = selectedInterventionData.interventionAssessment.questions.find(
+                                  q => q.questionId === response.questionId
+                                );
+                                
+                                if (question && question.displayWord) {
+                                  return (
+                                    <div className="intervention-response-display-word">
+                                      <h6>Display Word/Sentence:</h6>
+                                      <p className="intervention-response-display-word-text">{question.displayWord}</p>
+                                    </div>
+                                  );
+                                }
+                              }
+                              return null;
+                            })()}
+
+                            {/* Display Sequence for Decoding questions */}
+                            {selectedInterventionData.category === 'Decoding' && (() => {
+                              // Find the corresponding question in the intervention assessment
+                              if (selectedInterventionData?.interventionAssessment?.questions) {
+                                const question = selectedInterventionData.interventionAssessment.questions.find(
+                                  q => q.questionId === response.questionId
+                                );
+                                
+                                if (question && (question.displaySequence || question.correctSequence)) {
+                                  return (
+                                    <div className="intervention-response-display-sequence">
+                                      {question.displaySequence && (
+                                        <div className="intervention-response-sequence-item">
+                                          <h6>Word Structure:</h6>
+                                          <div className="intervention-response-sequence-display">
+                                            {question.displaySequence.map((letter, index) => (
+                                              <span 
+                                                key={index} 
+                                                className={`sequence-letter ${letter === '_' ? 'blank' : 'filled'}`}
+                                              >
+                                                {letter === '_' ? '___' : letter}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      {question.correctSequence && (
+                                        <div className="intervention-response-sequence-item">
+                                          <h6>Correct Answer:</h6>
+                                          <div className="intervention-response-correct-sequence">
+                                            {question.correctSequence.map((letter, index) => (
+                                              <span key={index} className="correct-letter">
+                                                {letter}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      {question.dragElements && question.dragElements.length > 0 && (
+                                        <div className="intervention-response-sequence-item">
+                                          <h6>Available Options:</h6>
+                                          <div className="intervention-response-drag-elements">
+                                            {question.dragElements.map((element, index) => (
+                                              <span key={index} className="drag-element">
+                                                {element}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                }
+                              }
+                              return null;
+                            })()}
                             {response.questionImage && response.questionImage.trim() !== '' ? (
                               <div className="intervention-response-question-image">
                                 <img
@@ -5898,7 +6027,34 @@ const PrescriptiveAnalysis = ({
                                   className="intervention-response-image"
                                   onError={(e) => {
                                     console.warn('Failed to load question image:', response.questionImage);
+                                    console.warn('Sanitized URL:', sanitizeImageUrl(response.questionImage));
                                     console.warn('This could be due to network issues, CORS settings, or temporary AWS issues');
+
+                                    // Try alternative path if original failed
+                                    const originalUrl = response.questionImage;
+                                    if (originalUrl.includes('/mobile/')) {
+                                      const filename = originalUrl.split('/mobile/')[1];
+                                      const alternativeUrl = `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/general/${filename}`;
+                                      console.log(`🔄 Trying alternative path: ${alternativeUrl}`);
+                                      
+                                      // Try loading the alternative URL
+                                      const img = new Image();
+                                      img.onload = () => {
+                                        console.log('✅ Alternative image loaded successfully');
+                                        e.target.src = alternativeUrl;
+                                        e.target.style.display = 'block';
+                                        // Remove any existing error div
+                                        const errorDiv = e.target.parentNode.querySelector('.intervention-response-image-retry');
+                                        if (errorDiv) {
+                                          errorDiv.remove();
+                                        }
+                                      };
+                                      img.onerror = () => {
+                                        console.warn('❌ Alternative image also failed to load');
+                                      };
+                                      img.src = alternativeUrl;
+                                      return; // Don't show error message yet, wait for alternative attempt
+                                    }
 
                                     // Check if this is actually a corrupted URL (contains JavaScript code)
                                     const isActuallyCorrupted = response.questionImage.includes('async () =>') ||
@@ -5928,7 +6084,7 @@ const PrescriptiveAnalysis = ({
                                         <div style="padding: 15px; text-align: center; background: #fef3cd; border: 1px solid #fde68a; border-radius: 8px; color: #92400e;">
                                           <strong>Image Loading Failed</strong><br>
                                           <small>This may be temporary. Click to retry loading.</small><br>
-                                          <button style="margin-top: 8px; padding: 4px 12px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer;" onclick="this.parentNode.parentNode.previousElementSibling.style.display='block'; this.parentNode.parentNode.previousElementSibling.src='${response.questionImage}?t=' + Date.now(); this.parentNode.parentNode.remove();">
+                                          <button style="margin-top: 8px; padding: 4px 12px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer;" onclick="this.parentNode.parentNode.previousElementSibling.style.display='block'; this.parentNode.parentNode.previousElementSibling.src='${sanitizeImageUrl(response.questionImage)}?t=' + Date.now(); this.parentNode.parentNode.remove();">
                                             Retry Loading Image
                                           </button><br>
                                           <small style="word-break: break-all; font-family: monospace; font-size: 10px; margin-top: 8px; display: block;">${response.questionImage}</small>
@@ -5947,7 +6103,7 @@ const PrescriptiveAnalysis = ({
                           </div>
 
                           <div className="intervention-response-answers-section">
-                            <div className="intervention-response-answer-row">
+                            <div className={`intervention-response-answer-row ${selectedInterventionData.category === 'Decoding' ? 'decoding-only' : ''}`}>
                               <div className="intervention-response-answer-item student-answer">
                                 <span className="intervention-response-answer-label">Student Answer</span>
                                 <span className={`intervention-response-answer-value ${response.isCorrect ? 'correct' : 'incorrect'}`}>
@@ -5984,31 +6140,35 @@ const PrescriptiveAnalysis = ({
                                   })()}
                                 </span>
                               </div>
-                              <div className="intervention-response-answer-item correct-answer">
-                                <span className="intervention-response-answer-label">Correct Answer</span>
-                                <span className="intervention-response-answer-value correct">
-                                  {(() => {
-                                    // Find the corresponding question in the intervention assessment
-                                    if (selectedInterventionData?.interventionAssessment?.questions) {
-                                      const question = selectedInterventionData.interventionAssessment.questions.find(
-                                        q => q.questionId === response.questionId
-                                      );
+                              
+                              {/* Only show correct answer for non-Decoding categories */}
+                              {selectedInterventionData.category !== 'Decoding' && (
+                                <div className="intervention-response-answer-item correct-answer">
+                                  <span className="intervention-response-answer-label">Correct Answer</span>
+                                  <span className="intervention-response-answer-value correct">
+                                    {(() => {
+                                      // Find the corresponding question in the intervention assessment
+                                      if (selectedInterventionData?.interventionAssessment?.questions) {
+                                        const question = selectedInterventionData.interventionAssessment.questions.find(
+                                          q => q.questionId === response.questionId
+                                        );
 
-                                      console.log('🔍 [CORRECT ANSWER] Found question for', response.questionId, ':', question);
+                                        console.log('🔍 [CORRECT ANSWER] Found question for', response.questionId, ':', question);
 
-                                      if (question) {
-                                        // DYNAMIC CORRECT ANSWER EXTRACTION FOR ALL CATEGORIES
-                                        return extractCorrectAnswerForCategory(question, selectedInterventionData.category);
+                                        if (question) {
+                                          // DYNAMIC CORRECT ANSWER EXTRACTION FOR ALL CATEGORIES
+                                          return extractCorrectAnswerForCategory(question, selectedInterventionData.category);
+                                        }
+
+                                        console.log('🔍 [CORRECT ANSWER] Question not found');
                                       }
 
-                                      console.log('🔍 [CORRECT ANSWER] Question not found');
-                                    }
-
-                                    console.log('🔍 [CORRECT ANSWER] No intervention assessment or questions found');
-                                    return 'N/A - No intervention assessment data';
-                                  })()}
-                                </span>
-                              </div>
+                                      console.log('🔍 [CORRECT ANSWER] No intervention assessment or questions found');
+                                      return 'N/A - No intervention assessment data';
+                                    })()}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>

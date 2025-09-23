@@ -1489,10 +1489,10 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   /**
    * Upload an image to S3 bucket
    * @param {File} file - The file to upload
-   * @param {string} targetFolder - Target folder in S3 bucket (default: 'mobile')
+   * @param {string} targetFolder - Target folder in S3 bucket (default: 'general')
    * @returns {Promise<string>} - The URL of the uploaded file
    */
-  const uploadImageToS3 = async (file, targetFolder = 'mobile') => {
+  const uploadImageToS3 = async (file, targetFolder = 'general') => {
     try {
       setUploading(true);
       console.log(`[S3 UPLOAD] 🚀 Starting DIRECT upload process for file: ${file.name} (${file.type})`);
@@ -1911,8 +1911,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       // IMMEDIATE UPLOAD: Upload the file to S3 right away instead of waiting for save
       console.log(`[FILE] Starting immediate S3 upload for file: ${file.name}`);
       
-      // Upload to S3 in the mobile folder
-      const imageUrl = await uploadImageToS3(file, 'mobile');
+      // Upload to S3 in the general folder
+      const imageUrl = await uploadImageToS3(file, 'general');
       
       if (imageUrl) {
         console.log(`[FILE] ✅ Immediate upload successful! Image URL: ${imageUrl}`);
@@ -7214,6 +7214,7 @@ const renderWordRecognitionStep = () => {
           const formData = new FormData();
           formData.append('file', file);
           formData.append('type', 'question-image');
+          formData.append('path', 'general'); // Specify general folder
 
           const response = await fetch('/api/uploads/s3', {
             method: 'POST',
