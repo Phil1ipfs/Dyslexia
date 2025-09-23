@@ -7112,11 +7112,11 @@ const renderWordRecognitionStep = () => {
     return validPattern.test(text.trim());
   };
 
-  // Helper function to validate word input (no numbers or symbols, single word)
+  // Helper function to validate word input (no numbers or symbols, allows spaces for multi-word display)
   const validateWordInput = (word) => {
     if (!word || typeof word !== 'string') return false;
-    // Only allow letters and basic Filipino characters, no spaces for single words
-    const validPattern = /^[a-zA-ZÀ-ÿñÑ]+$/;
+    // Allow letters, spaces, and basic Filipino characters for display words
+    const validPattern = /^[a-zA-ZÀ-ÿñÑ\s]+$/;
     return validPattern.test(word.trim());
   };
 
@@ -7198,7 +7198,7 @@ const renderWordRecognitionStep = () => {
     } else {
       // Set validation error
       const errorMessage = isWordInput
-        ? 'Only letters are allowed (no numbers, symbols, or spaces)'
+        ? 'Only letters and spaces are allowed (no numbers or symbols)'
         : 'Only letters, spaces, and basic punctuation are allowed';
 
       setErrors(prev => ({
@@ -7545,14 +7545,14 @@ const renderWordRecognitionStep = () => {
                     }
                   }}
                   onKeyDown={(e) => {
-                    // Prevent typing numbers and symbols entirely for single words
+                    // Allow letters, spaces, and basic navigation keys
                     const char = e.key;
-                    const validPattern = /^[a-zA-ZÀ-ÿñÑ]$/;
+                    const validPattern = /^[a-zA-ZÀ-ÿñÑ\s]$/;
                     if (!validPattern.test(char) && char !== 'Backspace' && char !== 'Delete' && char !== 'Tab' && char !== 'ArrowLeft' && char !== 'ArrowRight' && char !== 'ArrowUp' && char !== 'ArrowDown' && char.length === 1) {
                       e.preventDefault();
                     }
                   }}
-                  placeholder="e.g., SUMBRERO (letters only)"
+                  placeholder="e.g., SUMBRERO or LARUAN (letters and spaces allowed)"
                   disabled={pair.sourceTemplateId} // Disable if template is selected
                   className={errors[`${pair.id}_displayWord`] ? 'literexia-error' : ''}
                 />
@@ -7567,7 +7567,7 @@ const renderWordRecognitionStep = () => {
                   </small>
                 ) : (
                   <small style={{color: '#0c4a6e', fontSize: '11px', marginTop: '4px', display: 'block'}}>
-                    Enter the word that students will match sounds with
+                    Enter the word that students will match sounds with (spaces allowed for multi-word phrases)
                   </small>
                 )}
               </div>
@@ -7581,7 +7581,7 @@ const renderWordRecognitionStep = () => {
                       <img
                         src={pair.questionImage}
                         alt="Word"
-                        style={{maxWidth: '150px', maxHeight: '100px', objectFit: 'contain'}}
+                        className="word-recognition-uploaded-image"
                       />
                       <button
                         type="button"
@@ -7589,17 +7589,23 @@ const renderWordRecognitionStep = () => {
                         onClick={() => updateQuestionChoicePair(pair.id, { questionImage: null })}
                         title="Remove image"
                       >
-                        <FaTimes /> Remove
+                        <FaTimes />
                       </button>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      className="word-recognition-upload-btn"
-                      onClick={() => triggerFileUpload(pair.id)}
-                    >
-                      <FaPlus /> Upload Image
-                    </button>
+                    <div className="word-recognition-image-upload-empty">
+                      <FaImage className="word-recognition-image-upload-icon" />
+                      <p className="word-recognition-image-upload-text">
+                        Add an image to represent the word
+                      </p>
+                      <button
+                        type="button"
+                        className="word-recognition-upload-btn"
+                        onClick={() => triggerFileUpload(pair.id)}
+                      >
+                        <FaPlus /> Choose Image
+                      </button>
+                    </div>
                   )}
                 </div>
                 <small style={{color: '#0c4a6e', fontSize: '11px', marginTop: '4px', display: 'block'}}>
