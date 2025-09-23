@@ -4240,18 +4240,6 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
     console.log(`[WORD RECOGNITION TEMPLATE] Final template data being applied:`, templateData);
     updateQuestionChoicePair(pairId, templateData);
-    
-    // Debug: Log the updated pair after template application
-    setTimeout(() => {
-      const updatedPair = questionChoicePairs.find(p => p.id === pairId);
-      console.log('[TEMPLATE APPLICATION DEBUG] Updated pair after template application:', {
-        pairId: pairId,
-        sourceTemplateId: updatedPair?.sourceTemplateId,
-        questionSubType: updatedPair?.questionSubType,
-        questionText: updatedPair?.questionText,
-        displayWord: updatedPair?.displayWord
-      });
-    }, 100);
 
     // Show success notification
     createModalToast(`Template applied: ${questionSubType === 'sound_matching' ? 'Sound Matching' : 'Sentence Completion'}`, 'success');
@@ -7693,12 +7681,6 @@ const renderWordRecognitionStep = () => {
                 <div className="word-recognition-image-upload">
                   {pair.questionImage ? (
                     <div className="word-recognition-image-preview">
-                      {console.log('[IMAGE RENDER DEBUG] Rendering image removal button:', {
-                        pairId: pair.id,
-                        sourceTemplateId: pair.sourceTemplateId,
-                        questionSubType: pair.questionSubType,
-                        shouldBeDisabled: pair.sourceTemplateId && pair.questionSubType === 'sentence_completion'
-                      })}
                       <img
                         src={pair.questionImage}
                         alt="Word"
@@ -7707,22 +7689,12 @@ const renderWordRecognitionStep = () => {
                       <button
                         type="button"
                         className="word-recognition-remove-image-btn"
-                        onClick={() => {
-                          console.log('[IMAGE REMOVAL DEBUG] Button clicked:', {
-                            pairId: pair.id,
-                            sourceTemplateId: pair.sourceTemplateId,
-                            questionSubType: pair.questionSubType,
-                            shouldBeDisabled: pair.sourceTemplateId && pair.questionSubType === 'sentence_completion'
-                          });
-                          if (!(pair.sourceTemplateId && pair.questionSubType === 'sentence_completion')) {
-                            updateQuestionChoicePair(pair.id, { questionImage: null });
-                          }
-                        }}
-                        title={pair.sourceTemplateId && pair.questionSubType === 'sentence_completion' ? "Image is from sentence completion template - cannot remove" : "Remove image"}
-                        disabled={pair.sourceTemplateId && pair.questionSubType === 'sentence_completion'}
+                        onClick={() => updateQuestionChoicePair(pair.id, { questionImage: null })}
+                        title={pair.sourceTemplateId ? "Image is from template - cannot remove" : "Remove image"}
+                        disabled={pair.sourceTemplateId}
                         style={{
-                          opacity: (pair.sourceTemplateId && pair.questionSubType === 'sentence_completion') ? 0.5 : 1,
-                          cursor: (pair.sourceTemplateId && pair.questionSubType === 'sentence_completion') ? 'not-allowed' : 'pointer'
+                          opacity: pair.sourceTemplateId ? 0.5 : 1,
+                          cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer'
                         }}
                       >
                         <FaTimes />
@@ -7813,8 +7785,7 @@ const renderWordRecognitionStep = () => {
               {(pair.blankOptions || ['', '', '', '']).map((option, optionIndex) => {
                 // Check if this option is the correct answer from template
                 const isCorrectAnswer = (pair.correctAnswer || []).includes(option);
-                // Only lock correct answers for non-sentence-completion templates
-                const isFromTemplate = pair.sourceTemplateId && isCorrectAnswer && pair.questionSubType !== 'sentence_completion';
+                const isFromTemplate = pair.sourceTemplateId && isCorrectAnswer;
                 
                 return (
                   <div key={optionIndex} className="word-recognition-option-item">
@@ -7933,17 +7904,17 @@ const renderWordRecognitionStep = () => {
                             updateQuestionChoicePair(pair.id, { correctAnswer: [option] });
                           }
                         }}
-                        disabled={option === '' || (pair.sourceTemplateId && pair.questionSubType !== 'sentence_completion')} // Disable if empty or using non-sentence-completion template
+                        disabled={option === '' || pair.sourceTemplateId} // Disable if empty or using template
                         style={{
-                          cursor: (pair.sourceTemplateId && pair.questionSubType !== 'sentence_completion') ? 'not-allowed' : 'pointer'
+                          cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer'
                         }}
                       />
                       <span style={{ 
-                        color: (pair.sourceTemplateId && pair.questionSubType !== 'sentence_completion') ? '#6b7280' : 'inherit',
-                        fontStyle: (pair.sourceTemplateId && pair.questionSubType !== 'sentence_completion') ? 'italic' : 'normal'
+                        color: pair.sourceTemplateId ? '#6b7280' : 'inherit',
+                        fontStyle: pair.sourceTemplateId ? 'italic' : 'normal'
                       }}>
                         Correct Answer (select only one)
-                        {(pair.sourceTemplateId && pair.questionSubType !== 'sentence_completion') && ' (from template)'}
+                        {pair.sourceTemplateId && ' (from template)'}
                       </span>
                     </label>
                   </div>
@@ -7952,10 +7923,7 @@ const renderWordRecognitionStep = () => {
             </div>
             {pair.sourceTemplateId ? (
               <small style={{color: '#92400e', fontSize: '11px', marginTop: '8px', display: 'block', fontWeight: '500'}}>
-                {pair.questionSubType === 'sentence_completion' 
-                  ? 'Sentence completion template - you can edit all options and select correct answers freely.'
-                  : 'Template provides base options - you can add/remove options and edit incorrect answers. Correct answer selection is locked from template.'
-                }
+                Template provides base options - you can add/remove options and edit incorrect answers. Correct answer selection is locked from template.
               </small>
             ) : (
               <small style={{color: '#92400e', fontSize: '11px', marginTop: '8px', display: 'block'}}>

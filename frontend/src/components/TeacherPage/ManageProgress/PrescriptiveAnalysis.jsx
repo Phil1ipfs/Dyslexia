@@ -242,6 +242,20 @@ const PrescriptiveAnalysis = ({
 
   // Helper function to get intervention status for a category
   const getInterventionStatus = (categoryName, categoryData = null) => {
+    // 🎯 AUTO-FIND CATEGORY DATA: If categoryData not provided, find it from liveCategoryResults
+    if (!categoryData && liveCategoryResults?.categories) {
+      categoryData = liveCategoryResults.categories.find(cat =>
+        cat.categoryName === categoryName || cat.category === categoryName
+      );
+      if (categoryData) {
+        console.log(`[INTERVENTION STATUS] 🔍 Auto-found categoryData for ${categoryName}:`, {
+          interventionHistory: categoryData.interventionHistory?.length || 0,
+          isPassed: categoryData.isPassed,
+          interventionCompleted: categoryData.interventionCompleted
+        });
+      }
+    }
+
     // 🎯 PRIORITY 1: Check category data for intervention history FIRST
     if (categoryData) {
       // Check intervention history for successful attempts (most reliable indicator)
@@ -401,70 +415,6 @@ const PrescriptiveAnalysis = ({
     }
   };
 
-  // Helper function to render status-specific content
-  const renderStatusContent = (categoryName, defaultContent) => {
-    const status = getInterventionStatus(categoryName);
-    const results = interventionResults[categoryName];
-
-    switch (status) {
-      case 'success':
-        return (
-          <div className="epa-success-content">
-            <div className="epa-success-header">
-              <FaCheckCircle className="epa-success-icon" />
-              <div>
-                <h5 className="epa-success-title">Intervention Successful!</h5>
-                <p className="epa-success-subtitle">
-                  Student scored {results?.score}% (improved from {results?.previousScore || 'N/A'}%)
-                </p>
-              </div>
-            </div>
-            <div className="epa-success-metrics">
-              <div className="epa-metric">
-                <span className="epa-metric-label">Current Score:</span>
-                <span className="epa-metric-value">{results?.score}%</span>
-              </div>
-              <div className="epa-metric">
-                <span className="epa-metric-label">Improvement:</span>
-                <span className="epa-metric-value">+{results?.improvement || 0}%</span>
-              </div>
-              <div className="epa-metric">
-                <span className="epa-metric-label">Status:</span>
-                <span className="epa-metric-value success">Passed</span>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'revision_needed':
-        return (
-          <div className="epa-revision-content">
-            <div className="epa-revision-header">
-              <FaEdit className="epa-revision-icon" />
-              <div>
-                <h5 className="epa-revision-title">Intervention Needs Revision</h5>
-                <p className="epa-revision-subtitle">
-                  Student scored {results?.score}% - close to passing! Consider revision.
-                </p>
-              </div>
-            </div>
-            <div className="epa-revision-guidance">
-              <h6 className="epa-revision-guidance-title">Revision Recommendations:</h6>
-              <ul className="epa-revision-suggestions">
-                <li>Reduce complexity of questions slightly</li>
-                <li>Add more visual cues or audio support</li>
-                <li>Focus on specific error patterns identified</li>
-                <li>Consider breaking into smaller practice sessions</li>
-              </ul>
-            </div>
-            {defaultContent}
-          </div>
-        );
-
-      default:
-        return defaultContent;
-    }
-  };
 
   // Enhanced function to fetch intervention results with version tracking and data normalization
   const fetchInterventionResults = async (studentId, categoryName) => {
@@ -1570,17 +1520,6 @@ const PrescriptiveAnalysis = ({
     );
   };
 
-  /**
-   * Get progress for a specific intervention
-   * @param {string} interventionId - Intervention ID
-   * @return {Object|null} Progress object or null
-   */
-  const getProgressForIntervention = (interventionId) => {
-    if (!interventionProgress) return null;
-    return interventionProgress.find(
-      progress => progress.interventionPlanId === interventionId
-    );
-  };
 
   /**
    * Format category name for display
@@ -3214,58 +3153,6 @@ const PrescriptiveAnalysis = ({
    * @param {string} categoryName - Category name
    * @return {JSX.Element} Teaching guide content
    */
-  /**
-   * Render BKT (Bayesian Knowledge Tracing) visualization
-   */
-  const renderBKTAnalysis = (bktData, categoryName) => {
-    if (!bktData) return null;
-
-    const masteryPercentage = Math.round((bktData.masteryProbability || 0.5) * 100);
-    const confidenceLevel = masteryPercentage >= 80 ? 'high' : masteryPercentage >= 60 ? 'medium' : 'low';
-
-    return (
-      <div className="literexia-bkt-analysis">
-        <div className="literexia-analysis-section">
-          <h4><FaBrain /> Bayesian Knowledge Tracing (BKT)</h4>
-          <div className="literexia-bkt-content">
-            <div className="literexia-mastery-display">
-              <div className="literexia-mastery-gauge">
-                <div
-                  className={`literexia-mastery-fill literexia-confidence-${confidenceLevel}`}
-                  style={{ width: `${masteryPercentage}%` }}
-                ></div>
-              </div>
-              <div className="literexia-mastery-info">
-                <span className="literexia-mastery-percentage">{masteryPercentage}%</span>
-                <span className="literexia-mastery-label">Mastery Probability</span>
-              </div>
-            </div>
-
-            {bktData.responseHistory && bktData.responseHistory.length > 0 && (
-              <div className="literexia-learning-progression">
-                <h5>Learning Progression</h5>
-                <div className="literexia-progression-timeline">
-                  {bktData.responseHistory.slice(-10).map((response, index) => (
-                    <div key={index} className="literexia-progression-point">
-                      <div
-                        className={`literexia-point ${response.correct ? 'correct' : 'incorrect'}`}
-                        title={`Question ${response.questionId}: ${response.correct ? 'Correct' : 'Incorrect'} - Mastery: ${Math.round((response.masteryAfter || 0.5) * 100)}%`}
-                      >
-                        {response.correct ? '✓' : '✗'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="literexia-progression-summary">
-                  <span>Latest responses showing mastery evolution</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   /**
    * Render IRT (Item Response Theory) ability estimate

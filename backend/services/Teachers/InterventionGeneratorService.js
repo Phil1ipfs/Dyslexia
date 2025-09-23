@@ -4,7 +4,6 @@ const InterventionAssessment = require('../../models/Teachers/ManageProgress/int
 const InterventionResponse = require('../../models/Teachers/ManageProgress/interventionResponseModel');
 const InterventionResults = require('../../models/Teachers/ManageProgress/interventionResultsModel');
 const TemplateQuestion = require('../../models/Teachers/ManageProgress/templatesQuestionsModel');
-const TemplateChoice = require('../../models/Teachers/ManageProgress/templatesChoicesModel');
 const SentenceTemplate = require('../../models/Teachers/ManageProgress/sentenceTemplateModel');
 const MainAssessment = require('../../models/Teachers/mainAssessmentModel');
 const CategoryResult = require('../../models/Teachers/ManageProgress/categoryResultModel');

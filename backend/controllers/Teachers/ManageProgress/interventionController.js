@@ -344,33 +344,6 @@ class InterventionController {
     }
   }
 
-  /**
-   * Get template choices
-   * @param {Object} req - Express request object
-   * @param {Object} res - Express response object
-   */
-  async getTemplateChoices(req, res) {
-    try {
-      const { choiceTypes } = req.query;
-      
-      const choiceTypesArray = choiceTypes ? choiceTypes.split(',') : [];
-      
-      const choices = await InterventionService.getTemplateChoices(choiceTypesArray);
-      
-      return res.status(200).json({
-        success: true,
-        count: choices.length,
-        data: choices
-      });
-    } catch (error) {
-      console.error('Error fetching template choices:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Error fetching template choices',
-        error: error.message
-      });
-    }
-  }
 
   /**
    * Get sentence templates
@@ -448,54 +421,6 @@ class InterventionController {
     }
   }
 
-  /**
-   * Create a new template choice
-   * @param {Object} req - Express request object
-   * @param {Object} res - Express response object
-   */
-  async createTemplateChoice(req, res) {
-    try {
-      const choiceData = req.body;
-      
-      // Validate required fields
-      if (!choiceData.choiceType) {
-        return res.status(400).json({
-          success: false,
-          message: 'Choice type is required'
-        });
-      }
-      
-      // Validate choiceImage if present
-      if (choiceData.choiceImage) {
-        const isUrl = /^https?:\/\//.test(choiceData.choiceImage);
-        if (!isUrl) {
-          return res.status(400).json({ 
-            success: false, 
-            message: 'Invalid image URL format' 
-          });
-        }
-      }
-      
-      // Add user ID from auth middleware
-      if (req.user) {
-        choiceData.createdBy = req.user.id;
-      }
-      
-      const choice = await InterventionService.createTemplateChoice(choiceData);
-      
-      return res.status(201).json({
-        success: true,
-        data: choice
-      });
-    } catch (error) {
-      console.error('Error creating template choice:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Error creating template choice',
-        error: error.message
-      });
-    }
-  }
 
   /**
    * Get a pre-signed URL for S3 uploads
@@ -669,21 +594,17 @@ class InterventionController {
       
       // Import models
       const TemplateQuestion = require('../../../models/Teachers/ManageProgress/templatesQuestionsModel');
-      const TemplateChoice = require('../../../models/Teachers/ManageProgress/templatesChoicesModel');
       const SentenceTemplate = require('../../../models/Teachers/ManageProgress/sentenceTemplateModel');
       
       // Fetch all templates from database
       const questionTemplates = await TemplateQuestion.find({}).lean();
-      const choiceTemplates = await TemplateChoice.find({}).lean();
       const sentenceTemplates = await SentenceTemplate.find({}).lean();
       
       console.log(`[DEBUG] Found ${questionTemplates.length} question templates`);
-      console.log(`[DEBUG] Found ${choiceTemplates.length} choice templates`);
       console.log(`[DEBUG] Found ${sentenceTemplates.length} sentence templates`);
       
       const counts = {
         questionTemplates: questionTemplates.length,
-        choiceTemplates: choiceTemplates.length,
         sentenceTemplates: sentenceTemplates.length
       };
       
@@ -693,7 +614,6 @@ class InterventionController {
         counts,
         data: {
           questionTemplates,
-          choiceTemplates,
           sentenceTemplates
         }
       });
@@ -767,76 +687,6 @@ class InterventionController {
     }
   }
   
-  /**
-   * Update a template choice
-   * @param {Object} req - Express request object
-   * @param {Object} res - Express response object
-   */
-  async updateTemplateChoice(req, res) {
-    try {
-      const templateId = req.params.templateId;
-      const choiceData = req.body;
-      
-      // Validate the template ID
-      if (!templateId || !mongoose.Types.ObjectId.isValid(templateId)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid template ID'
-        });
-      }
-      
-      // Validate required fields
-      if (!choiceData.choiceType) {
-        return res.status(400).json({
-          success: false,
-          message: 'Choice type is required'
-        });
-      }
-      
-      // Validate choiceImage if present
-      if (choiceData.choiceImage) {
-        const isUrl = /^https?:\/\//.test(choiceData.choiceImage);
-        if (!isUrl) {
-          return res.status(400).json({ 
-            success: false, 
-            message: 'Invalid image URL format' 
-          });
-        }
-      }
-      
-      // Add updated timestamp
-      choiceData.updatedAt = new Date();
-      
-      // Update the template in the database
-      const TemplateChoice = require('../../../models/Teachers/ManageProgress/templatesChoicesModel');
-      
-      const updatedChoice = await TemplateChoice.findByIdAndUpdate(
-        templateId,
-        choiceData,
-        { new: true, runValidators: true }
-      );
-      
-      if (!updatedChoice) {
-        return res.status(404).json({
-          success: false,
-          message: 'Template choice not found'
-        });
-      }
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Template choice updated successfully',
-        data: updatedChoice
-      });
-    } catch (error) {
-      console.error('Error updating template choice:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Error updating template choice',
-        error: error.message
-      });
-    }
-  }
   
   /**
    * Update a sentence template
@@ -941,48 +791,6 @@ class InterventionController {
     }
   }
   
-  /**
-   * Delete a template choice
-   * @param {Object} req - Express request object
-   * @param {Object} res - Express response object
-   */
-  async deleteTemplateChoice(req, res) {
-    try {
-      const templateId = req.params.templateId;
-      
-      // Validate the template ID
-      if (!templateId || !mongoose.Types.ObjectId.isValid(templateId)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid template ID'
-        });
-      }
-      
-      // Delete the template from the database
-      const TemplateChoice = require('../../../models/Teachers/ManageProgress/templatesChoicesModel');
-      
-      const deletedChoice = await TemplateChoice.findByIdAndDelete(templateId);
-      
-      if (!deletedChoice) {
-        return res.status(404).json({
-          success: false,
-          message: 'Template choice not found'
-        });
-      }
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Template choice deleted successfully'
-      });
-    } catch (error) {
-      console.error('Error deleting template choice:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Error deleting template choice',
-        error: error.message
-      });
-    }
-  }
   
   /**
    * Delete a sentence template

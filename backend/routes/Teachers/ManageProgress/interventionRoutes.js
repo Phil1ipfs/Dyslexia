@@ -166,56 +166,6 @@ router.delete('/templates/questions/:templateId', auth, authorize('teacher', 'ad
   }
 );
 
-// Get template choices
-router.get('/templates/choices', auth, authorize('teacher', 'admin'), 
-  async (req, res) => {
-    try {
-      await interventionController.getTemplateChoices(req, res);
-      // Controller handles the response
-    } catch (error) {
-      console.error('Error in GET /templates/choices route:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Server error processing request',
-        error: error.message
-      });
-    }
-  }
-);
-
-// Update a template choice
-router.put('/templates/choices/:templateId', auth, authorize('teacher', 'admin'), 
-  async (req, res) => {
-    try {
-      await interventionController.updateTemplateChoice(req, res);
-      // Controller handles the response
-    } catch (error) {
-      console.error('Error in PUT /templates/choices/:templateId route:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Server error processing request',
-        error: error.message
-      });
-    }
-  }
-);
-
-// Delete a template choice
-router.delete('/templates/choices/:templateId', auth, authorize('teacher', 'admin'), 
-  async (req, res) => {
-    try {
-      await interventionController.deleteTemplateChoice(req, res);
-      // Controller handles the response
-    } catch (error) {
-      console.error('Error in DELETE /templates/choices/:templateId route:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Server error processing request',
-        error: error.message
-      });
-    }
-  }
-);
 
 // Get sentence templates
 router.get('/templates/sentences', auth, authorize('teacher', 'admin'), 
@@ -302,22 +252,6 @@ router.post('/templates/questions', auth, authorize('teacher', 'admin'),
   }
 );
 
-// Create a new template choice
-router.post('/templates/choices', auth, authorize('teacher', 'admin'), 
-  async (req, res) => {
-    try {
-      await interventionController.createTemplateChoice(req, res);
-      // Controller handles the response
-    } catch (error) {
-      console.error('Error in POST /templates/choices route:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Server error processing request',
-        error: error.message
-      });
-    }
-  }
-);
 
 // Fetch all templates from the database
 router.get('/templates/all', auth, authorize('teacher', 'admin'), 

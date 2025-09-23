@@ -40,42 +40,6 @@ router.delete('/questions/:id',
   templatesController.deleteTemplateQuestion
 );
 
-// ========== TEMPLATE CHOICES ROUTES ==========
-
-// Get all template choices with filtering
-router.get('/choices',
-  auth,
-  authorize('teacher', 'guro'),
-  templatesController.getTemplateChoices
-);
-
-// Get template choices by choice types (POST for complex query)
-router.post('/choices/by-types',
-  auth,
-  authorize('teacher', 'guro'),
-  templatesController.getTemplateChoicesByTypes
-);
-
-// Create new template choice
-router.post('/choices',
-  auth,
-  authorize('teacher', 'guro'),
-  templatesController.createTemplateChoice
-);
-
-// Update template choice
-router.put('/choices/:id',
-  auth,
-  authorize('teacher', 'guro'),
-  templatesController.updateTemplateChoice
-);
-
-// Delete template choice
-router.delete('/choices/:id',
-  auth,
-  authorize('teacher', 'guro'),
-  templatesController.deleteTemplateChoice
-);
 
 // ========== SENTENCE TEMPLATES ROUTES ==========
 

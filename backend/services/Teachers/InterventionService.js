@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const InterventionAssessment = require('../../models/Teachers/ManageProgress/interventionAssessmentModel');
 const InterventionResults = require('../../models/Teachers/ManageProgress/interventionResultsModel');
 const TemplateQuestion = require('../../models/Teachers/ManageProgress/templatesQuestionsModel');
-const TemplateChoice = require('../../models/Teachers/ManageProgress/templatesChoicesModel');
 const SentenceTemplate = require('../../models/Teachers/ManageProgress/sentenceTemplateModel');
 const PrescriptiveAnalysis = require('../../models/Teachers/ManageProgress/prescriptiveAnalysisModel');
 const User = require('../../models/userModel');
@@ -1086,42 +1085,6 @@ class InterventionService {
     }
   }
   
-  /**
-   * Get template choices by choice types
-   * @param {Array} choiceTypes - The choice types
-   * @returns {Promise<Array>} - The template choices
-   */
-  async getTemplateChoices(choiceTypes = []) {
-    try {
-      const query = { isActive: true };
-      
-      if (choiceTypes && choiceTypes.length > 0) {
-        query.choiceType = { $in: choiceTypes };
-        console.log(`[DEBUG] Fetching template choices for types: ${choiceTypes.join(', ')}`);
-      } else {
-        console.log('[DEBUG] Fetching all active template choices');
-      }
-      
-      const choices = await TemplateChoice.find(query);
-      
-      console.log(`[DEBUG] Found ${choices.length} template choices`);
-      if (choices.length > 0) {
-        console.log('[DEBUG] Template choices data sample:', 
-          choices.slice(0, 2).map(c => ({ 
-            id: c._id, 
-            type: c.choiceType, 
-            value: c.choiceValue, 
-            soundText: c.soundText 
-          }))
-        );
-      }
-      
-      return choices;
-    } catch (error) {
-      console.error('[ERROR] Error fetching template choices:', error);
-      throw error;
-    }
-  }
   
   /**
    * Get sentence templates for a reading level
@@ -1250,45 +1213,6 @@ class InterventionService {
     }
   }
   
-  /**
-   * Create a new template choice
-   * @param {Object} choiceData - The choice data
-   * @returns {Promise<Object>} - The created choice
-   */
-  async createTemplateChoice(choiceData) {
-    try {
-      console.log('[DEBUG] Creating template choice with data:', choiceData);
-      
-      // Clean up empty strings to be null
-      if (choiceData.soundText === '') {
-        choiceData.soundText = null;
-      }
-      if (choiceData.choiceValue === '') {
-        choiceData.choiceValue = null;
-      }
-      
-      // Make sure at least one of choiceValue or soundText is provided
-      if (choiceData.choiceValue === null && choiceData.soundText === null) {
-        throw new Error('Either choiceValue or soundText must be provided');
-      }
-      
-      const newChoice = new TemplateChoice(choiceData);
-      await newChoice.save();
-      
-      console.log(`[DEBUG] Successfully created template choice with ID: ${newChoice._id}`);
-      console.log('[DEBUG] New choice data:', {
-        id: newChoice._id,
-        type: newChoice.choiceType,
-        value: newChoice.choiceValue,
-        soundText: newChoice.soundText
-      });
-      
-      return newChoice;
-    } catch (error) {
-      console.error('[ERROR] Error creating template choice:', error);
-      throw error;
-    }
-  }
   
   /**
    * Generate a pre-signed URL for S3 uploads
@@ -2260,11 +2184,8 @@ class InterventionService {
       for (let i = 0; i < Math.min(maxQuestions, relevantTemplates.length); i++) {
         const template = relevantTemplates[i];
 
-        // Get applicable choices for this template
-        const choices = await this.getTemplateChoices(template.applicableChoiceTypes || []);
-
         // Build question from template
-        const question = await this.buildQuestionFromTemplate(template, choices, i + 1);
+        const question = await this.buildQuestionFromTemplate(template, i + 1);
         if (question) {
           questions.push(question);
         }
@@ -2337,7 +2258,7 @@ class InterventionService {
   /**
    * Helper method to build question from template
    */
-  async buildQuestionFromTemplate(template, choices, questionNumber) {
+  async buildQuestionFromTemplate(template, questionNumber) {
     try {
       const questionId = `q_int_${template.category.toLowerCase().replace(/\s+/g, '_')}_${String(questionNumber).padStart(3, '0')}`;
 
@@ -2355,28 +2276,17 @@ class InterventionService {
         targetElement: 'template_based'
       };
 
-      // Add category-specific question data based on question type
+      // Add category-specific question data based on template data
       if (template.questionType === 'malapantig' && template.category === 'Phonological Awareness') {
-        // Build matching question structure
-        const audioTexts = choices.slice(0, template.matchCount || 3).map(c => c.choiceValue);
-        const matchingOptions = choices.slice(0, template.matchCount || 3).map(c => c.correctMatch || c.choiceValue);
-
-        question.questionSet = {
-          audioTexts: audioTexts,
-          matchingOptions: matchingOptions,
-          correctPairs: audioTexts.map(audio => ({
-            audio: audio,
-            match: choices.find(c => c.choiceValue === audio)?.correctMatch || audio
-          }))
-        };
+        // Use template's questionSet data directly
+        if (template.questionSet) {
+          question.questionSet = template.questionSet;
+        }
       } else {
-        // Build choice options for multiple choice questions
-        const selectedChoices = choices.slice(0, 4); // Get up to 4 choices
-        question.choiceOptions = selectedChoices.map((choice, index) => ({
-          optionId: `opt_${index + 1}`,
-          optionText: choice.choiceValue,
-          isCorrect: index === 0 // First option is correct by default
-        }));
+        // Use template's choiceOptions data directly
+        if (template.choiceOptions) {
+          question.choiceOptions = template.choiceOptions;
+        }
       }
 
       return question;
