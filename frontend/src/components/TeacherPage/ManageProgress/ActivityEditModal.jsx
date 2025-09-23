@@ -10,7 +10,7 @@
  * 1. GET /api/templates/questions?category={category}
  * 2. GET /api/templates/sentences?readingLevel={level}
  * 3. POST /api/templates/questions (for inline creation)
- * 4. POST /api/upload/question-image (for S3 image uploads)
+ * 4. POST /api/uploads/s3 (for S3 image uploads)
  * 5. GET /api/interventions/check?studentId={id}&category={category} (to check for duplicates)
  * 6. POST /api/interventions (to save intervention)
  * 7. PUT /api/interventions/{id} (to update intervention)
@@ -46,13 +46,14 @@ import {
   FaExclamationTriangle,
   FaChartLine,
   FaEdit,
+  FaMagic,
   FaCheckCircle,
   FaPlus,
   FaSpinner,
   FaTimes,
   FaUser,
   FaSave,
-  FaArrowRight,
+  FaArrowRight,FaMinus,
   FaTrash,
   FaMobile,
   FaLightbulb,
@@ -71,6 +72,7 @@ import './css/ActivityEditModal.css';
 import './css/AlphabetKnowledgeActivityEdit.css';
 import './css/PhonologicalAwarenessActivityEdit.css';
 import './css/DecodingActivityEdit.css';
+import './css/WordRecognitionActivityEdit.css';
 
 // Utility function to safely handle arrays that might be undefined
 const safe = (arr) => Array.isArray(arr) ? arr : [];
@@ -2195,6 +2197,23 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               
               return false;
             });
+          } else if (normCategory === 'word_recognition') {
+            // For Word Recognition, check by displayWord and questionSubType to prevent true duplicates
+            isDuplicate = existingTemplates.some(template => {
+              if (template.category !== category) return false;
+
+              // Check if same displayWord and questionSubType combination exists
+              const sameDisplayWord = template.displayWord && pair.displayWord &&
+                template.displayWord.toLowerCase().trim() === pair.displayWord.toLowerCase().trim();
+              const sameQuestionSubType = template.questionSubType === pair.questionSubType;
+
+              if (sameDisplayWord && sameQuestionSubType) {
+                console.log(`[TEMPLATE AUTO-SAVE] Found duplicate Word Recognition template: "${template.displayWord}" (${template.questionSubType})`);
+                return true;
+              }
+
+              return false;
+            });
           } else {
             // For other categories, use questionText + category as before
             isDuplicate = existingTemplates.some(template =>
@@ -2335,24 +2354,47 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               });
             }
           } else if (normCategory === 'word_recognition') {
-            // Word Recognition template structure (choice-based)
-            const choices = pair.choices || [];
-            const validChoices = choices.filter(choice => choice && choice.optionText);
+            // Word Recognition template structure (new displayWord/blankOptions structure)
+            const validBlankOptions = (pair.blankOptions || []).filter(option => option && option.trim() !== '');
+            const validCorrectAnswers = (pair.correctAnswer || []).filter(answer => answer && answer.trim() !== '');
 
             templateData = {
               category: category,
-              questionType: pair.questionType || 'multiple_choice',
-              questionText: pair.questionText,
+              questionType: pair.questionType || 'word',
+              questionText: pair.questionText || 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.',
               questionImage: pair.questionImage,
-              choiceOptions: validChoices.map((choice, index) => ({
-                optionId: (index + 1).toString(),
-                optionText: choice.optionText,
-                isCorrect: choice.isCorrect
-              })),
-              targetSkills: ["word recognition", "custom_teacher_created"],
+
+              // Word Recognition specific fields
+              displayWord: pair.displayWord || '',
+              blankOptions: validBlankOptions.length > 0 ? validBlankOptions : ['', '', '', ''],
+              correctAnswer: validCorrectAnswers.length > 0 ? validCorrectAnswers : [],
+
+              // Optional fields for sentence completion
+              ...(pair.questionSubType === 'sentence_completion' && {
+                blankPosition: pair.blankPosition,
+                sentenceTokens: pair.sentenceTokens || []
+              }),
+
+              // Template metadata
+              questionSubType: pair.questionSubType || 'sentence_completion',
+              targetSkills: [
+                "word_recognition",
+                pair.questionSubType === 'sound_matching' ? "sound_matching" : "sentence_completion",
+                "custom_teacher_created"
+              ],
               difficultyLevel: "medium",
-              isActive: true
+              isActive: true,
+              createdBy: getValidTeacherId(),
+              createdAt: new Date().toISOString()
             };
+
+            console.log(`[TEMPLATE AUTO-SAVE] Word Recognition template data:`, {
+              displayWord: templateData.displayWord,
+              blankOptions: templateData.blankOptions,
+              correctAnswer: templateData.correctAnswer,
+              questionSubType: templateData.questionSubType,
+              blankPosition: templateData.blankPosition
+            });
           } else {
             // Fallback for unsupported categories
             console.warn(`[TEMPLATE AUTO-SAVE] Unsupported category for template creation: ${normCategory}`);
@@ -3565,10 +3607,20 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     } else if (normCategory === 'phonological_awareness') {
       defaultQuestionText = 'Anong tunog ang naririnig mo?';
     } else if (normCategory === 'word_recognition') {
-      defaultQuestionText = 'Anong salita ang nasa larawan?';
+      defaultQuestionText = 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.';
     } else if (normCategory === 'reading_comprehension') {
       defaultQuestionText = 'Basahin ang pangungusap at sagutin ang tanong.';
     }
+
+    // Create Word Recognition specific fields
+    const defaultWordRecognitionFields = normCategory === 'word_recognition' ? {
+      displayWord: '',                    // Sentence with blank or word to match
+      blankOptions: ['', '', '', ''],     // 4 answer choices by default
+      correctAnswer: [],                  // Array of correct answers
+      blankPosition: null,                // Position of blank in sentence
+      sentenceTokens: [],                 // Tokenized sentence for click-to-select
+      questionSubType: 'sentence_completion' // 'sentence_completion' or 'sound_matching'
+    } : {};
 
     const newPair = {
       id: generateUniqueId(),
@@ -3582,7 +3634,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       correctChoiceId: null,
       choices: defaultChoices,  // Add choices array for Alphabet Knowledge
       // Add audioTexts for Phonological Awareness
-      ...(defaultAudioTexts && { audioTexts: defaultAudioTexts })
+      ...(defaultAudioTexts && { audioTexts: defaultAudioTexts }),
+      // Add Word Recognition specific fields
+      ...defaultWordRecognitionFields
     };
 
     setQuestionChoicePairs(prev => [...prev, newPair]);
@@ -3915,6 +3969,99 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         success: ''
       }));
     }, 3000);
+  };
+
+  /**
+   * Apply Word Recognition Template - Populates Word Recognition-specific fields from template
+   */
+  const applyWordRecognitionTemplate = (pairId, templateId) => {
+    if (!templateId) {
+      // Clear template - reset to custom question
+      updateQuestionChoicePair(pairId, {
+        sourceTemplateId: null,
+        questionText: 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.',
+        questionSubType: 'sentence_completion',
+        displayWord: '',
+        blankOptions: ['', '', '', ''],
+        correctAnswer: [],
+        blankPosition: null,
+        sentenceTokens: []
+      });
+      return;
+    }
+
+    const template = questionTemplates.find(t => t._id === templateId);
+    if (!template) {
+      console.warn('[WORD RECOGNITION TEMPLATE] Template not found:', templateId);
+      return;
+    }
+
+    console.log('[WORD RECOGNITION TEMPLATE] Applying template:', {
+      templateId: template._id,
+      questionText: template.questionText,
+      displayWord: template.displayWord,
+      blankOptions: template.blankOptions,
+      correctAnswer: template.correctAnswer
+    });
+
+    // Determine question sub-type based on question text
+    const questionSubType = template.questionText && template.questionText.includes('kasing tunog')
+      ? 'sound_matching'
+      : 'sentence_completion';
+
+    // For sentence completion, tokenize the displayWord
+    let sentenceTokens = [];
+    let blankPosition = null;
+    if (questionSubType === 'sentence_completion' && template.displayWord) {
+      // Check if displayWord contains a blank (_____)
+      if (template.displayWord.includes('_____')) {
+        // Split by the blank to reconstruct tokens and position
+        const parts = template.displayWord.split('_____');
+        if (parts.length === 2) {
+          const beforeTokens = parts[0].trim().split(/\s+/).filter(t => t.length > 0);
+          const afterTokens = parts[1].trim().split(/\s+/).filter(t => t.length > 0);
+
+          // Assume the correct answer is the word that goes in the blank
+          const correctWord = template.correctAnswer && template.correctAnswer.length > 0
+            ? template.correctAnswer[0]
+            : 'BLANK';
+
+          sentenceTokens = [...beforeTokens, correctWord, ...afterTokens];
+          blankPosition = beforeTokens.length; // Position where the blank word should go
+        }
+      } else {
+        // No blank in template, just tokenize normally
+        sentenceTokens = template.displayWord.split(/\s+/).filter(t => t.length > 0);
+      }
+    } else if (questionSubType === 'sound_matching' && template.displayWord) {
+      // For sound matching questions, the displayWord is a single word (e.g. "SUMBRERO")
+      // Tokenize as single word for consistency, no blank position needed
+      sentenceTokens = [template.displayWord];
+      blankPosition = null;
+    }
+
+    // Apply template data to the question pair
+    const templateData = {
+      sourceTemplateId: template._id,
+      sourceType: 'template',
+      questionText: template.questionText || 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.',
+      questionSubType: questionSubType,
+      displayWord: template.displayWord || '',
+      blankOptions: template.blankOptions || ['', '', '', ''],
+      correctAnswer: template.correctAnswer || [],
+      blankPosition: blankPosition,
+      sentenceTokens: sentenceTokens,
+      questionImage: template.questionImage || null
+    };
+
+    updateQuestionChoicePair(pairId, templateData);
+
+    // Success notification
+    const notificationTimeout = setTimeout(() => {
+      setSuccessMessage('');
+    }, 3000);
+
+    setSuccessMessage(`Template applied successfully!`);
   };
 
   /**
@@ -4387,13 +4534,53 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         break;
 
       case 'word_recognition':
-        // Word Recognition: similar to decoding, context-based choices
-        const invalidWordRecognitionPairs = questionChoicePairs.filter(pair =>
-          safe(pair.choiceIds).length < 2 || !pair.correctChoiceId
-        );
+        // Word Recognition: validate displayWord, blankOptions, correctAnswer structure
+        const invalidWordRecognitionPairs = questionChoicePairs.filter(pair => {
+          // Must have displayWord
+          if (!pair.displayWord || pair.displayWord.trim() === '') {
+            return true;
+          }
+
+          // Must have blankOptions array with at least 2 options
+          if (!pair.blankOptions || !Array.isArray(pair.blankOptions) ||
+              pair.blankOptions.filter(opt => opt && opt.trim() !== '').length < 2) {
+            return true;
+          }
+
+          // Must have at least one correct answer
+          if (!pair.correctAnswer || !Array.isArray(pair.correctAnswer) ||
+              pair.correctAnswer.length === 0) {
+            return true;
+          }
+
+          // For sentence completion, must have blankPosition set
+          if (pair.questionSubType === 'sentence_completion') {
+            if (pair.blankPosition === null || pair.blankPosition === undefined) {
+              return true;
+            }
+            // Sentence tokens should be present
+            if (!pair.sentenceTokens || !Array.isArray(pair.sentenceTokens) ||
+                pair.sentenceTokens.length === 0) {
+              return true;
+            }
+          }
+
+          return false;
+        });
 
         if (invalidWordRecognitionPairs.length > 0) {
-          errors.pairs = "All Word Recognition questions must have at least 2 choices with one marked as correct";
+          const firstInvalid = invalidWordRecognitionPairs[0];
+          if (!firstInvalid.displayWord || firstInvalid.displayWord.trim() === '') {
+            errors.pairs = "All Word Recognition questions must have a sentence or display word";
+          } else if (!firstInvalid.blankOptions || firstInvalid.blankOptions.filter(opt => opt && opt.trim() !== '').length < 2) {
+            errors.pairs = "All Word Recognition questions must have at least 2 answer options";
+          } else if (!firstInvalid.correctAnswer || firstInvalid.correctAnswer.length === 0) {
+            errors.pairs = "All Word Recognition questions must have at least one correct answer selected";
+          } else if (firstInvalid.questionSubType === 'sentence_completion' && (firstInvalid.blankPosition === null || firstInvalid.blankPosition === undefined)) {
+            errors.pairs = "All sentence completion questions must have a blank position selected (click on a word)";
+          } else {
+            errors.pairs = "All Word Recognition questions must be properly configured";
+          }
         }
         break;
 
@@ -4612,6 +4799,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           return renderPhonologicalAwarenessStep();
         } else if (category === 'Decoding') {
           return renderDecodingStep();
+        } else if (category === 'Word Recognition') {
+          return renderWordRecognitionStep();
         } else {
           return renderQuestionChoicesStepWithTemplates();
         }
@@ -6729,6 +6918,778 @@ const renderDecodingStep = () => {
         >
           <FaPlus /> Add Question
         </button>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Step 2: Word Recognition Questions - Two Types Implementation
+ * Type A: "Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay." (Sentence completion with blank)
+ * Type B: "Anong kasing tunog ng salitang nakikita?" (Sound matching)
+ */
+const renderWordRecognitionStep = () => {
+  // Helper function to tokenize sentence for click-to-select blank position
+  const tokenizeSentence = (sentence) => {
+    if (!sentence || typeof sentence !== 'string') return [];
+    return sentence.trim().split(/\s+/).filter(token => token.length > 0);
+  };
+
+  // Helper function to update sentence tokens when displayWord changes
+  const updateSentenceTokens = (pairId, sentence) => {
+    const tokens = tokenizeSentence(sentence);
+    updateQuestionChoicePair(pairId, {
+      sentenceTokens: tokens,
+      blankPosition: null // Reset blank position when sentence changes
+    });
+  };
+
+  // Helper function to set blank position
+  const setBlankPosition = (pairId, position) => {
+    updateQuestionChoicePair(pairId, { blankPosition: position });
+  };
+
+  // Helper function to generate sentence with blank for preview (dynamic underscore count)
+  const generateSentencePreview = (tokens, blankPosition) => {
+    if (!tokens || tokens.length === 0) return '';
+    return tokens.map((token, index) => {
+      if (index === blankPosition) {
+        // Create dynamic blanks based on word length
+        const wordLength = token.length;
+        return '_'.repeat(Math.max(wordLength, 1)); // Match exact word length
+      }
+      return token;
+    }).join(' ');
+  };
+
+  // Helper function to auto-generate answer options
+  const autoGenerateOptions = (pairId, correctWord) => {
+    if (!correctWord || correctWord.trim() === '') return;
+
+    const common_distractors = [
+      'aso', 'pusa', 'bahay', 'mesa', 'silya', 'libro', 'lapis', 'papel',
+      'bola', 'damit', 'sapatos', 'pagkain', 'tubig', 'bulaklak', 'puno',
+      'kotse', 'kutsara', 'plato', 'baso', 'kama', 'unan', 'kumot'
+    ];
+
+    const correctWordClean = correctWord.trim().toLowerCase();
+
+    // Generate 3 distractors that are different from the correct word
+    const distractors = common_distractors
+      .filter(word => word !== correctWordClean)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 3);
+
+    const newOptions = [correctWordClean, ...distractors];
+
+    updateQuestionChoicePair(pairId, {
+      blankOptions: newOptions,
+      correctAnswer: [correctWordClean]
+    });
+  };
+
+  // Helper function to validate text input (no numbers or symbols)
+  const validateTextInput = (text) => {
+    if (!text || typeof text !== 'string') return false;
+    // Only allow letters, spaces, and basic Filipino punctuation
+    const validPattern = /^[a-zA-ZÀ-ÿñÑ\s.,!?'-]+$/;
+    return validPattern.test(text.trim());
+  };
+
+  // Helper function to validate word input (no numbers or symbols, single word)
+  const validateWordInput = (word) => {
+    if (!word || typeof word !== 'string') return false;
+    // Only allow letters and basic Filipino characters, no spaces for single words
+    const validPattern = /^[a-zA-ZÀ-ÿñÑ]+$/;
+    return validPattern.test(word.trim());
+  };
+
+  // Helper function to check template duplicate by displayWord
+  const checkTemplateDuplicate = async (displayWord, category = 'Word Recognition') => {
+    if (!displayWord || displayWord.trim() === '') return false;
+
+    try {
+      const response = await fetch('/api/templates/questions/check-duplicate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          category: category,
+          displayWord: displayWord.trim(),
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        return result.isDuplicate;
+      }
+    } catch (error) {
+      console.error('Error checking template duplicate:', error);
+    }
+    return false;
+  };
+
+  // Helper function to generate correct answer preview
+  const generateCorrectAnswerPreview = (pair) => {
+    if (!pair) return '';
+
+    // Auto-detect question type if questionSubType is not set
+    let questionType = pair.questionSubType;
+    if (!questionType && pair.questionText) {
+      questionType = pair.questionText.includes('kasing tunog') ? 'sound_matching' : 'sentence_completion';
+    }
+
+    if (questionType === 'sentence_completion') {
+      const tokens = pair.sentenceTokens || [];
+      const blankPosition = pair.blankPosition;
+      const correctAnswer = pair.correctAnswer && pair.correctAnswer[0];
+
+      if (tokens.length > 0 && blankPosition !== null && blankPosition !== undefined && correctAnswer && correctAnswer.trim() !== '') {
+        return tokens.map((token, index) => {
+          if (index === blankPosition) {
+            return `[${correctAnswer}]`; // Show correct answer in brackets
+          }
+          return token;
+        }).join(' ');
+      }
+    } else if (questionType === 'sound_matching') {
+      const displayWord = pair.displayWord;
+      const correctAnswer = pair.correctAnswer && pair.correctAnswer[0];
+
+      if (displayWord && displayWord.trim() !== '' && correctAnswer && correctAnswer.trim() !== '') {
+        return `"${displayWord}" sounds like "${correctAnswer}"`;
+      }
+    }
+
+    return '';
+  };
+
+  // Helper function to handle text input with validation
+  const handleValidatedTextInput = (value, pairId, fieldName, isWordInput = false) => {
+    const validator = isWordInput ? validateWordInput : validateTextInput;
+
+    if (value === '' || validator(value)) {
+      updateQuestionChoicePair(pairId, { [fieldName]: value });
+      // Clear any validation errors for this field
+      if (errors[`${pairId}_${fieldName}`]) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[`${pairId}_${fieldName}`];
+          return newErrors;
+        });
+      }
+    } else {
+      // Set validation error
+      const errorMessage = isWordInput
+        ? 'Only letters are allowed (no numbers, symbols, or spaces)'
+        : 'Only letters, spaces, and basic punctuation are allowed';
+
+      setErrors(prev => ({
+        ...prev,
+        [`${pairId}_${fieldName}`]: errorMessage
+      }));
+    }
+  };
+
+  // Helper function to trigger file upload for Word Recognition images
+  const triggerFileUpload = (pairId) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        try {
+          setUploadingImage(true);
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('type', 'question-image');
+
+          const response = await fetch('/api/uploads/s3', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            updateQuestionChoicePair(pairId, { questionImage: data.url });
+            setNotification({
+              message: 'Image uploaded successfully!',
+              type: 'success'
+            });
+          } else {
+            throw new Error('Upload failed');
+          }
+        } catch (error) {
+          console.error('Error uploading image:', error);
+          setNotification({
+            message: 'Failed to upload image. Please try again.',
+            type: 'error'
+          });
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+    };
+    input.click();
+  };
+
+  return (
+    <div className="word-recognition-container">
+      <div className="word-recognition-info-banner">
+        <FaInfoCircle className="info-icon" />
+        <div>
+          <h3>Create Word Recognition Questions</h3>
+          <p>
+            <strong>Activity Creator</strong> - Help students practice word recognition skills
+          </p>
+          <p>
+            <strong>Choose activity type:</strong>
+          </p>
+          <div style={{display: 'flex', gap: '24px', marginTop: '12px', flexWrap: 'wrap'}}>
+            <div style={{minWidth: '280px', padding: '12px 16px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.2)', flex: '1'}}>
+              <strong>Type A - Sentence Completion</strong>
+              <br />
+              <span style={{color: '#e3f2fd', fontSize: '13px'}}>Students fill in missing words</span>
+            </div>
+            <div style={{minWidth: '280px', padding: '12px 16px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.2)', flex: '1'}}>
+              <strong>Type B - Sound Matching</strong>
+              <br />
+              <span style={{color: '#e3f2fd', fontSize: '13px'}}>Students match similar sounds</span>
+            </div>
+          </div>
+          <p style={{marginTop: '8px', fontSize: '12px', color: '#e3f2fd', padding: '6px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '4px', border: '1px solid rgba(255, 255, 255, 0.2)'}}>
+            <strong>Tip:</strong> Click words to set blanks. Use auto-generate for quick setup.
+          </p>
+        </div>
+      </div>
+
+      {errors.pairs && (
+        <div className="literexia-error-banner">
+          <FaExclamationTriangle />
+          <p>{errors.pairs}</p>
+        </div>
+      )}
+
+      {/* Questions Section */}
+      {safe(questionChoicePairs).map((pair, index) => (
+        <div key={pair.id} className="word-recognition-question-card">
+          <div className="word-recognition-question-header">
+            <h4>Question {index + 1}</h4>
+            <button
+              type="button"
+              className="word-recognition-remove-btn"
+              onClick={() => removeQuestionChoicePair(pair.id)}
+              title="Remove this question"
+            >
+              <FaTrash /> Remove
+            </button>
+          </div>
+
+          {/* Template Selection Section */}
+          <div style={{background: '#f8fafc', padding: '12px', borderRadius: '4px', marginBottom: '12px', border: '1px solid #e1e8ed'}}>
+            <div className="word-recognition-form-group">
+              <label>Use Template (Optional)</label>
+              <select
+                value={pair.sourceTemplateId || ''}
+                onChange={(e) => applyWordRecognitionTemplate(pair.id, e.target.value)}
+                className="word-recognition-select"
+              >
+                <option value="">Create Custom Question</option>
+                {safe(questionTemplates)
+                  .filter(template => {
+                    // Only show Word Recognition templates
+                    if (template.category !== 'Word Recognition') return false;
+                    return true;
+                  })
+                  .map((template) => {
+                    // Create descriptive display text
+                    let displayText = '';
+                    if (template.questionText && template.questionText.includes('kasing tunog')) {
+                      displayText = `Sound Matching: ${template.displayWord || 'Untitled'}`;
+                    } else {
+                      displayText = `Sentence: ${template.displayWord || 'Untitled'}`;
+                    }
+
+                    return (
+                      <option key={template._id} value={template._id}>
+                        {displayText}
+                      </option>
+                    );
+                  })}
+              </select>
+              <small style={{color: '#64748b', fontSize: '11px', marginTop: '4px', display: 'block'}}>
+                Templates provide pre-made content for faster question creation
+              </small>
+            </div>
+          </div>
+
+          {/* Question Type Selection Section */}
+          <div style={{background: '#fef3c7', padding: '12px', borderRadius: '4px', marginBottom: '12px', border: '1px solid #f59e0b'}}>
+            <div className="word-recognition-form-group">
+              <label>Question Type</label>
+              <select
+                value={pair.questionText || 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.'}
+                onChange={(e) => {
+                  const newQuestionText = e.target.value;
+                  const newSubType = newQuestionText.includes('kasing tunog') ? 'sound_matching' : 'sentence_completion';
+                  updateQuestionChoicePair(pair.id, {
+                    questionText: newQuestionText,
+                    questionSubType: newSubType,
+                    // Reset fields when changing type
+                    displayWord: '',
+                    blankOptions: ['', '', '', ''],
+                    correctAnswer: [],
+                    blankPosition: null,
+                    sentenceTokens: []
+                  });
+                }}
+                disabled={pair.sourceTemplateId} // Disable if template is selected
+              >
+                <option value="Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.">
+                  Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.
+                </option>
+                <option value="Anong kasing tunog ng salitang nakikita?">
+                  Anong kasing tunog ng salitang nakikita?
+                </option>
+              </select>
+              {pair.sourceTemplateId ? (
+                <small style={{color: '#92400e', fontSize: '11px', marginTop: '4px', display: 'block', fontWeight: '500'}}>
+                  Question text is controlled by the selected template
+                </small>
+              ) : (
+                <small style={{color: '#92400e', fontSize: '11px', marginTop: '4px', display: 'block'}}>
+                  Select the type of question to create
+                </small>
+              )}
+            </div>
+          </div>
+
+          {/* Type A: Sentence Completion */}
+          {pair.questionSubType === 'sentence_completion' && (
+            <div style={{background: '#ecfdf5', padding: '12px', borderRadius: '4px', marginBottom: '12px', border: '1px solid #10b981'}}>
+              <h5 style={{margin: '0 0 12px 0', color: '#047857', fontSize: '14px', fontWeight: '600'}}>
+                Sentence Completion Setup
+              </h5>
+              
+              {/* Sentence Input */}
+              <div className="word-recognition-form-group">
+                <label>Complete Sentence (click word to set as blank)</label>
+                <input
+                  type="text"
+                  value={pair.displayWord || ''}
+                  onChange={(e) => {
+                    const sentence = e.target.value;
+                    if (!pair.sourceTemplateId) {
+                      handleValidatedTextInput(sentence, pair.id, 'displayWord', false);
+                      updateSentenceTokens(pair.id, sentence);
+                    }
+                  }}
+                  placeholder="e.g., Naglalaro siya ng bola sa parke"
+                  disabled={pair.sourceTemplateId} // Disable if template is selected
+                  className={errors[`${pair.id}_displayWord`] ? 'literexia-error' : ''}
+                />
+                {errors[`${pair.id}_displayWord`] && (
+                  <div className="literexia-error-message" style={{color: '#dc2626', fontSize: '11px', marginTop: '4px'}}>
+                    {errors[`${pair.id}_displayWord`]}
+                  </div>
+                )}
+                {pair.sourceTemplateId ? (
+                  <small style={{color: '#047857', fontSize: '11px', marginTop: '4px', display: 'block', fontWeight: '500'}}>
+                    Sentence is controlled by the selected template
+                  </small>
+                ) : (
+                  <small style={{color: '#047857', fontSize: '11px', marginTop: '4px', display: 'block'}}>
+                    Type a complete sentence, then click words to set blank position
+                  </small>
+                )}
+              </div>
+
+              {/* Sentence Image Upload (Optional) */}
+              <div className="word-recognition-form-group">
+                <label>Sentence Image (Optional)</label>
+                <div className="word-recognition-image-upload">
+                  {pair.questionImage ? (
+                    <div className="word-recognition-image-uploaded">
+                      <img
+                        src={pair.questionImage}
+                        alt="Sentence illustration"
+                        className="word-recognition-uploaded-image"
+                      />
+                      <button
+                        type="button"
+                        className="word-recognition-remove-image"
+                        onClick={() => updateQuestionChoicePair(pair.id, { questionImage: null })}
+                        title="Remove image"
+                      >
+                        <FaTimes /> Remove Image
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="word-recognition-image-upload-empty">
+                      <FaImage className="word-recognition-image-upload-icon" />
+                      <p className="word-recognition-image-upload-text">
+                        Add an image to illustrate the sentence
+                      </p>
+                      <button
+                        type="button"
+                        className="word-recognition-upload-btn"
+                        onClick={() => triggerFileUpload(pair.id)}
+                        disabled={uploadingImage}
+                      >
+                        {uploadingImage ? (
+                          <>
+                            <div className="word-recognition-upload-spinner"></div>
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <FaPlus /> Choose Image
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <small style={{color: '#047857', fontSize: '12px', marginTop: '8px', display: 'block', textAlign: 'center', fontStyle: 'italic'}}>
+                  Images help students understand the context better (optional but recommended)
+                </small>
+              </div>
+
+              {/* Click-to-Select Blank Position */}
+              {pair.sentenceTokens && pair.sentenceTokens.length > 0 && (
+                <div className="word-recognition-form-group">
+                  <label>Click word to set as blank:</label>
+                  <div className="word-recognition-sentence-tokens">
+                    {pair.sentenceTokens.map((token, tokenIndex) => (
+                      <span
+                        key={tokenIndex}
+                        className={`word-token ${pair.blankPosition === tokenIndex ? 'selected-blank' : ''}`}
+                        onClick={() => setBlankPosition(pair.id, tokenIndex)}
+                        title={`Click to set "${token}" as the blank word`}
+                      >
+                        {token}
+                      </span>
+                    ))}
+                  </div>
+                  <small style={{color: '#047857', fontSize: '11px', marginTop: '4px', display: 'block'}}>
+                    Click any word above to make it the blank for students to fill in
+                  </small>
+                </div>
+              )}
+
+              {/* Preview */}
+              {pair.blankPosition !== null && pair.sentenceTokens && (
+                <div className="word-recognition-form-group">
+                  <label>Preview:</label>
+                  <div className="word-recognition-preview">
+                    {generateSentencePreview(pair.sentenceTokens, pair.blankPosition)}
+                  </div>
+                  <small style={{color: '#047857', fontSize: '11px', marginTop: '4px', display: 'block'}}>
+                    This is how your question will appear to students
+                  </small>
+                </div>
+              )}
+
+              {/* Auto-generate button */}
+              {pair.blankPosition !== null && pair.sentenceTokens && !pair.sourceTemplateId && (
+                <div className="word-recognition-form-group">
+                  <button
+                    type="button"
+                    className="word-recognition-auto-generate-btn"
+                    onClick={() => {
+                      const correctWord = pair.sentenceTokens[pair.blankPosition];
+                      autoGenerateOptions(pair.id, correctWord);
+                    }}
+                    title="Automatically generate answer options based on the selected word"
+                  >
+                    <FaMagic /> Auto-Generate Options
+                  </button>
+                  <small style={{color: '#047857', fontSize: '11px', marginTop: '4px', display: 'block'}}>
+                    Automatically creates answer options to save time
+                  </small>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Type B: Sound Matching */}
+          {pair.questionSubType === 'sound_matching' && (
+            <div style={{background: '#f0f9ff', padding: '12px', borderRadius: '4px', marginBottom: '12px', border: '1px solid #0ea5e9'}}>
+              <h5 style={{margin: '0 0 12px 0', color: '#0c4a6e', fontSize: '14px', fontWeight: '600'}}>
+                Sound Matching Setup
+              </h5>
+              
+              {/* Display Word */}
+              <div className="word-recognition-form-group">
+                <label>Display Word (word to match sounds with)</label>
+                <input
+                  type="text"
+                  value={pair.displayWord || ''}
+                  onChange={(e) => {
+                    const word = e.target.value;
+                    if (!pair.sourceTemplateId) {
+                      handleValidatedTextInput(word, pair.id, 'displayWord', true); // true for word input validation
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    // Prevent typing numbers and symbols entirely for single words
+                    const char = e.key;
+                    const validPattern = /^[a-zA-ZÀ-ÿñÑ]$/;
+                    if (!validPattern.test(char) && char !== 'Backspace' && char !== 'Delete' && char !== 'Tab' && char !== 'ArrowLeft' && char !== 'ArrowRight' && char !== 'ArrowUp' && char !== 'ArrowDown' && char.length === 1) {
+                      e.preventDefault();
+                    }
+                  }}
+                  placeholder="e.g., SUMBRERO (letters only)"
+                  disabled={pair.sourceTemplateId} // Disable if template is selected
+                  className={errors[`${pair.id}_displayWord`] ? 'literexia-error' : ''}
+                />
+                {errors[`${pair.id}_displayWord`] && (
+                  <div className="literexia-error-message" style={{color: '#dc2626', fontSize: '11px', marginTop: '4px'}}>
+                    {errors[`${pair.id}_displayWord`]}
+                  </div>
+                )}
+                {pair.sourceTemplateId ? (
+                  <small style={{color: '#0c4a6e', fontSize: '11px', marginTop: '4px', display: 'block', fontWeight: '500'}}>
+                    Display word is controlled by the selected template
+                  </small>
+                ) : (
+                  <small style={{color: '#0c4a6e', fontSize: '11px', marginTop: '4px', display: 'block'}}>
+                    Enter the word that students will match sounds with
+                  </small>
+                )}
+              </div>
+
+              {/* Word Image Upload (Optional) */}
+              <div className="word-recognition-form-group">
+                <label>Word Image (Optional)</label>
+                <div className="word-recognition-image-upload">
+                  {pair.questionImage ? (
+                    <div className="word-recognition-image-preview">
+                      <img
+                        src={pair.questionImage}
+                        alt="Word"
+                        style={{maxWidth: '150px', maxHeight: '100px', objectFit: 'contain'}}
+                      />
+                      <button
+                        type="button"
+                        className="word-recognition-remove-image-btn"
+                        onClick={() => updateQuestionChoicePair(pair.id, { questionImage: null })}
+                        title="Remove image"
+                      >
+                        <FaTimes /> Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="word-recognition-upload-btn"
+                      onClick={() => triggerFileUpload(pair.id)}
+                    >
+                      <FaPlus /> Upload Image
+                    </button>
+                  )}
+                </div>
+                <small style={{color: '#0c4a6e', fontSize: '11px', marginTop: '4px', display: 'block'}}>
+                  Upload an image that represents the word
+                </small>
+              </div>
+            </div>
+          )}
+
+          {/* Answer Options (Common for both types) */}
+          <div style={{background: '#fef3c7', padding: '12px', borderRadius: '4px', marginBottom: '12px', border: '1px solid #f59e0b'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px'}}>
+              <h5 style={{margin: '0', color: '#92400e', fontSize: '14px', fontWeight: '600'}}>
+                Answer Options ({(pair.blankOptions || ['', '', '', '']).length} options)
+              </h5>
+              {!pair.sourceTemplateId && (
+                <div style={{display: 'flex', gap: '8px'}}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentOptions = pair.blankOptions || ['', '', '', ''];
+                      const newOptions = [...currentOptions, ''];
+                      updateQuestionChoicePair(pair.id, { blankOptions: newOptions });
+                    }}
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '12px',
+                      background: '#10b981',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                    title="Add another option"
+                  >
+                    <FaPlus /> Add Option
+                  </button>
+                  {(pair.blankOptions || ['', '', '', '']).length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentOptions = pair.blankOptions || ['', '', '', ''];
+                        const newOptions = currentOptions.slice(0, -1);
+                        // Remove from correct answers if it was selected
+                        const removedOption = currentOptions[currentOptions.length - 1];
+                        const newCorrectAnswers = (pair.correctAnswer || []).filter(answer => answer !== removedOption);
+                        updateQuestionChoicePair(pair.id, {
+                          blankOptions: newOptions,
+                          correctAnswer: newCorrectAnswers
+                        });
+                      }}
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: '12px',
+                        background: '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                      title="Remove last option"
+                    >
+                      <FaMinus /> Remove Option
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="word-recognition-options-grid">
+              {(pair.blankOptions || ['', '', '', '']).map((option, optionIndex) => (
+                <div key={optionIndex} className="word-recognition-option-item">
+                  <input
+                    type="text"
+                    value={option}
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      // Strict validation: only allow letters (no numbers, symbols, or spaces)
+                      if (newValue === '' || validateWordInput(newValue)) {
+                        const oldOption = option;
+                        const newOptions = [...(pair.blankOptions || ['', '', '', ''])];
+                        newOptions[optionIndex] = newValue;
+
+                        // Update correct answers if this option was marked as correct
+                        let newCorrectAnswers = pair.correctAnswer || [];
+                        if (newCorrectAnswers.includes(oldOption)) {
+                          newCorrectAnswers = newCorrectAnswers.map(answer =>
+                            answer === oldOption ? newValue : answer
+                          ).filter(answer => answer !== ''); // Remove empty answers
+                        }
+
+                        updateQuestionChoicePair(pair.id, {
+                          blankOptions: newOptions,
+                          correctAnswer: newCorrectAnswers
+                        });
+
+                        // Clear any validation errors for this field
+                        if (errors[`${pair.id}_option_${optionIndex}`]) {
+                          setErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors[`${pair.id}_option_${optionIndex}`];
+                            return newErrors;
+                          });
+                        }
+                      } else {
+                        // Set validation error and prevent invalid input
+                        setErrors(prev => ({
+                          ...prev,
+                          [`${pair.id}_option_${optionIndex}`]: 'Only letters are allowed (no numbers, symbols, or spaces)'
+                        }));
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      // Prevent typing numbers and symbols entirely
+                      const char = e.key;
+                      const validPattern = /^[a-zA-ZÀ-ÿñÑ]$/;
+                      if (!validPattern.test(char) && char !== 'Backspace' && char !== 'Delete' && char !== 'Tab' && char !== 'ArrowLeft' && char !== 'ArrowRight' && char !== 'ArrowUp' && char !== 'ArrowDown' && char.length === 1) {
+                        e.preventDefault();
+                      }
+                    }}
+                    placeholder={`Option ${optionIndex + 1} (letters only)`}
+                    disabled={false}
+                    className={errors[`${pair.id}_option_${optionIndex}`] ? 'literexia-error' : ''}
+                  />
+                  {errors[`${pair.id}_option_${optionIndex}`] && (
+                    <div className="literexia-error-message" style={{color: '#dc2626', fontSize: '11px', marginTop: '4px'}}>
+                      {errors[`${pair.id}_option_${optionIndex}`]}
+                    </div>
+                  )}
+                  <label className="word-recognition-correct-checkbox">
+                    <input
+                      type="radio"
+                      name={`correct-answer-${pair.id}`}
+                      checked={option !== '' && (pair.correctAnswer || []).includes(option)}
+                      onChange={(e) => {
+                        if (option === '') {
+                          setNotification({
+                            message: 'Please enter an option before marking it as correct',
+                            type: 'warning'
+                          });
+                          return;
+                        }
+
+                        if (e.target.checked) {
+                          // Word Recognition allows only ONE correct answer
+                          updateQuestionChoicePair(pair.id, { correctAnswer: [option] });
+                        }
+                      }}
+                      disabled={option === ''} // Disable only if option is empty
+                    />
+                    Correct Answer (select only one)
+                  </label>
+                </div>
+              ))}
+            </div>
+            {pair.sourceTemplateId ? (
+              <small style={{color: '#92400e', fontSize: '11px', marginTop: '8px', display: 'block', fontWeight: '500'}}>
+                Answer options are controlled by the selected template
+              </small>
+            ) : (
+              <small style={{color: '#92400e', fontSize: '11px', marginTop: '8px', display: 'block'}}>
+                Enter answer choices and mark which ones are correct. Min 2 options required.
+              </small>
+            )}
+          </div>
+
+          {/* Correct Answer Preview */}
+          <div style={{background: '#f0fdf4', padding: '12px', borderRadius: '4px', marginTop: '12px', border: '1px solid #10b981'}}>
+            <h5 style={{margin: '0 0 8px 0', color: '#047857', fontSize: '14px', fontWeight: '600'}}>
+              ✓ Correct Answer Preview
+            </h5>
+            <div style={{color: '#065f46', fontSize: '15px', fontWeight: '500', fontFamily: 'monospace', background: 'white', padding: '8px 12px', borderRadius: '4px', border: '1px solid #bbf7d0', minHeight: '40px', display: 'flex', alignItems: 'center'}}>
+              {generateCorrectAnswerPreview(pair) || (
+                <span style={{color: '#9ca3af', fontStyle: 'italic', fontSize: '13px'}}>
+                  Preview will appear when you complete the question setup
+                </span>
+              )}
+            </div>
+            <small style={{color: '#047857', fontSize: '11px', marginTop: '4px', display: 'block', fontStyle: 'italic'}}>
+              {generateCorrectAnswerPreview(pair)
+                ? 'This shows how the correct answer will appear to students'
+                : 'Complete the sentence/word, set blank position/answer options, and mark correct answer to see preview'
+              }
+            </small>
+          </div>
+        </div>
+      ))}
+
+      {/* Add Question Button */}
+      <div className="word-recognition-add-section">
+        <button
+          type="button"
+          className="word-recognition-add-question-btn"
+          onClick={() => addQuestionChoicePair()}
+          title="Add another question to this activity"
+        >
+          <FaPlus /> Add Another Question
+        </button>
+        <p style={{color: '#64748b', fontSize: '12px', marginTop: '8px', fontStyle: 'italic'}}>
+          You can add multiple questions to create a complete activity
+        </p>
       </div>
     </div>
   );
