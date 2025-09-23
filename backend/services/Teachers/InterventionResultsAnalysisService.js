@@ -1085,8 +1085,8 @@ class InterventionResultsAnalysisService {
             percentage: errorPercentage,              // ✅ Accurate percentage
             sentence_completion_errors: Math.round(failedWordQuestions * 0.6), // ✅ Estimate based on failed, not total
             rhyming_errors: Math.round(failedWordQuestions * 0.4),             // ✅ Estimate based on failed, not total
-            error_type: "context_clues",
-            secondary_type: "word_families",
+            error_type: "word_recognition",
+            secondary_type: "visual_orthographic",
             questionIds: incorrectResponses.map(r => r.questionId),
             // ✅ Additional transparency and analysis
             correct_questions: correctWordQuestions,

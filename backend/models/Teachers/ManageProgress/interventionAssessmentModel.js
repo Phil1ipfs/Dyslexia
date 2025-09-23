@@ -50,7 +50,7 @@ const interventionQuestionSchema = new mongoose.Schema({
   },
   source: {
     type: String,
-    enum: ['custom', 'template_question', 'main_assessment'],
+    enum: ['custom', 'template', 'template_question', 'main_assessment'],
     default: 'custom'
   },
   sourceQuestionId: {

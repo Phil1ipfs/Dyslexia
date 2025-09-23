@@ -596,7 +596,7 @@ class ErrorPatternService {
 
       const errorType = sentenceErrors.length > rhymeErrors.length
         ? 'context_clues'
-        : 'phonological_awareness';
+        : 'word_recognition';
 
       errorAnalysis.word_errors = {
         count: incorrectWR.length,

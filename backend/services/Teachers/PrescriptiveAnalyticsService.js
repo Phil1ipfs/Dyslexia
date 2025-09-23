@@ -3033,15 +3033,16 @@ class PrescriptiveAnalyticsService {
             percentage: errorRate,
             sentence_completion_errors: Math.ceil((totalQuestions - correctAnswers) * 0.6),
             rhyming_errors: Math.floor((totalQuestions - correctAnswers) * 0.4),
-            error_type: "context_clues",
-            secondary_type: "word_families",
+            error_type: "word_recognition",
+            secondary_type: "visual_orthographic",
             questionIds: this.generateErrorQuestionIds('WR', totalQuestions - correctAnswers, totalQuestions)
           },
           detailedErrorAnalysis: [
             {
-              errorPattern: "Context clue utilization difficulty",
+              errorType: "word_recognition_error",
+              errorPattern: "Word recognition difficulty - visual-orthographic processing weakness",
               specificPairs: [],
-              interventionFocus: "Sentence context and meaning focus"
+              interventionFocus: "Sight word recognition training and vocabulary development"
             }
           ]
         };
@@ -3146,15 +3147,19 @@ class PrescriptiveAnalyticsService {
     const maxReasonableMastery = scoreRatio + 0.15; // Allow 15% optimism above actual score
     const minReasonableMastery = Math.max(0.05, scoreRatio - 0.1); // Don't go below 5% or too far below score
 
+    console.log(`[BKT ADJUSTMENT] Score: ${score}%, ScoreRatio: ${scoreRatio}, BKT: ${bktMastery}, MaxReasonable: ${maxReasonableMastery}, MinReasonable: ${minReasonableMastery}`);
+
     // If BKT is reasonable, use it. Otherwise, constrain it.
     if (bktMastery >= minReasonableMastery && bktMastery <= maxReasonableMastery) {
+      console.log(`[BKT ADJUSTMENT] BKT is reasonable, using original: ${bktMastery}`);
       return Math.round(bktMastery * 1000) / 1000; // Keep original if reasonable
     }
 
     // Adjust BKT to be more realistic based on actual performance
-    const adjustedMastery = scoreRatio + (Math.random() * 0.1 - 0.05); // Small random variation
+    const adjustedMastery = Math.max(minReasonableMastery, Math.min(maxReasonableMastery, scoreRatio + 0.1));
+    console.log(`[BKT ADJUSTMENT] BKT unreasonable, adjusting to: ${adjustedMastery}`);
 
-    return Math.max(0.05, Math.min(0.95, adjustedMastery));
+    return Math.round(adjustedMastery * 1000) / 1000;
   }
 
   /**

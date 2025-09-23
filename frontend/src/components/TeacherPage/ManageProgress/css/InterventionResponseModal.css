@@ -458,6 +458,17 @@
   border: 2px solid #e2e8f0;
   object-fit: contain;
 }
+
+.intervention-response-question-image-placeholder {
+  margin-top: 12px;
+  text-align: center;
+  padding: 40px 20px;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  color: #64748b;
+  font-style: italic;
+}
   
 /* Answers Section */
 .intervention-response-answers-section {

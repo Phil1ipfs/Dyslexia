@@ -377,8 +377,11 @@ class PrescriptionOnlyService {
         totalCount = totalMatches;
         score = totalMatches > 0 ? Math.round((correctMatches / totalMatches) * 100) : 0;
 
+        // ✅ FIXED: Ensure BKT mastery probability aligns with actual performance
+        const adjustedMasteryProbability = this.calculateRealisticMasteryProbability(score, bktResult.finalMastery);
+
         skillMastery[category] = {
-          masteryProbability: bktResult.finalMastery,
+          masteryProbability: adjustedMasteryProbability,
           lastUpdated: new Date(),
           totalQuestions: categoryResponses.length,
           totalPossibleMatches: totalMatches,
@@ -393,8 +396,11 @@ class PrescriptionOnlyService {
         totalCount = categoryResponses.length;
         score = Math.round((correctCount / totalCount) * 100);
 
+        // ✅ FIXED: Ensure BKT mastery probability aligns with actual performance
+        const adjustedMasteryProbability = this.calculateRealisticMasteryProbability(score, bktResult.finalMastery);
+
         skillMastery[category] = {
-          masteryProbability: bktResult.finalMastery,
+          masteryProbability: adjustedMasteryProbability,
           lastUpdated: new Date(),
           totalQuestions: totalCount,
           correctAnswers: correctCount,
@@ -1022,6 +1028,37 @@ class PrescriptionOnlyService {
     });
 
     return prescriptions;
+  }
+
+  /**
+   * ✅ FIXED: Calculate realistic mastery probability that aligns with actual performance
+   * Prevents BKT from showing unrealistic mastery levels when actual performance is low
+   *
+   * @param {number} score - Actual score percentage (0-100)
+   * @param {number} bktMastery - BKT calculated mastery (0-1)
+   * @returns {number} Adjusted mastery probability that makes sense
+   */
+  calculateRealisticMasteryProbability(score, bktMastery) {
+    // Convert score to 0-1 scale
+    const scoreRatio = score / 100;
+
+    // If the BKT mastery is way higher than the actual performance, adjust it
+    const maxReasonableMastery = scoreRatio + 0.15; // Allow 15% optimism above actual score
+    const minReasonableMastery = Math.max(0.05, scoreRatio - 0.1); // Don't go below 5% or too far below score
+
+    console.log(`[BKT ADJUSTMENT] Score: ${score}%, ScoreRatio: ${scoreRatio}, BKT: ${bktMastery}, MaxReasonable: ${maxReasonableMastery}, MinReasonable: ${minReasonableMastery}`);
+
+    // If BKT is reasonable, use it. Otherwise, constrain it.
+    if (bktMastery >= minReasonableMastery && bktMastery <= maxReasonableMastery) {
+      console.log(`[BKT ADJUSTMENT] BKT is reasonable, using original: ${bktMastery}`);
+      return Math.round(bktMastery * 1000) / 1000; // Keep original if reasonable
+    }
+
+    // Adjust BKT to be more realistic based on actual performance
+    const adjustedMastery = Math.max(minReasonableMastery, Math.min(maxReasonableMastery, scoreRatio + 0.1));
+    console.log(`[BKT ADJUSTMENT] BKT unreasonable, adjusting to: ${adjustedMastery}`);
+
+    return Math.round(adjustedMastery * 1000) / 1000;
   }
 }
 

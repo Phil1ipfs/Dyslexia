@@ -33,7 +33,15 @@ router.post('/s3',
       // Get file details
       const file = req.file;
       const path = req.body.path || 'general';
-      const fileName = `${path}/${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
+      
+      // Sanitize filename to prevent corruption and special character issues
+      const sanitizedOriginalName = file.originalname
+        .replace(/[^\w\s.-]/g, '') // Remove special characters except word chars, spaces, dots, and dashes
+        .replace(/\s+/g, '-') // Replace spaces with dashes
+        .replace(/--+/g, '-') // Replace multiple dashes with single dash
+        .replace(/^-+|-+$/g, ''); // Remove leading/trailing dashes
+      
+      const fileName = `${path}/${Date.now()}-${sanitizedOriginalName}`;
 
       // Set up S3 parameters
       const params = {

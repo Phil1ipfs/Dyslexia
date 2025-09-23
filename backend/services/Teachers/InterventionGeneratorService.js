@@ -1011,6 +1011,9 @@ class InterventionGeneratorService {
     if (errorPatterns.word_errors && errorPatterns.word_errors.error_type === 'context_clues') {
       return 'sentence_completion';
     }
+    if (errorPatterns.word_errors && errorPatterns.word_errors.error_type === 'word_recognition') {
+      return 'word_recognition';
+    }
     return 'word_recognition';
   }
 

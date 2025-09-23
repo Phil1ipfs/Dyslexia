@@ -1505,9 +1505,17 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       }
       
       // For development: Use real S3 upload but with extensive logging
-      // Get pre-signed URL from server
-      console.log(`[S3 UPLOAD] Requesting pre-signed URL for ${file.name}`);
-      const response = await api.interventions.getUploadUrl(file.name, file.type, targetFolder);
+      // Sanitize filename to prevent corruption and special character issues
+      const sanitizedFileName = file.name
+        .replace(/[^\w\s.-]/g, '') // Remove special characters except word chars, spaces, dots, and dashes
+        .replace(/\s+/g, '-') // Replace spaces with dashes
+        .replace(/--+/g, '-') // Replace multiple dashes with single dash
+        .replace(/^-+|-+$/g, ''); // Remove leading/trailing dashes
+      
+      console.log(`[S3 UPLOAD] Original filename: ${file.name}`);
+      console.log(`[S3 UPLOAD] Sanitized filename: ${sanitizedFileName}`);
+      console.log(`[S3 UPLOAD] Requesting pre-signed URL for ${sanitizedFileName}`);
+      const response = await api.interventions.getUploadUrl(sanitizedFileName, file.type, targetFolder);
       console.log('[S3 UPLOAD] Upload URL response:', response.data);
       
       // Use the pre-signed URL to upload directly to S3
@@ -4232,6 +4240,18 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
     console.log(`[WORD RECOGNITION TEMPLATE] Final template data being applied:`, templateData);
     updateQuestionChoicePair(pairId, templateData);
+    
+    // Debug: Log the updated pair after template application
+    setTimeout(() => {
+      const updatedPair = questionChoicePairs.find(p => p.id === pairId);
+      console.log('[TEMPLATE APPLICATION DEBUG] Updated pair after template application:', {
+        pairId: pairId,
+        sourceTemplateId: updatedPair?.sourceTemplateId,
+        questionSubType: updatedPair?.questionSubType,
+        questionText: updatedPair?.questionText,
+        displayWord: updatedPair?.displayWord
+      });
+    }, 100);
 
     // Show success notification
     createModalToast(`Template applied: ${questionSubType === 'sound_matching' ? 'Sound Matching' : 'Sentence Completion'}`, 'success');
@@ -7673,6 +7693,12 @@ const renderWordRecognitionStep = () => {
                 <div className="word-recognition-image-upload">
                   {pair.questionImage ? (
                     <div className="word-recognition-image-preview">
+                      {console.log('[IMAGE RENDER DEBUG] Rendering image removal button:', {
+                        pairId: pair.id,
+                        sourceTemplateId: pair.sourceTemplateId,
+                        questionSubType: pair.questionSubType,
+                        shouldBeDisabled: pair.sourceTemplateId && pair.questionSubType === 'sentence_completion'
+                      })}
                       <img
                         src={pair.questionImage}
                         alt="Word"
@@ -7681,12 +7707,22 @@ const renderWordRecognitionStep = () => {
                       <button
                         type="button"
                         className="word-recognition-remove-image-btn"
-                        onClick={() => updateQuestionChoicePair(pair.id, { questionImage: null })}
-                        title={pair.sourceTemplateId ? "Image is from template - cannot remove" : "Remove image"}
-                        disabled={pair.sourceTemplateId}
+                        onClick={() => {
+                          console.log('[IMAGE REMOVAL DEBUG] Button clicked:', {
+                            pairId: pair.id,
+                            sourceTemplateId: pair.sourceTemplateId,
+                            questionSubType: pair.questionSubType,
+                            shouldBeDisabled: pair.sourceTemplateId && pair.questionSubType === 'sentence_completion'
+                          });
+                          if (!(pair.sourceTemplateId && pair.questionSubType === 'sentence_completion')) {
+                            updateQuestionChoicePair(pair.id, { questionImage: null });
+                          }
+                        }}
+                        title={pair.sourceTemplateId && pair.questionSubType === 'sentence_completion' ? "Image is from sentence completion template - cannot remove" : "Remove image"}
+                        disabled={pair.sourceTemplateId && pair.questionSubType === 'sentence_completion'}
                         style={{
-                          opacity: pair.sourceTemplateId ? 0.5 : 1,
-                          cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer'
+                          opacity: (pair.sourceTemplateId && pair.questionSubType === 'sentence_completion') ? 0.5 : 1,
+                          cursor: (pair.sourceTemplateId && pair.questionSubType === 'sentence_completion') ? 'not-allowed' : 'pointer'
                         }}
                       >
                         <FaTimes />
@@ -7777,7 +7813,8 @@ const renderWordRecognitionStep = () => {
               {(pair.blankOptions || ['', '', '', '']).map((option, optionIndex) => {
                 // Check if this option is the correct answer from template
                 const isCorrectAnswer = (pair.correctAnswer || []).includes(option);
-                const isFromTemplate = pair.sourceTemplateId && isCorrectAnswer;
+                // Only lock correct answers for non-sentence-completion templates
+                const isFromTemplate = pair.sourceTemplateId && isCorrectAnswer && pair.questionSubType !== 'sentence_completion';
                 
                 return (
                   <div key={optionIndex} className="word-recognition-option-item">
@@ -7896,17 +7933,17 @@ const renderWordRecognitionStep = () => {
                             updateQuestionChoicePair(pair.id, { correctAnswer: [option] });
                           }
                         }}
-                        disabled={option === '' || pair.sourceTemplateId} // Disable if empty or using template
+                        disabled={option === '' || (pair.sourceTemplateId && pair.questionSubType !== 'sentence_completion')} // Disable if empty or using non-sentence-completion template
                         style={{
-                          cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer'
+                          cursor: (pair.sourceTemplateId && pair.questionSubType !== 'sentence_completion') ? 'not-allowed' : 'pointer'
                         }}
                       />
                       <span style={{ 
-                        color: pair.sourceTemplateId ? '#6b7280' : 'inherit',
-                        fontStyle: pair.sourceTemplateId ? 'italic' : 'normal'
+                        color: (pair.sourceTemplateId && pair.questionSubType !== 'sentence_completion') ? '#6b7280' : 'inherit',
+                        fontStyle: (pair.sourceTemplateId && pair.questionSubType !== 'sentence_completion') ? 'italic' : 'normal'
                       }}>
                         Correct Answer (select only one)
-                        {pair.sourceTemplateId && ' (from template)'}
+                        {(pair.sourceTemplateId && pair.questionSubType !== 'sentence_completion') && ' (from template)'}
                       </span>
                     </label>
                   </div>
@@ -7915,7 +7952,10 @@ const renderWordRecognitionStep = () => {
             </div>
             {pair.sourceTemplateId ? (
               <small style={{color: '#92400e', fontSize: '11px', marginTop: '8px', display: 'block', fontWeight: '500'}}>
-                Template provides base options - you can add/remove options and edit incorrect answers. Correct answer selection is locked from template.
+                {pair.questionSubType === 'sentence_completion' 
+                  ? 'Sentence completion template - you can edit all options and select correct answers freely.'
+                  : 'Template provides base options - you can add/remove options and edit incorrect answers. Correct answer selection is locked from template.'
+                }
               </small>
             ) : (
               <small style={{color: '#92400e', fontSize: '11px', marginTop: '8px', display: 'block'}}>

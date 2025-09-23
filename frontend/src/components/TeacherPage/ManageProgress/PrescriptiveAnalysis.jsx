@@ -609,6 +609,12 @@ const PrescriptiveAnalysis = ({
 
         if (fallbackResponse.data && fallbackResponse.data.success && fallbackResponse.data.data.interventionResults) {
           const allResults = fallbackResponse.data.data.interventionResults;
+
+          console.log(`[FALLBACK DEBUG] Looking for studentId: ${studentId} (parsed: ${parseInt(studentId)}), category: ${categoryName}`);
+          console.log(`[FALLBACK DEBUG] Total intervention results available:`, allResults.length);
+          console.log(`[FALLBACK DEBUG] Available student IDs:`, [...new Set(allResults.map(r => r.studentId))]);
+          console.log(`[FALLBACK DEBUG] Available categories:`, [...new Set(allResults.map(r => r.category))]);
+
           const categoryResults = allResults.filter(result =>
             result.studentId === parseInt(studentId) &&
             result.category === categoryName
@@ -618,10 +624,57 @@ const PrescriptiveAnalysis = ({
             return dateB - dateA;
           });
 
+          console.log(`[FALLBACK DEBUG] Filtered results for ${categoryName}:`, categoryResults.length);
+
           if (categoryResults.length > 0) {
             console.log(`[INTERVENTION RESULTS] Using fallback data for ${categoryName}`);
             return categoryResults[0];
+          } else {
+            console.log(`[FALLBACK DEBUG] No matching results found for studentId ${parseInt(studentId)}, category ${categoryName}`);
+
+            // ADDITIONAL FALLBACK: Use intervention history data if available
+            console.log(`[INTERVENTION HISTORY FALLBACK] Checking for intervention history data for ${categoryName}`);
+            const categoryResponse = await api.get(`/api/category-results/student/${studentId}`);
+            if (categoryResponse.data && categoryResponse.data.success) {
+              const categoryResults = categoryResponse.data.data;
+              const relevantCategory = categoryResults.categories?.find(cat => cat.categoryName === categoryName);
+
+              if (relevantCategory?.interventionHistory && relevantCategory.interventionHistory.length > 0) {
+                // Sort intervention history by attempt number (latest first)
+                const sortedHistory = [...relevantCategory.interventionHistory].sort((a, b) => b.attemptNumber - a.attemptNumber);
+                const latestAttempt = sortedHistory[0];
+
+                if (latestAttempt.isPassed) {
+                  console.log(`[INTERVENTION HISTORY FALLBACK] ✅ Using intervention history data for ${categoryName} - Score: ${latestAttempt.score}%`);
+
+                  // Create a synthetic intervention result from history data
+                  return {
+                    category: categoryName,
+                    score: latestAttempt.score,
+                    isPassed: latestAttempt.isPassed,
+                    passed: latestAttempt.isPassed,
+                    previousScore: relevantCategory.score || 0,
+                    improvement: (latestAttempt.score || 0) - (relevantCategory.score || 0),
+                    completedAt: latestAttempt.completedAt,
+                    revisionNumber: latestAttempt.revisionNumber || 1,
+
+                    // Synthetic data to match expected format
+                    originalAssessmentScore: relevantCategory.score || 0,
+                    interventionScore: latestAttempt.score,
+                    dataSource: 'intervention_history_fallback',
+
+                    metadata: {
+                      fetchedAt: new Date().toISOString(),
+                      dataSource: 'intervention_history_fallback',
+                      note: 'Created from intervention history due to missing intervention_results'
+                    }
+                  };
+                }
+              }
+            }
           }
+        } else {
+          console.log(`[FALLBACK DEBUG] Invalid fallback response structure`);
         }
       } catch (fallbackError) {
         console.error('❌ Fallback also failed:', fallbackError);
@@ -850,31 +903,72 @@ const PrescriptiveAnalysis = ({
 
   // Effect to load intervention results when component mounts or student changes
   useEffect(() => {
+    console.log('[INTERVENTION RESULTS] 🚀 useEffect triggered - checking if we need to load intervention results');
+    console.log('[INTERVENTION RESULTS] 🚀 Dependencies:', {
+      liveStudentIdNumber: liveStudent?.idNumber,
+      liveStudentId: liveStudent?.id,
+      studentId: studentId,
+      liveCategoryResultsExists: !!liveCategoryResults,
+      categoriesCount: liveCategoryResults?.categories?.length
+    });
+
     const loadInterventionResults = async () => {
       const currentStudentId = liveStudent?.idNumber || liveStudent?.id || studentId;
 
+      console.log('[INTERVENTION RESULTS] 🎯 loadInterventionResults called with studentId:', currentStudentId);
+
       // Skip if no student ID or already loading
       if (!currentStudentId || isLoadingInterventionsRef.current) {
+        console.log('[INTERVENTION RESULTS] ⏭️ Skipping load - no studentId or already loading');
         return;
       }
 
-      // Skip if no categories need intervention
-      if (!categoriesNeedingIntervention || categoriesNeedingIntervention.length === 0) {
+      // Get ALL categories that have intervention history (not just ones needing intervention)
+      console.log('[INTERVENTION RESULTS] 🔍 Checking categories for intervention history:', liveCategoryResults?.categories?.map(cat => ({
+        name: cat.categoryName,
+        hasHistory: !!(cat.interventionHistory && cat.interventionHistory.length > 0),
+        historyLength: cat.interventionHistory?.length || 0,
+        firstAttempt: cat.interventionHistory?.[0]
+      })));
+
+      const categoriesWithInterventionHistory = liveCategoryResults?.categories?.filter(cat => {
+        const hasHistory = cat.interventionHistory && cat.interventionHistory.length > 0;
+        console.log(`[INTERVENTION RESULTS] 🔍 ${cat.categoryName}: hasHistory=${hasHistory}, historyLength=${cat.interventionHistory?.length || 0}`);
+        return hasHistory;
+      }) || [];
+
+      console.log('[INTERVENTION RESULTS] 📋 Categories WITH intervention history:', categoriesWithInterventionHistory.map(cat => cat.categoryName));
+
+      // Skip if no categories have intervention history
+      if (categoriesWithInterventionHistory.length === 0) {
         setInterventionResults({});
         return;
       }
 
-      console.log('Loading intervention results for categories:', categoriesNeedingIntervention.map(cat => cat.categoryName));
+      console.log('[INTERVENTION RESULTS] Loading intervention results for categories with history:', categoriesWithInterventionHistory.map(cat => cat.categoryName));
+      console.log('[INTERVENTION RESULTS] 🎯 Using student ID:', currentStudentId);
+      console.log('[INTERVENTION RESULTS] 🎯 Student data source:', {
+        liveStudent: !!liveStudent,
+        studentId: studentId,
+        liveStudentIdNumber: liveStudent?.idNumber,
+        liveStudentId: liveStudent?.id
+      });
 
       isLoadingInterventionsRef.current = true;
 
       try {
         const results = {};
-        for (const category of categoriesNeedingIntervention) {
+        for (const category of categoriesWithInterventionHistory) {
           try {
+            console.log(`[INTERVENTION RESULTS] 🔍 Fetching results for: ${category.categoryName} (student: ${currentStudentId})`);
             const categoryResults = await fetchInterventionResults(currentStudentId, category.categoryName);
+            console.log(`[INTERVENTION RESULTS] 📊 Results for ${category.categoryName}:`, categoryResults);
+
             if (categoryResults) {
               results[category.categoryName] = categoryResults;
+              console.log(`[INTERVENTION RESULTS] ✅ Added ${category.categoryName} to results`);
+            } else {
+              console.log(`[INTERVENTION RESULTS] ❌ No results returned for ${category.categoryName}`);
             }
           } catch (error) {
             console.error(`Error loading intervention results for ${category.categoryName}:`, error);
@@ -884,6 +978,15 @@ const PrescriptiveAnalysis = ({
 
         setInterventionResults(results);
         console.log('[INTERVENTION RESULTS] All intervention results loaded:', results);
+        console.log('[INTERVENTION RESULTS] Keys in results:', Object.keys(results));
+
+        // Specific check for Alphabet Knowledge
+        if (results['Alphabet Knowledge']) {
+          console.log('[INTERVENTION RESULTS] ✅ Alphabet Knowledge data found:', results['Alphabet Knowledge']);
+        } else {
+          console.log('[INTERVENTION RESULTS] ❌ Alphabet Knowledge NOT found in results');
+          console.log('[INTERVENTION RESULTS] Available category keys:', Object.keys(results));
+        }
       } finally {
         isLoadingInterventionsRef.current = false;
       }
@@ -893,7 +996,7 @@ const PrescriptiveAnalysis = ({
     if (liveStudent || studentId) {
       loadInterventionResults();
     }
-  }, [liveStudent?.idNumber, liveStudent?.id, studentId, categoriesNeedingIntervention?.length]);
+  }, [liveStudent?.idNumber, liveStudent?.id, studentId, liveCategoryResults?.categories]);
 
   // ===== HELPER FUNCTIONS =====
 
@@ -1007,11 +1110,43 @@ const PrescriptiveAnalysis = ({
     let skillMasteryData;
     let dataSource = '';
 
+    // 🎯 PRIORITY 1: Check if we have intervention data from the interventionResults state
     if (hasPassedViaIntervention && interventionData?.skillMastery?.[categoryName]) {
       // 🎯 Use POST-INTERVENTION analysis for categories that passed via intervention
       skillMasteryData = interventionData.skillMastery[categoryName];
       dataSource = 'intervention_results (post-intervention)';
       console.log(`[ANALYSIS DATA] ✅ Using POST-INTERVENTION analysis for ${categoryName}:`, skillMasteryData);
+    } 
+    // 🎯 PRIORITY 2: Check if we have intervention history in category data (fallback)
+    else if (hasPassedViaIntervention && categoryData?.interventionHistory) {
+      // Find the latest successful intervention attempt
+      const successfulAttempt = categoryData.interventionHistory
+        .filter(attempt => attempt.isPassed)
+        .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))[0];
+      
+      if (successfulAttempt) {
+        // Create skill mastery data from the successful intervention attempt
+        skillMasteryData = {
+          masteryProbability: successfulAttempt.score / 100, // Convert score to probability
+          score: successfulAttempt.score,
+          isPassed: successfulAttempt.isPassed,
+          totalQuestions: 15, // Default from category data
+          correctAnswers: Math.round((successfulAttempt.score / 100) * 15), // Calculate from score
+          totalPossibleMatches: 0,
+          correctMatches: 0,
+          responseHistory: [],
+          lastUpdated: successfulAttempt.completedAt,
+          _dataSource: 'category_intervention_history (post-intervention)',
+          _isPostIntervention: true
+        };
+        dataSource = 'category_intervention_history (post-intervention)';
+        console.log(`[ANALYSIS DATA] ✅ Using POST-INTERVENTION analysis from category history for ${categoryName}:`, skillMasteryData);
+      } else {
+        // Fallback to pre-intervention data
+        skillMasteryData = studentAnalysis.skillMastery?.[categoryName] || studentAnalysis.skillMastery?.[normalizedCategory];
+        dataSource = 'prescriptive_analysis (pre-intervention)';
+        console.log(`[ANALYSIS DATA] 📊 Using PRE-INTERVENTION analysis for ${categoryName}:`, skillMasteryData);
+      }
     } else {
       // 📊 Use PRE-INTERVENTION analysis for categories not yet attempted or failed intervention
       skillMasteryData = studentAnalysis.skillMastery?.[categoryName] || studentAnalysis.skillMastery?.[normalizedCategory];
@@ -1553,6 +1688,11 @@ const PrescriptiveAnalysis = ({
           
           if (response.data && response.data.success && response.data.data) {
             fetchedResponses = response.data.data;
+            // Extract intervention assessment data if available
+            if (response.data.interventionAssessment) {
+              intervention = response.data.interventionAssessment;
+              console.log('Updated intervention with fresh data from API:', intervention.questions?.length, 'questions');
+            }
             console.log('Found intervention responses from API:', fetchedResponses.length, 'responses');
           } else if (response.data && Array.isArray(response.data)) {
             // Handle case where API returns array directly
@@ -1586,6 +1726,11 @@ const PrescriptiveAnalysis = ({
             
             if (altResponse.data && altResponse.data.success && altResponse.data.data) {
               fetchedResponses = altResponse.data.data;
+              // Extract intervention assessment data if available
+              if (altResponse.data.interventionAssessment) {
+                intervention = altResponse.data.interventionAssessment;
+                console.log('Updated intervention with fresh data from alternative API:', intervention.questions?.length, 'questions');
+              }
               console.log('Found intervention responses from alternative API:', fetchedResponses.length, 'responses');
             } else if (altResponse.data && Array.isArray(altResponse.data)) {
               // Handle case where API returns array directly
@@ -1637,13 +1782,29 @@ const PrescriptiveAnalysis = ({
       // Combine response data with question data from intervention assessment
       const enrichedResponses = fetchedResponses.map(response => {
         const question = intervention.questions?.find(q => q.questionId === response.questionId);
+        
+        // Handle different question types for correct answer extraction
+        let correctAnswer = 'N/A';
+        if (question) {
+          if (question.choiceOptions && question.choiceOptions.length > 0) {
+            // For questions with choiceOptions (Alphabet Knowledge, Phonological Awareness, Decoding)
+            correctAnswer = question.choiceOptions.find(opt => opt.isCorrect)?.optionText || 'N/A';
+          } else if (question.correctAnswer && Array.isArray(question.correctAnswer)) {
+            // For Word Recognition questions with correctAnswer array
+            correctAnswer = question.correctAnswer.join(', ');
+          } else if (question.correctAnswer) {
+            // For single correct answer
+            correctAnswer = question.correctAnswer;
+          }
+        }
+        
         return {
           ...response,
           questionText: question?.questionText || 'Question text not found',
           questionImage: question?.questionImage,
           questionValue: question?.questionValue,
           choiceOptions: question?.choiceOptions || [],
-          correctAnswer: question?.choiceOptions?.find(opt => opt.isCorrect)?.optionText || 'N/A'
+          correctAnswer: correctAnswer
         };
       });
 
@@ -1652,6 +1813,24 @@ const PrescriptiveAnalysis = ({
         enrichedResponsesCount: enrichedResponses.length,
         sampleResponse: enrichedResponses[0] || 'No responses'
       });
+      
+      // Debug Word Recognition question images
+      if (category === 'Word Recognition') {
+        console.log('🔍 Word Recognition image debug:', {
+          interventionQuestions: intervention.questions?.map(q => ({
+            questionId: q.questionId,
+            questionText: q.questionText,
+            questionImage: q.questionImage,
+            hasImage: !!q.questionImage
+          })),
+          enrichedResponses: enrichedResponses.map(r => ({
+            questionId: r.questionId,
+            questionImage: r.questionImage,
+            hasImage: !!r.questionImage
+          })),
+          interventionSource: 'API response' // Indicate data source
+        });
+      }
 
       // Get intervention results for this category
       const categoryInterventionResults = interventionResults[category];
@@ -3227,6 +3406,55 @@ const PrescriptiveAnalysis = ({
             </div>
           );
 
+        case 'Word Recognition':
+          return (
+            <div className="literexia-error-breakdown">
+              {errorPatterns.word_errors && (
+                <div className="literexia-error-group">
+                  <h6>Word Recognition Errors</h6>
+                  <div className="literexia-error-stats">
+                    <span className="literexia-error-rate">{errorPatterns.word_errors.percentage}% error rate</span>
+                    <span className="literexia-error-count">({errorPatterns.word_errors.count}/{errorPatterns.word_errors.total})</span>
+                  </div>
+                  <div className="literexia-error-type">
+                    <strong>Primary issue:</strong> {errorPatterns.word_errors.error_type?.replace(/_/g, ' ')}
+                  </div>
+                  {errorPatterns.word_errors.sentence_completion_errors > 0 && (
+                    <div className="literexia-error-breakdown">
+                      <div className="literexia-error-subgroup">
+                        <strong>Sentence Completion:</strong> {errorPatterns.word_errors.sentence_completion_errors} errors
+                      </div>
+                    </div>
+                  )}
+                  {errorPatterns.word_errors.rhyming_errors > 0 && (
+                    <div className="literexia-error-breakdown">
+                      <div className="literexia-error-subgroup">
+                        <strong>Rhyming Words:</strong> {errorPatterns.word_errors.rhyming_errors} errors
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+
+        case 'Reading Comprehension':
+          return (
+            <div className="literexia-error-breakdown">
+              {errorPatterns.comprehension_errors && (
+                <div className="literexia-error-group">
+                  <h6>Reading Comprehension Errors</h6>
+                  <div className="literexia-error-stats">
+                    <span className="literexia-error-rate">{errorPatterns.comprehension_errors.percentage}% error rate</span>
+                  </div>
+                  <div className="literexia-error-type">
+                    <strong>Primary issue:</strong> {errorPatterns.comprehension_errors.error_type?.replace(/_/g, ' ')}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+
         default:
           return (
             <div className="literexia-general-errors">
@@ -3363,7 +3591,21 @@ const PrescriptiveAnalysis = ({
     }
 
     // Extract the category data from selectedCategoryData for scores
-    const currentScore = selectedCategoryData?.score || 0;
+    // 🎯 PRIORITIZE POST-INTERVENTION SCORE: Use intervention score if category passed via intervention
+    let currentScore = selectedCategoryData?.score || 0;
+    
+    // Check if category passed via intervention and use that score
+    const interventionStatus = getInterventionStatus(categoryName, selectedCategoryData);
+    if (interventionStatus === 'success' && selectedCategoryData?.interventionHistory) {
+      const successfulAttempt = selectedCategoryData.interventionHistory
+        .filter(attempt => attempt.isPassed)
+        .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))[0];
+      
+      if (successfulAttempt) {
+        currentScore = successfulAttempt.score;
+        console.log(`[CURRENT SCORE] Using post-intervention score: ${currentScore}% (was ${selectedCategoryData?.score}%)`);
+      }
+    }
 
     // Check if student has actually attempted any questions for this category
     const hasAttemptedQuestions = currentScore > 0 ||
@@ -5992,13 +6234,39 @@ const PrescriptiveAnalysis = ({
               <FaCheckCircle style={{color: '#4CAF50'}} />
               <p>
                 The student has mastered {formatCategoryName(selectedCategory)} with a score of {(() => {
-                  // Get the most recent score - either from intervention results or category data
+                  // Get the most recent score - prioritize intervention results
                   const interventionResultData = interventionResults[selectedCategory];
-                  if (interventionResultData && interventionResultData.isPassed) {
+
+                  // Debug logging
+                  console.log(`[SUCCESS BANNER] ${selectedCategory} - Intervention Results:`, interventionResultData);
+                  console.log(`[SUCCESS BANNER] ${selectedCategory} - Category Data:`, selectedCategoryData);
+
+                  // Check intervention results first
+                  if (interventionResultData && interventionResultData.score !== undefined && interventionResultData.isPassed) {
+                    console.log(`[SUCCESS BANNER] Using intervention score: ${interventionResultData.score}%`);
                     return interventionResultData.score;
                   }
+
+                  // Check intervention history in category data
+                  const latestIntervention = selectedCategoryData?.interventionHistory?.find(attempt => attempt.isPassed);
+                  if (latestIntervention) {
+                    console.log(`[SUCCESS BANNER] Using intervention history score: ${latestIntervention.score}%`);
+                    return latestIntervention.score;
+                  }
+
+                  // Fallback to category score
+                  console.log(`[SUCCESS BANNER] Using category score: ${selectedCategoryData?.score || 0}%`);
                   return selectedCategoryData?.score || 0;
-                })()}% (above the 75% threshold). No intervention is needed for this category.
+                })()}% {(() => {
+                  // Determine pass method
+                  const interventionResultData = interventionResults[selectedCategory];
+                  const latestIntervention = selectedCategoryData?.interventionHistory?.find(attempt => attempt.isPassed);
+
+                  if (interventionResultData?.isPassed || latestIntervention) {
+                    return "(passed via intervention)";
+                  }
+                  return "(above the 75% threshold)";
+                })()} No intervention is needed for this category.
               </p>
             </div>
           )}
@@ -6458,13 +6726,33 @@ const PrescriptiveAnalysis = ({
                           <div className="intervention-response-question-section">
                             <h5>Question</h5>
                             <p className="intervention-response-question-text">{response.questionText || 'Question text not available'}</p>
-                            {response.questionImage && (
+                            {response.questionImage && response.questionImage.trim() !== '' ? (
                               <div className="intervention-response-question-image">
                                 <img 
                                   src={response.questionImage} 
                                   alt="Question image" 
                                   className="intervention-response-image"
+                                  onError={(e) => {
+                                    console.error('Failed to load question image:', response.questionImage);
+                                    console.error('Image URL contains corrupted characters, likely due to filename encoding issues');
+                                    // Hide the broken image and show error message
+                                    e.target.style.display = 'none';
+                                    const errorDiv = document.createElement('div');
+                                    errorDiv.className = 'intervention-response-image-error';
+                                    errorDiv.innerHTML = `
+                                      <div style="padding: 20px; text-align: center; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #dc2626;">
+                                        <strong>Image Failed to Load</strong><br>
+                                        <small>URL contains corrupted characters</small><br>
+                                        <small style="word-break: break-all; font-family: monospace; font-size: 10px;">${response.questionImage}</small>
+                                      </div>
+                                    `;
+                                    e.target.parentNode.appendChild(errorDiv);
+                                  }}
                                 />
+                              </div>
+                            ) : (
+                              <div className="intervention-response-question-image-placeholder">
+                                <span>No image available</span>
                               </div>
                             )}
                           </div>
