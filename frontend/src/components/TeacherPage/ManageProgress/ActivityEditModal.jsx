@@ -2470,24 +2470,25 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             const validBlankOptions = (pair.blankOptions || []).filter(option => option && option.trim() !== '');
             const validCorrectAnswers = (pair.correctAnswer || []).filter(answer => answer && answer.trim() !== '');
 
+            // For templates, reconstruct the complete sentence without blanks
+            let templateDisplayWord = pair.displayWord || '';
+            if (pair.questionSubType === 'sentence_completion' && pair.blankPosition !== null && pair.sentenceTokens) {
+              // Reconstruct complete sentence from tokens for template storage
+              templateDisplayWord = pair.sentenceTokens.join(' ');
+            }
+
             templateData = {
               category: category,
-              questionType: pair.questionType || 'word',
+              questionType: 'fill_blank', // Use correct questionType for templates
               questionText: pair.questionText || 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.',
               questionImage: pair.questionImage,
 
-              // Word Recognition specific fields
-              displayWord: pair.displayWord || '',
+              // Word Recognition specific fields - templates store complete sentences
+              displayWord: templateDisplayWord, // Complete sentence without blanks
               blankOptions: validBlankOptions.length > 0 ? validBlankOptions : ['', '', '', ''],
               correctAnswer: validCorrectAnswers.length > 0 ? validCorrectAnswers : [],
 
-              // Optional fields for sentence completion
-              ...(pair.questionSubType === 'sentence_completion' && {
-                blankPosition: pair.blankPosition,
-                sentenceTokens: pair.sentenceTokens || []
-              }),
-
-              // Template metadata
+              // Template metadata - NO blankPosition or sentenceTokens in templates
               questionSubType: pair.questionSubType || 'sentence_completion',
               targetSkills: [
                 "word_recognition",
@@ -2501,11 +2502,11 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             };
 
             console.log(`[TEMPLATE AUTO-SAVE] Word Recognition template data:`, {
-              displayWord: templateData.displayWord,
+              displayWord: templateData.displayWord, // Complete sentence without blanks
               blankOptions: templateData.blankOptions,
               correctAnswer: templateData.correctAnswer,
               questionSubType: templateData.questionSubType,
-              blankPosition: templateData.blankPosition
+              questionType: templateData.questionType
             });
           } else {
             // Fallback for unsupported categories
@@ -3458,18 +3459,18 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           
           // Build CLAUDE.md compliant question structure
           const questionId = `int_${category.toLowerCase().replace(/\s+/g, '_')}_${String(index + 1).padStart(3, '0')}`;
-          const isTemplateQuestion = pair.sourceType === 'template_question';
+          const isTemplateQuestion = pair.sourceType === 'template' || pair.sourceType === 'template_question';
 
           // Base question structure
           const baseQuestion = {
             questionId: questionId,
             source: pair.sourceType || 'custom',
-            sourceTemplateId: isTemplateQuestion ? pair.sourceId : null,
+            sourceTemplateId: isTemplateQuestion ? pair.sourceTemplateId : null,
             sourceQuestionId: pair.sourceId,
-            questionType: pair.questionType,
+            questionType: isWordRecognition ? 'fill_blank' : pair.questionType,
             questionText: pair.questionText,
             questionImage: processedImageUrl,
-            questionValue: isDecoding ? null : (pair.questionValue || (pair.questionImage ? pair.questionText?.split(' ').pop() || '' : '')),
+            questionValue: isDecoding ? null : (isWordRecognition ? null : (pair.questionValue || (pair.questionImage ? pair.questionText?.split(' ').pop() || '' : ''))),
           };
 
           // Category-specific structure
@@ -4123,6 +4124,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         displayWord: '',
         blankOptions: ['', '', '', ''],
         correctAnswer: [],
+        // These fields are generated dynamically, not stored in templates
         blankPosition: null,
         sentenceTokens: []
       });
@@ -4168,34 +4170,18 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     
     console.log(`[WORD RECOGNITION TEMPLATE] Detected question type: ${questionSubType} from text: "${template.questionText}"`);
 
-    // For sentence completion, tokenize the displayWord
+    // For sentence completion, generate sentenceTokens and blankPosition dynamically
     let sentenceTokens = [];
     let blankPosition = null;
     if (questionSubType === 'sentence_completion' && template.displayWord) {
-      // Check if displayWord contains a blank (_____)
-      if (template.displayWord.includes('_____')) {
-        // Split by the blank to reconstruct tokens and position
-        const parts = template.displayWord.split('_____');
-        if (parts.length === 2) {
-          const beforeTokens = parts[0].trim().split(/\s+/).filter(t => t.length > 0);
-          const afterTokens = parts[1].trim().split(/\s+/).filter(t => t.length > 0);
-
-          // Assume the correct answer is the word that goes in the blank
-          const correctWord = template.correctAnswer && template.correctAnswer.length > 0
-            ? template.correctAnswer[0]
-            : 'BLANK';
-
-          sentenceTokens = [...beforeTokens, correctWord, ...afterTokens];
-          blankPosition = beforeTokens.length; // Position where the blank word should go
-        }
-      } else {
-        // No blank in template, just tokenize normally
-        sentenceTokens = template.displayWord.split(/\s+/).filter(t => t.length > 0);
-      }
+      // Templates store complete sentences WITHOUT blanks - teachers choose blank position
+      // Tokenize the complete sentence for word clicking functionality
+      sentenceTokens = template.displayWord.split(/\s+/).filter(t => t.length > 0);
+      blankPosition = null; // No blank position set initially - teacher must choose
     } else if (questionSubType === 'sound_matching' && template.displayWord) {
       // For sound matching questions, the displayWord is a single word (e.g. "SUMBRERO")
-      // Tokenize as single word for consistency, no blank position needed
-      sentenceTokens = [template.displayWord];
+      // No sentence tokens or blank position needed for sound matching
+      sentenceTokens = [];
       blankPosition = null;
     }
 
@@ -4207,11 +4193,12 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         ? 'Anong kasing tunog ng salitang nakikita?' 
         : 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.'),
       questionSubType: questionSubType,
-      displayWord: template.displayWord || '',
+      displayWord: template.displayWord || '', // Complete sentence from template (no blanks)
       blankOptions: template.blankOptions || ['', '', '', ''],
       correctAnswer: template.correctAnswer || [],
-      blankPosition: blankPosition,
-      sentenceTokens: sentenceTokens,
+      // Generate these fields dynamically from template data
+      blankPosition: blankPosition, // null initially - teacher must choose
+      sentenceTokens: sentenceTokens, // Generated from complete sentence
       questionImage: template.questionImage || null
     };
 
@@ -4223,9 +4210,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       templateData.sentenceTokens = sentenceTokens;
       
       console.log(`[WORD RECOGNITION TEMPLATE] Sentence completion populated:`, {
-        displayWord: templateData.displayWord,
-        blankPosition: templateData.blankPosition,
-        sentenceTokens: templateData.sentenceTokens,
+        displayWord: templateData.displayWord, // Complete sentence from template
+        blankPosition: templateData.blankPosition, // null - teacher must choose
+        sentenceTokens: templateData.sentenceTokens, // Generated from complete sentence
         blankOptions: templateData.blankOptions,
         correctAnswer: templateData.correctAnswer
       });
@@ -4243,6 +4230,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       });
     }
 
+    console.log(`[WORD RECOGNITION TEMPLATE] Final template data being applied:`, templateData);
     updateQuestionChoicePair(pairId, templateData);
 
     // Show success notification
@@ -7496,9 +7484,7 @@ const renderWordRecognitionStep = () => {
                 <label>Complete Sentence (click word to set as blank)</label>
                 <input
                   type="text"
-                  value={pair.blankPosition !== null && pair.sentenceTokens ? 
-                    pair.sentenceTokens.map((token, index) => index === pair.blankPosition ? '_____' : token).join(' ') :
-                    pair.displayWord || ''}
+                  value={pair.displayWord || ''}
                   onChange={(e) => {
                     const sentence = e.target.value;
                     if (!pair.sourceTemplateId) {
@@ -7506,7 +7492,7 @@ const renderWordRecognitionStep = () => {
                       updateSentenceTokens(pair.id, sentence);
                     }
                   }}
-                  placeholder="e.g., Naglalaro siya ng bola sa parke"
+                  placeholder="e.g., Naglalaro siya ng _____ sa parke"
                   disabled={pair.sourceTemplateId} // Disable if template is selected
                   className={errors[`${pair.id}_displayWord`] ? 'literexia-error' : ''}
                 />
@@ -7696,7 +7682,12 @@ const renderWordRecognitionStep = () => {
                         type="button"
                         className="word-recognition-remove-image-btn"
                         onClick={() => updateQuestionChoicePair(pair.id, { questionImage: null })}
-                        title="Remove image"
+                        title={pair.sourceTemplateId ? "Image is from template - cannot remove" : "Remove image"}
+                        disabled={pair.sourceTemplateId}
+                        style={{
+                          opacity: pair.sourceTemplateId ? 0.5 : 1,
+                          cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer'
+                        }}
                       >
                         <FaTimes />
                       </button>
@@ -7730,175 +7721,201 @@ const renderWordRecognitionStep = () => {
               <h5 style={{margin: '0', color: '#92400e', fontSize: '14px', fontWeight: '600'}}>
                 Answer Options ({(pair.blankOptions || ['', '', '', '']).length} options)
               </h5>
-              {!pair.sourceTemplateId && (
-                <div style={{display: 'flex', gap: '8px'}}>
+              <div style={{display: 'flex', gap: '8px'}}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentOptions = pair.blankOptions || ['', '', '', ''];
+                    const newOptions = [...currentOptions, ''];
+                    updateQuestionChoicePair(pair.id, { blankOptions: newOptions });
+                  }}
+                  style={{
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    background: '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                  title="Add another option"
+                >
+                  <FaPlus /> Add Option
+                </button>
+                {(pair.blankOptions || ['', '', '', '']).length > 2 && (
                   <button
                     type="button"
                     onClick={() => {
                       const currentOptions = pair.blankOptions || ['', '', '', ''];
-                      const newOptions = [...currentOptions, ''];
-                      updateQuestionChoicePair(pair.id, { blankOptions: newOptions });
+                      const newOptions = currentOptions.slice(0, -1);
+                      // Remove from correct answers if it was selected
+                      const removedOption = currentOptions[currentOptions.length - 1];
+                      const newCorrectAnswers = (pair.correctAnswer || []).filter(answer => answer !== removedOption);
+                      updateQuestionChoicePair(pair.id, {
+                        blankOptions: newOptions,
+                        correctAnswer: newCorrectAnswers
+                      });
                     }}
                     style={{
                       padding: '4px 8px',
                       fontSize: '12px',
-                      background: '#10b981',
+                      background: '#ef4444',
                       color: 'white',
                       border: 'none',
                       borderRadius: '4px',
                       cursor: 'pointer'
                     }}
-                    title="Add another option"
+                    title="Remove last option"
                   >
-                    <FaPlus /> Add Option
+                    <FaMinus /> Remove Option
                   </button>
-                  {(pair.blankOptions || ['', '', '', '']).length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const currentOptions = pair.blankOptions || ['', '', '', ''];
-                        const newOptions = currentOptions.slice(0, -1);
-                        // Remove from correct answers if it was selected
-                        const removedOption = currentOptions[currentOptions.length - 1];
-                        const newCorrectAnswers = (pair.correctAnswer || []).filter(answer => answer !== removedOption);
-                        updateQuestionChoicePair(pair.id, {
-                          blankOptions: newOptions,
-                          correctAnswer: newCorrectAnswers
-                        });
-                      }}
-                      style={{
-                        padding: '4px 8px',
-                        fontSize: '12px',
-                        background: '#ef4444',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                      title="Remove last option"
-                    >
-                      <FaMinus /> Remove Option
-                    </button>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             <div className="word-recognition-options-grid">
-              {(pair.blankOptions || ['', '', '', '']).map((option, optionIndex) => (
-                <div key={optionIndex} className="word-recognition-option-item">
-                  <input
-                    type="text"
-                    value={option}
-                    onChange={(e) => {
-                      const newValue = e.target.value;
-                      // Strict validation: only allow letters (no numbers, symbols, or spaces)
-                      if (newValue === '' || validateWordInput(newValue)) {
-                        // Check for duplicates in other options
-                        const currentOptions = pair.blankOptions || ['', '', '', ''];
-                        const isDuplicate = currentOptions.some((existingOption, index) => 
-                          index !== optionIndex && 
-                          existingOption.toLowerCase() === newValue.toLowerCase() && 
-                          existingOption.trim() !== ''
-                        );
+              {(pair.blankOptions || ['', '', '', '']).map((option, optionIndex) => {
+                // Check if this option is the correct answer from template
+                const isCorrectAnswer = (pair.correctAnswer || []).includes(option);
+                const isFromTemplate = pair.sourceTemplateId && isCorrectAnswer;
+                
+                return (
+                  <div key={optionIndex} className="word-recognition-option-item">
+                    <input
+                      type="text"
+                      value={option}
+                      onChange={(e) => {
+                        // Don't allow editing correct answers from templates
+                        if (isFromTemplate) return;
+                        
+                        const newValue = e.target.value;
+                        // Strict validation: only allow letters (no numbers, symbols, or spaces)
+                        if (newValue === '' || validateWordInput(newValue)) {
+                          // Check for duplicates in other options
+                          const currentOptions = pair.blankOptions || ['', '', '', ''];
+                          const isDuplicate = currentOptions.some((existingOption, index) => 
+                            index !== optionIndex && 
+                            existingOption.toLowerCase() === newValue.toLowerCase() && 
+                            existingOption.trim() !== ''
+                          );
 
-                        if (isDuplicate) {
-                          // Clear the field and show error for duplicate option
+                          if (isDuplicate) {
+                            // Clear the field and show error for duplicate option
+                            const newOptions = [...currentOptions];
+                            newOptions[optionIndex] = ''; // Clear the duplicate value
+                            
+                            updateQuestionChoicePair(pair.id, {
+                              blankOptions: newOptions,
+                              correctAnswer: pair.correctAnswer || []
+                            });
+                            
+                            // Show error for duplicate option
+                            setErrors(prev => ({
+                              ...prev,
+                              [`${pair.id}_option_${optionIndex}`]: 'This option already exists. Please enter a unique answer choice.'
+                            }));
+                            return;
+                          }
+
+                          const oldOption = option;
                           const newOptions = [...currentOptions];
-                          newOptions[optionIndex] = ''; // Clear the duplicate value
-                          
+                          newOptions[optionIndex] = newValue;
+
+                          // Update correct answers if this option was marked as correct
+                          let newCorrectAnswers = pair.correctAnswer || [];
+                          if (newCorrectAnswers.includes(oldOption)) {
+                            newCorrectAnswers = newCorrectAnswers.map(answer =>
+                              answer === oldOption ? newValue : answer
+                            ).filter(answer => answer !== ''); // Remove empty answers
+                          }
+
                           updateQuestionChoicePair(pair.id, {
                             blankOptions: newOptions,
-                            correctAnswer: pair.correctAnswer || []
+                            correctAnswer: newCorrectAnswers
                           });
-                          
-                          // Show error for duplicate option
+
+                          // Clear any validation errors for this field
+                          if (errors[`${pair.id}_option_${optionIndex}`]) {
+                            setErrors(prev => {
+                              const newErrors = { ...prev };
+                              delete newErrors[`${pair.id}_option_${optionIndex}`];
+                              return newErrors;
+                            });
+                          }
+                        } else {
+                          // Set validation error and prevent invalid input
                           setErrors(prev => ({
                             ...prev,
-                            [`${pair.id}_option_${optionIndex}`]: 'This option already exists. Please enter a unique answer choice.'
+                            [`${pair.id}_option_${optionIndex}`]: 'Only letters and spaces are allowed (no numbers or symbols)'
                           }));
-                          return;
-                        }
-
-                        const oldOption = option;
-                        const newOptions = [...currentOptions];
-                        newOptions[optionIndex] = newValue;
-
-                        // Update correct answers if this option was marked as correct
-                        let newCorrectAnswers = pair.correctAnswer || [];
-                        if (newCorrectAnswers.includes(oldOption)) {
-                          newCorrectAnswers = newCorrectAnswers.map(answer =>
-                            answer === oldOption ? newValue : answer
-                          ).filter(answer => answer !== ''); // Remove empty answers
-                        }
-
-                        updateQuestionChoicePair(pair.id, {
-                          blankOptions: newOptions,
-                          correctAnswer: newCorrectAnswers
-                        });
-
-                        // Clear any validation errors for this field
-                        if (errors[`${pair.id}_option_${optionIndex}`]) {
-                          setErrors(prev => {
-                            const newErrors = { ...prev };
-                            delete newErrors[`${pair.id}_option_${optionIndex}`];
-                            return newErrors;
-                          });
-                        }
-                      } else {
-                        // Set validation error and prevent invalid input
-                        setErrors(prev => ({
-                          ...prev,
-                          [`${pair.id}_option_${optionIndex}`]: 'Only letters and spaces are allowed (no numbers or symbols)'
-                        }));
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      // Allow letters and spaces, prevent numbers and symbols
-                      const char = e.key;
-                      const validPattern = /^[a-zA-ZÀ-ÿñÑ\s]$/;
-                      if (!validPattern.test(char) && char !== 'Backspace' && char !== 'Delete' && char !== 'Tab' && char !== 'ArrowLeft' && char !== 'ArrowRight' && char !== 'ArrowUp' && char !== 'ArrowDown' && char.length === 1) {
-                        e.preventDefault();
-                      }
-                    }}
-                    placeholder={`Option (letters and spaces allowed)`}
-                    disabled={false}
-                    className={errors[`${pair.id}_option_${optionIndex}`] ? 'literexia-error' : ''}
-                  />
-                  {errors[`${pair.id}_option_${optionIndex}`] && (
-                    <div className="literexia-error-message" style={{color: '#dc2626', fontSize: '11px', marginTop: '4px'}}>
-                      {errors[`${pair.id}_option_${optionIndex}`]}
-                    </div>
-                  )}
-                  <label className="word-recognition-correct-checkbox">
-                    <input
-                      type="radio"
-                      name={`correct-answer-${pair.id}`}
-                      checked={option !== '' && (pair.correctAnswer || []).includes(option)}
-                      onChange={(e) => {
-                        if (option === '') {
-                          setNotification({
-                            message: 'Please enter an option before marking it as correct',
-                            type: 'warning'
-                          });
-                          return;
-                        }
-
-                        if (e.target.checked) {
-                          // Word Recognition allows only ONE correct answer
-                          updateQuestionChoicePair(pair.id, { correctAnswer: [option] });
                         }
                       }}
-                      disabled={option === ''} // Disable only if option is empty
+                      onKeyDown={(e) => {
+                        // Don't allow editing correct answers from templates
+                        if (isFromTemplate) {
+                          e.preventDefault();
+                          return;
+                        }
+                        
+                        // Allow letters and spaces, prevent numbers and symbols
+                        const char = e.key;
+                        const validPattern = /^[a-zA-ZÀ-ÿñÑ\s]$/;
+                        if (!validPattern.test(char) && char !== 'Backspace' && char !== 'Delete' && char !== 'Tab' && char !== 'ArrowLeft' && char !== 'ArrowRight' && char !== 'ArrowUp' && char !== 'ArrowDown' && char.length === 1) {
+                          e.preventDefault();
+                        }
+                      }}
+                      placeholder={isFromTemplate ? "Correct answer from template" : "Option (letters and spaces allowed)"}
+                      disabled={isFromTemplate}
+                      className={`${errors[`${pair.id}_option_${optionIndex}`] ? 'literexia-error' : ''} ${isFromTemplate ? 'template-locked' : ''}`}
+                      style={{
+                        backgroundColor: isFromTemplate ? '#f3f4f6' : 'white',
+                        cursor: isFromTemplate ? 'not-allowed' : 'text'
+                      }}
                     />
-                    Correct Answer (select only one)
-                  </label>
-                </div>
-              ))}
+                    {errors[`${pair.id}_option_${optionIndex}`] && (
+                      <div className="literexia-error-message" style={{color: '#dc2626', fontSize: '11px', marginTop: '4px'}}>
+                        {errors[`${pair.id}_option_${optionIndex}`]}
+                      </div>
+                    )}
+                    <label className="word-recognition-correct-checkbox">
+                      <input
+                        type="radio"
+                        name={`correct-answer-${pair.id}`}
+                        checked={option !== '' && (pair.correctAnswer || []).includes(option)}
+                        onChange={(e) => {
+                          if (option === '') {
+                            setNotification({
+                              message: 'Please enter an option before marking it as correct',
+                              type: 'warning'
+                            });
+                            return;
+                          }
+
+                          if (e.target.checked) {
+                            // Word Recognition allows only ONE correct answer
+                            updateQuestionChoicePair(pair.id, { correctAnswer: [option] });
+                          }
+                        }}
+                        disabled={option === '' || pair.sourceTemplateId} // Disable if empty or using template
+                        style={{
+                          cursor: pair.sourceTemplateId ? 'not-allowed' : 'pointer'
+                        }}
+                      />
+                      <span style={{ 
+                        color: pair.sourceTemplateId ? '#6b7280' : 'inherit',
+                        fontStyle: pair.sourceTemplateId ? 'italic' : 'normal'
+                      }}>
+                        Correct Answer (select only one)
+                        {pair.sourceTemplateId && ' (from template)'}
+                      </span>
+                    </label>
+                  </div>
+                );
+              })}
             </div>
             {pair.sourceTemplateId ? (
               <small style={{color: '#92400e', fontSize: '11px', marginTop: '8px', display: 'block', fontWeight: '500'}}>
-                Answer options are controlled by the selected template
+                Template provides base options - you can add/remove options and edit incorrect answers. Correct answer selection is locked from template.
               </small>
             ) : (
               <small style={{color: '#92400e', fontSize: '11px', marginTop: '8px', display: 'block'}}>
