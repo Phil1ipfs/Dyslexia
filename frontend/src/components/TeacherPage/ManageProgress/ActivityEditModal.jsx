@@ -68,6 +68,95 @@ import {
 import api from '../../../services/Teachers/api';
 import { toast } from '../../../utils/toastHelper';
 
+// Local toast system for modal validation errors
+const createModalToast = (message, type = 'error') => {
+  const modal = document.querySelector('.literexia-activity-edit-modal');
+  if (!modal) return;
+
+  // Clear any existing toasts first
+  const existingContainer = modal.querySelector('.modal-toast-container');
+  if (existingContainer) {
+    existingContainer.remove();
+  }
+
+  // Create toast container
+  const toastContainer = document.createElement('div');
+  toastContainer.className = 'modal-toast-container';
+  toastContainer.style.cssText = `
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    pointer-events: none;
+  `;
+  modal.appendChild(toastContainer);
+
+  const toastId = 'modal-toast-' + Date.now();
+  const toast = document.createElement('div');
+
+  // Toast styling
+  const colors = {
+    success: { bg: '#10b981', border: '#059669' },
+    error: { bg: '#ef4444', border: '#dc2626' },
+    warning: { bg: '#f59e0b', border: '#d97706' },
+    info: { bg: '#3b82f6', border: '#2563eb' }
+  };
+
+  const color = colors[type] || colors.error;
+
+  toast.id = toastId;
+  toast.style.cssText = `
+    background: ${color.bg};
+    color: white;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    border-left: 4px solid ${color.border};
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    max-width: 350px;
+    word-wrap: break-word;
+    pointer-events: auto;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+    opacity: 0.95;
+    cursor: pointer;
+  `;
+
+  toast.textContent = message;
+
+  // Add click to dismiss
+  toast.onclick = () => {
+    toast.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 300);
+  };
+
+  toastContainer.appendChild(toast);
+
+  // Animate in
+  requestAnimationFrame(() => {
+    toast.style.transform = 'translateX(0)';
+  });
+
+  // Auto dismiss after 6 seconds
+  setTimeout(() => {
+    toast.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 300);
+  }, 6000);
+
+  return toastId;
+};
+
 import './css/ActivityEditModal.css';
 import './css/AlphabetKnowledgeActivityEdit.css';
 import './css/PhonologicalAwarenessActivityEdit.css';
@@ -129,6 +218,29 @@ const debounce = (func, delay) => {
 };
 
 const ActivityEditModal = ({ activity, onClose, onSave, student, category, analysis }) => {
+  // Cleanup function to remove modal toasts
+  const cleanupModalToasts = () => {
+    const modal = document.querySelector('.literexia-activity-edit-modal');
+    if (modal) {
+      const toastContainer = modal.querySelector('.modal-toast-container');
+      if (toastContainer) {
+        toastContainer.remove();
+      }
+    }
+  };
+
+  // Enhanced close function that cleans up toasts
+  const handleClose = () => {
+    cleanupModalToasts();
+    onClose();
+  };
+
+  // Cleanup toasts when component unmounts
+  React.useEffect(() => {
+    return () => {
+      cleanupModalToasts();
+    };
+  }, []);
   // ===== UTILITY FUNCTIONS (COMPONENT LEVEL) =====
 
   // Helper function to get a valid ObjectId for teacher implementation
@@ -2452,7 +2564,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         if (errors.title) errorMessages.push("Title is required");
         if (errors.description) errorMessages.push("Description is required");
         if (errors.sentenceTemplate) errorMessages.push("Please select a sentence template");
-        if (errors.pairs) errorMessages.push("Please fill in all required question fields");
+        // Note: errors.pairs, errors.questionValue, and errors.questionText are now handled by toast notifications in validation functions
         if (errors.questionValue) errorMessages.push("Question Value is required for all questions");
         if (errors.questionText) errorMessages.push("Question Text is required for all questions");
 
@@ -4475,7 +4587,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         });
 
         if (invalidAlphabetPairs.length > 0) {
-          errors.pairs = "All Alphabet Knowledge questions must have exactly 3 choices with one marked as correct";
+          const errorMessage = "All Alphabet Knowledge questions must have exactly 3 choices with one marked as correct";
+          createModalToast(errorMessage, 'error');
+          errors.pairs = errorMessage; // Keep for backward compatibility if needed
         }
 
         // Validate Question Value is required
@@ -4484,7 +4598,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         );
 
         if (missingQuestionValue.length > 0) {
-          errors.questionValue = "Question Value is required for all Alphabet Knowledge questions";
+          const errorMessage = "Question Value is required for all Alphabet Knowledge questions";
+          createModalToast(errorMessage, 'error');
+          errors.questionValue = errorMessage; // Keep for backward compatibility if needed
         }
 
         // Validate Question Text is required
@@ -4493,7 +4609,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         );
 
         if (missingAlphabetQuestionText.length > 0) {
-          errors.questionText = "Question Text is required for all Alphabet Knowledge questions";
+          const errorMessage = "Question Text is required for all Alphabet Knowledge questions";
+          createModalToast(errorMessage, 'error');
+          errors.questionText = errorMessage; // Keep for backward compatibility if needed
         }
         break;
 
@@ -4506,7 +4624,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         });
 
         if (missingAudioTexts.length > 0) {
-          errors.pairs = "All Phonological Awareness questions must have at least one audio text";
+          const errorMessage = "All Phonological Awareness questions must have at least one audio text";
+          createModalToast(errorMessage, 'error');
+          errors.pairs = errorMessage; // Keep for backward compatibility if needed
         }
 
         // Validate Question Text is required
@@ -4515,7 +4635,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         );
 
         if (missingPAQuestionText.length > 0) {
-          errors.questionText = "Question Text is required for all Phonological Awareness questions";
+          const errorMessage = "Question Text is required for all Phonological Awareness questions";
+          createModalToast(errorMessage, 'error');
+          errors.questionText = errorMessage; // Keep for backward compatibility if needed
         }
         break;
 
@@ -4529,7 +4651,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         });
 
         if (invalidDecodingPairs.length > 0) {
-          errors.pairs = "All Decoding questions must have either drag elements or at least 2 choices with one marked as correct";
+          const errorMessage = "All Decoding questions must have either drag elements or at least 2 choices with one marked as correct";
+          createModalToast(errorMessage, 'error');
+          errors.pairs = errorMessage; // Keep for backward compatibility if needed
         }
         break;
 
@@ -4570,17 +4694,22 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
         if (invalidWordRecognitionPairs.length > 0) {
           const firstInvalid = invalidWordRecognitionPairs[0];
+          let errorMessage = "";
           if (!firstInvalid.displayWord || firstInvalid.displayWord.trim() === '') {
-            errors.pairs = "All Word Recognition questions must have a sentence or display word";
+            errorMessage = "All Word Recognition questions must have a sentence or display word";
           } else if (!firstInvalid.blankOptions || firstInvalid.blankOptions.filter(opt => opt && opt.trim() !== '').length < 2) {
-            errors.pairs = "All Word Recognition questions must have at least 2 answer options";
+            errorMessage = "All Word Recognition questions must have at least 2 answer options";
           } else if (!firstInvalid.correctAnswer || firstInvalid.correctAnswer.length === 0) {
-            errors.pairs = "All Word Recognition questions must have at least one correct answer selected";
+            errorMessage = "All Word Recognition questions must have at least one correct answer selected";
           } else if (firstInvalid.questionSubType === 'sentence_completion' && (firstInvalid.blankPosition === null || firstInvalid.blankPosition === undefined)) {
-            errors.pairs = "All sentence completion questions must have a blank position selected (click on a word)";
+            errorMessage = "All sentence completion questions must have a blank position selected (click on a word)";
           } else {
-            errors.pairs = "All Word Recognition questions must be properly configured";
+            errorMessage = "All Word Recognition questions must be properly configured";
           }
+          
+          // Show modal toast notification instead of banner error
+          createModalToast(errorMessage, 'error');
+          errors.pairs = errorMessage; // Keep for backward compatibility if needed
         }
         break;
 
@@ -4596,7 +4725,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         );
 
         if (invalidDefaultPairs.length > 0) {
-          errors.pairs = `All ${category} questions must have exactly 2 choices with one marked as correct`;
+          const errorMessage = `All ${category} questions must have exactly 2 choices with one marked as correct`;
+          createModalToast(errorMessage, 'error');
+          errors.pairs = errorMessage; // Keep for backward compatibility if needed
         }
         break;
     }
@@ -5700,12 +5831,7 @@ const renderQuestionChoicesStepWithTemplates = () => {
         </p>
       </div>
 
-      {errors.pairs && (
-        <div className="literexia-error-banner">
-          <FaExclamationTriangle />
-          <p>{errors.pairs}</p>
-        </div>
-      )}
+      {/* Validation errors now shown as toast notifications instead of banners */}
 
       {safe(questionChoicePairs).map((pair, index) => (
         <div key={pair.id} className="literexia-question-pair">
@@ -5911,12 +6037,7 @@ const renderPhonologicalAwarenessStep = () => {
       </div>
 
 
-      {errors.pairs && (
-        <div className="literexia-error-banner">
-          <FaExclamationTriangle />
-          <p>{errors.pairs}</p>
-        </div>
-      )}
+      {/* Validation errors now shown as toast notifications instead of banners */}
 
       {/* Questions Section */}
       {safe(questionChoicePairs).map((pair, index) => (
@@ -6173,12 +6294,7 @@ const renderDecodingStep = () => {
         </div>
       </div>
 
-      {errors.pairs && (
-        <div className="literexia-error-banner">
-          <FaExclamationTriangle />
-          <p>{errors.pairs}</p>
-        </div>
-      )}
+      {/* Validation errors now shown as toast notifications instead of banners */}
 
       {/* Questions Section */}
       {safe(questionChoicePairs).map((pair, index) => (
@@ -7165,12 +7281,7 @@ const renderWordRecognitionStep = () => {
         </div>
       </div>
 
-      {errors.pairs && (
-        <div className="literexia-error-banner">
-          <FaExclamationTriangle />
-          <p>{errors.pairs}</p>
-        </div>
-      )}
+      {/* Validation errors now shown as toast notifications instead of banners */}
 
       {/* Questions Section */}
       {safe(questionChoicePairs).map((pair, index) => (
@@ -7311,7 +7422,7 @@ const renderWordRecognitionStep = () => {
                 <label>Sentence Image (Optional)</label>
                 <div className="word-recognition-image-upload">
                   {pair.questionImage ? (
-                    <div className="word-recognition-image-uploaded">
+                    <div className="word-recognition-image-preview">
                       <img
                         src={pair.questionImage}
                         alt="Sentence illustration"
@@ -7319,11 +7430,11 @@ const renderWordRecognitionStep = () => {
                       />
                       <button
                         type="button"
-                        className="word-recognition-remove-image"
+                        className="word-recognition-remove-image-btn"
                         onClick={() => updateQuestionChoicePair(pair.id, { questionImage: null })}
                         title="Remove image"
                       >
-                        <FaTimes /> Remove Image
+                        <FaTimes />
                       </button>
                     </div>
                   ) : (
@@ -7609,7 +7720,7 @@ const renderWordRecognitionStep = () => {
                         e.preventDefault();
                       }
                     }}
-                    placeholder={`Option ${optionIndex + 1} (letters only)`}
+                    placeholder={`Option (letters only)`}
                     disabled={false}
                     className={errors[`${pair.id}_option_${optionIndex}`] ? 'literexia-error' : ''}
                   />
@@ -7711,12 +7822,7 @@ const renderQuestionChoicesStep = () => {
                 </p>
               </div>
       
-      {errors.pairs && (
-        <div className="literexia-error-banner">
-          <FaExclamationTriangle />
-          <p>{errors.pairs}</p>
-        </div>
-      )}
+      {/* Validation errors now shown as toast notifications instead of banners */}
               
               {safe(questionChoicePairs).map((pair, index) => (
         <div key={pair.id} className="literexia-question-pair">
@@ -8564,7 +8670,7 @@ return (
            <FaUser /> {readingLevel}
          </div>
        </div>
-       <button className="literexia-close-button" onClick={onClose}>
+       <button className="literexia-close-button" onClick={handleClose}>
          <FaTimes />
        </button>
      </div>
@@ -8625,7 +8731,7 @@ return (
                 Back
               </button>
             ) : (
-             <button type="button" className="literexia-cancel-btn" onClick={onClose}>
+             <button type="button" className="literexia-cancel-btn" onClick={handleClose}>
                 Cancel
               </button>
             )}

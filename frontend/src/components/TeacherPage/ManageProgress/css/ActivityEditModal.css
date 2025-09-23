@@ -30,6 +30,16 @@
   border: 1px solid rgba(230, 232, 240, 0.8);
 }
 
+/* Modal toast container for validation errors */
+.modal-toast-container {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  pointer-events: none;
+  max-width: 350px;
+}
+
 @keyframes literexiaZoomIn {
   from {
     opacity: 0;

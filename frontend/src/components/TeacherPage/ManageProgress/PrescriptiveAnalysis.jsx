@@ -83,17 +83,14 @@ const extractCorrectAnswerForCategory = (question, category) => {
       break;
 
     case 'Decoding':
-      // Format: correctSequence array
+      // Show displaySequence with blanks to show the word structure
+      if (question?.displaySequence && Array.isArray(question.displaySequence)) {
+        // Show the display sequence with blanks (e.g., "_so" for "Oso")
+        return question.displaySequence.join('');
+      }
+      // Fallback: show correctSequence if displaySequence not available
       if (question?.correctSequence && Array.isArray(question.correctSequence)) {
         return question.correctSequence.join('-');
-      }
-      // Alternative format: displaySequence with fill-in-the-blank
-      if (question?.displaySequence && question?.blankPosition !== undefined) {
-        const sequence = [...question.displaySequence];
-        if (question.correctSequence && question.correctSequence[0]) {
-          sequence[question.blankPosition] = question.correctSequence[0];
-          return sequence.join('');
-        }
       }
       break;
 

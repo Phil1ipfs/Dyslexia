@@ -361,6 +361,9 @@
   border-radius: 6px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   border: 2px solid #e5e7eb;
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .word-recognition-remove-image {
@@ -381,6 +384,40 @@
 .word-recognition-remove-image:hover {
   background: #b91c1c;
   transform: scale(1.05);
+}
+
+/* Override for when used in image-uploaded context */
+.word-recognition-image-uploaded .word-recognition-remove-image {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #dc2626;
+  color: white;
+  border: 2px solid white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  padding: 0;
+  gap: 0;
+}
+
+.word-recognition-image-uploaded .word-recognition-remove-image:hover {
+  background: #b91c1c;
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.word-recognition-image-uploaded .word-recognition-remove-image:active {
+  transform: scale(0.95);
 }
 
 .word-recognition-upload-btn {
@@ -443,29 +480,39 @@
   position: relative;
   display: inline-block;
   border-radius: 4px;
-  overflow: hidden;
+  overflow: visible;
+  margin: 0 auto;
 }
 
 .word-recognition-remove-image-btn {
   position: absolute;
-  top: -6px;
-  right: -6px;
+  top: -8px;
+  right: -8px;
   background: #dc2626;
   color: white;
-  border: none;
+  border: 2px solid white;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  font-size: 10px;
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  font-weight: bold;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .word-recognition-remove-image-btn:hover {
   background: #b91c1c;
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.word-recognition-remove-image-btn:active {
+  transform: scale(0.95);
 }
 
 /* Compact Answer Options Grid */
