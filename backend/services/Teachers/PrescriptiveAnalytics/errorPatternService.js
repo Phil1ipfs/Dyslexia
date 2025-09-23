@@ -221,23 +221,23 @@ class ErrorPatternService {
    */
   analyzePhonologicalAwarenessErrors(responses) {
     const errorAnalysis = {};
-    
+
     const incorrectMatches = responses.filter(r => !r.isCorrect);
     const totalResponses = responses.length;
-    
+
     if (incorrectMatches.length > 0 && totalResponses > 0) {
       // Calculate average partial success rate for incorrect responses
       const partialSuccessRates = incorrectMatches
         .filter(r => r.totalMatches > 0)
         .map(r => r.correctMatches / r.totalMatches);
-      
-      const avgPartialSuccess = partialSuccessRates.length > 0 
-        ? partialSuccessRates.reduce((sum, rate) => sum + rate, 0) / partialSuccessRates.length 
+
+      const avgPartialSuccess = partialSuccessRates.length > 0
+        ? partialSuccessRates.reduce((sum, rate) => sum + rate, 0) / partialSuccessRates.length
         : 0;
-      
+
       // Determine error type based on partial success
       const errorType = avgPartialSuccess < 0.5 ? 'sound_discrimination' : 'sequencing';
-      
+
       errorAnalysis.matching_errors = {
         count: incorrectMatches.length,
         total: totalResponses,
@@ -263,11 +263,58 @@ class ErrorPatternService {
           'Phonological processing deficit - core difficulty with sound-symbol mapping' :
           'Sequential phonological processing challenge - working memory involved'
       };
-      
+
       // Additional analysis: identify specific confusion patterns
       this.identifyPhonologicalConfusions(incorrectMatches, errorAnalysis);
     }
-    
+
+    // Create comprehensive detailed error analysis array
+    const detailedErrorAnalysis = [];
+
+    // Add detailed analysis for each incorrect matching question
+    incorrectMatches.forEach(errorResponse => {
+      const partialSuccessRate = errorResponse.totalMatches > 0 ?
+        (errorResponse.correctMatches / errorResponse.totalMatches) * 100 : 0;
+
+      // Analyze specific confusion patterns within this response
+      const confusions = [];
+      if (errorResponse.response && Array.isArray(errorResponse.response)) {
+        errorResponse.response.forEach(pair => {
+          if (typeof pair === 'object') {
+            for (const [audio, selected] of Object.entries(pair)) {
+              if (audio !== selected) {
+                confusions.push(`${audio}→${selected}`);
+              }
+            }
+          }
+        });
+      }
+
+      detailedErrorAnalysis.push({
+        questionId: errorResponse.questionId,
+        errorType: 'phonological_matching_error',
+        specificError: `Sound-letter matching difficulty: ${errorResponse.correctMatches}/${errorResponse.totalMatches} correct`,
+        partialSuccessRate: Math.round(partialSuccessRate),
+        confusionPatterns: confusions,
+        cognitiveImplication: partialSuccessRate < 30 ?
+          'Severe phonological processing deficit requiring intensive intervention' :
+          partialSuccessRate < 60 ?
+          'Moderate phonological awareness challenges with focused intervention potential' :
+          'Mild phonological processing difficulty with good intervention prognosis',
+        workingMemoryLoad: errorResponse.totalMatches >= 4 ? 'High cognitive load' :
+                          errorResponse.totalMatches === 3 ? 'Moderate cognitive load' : 'Manageable cognitive load',
+        // Required fields for validation
+        errorPattern: confusions.length > 0 ?
+          `Sound discrimination confusions: ${confusions.join(', ')}` :
+          `Sequential phonological processing difficulty with ${errorResponse.totalMatches} sound sequences`,
+        interventionFocus: confusions.length > 0 ?
+          `Targeted sound discrimination practice for confused pairs: ${confusions.join(', ')}` :
+          `Sequential sound processing training with reduced cognitive load`
+      });
+    });
+
+    errorAnalysis.detailedErrorAnalysis = detailedErrorAnalysis;
+
     return errorAnalysis;
   }
 
@@ -397,24 +444,24 @@ class ErrorPatternService {
    */
   analyzeDecodingErrors(responses) {
     const errorAnalysis = {};
-    
+
     const incorrectDecoding = responses.filter(r => !r.isCorrect);
     const totalDecoding = responses.length;
-    
+
     if (incorrectDecoding.length > 0 && totalDecoding > 0) {
       // Analyze blank positions for fill-in-the-blank type questions
       const blankPositions = incorrectDecoding
         .filter(r => typeof r.blankPosition === 'number')
         .map(r => r.blankPosition);
-      
-      const mostErrorPosition = blankPositions.length > 0 
-        ? this.getMostFrequent(blankPositions) 
+
+      const mostErrorPosition = blankPositions.length > 0
+        ? this.getMostFrequent(blankPositions)
         : -1;
-      
+
       // Determine error type
       const highErrorRate = (incorrectDecoding.length / totalDecoding) > 0.5;
       const errorType = highErrorRate ? 'letter_sequence' : 'specific_pattern';
-      
+
       errorAnalysis.decoding_errors = {
         count: incorrectDecoding.length,
         total: totalDecoding,
@@ -423,11 +470,75 @@ class ErrorPatternService {
         most_error_position: mostErrorPosition,
         questionIds: incorrectDecoding.map(r => r.questionId)
       };
-      
+
       // Additional analysis: sequence error patterns
       this.analyzeSequenceErrors(incorrectDecoding, errorAnalysis);
     }
-    
+
+    // Create comprehensive detailed error analysis array
+    const detailedErrorAnalysis = [];
+
+    // Add detailed analysis for each incorrect decoding question
+    incorrectDecoding.forEach(errorResponse => {
+      // Work with actual data structure (may not have blankPosition)
+      const blankPosition = errorResponse.blankPosition || null;
+      const userResponse = Array.isArray(errorResponse.response) ? errorResponse.response : [errorResponse.response];
+
+      // Analyze response patterns without requiring blankPosition
+      const responseLength = userResponse.length;
+      const questionId = errorResponse.questionId || 'Unknown';
+
+      // Determine error pattern based on available data
+      let positionAnalysis = 'decoding_difficulty';
+      let sequenceAnalysis = 'pattern_error';
+
+      if (blankPosition !== null) {
+        // If blankPosition is available, use it
+        positionAnalysis = blankPosition === 0 ? 'initial_sound_difficulty' :
+                          blankPosition === 1 ? 'middle_sound_difficulty' :
+                          blankPosition >= 2 ? 'final_sound_difficulty' : 'whole_word_difficulty';
+      } else {
+        // If no blankPosition, analyze based on response patterns
+        positionAnalysis = responseLength === 1 ? 'single_letter_response' :
+                          responseLength <= 3 ? 'short_word_attempt' :
+                          responseLength <= 5 ? 'moderate_word_attempt' : 'long_word_attempt';
+      }
+
+      // Analyze sequence patterns
+      sequenceAnalysis = responseLength < 3 ? 'insufficient_letters' :
+                        responseLength > 7 ? 'excessive_letters' :
+                        'reasonable_attempt';
+
+      detailedErrorAnalysis.push({
+        questionId: errorResponse.questionId,
+        errorType: 'decoding_error',
+        specificError: `Decoding difficulty: responded with ${responseLength} letters "${userResponse.join('')}" for ${questionId}`,
+        blankPosition: blankPosition,
+        userResponse: userResponse,
+        responseLength: responseLength,
+        positionPattern: positionAnalysis,
+        sequencePattern: sequenceAnalysis,
+        cognitiveImplication: responseLength === 1 ?
+          'Single letter responses suggest sound isolation difficulty - needs blending practice' :
+          responseLength < 3 ?
+          'Short responses suggest difficulty with word completion or sound sequencing' :
+          'Response suggests partial decoding ability but needs refinement in sound-letter correspondence',
+        phonicsDemand: responseLength <= 3 ? 'Simple pattern' :
+                      responseLength <= 5 ? 'Complex pattern' : 'Multi-syllabic challenge',
+        decodingStrategy: responseLength === 1 ? 'letter-by-letter' :
+                         responseLength < 4 ? 'partial_blending' : 'whole_word_attempt',
+        // Required fields for validation
+        errorPattern: `Decoding ${positionAnalysis} with ${responseLength}-letter response: "${userResponse.join('')}"`,
+        interventionFocus: responseLength === 1 ?
+          'Sound blending and phoneme synthesis training' :
+          responseLength < 3 ?
+          'Word completion and sound sequence training' :
+          'Sound-letter correspondence refinement and decoding accuracy practice'
+      });
+    });
+
+    errorAnalysis.detailedErrorAnalysis = detailedErrorAnalysis;
+
     return errorAnalysis;
   }
 
@@ -470,23 +581,23 @@ class ErrorPatternService {
    */
   analyzeWordRecognitionErrors(responses) {
     const errorAnalysis = {};
-    
+
     const incorrectWR = responses.filter(r => !r.isCorrect);
     const totalWR = responses.length;
-    
+
     if (incorrectWR.length > 0 && totalWR > 0) {
       // Classify error types based on question text
-      const sentenceErrors = incorrectWR.filter(r => 
+      const sentenceErrors = incorrectWR.filter(r =>
         r.questionText && r.questionText.toLowerCase().includes('pangungusap')
       );
-      const rhymeErrors = incorrectWR.filter(r => 
+      const rhymeErrors = incorrectWR.filter(r =>
         r.questionText && r.questionText.toLowerCase().includes('kasing tunog')
       );
-      
-      const errorType = sentenceErrors.length > rhymeErrors.length 
-        ? 'context_clues' 
+
+      const errorType = sentenceErrors.length > rhymeErrors.length
+        ? 'context_clues'
         : 'phonological_awareness';
-      
+
       errorAnalysis.word_errors = {
         count: incorrectWR.length,
         total: totalWR,
@@ -497,7 +608,60 @@ class ErrorPatternService {
         questionIds: incorrectWR.map(r => r.questionId)
       };
     }
-    
+
+    // Create comprehensive detailed error analysis array
+    const detailedErrorAnalysis = [];
+
+    // Add detailed analysis for each incorrect word recognition question
+    incorrectWR.forEach(errorResponse => {
+      // Determine the type of word recognition task from questionId pattern
+      // Since questionText might not be available, use questionId patterns
+      const questionId = errorResponse.questionId || '';
+
+      // Analyze task type based on questionId or available data
+      const isSentenceCompletion = errorResponse.questionText &&
+        errorResponse.questionText.toLowerCase().includes('pangungusap');
+      const isRhyming = errorResponse.questionText &&
+        errorResponse.questionText.toLowerCase().includes('kasing tunog');
+
+      // If questionText not available, make reasonable assumptions based on data patterns
+      const taskType = isSentenceCompletion ? 'sentence_completion' :
+                      isRhyming ? 'rhyming_words' : 'word_identification';
+
+      const userResponse = Array.isArray(errorResponse.response) ?
+        errorResponse.response[0] : errorResponse.response;
+
+      detailedErrorAnalysis.push({
+        questionId: errorResponse.questionId,
+        errorType: 'word_recognition_error',
+        taskType: taskType,
+        specificError: `Word recognition difficulty: responded "${userResponse}" for question ${questionId}`,
+        userResponse: userResponse,
+        wordRecognitionContext: taskType,
+        cognitiveImplication: isSentenceCompletion ?
+          'Semantic processing and context integration weakness requiring comprehension support' :
+          isRhyming ?
+          'Phonological awareness and sound pattern recognition deficit' :
+          'Visual word recognition or orthographic processing difficulty - may need sight word practice',
+        linguisticDemand: isSentenceCompletion ?
+          'Requires syntactic and semantic processing integration' :
+          isRhyming ?
+          'Requires phonological pattern analysis and comparison' :
+          'Requires visual-orthographic word recognition and vocabulary knowledge',
+        processingType: isSentenceCompletion ? 'semantic_contextual' :
+                       isRhyming ? 'phonological_pattern' : 'visual_orthographic',
+        // Required fields for validation
+        errorPattern: `Word recognition error in ${taskType}: ${userResponse} (Question ${questionId})`,
+        interventionFocus: isSentenceCompletion ?
+          'Context clue training and sentence meaning comprehension strategies' :
+          isRhyming ?
+          'Phonological awareness training with rhyme and sound pattern practice' :
+          `Sight word recognition training and vocabulary development for words like "${userResponse}"`
+      });
+    });
+
+    errorAnalysis.detailedErrorAnalysis = detailedErrorAnalysis;
+
     return errorAnalysis;
   }
 
@@ -506,10 +670,10 @@ class ErrorPatternService {
    */
   analyzeReadingComprehensionErrors(responses) {
     const errorAnalysis = {};
-    
+
     const incorrectRC = responses.filter(r => !r.isCorrect);
     const totalRC = responses.length;
-    
+
     if (incorrectRC.length > 0 && totalRC > 0) {
       errorAnalysis.comprehension_errors = {
         count: incorrectRC.length,
@@ -518,13 +682,72 @@ class ErrorPatternService {
         error_type: 'literal_comprehension',
         questionIds: incorrectRC.map(r => r.questionId)
       };
-      
+
       // Additional analysis could include:
       // - Question type analysis (who, what, where, when, why)
       // - Passage complexity analysis
       // - Response pattern analysis
     }
-    
+
+    // Create comprehensive detailed error analysis array
+    const detailedErrorAnalysis = [];
+
+    // Add detailed analysis for each incorrect reading comprehension question
+    incorrectRC.forEach(errorResponse => {
+      // Analyze the all-or-nothing scoring pattern
+      const userResponses = Array.isArray(errorResponse.response) ?
+        errorResponse.response : [errorResponse.response];
+
+      // Determine comprehension level (literal, inferential, critical)
+      const questionText = errorResponse.questionText || '';
+      const comprehensionLevel = questionText.includes('Sino') || questionText.includes('Ano') || questionText.includes('Saan') ?
+        'literal' :
+        questionText.includes('Bakit') || questionText.includes('Paano') ?
+        'inferential' : 'literal';
+
+      // Analyze partial success pattern (for all-or-nothing questions)
+      const sentenceQuestionCount = userResponses.length;
+      const hasPartialSuccess = sentenceQuestionCount > 1; // Multiple sentence questions under one questionId
+
+      detailedErrorAnalysis.push({
+        questionId: errorResponse.questionId,
+        errorType: 'reading_comprehension_error',
+        comprehensionLevel: comprehensionLevel,
+        specificError: hasPartialSuccess ?
+          `All-or-nothing failure: ${sentenceQuestionCount} sentence questions, but not all correct` :
+          'Complete comprehension failure with single question',
+        userResponses: userResponses,
+        sentenceQuestionCount: sentenceQuestionCount,
+        allOrNothingScoring: true,
+        cognitiveImplication: comprehensionLevel === 'literal' ?
+          'Literal comprehension difficulty - struggles with finding stated facts in text' :
+          comprehensionLevel === 'inferential' ?
+          'Inferential comprehension weakness - difficulty connecting ideas and making logical conclusions' :
+          'Critical thinking and evaluation challenges with text analysis',
+        comprehensionStrategy: comprehensionLevel === 'literal' ?
+          'Needs explicit fact-finding strategies and text scanning techniques' :
+          comprehensionLevel === 'inferential' ?
+          'Requires inference training and logical reasoning development' :
+          'Benefits from critical thinking scaffolds and evaluation frameworks',
+        textComplexity: sentenceQuestionCount >= 3 ?
+          'High complexity - multiple concepts requiring integration' :
+          sentenceQuestionCount === 2 ?
+          'Moderate complexity - dual concept processing' :
+          'Low complexity - single concept focus',
+        // Required fields for validation
+        errorPattern: hasPartialSuccess ?
+          `Partial story comprehension with ${sentenceQuestionCount} sentence questions (all-or-nothing scoring)` :
+          `Complete comprehension failure with ${comprehensionLevel} level question`,
+        interventionFocus: comprehensionLevel === 'literal' ?
+          'Literal comprehension training with text scanning and fact identification' :
+          comprehensionLevel === 'inferential' ?
+          'Inferential comprehension development with logical reasoning practice' :
+          'Reading comprehension strategies with story analysis and critical thinking'
+      });
+    });
+
+    errorAnalysis.detailedErrorAnalysis = detailedErrorAnalysis;
+
     return errorAnalysis;
   }
 

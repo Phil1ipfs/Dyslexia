@@ -1104,19 +1104,23 @@ const PrescriptiveAnalysis = ({
     console.log('🔍 [DEBUG] Research prescriptions for', categoryName, ':', researchPrescriptions);
 
     // Extract detailed error analysis - individual letter/question level analysis
-    // It's nested in errorPatterns.[categoryName].detailedErrorAnalysis
+    // All categories now have comprehensive detailedErrorAnalysis from enhanced errorPatternService
     const categoryErrorPatterns = studentAnalysis.errorPatterns?.[categoryName] || studentAnalysis.errorPatterns?.[normalizedCategory];
-    
-    // For Phonological Awareness, use matching_errors data instead of detailedErrorAnalysis
-    let detailedErrorAnalysis = [];
-    if (categoryName === 'Phonological Awareness' && categoryErrorPatterns?.matching_errors) {
-      // Convert matching_errors to detailedErrorAnalysis format
+
+    // Use the comprehensive detailedErrorAnalysis for all categories (enhanced implementation)
+    let detailedErrorAnalysis = categoryErrorPatterns?.detailedErrorAnalysis || [];
+
+    // Legacy fallback: For older Phonological Awareness data that might not have detailedErrorAnalysis yet
+    if (categoryName === 'Phonological Awareness' &&
+        (!detailedErrorAnalysis || detailedErrorAnalysis.length === 0) &&
+        categoryErrorPatterns?.matching_errors) {
+      // Convert matching_errors to detailedErrorAnalysis format as fallback for legacy data
       const matchingErrors = categoryErrorPatterns.matching_errors;
       detailedErrorAnalysis = matchingErrors.confusionPairs?.map(pair => {
         // Handle different data structures for confusion pairs
         let soundsArray = [];
         let displayText = 'Unknown';
-        
+
         if (pair && typeof pair === 'object') {
           // Check if it's the new format with audio/match keys
           if (pair.audio && pair.match) {
@@ -1142,17 +1146,15 @@ const PrescriptiveAnalysis = ({
           soundsArray = [pair];
           displayText = pair;
         }
-        
+
         return {
           errorPattern: `Sound discrimination difficulty with ${displayText}`,
           specificPairs: soundsArray,
           interventionFocus: pair.interventionFocus || 'Focus on sound discrimination training',
           confusionRate: pair.confusionRate || pair.confusion_rate || pair.rate || 0,
-        errorType: 'sound_discrimination'
+          errorType: 'sound_discrimination'
         };
       }) || [];
-    } else {
-      detailedErrorAnalysis = categoryErrorPatterns?.detailedErrorAnalysis || [];
     }
 
     console.log('🔍 [DEBUG] Detailed error analysis extraction for', categoryName, ':');
@@ -2537,57 +2539,98 @@ const PrescriptiveAnalysis = ({
 
     console.log('🔍 [RENDER] Rendering detailed error analysis with data:', detailedErrorAnalysis);
 
-    // Transform database structure to match our display needs
+    // Transform database structure to match our display needs - enhanced for all categories
     const transformedErrors = detailedErrorAnalysis.map(error => {
-      // Extract letter/pattern from errorPattern (e.g., "Vowel recognition difficulty with E" -> "E", "Sound blending difficulty with CVC patterns" -> "CVC patterns")
-      const letterMatch = error.errorPattern?.match(/with (.+)$/);
-      let letter = letterMatch ? letterMatch[1] : null;
-      
-      // If no "with" pattern found, try to extract meaningful identifier from the error pattern
-      if (!letter) {
-        if (error.errorPattern?.includes('CVC')) {
-          letter = 'CVC patterns';
-        } else if (error.errorPattern?.includes('sound recognition')) {
-          letter = 'Sound recognition';
-        } else if (error.errorPattern?.includes('sound blending')) {
-          letter = 'Sound blending';
-        } else {
-          // Extract first meaningful word or phrase
-          const words = error.errorPattern?.split(' ').filter(word => 
-            word.length > 2 && 
-            !['difficulty', 'recognition', 'challenges', 'with'].includes(word.toLowerCase())
-          );
-          letter = words?.[0] || 'Pattern';
-        }
-      }
+      // Use the comprehensive error data from enhanced errorPatternService
+      let letter = null;
+      let letterType = 'other';
 
-      // Determine if it's vowel, consonant, or sound discrimination based on errorPattern
-      const isVowel = error.errorPattern?.toLowerCase().includes('vowel');
-      const isConsonant = error.errorPattern?.toLowerCase().includes('consonant');
-      const isSoundDiscrimination = error.errorPattern?.toLowerCase().includes('sound discrimination');
-      const isDecoding = error.errorPattern?.toLowerCase().includes('sound blending') || error.errorPattern?.toLowerCase().includes('cvc') || error.errorPattern?.toLowerCase().includes('sound recognition');
+      // Enhanced pattern extraction based on error type and category
+      switch (error.errorType) {
+        case 'alphabet_recognition_error':
+          // Alphabet Knowledge errors
+          letter = error.letter || error.interventionTarget || 'Letter';
+          letterType = error.letterType || (error.errorPattern?.toLowerCase().includes('vowel') ? 'vowel' : 'consonant');
+          break;
+
+        case 'phonological_matching_error':
+          // Phonological Awareness errors
+          if (error.confusionPatterns && error.confusionPatterns.length > 0) {
+            letter = error.confusionPatterns.join(', ');
+          } else {
+            letter = `${error.correctMatches || 0}/${error.totalMatches || 0} matches`;
+          }
+          letterType = 'sound';
+          break;
+
+        case 'decoding_error':
+          // Decoding errors
+          letter = error.positionPattern || error.sequencePattern || 'Decoding';
+          letterType = 'decoding';
+          break;
+
+        case 'word_recognition_error':
+          // Word Recognition errors
+          letter = error.taskType || 'Word Recognition';
+          letterType = error.taskType === 'sentence_completion' ? 'context' :
+                      error.taskType === 'rhyming_words' ? 'rhyming' : 'word';
+          break;
+
+        case 'reading_comprehension_error':
+          // Reading Comprehension errors
+          letter = error.comprehensionLevel || 'Comprehension';
+          letterType = 'comprehension';
+          break;
+
+        default:
+          // Fallback to legacy pattern extraction
+          const letterMatch = error.errorPattern?.match(/with (.+)$/);
+          letter = letterMatch ? letterMatch[1] : null;
+
+          if (!letter) {
+            if (error.errorPattern?.includes('CVC')) {
+              letter = 'CVC patterns';
+              letterType = 'decoding';
+            } else if (error.errorPattern?.includes('sound discrimination')) {
+              letter = 'Sound discrimination';
+              letterType = 'sound';
+            } else if (error.errorPattern?.includes('vowel')) {
+              letter = 'Vowel';
+              letterType = 'vowel';
+            } else if (error.errorPattern?.includes('consonant')) {
+              letter = 'Consonant';
+              letterType = 'consonant';
+            } else {
+              const words = error.errorPattern?.split(' ').filter(word =>
+                word.length > 2 &&
+                !['difficulty', 'recognition', 'challenges', 'with'].includes(word.toLowerCase())
+              );
+              letter = words?.[0] || 'Pattern';
+            }
+          }
+      }
 
       return {
         ...error,
         letter: letter,
-        letterType: isVowel ? 'vowel' : (isConsonant ? 'consonant' : (isSoundDiscrimination ? 'sound' : (isDecoding ? 'decoding' : 'other'))),
-        specificError: error.errorPattern,
-        cognitiveImplication: isVowel ?
-          'Visual-auditory vowel processing difficulty' :
-          (isConsonant ? 'Consonant-sound correspondence weakness' : 
-           (isSoundDiscrimination ? 'Auditory discrimination and working memory limitations' :
-            (isDecoding ? 'Sound blending and word recognition difficulties' : 'General processing difficulty'))),
-        questionId: `Pattern Analysis` // Since we don't have specific questionId in this structure
+        letterType: letterType,
+        specificError: error.specificError || error.errorPattern,
+        cognitiveImplication: error.cognitiveImplication || 'Processing difficulty requiring targeted intervention',
+        questionId: error.questionId || `${error.errorType}_pattern`
       };
     });
 
     console.log('🔍 [RENDER] Transformed errors:', transformedErrors);
 
-    // Group errors by letter type for better organization
+    // Group errors by letter type for better organization - enhanced for all categories
     const vowelErrors = transformedErrors.filter(error => error.letterType === 'vowel');
     const consonantErrors = transformedErrors.filter(error => error.letterType === 'consonant');
     const soundErrors = transformedErrors.filter(error => error.letterType === 'sound');
     const decodingErrors = transformedErrors.filter(error => error.letterType === 'decoding');
+    const contextErrors = transformedErrors.filter(error => error.letterType === 'context');
+    const rhymingErrors = transformedErrors.filter(error => error.letterType === 'rhyming');
+    const wordErrors = transformedErrors.filter(error => error.letterType === 'word');
+    const comprehensionErrors = transformedErrors.filter(error => error.letterType === 'comprehension');
     const otherErrors = transformedErrors.filter(error => error.letterType === 'other');
 
     return (
@@ -2746,6 +2789,186 @@ const PrescriptiveAnalysis = ({
                           {error.interventionFocus && (
                             <div className="epa-error-intervention">
                               <strong>Intervention Focus:</strong> {error.interventionFocus}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Sound Discrimination Errors Section */}
+              {soundErrors.length > 0 && (
+                <div className="epa-error-group">
+                  <div className="epa-error-group-header">
+                    <h5 className="epa-error-group-title">
+                      <span className="epa-error-type-badge epa-error-type-badge--sound">Sound Errors</span>
+                      Sound Discrimination Difficulties ({soundErrors.length} errors)
+                    </h5>
+                  </div>
+                  <div className="epa-error-items">
+                    {soundErrors.map((error, index) => (
+                      <div key={index} className="epa-error-item">
+                        <div className="epa-error-header">
+                          <span className="epa-error-letter-badge epa-error-letter-badge--sound">{error.letter}</span>
+                          <div className="epa-error-title">Sound Processing Issue</div>
+                        </div>
+                        <div className="epa-error-compact-details">
+                          <div className="epa-error-pattern-compact">
+                            <strong>Pattern:</strong> {error.specificError}
+                          </div>
+                          <div className="epa-error-intervention-compact">
+                            <strong>Focus:</strong> {error.interventionFocus}
+                          </div>
+                          {error.cognitiveImplication && (
+                            <div className="epa-error-cognitive-compact">
+                              <strong>Cognitive:</strong> {error.cognitiveImplication}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Context Clue Errors Section (Word Recognition) */}
+              {contextErrors.length > 0 && (
+                <div className="epa-error-group">
+                  <div className="epa-error-group-header">
+                    <h5 className="epa-error-group-title">
+                      <span className="epa-error-type-badge epa-error-type-badge--context">Context Errors</span>
+                      Context Clue Difficulties ({contextErrors.length} errors)
+                    </h5>
+                  </div>
+                  <div className="epa-error-items">
+                    {contextErrors.map((error, index) => (
+                      <div key={index} className="epa-error-item">
+                        <div className="epa-error-header">
+                          <span className="epa-error-letter-badge epa-error-letter-badge--context">{error.letter}</span>
+                          <div className="epa-error-title">Context Clue Processing Issue</div>
+                        </div>
+                        <div className="epa-error-compact-details">
+                          <div className="epa-error-pattern-compact">
+                            <strong>Pattern:</strong> {error.specificError}
+                          </div>
+                          <div className="epa-error-intervention-compact">
+                            <strong>Focus:</strong> {error.interventionFocus}
+                          </div>
+                          {error.cognitiveImplication && (
+                            <div className="epa-error-cognitive-compact">
+                              <strong>Cognitive:</strong> {error.cognitiveImplication}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Rhyming Errors Section (Word Recognition) */}
+              {rhymingErrors.length > 0 && (
+                <div className="epa-error-group">
+                  <div className="epa-error-group-header">
+                    <h5 className="epa-error-group-title">
+                      <span className="epa-error-type-badge epa-error-type-badge--rhyming">Rhyming Errors</span>
+                      Rhyming Pattern Difficulties ({rhymingErrors.length} errors)
+                    </h5>
+                  </div>
+                  <div className="epa-error-items">
+                    {rhymingErrors.map((error, index) => (
+                      <div key={index} className="epa-error-item">
+                        <div className="epa-error-header">
+                          <span className="epa-error-letter-badge epa-error-letter-badge--rhyming">{error.letter}</span>
+                          <div className="epa-error-title">Rhyming Pattern Issue</div>
+                        </div>
+                        <div className="epa-error-compact-details">
+                          <div className="epa-error-pattern-compact">
+                            <strong>Pattern:</strong> {error.specificError}
+                          </div>
+                          <div className="epa-error-intervention-compact">
+                            <strong>Focus:</strong> {error.interventionFocus}
+                          </div>
+                          {error.cognitiveImplication && (
+                            <div className="epa-error-cognitive-compact">
+                              <strong>Cognitive:</strong> {error.cognitiveImplication}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Word Recognition Errors Section */}
+              {wordErrors.length > 0 && (
+                <div className="epa-error-group">
+                  <div className="epa-error-group-header">
+                    <h5 className="epa-error-group-title">
+                      <span className="epa-error-type-badge epa-error-type-badge--word">Word Recognition Errors</span>
+                      Word Identification Difficulties ({wordErrors.length} errors)
+                    </h5>
+                  </div>
+                  <div className="epa-error-items">
+                    {wordErrors.map((error, index) => (
+                      <div key={index} className="epa-error-item">
+                        <div className="epa-error-header">
+                          <span className="epa-error-letter-badge epa-error-letter-badge--word">{error.letter}</span>
+                          <div className="epa-error-title">Word Recognition Issue</div>
+                        </div>
+                        <div className="epa-error-compact-details">
+                          <div className="epa-error-pattern-compact">
+                            <strong>Pattern:</strong> {error.specificError}
+                          </div>
+                          <div className="epa-error-intervention-compact">
+                            <strong>Focus:</strong> {error.interventionFocus}
+                          </div>
+                          {error.cognitiveImplication && (
+                            <div className="epa-error-cognitive-compact">
+                              <strong>Cognitive:</strong> {error.cognitiveImplication}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Reading Comprehension Errors Section */}
+              {comprehensionErrors.length > 0 && (
+                <div className="epa-error-group">
+                  <div className="epa-error-group-header">
+                    <h5 className="epa-error-group-title">
+                      <span className="epa-error-type-badge epa-error-type-badge--comprehension">Comprehension Errors</span>
+                      Reading Comprehension Difficulties ({comprehensionErrors.length} errors)
+                    </h5>
+                  </div>
+                  <div className="epa-error-items">
+                    {comprehensionErrors.map((error, index) => (
+                      <div key={index} className="epa-error-item">
+                        <div className="epa-error-header">
+                          <span className="epa-error-letter-badge epa-error-letter-badge--comprehension">{error.letter}</span>
+                          <div className="epa-error-title">Comprehension Processing Issue</div>
+                        </div>
+                        <div className="epa-error-compact-details">
+                          <div className="epa-error-pattern-compact">
+                            <strong>Pattern:</strong> {error.specificError}
+                          </div>
+                          <div className="epa-error-intervention-compact">
+                            <strong>Focus:</strong> {error.interventionFocus}
+                          </div>
+                          {error.cognitiveImplication && (
+                            <div className="epa-error-cognitive-compact">
+                              <strong>Cognitive:</strong> {error.cognitiveImplication}
+                            </div>
+                          )}
+                          {error.allOrNothingScoring && (
+                            <div className="epa-error-scoring-compact">
+                              <strong>Scoring:</strong> All-or-nothing method (requires complete accuracy)
                             </div>
                           )}
                         </div>
