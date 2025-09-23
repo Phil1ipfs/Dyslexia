@@ -5234,6 +5234,322 @@
   border: 1px solid #86efac;
 }
 
+/* ===== ENHANCED ERROR PATTERN ANALYSIS STYLES ===== */
+
+/* Main Error Pattern Analysis Container */
+.epa-container {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.epa-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.epa-icon {
+  font-size: 1.5rem;
+  opacity: 0.9;
+}
+
+.epa-summary {
+  flex: 1;
+}
+
+.epa-error-count {
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: block;
+}
+
+.epa-content {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Error Group Styles */
+.epa-error-group {
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.epa-error-group-header {
+  background: #f1f5f9;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.epa-error-group-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Error Type Badges */
+.epa-error-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.epa-error-type-badge--vowel {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+.epa-error-type-badge--consonant {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #3b82f6;
+}
+
+.epa-error-type-badge--sound {
+  background: #f3e8ff;
+  color: #7c3aed;
+  border: 1px solid #8b5cf6;
+}
+
+.epa-error-type-badge--context {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.epa-error-type-badge--rhyming {
+  background: #fdf2f8;
+  color: #be185d;
+  border: 1px solid #ec4899;
+}
+
+.epa-error-type-badge--word {
+  background: #fef7ff;
+  color: #a21caf;
+  border: 1px solid #c084fc;
+}
+
+.epa-error-type-badge--comprehension {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fb923c;
+}
+
+/* Error Items Container */
+.epa-error-items {
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Individual Error Item */
+.epa-error-item {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.epa-error-item:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.epa-error-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.epa-error-title {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+/* Error Letter Badges */
+.epa-error-letter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+}
+
+.epa-error-letter-badge--vowel {
+  background: #fef3c7;
+  color: #92400e;
+  border: 2px solid #f59e0b;
+}
+
+.epa-error-letter-badge--consonant {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 2px solid #3b82f6;
+}
+
+.epa-error-letter-badge--sound {
+  background: #f3e8ff;
+  color: #7c3aed;
+  border: 2px solid #8b5cf6;
+}
+
+.epa-error-letter-badge--context {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 2px solid #10b981;
+}
+
+.epa-error-letter-badge--rhyming {
+  background: #fdf2f8;
+  color: #be185d;
+  border: 2px solid #ec4899;
+}
+
+.epa-error-letter-badge--word {
+  background: #fef7ff;
+  color: #a21caf;
+  border: 2px solid #c084fc;
+}
+
+.epa-error-letter-badge--comprehension {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 2px solid #fb923c;
+}
+
+/* Compact Error Details */
+.epa-error-compact-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.epa-error-pattern-compact,
+.epa-error-intervention-compact,
+.epa-error-cognitive-compact,
+.epa-error-scoring-compact {
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.epa-error-pattern-compact strong,
+.epa-error-intervention-compact strong,
+.epa-error-cognitive-compact strong,
+.epa-error-scoring-compact strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+.epa-error-pattern-compact {
+  color: #4b5563;
+}
+
+.epa-error-intervention-compact {
+  color: #065f46;
+  background: #f0fdf4;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border-left: 3px solid #10b981;
+}
+
+.epa-error-cognitive-compact {
+  color: #7c2d12;
+  background: #fefbf2;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border-left: 3px solid #f59e0b;
+}
+
+.epa-error-scoring-compact {
+  color: #7c3aed;
+  background: #faf5ff;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border-left: 3px solid #8b5cf6;
+}
+
+/* Responsive Design for Error Pattern Analysis */
+@media (max-width: 768px) {
+  .epa-content {
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .epa-header {
+    padding: 1rem;
+  }
+  
+  .epa-error-items {
+    padding: 0.75rem 1rem;
+    gap: 0.75rem;
+  }
+  
+  .epa-error-item {
+    padding: 0.75rem;
+  }
+  
+  .epa-error-header {
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .epa-error-letter-badge {
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+  
+  .epa-error-compact-details {
+    gap: 0.375rem;
+  }
+  
+  .epa-error-intervention-compact,
+  .epa-error-cognitive-compact,
+  .epa-error-scoring-compact {
+    padding: 0.375rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .epa-error-group-title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .epa-error-type-badge {
+    font-size: 0.6875rem;
+    padding: 0.2rem 0.6rem;
+  }
+}
+
 /* Enhanced Intervention Responses Modal Styles */
 .literexia-response-modal {
   max-width: 900px;

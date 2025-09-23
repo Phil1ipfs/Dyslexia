@@ -2614,9 +2614,11 @@ const PrescriptiveAnalysis = ({
         ...error,
         letter: letter,
         letterType: letterType,
-        specificError: error.specificError || error.errorPattern,
+        specificError: error.specificError || error.errorPattern || 'Error pattern identified',
         cognitiveImplication: error.cognitiveImplication || 'Processing difficulty requiring targeted intervention',
-        questionId: error.questionId || `${error.errorType}_pattern`
+        questionId: error.questionId || error.letter || `${error.errorType || 'error'}_pattern`,
+        // Ensure we have a proper display name for the question
+        displayName: error.questionId || error.letter || 'Pattern Analysis'
       };
     });
 
@@ -2772,7 +2774,7 @@ const PrescriptiveAnalysis = ({
                         <div className="epa-error-details">
                           <div className="epa-error-primary">
                             <span className="epa-error-description">{error.specificError}</span>
-                            <span className="epa-error-question">Question: {error.questionId}</span>
+                            <span className="epa-error-question">Question: {error.displayName || error.questionId || error.letter || 'Pattern Analysis'}</span>
                           </div>
                           <div className="epa-error-secondary">
                             {error.errorPattern && (
@@ -2998,7 +3000,7 @@ const PrescriptiveAnalysis = ({
                         <div className="epa-error-details">
                           <div className="epa-error-primary">
                             <span className="epa-error-description">{error.specificError}</span>
-                            <span className="epa-error-question">Question: {error.questionId}</span>
+                            <span className="epa-error-question">Question: {error.displayName || error.questionId || error.letter || 'Pattern Analysis'}</span>
                           </div>
                           <div className="epa-error-secondary">
                             {error.errorPattern && (

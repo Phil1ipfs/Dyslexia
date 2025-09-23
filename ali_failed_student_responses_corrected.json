@@ -8,7 +8,7 @@
       "$oid": "61bcbfaae82d5718169f6bc6"
     },
     "questionId": "AK_001",
-    "category": "Alphabet Knowledge",
+    "category": "Alphabet Knowledge", 
     "response": [
       "2"
     ],
@@ -1115,18 +1115,88 @@
   },
   {
     "_id": {
+      "$oid": "68491110988139e71b308f49"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "69bba9b3e4c854c11d63162f"
+    },
+    "questionId": "WR_013",
+    "category": "Word Recognition",
+    "response": [
+      "MESA"
+    ],
+    "isCorrect": true,
+    "responseTime": 29.4,
+    "answeredAt": {
+      "$date": "2025-09-16T08:38:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-16T08:38:00.000Z"
+    },
+    "readingLevel": "At Grade Level"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b308f50"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "69bba9b3e4c854c11d63162f"
+    },
+    "questionId": "WR_014",
+    "category": "Word Recognition",
+    "response": [
+      "SUSI"
+    ],
+    "isCorrect": true,
+    "responseTime": 31.8,
+    "answeredAt": {
+      "$date": "2025-09-16T08:39:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-16T08:39:00.000Z"
+    },
+    "readingLevel": "At Grade Level"
+  },
+  {
+    "_id": {
+      "$oid": "68491110988139e71b308f51"
+    },
+    "studentId": 202522233,
+    "categoryId": {
+      "$oid": "69bba9b3e4c854c11d63162f"
+    },
+    "questionId": "WR_015",
+    "category": "Word Recognition",
+    "response": [
+      "SILYA"
+    ],
+    "isCorrect": true,
+    "responseTime": 27.6,
+    "answeredAt": {
+      "$date": "2025-09-16T08:40:00.000Z"
+    },
+    "createdAt": {
+      "$date": "2025-09-16T08:40:00.000Z"
+    },
+    "readingLevel": "At Grade Level"
+  },
+
+  {
+    "_id": {
       "$oid": "68491110988139e71b308f46"
     },
     "studentId": 202522233,
     "categoryId": {
       "$oid": "68be35c466224f27838e0a42"
-    },
+    }, 
     "questionId": "RC_001",
     "category": "Reading Comprehension",
     "response": [
-      "pedro",
-      "bahay",
-      "libro"
+      "pedro", 
+      "bahay",  
+      "libro" 
     ],
     "isCorrect": false,
     "responseTime": 67.8,
@@ -1138,6 +1208,8 @@
     },
     "readingLevel": "At Grade Level"
   },
+
+  
   {
     "_id": {
       "$oid": "68491110988139e71b308f47"
