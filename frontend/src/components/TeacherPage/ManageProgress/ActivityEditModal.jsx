@@ -7760,8 +7760,34 @@ const renderWordRecognitionStep = () => {
                       const newValue = e.target.value;
                       // Strict validation: only allow letters (no numbers, symbols, or spaces)
                       if (newValue === '' || validateWordInput(newValue)) {
+                        // Check for duplicates in other options
+                        const currentOptions = pair.blankOptions || ['', '', '', ''];
+                        const isDuplicate = currentOptions.some((existingOption, index) => 
+                          index !== optionIndex && 
+                          existingOption.toLowerCase() === newValue.toLowerCase() && 
+                          existingOption.trim() !== ''
+                        );
+
+                        if (isDuplicate) {
+                          // Clear the field and show error for duplicate option
+                          const newOptions = [...currentOptions];
+                          newOptions[optionIndex] = ''; // Clear the duplicate value
+                          
+                          updateQuestionChoicePair(pair.id, {
+                            blankOptions: newOptions,
+                            correctAnswer: pair.correctAnswer || []
+                          });
+                          
+                          // Show error for duplicate option
+                          setErrors(prev => ({
+                            ...prev,
+                            [`${pair.id}_option_${optionIndex}`]: 'This option already exists. Please enter a unique answer choice.'
+                          }));
+                          return;
+                        }
+
                         const oldOption = option;
-                        const newOptions = [...(pair.blankOptions || ['', '', '', ''])];
+                        const newOptions = [...currentOptions];
                         newOptions[optionIndex] = newValue;
 
                         // Update correct answers if this option was marked as correct
@@ -7789,19 +7815,19 @@ const renderWordRecognitionStep = () => {
                         // Set validation error and prevent invalid input
                         setErrors(prev => ({
                           ...prev,
-                          [`${pair.id}_option_${optionIndex}`]: 'Only letters are allowed (no numbers, symbols, or spaces)'
+                          [`${pair.id}_option_${optionIndex}`]: 'Only letters and spaces are allowed (no numbers or symbols)'
                         }));
                       }
                     }}
                     onKeyDown={(e) => {
-                      // Prevent typing numbers and symbols entirely
+                      // Allow letters and spaces, prevent numbers and symbols
                       const char = e.key;
-                      const validPattern = /^[a-zA-ZÀ-ÿñÑ]$/;
+                      const validPattern = /^[a-zA-ZÀ-ÿñÑ\s]$/;
                       if (!validPattern.test(char) && char !== 'Backspace' && char !== 'Delete' && char !== 'Tab' && char !== 'ArrowLeft' && char !== 'ArrowRight' && char !== 'ArrowUp' && char !== 'ArrowDown' && char.length === 1) {
                         e.preventDefault();
                       }
                     }}
-                    placeholder={`Option (letters only)`}
+                    placeholder={`Option (letters and spaces allowed)`}
                     disabled={false}
                     className={errors[`${pair.id}_option_${optionIndex}`] ? 'literexia-error' : ''}
                   />
@@ -7842,7 +7868,7 @@ const renderWordRecognitionStep = () => {
               </small>
             ) : (
               <small style={{color: '#92400e', fontSize: '11px', marginTop: '8px', display: 'block'}}>
-                Enter answer choices and mark which ones are correct. Min 2 options required.
+                Enter answer choices and mark which ones are correct. Min 2 options required. Each option must be unique.
               </small>
             )}
           </div>
