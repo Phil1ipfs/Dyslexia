@@ -4116,10 +4116,30 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       correctAnswer: template.correctAnswer
     });
 
-    // Determine question sub-type based on question text
-    const questionSubType = template.questionText && template.questionText.includes('kasing tunog')
-      ? 'sound_matching'
-      : 'sentence_completion';
+    // Determine question sub-type based on question text content
+    let questionSubType = 'sentence_completion'; // Default
+    
+    if (template.questionText) {
+      const questionText = template.questionText.toLowerCase();
+      
+      // Check for sound matching indicators
+      if (questionText.includes('kasing tunog') || 
+          questionText.includes('buoin') || 
+          questionText.includes('sound') ||
+          questionText.includes('match')) {
+        questionSubType = 'sound_matching';
+      }
+      // Check for sentence completion indicators
+      else if (questionText.includes('basahin') || 
+               questionText.includes('pangungusap') || 
+               questionText.includes('piliin') ||
+               questionText.includes('sentence') ||
+               questionText.includes('complete')) {
+        questionSubType = 'sentence_completion';
+      }
+    }
+    
+    console.log(`[WORD RECOGNITION TEMPLATE] Detected question type: ${questionSubType} from text: "${template.questionText}"`);
 
     // For sentence completion, tokenize the displayWord
     let sentenceTokens = [];
@@ -4152,11 +4172,13 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       blankPosition = null;
     }
 
-    // Apply template data to the question pair
+    // Apply template data to the question pair based on detected type
     const templateData = {
       sourceTemplateId: template._id,
       sourceType: 'template',
-      questionText: template.questionText || 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.',
+      questionText: template.questionText || (questionSubType === 'sound_matching' 
+        ? 'Anong kasing tunog ng salitang nakikita?' 
+        : 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.'),
       questionSubType: questionSubType,
       displayWord: template.displayWord || '',
       blankOptions: template.blankOptions || ['', '', '', ''],
@@ -4166,7 +4188,38 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       questionImage: template.questionImage || null
     };
 
+    // Type-specific field population
+    if (questionSubType === 'sentence_completion') {
+      // Ensure sentence completion has proper structure
+      templateData.questionText = template.questionText || 'Basahin ang pangungusap. Piliin ang tamang salita mula sa hanay.';
+      templateData.blankPosition = blankPosition;
+      templateData.sentenceTokens = sentenceTokens;
+      
+      console.log(`[WORD RECOGNITION TEMPLATE] Sentence completion populated:`, {
+        displayWord: templateData.displayWord,
+        blankPosition: templateData.blankPosition,
+        sentenceTokens: templateData.sentenceTokens,
+        blankOptions: templateData.blankOptions,
+        correctAnswer: templateData.correctAnswer
+      });
+    } else if (questionSubType === 'sound_matching') {
+      // Ensure sound matching has proper structure
+      templateData.questionText = template.questionText || 'Anong kasing tunog ng salitang nakikita?';
+      templateData.blankPosition = null; // No blank position for sound matching
+      templateData.sentenceTokens = []; // No sentence tokens for sound matching
+      
+      console.log(`[WORD RECOGNITION TEMPLATE] Sound matching populated:`, {
+        displayWord: templateData.displayWord,
+        blankOptions: templateData.blankOptions,
+        correctAnswer: templateData.correctAnswer,
+        questionImage: templateData.questionImage
+      });
+    }
+
     updateQuestionChoicePair(pairId, templateData);
+
+    // Show success notification
+    createModalToast(`Template applied: ${questionSubType === 'sound_matching' ? 'Sound Matching' : 'Sentence Completion'}`, 'success');
 
     // Success notification
     const notificationTimeout = setTimeout(() => {
@@ -7315,12 +7368,34 @@ const renderWordRecognitionStep = () => {
                     return true;
                   })
                   .map((template) => {
-                    // Create descriptive display text
+                    // Create descriptive display text based on question type
                     let displayText = '';
-                    if (template.questionText && template.questionText.includes('kasing tunog')) {
+                    let questionType = 'sentence_completion'; // Default
+                    
+                    if (template.questionText) {
+                      const questionText = template.questionText.toLowerCase();
+                      
+                      // Check for sound matching indicators
+                      if (questionText.includes('kasing tunog') || 
+                          questionText.includes('buoin') || 
+                          questionText.includes('sound') ||
+                          questionText.includes('match')) {
+                        questionType = 'sound_matching';
+                      }
+                      // Check for sentence completion indicators
+                      else if (questionText.includes('basahin') || 
+                               questionText.includes('pangungusap') || 
+                               questionText.includes('piliin') ||
+                               questionText.includes('sentence') ||
+                               questionText.includes('complete')) {
+                        questionType = 'sentence_completion';
+                      }
+                    }
+                    
+                    if (questionType === 'sound_matching') {
                       displayText = `Sound Matching: ${template.displayWord || 'Untitled'}`;
                     } else {
-                      displayText = `Sentence: ${template.displayWord || 'Untitled'}`;
+                      displayText = `Sentence Completion: ${template.displayWord || 'Untitled'}`;
                     }
 
                     return (
