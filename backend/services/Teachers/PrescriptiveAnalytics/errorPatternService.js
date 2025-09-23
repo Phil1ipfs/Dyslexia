@@ -674,81 +674,177 @@ class ErrorPatternService {
     const incorrectRC = responses.filter(r => !r.isCorrect);
     const totalRC = responses.length;
 
-    if (incorrectRC.length > 0 && totalRC > 0) {
+    console.log(`[RC ERROR ANALYSIS] Processing ${totalRC} Reading Comprehension responses, ${incorrectRC.length} incorrect`);
+
+    if (totalRC > 0) {
+      // Enhanced comprehension error analysis
       errorAnalysis.comprehension_errors = {
         count: incorrectRC.length,
         total: totalRC,
         percentage: Math.round((incorrectRC.length / totalRC) * 100),
-        error_type: 'literal_comprehension',
-        questionIds: incorrectRC.map(r => r.questionId)
+        error_type: 'reading_comprehension_deficit',
+        scoring_methodology: 'all_or_nothing',
+        scoring_rule: 'Each questionId requires ALL sentence questions correct - no partial credit',
+        questionIds: responses.map(r => r.questionId),
+        failed_questionIds: incorrectRC.map(r => r.questionId),
+        passed_questionIds: responses.filter(r => r.isCorrect).map(r => r.questionId),
+        
+        // Sentence-level analysis
+        total_sentence_questions: responses.reduce((sum, r) => sum + (Array.isArray(r.response) ? r.response.length : 1), 0),
+        total_correct_sentences: responses.filter(r => r.isCorrect).reduce((sum, r) => sum + (Array.isArray(r.response) ? r.response.length : 1), 0),
+        
+        // Diagnostic insights
+        literal_comprehension: {
+          errors: incorrectRC.length,
+          description: 'Difficulty finding stated facts in story context'
+        },
+        all_or_nothing_failures: incorrectRC.length,
+        partial_understanding: responses.filter(r => !r.isCorrect && Array.isArray(r.response) && r.response.length > 1).length
       };
 
-      // Additional analysis could include:
-      // - Question type analysis (who, what, where, when, why)
-      // - Passage complexity analysis
-      // - Response pattern analysis
+      console.log(`[RC ERROR ANALYSIS] Generated comprehension_errors:`, errorAnalysis.comprehension_errors);
     }
 
     // Create comprehensive detailed error analysis array
     const detailedErrorAnalysis = [];
 
-    // Add detailed analysis for each incorrect reading comprehension question
-    incorrectRC.forEach(errorResponse => {
-      // Analyze the all-or-nothing scoring pattern
-      const userResponses = Array.isArray(errorResponse.response) ?
-        errorResponse.response : [errorResponse.response];
+    // Add detailed analysis for each reading comprehension question (both correct and incorrect)
+    responses.forEach(response => {
+      const userResponses = Array.isArray(response.response) ?
+        response.response : [response.response];
 
-      // Determine comprehension level (literal, inferential, critical)
-      const questionText = errorResponse.questionText || '';
-      const comprehensionLevel = questionText.includes('Sino') || questionText.includes('Ano') || questionText.includes('Saan') ?
-        'literal' :
-        questionText.includes('Bakit') || questionText.includes('Paano') ?
-        'inferential' : 'literal';
+      // Determine comprehension level based on question patterns
+      const questionText = response.questionText || '';
+      const comprehensionLevel = this.determineComprehensionLevel(questionText);
 
-      // Analyze partial success pattern (for all-or-nothing questions)
+      // Analyze sentence question structure
       const sentenceQuestionCount = userResponses.length;
-      const hasPartialSuccess = sentenceQuestionCount > 1; // Multiple sentence questions under one questionId
+      const isCorrect = response.isCorrect;
 
-      detailedErrorAnalysis.push({
-        questionId: errorResponse.questionId,
+      // Create detailed error analysis entry
+      const errorEntry = {
+        questionId: response.questionId,
         errorType: 'reading_comprehension_error',
         comprehensionLevel: comprehensionLevel,
-        specificError: hasPartialSuccess ?
-          `All-or-nothing failure: ${sentenceQuestionCount} sentence questions, but not all correct` :
-          'Complete comprehension failure with single question',
-        userResponses: userResponses,
         sentenceQuestionCount: sentenceQuestionCount,
         allOrNothingScoring: true,
-        cognitiveImplication: comprehensionLevel === 'literal' ?
-          'Literal comprehension difficulty - struggles with finding stated facts in text' :
-          comprehensionLevel === 'inferential' ?
-          'Inferential comprehension weakness - difficulty connecting ideas and making logical conclusions' :
-          'Critical thinking and evaluation challenges with text analysis',
-        comprehensionStrategy: comprehensionLevel === 'literal' ?
-          'Needs explicit fact-finding strategies and text scanning techniques' :
-          comprehensionLevel === 'inferential' ?
-          'Requires inference training and logical reasoning development' :
-          'Benefits from critical thinking scaffolds and evaluation frameworks',
-        textComplexity: sentenceQuestionCount >= 3 ?
-          'High complexity - multiple concepts requiring integration' :
-          sentenceQuestionCount === 2 ?
-          'Moderate complexity - dual concept processing' :
-          'Low complexity - single concept focus',
+        isCorrect: isCorrect,
+        userResponses: userResponses,
+        
+        // Cognitive analysis
+        cognitiveImplication: this.getCognitiveImplication(comprehensionLevel, isCorrect),
+        comprehensionStrategy: this.getComprehensionStrategy(comprehensionLevel),
+        textComplexity: this.assessTextComplexity(sentenceQuestionCount),
+        
         // Required fields for validation
-        errorPattern: hasPartialSuccess ?
-          `Partial story comprehension with ${sentenceQuestionCount} sentence questions (all-or-nothing scoring)` :
-          `Complete comprehension failure with ${comprehensionLevel} level question`,
-        interventionFocus: comprehensionLevel === 'literal' ?
-          'Literal comprehension training with text scanning and fact identification' :
-          comprehensionLevel === 'inferential' ?
-          'Inferential comprehension development with logical reasoning practice' :
-          'Reading comprehension strategies with story analysis and critical thinking'
-      });
+        errorPattern: isCorrect ? 
+          `Successful ${comprehensionLevel} comprehension with ${sentenceQuestionCount} sentence questions` :
+          `Partial story comprehension with ${sentenceQuestionCount} sentence questions (all-or-nothing scoring)`,
+        interventionFocus: isCorrect ?
+          'Maintain current comprehension strategies' :
+          this.getInterventionFocus(comprehensionLevel)
+      };
+
+      detailedErrorAnalysis.push(errorEntry);
     });
 
     errorAnalysis.detailedErrorAnalysis = detailedErrorAnalysis;
 
+    console.log(`[RC ERROR ANALYSIS] Generated ${detailedErrorAnalysis.length} detailed error analyses`);
+
     return errorAnalysis;
+  }
+
+  /**
+   * Determine comprehension level from question text
+   */
+  determineComprehensionLevel(questionText) {
+    if (!questionText) return 'literal';
+    
+    const text = questionText.toLowerCase();
+    
+    // Literal comprehension indicators
+    if (text.includes('sino') || text.includes('ano') || text.includes('saan') || 
+        text.includes('kailan') || text.includes('alin')) {
+      return 'literal';
+    }
+    
+    // Inferential comprehension indicators
+    if (text.includes('bakit') || text.includes('paano') || text.includes('kung')) {
+      return 'inferential';
+    }
+    
+    // Critical thinking indicators
+    if (text.includes('sa palagay') || text.includes('tingin') || text.includes('opinyon')) {
+      return 'critical';
+    }
+    
+    return 'literal'; // Default to literal
+  }
+
+  /**
+   * Get cognitive implication based on comprehension level and correctness
+   */
+  getCognitiveImplication(comprehensionLevel, isCorrect) {
+    if (isCorrect) {
+      return `${comprehensionLevel} comprehension strength - demonstrates solid understanding`;
+    }
+    
+    switch (comprehensionLevel) {
+      case 'literal':
+        return 'Literal comprehension difficulty - struggles with finding stated facts in text';
+      case 'inferential':
+        return 'Inferential comprehension weakness - difficulty connecting ideas and making logical conclusions';
+      case 'critical':
+        return 'Critical thinking and evaluation challenges with text analysis';
+      default:
+        return 'General comprehension processing difficulty';
+    }
+  }
+
+  /**
+   * Get comprehension strategy recommendation
+   */
+  getComprehensionStrategy(comprehensionLevel) {
+    switch (comprehensionLevel) {
+      case 'literal':
+        return 'Needs explicit fact-finding strategies and text scanning techniques';
+      case 'inferential':
+        return 'Requires inference training and logical reasoning development';
+      case 'critical':
+        return 'Benefits from critical thinking scaffolds and evaluation frameworks';
+      default:
+        return 'General reading comprehension strategy development';
+    }
+  }
+
+  /**
+   * Assess text complexity based on sentence question count
+   */
+  assessTextComplexity(sentenceQuestionCount) {
+    if (sentenceQuestionCount >= 3) {
+      return 'High complexity - multiple concepts requiring integration';
+    } else if (sentenceQuestionCount === 2) {
+      return 'Moderate complexity - dual concept processing';
+    } else {
+      return 'Low complexity - single concept focus';
+    }
+  }
+
+  /**
+   * Get intervention focus based on comprehension level
+   */
+  getInterventionFocus(comprehensionLevel) {
+    switch (comprehensionLevel) {
+      case 'literal':
+        return 'Literal comprehension training with text scanning and fact identification';
+      case 'inferential':
+        return 'Inferential comprehension development with logical reasoning practice';
+      case 'critical':
+        return 'Reading comprehension strategies with story analysis and critical thinking';
+      default:
+        return 'Comprehensive reading comprehension strategy development';
+    }
   }
 
   /**

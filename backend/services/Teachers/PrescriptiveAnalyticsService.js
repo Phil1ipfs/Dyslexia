@@ -82,8 +82,8 @@ class PrescriptiveAnalyticsService {
       // Estimate abilities using IRT
       const abilityEstimates = this.estimateStudentAbilities(responses, readingLevel);
 
-      // Analyze error patterns
-      const errorPatterns = await errorPatternService.analyzeErrorPatterns(studentId);
+      // Analyze error patterns - pass categoryResultId to properly link responses
+      const errorPatterns = await errorPatternService.analyzeErrorPatterns(studentId, categoryResultId);
 
       // Generate intervention plan based on failed categories
       const interventionPlan = this.generateInterventionPlan(
@@ -246,6 +246,41 @@ class PrescriptiveAnalyticsService {
           status: this.determineSkillStatus(score), // ✅ FIXED: Add proper status based on score
           responseHistory: bktResult.responseHistory
         };
+      } else if (category === 'Reading Comprehension') {
+        // Special handling for Reading Comprehension - all-or-nothing scoring
+        correctCount = categoryResponses.filter(r => r.isCorrect).length;
+        totalCount = categoryResponses.length;
+        score = Math.round((correctCount / totalCount) * 100);
+        
+        // Calculate sentence-level statistics for Reading Comprehension
+        const totalSentenceQuestions = categoryResponses.reduce((sum, r) => {
+          // Count sentence questions from response array length
+          return sum + (Array.isArray(r.response) ? r.response.length : 1);
+        }, 0);
+        
+        const correctSentenceQuestions = categoryResponses.reduce((sum, r) => {
+          if (r.isCorrect) {
+            // If question is correct, all sentence questions are correct
+            return sum + (Array.isArray(r.response) ? r.response.length : 1);
+          }
+          return sum;
+        }, 0);
+        
+        // ✅ FIXED: Ensure BKT mastery probability aligns with actual performance
+        const adjustedMasteryProbability = this.calculateRealisticMasteryProbability(score, bktResult.finalMastery);
+
+        skillMastery[category] = {
+          masteryProbability: adjustedMasteryProbability,
+          lastUpdated: new Date(),
+          totalQuestions: totalCount,
+          correctAnswers: correctCount,
+          totalSentenceQuestions: totalSentenceQuestions,
+          correctSentenceQuestions: correctSentenceQuestions,
+          score,
+          isPassed: score >= 75,
+          status: this.determineSkillStatus(score),
+          responseHistory: bktResult.responseHistory
+        };
       } else {
         // Standard handling for other categories
         correctCount = categoryResponses.filter(r => r.isCorrect).length;
@@ -318,12 +353,57 @@ class PrescriptiveAnalyticsService {
    * @returns {Object} Intervention plan
    */
   generateInterventionPlan(skillMastery, errorPatterns, categoryResults) {
-    // Identify categories that need intervention (score < 75%)
+    // FIXED: Check intervention completion status from category_results
     const failedCategories = [];
     const specificFocus = {};
 
+    // Get category completion status from category_results (the source of truth)
+    const categoryCompletionStatus = {};
+    if (categoryResults && Array.isArray(categoryResults)) {
+      categoryResults.forEach(categoryData => {
+        const categoryName = categoryData.categoryName;
+        const mainScore = categoryData.score || 0;
+        const isPassed = categoryData.isPassed === true;
+        const interventionCompleted = categoryData.interventionCompleted === true;
+        const interventionHistory = categoryData.interventionHistory || [];
+
+        // Check if category is ACTUALLY passed (main assessment OR successful intervention)
+        const isActuallyCompleted = isPassed || (interventionCompleted && interventionHistory.some(h => h.isPassed === true));
+
+        categoryCompletionStatus[categoryName] = {
+          mainScore: mainScore,
+          isPassed: isPassed,
+          interventionCompleted: interventionCompleted,
+          isActuallyCompleted: isActuallyCompleted,
+          lastInterventionScore: interventionHistory.length > 0 ?
+            interventionHistory[interventionHistory.length - 1].score : null,
+          interventionHistory: interventionHistory
+        };
+
+        console.log(`[PRESCRIPTIVE] ${categoryName} status: main=${mainScore}%, passed=${isPassed}, interventionCompleted=${interventionCompleted}, actuallyCompleted=${isActuallyCompleted}`);
+      });
+    }
+
+    // CORRECTED LOGIC: Only include categories that are NOT actually completed
     Object.entries(skillMastery).forEach(([category, data]) => {
-      if (data.score < 75) {
+      const completionStatus = categoryCompletionStatus[category];
+
+      if (completionStatus) {
+        // Use actual completion status instead of just main assessment score
+        if (!completionStatus.isActuallyCompleted) {
+          console.log(`[PRESCRIPTIVE] Adding ${category} to intervention plan - not completed`);
+          failedCategories.push({
+            category,
+            score: data.score,
+            masteryProbability: data.masteryProbability,
+            actualStatus: completionStatus
+          });
+        } else {
+          console.log(`[PRESCRIPTIVE] Skipping ${category} - already completed via ${completionStatus.isPassed ? 'main assessment' : 'intervention'}`);
+        }
+      } else if (data.score < 75) {
+        // Fallback to original logic if no category results data
+        console.log(`[PRESCRIPTIVE] Adding ${category} to intervention plan - score below 75%`);
         failedCategories.push({
           category,
           score: data.score,
@@ -333,6 +413,7 @@ class PrescriptiveAnalyticsService {
     });
 
     if (failedCategories.length === 0) {
+      console.log(`[PRESCRIPTIVE] No intervention required - all categories completed`);
       return {
         required: false,
         priority: [],
@@ -390,29 +471,79 @@ class PrescriptiveAnalyticsService {
     let passedCategories = 0;
     let failedCategories = 0;
 
-    // Analyze each category
+    // FIXED: Check intervention completion status from category_results
+    const categoryCompletionStatus = {};
+    if (categoryResults && Array.isArray(categoryResults)) {
+      categoryResults.forEach(categoryData => {
+        const categoryName = categoryData.categoryName;
+        const mainScore = categoryData.score || 0;
+        const isPassed = categoryData.isPassed === true;
+        const interventionCompleted = categoryData.interventionCompleted === true;
+        const interventionHistory = categoryData.interventionHistory || [];
+
+        // Check if category is ACTUALLY completed (main assessment OR successful intervention)
+        const isActuallyCompleted = isPassed || (interventionCompleted && interventionHistory.some(h => h.isPassed === true));
+        const finalScore = isActuallyCompleted && interventionHistory.length > 0 ?
+          Math.max(mainScore, interventionHistory[interventionHistory.length - 1].score || 0) : mainScore;
+
+        categoryCompletionStatus[categoryName] = {
+          isActuallyCompleted: isActuallyCompleted,
+          finalScore: finalScore,
+          completionMethod: isPassed ? 'main_assessment' : (isActuallyCompleted ? 'intervention' : 'incomplete')
+        };
+
+        console.log(`[INSIGHTS] ${categoryName}: completed=${isActuallyCompleted}, method=${categoryCompletionStatus[categoryName].completionMethod}, finalScore=${finalScore}%`);
+      });
+    }
+
+    // CORRECTED: Analyze each category using actual completion status
     Object.entries(skillMastery).forEach(([category, data]) => {
-      const score = data.score || 0;
-      
-      if (score >= 85) {
-        strengths.push(category);
-      }
-      
-      if (score >= 75) {
-        passedCategories++;
+      const completionStatus = categoryCompletionStatus[category];
+
+      if (completionStatus) {
+        if (completionStatus.isActuallyCompleted) {
+          // Category is completed - add to strengths
+          const completionMethod = completionStatus.completionMethod === 'main_assessment' ?
+            `Main assessment (${completionStatus.finalScore}%)` :
+            `Intervention completed (${completionStatus.finalScore}%)`;
+          strengths.push(`${category} - ${completionMethod}`);
+          passedCategories++;
+          console.log(`[INSIGHTS] ✅ ${category} counted as PASSED (${completionMethod})`);
+        } else {
+          // Category still needs work
+          failedCategories++;
+          weaknesses.push(`${category} - ${completionStatus.finalScore}% (needs intervention)`);
+          console.log(`[INSIGHTS] ❌ ${category} counted as FAILED (needs intervention)`);
+        }
       } else {
-        failedCategories++;
-        weaknesses.push(`${category} - ${score}%`);
+        // Fallback to original logic if no category results data
+        const score = data.score || 0;
+        if (score >= 75) {
+          passedCategories++;
+          strengths.push(`${category} - ${score}%`);
+        } else {
+          failedCategories++;
+          weaknesses.push(`${category} - ${score}%`);
+        }
       }
     });
 
-    // Calculate weighted overall score
+    // FIXED: Calculate weighted overall score using actual completion scores
     const categoryScores = {};
     Object.entries(skillMastery).forEach(([category, data]) => {
-      categoryScores[category] = data.score || 0;
+      const completionStatus = categoryCompletionStatus[category];
+      if (completionStatus) {
+        // Use the final score (main assessment or intervention, whichever is higher)
+        categoryScores[category] = completionStatus.finalScore;
+        console.log(`[INSIGHTS] Using ${category} score: ${completionStatus.finalScore}% (${completionStatus.completionMethod})`);
+      } else {
+        // Fallback to original score
+        categoryScores[category] = data.score || 0;
+      }
     });
 
     const overallScore = mathematicalModelsService.calculateWeightedScore(categoryScores, readingLevel);
+    console.log(`[INSIGHTS] Overall score calculated: ${overallScore}% (passed: ${passedCategories}, failed: ${failedCategories})`);
 
     // Determine overall readiness and recommended action
     let overallReadiness, recommendedAction;
