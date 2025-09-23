@@ -3393,6 +3393,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           const isAlphabetKnowledge = normCategory === 'alphabet_knowledge';
           const isPhonologicalAwareness = normCategory === 'phonological_awareness';
           const isDecoding = normCategory === 'decoding';
+          const isWordRecognition = normCategory === 'word_recognition';
 
           // Get full choice objects for the selected choices
           let selectedChoices = [];
@@ -3465,7 +3466,6 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             source: pair.sourceType || 'custom',
             sourceTemplateId: isTemplateQuestion ? pair.sourceId : null,
             sourceQuestionId: pair.sourceId,
-            questionIndex: index,
             questionType: pair.questionType,
             questionText: pair.questionText,
             questionImage: processedImageUrl,
@@ -3534,10 +3534,18 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             };
           } else if (isWordRecognition) {
             // Word Recognition uses displayWord, blankOptions, correctAnswer structure matching main_assessment
+            // For sentence completion, ensure displayWord has blanks if blankPosition is set
+            let finalDisplayWord = pair.displayWord || '';
+            if (pair.questionSubType === 'sentence_completion' && pair.blankPosition !== null && pair.sentenceTokens) {
+              finalDisplayWord = pair.sentenceTokens.map((token, index) => 
+                index === pair.blankPosition ? '_____' : token
+              ).join(' ');
+            }
+            
             return {
               ...baseQuestion,
               // Word Recognition specific structure matching main_assessment exactly
-              displayWord: pair.displayWord || '',
+              displayWord: finalDisplayWord,
               blankOptions: pair.blankOptions || [],
               correctAnswer: pair.correctAnswer || [],
               // Add prescription alignment for intervention tracking
@@ -7118,13 +7126,28 @@ const renderWordRecognitionStep = () => {
     const tokens = tokenizeSentence(sentence);
     updateQuestionChoicePair(pairId, {
       sentenceTokens: tokens,
-      blankPosition: null // Reset blank position when sentence changes
+      blankPosition: null, // Reset blank position when sentence changes
+      displayWord: sentence // Update displayWord with the new sentence
     });
   };
 
   // Helper function to set blank position
   const setBlankPosition = (pairId, position) => {
-    updateQuestionChoicePair(pairId, { blankPosition: position });
+    const pair = questionChoicePairs.find(p => p.id === pairId);
+    if (!pair || !pair.sentenceTokens) return;
+    
+    // Generate the displayWord with blank
+    const displayWordWithBlank = pair.sentenceTokens.map((token, index) => {
+      if (index === position) {
+        return '_____';
+      }
+      return token;
+    }).join(' ');
+    
+    updateQuestionChoicePair(pairId, { 
+      blankPosition: position,
+      displayWord: displayWordWithBlank
+    });
   };
 
   // Helper function to generate sentence with blank for preview (dynamic underscore count)
@@ -7473,7 +7496,9 @@ const renderWordRecognitionStep = () => {
                 <label>Complete Sentence (click word to set as blank)</label>
                 <input
                   type="text"
-                  value={pair.displayWord || ''}
+                  value={pair.blankPosition !== null && pair.sentenceTokens ? 
+                    pair.sentenceTokens.map((token, index) => index === pair.blankPosition ? '_____' : token).join(' ') :
+                    pair.displayWord || ''}
                   onChange={(e) => {
                     const sentence = e.target.value;
                     if (!pair.sourceTemplateId) {
