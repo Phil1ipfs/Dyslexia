@@ -928,9 +928,40 @@ class InterventionController {
       
       // Create the template in the database
       const SentenceTemplate = require('../../../models/Teachers/ManageProgress/sentenceTemplateModel');
-      
+
+      // ✅ DEDUPLICATION LOGIC: Check if identical template already exists
+      const existingTemplate = await SentenceTemplate.findOne({
+        title: templateData.title.trim(),
+        category: templateData.category,
+        readingLevel: templateData.readingLevel,
+        isActive: true
+      });
+
+      if (existingTemplate) {
+        // Compare content to see if it's truly identical
+        const existingContent = JSON.stringify({
+          sentenceText: existingTemplate.sentenceText,
+          sentenceQuestions: existingTemplate.sentenceQuestions
+        });
+        const newContent = JSON.stringify({
+          sentenceText: templateData.sentenceText,
+          sentenceQuestions: templateData.sentenceQuestions
+        });
+
+        if (existingContent === newContent) {
+          console.log(`[INTERVENTION TEMPLATE DEDUPLICATION] ✅ Identical template found, returning existing template ID: ${existingTemplate._id}`);
+          return res.status(200).json({
+            success: true,
+            message: 'Template already exists with identical content',
+            data: existingTemplate,
+            duplicate_prevented: true
+          });
+        }
+      }
+
       const newTemplate = new SentenceTemplate(templateData);
       await newTemplate.save();
+      console.log(`[INTERVENTION TEMPLATE CREATION] ✅ New unique template created: ${newTemplate._id}`);
       
       return res.status(201).json({
         success: true,
