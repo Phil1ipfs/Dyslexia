@@ -83,11 +83,15 @@ const createModalToast = (message, type = 'error') => {
   const toastContainer = document.createElement('div');
   toastContainer.className = 'modal-toast-container';
   toastContainer.style.cssText = `
-    position: absolute;
-    top: 20px;
-    right: 20px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     z-index: 1000;
     pointer-events: none;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: auto;
   `;
   modal.appendChild(toastContainer);
 
@@ -108,28 +112,32 @@ const createModalToast = (message, type = 'error') => {
   toast.style.cssText = `
     background: ${color.bg};
     color: white;
-    padding: 12px 16px;
-    margin-bottom: 8px;
-    border-radius: 6px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    border-radius: 12px;
     border-left: 4px solid ${color.border};
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 14px;
-    line-height: 1.4;
-    max-width: 350px;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.5;
+    max-width: 400px;
+    min-width: 300px;
     word-wrap: break-word;
     pointer-events: auto;
-    transform: translateX(100%);
-    transition: transform 0.3s ease-in-out;
-    opacity: 0.95;
+    transform: scale(0.8) translateY(-20px);
+    transition: all 0.3s ease-in-out;
+    opacity: 0;
     cursor: pointer;
+    text-align: center;
   `;
 
   toast.textContent = message;
 
   // Add click to dismiss
   toast.onclick = () => {
-    toast.style.transform = 'translateX(100%)';
+    toast.style.transform = 'scale(0.8) translateY(-20px)';
+    toast.style.opacity = '0';
     setTimeout(() => {
       if (toast.parentNode) {
         toast.parentNode.removeChild(toast);
@@ -141,12 +149,14 @@ const createModalToast = (message, type = 'error') => {
 
   // Animate in
   requestAnimationFrame(() => {
-    toast.style.transform = 'translateX(0)';
+    toast.style.transform = 'scale(1) translateY(0)';
+    toast.style.opacity = '1';
   });
 
   // Auto dismiss after 6 seconds
   setTimeout(() => {
-    toast.style.transform = 'translateX(100%)';
+    toast.style.transform = 'scale(0.8) translateY(-20px)';
+    toast.style.opacity = '0';
     setTimeout(() => {
       if (toast.parentNode) {
         toast.parentNode.removeChild(toast);
@@ -1521,16 +1531,29 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       console.log(`[S3 UPLOAD] Using NEW DIRECT UPLOAD method with public-read ACL`);
       console.log(`[S3 UPLOAD] Original filename: ${file.name}`);
 
-      // Use the new direct upload method
-      const response = await api.interventions.uploadFile(file, targetFolder);
-      console.log('[S3 UPLOAD] Direct upload response:', response.data);
+      // Use direct fetch to /api/uploads/s3 (known working endpoint)
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('targetFolder', targetFolder);
 
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Upload failed');
+      const response = await fetch('/api/uploads/s3', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed with status: ${response.status}`);
       }
 
-      const fileUrl = response.data.url;
-      const isPublic = response.data.verified;
+      const responseData = await response.json();
+      console.log('[S3 UPLOAD] Direct upload response:', responseData);
+
+      if (!responseData.success) {
+        throw new Error(responseData.message || 'Upload failed');
+      }
+
+      const fileUrl = responseData.url;
+      const isPublic = responseData.verified;
 
       console.log(`[S3 UPLOAD] ✅ Direct upload successful!`);
       console.log(`[S3 UPLOAD] File URL: ${fileUrl}`);
@@ -2555,9 +2578,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             image: page.image || page.pageImage || null
           })),
           sentenceQuestions: (activity.questions || []).map((question, questionIndex) => ({
-            questionNumber: questionIndex + 1,
             questionText: question.questionText,
-            sentenceCorrectAnswer: question.correctAnswer,
+            correctAnswer: question.correctAnswer,
             sentenceOptionAnswers: [
               question.correctAnswer,
               ...(question.acceptableAnswers || [])
@@ -2607,7 +2629,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
         if (errors.title) errorMessages.push("Title is required");
         if (errors.description) errorMessages.push("Description is required");
-        if (errors.sentenceTemplate) errorMessages.push("Please select a sentence template");
+        if (errors.sentenceTemplate) errorMessages.push("Please select a reading passage template or create custom content");
         // Note: errors.pairs, errors.questionValue, and errors.questionText are now handled by toast notifications in validation functions
         if (errors.questionValue) errorMessages.push("Question Value is required for all questions");
         if (errors.questionText) errorMessages.push("Question Text is required for all questions");
@@ -3049,9 +3071,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           image: page.image || null
         }));
         sentenceQuestions = primaryActivity.questions.map((q, index) => ({
-          questionNumber: index + 1,
           questionText: q.questionText,
-          sentenceCorrectAnswer: q.correctAnswer,
+          correctAnswer: q.correctAnswer,
           // Include acceptable answers for Reading Comprehension
           acceptableAnswers: q.acceptableAnswers || []
         }));
@@ -3148,9 +3169,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           storyTitle: storyTitle,
           passages: passages,
           sentenceQuestions: sentenceQuestions.map((q, qIndex) => ({
-            questionNumber: qIndex + 1,
             questionText: q.questionText,
-            sentenceCorrectAnswer: q.sentenceCorrectAnswer,
+            correctAnswer: q.correctAnswer,
             sentenceOptionAnswers: q.sentenceOptionAnswers || [],
             // Add acceptableAnswers for custom content (CLAUDE.md specification)
             ...(q.acceptableAnswers && { acceptableAnswers: q.acceptableAnswers })
@@ -3172,16 +3192,16 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               (q.sentenceOptionAnswers || []).map((option, optIndex) => ({
                 optionId: `${qIndex + 1}_${optIndex + 1}`,
                 optionText: option,
-                isCorrect: option === q.sentenceCorrectAnswer,
+                isCorrect: option === q.correctAnswer,
                 questionNumber: qIndex + 1,
-                description: option === q.sentenceCorrectAnswer ?
+                description: option === q.correctAnswer ?
                   'Correct! You understood the passage well.' :
                   'Incorrect. Try reading the passage again carefully.'
               }))
             ) :
             // Custom: create choices from correct answer and acceptable answers
             sentenceQuestions.flatMap((q, qIndex) => {
-              const allAnswers = [q.sentenceCorrectAnswer, ...(q.acceptableAnswers || [])];
+              const allAnswers = [q.correctAnswer, ...(q.acceptableAnswers || [])];
               return allAnswers.map((answer, optIndex) => ({
                 optionId: `${qIndex + 1}_${optIndex + 1}`,
                 optionText: answer,
@@ -3231,7 +3251,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
         // Intervention Parameters
         interventionParameters: {
-          fixedQuestions: selectedSentenceTemplate.sentenceQuestions?.length || 1,
+          fixedQuestions: contentSource.type === 'template' ? 
+            (selectedSentenceTemplate?.sentenceQuestions?.length || 1) : 
+            questionCount,
           allowSkip: false,
           showProgress: true,
           immediateFeedback: false
@@ -5206,9 +5228,19 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       allErrors.description = "Description is required";
     }
     
-    // Template validation
-    if (contentType === 'sentence' && !selectedSentenceTemplate) {
-      allErrors.sentenceTemplate = "A reading passage must be selected";
+    // Template validation - check for either template OR custom content
+    if (contentType === 'sentence') {
+      const hasTemplate = selectedSentenceTemplate;
+      const hasCustomContent = customReadingComprehensionActivities.length > 0 &&
+        customReadingComprehensionActivities.some(activity =>
+          activity.storyTitle && activity.storyTitle.trim() &&
+          activity.storyPages && activity.storyPages.length > 0 &&
+          activity.questions && activity.questions.length > 0
+        );
+      
+      if (!hasTemplate && !hasCustomContent) {
+        allErrors.sentenceTemplate = "A reading passage must be selected or custom content must be created";
+      }
     }
     
     // Questions validation
@@ -9362,19 +9394,229 @@ const renderReviewStep = () => {
        <div className="literexia-review-card">
          <h4>Reading Passage</h4>
          <div className="literexia-review-summary">
-           <p><strong>Title:</strong> {selectedSentenceTemplate?.title}</p>
-           <p><strong>Pages:</strong> {selectedSentenceTemplate?.sentenceText?.length || 0}</p>
-           <p><strong>Questions:</strong> {selectedSentenceTemplate?.sentenceQuestions?.length || 0}</p>
-           
-           {selectedSentenceTemplate && (
-             <div className="literexia-passage-preview">
-               <p className="literexia-passage-sample">
-                 <strong>Sample text:</strong> "{selectedSentenceTemplate.sentenceText?.[0]?.text?.substring(0, 100) || ''}..."
-               </p>
-               <p className="literexia-question-sample">
-                 <strong>Sample question:</strong> "{selectedSentenceTemplate.sentenceQuestions?.[0]?.questionText || ''}"
-               </p>
-             </div>
+           {!selectedSentenceTemplate ? (
+             // Custom content summary - Show ALL activities
+             <>
+               {/* Overall Statistics */}
+               <div className="rc-activity-stats" style={{ marginBottom: '24px' }}>
+                 <div className="rc-stat-item">
+                   <span className="rc-stat-icon">
+                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                       <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/>
+                     </svg>
+                   </span>
+                   <span><strong>Total Activities:</strong> {customReadingComprehensionActivities.length}</span>
+                 </div>
+                 <div className="rc-stat-item">
+                   <span className="rc-stat-icon">
+                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                       <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                     </svg>
+                   </span>
+                   <span><strong>Total Pages:</strong> {customReadingComprehensionActivities.reduce((total, activity) => total + (activity.storyPages?.length || 0), 0)}</span>
+                 </div>
+                 <div className="rc-stat-item">
+                   <span className="rc-stat-icon">
+                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+                     </svg>
+                   </span>
+                   <span><strong>Total Questions:</strong> {customReadingComprehensionActivities.reduce((total, activity) => total + (activity.questions?.length || 0), 0)}</span>
+                 </div>
+               </div>
+               
+               {customReadingComprehensionActivities.length > 0 && (
+                 <div className="literexia-passage-preview">
+                   <div className="rc-section">
+                     <h4 style={{ 
+                       color: '#4A608A', 
+                       fontSize: '18px', 
+                       fontWeight: '700',
+                       marginBottom: '20px',
+                       display: 'flex',
+                       alignItems: 'center',
+                       gap: '12px'
+                     }}>
+                       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                         <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                       </svg>
+                       Activity Summary
+                     </h4>
+                     
+                     <div className="rc-activities-container">
+                       {customReadingComprehensionActivities.map((activity, index) => (
+                         <div key={index} className="rc-activity-card">
+                           <div className="rc-activity-header">
+                             <div className="rc-activity-title">
+                               <div className="page-number" style={{ 
+                                 width: '40px', 
+                                 height: '40px', 
+                                 fontSize: '16px',
+                                 marginRight: '12px'
+                               }}>
+                                 {index + 1}
+                               </div>
+                               <div>
+                                 <h3 style={{ 
+                                   margin: '0 0 4px 0', 
+                                   fontSize: '18px', 
+                                   fontWeight: '700', 
+                                   color: '#1f2937' 
+                                 }}>
+                                   {activity.storyTitle || 'Untitled Story'}
+                                 </h3>
+                                 <p style={{ 
+                                   margin: '0', 
+                                   fontSize: '14px', 
+                                   color: '#6b7280',
+                                   fontWeight: '500'
+                                 }}>
+                                   Reading Comprehension Activity
+                                 </p>
+                               </div>
+                             </div>
+                             <div className="rc-activity-badge">
+                               {activity.storyPages?.length || 0} Pages • {activity.questions?.length || 0} Questions
+                             </div>
+                           </div>
+                           
+                           {/* Story Pages Content */}
+                           {activity.storyPages && activity.storyPages.length > 0 && (
+                             <div className="rc-section rc-summary-section">
+                               <h4 className="rc-summary-section-header">
+                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                   <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                                 </svg>
+                                 Story Pages
+                               </h4>
+                               
+                               <div className="rc-summary-cards-container">
+                                 {activity.storyPages.map((page, pageIndex) => (
+                                   <div key={pageIndex} className="rc-story-page-card rc-summary-card">
+                                     <div className="rc-card-header rc-summary-card-header">
+                                       <div className="rc-summary-card-title-row">
+                                         <div className="page-number rc-summary-page-number">
+                                           {pageIndex + 1}
+                                         </div>
+                                         <h5 className="rc-card-title rc-summary-card-title">
+                                           Page {pageIndex + 1}
+                                         </h5>
+                                       </div>
+                                     </div>
+                                     
+                                     <div className="rc-form-group rc-summary-content-group">
+                                       <p className="rc-summary-label">
+                                         Content:
+                                       </p>
+                                       <div className="rc-summary-content-box">
+                                         {page.text || 'No text content'}
+                                       </div>
+                                     </div>
+                                     
+                                     {page.image && (
+                                       <div className="rc-summary-image-indicator">
+                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                           <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                                         </svg>
+                                         Image attached
+                                       </div>
+                                     )}
+                                   </div>
+                                 ))}
+                               </div>
+                             </div>
+                           )}
+                           
+                           {/* Questions Content */}
+                           {activity.questions && activity.questions.length > 0 && (
+                             <div className="rc-section rc-summary-section">
+                               <h4 className="rc-summary-section-header questions">
+                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+                                 </svg>
+                                 Questions
+                               </h4>
+                               
+                               <div className="rc-summary-cards-container">
+                                 {activity.questions.map((question, questionIndex) => (
+                                   <div key={questionIndex} className="rc-question-card rc-summary-card">
+                                     <div className="rc-card-header rc-summary-card-header">
+                                       <div className="rc-summary-card-title-row">
+                                         <div className="question-number rc-summary-question-number">
+                                           {questionIndex + 1}
+                                         </div>
+                                         <h5 className="rc-card-title rc-summary-card-title">
+                                           Question {questionIndex + 1}
+                                         </h5>
+                                       </div>
+                                     </div>
+                                     
+                                     <div className="rc-form-group rc-summary-content-group questions">
+                                       <p className="rc-summary-label">
+                                         Question Text:
+                                       </p>
+                                       <div className="rc-summary-content-box">
+                                         {question.questionText || 'No question text'}
+                                       </div>
+                                     </div>
+                                     
+                                     {/* Correct Answer */}
+                                     {question.correctAnswer && (
+                                       <div className="rc-form-group rc-summary-content-group">
+                                         <p className="rc-summary-label correct">
+                                           Correct Answer:
+                                         </p>
+                                         <div className="rc-summary-content-box correct">
+                                           {question.correctAnswer}
+                                         </div>
+                                       </div>
+                                     )}
+                                     
+                                     {/* Acceptable Answers */}
+                                     {question.acceptableAnswers && question.acceptableAnswers.length > 0 && (
+                                       <div className="rc-form-group rc-summary-content-group last">
+                                         <p className="rc-summary-label acceptable">
+                                           Acceptable Answers:
+                                         </p>
+                                         <div className="rc-summary-content-box acceptable">
+                                           {question.acceptableAnswers.map((answer, answerIndex) => (
+                                             <div key={answerIndex} className={`rc-summary-answer-item ${answerIndex === question.acceptableAnswers.length - 1 ? 'last' : ''}`}>
+                                               • "{answer}"
+                                             </div>
+                                           ))}
+                                         </div>
+                                       </div>
+                                     )}
+                                   </div>
+                                 ))}
+                               </div>
+                             </div>
+                           )}
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 </div>
+               )}
+             </>
+           ) : (
+             // Template content summary
+             <>
+               <p><strong>Title:</strong> {selectedSentenceTemplate?.title}</p>
+               <p><strong>Pages:</strong> {selectedSentenceTemplate?.sentenceText?.length || 0}</p>
+               <p><strong>Questions:</strong> {selectedSentenceTemplate?.sentenceQuestions?.length || 0}</p>
+               
+               {selectedSentenceTemplate && (
+                 <div className="literexia-passage-preview">
+                   <p className="literexia-passage-sample">
+                     <strong>Sample text:</strong> "{selectedSentenceTemplate.sentenceText?.[0]?.text?.substring(0, 100) || ''}..."
+                   </p>
+                   <p className="literexia-question-sample">
+                     <strong>Sample question:</strong> "{selectedSentenceTemplate.sentenceQuestions?.[0]?.questionText || ''}"
+                   </p>
+                 </div>
+               )}
+             </>
            )}
          </div>
          

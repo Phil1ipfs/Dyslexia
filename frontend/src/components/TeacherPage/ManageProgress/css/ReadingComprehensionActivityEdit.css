@@ -1403,6 +1403,134 @@ h5.question-number {
 
 /* Note: Add Page Button styling is handled above */
 
+/* Summary Section Styling - Specific to Reading Comprehension Summary */
+.literexia-review-summary .rc-summary-section {
+  margin-top: 24px;
+}
+
+.literexia-review-summary .rc-summary-section-header {
+  color: #4A608A;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.literexia-review-summary .rc-summary-section-header.questions {
+  color: #0369a1;
+}
+
+.literexia-review-summary .rc-summary-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.literexia-review-summary .rc-summary-card {
+  margin-bottom: 0 !important;
+  padding: 20px !important;
+}
+
+.literexia-review-summary .rc-summary-card-header {
+  margin-bottom: 16px !important;
+}
+
+.literexia-review-summary .rc-summary-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.literexia-review-summary .rc-summary-page-number,
+.literexia-review-summary .rc-summary-question-number {
+  width: 36px !important;
+  height: 36px !important;
+  font-size: 14px !important;
+  margin-right: 0 !important;
+}
+
+.literexia-review-summary .rc-summary-card-title {
+  margin: 0 !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #1f2937 !important;
+}
+
+.literexia-review-summary .rc-summary-content-group {
+  margin-bottom: 12px !important;
+}
+
+.literexia-review-summary .rc-summary-content-group.last {
+  margin-bottom: 0 !important;
+}
+
+.literexia-review-summary .rc-summary-content-group.questions {
+  margin-bottom: 16px !important;
+}
+
+.literexia-review-summary .rc-summary-label {
+  margin: 0 0 8px 0 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+}
+
+.literexia-review-summary .rc-summary-label.correct {
+  color: #16a34a !important;
+}
+
+.literexia-review-summary .rc-summary-label.acceptable {
+  color: #ca8a04 !important;
+}
+
+.literexia-review-summary .rc-summary-content-box {
+  padding: 12px !important;
+  background: #f9fafb !important;
+  border-radius: 8px !important;
+  border: 1px solid #e5e7eb !important;
+  font-size: 14px !important;
+  color: #6b7280 !important;
+  line-height: 1.6 !important;
+  min-height: 60px !important;
+}
+
+.literexia-review-summary .rc-summary-content-box.correct {
+  background: #f0fdf4 !important;
+  border: 1px solid #bbf7d0 !important;
+  color: #15803d !important;
+  font-weight: 500 !important;
+}
+
+.literexia-review-summary .rc-summary-content-box.acceptable {
+  background: #fefce8 !important;
+  border: 1px solid #fde047 !important;
+  color: #a16207 !important;
+}
+
+.literexia-review-summary .rc-summary-answer-item {
+  margin-bottom: 4px !important;
+  padding: 4px 0 !important;
+}
+
+.literexia-review-summary .rc-summary-answer-item.last {
+  margin-bottom: 0 !important;
+}
+
+.literexia-review-summary .rc-summary-image-indicator {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 12px !important;
+  background: #f0f9ff !important;
+  border-radius: 8px !important;
+  border: 1px solid #bae6fd !important;
+  font-size: 13px !important;
+  color: #0369a1 !important;
+  font-weight: 500 !important;
+}
+
 /* Responsive design for activities */
 @media (max-width: 768px) {
   .rc-activities-nav {
@@ -1428,6 +1556,14 @@ h5.question-number {
     gap: 12px;
     align-items: flex-start;
   }
+  
+  .literexia-review-summary .rc-summary-cards-container {
+    gap: 12px;
+  }
+  
+  .literexia-review-summary .rc-summary-card {
+    padding: 16px !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1448,5 +1584,13 @@ h5.question-number {
   .rc-story-page-card,
   .rc-question-card {
     padding: 16px;
+  }
+  
+  .literexia-review-summary .rc-summary-card {
+    padding: 12px !important;
+  }
+  
+  .literexia-review-summary .rc-summary-section-header {
+    font-size: 15px !important;
   }
 }
