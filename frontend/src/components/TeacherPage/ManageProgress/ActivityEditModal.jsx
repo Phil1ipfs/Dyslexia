@@ -3269,21 +3269,51 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         questions: (allActivities || []).map((activity, activityIndex) => {
           // Check if this activity uses a template or custom content
           if (activity.selectedTemplate && activity.selectedTemplate._id) {
-            // ✅ PURE REFERENCE-ONLY approach - NO template content duplication
+            // ✅ Template-based activity - populate with template content
             return {
               questionId: `int_rc_${String(activityIndex + 1).padStart(3, '0')}`,
               source: 'sentence_template',
-              sourceQuestionId: activity.selectedTemplate._id, // ✅ ONLY the template reference
+              sourceQuestionId: activity.selectedTemplate._id, // Template reference
               questionType: 'text_input',
-              questionText: activity.selectedTemplate.title, // ✅ Only title for identification
+              questionText: activity.selectedTemplate.title, // Template title for identification
 
-              // ✅ CRITICAL: NO template content stored here - ONLY references
-              // ✅ Template data stays ONLY in sentence_templates collection
-              // ✅ Backend will fetch template data by reference when needed
-              
-              // ✅ NO sentenceQuestions, NO passages for template-based activities
-              // ✅ Template content is fetched by backend using sourceQuestionId
-              sentenceQuestions: [],
+              // ✅ CRITICAL: Populate template content into intervention assessment
+              // Template passages from sentenceText
+              passages: (activity.selectedTemplate.sentenceText || []).map((page, pageIndex) => ({
+                pageNumber: pageIndex + 1,
+                text: page.text,
+                image: page.image || null
+              })),
+
+              // ✅ CRITICAL: Combine BOTH template questions AND manually added questions
+              sentenceQuestions: [
+                // First, add all template questions
+                ...(activity.selectedTemplate.sentenceQuestions || []).map((q, questionIndex) => ({
+                  questionNumber: questionIndex + 1,
+                  questionText: q.questionText,
+                  sentenceCorrectAnswer: q.sentenceCorrectAnswer,
+                  sentenceAcceptableAnswer: q.acceptableAnswers || []
+                })),
+                // Then, add all manually added questions (continuing the numbering)
+                ...(activity.questions || []).map((q, questionIndex) => ({
+                  questionNumber: (activity.selectedTemplate.sentenceQuestions || []).length + questionIndex + 1,
+                  questionText: q.questionText,
+                  sentenceCorrectAnswer: q.correctAnswer,
+                  sentenceAcceptableAnswer: q.acceptableAnswers || []
+                }))
+              ],
+
+              // ✅ Add missing properties to match intervention assessment schema
+              questionImage: null,
+              questionValue: null,
+              displaySequence: [],
+              dragElements: [],
+              correctSequence: [],
+              blankOptions: [],
+              correctAnswer: [],
+              difficulty: 0,
+              discrimination: 1,
+              choiceOptions: [],
 
               // Prescription alignment
               prescriptionAlignment: {
