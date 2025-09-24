@@ -357,12 +357,23 @@ class AutoProcessingService {
       console.error('[AUTO PROCESSOR] Error in initial processing:', error.message);
     });
 
-    // Then run periodically
+    // Run progression validation immediately on startup
+    this.runPeriodicProgressionValidation().catch(error => {
+      console.error('[AUTO PROCESSOR] Error in initial progression validation:', error.message);
+    });
+
+    // Then run both periodically
     const intervalMs = intervalMinutes * 60 * 1000;
-    setInterval(() => {
-      this.processAllCompleteAssessments().catch(error => {
+    setInterval(async () => {
+      try {
+        // Run assessment processing
+        await this.processAllCompleteAssessments();
+
+        // Run progression validation
+        await this.runPeriodicProgressionValidation();
+      } catch (error) {
         console.error('[AUTO PROCESSOR] Error in periodic processing:', error.message);
-      });
+      }
     }, intervalMs);
   }
 
@@ -392,6 +403,31 @@ class AutoProcessingService {
     } catch (error) {
       console.error('[AUTO PROCESSOR] Error getting processing status:', error.message);
       throw error;
+    }
+  }
+
+  /**
+   * Run automatic progression validation as part of periodic processing
+   * This ensures all students who should have progressed are properly handled
+   */
+  static async runPeriodicProgressionValidation() {
+    try {
+      console.log('[AUTO PROCESSOR] 🔄 Running periodic progression validation...');
+
+      const AutomaticProgressionValidationService = require('../AutomaticProgressionValidationService');
+      const results = await AutomaticProgressionValidationService.detectStuckProgressions();
+
+      if (results.success) {
+        console.log(`[AUTO PROCESSOR] ✅ Progression validation: ${results.progressionsFixed} progressions fixed from ${results.stuckFound} stuck`);
+      } else {
+        console.warn(`[AUTO PROCESSOR] ⚠️ Progression validation failed: ${results.error}`);
+      }
+
+      return results;
+
+    } catch (error) {
+      console.error('[AUTO PROCESSOR] ❌ Error in progression validation:', error.message);
+      return { success: false, error: error.message };
     }
   }
 }

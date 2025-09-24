@@ -1104,6 +1104,7 @@ connectDB().then(async (connected) => {
       console.warn('⚠️ Could not load cleanup routes:', error.message);
     }
 
+
     // 404 handler
     app.use((req, res) => {
       console.log(`[404] Route not found: ${req.method} ${req.url}`);
@@ -1137,6 +1138,16 @@ app.listen(PORT, async () => {
     console.log('✅ Automatic data consistency fix completed');
   } catch (error) {
     console.warn('⚠️ Could not run automatic data fix:', error.message);
+  }
+
+  // Run complete automatic progression validation
+  try {
+    const AutomaticProgressionValidationService = require('./services/AutomaticProgressionValidationService');
+    console.log('🔄 Starting automatic progression validation...');
+    await AutomaticProgressionValidationService.runCompleteValidation();
+    console.log('✅ Automatic progression validation completed');
+  } catch (error) {
+    console.warn('⚠️ Could not run automatic progression validation:', error.message);
   }
 
   // Start automatic processing of complete assessments

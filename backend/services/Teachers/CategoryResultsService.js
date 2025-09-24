@@ -3,6 +3,7 @@ const User = require('../../models/userModel');
 const CategoryResult = require('../../models/Teachers/ManageProgress/categoryResultModel');
 const IntegrationTriggerService = require('./PrescriptiveAnalytics/integrationTriggerService');
 const AssessmentFlowControlService = require('./AssessmentFlowControlService');
+const ReadingLevelProgressionService = require('../ReadingLevelProgressionService');
 
 /**
  * Service for handling category results data
@@ -590,9 +591,9 @@ class CategoryResultsService {
       // Trigger prescriptive analysis generation
       try {
         console.log(`[CATEGORY RESULTS] Triggering prescriptive analysis for category result ${savedResult._id}`);
-        
+
         const prescriptiveAnalysis = await IntegrationTriggerService.triggerPrescriptiveAnalysis(savedResult.toObject());
-        
+
         if (prescriptiveAnalysis) {
           console.log(`[CATEGORY RESULTS] Successfully generated prescriptive analysis ${prescriptiveAnalysis._id}`);
           savedResult.prescriptiveAnalysisId = prescriptiveAnalysis._id;
@@ -602,6 +603,34 @@ class CategoryResultsService {
       } catch (analyticsError) {
         console.error('[CATEGORY RESULTS] Error generating prescriptive analysis:', analyticsError);
         // Don't fail the category result creation if analytics fails
+      }
+
+      // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK
+      // Check if student is now eligible for reading level progression after category completion
+      try {
+        console.log(`[CATEGORY RESULTS] 🔍 Checking reading level progression eligibility after category completion`);
+
+        const progressionResult = await ReadingLevelProgressionService.checkAndProgressReadingLevel(
+          savedResult.studentId,
+          savedResult.readingLevel
+        );
+
+        if (progressionResult.success && progressionResult.progressionExecuted) {
+          console.log(`[CATEGORY RESULTS] 🎉 AUTOMATIC PROGRESSION TRIGGERED: ${progressionResult.fromLevel} → ${progressionResult.toLevel}`);
+
+          // Update the current category result to mark progression as completed
+          savedResult.readingLevelUpdated = true;
+          await savedResult.save();
+
+          console.log(`[CATEGORY RESULTS] 📋 Updated current category result to mark progression completed`);
+        } else if (progressionResult.success && !progressionResult.progressionNeeded) {
+          console.log(`[CATEGORY RESULTS] ℹ️ No progression needed: ${progressionResult.reason}`);
+        } else {
+          console.warn(`[CATEGORY RESULTS] ⚠️ Progression check incomplete:`, progressionResult);
+        }
+      } catch (progressionError) {
+        console.error('[CATEGORY RESULTS] ❌ Error in automatic reading level progression check:', progressionError);
+        // Don't fail the category result creation if progression check fails
       }
 
       return savedResult.toObject();
@@ -653,20 +682,32 @@ class CategoryResultsService {
         updateData.totalCategories = updateData.categories.length;
         updateData.allCategoriesPassed = overallStats.passedCategories === updateData.categories.length;
 
-        // Check for reading level progression if all categories passed
+        // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK
+        // Check for reading level progression using the comprehensive ReadingLevelProgressionService
         if (updateData.allCategoriesPassed && !existingResult.allCategoriesPassed) {
-          console.log(`[CATEGORY RESULTS] Student ${existingResult.studentId} passed all categories for ${existingResult.readingLevel}`);
+          console.log(`[CATEGORY RESULTS] ✅ Student ${existingResult.studentId} passed all categories for ${existingResult.readingLevel} - triggering progression check`);
 
           try {
-            const progressionResult = await this.processReadingLevelProgression(existingResult.studentId, existingResult.readingLevel);
-            if (progressionResult.levelChanged) {
+            const progressionResult = await ReadingLevelProgressionService.checkAndProgressReadingLevel(
+              existingResult.studentId,
+              existingResult.readingLevel
+            );
+
+            if (progressionResult.success && progressionResult.progressionExecuted) {
               updateData.readingLevelUpdated = true;
-              console.log(`[CATEGORY RESULTS] Reading level progression triggered: ${existingResult.readingLevel} → ${progressionResult.newLevel}`);
+              console.log(`[CATEGORY RESULTS] 🎉 READING LEVEL PROGRESSION SUCCESSFUL: ${progressionResult.fromLevel} → ${progressionResult.toLevel}`);
+              console.log(`[CATEGORY RESULTS] 📋 User updated: ${progressionResult.userUpdated}, Categories updated: ${progressionResult.categoryResultsUpdated}`);
+            } else if (progressionResult.success && !progressionResult.progressionNeeded) {
+              console.log(`[CATEGORY RESULTS] ℹ️ No progression needed: ${progressionResult.reason}`);
+            } else {
+              console.warn(`[CATEGORY RESULTS] ⚠️ Progression check failed:`, progressionResult);
             }
           } catch (progressionError) {
-            console.error('[CATEGORY RESULTS] Error processing reading level progression:', progressionError);
-            // Don't fail the update if progression fails
+            console.error('[CATEGORY RESULTS] ❌ Error in automatic reading level progression:', progressionError);
+            // Don't fail the update if progression fails - continue with category results update
           }
+        } else if (updateData.allCategoriesPassed) {
+          console.log(`[CATEGORY RESULTS] ℹ️ All categories already passed - skipping duplicate progression check`);
         }
       }
 
@@ -1673,100 +1714,82 @@ class CategoryResultsService {
    * @param {string} currentReadingLevel - Current reading level
    * @returns {Promise<Object>} - Progression result
    */
+  /**
+   * LEGACY WRAPPER METHOD: Process reading level progression
+   *
+   * This method is maintained for backward compatibility and now uses the comprehensive
+   * ReadingLevelProgressionService internally while preserving the original return format.
+   *
+   * @param {number} studentId - Student ID
+   * @param {string} currentReadingLevel - Current reading level
+   * @returns {Promise<Object>} - Progression result in legacy format
+   */
   static async processReadingLevelProgression(studentId, currentReadingLevel) {
     try {
-      console.log(`[READING LEVEL PROGRESSION] Processing progression for student ${studentId} from ${currentReadingLevel}`);
+      console.log(`[LEGACY WRAPPER] 🔄 processReadingLevelProgression called - delegating to ReadingLevelProgressionService`);
+      console.log(`[LEGACY WRAPPER] Student: ${studentId}, Current Level: ${currentReadingLevel}`);
 
-      // Get next reading level
-      const readingLevelProgression = {
-        'Low Emerging': 'High Emerging',
-        'High Emerging': 'Developing',
-        'Developing': 'Transitioning',
-        'Transitioning': 'At Grade Level',
-        'At Grade Level': null // Already at highest level
-      };
+      // Use the comprehensive ReadingLevelProgressionService
+      const progressionResult = await ReadingLevelProgressionService.checkAndProgressReadingLevel(
+        studentId,
+        currentReadingLevel
+      );
 
-      const nextLevel = readingLevelProgression[currentReadingLevel];
+      console.log(`[LEGACY WRAPPER] 📊 ReadingLevelProgressionService result:`, progressionResult);
 
-      if (!nextLevel) {
-        console.log(`[READING LEVEL PROGRESSION] Student ${studentId} already at highest level: ${currentReadingLevel}`);
+      // Map to legacy format for backward compatibility
+      if (progressionResult.success && progressionResult.progressionExecuted) {
+        const user = await User.findOne({ idNumber: studentId });
+
         return {
-          levelChanged: false,
+          shouldProgress: true,          // Legacy field name
+          levelChanged: true,            // Legacy field name
+          currentLevel: progressionResult.fromLevel,
+          newLevel: progressionResult.toLevel,
+          readingPercentagePreserved: user?.readingPercentage,
+          userUpdated: progressionResult.userUpdated,
+          categoryResultsUpdated: progressionResult.categoryResultsUpdated,
+          placeholderCreated: progressionResult.placeholderCreated,
+          message: `Successfully progressed from ${progressionResult.fromLevel} to ${progressionResult.toLevel}`,
+          // Include new comprehensive data
+          comprehensiveResult: progressionResult
+        };
+      } else if (progressionResult.success && !progressionResult.progressionNeeded) {
+        return {
+          shouldProgress: false,         // Legacy field name
+          levelChanged: false,           // Legacy field name
           currentLevel: currentReadingLevel,
           newLevel: null,
-          message: 'Already at highest reading level'
+          reason: progressionResult.reason,
+          message: progressionResult.reason || 'No progression needed',
+          // Include new comprehensive data
+          comprehensiveResult: progressionResult
+        };
+      } else {
+        // Handle error cases
+        return {
+          shouldProgress: false,         // Legacy field name
+          levelChanged: false,           // Legacy field name
+          currentLevel: currentReadingLevel,
+          newLevel: null,
+          error: progressionResult.error || 'Progression check failed',
+          message: progressionResult.error || 'Progression check failed',
+          // Include new comprehensive data
+          comprehensiveResult: progressionResult
         };
       }
 
-      // Update user's reading level and reading percentage
-      const User = require('../../models/userModel');
-      const user = await User.findOne({ studentId: studentId });
-
-      if (!user) {
-        throw new Error(`User with studentId ${studentId} not found`);
-      }
-
-      // Update user record - only readingLevel, NOT readingPercentage
-      // readingPercentage should only be updated during pre-assessment
-      await User.findByIdAndUpdate(user._id, {
-        $set: {
-          readingLevel: nextLevel,
-          updatedAt: new Date()
-        }
-      });
-
-      console.log(`[READING LEVEL PROGRESSION] Updated user ${studentId}: ${currentReadingLevel} → ${nextLevel} (readingPercentage preserved: ${user.readingPercentage}%)`);
-
-      // Create new category_results record for the next level
-      const nextLevelCategories = this.getCategoriesForReadingLevel(nextLevel);
-      const initialCategoryData = nextLevelCategories.map(categoryName => ({
-        categoryName,
-        totalQuestions: 0,
-        correctAnswers: 0,
-        totalPossibleMatches: 0,
-        correctMatches: 0,
-        score: 0,
-        isPassed: false,
-        passingThreshold: 75,
-        isCompleted: false,
-        lastQuestionAnswered: '',
-        interventionRequired: false,
-        interventionAttempts: 0,
-        interventionCompleted: false,
-        currentInterventionId: null,
-        interventionHistory: []
-      }));
-
-      const newCategoryResult = {
-        studentId: studentId,
-        assessmentDate: new Date(),
-        readingLevel: nextLevel,
-        categories: initialCategoryData,
-        overallScore: 0,
-        completedCategories: 0,
-        totalCategories: nextLevelCategories.length,
-        allCategoriesPassed: false,
-        readingLevelUpdated: false // Will be true when they complete this level
-      };
-
-      // Create the new category_results record
-      const createdResult = await this.createCategoryResult(newCategoryResult);
-
-      console.log(`[READING LEVEL PROGRESSION] Created new category_results ${createdResult._id} for reading level ${nextLevel}`);
+    } catch (error) {
+      console.error('[LEGACY WRAPPER] ❌ Error in processReadingLevelProgression wrapper:', error);
 
       return {
-        levelChanged: true,
+        shouldProgress: false,           // Legacy field name
+        levelChanged: false,             // Legacy field name
         currentLevel: currentReadingLevel,
-        newLevel: nextLevel,
-        readingPercentagePreserved: user.readingPercentage, // Unchanged from pre-assessment
-        newCategoryResultId: createdResult._id,
-        requiredCategories: nextLevelCategories,
-        message: `Successfully progressed from ${currentReadingLevel} to ${nextLevel} (readingPercentage preserved from pre-assessment)`
+        newLevel: null,
+        error: error.message,
+        message: `Error processing progression: ${error.message}`
       };
-
-    } catch (error) {
-      console.error('[READING LEVEL PROGRESSION] Error processing progression:', error);
-      throw error;
     }
   }
 
@@ -2169,16 +2192,35 @@ class CategoryResultsService {
 
       console.log(`[INTERVENTION UPDATE] Successfully updated category_results for ${category}`);
 
-      // Check if all categories for this reading level are now passed
+      // 🚀 AUTOMATIC READING LEVEL PROGRESSION CHECK AFTER INTERVENTION SUCCESS
+      // Check if intervention success now qualifies student for reading level progression
       const student = await User.findOne({ idNumber: studentId });
       if (student) {
-        const progressionResult = await this.processReadingLevelProgression(
-          studentId,
-          student.readingLevel
-        );
+        try {
+          console.log(`[INTERVENTION UPDATE] 🔍 Checking reading level progression after intervention success for ${category}`);
 
-        if (progressionResult.shouldProgress) {
-          console.log(`[INTERVENTION UPDATE] Student ${studentId} progressed from ${student.readingLevel} to ${progressionResult.newLevel}`);
+          const progressionResult = await ReadingLevelProgressionService.checkAndProgressReadingLevel(
+            studentId,
+            student.readingLevel
+          );
+
+          if (progressionResult.success && progressionResult.progressionExecuted) {
+            console.log(`[INTERVENTION UPDATE] 🎉 INTERVENTION SUCCESS TRIGGERED PROGRESSION: ${progressionResult.fromLevel} → ${progressionResult.toLevel}`);
+            console.log(`[INTERVENTION UPDATE] 📋 User updated: ${progressionResult.userUpdated}, Categories updated: ${progressionResult.categoryResultsUpdated}`);
+
+            // Update the current category result to mark progression as completed
+            categoryResult.readingLevelUpdated = true;
+            await categoryResult.save();
+
+            console.log(`[INTERVENTION UPDATE] 📋 Marked progression completed in category_results`);
+          } else if (progressionResult.success && !progressionResult.progressionNeeded) {
+            console.log(`[INTERVENTION UPDATE] ℹ️ No progression needed after intervention: ${progressionResult.reason}`);
+          } else {
+            console.warn(`[INTERVENTION UPDATE] ⚠️ Progression check after intervention inconclusive:`, progressionResult);
+          }
+        } catch (progressionError) {
+          console.error('[INTERVENTION UPDATE] ❌ Error in automatic reading level progression after intervention:', progressionError);
+          // Don't fail the intervention update if progression fails
         }
       }
 
