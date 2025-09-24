@@ -2407,7 +2407,8 @@ class InterventionService {
               questionValue: null,
               passageTitle: template.title,
               passageText: template.sentenceText,
-              choiceOptions: sentenceQuestion.sentenceOptionAnswers?.map((option, index) => ({
+              // Note: Use acceptableAnswers from sentence template (matches main assessment structure)
+              choiceOptions: sentenceQuestion.acceptableAnswers?.map((option, index) => ({
                 optionId: `opt_${index + 1}`,
                 optionText: option,
                 isCorrect: option === sentenceQuestion.sentenceCorrectAnswer

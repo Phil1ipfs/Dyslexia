@@ -44,9 +44,9 @@ const sentenceTemplateSchema = new mongoose.Schema({
       type: String,
       required: true
     },
-    sentenceOptionAnswers: [{
+    acceptableAnswers: [{
       type: String,
-      required: true
+      required: false // Match main assessment - not all questions have acceptable answers
     }]
   }],
   isActive: {

@@ -902,7 +902,7 @@ class InterventionGeneratorService {
         questionNumber: sq.questionNumber,
         questionText: sq.questionText,
         sentenceCorrectAnswer: sq.sentenceCorrectAnswer,
-        sentenceOptionAnswers: sq.sentenceOptionAnswers,
+        // Note: sentenceOptionAnswers field removed - doesn't exist in main assessment
         sentenceAcceptableAnswer: sq.sentenceAcceptableAnswer
       })),
       targetSkill: 'reading_comprehension',

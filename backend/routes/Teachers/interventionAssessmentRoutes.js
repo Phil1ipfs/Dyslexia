@@ -128,18 +128,28 @@ router.post('/',
   authorize('teacher', 'guro', 'admin'),
   (req, res, next) => {
     // Validate required fields for teacher-created interventions
+    console.log(`[MIDDLEWARE] 🔍 Validating intervention request...`);
+    console.log(`[MIDDLEWARE] Request body keys:`, Object.keys(req.body));
+
     const errors = [];
     const { studentId, category, questions } = req.body;
 
+    console.log(`[MIDDLEWARE] studentId:`, studentId, `(type: ${typeof studentId})`);
+    console.log(`[MIDDLEWARE] category:`, category, `(type: ${typeof category})`);
+    console.log(`[MIDDLEWARE] questions:`, questions ? `Array(${questions.length})` : questions, `(isArray: ${Array.isArray(questions)})`);
+
     if (!studentId) {
+      console.log(`[MIDDLEWARE] ❌ Missing studentId`);
       errors.push({ field: 'studentId', message: 'Student ID is required' });
     }
 
     if (!category) {
+      console.log(`[MIDDLEWARE] ❌ Missing category`);
       errors.push({ field: 'category', message: 'Category is required' });
     }
 
     if (!questions || !Array.isArray(questions) || questions.length === 0) {
+      console.log(`[MIDDLEWARE] ❌ Invalid questions:`, questions);
       errors.push({ field: 'questions', message: 'At least one question is required' });
     }
 

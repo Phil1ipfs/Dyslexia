@@ -80,6 +80,13 @@ class InterventionAssessmentController {
 
           if (shouldSaveToTemplates) {
             console.log(`[INTERVENTION CONTROLLER] 🆕 Found truly custom question ${question.questionId} - validating for template save`);
+
+            // Skip Reading Comprehension questions - they use sentence_templates, not templates_questions
+            if (interventionData.category === 'Reading Comprehension') {
+              console.log(`[INTERVENTION CONTROLLER] 📋 Question ${question.questionId} skipped - Reading Comprehension uses sentence_templates collection`);
+              continue; // Skip saving to templates_questions for Reading Comprehension
+            }
+
             try {
               // BULLETPROOF DUPLICATE CHECK: Multiple validation layers to prevent duplicates
               const TemplateQuestion = require('../../models/Teachers/ManageProgress/templatesQuestionsModel');

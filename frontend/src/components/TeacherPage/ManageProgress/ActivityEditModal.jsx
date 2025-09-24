@@ -799,11 +799,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                 throw new Error(`Question ${index}, sentence ${sentenceIndex} sentenceAcceptableAnswer must be an array`);
               }
 
-              // Validate sentenceOptionAnswers if present
-              if (sentenceQ.sentenceOptionAnswers && !Array.isArray(sentenceQ.sentenceOptionAnswers)) {
-                console.error(`[SAVE] ❌ Question ${index}, sentence ${sentenceIndex} sentenceOptionAnswers must be array:`, sentenceQ);
-                throw new Error(`Question ${index}, sentence ${sentenceIndex} sentenceOptionAnswers must be an array`);
-              }
+              // Note: sentenceOptionAnswers field removed - doesn't exist in main assessment
             });
 
             console.log(`✅ Question ${index} has valid Reading Comprehension structure with ${question.sentenceQuestions.length} sentence questions`);
@@ -2580,10 +2576,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           sentenceQuestions: (activity.questions || []).map((question, questionIndex) => ({
             questionText: question.questionText,
             correctAnswer: question.correctAnswer,
-            sentenceOptionAnswers: [
-              question.correctAnswer,
-              ...(question.acceptableAnswers || [])
-            ].filter(answer => answer && answer.trim()) // Remove empty answers
+            acceptableAnswers: question.acceptableAnswers || [] // Match main assessment structure
           })),
           isActive: true,
           createdBy: user?._id || "system", // Use current user ID or fallback
@@ -3102,7 +3095,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               optimalLength: "20-30 minutes",
               breakPattern: "Every 10 minutes"
             },
-            specificTechniques: mongoDbAnalysis.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques?.map(t => t.technique || t) || []
+            specificTechniques: mongoDbAnalysis.researchBasedPrescriptions?.[category]?.interventionPrescription?.specificTechniques || []
           },
           materialRecommendations: mongoDbAnalysis.researchBasedPrescriptions?.[category]?.interventionPrescription?.materialRecommendations || []
         } : {
@@ -3120,7 +3113,24 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               optimalLength: "20-30 minutes",
               breakPattern: "Every 10 minutes"
             },
-            specificTechniques: ["Systematic reading comprehension instruction", "Immediate corrective feedback"]
+            specificTechniques: [
+              {
+                technique: "Systematic reading comprehension instruction",
+                description: "Structured approach to teaching reading comprehension skills",
+                duration: "20-30 minutes daily",
+                materials: "Reading passages, comprehension questions",
+                progressCriteria: "80% accuracy on comprehension questions",
+                researchBasis: "Evidence-based reading comprehension strategies"
+              },
+              {
+                technique: "Immediate corrective feedback",
+                description: "Prompt feedback on reading comprehension responses",
+                duration: "During instruction time",
+                materials: "Answer keys, rubrics",
+                progressCriteria: "Reduced error rate over time",
+                researchBasis: "Feedback theory and comprehension research"
+              }
+            ]
           },
           materialRecommendations: [usingTemplate ? "Teacher-selected sentence templates" : "Teacher-created custom content"]
         },
@@ -3150,17 +3160,18 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             questionId: `int_rc_001`,
             source: 'sentence_template',
             sourceTemplateId: contentSource.sourceId,
-            questionType: 'sentence',
+            questionType: 'text_input', // ✅ Fixed: Use 'text_input' like main assessment
             questionText: storyTitle,
 
             // Reading Comprehension structure per CLAUDE.md
             storyTitle: storyTitle,
             passages: passages,
-            sentenceQuestions: sentenceQuestions.map((q) => ({
+            sentenceQuestions: sentenceQuestions.map((q, questionIndex) => ({
+              questionNumber: questionIndex + 1, // ✅ Fixed: Add required questionNumber
               questionText: q.questionText,
-              sentenceCorrectAnswer: q.correctAnswer,
-              // Add acceptableAnswers for custom content
-              ...(q.acceptableAnswers && { acceptableAnswers: q.acceptableAnswers })
+              sentenceCorrectAnswer: q.correctAnswer, // intervention uses sentenceCorrectAnswer, not correctAnswer
+              // Map acceptableAnswers to sentenceAcceptableAnswer (NO sentenceOptionAnswers - doesn't exist in main assessment)
+              sentenceAcceptableAnswer: q.acceptableAnswers || []
             })),
 
             // Prescription alignment
@@ -3179,7 +3190,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             questionId: `int_rc_${String(activityIndex + 1).padStart(3, '0')}`,
             source: 'custom',
             sourceTemplateId: null,
-            questionType: 'sentence',
+            questionType: 'text_input', // ✅ Fixed: Use 'text_input' like main assessment
             questionText: activity.storyTitle,
 
             // Reading Comprehension structure per CLAUDE.md
@@ -3189,11 +3200,12 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               text: page.text,
               image: page.image || null
             })),
-            sentenceQuestions: activity.questions.map((q) => ({
+            sentenceQuestions: activity.questions.map((q, questionIndex) => ({
+              questionNumber: questionIndex + 1, // Required by intervention schema
               questionText: q.questionText,
-              sentenceCorrectAnswer: q.correctAnswer,
-              // Add acceptableAnswers for custom content
-              ...(q.acceptableAnswers && { acceptableAnswers: q.acceptableAnswers })
+              sentenceCorrectAnswer: q.correctAnswer, // intervention uses sentenceCorrectAnswer, not correctAnswer
+              // Map acceptableAnswers to sentenceAcceptableAnswer (NO sentenceOptionAnswers - doesn't exist in main assessment)
+              sentenceAcceptableAnswer: q.acceptableAnswers || []
             })),
 
             // Prescription alignment
@@ -3372,7 +3384,15 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                                   researchBasis: t.researchBasis || 'Evidence-based practice'
                                 };
                               }
-                              return typeof t === 'string' ? t : t.technique || t;
+                              // Convert string to proper technique object
+                              return typeof t === 'string' ? {
+                                technique: t,
+                                description: `${t} approach`,
+                                duration: '10-15 minutes daily',
+                                materials: 'Visual-auditory materials',
+                                progressCriteria: '80% accuracy',
+                                researchBasis: 'Evidence-based practice'
+                              } : t;
                             }) ||
                               realAnalysisData.interventionPlan?.specificFocus?.[category]?.recommendedActivities ||
                               realAnalysisData.interventionPlan?.specificFocus?.[category]?.techniques ||
@@ -3448,7 +3468,16 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               optimalLength: "15-20 minutes",
               breakPattern: "Every 10 minutes"
             },
-            specificTechniques: ["Teacher-created intervention based on observation"]
+            specificTechniques: [
+              {
+                technique: "Teacher-created intervention based on observation",
+                description: "Customized intervention approach based on teacher observation",
+                duration: "15-20 minutes daily",
+                materials: "Teacher-created materials and resources",
+                progressCriteria: "Observable improvement in target skills",
+                researchBasis: "Teacher expertise and observational assessment"
+              }
+            ]
           },
           materialRecommendations: ["Teacher-created intervention questions"]
         },
@@ -9293,9 +9322,9 @@ const renderSentencePreviewStep = () => {
                      <strong>Correct answer:</strong> {question.sentenceCorrectAnswer}
                    </div>
                    <div className="literexia-options-list">
-                     <strong>Options:</strong>
+                     <strong>Acceptable Answers:</strong>
                      <ul>
-                       {safe(question.sentenceOptionAnswers).map((option, optIndex) => (
+                       {safe(question.sentenceAcceptableAnswer).map((option, optIndex) => (
                          <li key={optIndex} className={option === question.sentenceCorrectAnswer ? 'correct-option' : ''}>
                            {option}
                          </li>

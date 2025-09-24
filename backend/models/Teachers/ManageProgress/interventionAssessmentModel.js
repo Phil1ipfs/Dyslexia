@@ -107,7 +107,7 @@ const interventionQuestionSchema = new mongoose.Schema({
     questionNumber: Number,
     questionText: String,
     sentenceCorrectAnswer: String,
-    sentenceOptionAnswers: [String],
+    // Note: sentenceOptionAnswers removed - doesn't exist in main assessment
     sentenceAcceptableAnswer: [String]
   }],
   
