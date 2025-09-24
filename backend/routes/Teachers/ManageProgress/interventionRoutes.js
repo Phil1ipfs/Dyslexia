@@ -4,6 +4,13 @@ const router = express.Router();
 const InterventionController = require('../../../controllers/Teachers/ManageProgress/interventionController');
 const { auth, authorize } = require('../../../middleware/auth');
 const mongoose = require('mongoose');
+const multer = require('multer');
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
 
 // Initialize controller
 const interventionController = new InterventionController();

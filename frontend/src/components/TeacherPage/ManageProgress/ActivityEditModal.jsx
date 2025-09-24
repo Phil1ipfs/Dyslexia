@@ -3277,17 +3277,13 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               questionType: 'text_input',
               questionText: activity.selectedTemplate.title, // ✅ Only title for identification
 
-              // ✅ CRITICAL: NO template passages, NO template sentenceQuestions stored here
+              // ✅ CRITICAL: NO template content stored here - ONLY references
               // ✅ Template data stays ONLY in sentence_templates collection
               // ✅ Backend will fetch template data by reference when needed
-
-              // ✅ STANDARDIZED: Always use sentenceQuestions (consistent with custom questions)
-              sentenceQuestions: (activity.questions || []).map((q, questionIndex) => ({
-                questionNumber: questionIndex + 1,
-                questionText: q.questionText,
-                sentenceCorrectAnswer: q.correctAnswer,
-                sentenceAcceptableAnswer: q.acceptableAnswers || []
-              })),
+              
+              // ✅ NO sentenceQuestions, NO passages for template-based activities
+              // ✅ Template content is fetched by backend using sourceQuestionId
+              sentenceQuestions: [],
 
               // Prescription alignment
               prescriptionAlignment: {

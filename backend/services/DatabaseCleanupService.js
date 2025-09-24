@@ -1,6 +1,6 @@
 // services/DatabaseCleanupService.js
 const mongoose = require('mongoose');
-const InterventionAssessment = require('../models/interventionAssessmentModel');
+const InterventionAssessment = require('../models/Teachers/ManageProgress/interventionAssessmentModel');
 const imageUrlValidator = require('../utils/imageUrlValidator');
 const s3Client = require('../config/s3');
 const { DeleteObjectCommand } = require('@aws-sdk/client-s3');

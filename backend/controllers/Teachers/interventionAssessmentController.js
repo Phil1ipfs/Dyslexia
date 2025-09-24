@@ -75,7 +75,8 @@ class InterventionAssessmentController {
             question.questionText.trim() !== '' &&
             // EDGE CASE: Check if question might have been modified from template/main_assessment
             question.source !== 'template_question' &&
-            question.source !== 'main_assessment'
+            question.source !== 'main_assessment' &&
+            question.source !== 'sentence_template' // ✅ CRITICAL: Prevent template-based RC from being saved as new templates
           );
 
           if (shouldSaveToTemplates) {
@@ -85,11 +86,20 @@ class InterventionAssessmentController {
             if (interventionData.category === 'Reading Comprehension') {
               console.log(`[INTERVENTION CONTROLLER] 📋 Processing Reading Comprehension custom question ${question.questionId} for sentence_templates`);
 
-              // Only save if it's truly custom (not template + additional questions)
-              if (question.storyTitle && question.passages && question.sentenceQuestions) {
+              // ✅ BULLETPROOF: Only save if it's truly custom (not template + additional questions)
+              // Check for sourceQuestionId to ensure it's not template-based content
+              if (question.storyTitle && question.passages && question.sentenceQuestions &&
+                  !question.sourceQuestionId && question.source === 'custom') {
+                console.log(`[INTERVENTION CONTROLLER] 💾 Saving truly custom RC content as template`);
                 await this.saveCustomReadingComprehensionTemplate(question, interventionData.readingLevel, req.user.id);
               } else {
-                console.log(`[INTERVENTION CONTROLLER] ℹ️ Skipping RC question - appears to be template-based or additional questions only`);
+                console.log(`[INTERVENTION CONTROLLER] ⚠️ Skipping RC question - template-based or has sourceQuestionId:`, {
+                  sourceQuestionId: question.sourceQuestionId,
+                  source: question.source,
+                  hasStoryTitle: !!question.storyTitle,
+                  hasPassages: !!question.passages,
+                  hasSentenceQuestions: !!question.sentenceQuestions
+                });
               }
               continue; // Skip templates_questions processing for Reading Comprehension
             }
@@ -1321,13 +1331,36 @@ class InterventionAssessmentController {
             question.questionText.trim() !== '' &&
             // EDGE CASE: Check if question might have been modified from template/main_assessment
             question.source !== 'template_question' &&
-            question.source !== 'main_assessment'
+            question.source !== 'main_assessment' &&
+            question.source !== 'sentence_template' // ✅ CRITICAL: Prevent template-based RC from being saved as new templates
           );
 
           if (shouldSaveToTemplates) {
-            try {
-              console.log(`[INTERVENTION CONTROLLER] 🆕 Found truly custom question ${question.questionId} - validating for template save (update)`);
+            console.log(`[INTERVENTION CONTROLLER] 🆕 Found truly custom question ${question.questionId} - validating for template save (update)`);
 
+            // Handle Reading Comprehension custom content - save to sentence_templates (not templates_questions) [UPDATE]
+            if (updateData.category === 'Reading Comprehension') {
+              console.log(`[INTERVENTION CONTROLLER] 📋 Processing Reading Comprehension custom question ${question.questionId} for sentence_templates (update)`);
+
+              // ✅ BULLETPROOF: Only save if it's truly custom (not template + additional questions) [UPDATE]
+              // Check for sourceQuestionId to ensure it's not template-based content
+              if (question.storyTitle && question.passages && question.sentenceQuestions &&
+                  !question.sourceQuestionId && question.source === 'custom') {
+                console.log(`[INTERVENTION CONTROLLER] 💾 Saving truly custom RC content as template (update)`);
+                await this.saveCustomReadingComprehensionTemplate(question, updateData.readingLevel, req.user.id);
+              } else {
+                console.log(`[INTERVENTION CONTROLLER] ⚠️ Skipping RC question - template-based or has sourceQuestionId (update):`, {
+                  sourceQuestionId: question.sourceQuestionId,
+                  source: question.source,
+                  hasStoryTitle: !!question.storyTitle,
+                  hasPassages: !!question.passages,
+                  hasSentenceQuestions: !!question.sentenceQuestions
+                });
+              }
+              continue; // Skip templates_questions processing for Reading Comprehension
+            }
+
+            try {
               // BULLETPROOF DUPLICATE CHECK: Multiple validation layers to prevent duplicates (UPDATE)
               const TemplateQuestion = require('../../models/Teachers/ManageProgress/templatesQuestionsModel');
 
@@ -2030,10 +2063,26 @@ class InterventionAssessmentController {
       console.log(`[INTERVENTION CONTROLLER] - Story title: "${question.storyTitle}"`);
       console.log(`[INTERVENTION CONTROLLER] - Passages: ${question.passages?.length || 0}`);
       console.log(`[INTERVENTION CONTROLLER] - Sentence questions: ${question.sentenceQuestions?.length || 0}`);
+      console.log(`[INTERVENTION CONTROLLER] - Source: ${question.source}`);
+      console.log(`[INTERVENTION CONTROLLER] - SourceQuestionId: ${question.sourceQuestionId}`);
 
-      // Validate that this is truly custom content
+      // ✅ BULLETPROOF VALIDATION: Extra safety checks to prevent template duplication
       if (!question.storyTitle || !question.passages || !question.sentenceQuestions) {
         console.log(`[INTERVENTION CONTROLLER] ⚠️ Not saving - missing required RC fields`);
+        return;
+      }
+
+      // ✅ CRITICAL: Final safety check - never save template-based content as new templates
+      if (question.sourceQuestionId || question.source === 'sentence_template') {
+        console.log(`[INTERVENTION CONTROLLER] 🚫 BLOCKED: Template-based content detected - preventing duplicate template creation`);
+        console.log(`[INTERVENTION CONTROLLER] - sourceQuestionId: ${question.sourceQuestionId}`);
+        console.log(`[INTERVENTION CONTROLLER] - source: ${question.source}`);
+        return;
+      }
+
+      // ✅ Ensure it's marked as custom content only
+      if (question.source !== 'custom') {
+        console.log(`[INTERVENTION CONTROLLER] ⚠️ Not saving - source is not 'custom': ${question.source}`);
         return;
       }
 
