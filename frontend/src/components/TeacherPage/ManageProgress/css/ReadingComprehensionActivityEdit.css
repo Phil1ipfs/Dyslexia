@@ -290,23 +290,9 @@
   color: #374151 !important;
 }
 
-/* Image Upload Styling */
-.image-upload-area {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-}
+/* Image Upload Styling - Updated in Enhanced section below */
 
-.image-upload-btn {
-  transition: all 0.2s ease;
-  font-family: inherit;
-}
-
-.image-upload-btn:hover {
-  background: #f3f4f6 !important;
-  border-color: #9ca3af !important;
-}
+/* Duplicate styles removed - using enhanced version below */
 
 .uploaded-image-preview {
   display: flex;
@@ -1303,6 +1289,16 @@ h5.question-number {
   transform: translateY(0);
 }
 
+/* Spinner animation for uploads */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
 /* Enhanced textarea styling */
 .rc-form-group textarea {
   width: 100%;
@@ -1334,17 +1330,22 @@ h5.question-number {
 /* Enhanced image upload styling */
 .image-upload-area {
   margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
 }
 
 .uploaded-image-preview {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
-  padding: 12px;
+  padding: 16px;
   background: #f8fafc;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
+  text-align: center;
 }
 
 .uploaded-image-preview img {
@@ -1369,7 +1370,9 @@ h5.question-number {
   font-weight: 500;
   transition: all 0.3s ease;
   width: 100%;
+  max-width: 300px;
   justify-content: center;
+  margin: 0 auto;
 }
 
 .image-upload-btn:hover {

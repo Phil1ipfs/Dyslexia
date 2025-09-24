@@ -159,7 +159,7 @@ export default {
       formData.append('file', file);
       formData.append('targetFolder', targetFolder);
 
-      return api.post('/api/interventions/upload-file', formData, {
+      return api.post('/api/uploads/s3', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

@@ -1529,7 +1529,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         throw new Error(response.data.message || 'Upload failed');
       }
 
-      const { fileUrl, isPublic } = response.data.data;
+      const fileUrl = response.data.url;
+      const isPublic = response.data.verified;
 
       console.log(`[S3 UPLOAD] ✅ Direct upload successful!`);
       console.log(`[S3 UPLOAD] File URL: ${fileUrl}`);
@@ -4823,30 +4824,35 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     try {
       setUploading(true);
 
-      // Create FormData for upload
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('category', 'reading_comprehension');
-      formData.append('type', 'story_page');
+      // Create immediate local preview
+      const localUrl = URL.createObjectURL(file);
+      console.log(`[STORY PAGE] Created local preview URL: ${localUrl}`);
+      
+      // Update the UI immediately with the local preview
+      updateStoryPage(pageId, 'image', localUrl);
 
-      const response = await fetch('/api/interventions/upload-image', {
-        method: 'POST',
-        body: formData
-      });
+      // Upload to S3 using the existing function
+      console.log(`[STORY PAGE] Starting upload with targetFolder: reading_comprehension`);
+      const imageUrl = await uploadImageToS3(file, 'reading_comprehension');
 
-      if (!response.ok) {
-        throw new Error('Upload failed');
+      if (imageUrl) {
+        // Update the story page with the S3 URL, replacing the local URL
+        updateStoryPage(pageId, 'image', imageUrl);
+        console.log(`[STORY PAGE] ✅ Upload successful! Image URL: ${imageUrl}`);
+      } else {
+        throw new Error("Failed to upload image to S3");
       }
-
-      const data = await response.json();
-
-      // Update the story page with the new image URL
-      updateStoryPage(pageId, 'image', data.url);
+      
+      // Clean up the local URL
+      URL.revokeObjectURL(localUrl);
 
       createModalToast('Image uploaded successfully!', 'success');
     } catch (error) {
       console.error('Image upload error:', error);
       createModalToast('Failed to upload image. Please try again.', 'error');
+      
+      // Remove the local preview on error
+      updateStoryPage(pageId, 'image', null);
     } finally {
       setUploading(false);
       // Clear the input
@@ -5961,8 +5967,26 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                     type="button"
                     className="image-upload-btn"
                     onClick={() => storyPageImageRefs.current[page.id]?.click()}
+                    disabled={uploading}
                   >
-                    <FaImage /> {page.image ? 'Change Image' : 'Upload Image'}
+                    {uploading ? (
+                      <>
+                        <div className="spinner" style={{
+                          width: '16px',
+                          height: '16px',
+                          border: '2px solid #f3f3f3',
+                          borderTop: '2px solid #4A608A',
+                          borderRadius: '50%',
+                          animation: 'spin 1s linear infinite',
+                          marginRight: '8px'
+                        }}></div>
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <FaImage /> {page.image ? 'Change Image' : 'Upload Image'}
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
