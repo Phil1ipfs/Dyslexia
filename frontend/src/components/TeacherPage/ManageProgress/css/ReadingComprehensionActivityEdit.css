@@ -1,8 +1,9 @@
 /* Reading Comprehension Activity Edit Modal Styles */
 
 .reading-comprehension-container {
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: 100%;
+  width: 100%;
+  margin: 0;
   padding: 24px;
   background: #ffffff;
   border-radius: 12px;
@@ -177,6 +178,31 @@
 /* Form Elements */
 .rc-form-group {
   margin-bottom: 20px;
+  width: 100%;
+}
+
+.rc-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fafbfc;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.1);
+}
+
+.rc-select:focus {
+  outline: none;
+  border-color: #4A608A;
+  box-shadow: 0 0 0 3px rgba(74, 96, 138, 0.1);
+  background: white;
+}
+
+.rc-select:hover {
+  border-color: #cbd5e1;
+  background: white;
 }
 
 .rc-form-group label {
@@ -250,6 +276,12 @@
 .rc-template-preview {
   position: relative;
   transition: all 0.2s ease;
+  width: 100%;
+  padding: 16px;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  margin-top: 16px;
 }
 
 .rc-template-preview:hover {
@@ -334,6 +366,8 @@
   animation: slideIn 0.3s ease-out;
   position: relative;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 100%;
 }
 
 .rc-activity-card:hover {

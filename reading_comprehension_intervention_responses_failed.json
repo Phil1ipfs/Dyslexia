@@ -1,7 +1,7 @@
 [
   {
     "_id": {
-      "$oid": "68d36dc3f7cfe94040800ad1"
+      "$oid": "68d36dc3f9cfe94040800ad6"
     },
     "studentId": 202522233,
     "interventionAssessmentId": {
@@ -11,9 +11,7 @@
     "questionId": "int_rc_001",
     "category": "Reading Comprehension",
     "response": [
-      "pedro",
-      "bahay"
-    ],
+      "pedro"    ],
     "isCorrect": false,
     "responseTime": 45.2,
     "answeredAt": {
@@ -26,7 +24,7 @@
   },
   {
     "_id": {
-      "$oid": "68d32dc3f1cfe84040800ad3"
+      "$oid": "68d32dc9f1cfe84020800ad3"
     },
     "studentId": 202522233,
     "interventionAssessmentId": {
@@ -36,8 +34,7 @@
     "questionId": "int_rc_002",
     "category": "Reading Comprehension",
     "response": [
-      "hayop",
-      "mapanhahsds"
+      "hayop"
     ],
     "isCorrect": false,
     "responseTime": 52.8,
