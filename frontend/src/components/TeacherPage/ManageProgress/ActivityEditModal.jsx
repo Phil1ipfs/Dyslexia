@@ -161,7 +161,7 @@ import './css/ActivityEditModal.css';
 import './css/AlphabetKnowledgeActivityEdit.css';
 import './css/PhonologicalAwarenessActivityEdit.css';
 import './css/DecodingActivityEdit.css';
-import './css/WordRecognitionActivityEdit.css';
+import './css/ReadingComprehensionActivityEdit.css';
 
 // Utility function to safely handle arrays that might be undefined
 const safe = (arr) => Array.isArray(arr) ? arr : [];
@@ -5790,7 +5790,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         {/* Multiple Activities Navigation */}
         <div className="rc-activities-nav">
           <div className="rc-activities-nav-header">
-            <h4>Reading Comprehension Activities</h4>
+            <h4>Reading Comprehension</h4>
             <button
               type="button"
               onClick={addNewActivity}
@@ -5887,7 +5887,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           {safe(getCurrentActivity().storyPages || []).map((page, pageIndex) => (
             <div key={page.id} className="rc-story-page-card">
               <div className="rc-card-header">
-                <h5 className="rc-card-title page-number">Page {pageIndex + 1}</h5>
+                <div className="page-number">{pageIndex + 1}</div>
                 {safe(getCurrentActivity().storyPages || []).length > 1 && (
                   <button
                     type="button"
@@ -5910,22 +5910,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                   }}
                   placeholder="Write the story content for this page..."
                   rows={4}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontFamily: 'inherit',
-                    resize: 'vertical'
-                  }}
                   maxLength={500}
                 />
-                <div style={{
-                  fontSize: '12px',
-                  color: '#6b7280',
-                  marginTop: '4px'
-                }}>
+                <div className="rc-char-counter">
                   Only letters, spaces, and basic punctuation allowed. {(page.text || '').length}/500 characters
                 </div>
               </div>
@@ -5974,14 +5961,6 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                     type="button"
                     className="image-upload-btn"
                     onClick={() => storyPageImageRefs.current[page.id]?.click()}
-                    style={{
-                      padding: '8px 16px',
-                      background: '#f3f4f6',
-                      border: '2px dashed #d1d5db',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      color: '#6b7280'
-                    }}
                   >
                     <FaImage /> {page.image ? 'Change Image' : 'Upload Image'}
                   </button>
@@ -6013,7 +5992,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           {safe(getCurrentActivity().questions || []).map((question, questionIndex) => (
             <div key={question.id} className="rc-question-card">
               <div className="rc-card-header">
-                <h5 className="rc-card-title question-number">Question {questionIndex + 1}</h5>
+                <div className="question-number">{questionIndex + 1}</div>
                 {safe(getCurrentActivity().questions || []).length > 1 && (
                   <button
                     type="button"
@@ -6036,21 +6015,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                     updateComprehensionQuestion(question.id, 'questionText', validText);
                   }}
                   placeholder="Example: Sino ang mga pangunahing tauhan sa kwento?"
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontFamily: 'inherit'
-                  }}
                   maxLength={200}
                 />
-                <div style={{
-                  fontSize: '12px',
-                  color: '#6b7280',
-                  marginTop: '4px'
-                }}>
+                <div className="rc-char-counter">
                   Only letters, spaces, and basic punctuation allowed. {(question.questionText || '').length}/200 characters
                 </div>
               </div>
@@ -6066,33 +6033,21 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                     updateComprehensionQuestion(question.id, 'correctAnswer', validText);
                   }}
                   placeholder="Example: Si Juan at si Maria"
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontFamily: 'inherit'
-                  }}
                   maxLength={100}
                 />
-                <div style={{
-                  fontSize: '12px',
-                  color: '#6b7280',
-                  marginTop: '4px'
-                }}>
+                <div className="rc-char-counter">
                   Only letters and spaces allowed. {(question.correctAnswer || '').length}/100 characters
                 </div>
               </div>
 
               <div className="rc-form-group">
                 <label>Acceptable Answer Variations</label>
-                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>
+                <div className="rc-field-description">
                   Add alternative ways students might answer correctly
                 </div>
 
                 {safe(question.acceptableAnswers).map((answer, answerIndex) => (
-                  <div key={answerIndex} className="answer-variation-row">
+                  <div key={answerIndex} className="rc-acceptable-answer-row">
                     <input
                       type="text"
                       value={answer}
@@ -6102,27 +6057,13 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                         updateAcceptableAnswer(question.id, answerIndex, validText);
                       }}
                       placeholder={`Alternative answer ${answerIndex + 1}`}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        fontFamily: 'inherit'
-                      }}
+                      className="rc-acceptable-answer-input"
                       maxLength={100}
                     />
                     <button
                       type="button"
                       onClick={() => removeAcceptableAnswer(question.id, answerIndex)}
-                      style={{
-                        background: 'none',
-                        border: '1px solid #dc2626',
-                        color: '#dc2626',
-                        padding: '8px 12px',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
+                      className="rc-acceptable-answer-remove-btn"
                     >
                       <FaMinus />
                     </button>
@@ -6131,19 +6072,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
                 <button
                   type="button"
-                  className="add-answer-variation-btn"
+                  className="rc-add-acceptable-answer-btn"
                   onClick={() => addAcceptableAnswer(question.id)}
-                  style={{
-                    background: '#f9fafb',
-                    border: '2px dashed #d1d5db',
-                    color: '#6b7280',
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    width: '100%',
-                    marginTop: '8px'
-                  }}
                 >
                   <FaPlus /> Add Alternative Answer
                 </button>
