@@ -44,10 +44,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   FaInfoCircle,
   FaExclamationTriangle,
+  FaCheckCircle,
   FaChartLine,
   FaEdit,
   FaMagic,
-  FaCheckCircle,
+  FaBook,
+  FaPen,
+  FaTimes,
+  FaTrash,
+  FaSync,
+  FaLightbulb,
   FaPlus,
   FaSpinner,
   FaTimes,
@@ -282,7 +288,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     activity?.description || 
     `Targeted practice activities for improving skills`
   );
-  const [readingLevel] = useState(student?.readingLevel || 'Low Emerging'); // Fixed to student's level
+  const [readingLevel] = useState(student?.readingLevel); // Dynamic reading level from student
   
   // Saving and loading states
   const [submitting, setSubmitting] = useState(false);
@@ -311,8 +317,10 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   // Question Management
   const [questionChoicePairs, setQuestionChoicePairs] = useState([]);
   
-  // For Reading Comprehension
-  const [selectedSentenceTemplate, setSelectedSentenceTemplate] = useState(null);
+  // For Reading Comprehension - Enhanced for multiple templates
+  const [selectedSentenceTemplates, setSelectedSentenceTemplates] = useState([]); // Changed to array for multiple selection
+  const [contentSourceMode, setContentSourceMode] = useState('choose'); // 'choose', 'templates', 'custom', 'mixed'
+  const [showCustomContentForm, setShowCustomContentForm] = useState(false);
 
   // Custom Reading Comprehension Content - Support Multiple Activities
   const [customReadingComprehensionActivities, setCustomReadingComprehensionActivities] = useState([
@@ -1429,10 +1437,18 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    */
   const loadSentenceTemplates = async () => {
     try {
-      // Make the API call with proper authentication
-      console.log('Loading sentence templates:', `/api/templates/sentences?readingLevel=${readingLevel}`);
+      // Get reading level dynamically from student
+      const currentReadingLevel = student?.readingLevel || readingLevel;
       
-      const response = await api.interventions.getSentenceTemplates(readingLevel);
+      if (!currentReadingLevel) {
+        console.warn('[SENTENCE TEMPLATES] No reading level available for student:', student);
+        setSentenceTemplates([]);
+        return;
+      }
+      
+      console.log('Loading sentence templates:', `/api/templates/sentences?readingLevel=${currentReadingLevel}`);
+      
+      const response = await api.interventions.getSentenceTemplates(currentReadingLevel);
       console.log('Sentence templates response:', response.data);
       
       // Sanitize image URLs in the templates before updating state
@@ -2549,17 +2565,34 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         console.warn('[RC TEMPLATE SAVE] Could not fetch existing sentence templates for duplicate checking:', error);
       }
 
+      // Get the current reading level
+      const currentReadingLevel = student?.readingLevel || readingLevel;
+      
+      if (!currentReadingLevel) {
+        console.warn('[RC TEMPLATE SAVE] No reading level available for student, skipping template save');
+        toast.warn('Cannot save templates: Student reading level not available');
+        return;
+      }
+
+      // Validate reading level against backend enum
+      const validReadingLevels = ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'];
+      if (!validReadingLevels.includes(currentReadingLevel)) {
+        console.warn('[RC TEMPLATE SAVE] Invalid reading level:', currentReadingLevel, 'Valid levels:', validReadingLevels);
+        toast.warn(`Cannot save templates: Invalid reading level "${currentReadingLevel}". Valid levels are: ${validReadingLevels.join(', ')}`);
+        return;
+      }
+
       // Process each complete activity
       for (const [index, activity] of completeActivities.entries()) {
         // Check for duplicate templates based on story title and reading level
         const isDuplicate = existingTemplates.some(template =>
           template.title && template.title.toLowerCase().trim() === activity.storyTitle.toLowerCase().trim() &&
-          template.readingLevel === student?.readingLevel
+          template.readingLevel === currentReadingLevel
         );
 
         if (isDuplicate) {
-          console.log(`[RC TEMPLATE SAVE] ⚠️ Skipping duplicate template: "${activity.storyTitle}" already exists for reading level "${student?.readingLevel}"`);
-          toast.warn(`A Reading Comprehension template with title "${activity.storyTitle}" already exists for this reading level.`);
+          console.log(`[RC TEMPLATE SAVE] ⚠️ Skipping duplicate template: "${activity.storyTitle}" already exists for reading level "${currentReadingLevel}"`);
+          toast.warn(`A Reading Comprehension template with title "${activity.storyTitle}" already exists for reading level "${currentReadingLevel}".`);
           continue;
         }
 
@@ -2567,38 +2600,111 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         const templateData = {
           title: activity.storyTitle,
           category: "Reading Comprehension",
-          readingLevel: student?.readingLevel || "At Grade Level",
+          readingLevel: currentReadingLevel,
           sentenceText: (activity.storyPages || []).map((page, pageIndex) => ({
             pageNumber: pageIndex + 1,
             text: page.text || page.pageText,
             image: page.image || page.pageImage || null
           })),
-          sentenceQuestions: (activity.questions || []).map((question, questionIndex) => ({
-            questionText: question.questionText,
-            correctAnswer: question.correctAnswer,
-            acceptableAnswers: question.acceptableAnswers || [] // Match main assessment structure
+          sentenceQuestions: (activity.questions || []).map((question, qIndex) => ({
+            questionNumber: qIndex + 1,
+            questionText: question.questionText || question.sentenceQuestionText,
+            sentenceCorrectAnswer: question.sentenceCorrectAnswer || question.correctAnswer,
+            acceptableAnswers: question.sentenceAcceptableAnswer || question.acceptableAnswers || []
           })),
           isActive: true,
-          createdBy: user?._id || "system", // Use current user ID or fallback
+          createdBy: getValidTeacherId(), // Use current teacher ID
           createdAt: new Date()
         };
+
+        // Debug: Log the actual activity structure
+        console.log(`[RC TEMPLATE SAVE] 🔍 Activity structure for activity ${index + 1}:`, {
+          id: activity.id,
+          storyTitle: activity.storyTitle,
+          pagesCount: activity.storyPages?.length || 0,
+          questionsLength: activity.questions?.length || 0,
+          questionsStructure: activity.questions?.map((q, qIdx) => ({
+            index: qIdx,
+            keys: Object.keys(q || {}),
+            questionText: q?.questionText,
+            correctAnswer: q?.correctAnswer,
+            sentenceCorrectAnswer: q?.sentenceCorrectAnswer,
+            acceptableAnswers: q?.acceptableAnswers,
+            sentenceAcceptableAnswer: q?.sentenceAcceptableAnswer
+          })) || []
+        });
 
         console.log(`[RC TEMPLATE SAVE] Prepared sentence template data for activity ${index + 1}:`, {
           title: templateData.title,
           readingLevel: templateData.readingLevel,
           pagesCount: templateData.sentenceText.length,
-          questionsCount: templateData.sentenceQuestions.length
+          questionsCount: templateData.sentenceQuestions.length,
+          sourceQuestionsLength: activity.questions?.length || 0
         });
 
         // Save template using API
-        const templateResponse = await api.interventions.createSentenceTemplate(templateData);
+        console.log(`[RC TEMPLATE SAVE] 🔄 Attempting to save template with data:`, templateData);
+        console.log(`[RC TEMPLATE SAVE] 🔍 Template data structure:`, {
+          hasTitle: !!templateData.title,
+          hasCategory: !!templateData.category,
+          hasReadingLevel: !!templateData.readingLevel,
+          hasSentenceText: !!templateData.sentenceText,
+          hasSentenceQuestions: !!templateData.sentenceQuestions,
+          hasCreatedBy: !!templateData.createdBy,
+          titleLength: templateData.title?.length,
+          sentenceTextCount: templateData.sentenceText?.length,
+          sentenceQuestionsCount: templateData.sentenceQuestions?.length
+        });
 
-        if (templateResponse.success) {
-          console.log(`[RC TEMPLATE SAVE] ✅ Successfully saved Reading Comprehension template: "${templateData.title}"`);
-          toast.success(`Reading Comprehension template "${templateData.title}" saved successfully!`);
-        } else {
-          console.error('[RC TEMPLATE SAVE] ❌ Failed to save sentence template:', templateResponse.error);
-          toast.error(`Failed to save Reading Comprehension template: ${templateResponse.error || 'Unknown error'}`);
+        // Validate schema compliance before sending
+        const validation = {
+          titleValid: templateData.title && templateData.title.trim().length > 0,
+          readingLevelValid: ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'].includes(templateData.readingLevel),
+          sentenceTextValid: Array.isArray(templateData.sentenceText) && templateData.sentenceText.length > 0,
+          sentenceQuestionsValid: Array.isArray(templateData.sentenceQuestions) && templateData.sentenceQuestions.length > 0,
+          createdByValid: templateData.createdBy && typeof templateData.createdBy === 'string'
+        };
+
+        console.log(`[RC TEMPLATE SAVE] 🔍 Template validation:`, validation);
+
+        // Check if all validations pass
+        const allValid = Object.values(validation).every(v => v === true);
+        if (!allValid) {
+          console.error(`[RC TEMPLATE SAVE] ❌ Template validation failed:`, validation);
+          toast.error('Template data validation failed. Please check all required fields.');
+          return;
+        }
+
+        // Data validation complete - proceeding with actual template save
+
+        try {
+          const templateResponse = await api.interventions.createSentenceTemplate(templateData);
+          console.log(`[RC TEMPLATE SAVE] 📡 API Response:`, templateResponse);
+
+          if (templateResponse.data && templateResponse.data.success) {
+            console.log(`[RC TEMPLATE SAVE] ✅ Successfully saved Reading Comprehension template: "${templateData.title}"`);
+            toast.success(`Reading Comprehension template "${templateData.title}" saved successfully!`);
+          } else {
+            console.error('[RC TEMPLATE SAVE] ❌ Failed to save sentence template:', templateResponse.data?.error || templateResponse.error);
+            console.error('[RC TEMPLATE SAVE] ❌ Full response:', templateResponse);
+            toast.error(`Failed to save Reading Comprehension template: ${templateResponse.data?.error || templateResponse.error || 'Unknown error'}`);
+          }
+        } catch (apiError) {
+          console.error('[RC TEMPLATE SAVE] ❌ API Error:', apiError);
+          console.error('[RC TEMPLATE SAVE] ❌ Error details:', {
+            message: apiError.message,
+            status: apiError.response?.status,
+            statusText: apiError.response?.statusText,
+            data: apiError.response?.data
+          });
+          
+          if (apiError.response?.status === 500) {
+            toast.error('Server error: The template saving service is currently unavailable. Please try again later.');
+          } else if (apiError.response?.status === 404) {
+            toast.error('Template saving endpoint not found. Please contact support.');
+          } else {
+            toast.error(`Failed to save Reading Comprehension template: ${apiError.message || 'Network error'}`);
+          }
         }
       }
 
@@ -2669,6 +2775,11 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         setErrors({ general: "An intervention for this student and category already exists." });
         setSubmitting(false);
         return;
+      }
+      
+      // Save Reading Comprehension custom content as templates first (if applicable)
+      if (contentType === 'sentence' && !selectedSentenceTemplate) {
+        await saveReadingComprehensionCustomContentAsTemplate();
       }
       
       // Prepare data for saving
@@ -3014,17 +3125,21 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     
     if (contentType === 'sentence') {
       // Determine if using template or custom content
-      const usingTemplate = selectedSentenceTemplate;
+      const usingTemplate = selectedSentenceTemplate && selectedSentenceTemplate !== 'template_mode' && selectedSentenceTemplate._id;
       const hasCustomActivities = customReadingComprehensionActivities.length > 0 &&
         customReadingComprehensionActivities.some(activity =>
           activity.storyTitle && activity.storyTitle.trim() &&
           activity.storyPages && activity.storyPages.length > 0 &&
           activity.questions && activity.questions.length > 0
         );
-      const usingCustom = !selectedSentenceTemplate && hasCustomActivities;
+      const usingCustom = !usingTemplate && hasCustomActivities;
 
       if (!usingTemplate && !usingCustom) {
-        throw new Error("Either template or custom Reading Comprehension activities are required");
+        if (selectedSentenceTemplate === 'template_mode') {
+          throw new Error("Please select a template from the available options");
+        } else {
+          throw new Error("Either template or custom Reading Comprehension activities are required");
+        }
       }
 
       // Prepare content source
@@ -3159,7 +3274,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           [{
             questionId: `int_rc_001`,
             source: 'sentence_template',
-            sourceTemplateId: contentSource.sourceId,
+            sourceQuestionId: contentSource.sourceId,
             questionType: 'text_input', // ✅ Fixed: Use 'text_input' like main assessment
             questionText: storyTitle,
 
@@ -3189,7 +3304,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           (allActivities || []).map((activity, activityIndex) => ({
             questionId: `int_rc_${String(activityIndex + 1).padStart(3, '0')}`,
             source: 'custom',
-            sourceTemplateId: null,
+            sourceQuestionId: null,
             questionType: 'text_input', // ✅ Fixed: Use 'text_input' like main assessment
             questionText: activity.storyTitle,
 
@@ -4735,6 +4850,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   /**
    * Sentence Template Management
    */
+  // Enhanced handler for multiple template selection
   const handleSelectSentenceTemplate = (template) => {
     // Create a sanitized copy of the template with fixed image URLs
     const sanitizedTemplate = { ...template };
@@ -4752,7 +4868,32 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       sanitizedTemplate.imageUrl = sanitizeImageUrl(sanitizedTemplate.imageUrl);
     }
 
-    setSelectedSentenceTemplate(sanitizedTemplate);
+    // Toggle template selection (allow multiple)
+    setSelectedSentenceTemplates(prev => {
+      const isAlreadySelected = prev.some(t => t._id === template._id);
+      if (isAlreadySelected) {
+        // Remove if already selected
+        return prev.filter(t => t._id !== template._id);
+      } else {
+        // Add to selection
+        return [...prev, sanitizedTemplate];
+      }
+    });
+  };
+
+  // Helper function to check if template is selected
+  const isTemplateSelected = (templateId) => {
+    return selectedSentenceTemplates.some(t => t._id === templateId);
+  };
+
+  // Helper function to remove template from selection
+  const removeSelectedTemplate = (templateId) => {
+    setSelectedSentenceTemplates(prev => prev.filter(t => t._id !== templateId));
+  };
+
+  // Helper function to clear all selected templates
+  const clearAllTemplates = () => {
+    setSelectedSentenceTemplates([]);
   };
 
   /**
@@ -5133,11 +5274,14 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     }
     else if (currentStep === 2) {
       if (contentType === 'sentence') {
-        if (selectedSentenceTemplate) {
+        if (selectedSentenceTemplate && selectedSentenceTemplate !== 'template_mode') {
           // Using template - basic validation
           if (!selectedSentenceTemplate) {
             newErrors.sentenceTemplate = "A reading passage must be selected";
           }
+        } else if (selectedSentenceTemplate === 'template_mode') {
+          // Template mode selected but no template chosen
+          newErrors.sentenceTemplate = "Please select a template from the available options";
         } else {
           // Custom content validation - validate multiple activities
           if (!customReadingComprehensionActivities || customReadingComprehensionActivities.length === 0) {
@@ -5230,7 +5374,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     
     // Template validation - check for either template OR custom content
     if (contentType === 'sentence') {
-      const hasTemplate = selectedSentenceTemplate;
+      const hasTemplate = selectedSentenceTemplate && selectedSentenceTemplate !== 'template_mode' && selectedSentenceTemplate !== null;
       const hasCustomContent = customReadingComprehensionActivities.length > 0 &&
         customReadingComprehensionActivities.some(activity =>
           activity.storyTitle && activity.storyTitle.trim() &&
@@ -5239,7 +5383,11 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         );
       
       if (!hasTemplate && !hasCustomContent) {
-        allErrors.sentenceTemplate = "A reading passage must be selected or custom content must be created";
+        if (selectedSentenceTemplate === 'template_mode') {
+          allErrors.sentenceTemplate = "Please select a template from the available options";
+        } else {
+          allErrors.sentenceTemplate = "A reading passage must be selected or custom content must be created";
+        }
       }
     }
     
@@ -5658,64 +5806,318 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     return (
       <div className="reading-comprehension-container">
         <div className="rc-section">
-          <h3>Create Reading Comprehension Activity</h3>
+          <h3>📚 Create Reading Comprehension Activity</h3>
 
+          {/* Step-by-Step Guide for Teachers */}
           <div className="reading-comprehension-info-banner">
             <FaInfoCircle className="info-icon" />
-            <p>
-              Create a comprehensive reading comprehension activity with story title, passages, and comprehension questions.
-              You can select from pre-made templates or create custom content that will be saved for future use.
-            </p>
-          </div>
-
-          {/* Content Source Selection */}
-          <div className="rc-section">
-            <h4>Select Content Source</h4>
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-              <button
-                type="button"
-                className={`rc-source-btn ${selectedSentenceTemplate ? '' : 'active'}`}
-                style={{
-                  padding: '12px 20px',
-                  border: selectedSentenceTemplate ? '2px solid #e5e7eb' : '2px solid #22c55e',
-                  borderRadius: '8px',
-                  background: selectedSentenceTemplate ? '#f9fafb' : '#f0fdf4',
-                  color: selectedSentenceTemplate ? '#6b7280' : '#16a34a',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
-                onClick={() => setSelectedSentenceTemplate(null)}
-              >
-                Create Custom Content
-              </button>
-              <button
-                type="button"
-                className={`rc-source-btn ${selectedSentenceTemplate ? 'active' : ''}`}
-                style={{
-                  padding: '12px 20px',
-                  border: selectedSentenceTemplate ? '2px solid #22c55e' : '2px solid #e5e7eb',
-                  borderRadius: '8px',
-                  background: selectedSentenceTemplate ? '#f0fdf4' : '#f9fafb',
-                  color: selectedSentenceTemplate ? '#16a34a' : '#6b7280',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
-                onClick={() => {
-                  // Show template selection
-                }}
-              >
-                Use Pre-made Template
-              </button>
+            <div>
+              <p style={{ margin: '0 0 8px 0', fontWeight: '600' }}>
+                📝 Follow these simple steps to create your reading activity:
+              </p>
+              <p style={{ margin: 0 }}>
+                <strong>Step 1:</strong> Choose how you want to create content (use ready-made stories or write your own)<br/>
+                <strong>Step 2:</strong> Select templates or add your content<br/>
+                <strong>Step 3:</strong> Review and save your activity
+              </p>
             </div>
           </div>
 
-          {/* Template Selection (if using templates) */}
-          {selectedSentenceTemplate === null ? (
-            renderCustomReadingComprehensionForm()
-          ) : (
-            renderTemplateSelection()
-          )}
+          {/* Step 1: Content Source Selection with Clear Visual Guide */}
+          <div className="rc-section">
+            <h4>🎯 Step 1: How do you want to create content?</h4>
+            <p style={{ color: '#6b7280', marginBottom: '16px', fontSize: '14px' }}>
+              Choose the easiest option for you. You can always change your mind!
+            </p>
+
+            <div className="rc-activities-nav">
+              <div className="rc-activities-tabs" style={{ justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  className={`rc-activity-tab ${contentSourceMode === 'custom' ? 'active' : ''}`}
+                  onClick={() => setContentSourceMode('custom')}
+                >
+                  ✍️ Create My Own Story
+                  <span style={{ fontSize: '12px', opacity: 0.8, marginLeft: '8px' }}>
+                    (Write from scratch)
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className={`rc-activity-tab ${contentSourceMode === 'templates' ? 'active' : ''}`}
+                  onClick={() => setContentSourceMode('templates')}
+                >
+                  📋 Use Ready-Made Stories
+                  <span style={{ fontSize: '12px', opacity: 0.8, marginLeft: '8px' }}>
+                    (Select from templates)
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className={`rc-activity-tab ${contentSourceMode === 'mixed' ? 'active' : ''}`}
+                  onClick={() => setContentSourceMode('mixed')}
+                >
+                  🔄 Mix Both Options
+                  <span style={{ fontSize: '12px', opacity: 0.8, marginLeft: '8px' }}>
+                    (Templates + Custom)
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 2: Content Creation Based on Selection */}
+          <div className="rc-section">
+            {contentSourceMode === 'choose' && (
+              <div className="rc-activities-empty-state">
+                <p>👆 Please select an option above to continue</p>
+              </div>
+            )}
+
+            {contentSourceMode === 'custom' && (
+              <>
+                <h4>✍️ Step 2: Create Your Own Story</h4>
+                <div className="rc-success-message">
+                  <FaCheckCircle className="rc-success-icon" />
+                  <span>You chose to create your own story content. Fill in the form below to add your story and questions.</span>
+                </div>
+                {renderCustomReadingComprehensionForm()}
+              </>
+            )}
+
+            {contentSourceMode === 'templates' && (
+              <>
+                <h4>📋 Step 2: Choose Ready-Made Stories</h4>
+                <div className="rc-success-message">
+                  <FaCheckCircle className="rc-success-icon" />
+                  <span>Great choice! Select one or more story templates below. You can select multiple stories for a richer activity.</span>
+                </div>
+                {renderEnhancedTemplateSelection()}
+              </>
+            )}
+
+            {contentSourceMode === 'mixed' && (
+              <>
+                <h4>🔄 Step 2: Mix Templates & Custom Content</h4>
+                <div className="rc-success-message">
+                  <FaCheckCircle className="rc-success-icon" />
+                  <span>Perfect! You can select ready-made stories AND add your own content for maximum variety.</span>
+                </div>
+
+                {/* Templates Section */}
+                <div className="rc-section">
+                  <h5>📋 Ready-Made Stories (Optional)</h5>
+                  <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '16px' }}>
+                    Select any templates you'd like to include:
+                  </p>
+                  {renderEnhancedTemplateSelection()}
+                </div>
+
+                {/* Custom Content Section */}
+                <div className="rc-section">
+                  <h5>✍️ Your Custom Content (Optional)</h5>
+                  <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '16px' }}>
+                    Add your own stories and questions:
+                  </p>
+                  <button
+                    type="button"
+                    className="rc-btn rc-btn-secondary"
+                    onClick={() => setShowCustomContentForm(!showCustomContentForm)}
+                    style={{ marginBottom: '16px' }}
+                  >
+                    {showCustomContentForm ? '➖ Hide' : '➕ Add'} Custom Content
+                  </button>
+
+                  {showCustomContentForm && renderCustomReadingComprehensionForm()}
+                </div>
+              </>
+            )}
+          </div>
         </div>
+      </div>
+    );
+  };
+
+  /**
+   * Enhanced Template Selection for Multiple Templates
+   */
+  const renderEnhancedTemplateSelection = () => {
+    return (
+      <div className="rc-section">
+        {/* Selected Templates Summary */}
+        {selectedSentenceTemplates.length > 0 && (
+          <div className="rc-section">
+            <div className="rc-success-message" style={{ marginBottom: '16px' }}>
+              <FaCheckCircle className="rc-success-icon" />
+              <span>
+                ✅ You've selected <strong>{selectedSentenceTemplates.length}</strong> story template{selectedSentenceTemplates.length > 1 ? 's' : ''}
+              </span>
+            </div>
+
+            {/* Selected Templates Preview */}
+            <div className="rc-activities-nav" style={{ marginBottom: '24px' }}>
+              <div className="rc-activities-nav-header">
+                <h4>📚 Selected Stories</h4>
+                <button
+                  type="button"
+                  className="rc-btn rc-btn-danger"
+                  onClick={clearAllTemplates}
+                  style={{ fontSize: '12px', padding: '6px 12px' }}
+                >
+                  🗑️ Clear All
+                </button>
+              </div>
+              <div className="rc-activities-tabs">
+                {selectedSentenceTemplates.map((template, index) => (
+                  <div key={template._id} className="rc-activity-tab active">
+                    <span>📖 {template.title}</span>
+                    <button
+                      type="button"
+                      className="rc-activity-tab-remove"
+                      onClick={() => removeSelectedTemplate(template._id)}
+                      title="Remove this template"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Available Templates */}
+        <h4>📋 Available Story Templates</h4>
+        <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '16px' }}>
+          💡 <strong>Tip:</strong> Click on any story to add it to your selection. You can select multiple stories!
+          Click again to remove a story from your selection.
+        </p>
+
+        {safe(sentenceTemplates).length > 0 ? (
+          <div className="rc-templates-grid">
+            {safe(sentenceTemplates).map(template => {
+              const isSelected = isTemplateSelected(template._id);
+              return (
+                <div
+                  key={template._id}
+                  className={`rc-template-card ${isSelected ? 'selected' : ''}`}
+                  onClick={() => handleSelectSentenceTemplate(template)}
+                  style={{
+                    position: 'relative',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {/* Selection Indicator */}
+                  {isSelected && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      background: '#22c55e',
+                      color: 'white',
+                      borderRadius: '50%',
+                      width: '24px',
+                      height: '24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      zIndex: 1
+                    }}>
+                      ✓
+                    </div>
+                  )}
+
+                  {/* Template Header */}
+                  <div className="rc-template-header">
+                    <div>
+                      <div className="rc-template-badge">{template.readingLevel}</div>
+                      <h4 className="rc-template-title">📖 {template.title}</h4>
+                    </div>
+                  </div>
+
+                  {/* Template Preview */}
+                  <div className="rc-template-preview">
+                    {template.sentenceText?.[0]?.image && (
+                      <div style={{ marginBottom: '12px', textAlign: 'center' }}>
+                        <img
+                          src={template.sentenceText[0].image}
+                          alt="Story preview"
+                          style={{
+                            width: '100%',
+                            maxWidth: '200px',
+                            height: '100px',
+                            objectFit: 'cover',
+                            borderRadius: '6px',
+                            border: '1px solid #e5e7eb'
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    <div style={{
+                      fontSize: '13px',
+                      color: '#6b7280',
+                      lineHeight: '1.4',
+                      marginBottom: '12px'
+                    }}>
+                      {template.sentenceText?.[0]?.text?.length > 100
+                        ? template.sentenceText[0].text.substring(0, 100) + '...'
+                        : template.sentenceText?.[0]?.text || 'No preview available'}
+                    </div>
+                  </div>
+
+                  {/* Template Meta Information */}
+                  <div className="rc-template-meta">
+                    <span>📄 {template.sentenceText?.length || 0} pages</span>
+                    <span>❓ {template.sentenceQuestions?.length || 0} questions</span>
+                  </div>
+
+                  {/* Selection Status */}
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '8px',
+                    background: isSelected ? '#f0fdf4' : '#f9fafb',
+                    borderRadius: '6px',
+                    border: `1px solid ${isSelected ? '#bbf7d0' : '#e5e7eb'}`,
+                    textAlign: 'center',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    color: isSelected ? '#16a34a' : '#6b7280'
+                  }}>
+                    {isSelected ? (
+                      <>✅ Selected - Click to remove</>
+                    ) : (
+                      <>📌 Click to select this story</>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rc-section .empty-state">
+            <FaExclamationTriangle style={{ fontSize: '48px', color: '#9ca3af', marginBottom: '16px' }} />
+            <h3>No Templates Available</h3>
+            <p>No reading comprehension templates were found for this reading level.</p>
+            <p style={{ marginTop: '16px', fontSize: '14px', color: '#6b7280' }}>
+              💡 Don't worry! You can still create your own content using the "Create My Own Story" option.
+            </p>
+          </div>
+        )}
+
+        {/* Selection Summary */}
+        {selectedSentenceTemplates.length === 0 && safe(sentenceTemplates).length > 0 && (
+          <div className="reading-comprehension-info-banner" style={{ marginTop: '24px' }}>
+            <FaInfoCircle className="info-icon" />
+            <p>
+              🎯 <strong>How to select:</strong> Click on any story template above to add it to your activity.
+              You can select multiple stories to give students more reading variety!
+            </p>
+          </div>
+        )}
       </div>
     );
   };
@@ -5815,6 +6217,234 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             </div>
           )}
         </div>
+      </div>
+    );
+  };
+
+  /**
+   * Selected Template Preview with Option to Add Custom Content
+   */
+  const renderSelectedTemplatePreview = () => {
+    if (!selectedSentenceTemplate || selectedSentenceTemplate === 'template_mode') {
+      return null;
+    }
+
+    return (
+      <div className="rc-section">
+        {/* Template Preview Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+          <h4>Selected Template: {selectedSentenceTemplate.title}</h4>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => setSelectedSentenceTemplate('template_mode')}
+              style={{
+                padding: '8px 16px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                background: 'white',
+                color: '#374151',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}
+            >
+              Change Template
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedSentenceTemplate(null)}
+              style={{
+                padding: '8px 16px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                background: 'white',
+                color: '#374151',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}
+            >
+              Use Custom Content
+            </button>
+          </div>
+        </div>
+
+        {/* Template Details */}
+        <div style={{
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          borderRadius: '8px',
+          padding: '16px',
+          marginBottom: '20px'
+        }}>
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{
+              display: 'inline-block',
+              padding: '4px 8px',
+              background: '#dbeafe',
+              color: '#1e40af',
+              borderRadius: '4px',
+              fontSize: '12px',
+              fontWeight: '500',
+              marginBottom: '8px'
+            }}>
+              {selectedSentenceTemplate.readingLevel}
+            </div>
+          </div>
+
+          {/* Preview Image */}
+          {selectedSentenceTemplate.sentenceText?.[0]?.image && (
+            <div style={{ marginBottom: '12px' }}>
+              <img
+                src={selectedSentenceTemplate.sentenceText[0].image}
+                alt="Template preview"
+                style={{
+                  width: '100%',
+                  maxWidth: '400px',
+                  height: '200px',
+                  objectFit: 'cover',
+                  borderRadius: '6px'
+                }}
+              />
+            </div>
+          )}
+
+          {/* Text Preview */}
+          <div style={{ marginBottom: '12px' }}>
+            <strong style={{ color: '#1f2937', fontSize: '14px' }}>Story Text:</strong>
+            <p style={{
+              margin: '4px 0 0 0',
+              fontSize: '14px',
+              color: '#4b5563',
+              lineHeight: '1.5'
+            }}>
+              {selectedSentenceTemplate.sentenceText?.[0]?.text || 'No preview available'}
+            </p>
+          </div>
+
+          {/* Questions Preview */}
+          <div>
+            <strong style={{ color: '#1f2937', fontSize: '14px' }}>Questions:</strong>
+            {selectedSentenceTemplate.sentenceQuestions?.map((question, index) => (
+              <div key={index} style={{
+                margin: '8px 0',
+                padding: '8px',
+                background: 'white',
+                borderRadius: '4px',
+                border: '1px solid #e5e7eb'
+              }}>
+                <p style={{
+                  margin: '0 0 4px 0',
+                  fontSize: '14px',
+                  color: '#1f2937',
+                  fontWeight: '500'
+                }}>
+                  Q{question.questionNumber}: {question.questionText}
+                </p>
+                <p style={{
+                  margin: '0',
+                  fontSize: '13px',
+                  color: '#059669',
+                  fontStyle: 'italic'
+                }}>
+                  Answer: {question.sentenceCorrectAnswer}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Template Stats */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            marginTop: '12px',
+            paddingTop: '12px',
+            borderTop: '1px solid #e5e7eb',
+            fontSize: '12px',
+            color: '#6b7280',
+            fontWeight: '500'
+          }}>
+            <span>{selectedSentenceTemplate.sentenceText?.length || 0} page{(selectedSentenceTemplate.sentenceText?.length || 0) !== 1 ? 's' : ''}</span>
+            <span>{selectedSentenceTemplate.sentenceQuestions?.length || 0} question{(selectedSentenceTemplate.sentenceQuestions?.length || 0) !== 1 ? 's' : ''}</span>
+          </div>
+        </div>
+
+        {/* Option to Add Custom Content */}
+        <div style={{
+          background: '#fefce8',
+          border: '1px solid #fde047',
+          borderRadius: '8px',
+          padding: '16px'
+        }}>
+          <h5 style={{
+            margin: '0 0 8px 0',
+            color: '#a16207',
+            fontSize: '16px',
+            fontWeight: '600'
+          }}>
+            Add Custom Content (Optional)
+          </h5>
+          <p style={{
+            margin: '0 0 12px 0',
+            fontSize: '14px',
+            color: '#a16207',
+            lineHeight: '1.4'
+          }}>
+            You can add additional custom reading comprehension activities alongside this template.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => {
+              // Initialize custom activities if not already done
+              if (customReadingComprehensionActivities.length === 0) {
+                setCustomReadingComprehensionActivities([{
+                  id: Date.now(),
+                  storyTitle: '',
+                  passages: [{ pageNumber: 1, text: '', image: '' }],
+                  questions: [{ questionNumber: 1, questionText: '', correctAnswer: '', acceptableAnswers: [] }]
+                }]);
+              }
+              setShowCustomContentForm(true);
+            }}
+            style={{
+              padding: '8px 16px',
+              border: '1px solid #f59e0b',
+              borderRadius: '6px',
+              background: 'white',
+              color: '#f59e0b',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer'
+            }}
+          >
+            + Add Custom Content
+          </button>
+        </div>
+
+        {/* Custom Content Form (if enabled) */}
+        {showCustomContentForm && (
+          <div style={{ marginTop: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h5 style={{ margin: 0, color: '#1f2937' }}>Additional Custom Content</h5>
+              <button
+                type="button"
+                onClick={() => setShowCustomContentForm(false)}
+                style={{
+                  padding: '4px 8px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  background: 'white',
+                  color: '#6b7280',
+                  fontSize: '12px',
+                  cursor: 'pointer'
+                }}
+              >
+                Hide
+              </button>
+            </div>
+            {renderCustomReadingComprehensionForm()}
+          </div>
+        )}
       </div>
     );
   };
