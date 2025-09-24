@@ -806,7 +806,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               }
             });
 
-            console.log(`✅ Question ${index} has valid Reading Comprehension structure with ${question.sentenceQuestions.length} sentence questions, array response format: ${question.responseStructure?.format === 'array' ? 'YES' : 'NO'}`);
+            console.log(`✅ Question ${index} has valid Reading Comprehension structure with ${question.sentenceQuestions.length} sentence questions`);
             break;
 
           case 'alphabet_knowledge':
@@ -2185,8 +2185,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
       // Special handling for Reading Comprehension custom content
       if (normCategory === 'reading_comprehension' && contentType === 'sentence') {
-        await saveReadingComprehensionCustomContentAsTemplate();
-        return;
+        console.log('[RC TEMPLATE AUTO-SAVE] Reading Comprehension templates already saved earlier - skipping duplicate save');
+        return; // Reading Comprehension templates already saved in saveActivity before intervention creation
       }
 
       // Filter for truly custom questions (not from pre-made templates)
@@ -3035,14 +3035,15 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       }
 
       // Prepare content source
-      let contentSource, questionCount, storyTitle, passages, sentenceQuestions;
+      let contentSource, questionCount, storyTitle, passages, sentenceQuestions, allActivities;
 
       if (usingTemplate) {
         contentSource = {
           type: 'template',
           sourceId: selectedSentenceTemplate._id
         };
-        questionCount = selectedSentenceTemplate.sentenceQuestions?.length || 1;
+        // For Reading Comprehension: 1 RC questionId per intervention (not sentence question count)
+        questionCount = 1;
         storyTitle = selectedSentenceTemplate.title;
         passages = selectedSentenceTemplate.sentenceText;
         sentenceQuestions = selectedSentenceTemplate.sentenceQuestions;
@@ -3054,28 +3055,16 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           activity.questions && activity.questions.length > 0
         );
 
-        // For now, use the first complete activity as primary content
-        // TODO: Support multiple activities in intervention structure
-        const primaryActivity = completeActivities[0];
-
         contentSource = {
           type: 'custom',
           sourceId: null,
           totalActivities: completeActivities.length
         };
-        questionCount = primaryActivity.questions.length;
-        storyTitle = primaryActivity.storyTitle;
-        passages = primaryActivity.storyPages.map((page, index) => ({
-          pageNumber: index + 1,
-          text: page.text,
-          image: page.image || null
-        }));
-        sentenceQuestions = primaryActivity.questions.map((q, index) => ({
-          questionText: q.questionText,
-          correctAnswer: q.correctAnswer,
-          // Include acceptable answers for Reading Comprehension
-          acceptableAnswers: q.acceptableAnswers || []
-        }));
+        // For Reading Comprehension: 1 RC questionId per activity - create multiple questions
+        questionCount = completeActivities.length;
+
+        // Store all activities for question creation
+        allActivities = completeActivities;
       }
 
       // For Reading Comprehension, use the sentence template/custom content according to CLAUDE.md
@@ -3153,89 +3142,71 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         // Total questions count
         totalQuestions: questionCount,
 
-        // Questions array - Updated to match CLAUDE.md Reading Comprehension structure
-        questions: [{
-          questionId: `int_reading_comprehension_001`,
-          source: contentSource.type === 'template' ? 'sentence_template' : 'custom',
-          sourceTemplateId: contentSource.sourceId,
-          sourceQuestionId: contentSource.sourceId,
-          questionIndex: 0,
-          questionType: 'sentence',
-          questionText: storyTitle,
-          questionImage: null,
-          questionValue: null,
+        // Questions array - Reading Comprehension structure matching CLAUDE.md specification
+        // Each question represents one RC questionId with embedded sentence questions
+        questions: contentSource.type === 'template' ?
+          // Template: create one question from template
+          [{
+            questionId: `int_rc_001`,
+            source: 'sentence_template',
+            sourceTemplateId: contentSource.sourceId,
+            questionType: 'sentence',
+            questionText: storyTitle,
 
-          // Proper Reading Comprehension structure matching CLAUDE.md
-          storyTitle: storyTitle,
-          passages: passages,
-          sentenceQuestions: sentenceQuestions.map((q, qIndex) => ({
-            questionText: q.questionText,
-            correctAnswer: q.correctAnswer,
-            sentenceOptionAnswers: q.sentenceOptionAnswers || [],
-            // Add acceptableAnswers for custom content (CLAUDE.md specification)
-            ...(q.acceptableAnswers && { acceptableAnswers: q.acceptableAnswers })
+            // Reading Comprehension structure per CLAUDE.md
+            storyTitle: storyTitle,
+            passages: passages,
+            sentenceQuestions: sentenceQuestions.map((q) => ({
+              questionText: q.questionText,
+              sentenceCorrectAnswer: q.correctAnswer,
+              // Add acceptableAnswers for custom content
+              ...(q.acceptableAnswers && { acceptableAnswers: q.acceptableAnswers })
+            })),
+
+            // Prescription alignment
+            prescriptionAlignment: {
+              targetSkill: "reading_comprehension",
+              technique: "Systematic reading comprehension instruction",
+              difficultyLevel: "standard",
+              multisensoryElements: ["visual", "cognitive", "linguistic"]
+            },
+
+            createdBy: getValidTeacherId(),
+            createdAt: getFormattedDate()
+          }] :
+          // Custom: create separate questions for each activity
+          (allActivities || []).map((activity, activityIndex) => ({
+            questionId: `int_rc_${String(activityIndex + 1).padStart(3, '0')}`,
+            source: 'custom',
+            sourceTemplateId: null,
+            questionType: 'sentence',
+            questionText: activity.storyTitle,
+
+            // Reading Comprehension structure per CLAUDE.md
+            storyTitle: activity.storyTitle,
+            passages: activity.storyPages.map((page, pageIndex) => ({
+              pageNumber: pageIndex + 1,
+              text: page.text,
+              image: page.image || null
+            })),
+            sentenceQuestions: activity.questions.map((q) => ({
+              questionText: q.questionText,
+              sentenceCorrectAnswer: q.correctAnswer,
+              // Add acceptableAnswers for custom content
+              ...(q.acceptableAnswers && { acceptableAnswers: q.acceptableAnswers })
+            })),
+
+            // Prescription alignment
+            prescriptionAlignment: {
+              targetSkill: "reading_comprehension",
+              technique: "Systematic reading comprehension instruction",
+              difficultyLevel: "standard",
+              multisensoryElements: ["visual", "cognitive", "linguistic"]
+            },
+
+            createdBy: getValidTeacherId(),
+            createdAt: getFormattedDate()
           })),
-
-          // Response structure: Array format for multiple sentence questions
-          // If 3 sentence questions → response: ['answer1', 'answer2', 'answer3']
-          responseStructure: {
-            format: 'array',
-            expectedResponseCount: sentenceQuestions.length,
-            allOrNothingScoring: true,
-            description: `Student must provide ${sentenceQuestions.length} answers in array format`
-          },
-
-          // Choices for compatibility (flatten all sentence options or create from acceptable answers)
-          choices: contentSource.type === 'template' ?
-            // Template: use sentenceOptionAnswers
-            sentenceQuestions.flatMap((q, qIndex) =>
-              (q.sentenceOptionAnswers || []).map((option, optIndex) => ({
-                optionId: `${qIndex + 1}_${optIndex + 1}`,
-                optionText: option,
-                isCorrect: option === q.correctAnswer,
-                questionNumber: qIndex + 1,
-                description: option === q.correctAnswer ?
-                  'Correct! You understood the passage well.' :
-                  'Incorrect. Try reading the passage again carefully.'
-              }))
-            ) :
-            // Custom: create choices from correct answer and acceptable answers
-            sentenceQuestions.flatMap((q, qIndex) => {
-              const allAnswers = [q.correctAnswer, ...(q.acceptableAnswers || [])];
-              return allAnswers.map((answer, optIndex) => ({
-                optionId: `${qIndex + 1}_${optIndex + 1}`,
-                optionText: answer,
-                isCorrect: optIndex === 0, // First one is always correct
-                questionNumber: qIndex + 1,
-                description: optIndex === 0 ?
-                  'Correct! You understood the passage well.' :
-                  'Also correct! This is an acceptable variation.'
-              }));
-            }),
-
-          // Prescription alignment
-          prescriptionAlignment: {
-            targetSkill: "reading_comprehension",
-            technique: "Systematic reading comprehension instruction",
-            difficultyLevel: "standard",
-            multisensoryElements: ["visual", "cognitive", "linguistic"]
-          },
-
-          createdBy: getValidTeacherId(),
-          createdAt: getFormattedDate()
-        }],
-
-        // Include the full sentence template for reference (template or custom content)
-        sentenceTemplate: contentSource.type === 'template' ? selectedSentenceTemplate : {
-          title: storyTitle,
-          category: "Reading Comprehension",
-          readingLevel: readingLevel,
-          sentenceText: passages,
-          sentenceQuestions: sentenceQuestions,
-          isCustom: true,
-          createdBy: getValidTeacherId(),
-          createdAt: getFormattedDate()
-        },
 
         // Versioning System
         revisionNumber: activity?.revisionNumber || 1,
