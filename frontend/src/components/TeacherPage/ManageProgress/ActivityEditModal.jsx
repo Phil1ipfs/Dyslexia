@@ -304,10 +304,16 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   // For Reading Comprehension
   const [selectedSentenceTemplate, setSelectedSentenceTemplate] = useState(null);
 
-  // Custom Reading Comprehension Content
-  const [customStoryTitle, setCustomStoryTitle] = useState('');
-  const [customStoryPages, setCustomStoryPages] = useState([]);
-  const [customQuestions, setCustomQuestions] = useState([]);
+  // Custom Reading Comprehension Content - Support Multiple Activities
+  const [customReadingComprehensionActivities, setCustomReadingComprehensionActivities] = useState([
+    {
+      id: 'rc_activity_default',
+      storyTitle: '',
+      storyPages: [],
+      questions: []
+    }
+  ]);
+  const [activeActivityIndex, setActiveActivityIndex] = useState(0);
 
   // Image Upload State
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -2146,10 +2152,16 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
       // Process all supported categories for template saving
       const normCategory = normalizeCategory(category);
-      const supportedCategories = ['alphabet_knowledge', 'phonological_awareness', 'decoding', 'word_recognition'];
+      const supportedCategories = ['alphabet_knowledge', 'phonological_awareness', 'decoding', 'word_recognition', 'reading_comprehension'];
 
       if (!supportedCategories.includes(normCategory)) {
         console.log(`[TEMPLATE AUTO-SAVE] Skipping - category "${category}" not supported for auto-save yet`);
+        return;
+      }
+
+      // Special handling for Reading Comprehension custom content
+      if (normCategory === 'reading_comprehension' && contentType === 'sentence') {
+        await saveReadingComprehensionCustomContentAsTemplate();
         return;
       }
 
@@ -2475,6 +2487,108 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
     } catch (error) {
       console.error('[TEMPLATE AUTO-SAVE] Error in auto-save process:', error);
+      // Don't throw error to prevent interrupting the main save process
+    }
+  };
+
+  /**
+   * Save Reading Comprehension custom content as sentence template
+   * This function handles the creation of sentence templates from custom Reading Comprehension content
+   */
+  const saveReadingComprehensionCustomContentAsTemplate = async () => {
+    try {
+      console.log('[RC TEMPLATE SAVE] Starting Reading Comprehension custom content save as template');
+
+      // Validate custom content exists - save all activities as templates
+      if (!customReadingComprehensionActivities.length) {
+        console.log('[RC TEMPLATE SAVE] No custom content to save');
+        return;
+      }
+
+      // Filter activities that have complete content
+      const completeActivities = customReadingComprehensionActivities.filter(activity =>
+        activity.storyTitle && activity.storyTitle.trim() &&
+        activity.storyPages && activity.storyPages.length > 0 &&
+        activity.questions && activity.questions.length > 0
+      );
+
+      if (!completeActivities.length) {
+        console.log('[RC TEMPLATE SAVE] No complete activities to save');
+        return;
+      }
+
+      // Check for existing templates to prevent duplicates
+      let existingTemplates = [];
+      try {
+        const templatesResponse = await api.interventions.getSentenceTemplates();
+        if (templatesResponse.success) {
+          existingTemplates = templatesResponse.data || [];
+          console.log(`[RC TEMPLATE SAVE] Found ${existingTemplates.length} existing sentence templates for duplicate checking`);
+        }
+      } catch (error) {
+        console.warn('[RC TEMPLATE SAVE] Could not fetch existing sentence templates for duplicate checking:', error);
+      }
+
+      // Process each complete activity
+      for (const [index, activity] of completeActivities.entries()) {
+        // Check for duplicate templates based on story title and reading level
+        const isDuplicate = existingTemplates.some(template =>
+          template.title && template.title.toLowerCase().trim() === activity.storyTitle.toLowerCase().trim() &&
+          template.readingLevel === student?.readingLevel
+        );
+
+        if (isDuplicate) {
+          console.log(`[RC TEMPLATE SAVE] ⚠️ Skipping duplicate template: "${activity.storyTitle}" already exists for reading level "${student?.readingLevel}"`);
+          toast.warn(`A Reading Comprehension template with title "${activity.storyTitle}" already exists for this reading level.`);
+          continue;
+        }
+
+        // Prepare sentence template data for this activity
+        const templateData = {
+          title: activity.storyTitle,
+          category: "Reading Comprehension",
+          readingLevel: student?.readingLevel || "At Grade Level",
+          sentenceText: (activity.storyPages || []).map((page, pageIndex) => ({
+            pageNumber: pageIndex + 1,
+            text: page.text || page.pageText,
+            image: page.image || page.pageImage || null
+          })),
+          sentenceQuestions: (activity.questions || []).map((question, questionIndex) => ({
+            questionNumber: questionIndex + 1,
+            questionText: question.questionText,
+            sentenceCorrectAnswer: question.correctAnswer,
+            sentenceOptionAnswers: [
+              question.correctAnswer,
+              ...(question.acceptableAnswers || [])
+            ].filter(answer => answer && answer.trim()) // Remove empty answers
+          })),
+          isActive: true,
+          createdBy: user?._id || "system", // Use current user ID or fallback
+          createdAt: new Date()
+        };
+
+        console.log(`[RC TEMPLATE SAVE] Prepared sentence template data for activity ${index + 1}:`, {
+          title: templateData.title,
+          readingLevel: templateData.readingLevel,
+          pagesCount: templateData.sentenceText.length,
+          questionsCount: templateData.sentenceQuestions.length
+        });
+
+        // Save template using API
+        const templateResponse = await api.interventions.createSentenceTemplate(templateData);
+
+        if (templateResponse.success) {
+          console.log(`[RC TEMPLATE SAVE] ✅ Successfully saved Reading Comprehension template: "${templateData.title}"`);
+          toast.success(`Reading Comprehension template "${templateData.title}" saved successfully!`);
+        } else {
+          console.error('[RC TEMPLATE SAVE] ❌ Failed to save sentence template:', templateResponse.error);
+          toast.error(`Failed to save Reading Comprehension template: ${templateResponse.error || 'Unknown error'}`);
+        }
+      }
+
+    } catch (error) {
+      console.error('[RC TEMPLATE SAVE] ❌ Error saving Reading Comprehension custom content as template:', error);
+      toast.error('Failed to save Reading Comprehension template. Please try again.');
       // Don't throw error to prevent interrupting the main save process
     }
   };
@@ -2883,7 +2997,66 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     });
     
     if (contentType === 'sentence') {
-      // For Reading Comprehension, use the sentence template according to CLAUDE.md
+      // Determine if using template or custom content
+      const usingTemplate = selectedSentenceTemplate;
+      const hasCustomActivities = customReadingComprehensionActivities.length > 0 &&
+        customReadingComprehensionActivities.some(activity =>
+          activity.storyTitle && activity.storyTitle.trim() &&
+          activity.storyPages && activity.storyPages.length > 0 &&
+          activity.questions && activity.questions.length > 0
+        );
+      const usingCustom = !selectedSentenceTemplate && hasCustomActivities;
+
+      if (!usingTemplate && !usingCustom) {
+        throw new Error("Either template or custom Reading Comprehension activities are required");
+      }
+
+      // Prepare content source
+      let contentSource, questionCount, storyTitle, passages, sentenceQuestions;
+
+      if (usingTemplate) {
+        contentSource = {
+          type: 'template',
+          sourceId: selectedSentenceTemplate._id
+        };
+        questionCount = selectedSentenceTemplate.sentenceQuestions?.length || 1;
+        storyTitle = selectedSentenceTemplate.title;
+        passages = selectedSentenceTemplate.sentenceText;
+        sentenceQuestions = selectedSentenceTemplate.sentenceQuestions;
+      } else {
+        // Custom content - prepare multiple activities for intervention
+        const completeActivities = customReadingComprehensionActivities.filter(activity =>
+          activity.storyTitle && activity.storyTitle.trim() &&
+          activity.storyPages && activity.storyPages.length > 0 &&
+          activity.questions && activity.questions.length > 0
+        );
+
+        // For now, use the first complete activity as primary content
+        // TODO: Support multiple activities in intervention structure
+        const primaryActivity = completeActivities[0];
+
+        contentSource = {
+          type: 'custom',
+          sourceId: null,
+          totalActivities: completeActivities.length
+        };
+        questionCount = primaryActivity.questions.length;
+        storyTitle = primaryActivity.storyTitle;
+        passages = primaryActivity.storyPages.map((page, index) => ({
+          pageNumber: index + 1,
+          text: page.text,
+          image: page.image || null
+        }));
+        sentenceQuestions = primaryActivity.questions.map((q, index) => ({
+          questionNumber: index + 1,
+          questionText: q.questionText,
+          sentenceCorrectAnswer: q.correctAnswer,
+          // Include acceptable answers for Reading Comprehension
+          acceptableAnswers: q.acceptableAnswers || []
+        }));
+      }
+
+      // For Reading Comprehension, use the sentence template/custom content according to CLAUDE.md
       interventionData = {
         // Only include _id if editing an existing activity
         ...(activity?._id ? { _id: activity._id } : {}),
@@ -2905,7 +3078,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           },
           interventionPrescription: {
             primaryApproach: mongoDbAnalysis.researchBasedPrescriptions?.[category]?.interventionPrescription?.primaryApproach || "multisensory_structured",
-            recommendedQuestionCount: selectedSentenceTemplate.sentenceQuestions?.length || 1,
+            recommendedQuestionCount: questionCount,
             intensityLevel: (() => {
               const rawIntensity = mongoDbAnalysis.researchBasedPrescriptions?.[category]?.interventionPrescription?.intensityLevel;
               // Normalize old enum values to new valid values
@@ -2930,7 +3103,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           },
           interventionPrescription: {
             primaryApproach: "multisensory_structured",
-            recommendedQuestionCount: selectedSentenceTemplate.sentenceQuestions?.length || 1,
+            recommendedQuestionCount: questionCount,
             intensityLevel: "highly_intensive",
             sessionStructure: {
               optimalLength: "20-30 minutes",
@@ -2938,7 +3111,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             },
             specificTechniques: ["Systematic reading comprehension instruction", "Immediate corrective feedback"]
           },
-          materialRecommendations: ["Teacher-selected sentence templates"]
+          materialRecommendations: [usingTemplate ? "Teacher-selected sentence templates" : "Teacher-created custom content"]
         },
 
         // Teacher Implementation
@@ -2947,51 +3120,54 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           implementationDate: getFormattedDate(),
           prescriptionFollowed: true,
           questionDistribution: {
-            total: selectedSentenceTemplate.sentenceQuestions?.length || 1,
-            focusAreas: `Reading Comprehension - ${selectedSentenceTemplate.sentenceQuestions?.length || 1} passages`
+            total: questionCount,
+            focusAreas: `Reading Comprehension - ${questionCount} ${questionCount === 1 ? 'question' : 'questions'}`
           }
         },
 
+        // Content source tracking
+        contentSource,
+
         // Total questions count
-        totalQuestions: selectedSentenceTemplate.sentenceQuestions?.length || 1,
+        totalQuestions: questionCount,
 
         // Questions array - Updated to match CLAUDE.md Reading Comprehension structure
-        questions: selectedSentenceTemplate.sentenceText ?
-          // If sentenceText exists (from sentence_templates collection)
-          [{
-            questionId: `int_reading_comprehension_001`,
-            source: 'sentence_template',
-            sourceTemplateId: selectedSentenceTemplate._id,
-            sourceQuestionId: selectedSentenceTemplate._id,
-            questionIndex: 0,
-            questionType: 'sentence',
-            questionText: selectedSentenceTemplate.title || "Reading Comprehension",
-            questionImage: null,
-            questionValue: null,
+        questions: [{
+          questionId: `int_reading_comprehension_001`,
+          source: contentSource.type === 'template' ? 'sentence_template' : 'custom',
+          sourceTemplateId: contentSource.sourceId,
+          sourceQuestionId: contentSource.sourceId,
+          questionIndex: 0,
+          questionType: 'sentence',
+          questionText: storyTitle,
+          questionImage: null,
+          questionValue: null,
 
-            // Proper Reading Comprehension structure matching CLAUDE.md
-            storyTitle: selectedSentenceTemplate.title,
-            passages: selectedSentenceTemplate.sentenceText,
-            sentenceQuestions: selectedSentenceTemplate.sentenceQuestions.map((q, qIndex) => ({
-              questionNumber: qIndex + 1,
-              questionText: q.questionText,
-              sentenceCorrectAnswer: q.sentenceCorrectAnswer,
-              sentenceOptionAnswers: q.sentenceOptionAnswers || [],
-              // Add acceptableAnswers if available (CLAUDE.md specification)
-              ...(q.acceptableAnswers && { sentenceAcceptableAnswer: q.acceptableAnswers })
-            })),
+          // Proper Reading Comprehension structure matching CLAUDE.md
+          storyTitle: storyTitle,
+          passages: passages,
+          sentenceQuestions: sentenceQuestions.map((q, qIndex) => ({
+            questionNumber: qIndex + 1,
+            questionText: q.questionText,
+            sentenceCorrectAnswer: q.sentenceCorrectAnswer,
+            sentenceOptionAnswers: q.sentenceOptionAnswers || [],
+            // Add acceptableAnswers for custom content (CLAUDE.md specification)
+            ...(q.acceptableAnswers && { acceptableAnswers: q.acceptableAnswers })
+          })),
 
-            // Response structure: Array format for multiple sentence questions
-            // If 3 sentence questions → response: ['answer1', 'answer2', 'answer3']
-            responseStructure: {
-              format: 'array',
-              expectedResponseCount: selectedSentenceTemplate.sentenceQuestions.length,
-              allOrNothingScoring: true,
-              description: `Student must provide ${selectedSentenceTemplate.sentenceQuestions.length} answers in array format`
-            },
+          // Response structure: Array format for multiple sentence questions
+          // If 3 sentence questions → response: ['answer1', 'answer2', 'answer3']
+          responseStructure: {
+            format: 'array',
+            expectedResponseCount: sentenceQuestions.length,
+            allOrNothingScoring: true,
+            description: `Student must provide ${sentenceQuestions.length} answers in array format`
+          },
 
-            // Choices for compatibility (flatten all sentence options)
-            choices: selectedSentenceTemplate.sentenceQuestions.flatMap((q, qIndex) =>
+          // Choices for compatibility (flatten all sentence options or create from acceptable answers)
+          choices: contentSource.type === 'template' ?
+            // Template: use sentenceOptionAnswers
+            sentenceQuestions.flatMap((q, qIndex) =>
               (q.sentenceOptionAnswers || []).map((option, optIndex) => ({
                 optionId: `${qIndex + 1}_${optIndex + 1}`,
                 optionText: option,
@@ -3001,64 +3177,44 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                   'Correct! You understood the passage well.' :
                   'Incorrect. Try reading the passage again carefully.'
               }))
-            ),
+            ) :
+            // Custom: create choices from correct answer and acceptable answers
+            sentenceQuestions.flatMap((q, qIndex) => {
+              const allAnswers = [q.sentenceCorrectAnswer, ...(q.acceptableAnswers || [])];
+              return allAnswers.map((answer, optIndex) => ({
+                optionId: `${qIndex + 1}_${optIndex + 1}`,
+                optionText: answer,
+                isCorrect: optIndex === 0, // First one is always correct
+                questionNumber: qIndex + 1,
+                description: optIndex === 0 ?
+                  'Correct! You understood the passage well.' :
+                  'Also correct! This is an acceptable variation.'
+              }));
+            }),
 
-            // Prescription alignment
-            prescriptionAlignment: {
-              targetSkill: "reading_comprehension",
-              technique: "Systematic reading comprehension instruction",
-              difficultyLevel: "standard",
-              multisensoryElements: ["visual", "cognitive", "linguistic"]
-            },
+          // Prescription alignment
+          prescriptionAlignment: {
+            targetSkill: "reading_comprehension",
+            technique: "Systematic reading comprehension instruction",
+            difficultyLevel: "standard",
+            multisensoryElements: ["visual", "cognitive", "linguistic"]
+          },
 
-            createdBy: getValidTeacherId(),
-            createdAt: getFormattedDate()
-          }]
-          :
-          // Fallback for older format
-          selectedSentenceTemplate.sentenceQuestions.map((q, index) => ({
-            questionId: `int_reading_comprehension_${String(index + 1).padStart(3, '0')}`,
-            source: 'sentence_template',
-            sourceTemplateId: selectedSentenceTemplate._id,
-            sourceQuestionId: selectedSentenceTemplate._id,
-            questionIndex: index,
-            questionType: 'sentence',
-            questionText: q.questionText,
-            questionImage: sanitizeImageUrl(q.image),
-            questionValue: null,
+          createdBy: getValidTeacherId(),
+          createdAt: getFormattedDate()
+        }],
 
-            // Basic structure for single question
-            sentenceQuestions: [{
-              questionNumber: 1,
-              questionText: q.questionText,
-              sentenceCorrectAnswer: q.sentenceCorrectAnswer,
-              sentenceOptionAnswers: q.sentenceOptionAnswers || []
-            }],
-
-            // Choices for compatibility
-            choices: (q.sentenceOptionAnswers || []).map((option, optIndex) => ({
-              optionId: String(optIndex + 1),
-              optionText: option,
-              isCorrect: option === q.sentenceCorrectAnswer,
-              description: option === q.sentenceCorrectAnswer ?
-                'Correct! You understood the passage well.' :
-                'Incorrect. Try reading the passage again carefully.'
-            })),
-
-            // Prescription alignment
-            prescriptionAlignment: {
-              targetSkill: "reading_comprehension",
-              technique: "Systematic reading comprehension instruction",
-              difficultyLevel: "standard",
-              multisensoryElements: ["visual", "cognitive", "linguistic"]
-            },
-
-            createdBy: getValidTeacherId(),
-            createdAt: getFormattedDate()
-          })),
-
-        // Include the full sentence template for reference
-        sentenceTemplate: selectedSentenceTemplate,
+        // Include the full sentence template for reference (template or custom content)
+        sentenceTemplate: contentSource.type === 'template' ? selectedSentenceTemplate : {
+          title: storyTitle,
+          category: "Reading Comprehension",
+          readingLevel: readingLevel,
+          sentenceText: passages,
+          sentenceQuestions: sentenceQuestions,
+          isCustom: true,
+          createdBy: getValidTeacherId(),
+          createdAt: getFormattedDate()
+        },
 
         // Versioning System
         revisionNumber: activity?.revisionNumber || 1,
@@ -3082,8 +3238,10 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
         // Question Count Calculation
         questionCountCalculation: {
-          finalCount: selectedSentenceTemplate.sentenceQuestions?.length || 1,
-          rationale: `Teacher selected ${selectedSentenceTemplate.sentenceQuestions?.length || 1} reading comprehension passages`,
+          finalCount: questionCount,
+          rationale: contentSource.type === 'template' ?
+            `Teacher selected ${questionCount} reading comprehension passages from template` :
+            `Teacher created ${questionCount} custom comprehension questions`,
           factors: {
             base: mongoDbAnalysis?.interventionPlan?.specificFocus?.[category]?.questionDistribution?.total || 3,
             errorSeverity: {
@@ -4578,6 +4736,38 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    * Reading Comprehension Custom Content Management
    */
 
+  // Multiple Activities Management
+  const getCurrentActivity = () => {
+    return customReadingComprehensionActivities[activeActivityIndex] || {};
+  };
+
+  const updateCurrentActivity = (updates) => {
+    setCustomReadingComprehensionActivities(prev =>
+      prev.map((activity, index) =>
+        index === activeActivityIndex ? { ...activity, ...updates } : activity
+      )
+    );
+  };
+
+  const addNewActivity = () => {
+    const newActivity = {
+      id: 'rc_activity_' + Date.now(),
+      storyTitle: '',
+      storyPages: [],
+      questions: []
+    };
+    setCustomReadingComprehensionActivities(prev => [...prev, newActivity]);
+    setActiveActivityIndex(customReadingComprehensionActivities.length);
+  };
+
+  const removeActivity = (activityIndex) => {
+    if (customReadingComprehensionActivities.length <= 1) return;
+    setCustomReadingComprehensionActivities(prev => prev.filter((_, index) => index !== activityIndex));
+    if (activeActivityIndex >= customReadingComprehensionActivities.length - 1) {
+      setActiveActivityIndex(Math.max(0, activeActivityIndex - 1));
+    }
+  };
+
   // Story Page Management
   const generateUniquePageId = () => {
     return 'page_' + Math.random().toString(36).substring(2, 15) +
@@ -4585,25 +4775,32 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   };
 
   const addStoryPage = () => {
+    const currentActivity = getCurrentActivity();
     const newPage = {
       id: generateUniquePageId(),
-      pageNumber: customStoryPages.length + 1,
+      pageNumber: (currentActivity.storyPages || []).length + 1,
       text: '',
       image: null
     };
-    setCustomStoryPages(prev => [...prev, newPage]);
+    updateCurrentActivity({
+      storyPages: [...(currentActivity.storyPages || []), newPage]
+    });
   };
 
   const removeStoryPage = (pageId) => {
-    setCustomStoryPages(prev => prev.filter(page => page.id !== pageId));
+    const currentActivity = getCurrentActivity();
+    updateCurrentActivity({
+      storyPages: (currentActivity.storyPages || []).filter(page => page.id !== pageId)
+    });
   };
 
   const updateStoryPage = (pageId, field, value) => {
-    setCustomStoryPages(prev =>
-      prev.map(page =>
+    const currentActivity = getCurrentActivity();
+    updateCurrentActivity({
+      storyPages: (currentActivity.storyPages || []).map(page =>
         page.id === pageId ? { ...page, [field]: value } : page
       )
-    );
+    });
   };
 
   // Story Page Image Upload
@@ -4666,42 +4863,51 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   };
 
   const addComprehensionQuestion = () => {
+    const currentActivity = getCurrentActivity();
     const newQuestion = {
       id: generateUniqueQuestionId(),
-      questionNumber: customQuestions.length + 1,
+      questionNumber: (currentActivity.questions || []).length + 1,
       questionText: '',
       correctAnswer: '',
       acceptableAnswers: []
     };
-    setCustomQuestions(prev => [...prev, newQuestion]);
+    updateCurrentActivity({
+      questions: [...(currentActivity.questions || []), newQuestion]
+    });
   };
 
   const removeComprehensionQuestion = (questionId) => {
-    setCustomQuestions(prev => prev.filter(question => question.id !== questionId));
+    const currentActivity = getCurrentActivity();
+    updateCurrentActivity({
+      questions: (currentActivity.questions || []).filter(question => question.id !== questionId)
+    });
   };
 
   const updateComprehensionQuestion = (questionId, field, value) => {
-    setCustomQuestions(prev =>
-      prev.map(question =>
+    const currentActivity = getCurrentActivity();
+    updateCurrentActivity({
+      questions: (currentActivity.questions || []).map(question =>
         question.id === questionId ? { ...question, [field]: value } : question
       )
-    );
+    });
   };
 
   // Acceptable Answers Management
   const addAcceptableAnswer = (questionId) => {
-    setCustomQuestions(prev =>
-      prev.map(question =>
+    const currentActivity = getCurrentActivity();
+    updateCurrentActivity({
+      questions: (currentActivity.questions || []).map(question =>
         question.id === questionId
           ? { ...question, acceptableAnswers: [...(question.acceptableAnswers || []), ''] }
           : question
       )
-    );
+    });
   };
 
   const removeAcceptableAnswer = (questionId, answerIndex) => {
-    setCustomQuestions(prev =>
-      prev.map(question =>
+    const currentActivity = getCurrentActivity();
+    updateCurrentActivity({
+      questions: (currentActivity.questions || []).map(question =>
         question.id === questionId
           ? {
               ...question,
@@ -4709,12 +4915,13 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             }
           : question
       )
-    );
+    });
   };
 
   const updateAcceptableAnswer = (questionId, answerIndex, value) => {
-    setCustomQuestions(prev =>
-      prev.map(question =>
+    const currentActivity = getCurrentActivity();
+    updateCurrentActivity({
+      questions: (currentActivity.questions || []).map(question =>
         question.id === questionId
           ? {
               ...question,
@@ -4724,7 +4931,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             }
           : question
       )
-    );
+    });
   };
  
   // ===== VALIDATION FUNCTIONS =====
@@ -4904,44 +5111,56 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             newErrors.sentenceTemplate = "A reading passage must be selected";
           }
         } else {
-          // Custom content validation
-          if (!customStoryTitle || !customStoryTitle.trim()) {
-            newErrors.storyTitle = "Story title is required";
-          }
-
-          if (!customStoryPages || customStoryPages.length === 0) {
-            newErrors.storyPages = "At least one story page is required";
+          // Custom content validation - validate multiple activities
+          if (!customReadingComprehensionActivities || customReadingComprehensionActivities.length === 0) {
+            newErrors.activities = "At least one Reading Comprehension activity is required";
           } else {
-            // Validate each story page
-            let hasInvalidPages = false;
-            customStoryPages.forEach((page, index) => {
-              if (!page.text || !page.text.trim()) {
-                newErrors[`storyPage_${page.id}`] = `Page ${index + 1} text is required`;
-                hasInvalidPages = true;
+            // Validate each activity
+            let hasInvalidActivities = false;
+            customReadingComprehensionActivities.forEach((activity, activityIndex) => {
+              const activityPrefix = `activity_${activityIndex}`;
+
+              // Validate story title
+              if (!activity.storyTitle || !activity.storyTitle.trim()) {
+                newErrors[`${activityPrefix}_storyTitle`] = `Activity ${activityIndex + 1} story title is required`;
+                hasInvalidActivities = true;
+              }
+
+              // Validate story pages
+              if (!activity.storyPages || activity.storyPages.length === 0) {
+                newErrors[`${activityPrefix}_storyPages`] = `Activity ${activityIndex + 1} must have at least one story page`;
+                hasInvalidActivities = true;
+              } else {
+                // Validate each story page
+                activity.storyPages.forEach((page, pageIndex) => {
+                  if (!page.text || !page.text.trim()) {
+                    newErrors[`${activityPrefix}_page_${page.id}`] = `Activity ${activityIndex + 1}, Page ${pageIndex + 1} text is required`;
+                    hasInvalidActivities = true;
+                  }
+                });
+              }
+
+              // Validate comprehension questions
+              if (!activity.questions || activity.questions.length === 0) {
+                newErrors[`${activityPrefix}_questions`] = `Activity ${activityIndex + 1} must have at least one comprehension question`;
+                hasInvalidActivities = true;
+              } else {
+                // Validate each question
+                activity.questions.forEach((question, questionIndex) => {
+                  if (!question.questionText || !question.questionText.trim()) {
+                    newErrors[`${activityPrefix}_question_${question.id}_text`] = `Activity ${activityIndex + 1}, Question ${questionIndex + 1} text is required`;
+                    hasInvalidActivities = true;
+                  }
+                  if (!question.correctAnswer || !question.correctAnswer.trim()) {
+                    newErrors[`${activityPrefix}_question_${question.id}_answer`] = `Activity ${activityIndex + 1}, Question ${questionIndex + 1} correct answer is required`;
+                    hasInvalidActivities = true;
+                  }
+                });
               }
             });
-            if (hasInvalidPages) {
-              newErrors.storyPages = "All story pages must have text content";
-            }
-          }
 
-          if (!customQuestions || customQuestions.length === 0) {
-            newErrors.questions = "At least one comprehension question is required";
-          } else {
-            // Validate each question
-            let hasInvalidQuestions = false;
-            customQuestions.forEach((question, index) => {
-              if (!question.questionText || !question.questionText.trim()) {
-                newErrors[`question_${question.id}_text`] = `Question ${index + 1} text is required`;
-                hasInvalidQuestions = true;
-              }
-              if (!question.correctAnswer || !question.correctAnswer.trim()) {
-                newErrors[`question_${question.id}_answer`] = `Question ${index + 1} correct answer is required`;
-                hasInvalidQuestions = true;
-              }
-            });
-            if (hasInvalidQuestions) {
-              newErrors.questions = "All questions must have question text and correct answer";
+            if (hasInvalidActivities) {
+              newErrors.activities = "All Reading Comprehension activities must be complete with title, pages, and questions";
             }
           }
         }
@@ -5568,36 +5787,86 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   const renderCustomReadingComprehensionForm = () => {
     return (
       <>
-        {/* Story Title Section */}
-        <div className="rc-section">
+        {/* Multiple Activities Navigation */}
+        <div className="rc-activities-nav">
+          <div className="rc-activities-nav-header">
+            <h4>Reading Comprehension Activities</h4>
+            <button
+              type="button"
+              onClick={addNewActivity}
+              className="rc-btn rc-btn-primary rc-add-activity-btn"
+            >
+              <FaPlus /> Add Activity
+            </button>
+          </div>
+          
+          {customReadingComprehensionActivities.length > 0 && (
+            <div className="rc-activities-tabs">
+              {customReadingComprehensionActivities.map((activity, index) => (
+                <button
+                  key={activity.id || index}
+                  type="button"
+                  onClick={() => setActiveActivityIndex(index)}
+                  className={`rc-activity-tab ${activeActivityIndex === index ? 'active' : ''}`}
+                >
+                  Activity {index + 1}
+                  {customReadingComprehensionActivities.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeActivity(index);
+                      }}
+                      className="rc-activity-tab-remove"
+                    >
+                      <FaTimes size={12} />
+                    </button>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+          
+          {customReadingComprehensionActivities.length === 0 && (
+            <div className="rc-activities-empty-state">
+              <p>
+                No activities created yet. Click "Add Activity" to create your first Reading Comprehension activity.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Activity Content - Only show when there are activities */}
+        {customReadingComprehensionActivities.length > 0 && (
+          <div className="rc-activity-content">
+            {/* Activity Header */}
+            <div className="rc-activity-header">
+              <h3>
+                Activity {activeActivityIndex + 1}
+              </h3>
+              <div className="rc-activity-badge">
+                {customReadingComprehensionActivities.length} total activities
+              </div>
+            </div>
+
+            {/* Story Title Section */}
+            <div className="rc-section">
           <h4>Story Title</h4>
           <div className="rc-form-group">
             <label>Enter the title of your story <span style={{ color: '#ef4444' }}>*</span></label>
             <input
               type="text"
-              value={customStoryTitle || ''}
+              value={getCurrentActivity().storyTitle || ''}
               onChange={(e) => {
                 // Validation: only letters, spaces, uppercase/lowercase
                 const validText = e.target.value.replace(/[^a-zA-Z\s]/g, '');
-                setCustomStoryTitle(validText);
+                updateCurrentActivity({ storyTitle: validText });
               }}
               placeholder="Example: Ang Magkakaibigan na mga Hayop"
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontFamily: 'inherit'
-              }}
               maxLength={100}
             />
-            <div style={{
-              fontSize: '12px',
-              color: '#6b7280',
-              marginTop: '4px'
-            }}>
-              Only letters and spaces allowed. {(customStoryTitle || '').length}/100 characters
+            <div className="rc-char-counter">
+              Only letters and spaces allowed. {(getCurrentActivity().storyTitle || '').length}/100 characters
             </div>
           </div>
         </div>
@@ -5615,31 +5884,17 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             </button>
           </div>
 
-          {safe(customStoryPages).map((page, pageIndex) => (
-            <div key={page.id} className="rc-story-page-card" style={{
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '20px',
-              marginBottom: '16px',
-              background: 'white'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h5 className="page-number">Page {pageIndex + 1}</h5>
-                {safe(customStoryPages).length > 1 && (
+          {safe(getCurrentActivity().storyPages || []).map((page, pageIndex) => (
+            <div key={page.id} className="rc-story-page-card">
+              <div className="rc-card-header">
+                <h5 className="rc-card-title page-number">Page {pageIndex + 1}</h5>
+                {safe(getCurrentActivity().storyPages || []).length > 1 && (
                   <button
                     type="button"
-                    className="delete-btn"
+                    className="rc-delete-btn"
                     onClick={() => removeStoryPage(page.id)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#dc2626',
-                      cursor: 'pointer',
-                      padding: '6px',
-                      borderRadius: '4px'
-                    }}
                   >
-                    <FaTrash />
+                    <FaTimes /> Delete
                   </button>
                 )}
               </div>
@@ -5735,8 +5990,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             </div>
           ))}
 
-          {safe(customStoryPages).length === 0 && (
-            <div className="empty-state">
+          {safe(getCurrentActivity().storyPages || []).length === 0 && (
+            <div className="rc-empty-state">
               <p>No story pages added yet. Click "Add Page" to create your first page.</p>
             </div>
           )}
@@ -5755,31 +6010,17 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             </button>
           </div>
 
-          {safe(customQuestions).map((question, questionIndex) => (
-            <div key={question.id} className="rc-question-card" style={{
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '20px',
-              marginBottom: '16px',
-              background: 'white'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h5 className="question-number">Question {questionIndex + 1}</h5>
-                {safe(customQuestions).length > 1 && (
+          {safe(getCurrentActivity().questions || []).map((question, questionIndex) => (
+            <div key={question.id} className="rc-question-card">
+              <div className="rc-card-header">
+                <h5 className="rc-card-title question-number">Question {questionIndex + 1}</h5>
+                {safe(getCurrentActivity().questions || []).length > 1 && (
                   <button
                     type="button"
-                    className="delete-btn"
+                    className="rc-delete-btn"
                     onClick={() => removeComprehensionQuestion(question.id)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#dc2626',
-                      cursor: 'pointer',
-                      padding: '6px',
-                      borderRadius: '4px'
-                    }}
                   >
-                    <FaTrash />
+                    <FaTimes /> Delete
                   </button>
                 )}
               </div>
@@ -5910,12 +6151,14 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             </div>
           ))}
 
-          {safe(customQuestions).length === 0 && (
-            <div className="empty-state">
+          {safe(getCurrentActivity().questions || []).length === 0 && (
+            <div className="rc-empty-state">
               <p>No comprehension questions added yet. Click "Add Question" to create your first question.</p>
             </div>
           )}
         </div>
+          </div>
+        )}
       </>
     );
   };

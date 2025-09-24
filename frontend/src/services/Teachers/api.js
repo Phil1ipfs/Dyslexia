@@ -137,6 +137,10 @@ export default {
     getSentenceTemplates: (readingLevel) =>
       api.get(`/api/templates/sentences/level/${encodeURIComponent(readingLevel)}`),
 
+    // Create sentence template (CLAUDE.md system)
+    createSentenceTemplate: (templateData) =>
+      api.post('/api/templates/sentences', templateData),
+
     // Create template question (CLAUDE.md system)
     createTemplateQuestion: (templateData) =>
       api.post('/api/templates/questions', templateData),
