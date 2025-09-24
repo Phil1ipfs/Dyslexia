@@ -2780,18 +2780,19 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       // Only save CUSTOM content as templates - NOT when using existing templates
       if (contentType === 'sentence') {
         // Check if we have actual custom activities (not just template selections)
+        // ✅ CRITICAL FIX: Only save as templates if NO template is selected (truly custom content)
         const hasCustomActivities = customReadingComprehensionActivities.some(activity =>
           activity.storyTitle && activity.storyTitle.trim() &&
           activity.storyPages && activity.storyPages.length > 0 &&
           activity.questions && activity.questions.length > 0 &&
-          !activity.selectedTemplate // No template selected = custom content
+          !activity.selectedTemplate // No template selected = truly custom content
         );
 
         if (hasCustomActivities) {
-          console.log('[SAVE] ✅ Found custom activities - saving as templates');
+          console.log('[SAVE] ✅ Found truly custom activities (no templates selected) - saving as templates');
           await saveReadingComprehensionCustomContentAsTemplate();
         } else {
-          console.log('[SAVE] ✅ No custom activities found - using existing templates only');
+          console.log('[SAVE] ✅ No custom activities found OR using existing templates - NOT creating new templates');
         }
       }
       

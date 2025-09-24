@@ -1,7 +1,7 @@
 [
   {
     "_id": {
-      "$oid": "68d45dc1f2cfe55040500ad1"
+      "$oid": "68d45dc1f2cfe65040800ad4"
     },
     "studentId": 202522233,
     "interventionAssessmentId": {
@@ -13,7 +13,7 @@
     "response": [
       "pedro", 
     "hayop"  ],
-    "isCorrect": false,
+    "isCorrect": true,
     "responseTime": 45.2,
     "answeredAt": {
       "$date": "2025-09-24T08:15:30.000Z"
@@ -25,7 +25,7 @@
   },
   {
     "_id": {
-      "$oid": "68d31dc7f5cfe88020800ad1"
+      "$oid": "68d31dc7f5cfe89020900ad2"
     },
     "studentId": 202522233,
     "interventionAssessmentId": {
@@ -38,7 +38,7 @@
       "hayop",
     "mata", "mataaa"
     ],
-    "isCorrect": false,
+    "isCorrect": true,
     "responseTime": 52.8,
     "answeredAt": {
       "$date": "2025-09-24T08:16:45.000Z"
@@ -50,7 +50,7 @@
   },
   {
     "_id": {
-      "$oid": "68d36dc5f8cfe11040200ad9"
+      "$oid": "68d36dc5f8cfe58040200ad2"
     },
     "studentId": 202522233,
     "interventionAssessmentId": {
@@ -62,7 +62,7 @@
     "response": [
       "hayupan", 
     "hale"   ],
-    "isCorrect": false,
+    "isCorrect": true,
     "responseTime": 38.7,
     "answeredAt": {
       "$date": "2025-09-24T08:17:30.000Z"
