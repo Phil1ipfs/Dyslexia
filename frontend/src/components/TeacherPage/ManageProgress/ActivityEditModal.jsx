@@ -303,7 +303,12 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   
   // For Reading Comprehension
   const [selectedSentenceTemplate, setSelectedSentenceTemplate] = useState(null);
-  
+
+  // Custom Reading Comprehension Content
+  const [customStoryTitle, setCustomStoryTitle] = useState('');
+  const [customStoryPages, setCustomStoryPages] = useState([]);
+  const [customQuestions, setCustomQuestions] = useState([]);
+
   // Image Upload State
   const [uploadingImage, setUploadingImage] = useState(false);
   const [currentUploadTarget, setCurrentUploadTarget] = useState(null);
@@ -333,6 +338,9 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   const [creatingTemplate, setCreatingTemplate] = useState(false);
   const [fileUploads, setFileUploads] = useState({});
   const fileInputRefs = useRef({});
+
+  // Reading Comprehension Image Upload Refs
+  const storyPageImageRefs = useRef({});
   
   /**
    * Find MongoDB prescriptive analysis for student and category
@@ -4549,7 +4557,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
   const handleSelectSentenceTemplate = (template) => {
     // Create a sanitized copy of the template with fixed image URLs
     const sanitizedTemplate = { ...template };
-    
+
     // Fix image URLs in sentence templates
     if (sanitizedTemplate.sentenceText && sanitizedTemplate.sentenceText.length > 0) {
       sanitizedTemplate.sentenceText = sanitizedTemplate.sentenceText.map(page => ({
@@ -4557,13 +4565,166 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         image: sanitizeImageUrl(page.image)
       }));
     }
-    
+
     // Fix standalone imageUrl property if present
     if (sanitizedTemplate.imageUrl) {
       sanitizedTemplate.imageUrl = sanitizeImageUrl(sanitizedTemplate.imageUrl);
     }
-    
+
     setSelectedSentenceTemplate(sanitizedTemplate);
+  };
+
+  /**
+   * Reading Comprehension Custom Content Management
+   */
+
+  // Story Page Management
+  const generateUniquePageId = () => {
+    return 'page_' + Math.random().toString(36).substring(2, 15) +
+           Math.random().toString(36).substring(2, 15);
+  };
+
+  const addStoryPage = () => {
+    const newPage = {
+      id: generateUniquePageId(),
+      pageNumber: customStoryPages.length + 1,
+      text: '',
+      image: null
+    };
+    setCustomStoryPages(prev => [...prev, newPage]);
+  };
+
+  const removeStoryPage = (pageId) => {
+    setCustomStoryPages(prev => prev.filter(page => page.id !== pageId));
+  };
+
+  const updateStoryPage = (pageId, field, value) => {
+    setCustomStoryPages(prev =>
+      prev.map(page =>
+        page.id === pageId ? { ...page, [field]: value } : page
+      )
+    );
+  };
+
+  // Story Page Image Upload
+  const handleStoryPageImageUpload = async (e, pageId) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      createModalToast('Please select a valid image file', 'error');
+      return;
+    }
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      createModalToast('Image file must be less than 5MB', 'error');
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      // Create FormData for upload
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', 'reading_comprehension');
+      formData.append('type', 'story_page');
+
+      const response = await fetch('/api/interventions/upload-image', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const data = await response.json();
+
+      // Update the story page with the new image URL
+      updateStoryPage(pageId, 'image', data.url);
+
+      createModalToast('Image uploaded successfully!', 'success');
+    } catch (error) {
+      console.error('Image upload error:', error);
+      createModalToast('Failed to upload image. Please try again.', 'error');
+    } finally {
+      setUploading(false);
+      // Clear the input
+      if (storyPageImageRefs.current[pageId]) {
+        storyPageImageRefs.current[pageId].value = '';
+      }
+    }
+  };
+
+  // Comprehension Questions Management
+  const generateUniqueQuestionId = () => {
+    return 'question_' + Math.random().toString(36).substring(2, 15) +
+           Math.random().toString(36).substring(2, 15);
+  };
+
+  const addComprehensionQuestion = () => {
+    const newQuestion = {
+      id: generateUniqueQuestionId(),
+      questionNumber: customQuestions.length + 1,
+      questionText: '',
+      correctAnswer: '',
+      acceptableAnswers: []
+    };
+    setCustomQuestions(prev => [...prev, newQuestion]);
+  };
+
+  const removeComprehensionQuestion = (questionId) => {
+    setCustomQuestions(prev => prev.filter(question => question.id !== questionId));
+  };
+
+  const updateComprehensionQuestion = (questionId, field, value) => {
+    setCustomQuestions(prev =>
+      prev.map(question =>
+        question.id === questionId ? { ...question, [field]: value } : question
+      )
+    );
+  };
+
+  // Acceptable Answers Management
+  const addAcceptableAnswer = (questionId) => {
+    setCustomQuestions(prev =>
+      prev.map(question =>
+        question.id === questionId
+          ? { ...question, acceptableAnswers: [...(question.acceptableAnswers || []), ''] }
+          : question
+      )
+    );
+  };
+
+  const removeAcceptableAnswer = (questionId, answerIndex) => {
+    setCustomQuestions(prev =>
+      prev.map(question =>
+        question.id === questionId
+          ? {
+              ...question,
+              acceptableAnswers: (question.acceptableAnswers || []).filter((_, idx) => idx !== answerIndex)
+            }
+          : question
+      )
+    );
+  };
+
+  const updateAcceptableAnswer = (questionId, answerIndex, value) => {
+    setCustomQuestions(prev =>
+      prev.map(question =>
+        question.id === questionId
+          ? {
+              ...question,
+              acceptableAnswers: (question.acceptableAnswers || []).map((answer, idx) =>
+                idx === answerIndex ? value : answer
+              )
+            }
+          : question
+      )
+    );
   };
  
   // ===== VALIDATION FUNCTIONS =====
@@ -4737,8 +4898,52 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     }
     else if (currentStep === 2) {
       if (contentType === 'sentence') {
-        if (!selectedSentenceTemplate) {
-          newErrors.sentenceTemplate = "A reading passage must be selected";
+        if (selectedSentenceTemplate) {
+          // Using template - basic validation
+          if (!selectedSentenceTemplate) {
+            newErrors.sentenceTemplate = "A reading passage must be selected";
+          }
+        } else {
+          // Custom content validation
+          if (!customStoryTitle || !customStoryTitle.trim()) {
+            newErrors.storyTitle = "Story title is required";
+          }
+
+          if (!customStoryPages || customStoryPages.length === 0) {
+            newErrors.storyPages = "At least one story page is required";
+          } else {
+            // Validate each story page
+            let hasInvalidPages = false;
+            customStoryPages.forEach((page, index) => {
+              if (!page.text || !page.text.trim()) {
+                newErrors[`storyPage_${page.id}`] = `Page ${index + 1} text is required`;
+                hasInvalidPages = true;
+              }
+            });
+            if (hasInvalidPages) {
+              newErrors.storyPages = "All story pages must have text content";
+            }
+          }
+
+          if (!customQuestions || customQuestions.length === 0) {
+            newErrors.questions = "At least one comprehension question is required";
+          } else {
+            // Validate each question
+            let hasInvalidQuestions = false;
+            customQuestions.forEach((question, index) => {
+              if (!question.questionText || !question.questionText.trim()) {
+                newErrors[`question_${question.id}_text`] = `Question ${index + 1} text is required`;
+                hasInvalidQuestions = true;
+              }
+              if (!question.correctAnswer || !question.correctAnswer.trim()) {
+                newErrors[`question_${question.id}_answer`] = `Question ${index + 1} correct answer is required`;
+                hasInvalidQuestions = true;
+              }
+            });
+            if (hasInvalidQuestions) {
+              newErrors.questions = "All questions must have question text and correct answer";
+            }
+          }
         }
       } else {
         if (safe(questionChoicePairs).length === 0) {
@@ -5194,69 +5399,526 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    */
   const renderSentenceTemplateSelection = () => {
     return (
-      <div className="literexia-form-section">
-        <h3>Select a Reading Passage</h3>
-        
-        <div className="literexia-info-banner">
-                <FaInfoCircle />
-                <p>
-            Choose a reading passage for this activity. Each passage includes text content, 
-            supporting images, and comprehension questions tailored to the student's reading level.
-                </p>
-              </div>
-              
-        {errors.sentenceTemplate && (
-          <div className="literexia-error-banner">
-            <FaExclamationTriangle />
-            <p>{errors.sentenceTemplate}</p>
+      <div className="reading-comprehension-container">
+        <div className="rc-section">
+          <h3>Create Reading Comprehension Activity</h3>
+
+          <div className="reading-comprehension-info-banner">
+            <FaInfoCircle className="info-icon" />
+            <p>
+              Create a comprehensive reading comprehension activity with story title, passages, and comprehension questions.
+              You can select from pre-made templates or create custom content that will be saved for future use.
+            </p>
           </div>
-        )}
-        
-        <div className="literexia-sentence-templates-list">
+
+          {/* Content Source Selection */}
+          <div className="rc-section">
+            <h4>Select Content Source</h4>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+              <button
+                type="button"
+                className={`rc-source-btn ${selectedSentenceTemplate ? '' : 'active'}`}
+                style={{
+                  padding: '12px 20px',
+                  border: selectedSentenceTemplate ? '2px solid #e5e7eb' : '2px solid #22c55e',
+                  borderRadius: '8px',
+                  background: selectedSentenceTemplate ? '#f9fafb' : '#f0fdf4',
+                  color: selectedSentenceTemplate ? '#6b7280' : '#16a34a',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+                onClick={() => setSelectedSentenceTemplate(null)}
+              >
+                Create Custom Content
+              </button>
+              <button
+                type="button"
+                className={`rc-source-btn ${selectedSentenceTemplate ? 'active' : ''}`}
+                style={{
+                  padding: '12px 20px',
+                  border: selectedSentenceTemplate ? '2px solid #22c55e' : '2px solid #e5e7eb',
+                  borderRadius: '8px',
+                  background: selectedSentenceTemplate ? '#f0fdf4' : '#f9fafb',
+                  color: selectedSentenceTemplate ? '#16a34a' : '#6b7280',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+                onClick={() => {
+                  // Show template selection
+                }}
+              >
+                Use Pre-made Template
+              </button>
+            </div>
+          </div>
+
+          {/* Template Selection (if using templates) */}
+          {selectedSentenceTemplate === null ? (
+            renderCustomReadingComprehensionForm()
+          ) : (
+            renderTemplateSelection()
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  /**
+   * Template Selection Interface
+   */
+  const renderTemplateSelection = () => {
+    return (
+      <div className="rc-section">
+        <h4>Available Templates</h4>
+
+        <div className="rc-templates-grid">
           {safe(sentenceTemplates).length > 0 ? (
             safe(sentenceTemplates).map(template => (
-              <div 
-              key={template._id}
-              className={`literexia-sentence-template-item ${
-                selectedSentenceTemplate?._id === template._id ? 'selected' : ''
-              }`}
-                onClick={() => setSelectedSentenceTemplate(template)}
-            >
-              <div className="literexia-sentence-template-header">
-                <h4>{template.title}</h4>
-                <div className="literexia-sentence-template-level">
-                  {template.readingLevel}
-                      </div>
-                    </div>
-                    
-              <div className="literexia-sentence-template-preview">
-                <div className="literexia-sentence-image-preview">
-                  <img src={template.sentenceText[0].image} alt="Passage" />
-                      </div>
-                <div className="literexia-sentence-text-preview">
-                  <p>{template.sentenceText[0].text.length > 100 
-                    ? template.sentenceText[0].text.substring(0, 100) + '...' 
-                    : template.sentenceText[0].text}
-                  </p>
-                  <span className="literexia-sentence-stats">
-                    {template.sentenceText.length} page{template.sentenceText.length !== 1 ? 's' : ''} • 
-                    {template.sentenceQuestions.length} question{template.sentenceQuestions.length !== 1 ? 's' : ''}
-                  </span>
-                      </div>
-                    </div>
+              <div
+                key={template._id}
+                className={`rc-template-card ${
+                  selectedSentenceTemplate?._id === template._id ? 'selected' : ''
+                }`}
+                onClick={() => handleSelectSentenceTemplate(template)}
+                style={{
+                  border: selectedSentenceTemplate?._id === template._id ? '2px solid #22c55e' : '1px solid #e5e7eb',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  cursor: 'pointer',
+                  background: selectedSentenceTemplate?._id === template._id ? '#f0fdf4' : 'white'
+                }}
+              >
+                <div style={{ marginBottom: '12px' }}>
+                  <h4 style={{
+                    margin: '0 0 8px 0',
+                    color: '#1f2937',
+                    fontSize: '16px',
+                    fontWeight: '600'
+                  }}>
+                    {template.title}
+                  </h4>
+                  <div style={{
+                    display: 'inline-block',
+                    padding: '4px 8px',
+                    background: '#dbeafe',
+                    color: '#1e40af',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    fontWeight: '500'
+                  }}>
+                    {template.readingLevel}
                   </div>
-          ))
-        ) : (
-          <div className="literexia-empty-state">
-            <FaExclamationTriangle className="literexia-empty-icon" />
-            <h3>No Reading Passages Available</h3>
-            <p>No reading passages were found for the selected reading level.</p>
+                </div>
+
+                <div className="rc-template-preview">
+                  {template.sentenceText?.[0]?.image && (
+                    <div style={{ marginBottom: '8px' }}>
+                      <img
+                        src={template.sentenceText[0].image}
+                        alt="Passage preview"
+                        style={{
+                          width: '100%',
+                          height: '120px',
+                          objectFit: 'cover',
+                          borderRadius: '8px'
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <p style={{
+                    margin: '0 0 8px 0',
+                    fontSize: '14px',
+                    color: '#4b5563',
+                    lineHeight: '1.4'
+                  }}>
+                    {template.sentenceText?.[0]?.text?.length > 80
+                      ? template.sentenceText[0].text.substring(0, 80) + '...'
+                      : template.sentenceText?.[0]?.text || 'No preview available'}
+                  </p>
+
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: '12px',
+                    color: '#6b7280',
+                    fontWeight: '500'
+                  }}>
+                    <span>{template.sentenceText?.length || 0} page{(template.sentenceText?.length || 0) !== 1 ? 's' : ''}</span>
+                    <span>{template.sentenceQuestions?.length || 0} question{(template.sentenceQuestions?.length || 0) !== 1 ? 's' : ''}</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="empty-state">
+              <FaExclamationTriangle style={{ fontSize: '48px', color: '#9ca3af', marginBottom: '16px' }} />
+              <h3>No Templates Available</h3>
+              <p>No reading comprehension templates were found for this reading level.</p>
             </div>
           )}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
+
+  /**
+   * Custom Reading Comprehension Form
+   */
+  const renderCustomReadingComprehensionForm = () => {
+    return (
+      <>
+        {/* Story Title Section */}
+        <div className="rc-section">
+          <h4>Story Title</h4>
+          <div className="rc-form-group">
+            <label>Enter the title of your story <span style={{ color: '#ef4444' }}>*</span></label>
+            <input
+              type="text"
+              value={customStoryTitle || ''}
+              onChange={(e) => {
+                // Validation: only letters, spaces, uppercase/lowercase
+                const validText = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                setCustomStoryTitle(validText);
+              }}
+              placeholder="Example: Ang Magkakaibigan na mga Hayop"
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontFamily: 'inherit'
+              }}
+              maxLength={100}
+            />
+            <div style={{
+              fontSize: '12px',
+              color: '#6b7280',
+              marginTop: '4px'
+            }}>
+              Only letters and spaces allowed. {(customStoryTitle || '').length}/100 characters
+            </div>
+          </div>
+        </div>
+
+        {/* Story Pages Section */}
+        <div className="rc-section">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h4>Story Pages</h4>
+            <button
+              type="button"
+              className="reading-comprehension-add-question-btn"
+              onClick={addStoryPage}
+            >
+              <FaPlus /> Add Page
+            </button>
+          </div>
+
+          {safe(customStoryPages).map((page, pageIndex) => (
+            <div key={page.id} className="rc-story-page-card" style={{
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: '20px',
+              marginBottom: '16px',
+              background: 'white'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h5 className="page-number">Page {pageIndex + 1}</h5>
+                {safe(customStoryPages).length > 1 && (
+                  <button
+                    type="button"
+                    className="delete-btn"
+                    onClick={() => removeStoryPage(page.id)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#dc2626',
+                      cursor: 'pointer',
+                      padding: '6px',
+                      borderRadius: '4px'
+                    }}
+                  >
+                    <FaTrash />
+                  </button>
+                )}
+              </div>
+
+              <div className="rc-form-group">
+                <label>Page Text <span style={{ color: '#ef4444' }}>*</span></label>
+                <textarea
+                  value={page.text || ''}
+                  onChange={(e) => {
+                    // Validation: only letters, spaces, uppercase/lowercase, basic punctuation
+                    const validText = e.target.value.replace(/[^a-zA-Z\s.,!?]/g, '');
+                    updateStoryPage(page.id, 'text', validText);
+                  }}
+                  placeholder="Write the story content for this page..."
+                  rows={4}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontFamily: 'inherit',
+                    resize: 'vertical'
+                  }}
+                  maxLength={500}
+                />
+                <div style={{
+                  fontSize: '12px',
+                  color: '#6b7280',
+                  marginTop: '4px'
+                }}>
+                  Only letters, spaces, and basic punctuation allowed. {(page.text || '').length}/500 characters
+                </div>
+              </div>
+
+              <div className="rc-form-group">
+                <label>Page Image (Optional)</label>
+                <div className="image-upload-area">
+                  {page.image && (
+                    <div className="uploaded-image-preview">
+                      <img
+                        src={page.image}
+                        alt={`Page ${pageIndex + 1}`}
+                        style={{
+                          width: '120px',
+                          height: '90px',
+                          objectFit: 'cover',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updateStoryPage(page.id, 'image', null)}
+                        style={{
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '4px 8px',
+                          fontSize: '12px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+
+                  <input
+                    type="file"
+                    ref={el => storyPageImageRefs.current[page.id] = el}
+                    onChange={(e) => handleStoryPageImageUpload(e, page.id)}
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    type="button"
+                    className="image-upload-btn"
+                    onClick={() => storyPageImageRefs.current[page.id]?.click()}
+                    style={{
+                      padding: '8px 16px',
+                      background: '#f3f4f6',
+                      border: '2px dashed #d1d5db',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      color: '#6b7280'
+                    }}
+                  >
+                    <FaImage /> {page.image ? 'Change Image' : 'Upload Image'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {safe(customStoryPages).length === 0 && (
+            <div className="empty-state">
+              <p>No story pages added yet. Click "Add Page" to create your first page.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Comprehension Questions Section */}
+        <div className="rc-section">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h4>Comprehension Questions</h4>
+            <button
+              type="button"
+              className="reading-comprehension-add-question-btn"
+              onClick={addComprehensionQuestion}
+            >
+              <FaPlus /> Add Question
+            </button>
+          </div>
+
+          {safe(customQuestions).map((question, questionIndex) => (
+            <div key={question.id} className="rc-question-card" style={{
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: '20px',
+              marginBottom: '16px',
+              background: 'white'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h5 className="question-number">Question {questionIndex + 1}</h5>
+                {safe(customQuestions).length > 1 && (
+                  <button
+                    type="button"
+                    className="delete-btn"
+                    onClick={() => removeComprehensionQuestion(question.id)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#dc2626',
+                      cursor: 'pointer',
+                      padding: '6px',
+                      borderRadius: '4px'
+                    }}
+                  >
+                    <FaTrash />
+                  </button>
+                )}
+              </div>
+
+              <div className="rc-form-group">
+                <label>Question Text <span style={{ color: '#ef4444' }}>*</span></label>
+                <input
+                  type="text"
+                  value={question.questionText || ''}
+                  onChange={(e) => {
+                    // Validation: only letters, spaces, uppercase/lowercase, basic punctuation
+                    const validText = e.target.value.replace(/[^a-zA-Z\s.,!?]/g, '');
+                    updateComprehensionQuestion(question.id, 'questionText', validText);
+                  }}
+                  placeholder="Example: Sino ang mga pangunahing tauhan sa kwento?"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontFamily: 'inherit'
+                  }}
+                  maxLength={200}
+                />
+                <div style={{
+                  fontSize: '12px',
+                  color: '#6b7280',
+                  marginTop: '4px'
+                }}>
+                  Only letters, spaces, and basic punctuation allowed. {(question.questionText || '').length}/200 characters
+                </div>
+              </div>
+
+              <div className="rc-form-group">
+                <label>Correct Answer <span style={{ color: '#ef4444' }}>*</span></label>
+                <input
+                  type="text"
+                  value={question.correctAnswer || ''}
+                  onChange={(e) => {
+                    // Validation: only letters, spaces, uppercase/lowercase
+                    const validText = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                    updateComprehensionQuestion(question.id, 'correctAnswer', validText);
+                  }}
+                  placeholder="Example: Si Juan at si Maria"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontFamily: 'inherit'
+                  }}
+                  maxLength={100}
+                />
+                <div style={{
+                  fontSize: '12px',
+                  color: '#6b7280',
+                  marginTop: '4px'
+                }}>
+                  Only letters and spaces allowed. {(question.correctAnswer || '').length}/100 characters
+                </div>
+              </div>
+
+              <div className="rc-form-group">
+                <label>Acceptable Answer Variations</label>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>
+                  Add alternative ways students might answer correctly
+                </div>
+
+                {safe(question.acceptableAnswers).map((answer, answerIndex) => (
+                  <div key={answerIndex} className="answer-variation-row">
+                    <input
+                      type="text"
+                      value={answer}
+                      onChange={(e) => {
+                        // Validation: only letters, spaces, uppercase/lowercase
+                        const validText = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                        updateAcceptableAnswer(question.id, answerIndex, validText);
+                      }}
+                      placeholder={`Alternative answer ${answerIndex + 1}`}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        fontFamily: 'inherit'
+                      }}
+                      maxLength={100}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeAcceptableAnswer(question.id, answerIndex)}
+                      style={{
+                        background: 'none',
+                        border: '1px solid #dc2626',
+                        color: '#dc2626',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      <FaMinus />
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  className="add-answer-variation-btn"
+                  onClick={() => addAcceptableAnswer(question.id)}
+                  style={{
+                    background: '#f9fafb',
+                    border: '2px dashed #d1d5db',
+                    color: '#6b7280',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    width: '100%',
+                    marginTop: '8px'
+                  }}
+                >
+                  <FaPlus /> Add Alternative Answer
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {safe(customQuestions).length === 0 && (
+            <div className="empty-state">
+              <p>No comprehension questions added yet. Click "Add Question" to create your first question.</p>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  };
 
 /**
  * Step 2: Sentence Selection (for Reading Comprehension)
