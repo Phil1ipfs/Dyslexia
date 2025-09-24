@@ -1,17 +1,18 @@
 [
   {
     "_id": {
-      "$oid": "68d36dc3f9cfe94040800ad6"
+      "$oid": "68d46dc3f2cfe14040300ad8"
     },
     "studentId": 202522233,
     "interventionAssessmentId": {
       "$oid": "68d36dc7f1cfe84040800ace"
     },
-    "revisionNumber": 3,
+    "revisionNumber": 7,
     "questionId": "int_rc_001",
     "category": "Reading Comprehension",
     "response": [
-      "pedro"    ],
+      "pedro", 
+    "hayop"  ],
     "isCorrect": false,
     "responseTime": 45.2,
     "answeredAt": {
@@ -24,17 +25,18 @@
   },
   {
     "_id": {
-      "$oid": "68d32dc9f1cfe84020800ad3"
+      "$oid": "68d32dc7f1cfe29020800ad2"
     },
     "studentId": 202522233,
     "interventionAssessmentId": {
       "$oid": "68d36dc7f1cfe84040800ace"
     },
-    "revisionNumber": 3,
+    "revisionNumber": 7,
     "questionId": "int_rc_002",
     "category": "Reading Comprehension",
     "response": [
-      "hayop"
+      "hayop",
+    "mata"
     ],
     "isCorrect": false,
     "responseTime": 52.8,
@@ -48,19 +50,17 @@
   },
   {
     "_id": {
-      "$oid": "68d36dc2f1cfe87040800ad2"
+      "$oid": "68d36dc2f8cfe11040800ad2"
     },
     "studentId": 202522233,
     "interventionAssessmentId": {
       "$oid": "68d36dc7f1cfe84040800ace"
     },
-    "revisionNumber": 3,
+    "revisionNumber": 7,
     "questionId": "int_rc_003",
     "category": "Reading Comprehension",
     "response": [
-      "hayupan",
-      "boba"
-    ],
+      "hayupan"    ],
     "isCorrect": false,
     "responseTime": 38.7,
     "answeredAt": {

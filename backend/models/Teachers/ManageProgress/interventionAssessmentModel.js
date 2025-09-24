@@ -111,22 +111,8 @@ const interventionQuestionSchema = new mongoose.Schema({
     sentenceAcceptableAnswer: [String]
   }],
 
-  // ✅ NEW: For template-based Reading Comprehension - reference-only approach
-  // Prevents duplication of sentence_templates data in intervention_assessment
-  additionalSentenceQuestions: [{
-    questionNumber: Number,
-    questionText: String,
-    sentenceCorrectAnswer: String,
-    sentenceAcceptableAnswer: [String]
-  }],
-  hasAdditionalQuestions: {
-    type: Boolean,
-    default: false
-  },
-  additionalQuestionsCount: {
-    type: Number,
-    default: 0
-  },
+  // ✅ REMOVED: additionalSentenceQuestions, hasAdditionalQuestions, additionalQuestionsCount
+  // ✅ STANDARDIZED: Only sentenceQuestions is used for all Reading Comprehension questions
   
   // IRT parameters for adaptive difficulty
   difficulty: {

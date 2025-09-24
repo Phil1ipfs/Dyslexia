@@ -3281,17 +3281,13 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               // ✅ Template data stays ONLY in sentence_templates collection
               // ✅ Backend will fetch template data by reference when needed
 
-              // ✅ ONLY store user's ADDITIONAL questions (if any)
-              additionalSentenceQuestions: (activity.questions || []).map((q, questionIndex) => ({
+              // ✅ STANDARDIZED: Always use sentenceQuestions (consistent with custom questions)
+              sentenceQuestions: (activity.questions || []).map((q, questionIndex) => ({
                 questionNumber: questionIndex + 1,
                 questionText: q.questionText,
                 sentenceCorrectAnswer: q.correctAnswer,
                 sentenceAcceptableAnswer: q.acceptableAnswers || []
               })),
-
-              // ✅ Metadata for merging logic
-              hasAdditionalQuestions: (activity.questions || []).length > 0,
-              additionalQuestionsCount: (activity.questions || []).length,
 
               // Prescription alignment
               prescriptionAlignment: {

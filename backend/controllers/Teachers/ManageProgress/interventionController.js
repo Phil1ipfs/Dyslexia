@@ -883,100 +883,10 @@ class InterventionController {
     }
   }
 
-  /**
-   * Create a new sentence template
-   * @param {Object} req - Express request object
-   * @param {Object} res - Express response object
-   */
-  async createSentenceTemplate(req, res) {
-    try {
-      const templateData = req.body;
-      
-      // Validate required fields
-      if (!templateData.title || !templateData.readingLevel) {
-        return res.status(400).json({
-          success: false,
-          message: 'Title and reading level are required'
-        });
-      }
-      
-      // Validate sentenceText and sentenceQuestions
-      if (!templateData.sentenceText || !Array.isArray(templateData.sentenceText) || 
-          templateData.sentenceText.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Sentence text is required and must be an array'
-        });
-      }
-      
-      if (!templateData.sentenceQuestions || !Array.isArray(templateData.sentenceQuestions) || 
-          templateData.sentenceQuestions.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Sentence questions are required and must be an array'
-        });
-      }
-      
-      // Add user ID from auth middleware
-      if (req.user) {
-        templateData.createdBy = req.user.id;
-      }
-      
-      // Add timestamps
-      templateData.createdAt = new Date();
-      templateData.updatedAt = new Date();
-      
-      // Create the template in the database
-      const SentenceTemplate = require('../../../models/Teachers/ManageProgress/sentenceTemplateModel');
-
-      // ✅ DEDUPLICATION LOGIC: Check if identical template already exists
-      const existingTemplate = await SentenceTemplate.findOne({
-        title: templateData.title.trim(),
-        category: templateData.category,
-        readingLevel: templateData.readingLevel,
-        isActive: true
-      });
-
-      if (existingTemplate) {
-        // Compare content to see if it's truly identical
-        const existingContent = JSON.stringify({
-          sentenceText: existingTemplate.sentenceText,
-          sentenceQuestions: existingTemplate.sentenceQuestions
-        });
-        const newContent = JSON.stringify({
-          sentenceText: templateData.sentenceText,
-          sentenceQuestions: templateData.sentenceQuestions
-        });
-
-        if (existingContent === newContent) {
-          console.log(`[INTERVENTION TEMPLATE DEDUPLICATION] ✅ Identical template found, returning existing template ID: ${existingTemplate._id}`);
-          return res.status(200).json({
-            success: true,
-            message: 'Template already exists with identical content',
-            data: existingTemplate,
-            duplicate_prevented: true
-          });
-        }
-      }
-
-      const newTemplate = new SentenceTemplate(templateData);
-      await newTemplate.save();
-      console.log(`[INTERVENTION TEMPLATE CREATION] ✅ New unique template created: ${newTemplate._id}`);
-      
-      return res.status(201).json({
-        success: true,
-        message: 'Sentence template created successfully',
-        data: newTemplate
-      });
-    } catch (error) {
-      console.error('Error creating sentence template:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Error creating sentence template',
-        error: error.message
-      });
-    }
-  }
+  // ❌ REMOVED: createSentenceTemplate method
+  // Templates should ONLY be created through templatesController.js
+  // This duplicate method was causing intervention additional questions to be saved as new templates
+  // All template creation must go through proper templates API endpoints
 }
 
 // Export the class itself, not an instance

@@ -115,160 +115,28 @@ router.get('/questions/main', auth, authorize('teacher', 'admin'),
   }
 );
 
-// Get template questions
-router.get('/templates/questions', auth, authorize('teacher', 'admin'), 
-  async (req, res) => {
-    try {
-      await interventionController.getTemplateQuestions(req, res);
-      // Controller handles the response
-    } catch (error) {
-      console.error('Error in GET /templates/questions route:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Server error processing request',
-        error: error.message
-      });
-    }
-  }
-);
-
-// Update a template question
-router.put('/templates/questions/:templateId', auth, authorize('teacher', 'admin'), 
-  async (req, res) => {
-    try {
-      await interventionController.updateTemplateQuestion(req, res);
-      // Controller handles the response
-    } catch (error) {
-      console.error('Error in PUT /templates/questions/:templateId route:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Server error processing request',
-        error: error.message
-      });
-    }
-  }
-);
-
-// Delete a template question
-router.delete('/templates/questions/:templateId', auth, authorize('teacher', 'admin'), 
-  async (req, res) => {
-    try {
-      await interventionController.deleteTemplateQuestion(req, res);
-      // Controller handles the response
-    } catch (error) {
-      console.error('Error in DELETE /templates/questions/:templateId route:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Server error processing request',
-        error: error.message
-      });
-    }
-  }
-);
+// ❌ REMOVED: Additional duplicate template routes
+// GET    /templates/questions
+// PUT    /templates/questions/:templateId
+// DELETE /templates/questions/:templateId
 
 
-// Get sentence templates
-router.get('/templates/sentences', auth, authorize('teacher', 'admin'), 
-  async (req, res) => {
-    try {
-      await interventionController.getSentenceTemplates(req, res);
-      // Controller handles the response
-    } catch (error) {
-      console.error('Error in GET /templates/sentences route:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Server error processing request',
-        error: error.message
-      });
-    }
-  }
-);
+// ❌ REMOVED: All template routes from intervention endpoints
+// Template operations should ONLY go through /api/templates/* routes (templatesController.js)
+// These duplicate routes were causing intervention additional questions to be saved as new templates
+//
+// Correct template endpoints:
+// - GET    /api/templates/sentences (templatesController.getSentenceTemplates)
+// - POST   /api/templates/sentences (templatesController.createSentenceTemplate)
+// - PUT    /api/templates/sentences/:id (templatesController.updateSentenceTemplate)
+// - DELETE /api/templates/sentences/:id (templatesController.deleteSentenceTemplate)
 
-// Create a sentence template
-router.post('/templates/sentences', auth, authorize('teacher', 'admin'), 
-  async (req, res) => {
-    try {
-      await interventionController.createSentenceTemplate(req, res);
-      // Controller handles the response
-    } catch (error) {
-      console.error('Error in POST /templates/sentences route:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Server error processing request',
-        error: error.message
-      });
-    }
-  }
-);
-
-// Update a sentence template
-router.put('/templates/sentences/:templateId', auth, authorize('teacher', 'admin'), 
-  async (req, res) => {
-    try {
-      await interventionController.updateSentenceTemplate(req, res);
-      // Controller handles the response
-    } catch (error) {
-      console.error('Error in PUT /templates/sentences/:templateId route:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Server error processing request',
-        error: error.message
-      });
-    }
-  }
-);
-
-// Delete a sentence template
-router.delete('/templates/sentences/:templateId', auth, authorize('teacher', 'admin'), 
-  async (req, res) => {
-    try {
-      await interventionController.deleteSentenceTemplate(req, res);
-      // Controller handles the response
-    } catch (error) {
-      console.error('Error in DELETE /templates/sentences/:templateId route:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Server error processing request',
-        error: error.message
-      });
-    }
-  }
-);
-
-// Create a new template question
-router.post('/templates/questions', auth, authorize('teacher', 'admin'), 
-  async (req, res) => {
-    try {
-      await interventionController.createTemplateQuestion(req, res);
-      // Controller handles the response
-    } catch (error) {
-      console.error('Error in POST /templates/questions route:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Server error processing request',
-        error: error.message
-      });
-    }
-  }
-);
-
-
-// Fetch all templates from the database
-router.get('/templates/all', auth, authorize('teacher', 'admin'), 
-  async (req, res) => {
-    try {
-      await interventionController.getAllTemplates(req, res);
-      // Controller handles the response
-    } catch (error) {
-      console.error('Error in GET /templates/all route:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Server error processing request',
-        error: error.message
-      });
-    }
-  }
-);
+// ❌ REMOVED: Final duplicate template routes
+// POST   /templates/questions
+// GET    /templates/all
+//
+// All template operations should use the proper templates controller endpoints:
+// /api/templates/* routes in templatesController.js
 
 // Check if an intervention exists for a student and category
 router.get('/check', auth, authorize('teacher', 'admin'), 

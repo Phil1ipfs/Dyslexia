@@ -81,10 +81,17 @@ class InterventionAssessmentController {
           if (shouldSaveToTemplates) {
             console.log(`[INTERVENTION CONTROLLER] 🆕 Found truly custom question ${question.questionId} - validating for template save`);
 
-            // Skip Reading Comprehension questions - they use sentence_templates, not templates_questions
+            // Handle Reading Comprehension custom content - save to sentence_templates (not templates_questions)
             if (interventionData.category === 'Reading Comprehension') {
-              console.log(`[INTERVENTION CONTROLLER] 📋 Question ${question.questionId} skipped - Reading Comprehension uses sentence_templates collection`);
-              continue; // Skip saving to templates_questions for Reading Comprehension
+              console.log(`[INTERVENTION CONTROLLER] 📋 Processing Reading Comprehension custom question ${question.questionId} for sentence_templates`);
+
+              // Only save if it's truly custom (not template + additional questions)
+              if (question.storyTitle && question.passages && question.sentenceQuestions) {
+                await this.saveCustomReadingComprehensionTemplate(question, interventionData.readingLevel, req.user.id);
+              } else {
+                console.log(`[INTERVENTION CONTROLLER] ℹ️ Skipping RC question - appears to be template-based or additional questions only`);
+              }
+              continue; // Skip templates_questions processing for Reading Comprehension
             }
 
             try {
@@ -1846,7 +1853,9 @@ class InterventionAssessmentController {
               continue;
             }
 
-            console.log(`${debugPrefix} 📝 Additional questions from intervention: ${question.additionalSentenceQuestions?.length || 0}`);
+            // STANDARDIZED: Check for sentenceQuestions (with backward compatibility for additionalSentenceQuestions)
+            const interventionQuestions = question.sentenceQuestions || question.additionalSentenceQuestions || [];
+            console.log(`${debugPrefix} 📝 Intervention questions: ${interventionQuestions.length} (using ${question.sentenceQuestions ? 'sentenceQuestions' : question.additionalSentenceQuestions ? 'additionalSentenceQuestions (legacy)' : 'none'})`);
 
             // Create the base question object safely
             let baseQuestion;
@@ -1908,20 +1917,20 @@ class InterventionAssessmentController {
               throw new Error(`Template questions processing failed: ${templateQError.message}`);
             }
 
-            // Create additional questions safely
+            // STANDARDIZED: Create intervention questions safely (supports both new and legacy formats)
             let additionalQuestions = [];
             try {
-              if (question.additionalSentenceQuestions && Array.isArray(question.additionalSentenceQuestions)) {
-                console.log(`${debugPrefix} 🔧 Processing ${question.additionalSentenceQuestions.length} additional questions...`);
-                additionalQuestions = question.additionalSentenceQuestions.map((q, questionIndex) => {
+              if (interventionQuestions && Array.isArray(interventionQuestions) && interventionQuestions.length > 0) {
+                console.log(`${debugPrefix} 🔧 Processing ${interventionQuestions.length} intervention questions...`);
+                additionalQuestions = interventionQuestions.map((q, questionIndex) => {
                   if (!q || typeof q !== 'object') {
-                    console.warn(`${debugPrefix} ⚠️ Invalid additional question at index ${questionIndex}:`, q);
+                    console.warn(`${debugPrefix} ⚠️ Invalid intervention question at index ${questionIndex}:`, q);
                     return {
                       questionNumber: template.sentenceQuestions.length + questionIndex + 1,
                       questionText: '',
                       sentenceCorrectAnswer: '',
                       sentenceAcceptableAnswer: [],
-                      source: 'additional'
+                      source: 'intervention'
                     };
                   }
                   return {
@@ -1929,16 +1938,16 @@ class InterventionAssessmentController {
                     questionText: q.questionText || '',
                     sentenceCorrectAnswer: q.sentenceCorrectAnswer || '',
                     sentenceAcceptableAnswer: q.sentenceAcceptableAnswer || [],
-                    source: 'additional'
+                    source: 'intervention'
                   };
                 });
-                console.log(`${debugPrefix} ✅ Additional questions processed: ${additionalQuestions.length}`);
+                console.log(`${debugPrefix} ✅ Intervention questions processed: ${additionalQuestions.length}`);
               } else {
-                console.log(`${debugPrefix} ℹ️ No additional questions to process`);
+                console.log(`${debugPrefix} ℹ️ No intervention questions to process`);
               }
-            } catch (additionalQError) {
-              console.error(`${debugPrefix} ❌ Error processing additional questions:`, additionalQError);
-              console.warn(`${debugPrefix} ⚠️ Continuing without additional questions due to error`);
+            } catch (interventionQError) {
+              console.error(`${debugPrefix} ❌ Error processing intervention questions:`, interventionQError);
+              console.warn(`${debugPrefix} ⚠️ Continuing without intervention questions due to error`);
               additionalQuestions = [];
             }
 
@@ -2006,6 +2015,86 @@ class InterventionAssessmentController {
         console.error(`${debugPrefix} ❌ Fallback conversion also failed:`, fallbackError);
         return intervention;
       }
+    }
+  }
+
+  /**
+   * Save custom Reading Comprehension content to sentence_templates collection
+   * Only saves pure custom content, not template + additional question combinations
+   */
+  async saveCustomReadingComprehensionTemplate(question, readingLevel, teacherId) {
+    try {
+      const SentenceTemplate = require('../../models/Teachers/ManageProgress/sentenceTemplateModel');
+
+      console.log(`[INTERVENTION CONTROLLER] 💾 Checking if custom RC content should be saved as template`);
+      console.log(`[INTERVENTION CONTROLLER] - Story title: "${question.storyTitle}"`);
+      console.log(`[INTERVENTION CONTROLLER] - Passages: ${question.passages?.length || 0}`);
+      console.log(`[INTERVENTION CONTROLLER] - Sentence questions: ${question.sentenceQuestions?.length || 0}`);
+
+      // Validate that this is truly custom content
+      if (!question.storyTitle || !question.passages || !question.sentenceQuestions) {
+        console.log(`[INTERVENTION CONTROLLER] ⚠️ Not saving - missing required RC fields`);
+        return;
+      }
+
+      // Check for duplicates to prevent template pollution
+      const existingTemplate = await SentenceTemplate.findOne({
+        title: question.storyTitle.trim(),
+        readingLevel: readingLevel,
+        isActive: true
+      });
+
+      if (existingTemplate) {
+        // Compare content to see if it's truly identical
+        const existingContent = JSON.stringify({
+          sentenceText: existingTemplate.sentenceText,
+          sentenceQuestions: existingTemplate.sentenceQuestions
+        });
+        const newContent = JSON.stringify({
+          sentenceText: question.passages,
+          sentenceQuestions: question.sentenceQuestions
+        });
+
+        if (existingContent === newContent) {
+          console.log(`[INTERVENTION CONTROLLER] ✅ Identical RC template already exists: ${existingTemplate._id}`);
+          return; // Don't create duplicate
+        } else {
+          console.log(`[INTERVENTION CONTROLLER] ℹ️ Similar title found but different content - creating new template`);
+        }
+      }
+
+      // Create new sentence template from custom content
+      const templateData = {
+        title: question.storyTitle.trim(),
+        category: 'Reading Comprehension',
+        readingLevel: readingLevel,
+        sentenceText: question.passages.map(passage => ({
+          pageNumber: passage.pageNumber,
+          text: passage.text,
+          image: passage.image || null
+        })),
+        sentenceQuestions: question.sentenceQuestions.map(sq => ({
+          questionNumber: sq.questionNumber,
+          questionText: sq.questionText,
+          sentenceCorrectAnswer: sq.sentenceCorrectAnswer,
+          acceptableAnswers: sq.sentenceAcceptableAnswer || []
+        })),
+        isActive: true,
+        createdBy: teacherId,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const newTemplate = new SentenceTemplate(templateData);
+      await newTemplate.save();
+
+      console.log(`[INTERVENTION CONTROLLER] ✅ Custom RC content saved as new template: ${newTemplate._id}`);
+      console.log(`[INTERVENTION CONTROLLER] - Template title: "${newTemplate.title}"`);
+      console.log(`[INTERVENTION CONTROLLER] - Reading level: ${newTemplate.readingLevel}`);
+
+    } catch (error) {
+      console.error(`[INTERVENTION CONTROLLER] ❌ Error saving custom RC template:`, error);
+      // Don't throw - template saving failure shouldn't break intervention creation
     }
   }
 }
