@@ -1047,42 +1047,45 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       console.log(`[INTERVENTION REVISION] - Calculated newRevisionNumber:`, newRevisionNumber);
       console.log(`[INTERVENTION REVISION] Creating revision number: ${newRevisionNumber}`);
 
-      // Step 3: Prepare revision data
-      const revisionData = {
-        ...interventionData,
-        revisionNumber: newRevisionNumber,
-        // Add revision history entry
-        revisionHistory: [
-          ...(currentIntervention.revisionHistory || []),
-          {
-            version: newRevisionNumber,
-            editedBy: getValidTeacherId(),
-            editedAt: new Date().toISOString(),
-            changes: `Teacher revision ${newRevisionNumber} - Intervention customization for improved student outcomes`,
-            previousVersion: currentIntervention.revisionNumber || 1
-          }
-        ],
-        // Reset completion status for new version
-        completedAt: null,
-        startedAt: null,
-        interventionResultsId: null,
-        interventionResults: currentIntervention.interventionResults || [], // Preserve previous results
-        // Update metadata
-        lastEditedBy: getValidTeacherId(),
-        lastEditedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        status: 'active'
-      };
-
       console.log(`[INTERVENTION REVISION] 🔄 REVISION SUMMARY:`);
       console.log(`[INTERVENTION REVISION] - Previous version: ${currentIntervention.revisionNumber || 1}`);
-      console.log(`[INTERVENTION REVISION] - New version: ${newRevisionNumber}`);
+      console.log(`[INTERVENTION REVISION] - New version: ${newRevisionNumber} (backend will handle)`);
       console.log(`[INTERVENTION REVISION] - Previous results preserved: ${currentIntervention.interventionResultsId ? 'Yes' : 'No'}`);
       console.log(`[INTERVENTION REVISION] - Ready for student retake: Yes`);
       console.log(`[INTERVENTION REVISION] - Mobile will detect version change: Yes`);
+      console.log(`[INTERVENTION REVISION] - Questions to update: ${interventionData.questions?.length || 0}`);
 
-      // Step 4: Perform the revision update
-      const response = await api.interventions.update(interventionId, revisionData);
+      // Step 4: Perform the revision update - Send minimal data to avoid conflicts
+      const cleanRevisionData = {
+        // Core fields that need updating
+        questions: interventionData.questions,
+        totalQuestions: interventionData.totalQuestions || interventionData.questions?.length || 0,
+
+        // Teacher info for createRevision method
+        lastEditedBy: getValidTeacherId(),
+
+        // Let backend handle revisionNumber and revisionHistory via createRevision method
+        // Don't send revisionNumber or revisionHistory - causes conflicts
+
+        // Essential metadata
+        status: 'active',
+        updatedAt: new Date().toISOString(),
+
+        // Preserve other essential intervention fields if they exist
+        teacherImplementation: {
+          ...interventionData.teacherImplementation,
+          implementedBy: getValidTeacherId(),
+          implementationDate: new Date().toISOString()
+        },
+
+        // Reset completion fields for new version
+        completedAt: null,
+        startedAt: null,
+        interventionResultsId: null
+      };
+
+      console.log('[INTERVENTION REVISION] 🔄 Sending clean revision data:', cleanRevisionData);
+      const response = await api.interventions.update(interventionId, cleanRevisionData);
       console.log('[INTERVENTION REVISION] ✅ Revision response:', response.data);
 
       console.log(`[INTERVENTION REVISION] 🎯 INTERVENTION REVISION COMPLETE`);
@@ -2774,8 +2777,22 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
       }
       
       // Save Reading Comprehension custom content as templates first (if applicable)
-      if (contentType === 'sentence' && !selectedSentenceTemplate) {
-        await saveReadingComprehensionCustomContentAsTemplate();
+      // Only save CUSTOM content as templates - NOT when using existing templates
+      if (contentType === 'sentence') {
+        // Check if we have actual custom activities (not just template selections)
+        const hasCustomActivities = customReadingComprehensionActivities.some(activity =>
+          activity.storyTitle && activity.storyTitle.trim() &&
+          activity.storyPages && activity.storyPages.length > 0 &&
+          activity.questions && activity.questions.length > 0 &&
+          !activity.selectedTemplate // No template selected = custom content
+        );
+
+        if (hasCustomActivities) {
+          console.log('[SAVE] ✅ Found custom activities - saving as templates');
+          await saveReadingComprehensionCustomContentAsTemplate();
+        } else {
+          console.log('[SAVE] ✅ No custom activities found - using existing templates only');
+        }
       }
       
       // Prepare data for saving
@@ -3125,7 +3142,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         customReadingComprehensionActivities.some(activity => {
           const hasTemplate = activity.selectedTemplate && activity.selectedTemplate._id;
           const hasCustomContent = activity.storyTitle && activity.storyTitle.trim() &&
-            activity.storyPages && activity.storyPages.length > 0 &&
+          activity.storyPages && activity.storyPages.length > 0 &&
             activity.questions && activity.questions.length > 0;
           return hasTemplate || hasCustomContent;
         });
@@ -3145,14 +3162,14 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
       const contentSource = {
         type: 'mixed', // Can have both templates and custom content
-        sourceId: null,
-        totalActivities: completeActivities.length
-      };
+          sourceId: null,
+          totalActivities: completeActivities.length
+        };
       
       // For Reading Comprehension: 1 RC questionId per activity
       const questionCount = completeActivities.length;
-      
-      // Store all activities for question creation
+
+        // Store all activities for question creation
       const allActivities = completeActivities;
 
       // For Reading Comprehension, use the sentence template/custom content according to CLAUDE.md
@@ -3252,27 +3269,29 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
         questions: (allActivities || []).map((activity, activityIndex) => {
           // Check if this activity uses a template or custom content
           if (activity.selectedTemplate && activity.selectedTemplate._id) {
-            // Template-based activity
+            // ✅ PURE REFERENCE-ONLY approach - NO template content duplication
             return {
               questionId: `int_rc_${String(activityIndex + 1).padStart(3, '0')}`,
               source: 'sentence_template',
-              sourceQuestionId: activity.selectedTemplate._id,
+              sourceQuestionId: activity.selectedTemplate._id, // ✅ ONLY the template reference
               questionType: 'text_input',
-              questionText: activity.selectedTemplate.title,
+              questionText: activity.selectedTemplate.title, // ✅ Only title for identification
 
-              // Reading Comprehension structure per CLAUDE.md
-              storyTitle: activity.selectedTemplate.title,
-              passages: activity.selectedTemplate.sentenceText.map((page, pageIndex) => ({
-                pageNumber: pageIndex + 1,
-                text: page.text,
-                image: page.image || null
-              })),
-              sentenceQuestions: activity.selectedTemplate.sentenceQuestions.map((q, questionIndex) => ({
+              // ✅ CRITICAL: NO template passages, NO template sentenceQuestions stored here
+              // ✅ Template data stays ONLY in sentence_templates collection
+              // ✅ Backend will fetch template data by reference when needed
+
+              // ✅ ONLY store user's ADDITIONAL questions (if any)
+              additionalSentenceQuestions: (activity.questions || []).map((q, questionIndex) => ({
                 questionNumber: questionIndex + 1,
                 questionText: q.questionText,
-                sentenceCorrectAnswer: q.sentenceCorrectAnswer,
+                sentenceCorrectAnswer: q.correctAnswer,
                 sentenceAcceptableAnswer: q.acceptableAnswers || []
               })),
+
+              // ✅ Metadata for merging logic
+              hasAdditionalQuestions: (activity.questions || []).length > 0,
+              additionalQuestionsCount: (activity.questions || []).length,
 
               // Prescription alignment
               prescriptionAlignment: {
@@ -3308,16 +3327,16 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                 sentenceAcceptableAnswer: q.acceptableAnswers || []
               })),
 
-              // Prescription alignment
-              prescriptionAlignment: {
-                targetSkill: "reading_comprehension",
-                technique: "Systematic reading comprehension instruction",
-                difficultyLevel: "standard",
-                multisensoryElements: ["visual", "cognitive", "linguistic"]
-              },
+            // Prescription alignment
+            prescriptionAlignment: {
+              targetSkill: "reading_comprehension",
+              technique: "Systematic reading comprehension instruction",
+              difficultyLevel: "standard",
+              multisensoryElements: ["visual", "cognitive", "linguistic"]
+            },
 
-              createdBy: getValidTeacherId(),
-              createdAt: getFormattedDate()
+            createdBy: getValidTeacherId(),
+            createdAt: getFormattedDate()
             };
           }
         }),
@@ -5747,7 +5766,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
     return (
       <div className="reading-comprehension-container">
         <div className="rc-section">
-          <h3>📚 Reading Comprehension</h3>
+          <h3>📚Reading Comprehension</h3>
           
           {/* Activity Tabs */}
           <div className="rc-activities-nav">
@@ -5761,8 +5780,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               >
                 <FaPlus /> Add Activity
               </button>
-            </div>
-            
+          </div>
+
             <div className="rc-activities-tabs">
               {customReadingComprehensionActivities.map((activity, index) => (
                 <div
@@ -5772,8 +5791,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                 >
                   <span>Activity {index + 1}</span>
                   {customReadingComprehensionActivities.length > 1 && (
-                    <button
-                      type="button"
+              <button
+                type="button"
                       className="rc-activity-tab-remove"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -5782,7 +5801,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                       title="Remove this activity"
                     >
                       ✕
-                    </button>
+              </button>
                   )}
                 </div>
               ))}
@@ -5794,7 +5813,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             <div className="rc-activity-header">
               <h4>Activity {activeActivityIndex + 1}</h4>
               <div className="rc-activity-badge">
-                {customReadingComprehensionActivities.length} total activities
+                {safe(currentActivity.storyPages || []).length} passages • {safe(currentActivity.questions || []).length} questions
               </div>
             </div>
 
@@ -6176,8 +6195,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               Use Custom Content
             </button>
           </div>
-        </div>
-
+          </div>
+          
         {/* Template Details */}
         <div style={{
           background: '#f8fafc',
@@ -6302,8 +6321,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             You can add additional custom reading comprehension activities alongside this template.
           </p>
 
-          <button
-            type="button"
+                <button
+                  type="button"
             onClick={() => {
               // Initialize custom activities if not already done
               if (customReadingComprehensionActivities.length === 0) {
@@ -6336,8 +6355,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
           <div style={{ marginTop: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
               <h5 style={{ margin: 0, color: '#1f2937' }}>Additional Custom Content</h5>
-              <button
-                type="button"
+                    <button
+                      type="button"
                 onClick={() => setShowCustomContentForm(false)}
                 style={{
                   padding: '4px 8px',
@@ -6350,12 +6369,12 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                 }}
               >
                 Hide
-              </button>
+                    </button>
             </div>
             {renderCustomReadingComprehensionForm()}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
     );
   };
 
@@ -6363,70 +6382,11 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
    * Custom Reading Comprehension Form
    */
   const renderCustomReadingComprehensionForm = () => {
+    const currentActivity = getCurrentActivity();
+    const isTemplateSelected = currentActivity.selectedTemplate && currentActivity.selectedTemplate._id;
+    
     return (
       <>
-        {/* Multiple Activities Navigation */}
-        <div className="rc-activities-nav">
-          <div className="rc-activities-nav-header">
-            <h4>Reading Comprehension</h4>
-            <button
-              type="button"
-              onClick={addNewActivity}
-              className="rc-btn rc-btn-primary rc-add-activity-btn"
-            >
-              <FaPlus /> Add Activity
-            </button>
-          </div>
-          
-          {customReadingComprehensionActivities.length > 0 && (
-            <div className="rc-activities-tabs">
-              {customReadingComprehensionActivities.map((activity, index) => (
-                <button
-                  key={activity.id || index}
-                  type="button"
-                  onClick={() => setActiveActivityIndex(index)}
-                  className={`rc-activity-tab ${activeActivityIndex === index ? 'active' : ''}`}
-                >
-                  Activity {index + 1}
-                  {customReadingComprehensionActivities.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeActivity(index);
-                      }}
-                      className="rc-activity-tab-remove"
-                    >
-                      <FaTimes size={12} />
-                    </button>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-          
-          {customReadingComprehensionActivities.length === 0 && (
-            <div className="rc-activities-empty-state">
-              <p>
-                No activities created yet. Click "Add Activity" to create your first Reading Comprehension activity.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Activity Content - Only show when there are activities */}
-        {customReadingComprehensionActivities.length > 0 && (
-          <div className="rc-activity-content">
-            {/* Activity Header */}
-            <div className="rc-activity-header">
-              <h3>
-                Activity {activeActivityIndex + 1}
-              </h3>
-              <div className="rc-activity-badge">
-                {customReadingComprehensionActivities.length} total activities
-              </div>
-            </div>
-
             {/* Story Title Section */}
             <div className="rc-section">
           <h4>Story Title</h4>
@@ -6434,18 +6394,29 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             <label>Enter the title of your story <span style={{ color: '#ef4444' }}>*</span></label>
             <input
               type="text"
-              value={getCurrentActivity().storyTitle || ''}
+              value={currentActivity.storyTitle || ''}
               onChange={(e) => {
+                if (isTemplateSelected) return; // Disable editing when template is selected
                 // Validation: only letters, spaces, uppercase/lowercase
                 const validText = e.target.value.replace(/[^a-zA-Z\s]/g, '');
                 updateCurrentActivity({ storyTitle: validText });
               }}
               placeholder="Example: Ang Magkakaibigan na mga Hayop"
               maxLength={100}
+              disabled={isTemplateSelected}
+              style={{ 
+                opacity: isTemplateSelected ? 0.6 : 1,
+                cursor: isTemplateSelected ? 'not-allowed' : 'text'
+              }}
             />
             <div className="rc-char-counter">
-              Only letters and spaces allowed. {(getCurrentActivity().storyTitle || '').length}/100 characters
+              Only letters and spaces allowed. {(currentActivity.storyTitle || '').length}/100 characters
             </div>
+            {isTemplateSelected && (
+              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                <FaLock style={{ marginRight: '4px' }} /> Field is locked when using a template
+              </div>
+            )}
           </div>
         </div>
 
@@ -6457,16 +6428,26 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               type="button"
               className="reading-comprehension-add-question-btn"
               onClick={addStoryPage}
+              disabled={isTemplateSelected}
+              style={{ 
+                opacity: isTemplateSelected ? 0.6 : 1,
+                cursor: isTemplateSelected ? 'not-allowed' : 'pointer'
+              }}
             >
               <FaPlus /> Add Page
             </button>
           </div>
+          {isTemplateSelected && (
+            <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '16px' }}>
+              <FaLock style={{ marginRight: '4px' }} /> Pages are locked when using a template
+            </div>
+          )}
 
           {safe(getCurrentActivity().storyPages || []).map((page, pageIndex) => (
             <div key={page.id} className="rc-story-page-card">
               <div className="rc-card-header">
                 <div className="page-number">{pageIndex + 1}</div>
-                {safe(getCurrentActivity().storyPages || []).length > 1 && (
+                {!isTemplateSelected && safe(getCurrentActivity().storyPages || []).length > 1 && (
                   <button
                     type="button"
                     className="rc-delete-btn"
@@ -6482,6 +6463,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                 <textarea
                   value={page.text || ''}
                   onChange={(e) => {
+                    if (isTemplateSelected) return; // Disable editing when template is selected
                     // Validation: only letters, spaces, uppercase/lowercase, basic punctuation
                     const validText = e.target.value.replace(/[^a-zA-Z\s.,!?]/g, '');
                     updateStoryPage(page.id, 'text', validText);
@@ -6489,6 +6471,11 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                   placeholder="Write the story content for this page..."
                   rows={4}
                   maxLength={500}
+                  disabled={isTemplateSelected}
+                  style={{ 
+                    opacity: isTemplateSelected ? 0.6 : 1,
+                    cursor: isTemplateSelected ? 'not-allowed' : 'text'
+                  }}
                 />
                 <div className="rc-char-counter">
                   Only letters, spaces, and basic punctuation allowed. {(page.text || '').length}/500 characters
@@ -6497,7 +6484,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
 
               <div className="rc-form-group">
                 <label>Page Image (Optional)</label>
-                <div className="image-upload-area">
+                <div className="image-upload-area" style={{ opacity: isTemplateSelected ? 0.6 : 1 }}>
                   {page.image && (
                     <div className="uploaded-image-preview">
                       <img
@@ -6510,6 +6497,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                           borderRadius: '8px'
                         }}
                       />
+                      {!isTemplateSelected && (
                       <button
                         type="button"
                         onClick={() => updateStoryPage(page.id, 'image', null)}
@@ -6525,6 +6513,7 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                       >
                         Remove
                       </button>
+                      )}
                     </div>
                   )}
 
@@ -6534,12 +6523,17 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                     onChange={(e) => handleStoryPageImageUpload(e, page.id)}
                     accept="image/*"
                     style={{ display: 'none' }}
+                    disabled={isTemplateSelected}
                   />
                   <button
                     type="button"
                     className="image-upload-btn"
-                    onClick={() => storyPageImageRefs.current[page.id]?.click()}
-                    disabled={uploading}
+                    onClick={() => !isTemplateSelected && storyPageImageRefs.current[page.id]?.click()}
+                    disabled={uploading || isTemplateSelected}
+                    style={{ 
+                      opacity: isTemplateSelected ? 0.6 : 1,
+                      cursor: isTemplateSelected ? 'not-allowed' : 'pointer'
+                    }}
                   >
                     {uploading ? (
                       <>
@@ -6580,16 +6574,42 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
               type="button"
               className="reading-comprehension-add-question-btn"
               onClick={addComprehensionQuestion}
+              style={{ 
+                opacity: 1,
+                cursor: 'pointer'
+              }}
             >
               <FaPlus /> Add Question
             </button>
           </div>
+          {isTemplateSelected && (
+            <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '16px' }}>
+              <FaLock style={{ marginRight: '4px' }} /> Template questions are locked. You can edit acceptable answers and add more questions for this intervention.
+            </div>
+          )}
 
-          {safe(getCurrentActivity().questions || []).map((question, questionIndex) => (
+          {safe(getCurrentActivity().questions || []).map((question, questionIndex) => {
+            const isTemplateQuestion = isTemplateSelected && questionIndex < (currentActivity.selectedTemplate?.sentenceQuestions?.length || 0);
+            return (
             <div key={question.id} className="rc-question-card">
               <div className="rc-card-header">
-                <div className="question-number">{questionIndex + 1}</div>
-                {safe(getCurrentActivity().questions || []).length > 1 && (
+                <div className="question-number">
+                  {questionIndex + 1}
+                  {isTemplateQuestion && (
+                    <span style={{ 
+                      fontSize: '10px', 
+                      color: 'white', 
+                      marginLeft: '8px',
+                      background: '#4A608A',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontWeight: '500'
+                    }}>
+                      Template
+                    </span>
+                  )}
+                </div>
+                {(!isTemplateSelected || !isTemplateQuestion) && safe(getCurrentActivity().questions || []).length > 1 && (
                   <button
                     type="button"
                     className="rc-delete-btn"
@@ -6606,12 +6626,18 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                   type="text"
                   value={question.questionText || ''}
                   onChange={(e) => {
+                    if (isTemplateQuestion) return; // Disable editing only for template questions
                     // Validation: only letters, spaces, uppercase/lowercase, basic punctuation
                     const validText = e.target.value.replace(/[^a-zA-Z\s.,!?]/g, '');
                     updateComprehensionQuestion(question.id, 'questionText', validText);
                   }}
                   placeholder="Example: Sino ang mga pangunahing tauhan sa kwento?"
                   maxLength={200}
+                  disabled={isTemplateQuestion}
+                  style={{ 
+                    opacity: isTemplateQuestion ? 0.6 : 1,
+                    cursor: isTemplateQuestion ? 'not-allowed' : 'text'
+                  }}
                 />
                 <div className="rc-char-counter">
                   Only letters, spaces, and basic punctuation allowed. {(question.questionText || '').length}/200 characters
@@ -6624,12 +6650,18 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                   type="text"
                   value={question.correctAnswer || ''}
                   onChange={(e) => {
+                    if (isTemplateQuestion) return; // Disable editing only for template questions
                     // Validation: only letters, spaces, uppercase/lowercase
                     const validText = e.target.value.replace(/[^a-zA-Z\s]/g, '');
                     updateComprehensionQuestion(question.id, 'correctAnswer', validText);
                   }}
                   placeholder="Example: Si Juan at si Maria"
                   maxLength={100}
+                  disabled={isTemplateQuestion}
+                  style={{ 
+                    opacity: isTemplateQuestion ? 0.6 : 1,
+                    cursor: isTemplateQuestion ? 'not-allowed' : 'text'
+                  }}
                 />
                 <div className="rc-char-counter">
                   Only letters and spaces allowed. {(question.correctAnswer || '').length}/100 characters
@@ -6675,7 +6707,8 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
                 </button>
               </div>
             </div>
-          ))}
+            );
+          })}
 
           {safe(getCurrentActivity().questions || []).length === 0 && (
             <div className="rc-empty-state">
@@ -6683,8 +6716,6 @@ const ActivityEditModal = ({ activity, onClose, onSave, student, category, analy
             </div>
           )}
         </div>
-          </div>
-        )}
       </>
     );
   };

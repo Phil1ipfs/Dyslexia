@@ -521,7 +521,7 @@ class InterventionAssessmentController {
    * Get intervention assessment by ID
    * GET /api/intervention-assessment/:interventionId
    */
-  async getInterventionById(req, res) {
+  getInterventionById = async (req, res) => {
     try {
       const { interventionId } = req.params;
 
@@ -543,9 +543,12 @@ class InterventionAssessmentController {
       console.log(`[INTERVENTION CONTROLLER] - Last edited: ${intervention.lastEditedAt}`);
       console.log(`[INTERVENTION CONTROLLER] - Status: ${intervention.status}`);
 
+      // ✅ NEW: Merge template data for Reading Comprehension questions
+      const processedIntervention = await this.mergeTemplateDataForReadingComprehension(intervention);
+
       res.json({
         success: true,
-        data: intervention
+        data: processedIntervention
       });
 
     } catch (error) {
@@ -727,7 +730,7 @@ class InterventionAssessmentController {
    * Get questions for an intervention
    * GET /api/intervention-assessment/:interventionId/questions
    */
-  async getInterventionQuestions(req, res) {
+  getInterventionQuestions = async (req, res) => {
     try {
       const { interventionId } = req.params;
 
@@ -739,13 +742,16 @@ class InterventionAssessmentController {
         });
       }
 
+      // ✅ NEW: Merge template data for Reading Comprehension questions
+      const processedIntervention = await this.mergeTemplateDataForReadingComprehension(intervention);
+
       res.json({
         success: true,
         data: {
-          interventionId: intervention._id,
-          category: intervention.category,
-          totalQuestions: intervention.totalQuestions,
-          questions: intervention.questions
+          interventionId: processedIntervention._id,
+          category: processedIntervention.category,
+          totalQuestions: processedIntervention.totalQuestions,
+          questions: processedIntervention.questions
         }
       });
 
@@ -1284,13 +1290,14 @@ class InterventionAssessmentController {
         });
       }
 
-      // CRITICAL FIX: Handle revisions properly using createRevision method
+      // CRITICAL FIX: Detect revision updates by checking for question updates and lastEditedBy
       let isRevisionUpdate = false;
-      if (updateData.revisionNumber && updateData.revisionNumber > (intervention.revisionNumber || 1)) {
-        console.log(`[INTERVENTION CONTROLLER] 🔄 REVISION DETECTED - Using createRevision method:`);
+      if (updateData.questions && updateData.questions.length > 0 && updateData.lastEditedBy) {
+        console.log(`[INTERVENTION CONTROLLER] 🔄 REVISION DETECTED - Questions being updated with teacher ID:`);
         console.log(`[INTERVENTION CONTROLLER] - Previous version: ${intervention.revisionNumber || 1}`);
-        console.log(`[INTERVENTION CONTROLLER] - Expected new version: ${updateData.revisionNumber}`);
-        console.log(`[INTERVENTION CONTROLLER] - Revision history entries from frontend: ${updateData.revisionHistory?.length || 0}`);
+        console.log(`[INTERVENTION CONTROLLER] - Questions count: ${updateData.questions.length}`);
+        console.log(`[INTERVENTION CONTROLLER] - Edited by: ${updateData.lastEditedBy}`);
+        console.log(`[INTERVENTION CONTROLLER] - Using createRevision method to handle version increment`);
         isRevisionUpdate = true;
       }
 
@@ -1463,26 +1470,24 @@ class InterventionAssessmentController {
         // CRITICAL FIX: Use createRevision method for proper revision increment
         console.log(`[INTERVENTION CONTROLLER] 🔄 USING createRevision METHOD TO PROPERLY INCREMENT VERSION`);
 
-        // Extract revision-specific data
-        const latestRevisionEntry = updateData.revisionHistory && updateData.revisionHistory.length > 0
-          ? updateData.revisionHistory[updateData.revisionHistory.length - 1]
-          : null;
-
-        const revisionChanges = latestRevisionEntry?.changes || 'Teacher revision - Intervention customization';
-        const teacherId = updateData.lastEditedBy || latestRevisionEntry?.editedBy;
+        // Extract teacher info for createRevision method
+        const teacherId = updateData.lastEditedBy;
+        const revisionChanges = `Teacher revision - Intervention customization for improved student outcomes`;
 
         // Remove revision-related fields from updateData to avoid conflicts
         const cleanUpdateData = { ...updateData };
-        delete cleanUpdateData.revisionNumber;
-        delete cleanUpdateData.revisionHistory;
-        delete cleanUpdateData.lastEditedBy;
-        delete cleanUpdateData.lastEditedAt;
+        delete cleanUpdateData.lastEditedBy;  // Will be handled by createRevision
 
         // First, update non-revision fields
         cleanUpdateData.updatedAt = new Date();
         Object.assign(intervention, cleanUpdateData);
 
         // Then use createRevision method to properly handle version increment
+        console.log(`[INTERVENTION CONTROLLER] 🔄 Calling createRevision with:`);
+        console.log(`[INTERVENTION CONTROLLER] - teacherId: ${teacherId}`);
+        console.log(`[INTERVENTION CONTROLLER] - questions count: ${updateData.questions?.length || 0}`);
+        console.log(`[INTERVENTION CONTROLLER] - changes: ${revisionChanges}`);
+
         await intervention.createRevision(
           teacherId,
           revisionChanges,
@@ -1718,6 +1723,289 @@ class InterventionAssessmentController {
         message: 'Error verifying teacher profile linking',
         error: error.message
       });
+    }
+  }
+
+  /**
+   * ✅ TEMPLATE REFERENCE MERGING - Prevents sentence_templates duplication
+   * Merges sentence template data with additional questions for Reading Comprehension
+   * Templates stay pristine in sentence_templates collection - NO modifications
+   */
+  async mergeTemplateDataForReadingComprehension(intervention) {
+    const debugPrefix = '[TEMPLATE MERGING ENHANCED]';
+
+    try {
+      console.log(`${debugPrefix} 🚀 Starting enhanced template merging process...`);
+      console.log(`${debugPrefix} 🔍 Intervention type:`, typeof intervention);
+      console.log(`${debugPrefix} 🔍 Intervention ID: ${intervention._id}`);
+      console.log(`${debugPrefix} 🔍 Category: ${intervention.category}`);
+      console.log(`${debugPrefix} 🔍 Questions:`, intervention.questions?.length || 0);
+
+      // Only process Reading Comprehension interventions
+      if (intervention.category !== 'Reading Comprehension') {
+        console.log(`${debugPrefix} ✅ Non-Reading Comprehension category (${intervention.category}) - no template merging needed`);
+        return intervention;
+      }
+
+      // Check questions array existence and validity
+      if (!intervention.questions) {
+        console.warn(`${debugPrefix} ⚠️ intervention.questions is null/undefined`);
+        return intervention;
+      }
+
+      if (!Array.isArray(intervention.questions)) {
+        console.warn(`${debugPrefix} ⚠️ intervention.questions is not an array:`, typeof intervention.questions);
+        return intervention;
+      }
+
+      if (intervention.questions.length === 0) {
+        console.log(`${debugPrefix} ℹ️ No questions found, returning intervention unchanged`);
+        return intervention;
+      }
+
+      console.log(`${debugPrefix} 📚 Processing ${intervention.questions.length} questions...`);
+
+      // Import sentence template model with detailed error handling
+      let SentenceTemplate;
+      try {
+        console.log(`${debugPrefix} 🔧 Importing SentenceTemplate model...`);
+        SentenceTemplate = require('../../models/Teachers/ManageProgress/sentenceTemplateModel');
+        console.log(`${debugPrefix} ✅ SentenceTemplate model imported successfully`);
+      } catch (importError) {
+        console.error(`${debugPrefix} ❌ CRITICAL: Failed to import SentenceTemplate model:`, importError);
+        throw new Error(`Model import failed: ${importError.message}`);
+      }
+
+      const processedQuestions = [];
+
+      for (let questionIndex = 0; questionIndex < intervention.questions.length; questionIndex++) {
+        const question = intervention.questions[questionIndex];
+
+        console.log(`${debugPrefix} 📝 === Question ${questionIndex + 1}/${intervention.questions.length} ===`);
+        console.log(`${debugPrefix} - Question ID: ${question.questionId}`);
+        console.log(`${debugPrefix} - Source: ${question.source}`);
+        console.log(`${debugPrefix} - Source Question ID: ${question.sourceQuestionId}`);
+        console.log(`${debugPrefix} - Question type: ${typeof question}`);
+
+        if (question.source === 'sentence_template' && question.sourceQuestionId) {
+          console.log(`${debugPrefix} 📚 Template-based question detected - processing...`);
+
+          try {
+            // Validate template ID format
+            if (!question.sourceQuestionId) {
+              throw new Error('sourceQuestionId is empty or null');
+            }
+
+            if (typeof question.sourceQuestionId !== 'string') {
+              throw new Error(`sourceQuestionId is not a string: ${typeof question.sourceQuestionId}`);
+            }
+
+            console.log(`${debugPrefix} 🔍 Fetching template with ID: ${question.sourceQuestionId}`);
+
+            // ✅ Fetch original template data from sentence_templates collection
+            const template = await SentenceTemplate.findById(question.sourceQuestionId);
+
+            console.log(`${debugPrefix} 📊 Template query result:`, template ? 'FOUND' : 'NOT FOUND');
+
+            if (!template) {
+              console.warn(`${debugPrefix} ⚠️ Template NOT FOUND for ID: ${question.sourceQuestionId}`);
+              console.warn(`${debugPrefix} ⚠️ Keeping original question structure`);
+
+              const fallbackQuestion = question.toObject ? question.toObject() : { ...question };
+              processedQuestions.push(fallbackQuestion);
+              continue;
+            }
+
+            console.log(`${debugPrefix} ✅ Template found successfully`);
+            console.log(`${debugPrefix} - Title: "${template.title}"`);
+            console.log(`${debugPrefix} - Sentence text entries: ${template.sentenceText?.length || 0}`);
+            console.log(`${debugPrefix} - Sentence questions: ${template.sentenceQuestions?.length || 0}`);
+
+            // Validate template data structure
+            if (!template.sentenceText || !Array.isArray(template.sentenceText)) {
+              console.warn(`${debugPrefix} ⚠️ Invalid sentenceText:`, typeof template.sentenceText);
+              processedQuestions.push(question.toObject ? question.toObject() : { ...question });
+              continue;
+            }
+
+            if (template.sentenceText.length === 0) {
+              console.warn(`${debugPrefix} ⚠️ Empty sentenceText array`);
+              processedQuestions.push(question.toObject ? question.toObject() : { ...question });
+              continue;
+            }
+
+            if (!template.sentenceQuestions || !Array.isArray(template.sentenceQuestions)) {
+              console.warn(`${debugPrefix} ⚠️ Invalid sentenceQuestions:`, typeof template.sentenceQuestions);
+              processedQuestions.push(question.toObject ? question.toObject() : { ...question });
+              continue;
+            }
+
+            if (template.sentenceQuestions.length === 0) {
+              console.warn(`${debugPrefix} ⚠️ Empty sentenceQuestions array`);
+              processedQuestions.push(question.toObject ? question.toObject() : { ...question });
+              continue;
+            }
+
+            console.log(`${debugPrefix} 📝 Additional questions from intervention: ${question.additionalSentenceQuestions?.length || 0}`);
+
+            // Create the base question object safely
+            let baseQuestion;
+            try {
+              baseQuestion = question.toObject ? question.toObject() : { ...question };
+              console.log(`${debugPrefix} ✅ Base question object created`);
+            } catch (objError) {
+              console.error(`${debugPrefix} ❌ Error creating base question object:`, objError);
+              throw new Error(`Base question object creation failed: ${objError.message}`);
+            }
+
+            // Create passages array safely
+            let passages;
+            try {
+              console.log(`${debugPrefix} 🔧 Creating passages array from ${template.sentenceText.length} entries...`);
+              passages = template.sentenceText.map((page, pageIndex) => {
+                if (!page || typeof page !== 'object') {
+                  console.warn(`${debugPrefix} ⚠️ Invalid page data at index ${pageIndex}:`, page);
+                  return { pageNumber: pageIndex + 1, text: '', image: null };
+                }
+                return {
+                  pageNumber: pageIndex + 1,
+                  text: page.text || '',
+                  image: page.image || null
+                };
+              });
+              console.log(`${debugPrefix} ✅ Passages array created with ${passages.length} entries`);
+            } catch (passagesError) {
+              console.error(`${debugPrefix} ❌ Error creating passages array:`, passagesError);
+              throw new Error(`Passages creation failed: ${passagesError.message}`);
+            }
+
+            // Create template sentence questions safely
+            let templateQuestions;
+            try {
+              console.log(`${debugPrefix} 🔧 Processing ${template.sentenceQuestions.length} template questions...`);
+              templateQuestions = template.sentenceQuestions.map((q, questionIndex) => {
+                if (!q || typeof q !== 'object') {
+                  console.warn(`${debugPrefix} ⚠️ Invalid template question at index ${questionIndex}:`, q);
+                  return {
+                    questionNumber: questionIndex + 1,
+                    questionText: '',
+                    sentenceCorrectAnswer: '',
+                    sentenceAcceptableAnswer: [],
+                    source: 'template'
+                  };
+                }
+                return {
+                  questionNumber: questionIndex + 1,
+                  questionText: q.questionText || '',
+                  sentenceCorrectAnswer: q.sentenceCorrectAnswer || '',
+                  sentenceAcceptableAnswer: q.acceptableAnswers || [],
+                  source: 'template'
+                };
+              });
+              console.log(`${debugPrefix} ✅ Template questions processed: ${templateQuestions.length}`);
+            } catch (templateQError) {
+              console.error(`${debugPrefix} ❌ Error processing template questions:`, templateQError);
+              throw new Error(`Template questions processing failed: ${templateQError.message}`);
+            }
+
+            // Create additional questions safely
+            let additionalQuestions = [];
+            try {
+              if (question.additionalSentenceQuestions && Array.isArray(question.additionalSentenceQuestions)) {
+                console.log(`${debugPrefix} 🔧 Processing ${question.additionalSentenceQuestions.length} additional questions...`);
+                additionalQuestions = question.additionalSentenceQuestions.map((q, questionIndex) => {
+                  if (!q || typeof q !== 'object') {
+                    console.warn(`${debugPrefix} ⚠️ Invalid additional question at index ${questionIndex}:`, q);
+                    return {
+                      questionNumber: template.sentenceQuestions.length + questionIndex + 1,
+                      questionText: '',
+                      sentenceCorrectAnswer: '',
+                      sentenceAcceptableAnswer: [],
+                      source: 'additional'
+                    };
+                  }
+                  return {
+                    questionNumber: template.sentenceQuestions.length + questionIndex + 1,
+                    questionText: q.questionText || '',
+                    sentenceCorrectAnswer: q.sentenceCorrectAnswer || '',
+                    sentenceAcceptableAnswer: q.sentenceAcceptableAnswer || [],
+                    source: 'additional'
+                  };
+                });
+                console.log(`${debugPrefix} ✅ Additional questions processed: ${additionalQuestions.length}`);
+              } else {
+                console.log(`${debugPrefix} ℹ️ No additional questions to process`);
+              }
+            } catch (additionalQError) {
+              console.error(`${debugPrefix} ❌ Error processing additional questions:`, additionalQError);
+              console.warn(`${debugPrefix} ⚠️ Continuing without additional questions due to error`);
+              additionalQuestions = [];
+            }
+
+            // Create the final merged question
+            const mergedQuestion = {
+              ...baseQuestion,
+              storyTitle: template.title,
+              passages: passages,
+              sentenceQuestions: [...templateQuestions, ...additionalQuestions]
+            };
+
+            console.log(`${debugPrefix} 🎯 Merged question created successfully`);
+            console.log(`${debugPrefix} - Total sentence questions: ${mergedQuestion.sentenceQuestions.length}`);
+            console.log(`${debugPrefix} - Template questions: ${templateQuestions.length}`);
+            console.log(`${debugPrefix} - Additional questions: ${additionalQuestions.length}`);
+
+            processedQuestions.push(mergedQuestion);
+
+          } catch (templateError) {
+            console.error(`${debugPrefix} ❌ TEMPLATE PROCESSING ERROR for ${question.sourceQuestionId}:`);
+            console.error(`${debugPrefix} ❌ Error message:`, templateError.message);
+            console.error(`${debugPrefix} ❌ Error stack:`, templateError.stack);
+
+            // Keep original question if template processing fails
+            console.warn(`${debugPrefix} 🔄 Falling back to original question due to template error`);
+            processedQuestions.push(question.toObject ? question.toObject() : { ...question });
+          }
+
+        } else {
+          console.log(`${debugPrefix} ✅ Non-template question - keeping unchanged`);
+          console.log(`${debugPrefix} - Source: ${question.source}, has sourceQuestionId: ${!!question.sourceQuestionId}`);
+          processedQuestions.push(question.toObject ? question.toObject() : { ...question });
+        }
+      }
+
+      console.log(`${debugPrefix} 🎯 All questions processed. Creating final intervention object...`);
+
+      // ✅ Return intervention with merged question data
+      let processedIntervention;
+      try {
+        processedIntervention = {
+          ...(intervention.toObject ? intervention.toObject() : { ...intervention }),
+          questions: processedQuestions
+        };
+        console.log(`${debugPrefix} ✅ Final intervention object created successfully`);
+        console.log(`${debugPrefix} - Total processed questions: ${processedQuestions.length}`);
+      } catch (finalError) {
+        console.error(`${debugPrefix} ❌ Error creating final intervention object:`, finalError);
+        throw new Error(`Final object creation failed: ${finalError.message}`);
+      }
+
+      console.log(`${debugPrefix} 🏁 Template merging completed successfully`);
+      return processedIntervention;
+
+    } catch (error) {
+      console.error(`${debugPrefix} ❌ CRITICAL ERROR in mergeTemplateDataForReadingComprehension:`);
+      console.error(`${debugPrefix} ❌ Error message:`, error.message);
+      console.error(`${debugPrefix} ❌ Error stack:`, error.stack);
+
+      // Return original intervention if merging fails completely
+      console.warn(`${debugPrefix} 🔄 Returning original intervention due to critical error`);
+      try {
+        return intervention.toObject ? intervention.toObject() : { ...intervention };
+      } catch (fallbackError) {
+        console.error(`${debugPrefix} ❌ Fallback conversion also failed:`, fallbackError);
+        return intervention;
+      }
     }
   }
 }
