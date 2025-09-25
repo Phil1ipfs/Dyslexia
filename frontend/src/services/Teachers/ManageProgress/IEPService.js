@@ -77,23 +77,84 @@ class IEPService {
         objectiveId,
         remarksLength: remarks?.length || 0
       });
-      
+
       const response = await api.put(
         `/api/iep/student/${studentId}/objective/${objectiveId}/remarks`,
         { remarks: remarks || '' }
       );
-      
+
       console.log('[IEPService] Remarks updated successfully:', response.data);
       return response.data;
-      
+
     } catch (error) {
       console.error('[IEPService] Error updating remarks:', error);
-      
+
       if (error.response?.status === 404) {
         throw new Error('Student or objective not found');
       }
-      
+
       throw new Error(error.response?.data?.message || 'Failed to update remarks');
+    }
+  }
+
+  // Update main assessment remark for an objective
+  static async updateMainAssessmentRemark(studentId, objectiveId, remark) {
+    try {
+      console.log(`[IEPService] Updating main assessment remark:`, {
+        studentId,
+        objectiveId,
+        remarkLength: remark?.length || 0
+      });
+
+      const response = await api.put(
+        `/api/iep/student/${studentId}/objective/${objectiveId}/main-assessment-remark`,
+        { remark: remark || '' }
+      );
+
+      console.log('[IEPService] Main assessment remark updated successfully:', response.data);
+      return response.data;
+
+    } catch (error) {
+      console.error('[IEPService] Error updating main assessment remark:', error);
+
+      if (error.response?.status === 404) {
+        throw new Error('Student or objective not found');
+      }
+
+      throw new Error(error.response?.data?.message || 'Failed to update main assessment remark');
+    }
+  }
+
+  // Update remark for a specific intervention attempt
+  static async updateAttemptRemark(studentId, objectiveId, attemptIndex, remark) {
+    try {
+      console.log(`[IEPService] Updating attempt remark:`, {
+        studentId,
+        objectiveId,
+        attemptIndex,
+        remarkLength: remark?.length || 0
+      });
+
+      const response = await api.put(
+        `/api/iep/student/${studentId}/objective/${objectiveId}/attempt/${attemptIndex}/remark`,
+        { remark: remark || '' }
+      );
+
+      console.log('[IEPService] Attempt remark updated successfully:', response.data);
+      return response.data;
+
+    } catch (error) {
+      console.error('[IEPService] Error updating attempt remark:', error);
+
+      if (error.response?.status === 404) {
+        throw new Error('Student, objective, or attempt not found');
+      }
+
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data?.error || 'Invalid attempt index');
+      }
+
+      throw new Error(error.response?.data?.message || 'Failed to update attempt remark');
     }
   }
   

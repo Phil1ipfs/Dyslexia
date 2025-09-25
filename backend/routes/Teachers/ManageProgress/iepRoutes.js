@@ -21,6 +21,12 @@ router.put('/student/:studentId/objective/:objectiveId/support-level', IEPContro
 // Update remarks for a specific objective
 router.put('/student/:studentId/objective/:objectiveId/remarks', IEPController.updateRemarks);
 
+// Update main assessment remark for an objective
+router.put('/student/:studentId/objective/:objectiveId/main-assessment-remark', IEPController.updateMainAssessmentRemark);
+
+// Update remark for a specific intervention attempt
+router.put('/student/:studentId/objective/:objectiveId/attempt/:attemptIndex/remark', IEPController.updateAttemptRemark);
+
 // Bulk update multiple objectives for a student
 router.put('/student/:studentId/bulk-update', IEPController.bulkUpdateObjectives);
 

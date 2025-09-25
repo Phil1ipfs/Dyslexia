@@ -31,6 +31,11 @@ const iepObjectiveSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
+  mainAssessmentRemarks: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   score: {
     type: Number,
     min: 0,
@@ -129,6 +134,11 @@ const iepObjectiveSchema = new mongoose.Schema({
     revisionNumber: {
       type: Number,
       default: 1
+    },
+    teacherRemarks: {
+      type: String,
+      trim: true,
+      default: ''
     }
   }],
 

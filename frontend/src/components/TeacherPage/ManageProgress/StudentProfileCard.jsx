@@ -65,71 +65,71 @@ const StudentProfileCard = ({ student }) => {
   
   /* ---------- render ---------- */
   return (
-    <div className="literexia-student-card">
+    <div className="student-profile-card">
       {/* header: avatar + name/id */}
-      <div className="literexia-student-header">
-        <div className="literexia-avatar">
-          <div className="literexia-avatar-circle">
+      <div className="student-profile-header">
+        <div className="student-profile-avatar">
+          <div className="student-profile-avatar-circle">
             <S3Image 
               src={student.profileImageUrl}
               alt={getFullName(student)}
               fallbackText={getInitials(getFullName(student))}
-              className="literexia-avatar-image"
+              className="student-profile-avatar-image"
             />
           </div>
         </div>
-        <div className="literexia-student-name-section">
-          <h2 className="literexia-student-name">{getFullName(student)}</h2>
-          <span className="literexia-student-id">
+        <div className="student-profile-name-section">
+          <h2 className="student-profile-name">{getFullName(student)}</h2>
+          <span className="student-profile-id">
             <FaIdCard /> ID: {student.idNumber || student.id || ''}
           </span>
         </div>
       </div>
       {/* core details */}
-      <div className="literexia-student-details">
-        <div className="literexia-detail-row">
-          <div className="literexia-detail-item">
-            <div className="literexia-detail-icon">
+      <div className="student-profile-details">
+        <div className="student-profile-detail-row">
+          <div className="student-profile-detail-item">
+            <div className="student-profile-detail-icon">
               <FaUser />
             </div>
-            <div className="literexia-detail-content">
-              <span className="literexia-detail-label">Age</span>
-              <span className="literexia-detail-value">
+            <div className="student-profile-detail-content">
+              <span className="student-profile-detail-label">Age</span>
+              <span className="student-profile-detail-value">
                 {student.age} years old
               </span>
             </div>
           </div>
-          <div className="literexia-detail-item">
-            <div className="literexia-detail-icon">
+          <div className="student-profile-detail-item">
+            <div className="student-profile-detail-icon">
               <FaUserGraduate />
             </div>
-            <div className="literexia-detail-content">
-              <span className="literexia-detail-label">Grade</span>
-              <span className="literexia-detail-value">
+            <div className="student-profile-detail-content">
+              <span className="student-profile-detail-label">Grade</span>
+              <span className="student-profile-detail-value">
                 {student.gradeLevel}
               </span>
             </div>
           </div>
         </div>
-        <div className="literexia-detail-row">
-          <div className="literexia-detail-item">
-            <div className={`literexia-detail-icon gender-icon ${student.gender && student.gender.toLowerCase() === 'female' ? 'female-icon' : 'male-icon'}`}>
+        <div className="student-profile-detail-row">
+          <div className="student-profile-detail-item">
+            <div className={`student-profile-detail-icon student-profile-gender-icon ${student.gender && student.gender.toLowerCase() === 'female' ? 'female-icon' : 'male-icon'}`}>
               {student.gender && student.gender.toLowerCase() === 'female' ? <FaFemale /> : <FaMale />}
             </div>
-            <div className="literexia-detail-content">
-              <span className="literexia-detail-label">Gender</span>
-              <span className="literexia-detail-value">
+            <div className="student-profile-detail-content">
+              <span className="student-profile-detail-label">Gender</span>
+              <span className="student-profile-detail-value">
                 {student.gender || 'Not specified'}
               </span>
             </div>
           </div>
-          <div className="literexia-detail-item">
-            <div className="literexia-detail-icon section-icon">
+          <div className="student-profile-detail-item">
+            <div className="student-profile-detail-icon">
               <FaUsers />
             </div>
-            <div className="literexia-detail-content">
-              <span className="literexia-detail-label">Section</span>
-              <span className="literexia-detail-value">
+            <div className="student-profile-detail-content">
+              <span className="student-profile-detail-label">Section</span>
+              <span className="student-profile-detail-value">
                 {student.section || 'Not Assigned'}
               </span>
             </div>

@@ -561,13 +561,13 @@ class IEPController {
     }
   }
   
-  // Refresh intervention data
+  // Refresh intervention data - IMPROVED to preserve teacher data
   static async refreshInterventionData(req, res) {
     try {
       const { studentId } = req.params;
-      
-      console.log(`Refreshing intervention data for student: ${studentId}`);
-      
+
+      console.log(`🔄 Refreshing intervention data for student: ${studentId} (preserving teacher data)`);
+
       // Validate studentId
       if (!mongoose.Types.ObjectId.isValid(studentId)) {
         return res.status(400).json({
@@ -575,67 +575,171 @@ class IEPController {
           error: 'Invalid student ID format'
         });
       }
-      
+
       // Find the active IEP report
-      const iepReport = await IEPReport.findOne({
+      let iepReport = await IEPReport.findOne({
         studentId: new mongoose.Types.ObjectId(studentId),
         isActive: true
       });
-      
+
       if (!iepReport) {
         return res.status(404).json({
           success: false,
           error: 'No active IEP report found'
         });
       }
-      
-      // Get current interventions
+
+      // Get fresh category results with intervention data
       const testDb = mongoose.connection.useDb('test');
-      const interventionsCollection = testDb.collection('intervention_assessment');
-      const studentInterventions = await interventionsCollection.find({
-        studentId: new mongoose.Types.ObjectId(studentId),
-        status: { $in: ['active', 'completed'] }
-      }).toArray();
-      
-      console.log(`Found ${studentInterventions.length} interventions for student`);
-      
-      // Create intervention lookup by category
-      const interventionByCategory = {};
-      studentInterventions.forEach(intervention => {
-        interventionByCategory[intervention.category] = intervention;
-      });
-      
-      // Update each objective with intervention data
-      iepReport.objectives.forEach(objective => {
-        const intervention = interventionByCategory[objective.categoryName];
-        
-        if (intervention) {
-          objective.hasIntervention = true;
-          objective.interventionId = intervention._id;
-          objective.interventionName = intervention.description; // Use description
-          objective.interventionStatus = intervention.status;
-          objective.interventionCreatedAt = intervention.createdAt;
-          
-          console.log(`Updated ${objective.categoryName} with intervention: ${intervention.description}`);
-        } else {
-          objective.hasIntervention = false;
-          objective.interventionId = null;
-          objective.interventionName = '';
-          objective.interventionStatus = null;
-          objective.interventionCreatedAt = null;
+      const categoryResultsCollection = testDb.collection('category_results');
+
+      // Try different search methods for category results
+      let latestResults = null;
+
+      // Method 1: Try with ObjectId format
+      try {
+        latestResults = await categoryResultsCollection.findOne(
+          { studentObjectId: new mongoose.Types.ObjectId(studentId) },
+          { sort: { assessmentDate: -1 } }
+        );
+        if (latestResults) {
+          console.log('✅ Found category results using studentObjectId');
         }
-        
-        objective.lastUpdated = new Date();
+      } catch (err) {
+        console.log('Method 1 failed, trying alternative...');
+      }
+
+      // Method 2: Try with student number if ObjectId failed
+      if (!latestResults) {
+        const usersCollection = testDb.collection('users');
+        const student = await usersCollection.findOne({
+          _id: new mongoose.Types.ObjectId(studentId)
+        });
+
+        if (student) {
+          latestResults = await categoryResultsCollection.findOne(
+            { studentId: student.idNumber },
+            { sort: { assessmentDate: -1 } }
+          );
+
+          if (latestResults) {
+            console.log(`✅ Found category results using student number: ${student.idNumber}`);
+          }
+        }
+      }
+
+      if (!latestResults) {
+        console.log('⚠️ No category results found - using basic refresh');
+        // Fall back to basic refresh without comprehensive data
+        return this.basicRefreshIntervention(req, res, iepReport);
+      }
+
+      // Store original teacher data before refresh
+      const originalTeacherData = {};
+      iepReport.objectives.forEach(obj => {
+        originalTeacherData[obj.categoryName] = {
+          supportLevel: obj.supportLevel,
+          remarks: obj.remarks,
+          interventionHistory: obj.interventionHistory ? [...obj.interventionHistory] : []
+        };
       });
-      
-      iepReport.lastModifiedBy = req.user?.id;
+
+      console.log(`📚 Preserving teacher data for ${Object.keys(originalTeacherData).length} objectives`);
+
+      // Regenerate objectives with fresh intervention data (this preserves comprehensive data)
+      iepReport.generateObjectivesFromCategoryResults(latestResults);
+
+      // Enhanced objectives processing with fresh intervention data
+      iepReport.objectives = iepReport.objectives.map(objective => {
+        // Find matching category data with intervention history
+        const categoryData = latestResults.categories.find(cat =>
+          cat.categoryName === objective.categoryName
+        );
+
+        if (categoryData) {
+          // Update all assessment and intervention data
+          objective.assessmentScore = categoryData.score || 0;
+          objective.totalQuestions = categoryData.totalQuestions || 0;
+          objective.correctAnswers = categoryData.correctAnswers || 0;
+          objective.totalPossibleMatches = categoryData.totalPossibleMatches || 0;
+          objective.correctMatches = categoryData.correctMatches || 0;
+          objective.isCompleted = categoryData.isCompleted || false;
+          objective.isPassed = categoryData.isPassed || false;
+          objective.passingThreshold = categoryData.passingThreshold || 75;
+
+          // Update comprehensive intervention data
+          if (categoryData.interventionHistory && categoryData.interventionHistory.length > 0) {
+            objective.hasIntervention = true;
+            objective.interventionAttempts = categoryData.interventionAttempts || categoryData.interventionHistory.length;
+            objective.interventionCompleted = categoryData.interventionCompleted || false;
+            objective.interventionId = categoryData.currentInterventionId || null;
+
+            // Map fresh intervention history
+            objective.interventionHistory = categoryData.interventionHistory.map((attempt, index) => ({
+              attemptNumber: attempt.attemptNumber || (index + 1),
+              score: attempt.score || 0,
+              isPassed: attempt.isPassed || false,
+              attemptedAt: attempt.attemptedAt || attempt.completedAt || new Date(),
+              reason: attempt.attemptReason || attempt.reason || 'intervention_attempt',
+              revisionNumber: attempt.revisionNumber || 1,
+              // Preserve any existing teacher remarks for this attempt
+              teacherRemarks: originalTeacherData[objective.categoryName]?.interventionHistory?.[index]?.teacherRemarks || attempt.teacherRemarks || ''
+            }));
+
+            // Set latest intervention data
+            const latestAttempt = categoryData.interventionHistory[categoryData.interventionHistory.length - 1];
+            objective.latestInterventionScore = latestAttempt?.score || 0;
+            objective.latestInterventionPassed = latestAttempt?.isPassed || false;
+            objective.interventionImprovement = Math.max(0, (objective.latestInterventionScore || 0) - (objective.assessmentScore || 0));
+
+            // Set intervention status based on completion
+            if (objective.latestInterventionPassed) {
+              objective.interventionStatus = 'completed_passed';
+              objective.interventionName = `${objective.categoryName} Intervention - Passed`;
+            } else {
+              objective.interventionStatus = categoryData.interventionCompleted ? 'completed_failed' : 'in_progress';
+              objective.interventionName = `${objective.categoryName} Intervention - ${categoryData.interventionCompleted ? 'Failed' : 'In Progress'}`;
+            }
+
+            objective.interventionCreatedAt = categoryData.interventionHistory[0]?.attemptedAt || new Date();
+
+            console.log(`  📊 Updated ${objective.categoryName}: ${objective.interventionAttempts} attempts, latest: ${objective.latestInterventionScore}%`);
+          } else {
+            // No intervention data - clear intervention fields but preserve teacher data
+            objective.hasIntervention = false;
+            objective.interventionId = null;
+            objective.interventionName = '';
+            objective.interventionStatus = null;
+            objective.interventionAttempts = 0;
+            objective.interventionCompleted = false;
+            objective.interventionHistory = [];
+            objective.latestInterventionScore = 0;
+            objective.latestInterventionPassed = false;
+            objective.interventionImprovement = 0;
+            objective.interventionCreatedAt = null;
+          }
+
+          // ✅ PRESERVE TEACHER DATA - This is the key fix!
+          const teacherData = originalTeacherData[objective.categoryName];
+          if (teacherData) {
+            objective.supportLevel = teacherData.supportLevel;
+            objective.remarks = teacherData.remarks;
+            console.log(`  ✅ Preserved teacher data for ${objective.categoryName}: Support=${teacherData.supportLevel || 'none'}, Remarks=${teacherData.remarks ? 'yes' : 'none'}`);
+          }
+
+          objective.lastUpdated = new Date();
+        }
+
+        return objective;
+      });
+
       await iepReport.save();
-      
-      console.log('✅ Intervention data refreshed successfully');
-      
+
+      console.log('✅ Intervention data refreshed successfully WITH teacher data preserved');
+
       res.json({
         success: true,
-        message: 'Intervention data refreshed successfully',
+        message: 'Intervention data refreshed successfully (teacher data preserved)',
         data: iepReport
       });
       
@@ -935,6 +1039,229 @@ class IEPController {
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve previous reports',
+        message: error.message
+      });
+    }
+  }
+
+  // Update main assessment remark for an objective
+  static async updateMainAssessmentRemark(req, res) {
+    try {
+      const { studentId, objectiveId } = req.params;
+      const { remark } = req.body;
+
+      console.log(`Updating main assessment remark for student ${studentId}, objective ${objectiveId}`);
+
+      // Validate inputs
+      if (!mongoose.Types.ObjectId.isValid(studentId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid student ID format'
+        });
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(objectiveId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid objective ID format'
+        });
+      }
+
+      // Find the IEP report
+      const iepReport = await IEPReport.findOne({
+        studentId: new mongoose.Types.ObjectId(studentId),
+        isActive: true
+      });
+
+      if (!iepReport) {
+        return res.status(404).json({
+          success: false,
+          error: 'IEP report not found'
+        });
+      }
+
+      // Find the objective
+      const objective = iepReport.objectives.id(objectiveId);
+      if (!objective) {
+        return res.status(404).json({
+          success: false,
+          error: 'Objective not found'
+        });
+      }
+
+      // Update the main assessment remark
+      objective.mainAssessmentRemarks = remark || '';
+      objective.lastUpdated = new Date();
+      iepReport.lastModifiedBy = req.user?.id;
+
+      await iepReport.save();
+
+      console.log(`✅ Successfully updated main assessment remark for ${objective.categoryName}`);
+
+      res.json({
+        success: true,
+        message: 'Main assessment remark updated successfully',
+        data: {
+          objectiveId: objectiveId,
+          remark: remark || '',
+          updatedAt: objective.lastUpdated
+        }
+      });
+
+    } catch (error) {
+      console.error('Error updating main assessment remark:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update main assessment remark',
+        message: error.message
+      });
+    }
+  }
+
+  // Update attempt remark for a specific intervention attempt
+  static async updateAttemptRemark(req, res) {
+    try {
+      const { studentId, objectiveId, attemptIndex } = req.params;
+      const { remark } = req.body;
+
+      console.log(`Updating attempt remark for student ${studentId}, objective ${objectiveId}, attempt ${attemptIndex}`);
+
+      // Validate inputs
+      if (!mongoose.Types.ObjectId.isValid(studentId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid student ID format'
+        });
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(objectiveId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid objective ID format'
+        });
+      }
+
+      const attemptIndexNum = parseInt(attemptIndex);
+      if (isNaN(attemptIndexNum) || attemptIndexNum < 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid attempt index'
+        });
+      }
+
+      // Find the IEP report
+      const iepReport = await IEPReport.findOne({
+        studentId: new mongoose.Types.ObjectId(studentId),
+        isActive: true
+      });
+
+      if (!iepReport) {
+        return res.status(404).json({
+          success: false,
+          error: 'IEP report not found'
+        });
+      }
+
+      // Find the objective
+      const objective = iepReport.objectives.id(objectiveId);
+      if (!objective) {
+        return res.status(404).json({
+          success: false,
+          error: 'Objective not found'
+        });
+      }
+
+      // Check if intervention history exists and has the specified attempt
+      if (!objective.interventionHistory || !Array.isArray(objective.interventionHistory)) {
+        return res.status(404).json({
+          success: false,
+          error: 'No intervention history found for this objective'
+        });
+      }
+
+      if (attemptIndexNum >= objective.interventionHistory.length) {
+        return res.status(404).json({
+          success: false,
+          error: `Attempt index ${attemptIndexNum} not found. This objective has ${objective.interventionHistory.length} attempts.`
+        });
+      }
+
+      // Update the remark for the specific attempt
+      objective.interventionHistory[attemptIndexNum].teacherRemarks = remark || '';
+      objective.lastUpdated = new Date();
+      iepReport.lastModifiedBy = req.user?.id;
+
+      await iepReport.save();
+
+      console.log(`✅ Successfully updated attempt ${attemptIndexNum} remark for ${objective.categoryName}`);
+
+      res.json({
+        success: true,
+        message: 'Attempt remark updated successfully',
+        data: {
+          objectiveId: objectiveId,
+          attemptIndex: attemptIndexNum,
+          remark: remark || '',
+          updatedAt: objective.lastUpdated
+        }
+      });
+
+    } catch (error) {
+      console.error('Error updating attempt remark:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update attempt remark',
+        message: error.message
+      });
+    }
+  }
+
+  // Basic fallback refresh method when no category results are found
+  static async basicRefreshIntervention(req, res, iepReport) {
+    try {
+      console.log('⚠️ Using basic refresh fallback - preserving existing teacher data');
+
+      // Store original teacher data
+      const originalTeacherData = {};
+      iepReport.objectives.forEach(obj => {
+        originalTeacherData[obj.categoryName] = {
+          supportLevel: obj.supportLevel,
+          remarks: obj.remarks,
+          interventionHistory: obj.interventionHistory ? [...obj.interventionHistory] : []
+        };
+      });
+
+      // Update timestamps without losing teacher data
+      iepReport.objectives.forEach(objective => {
+        // Preserve teacher data
+        const teacherData = originalTeacherData[objective.categoryName];
+        if (teacherData) {
+          objective.supportLevel = teacherData.supportLevel;
+          objective.remarks = teacherData.remarks;
+          // Keep existing intervention history as-is
+          if (teacherData.interventionHistory.length > 0) {
+            objective.interventionHistory = teacherData.interventionHistory;
+          }
+        }
+
+        objective.lastUpdated = new Date();
+      });
+
+      await iepReport.save();
+
+      console.log('✅ Basic refresh completed with teacher data preserved');
+
+      return res.json({
+        success: true,
+        message: 'IEP report refreshed (basic mode - teacher data preserved)',
+        data: iepReport
+      });
+
+    } catch (error) {
+      console.error('Error in basic refresh:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to refresh IEP report',
         message: error.message
       });
     }

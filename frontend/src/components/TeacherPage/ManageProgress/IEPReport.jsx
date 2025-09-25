@@ -36,10 +36,14 @@ const IEPReport = ({
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [interventionModal, setInterventionModal] = useState({ isOpen: false, objective: null });
-  const [remarksModal, setRemarksModal] = useState({ isOpen: false, objective: null });
+  const [attemptModal, setAttemptModal] = useState({ isOpen: false, objective: null, attempt: null, attemptIndex: null });
+  const [expandedInterventions, setExpandedInterventions] = useState({});
+  const [expandedRemarks, setExpandedRemarks] = useState({});
   const [error, setError] = useState(null);
   const [editingRemarks, setEditingRemarks] = useState({}); // Track which remarks are being edited
   const [tempRemarks, setTempRemarks] = useState({}); // Store temporary remarks during editing
+  const [editingMainRemarks, setEditingMainRemarks] = useState({}); // Track which main assessment remarks are being edited
+  const [tempMainRemarks, setTempMainRemarks] = useState({}); // Store temporary main assessment remarks during editing
   const [successMessage, setSuccessMessage] = useState('');
 
   // Load IEP data when component mounts or student changes
@@ -114,6 +118,12 @@ const IEPReport = ({
   };
 
   // Toggle intervention details visibility
+  const toggleInterventionDetails = (objectiveId) => {
+    setExpandedInterventions(prev => ({
+      ...prev,
+      [objectiveId]: !prev[objectiveId]
+    }));
+  };
 
   // Open intervention modal
   const openInterventionModal = (objective) => {
@@ -125,14 +135,22 @@ const IEPReport = ({
     setInterventionModal({ isOpen: false, objective: null });
   };
 
-  // Open remarks modal
-  const openRemarksModal = (objective) => {
-    setRemarksModal({ isOpen: true, objective });
+  // Open individual attempt modal
+  const openAttemptModal = (objective, attempt, attemptIndex) => {
+    setAttemptModal({ isOpen: true, objective, attempt, attemptIndex });
   };
 
-  // Close remarks modal
-  const closeRemarksModal = () => {
-    setRemarksModal({ isOpen: false, objective: null });
+  // Close attempt modal
+  const closeAttemptModal = () => {
+    setAttemptModal({ isOpen: false, objective: null, attempt: null, attemptIndex: null });
+  };
+
+  // Toggle remarks expansion
+  const toggleRemarksExpansion = (objectiveId) => {
+    setExpandedRemarks(prev => ({
+      ...prev,
+      [objectiveId]: !prev[objectiveId]
+    }));
   };
 
   // Handle support level change (checkbox clicks)
@@ -230,33 +248,98 @@ const IEPReport = ({
     setTempRemarks(prev => ({ ...prev, [objectiveId]: newRemarks }));
   };
 
-  // Save intervention attempt remarks
-  const saveInterventionAttemptRemarks = async (objectiveId, interventionHistory) => {
+  // Start editing main assessment remarks for an objective
+  const startEditingMainRemarks = (objectiveId, currentMainRemarks) => {
+    setEditingMainRemarks(prev => ({ ...prev, [objectiveId]: true }));
+    setTempMainRemarks(prev => ({ ...prev, [objectiveId]: currentMainRemarks || '' }));
+  };
+
+  // Cancel editing main assessment remarks
+  const cancelEditingMainRemarks = (objectiveId) => {
+    setEditingMainRemarks(prev => ({ ...prev, [objectiveId]: false }));
+    setTempMainRemarks(prev => {
+      const newTemp = { ...prev };
+      delete newTemp[objectiveId];
+      return newTemp;
+    });
+  };
+
+  // Save main assessment remarks for an objective
+  const saveMainRemarks = async (objectiveId) => {
+    try {
+      setSaving(true);
+
+      const studentId = student?.id || student?._id;
+      const newMainRemarks = tempMainRemarks[objectiveId] || '';
+
+      console.log('Saving main assessment remarks:', { objectiveId, newMainRemarks });
+
+      await IEPService.updateMainAssessmentRemark(studentId, objectiveId, newMainRemarks);
+
+      // Update local state
+      setIepData(prevData => ({
+        ...prevData,
+        objectives: prevData.objectives.map(obj =>
+          obj._id === objectiveId
+            ? { ...obj, mainAssessmentRemarks: newMainRemarks, lastUpdated: new Date() }
+            : obj
+        )
+      }));
+
+      // Clear editing state
+      setEditingMainRemarks(prev => ({ ...prev, [objectiveId]: false }));
+      setTempMainRemarks(prev => {
+        const newTemp = { ...prev };
+        delete newTemp[objectiveId];
+        return newTemp;
+      });
+
+      showSuccessMessage('Main assessment remarks updated successfully');
+
+    } catch (err) {
+      console.error('Error saving main assessment remarks:', err);
+      setError(err.message || 'Failed to save main assessment remarks');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle main assessment remarks text change
+  const handleMainRemarksChange = (objectiveId, newMainRemarks) => {
+    setTempMainRemarks(prev => ({ ...prev, [objectiveId]: newMainRemarks }));
+  };
+
+  // Save individual attempt remark
+  const saveAttemptRemark = async (objectiveId, attemptIndex, remark) => {
     try {
       setSaving(true);
       
       const studentId = student?.id || student?._id;
       
-      console.log('Saving intervention attempt remarks:', { objectiveId, interventionHistory });
+      console.log('Saving attempt remark:', { objectiveId, attemptIndex, remark });
       
-      // Update local state first
+      // Save to backend first
+      await IEPService.updateAttemptRemark(studentId, objectiveId, attemptIndex, remark);
+
+      // Update local state after successful backend save
       setIepData(prevData => ({
         ...prevData,
-        objectives: prevData.objectives.map(obj => 
-          obj._id === objectiveId 
-            ? { ...obj, interventionHistory, lastUpdated: new Date() }
-            : obj
-        )
+        objectives: prevData.objectives.map(obj => {
+          if (obj._id === objectiveId) {
+            const updatedHistory = [...obj.interventionHistory];
+            updatedHistory[attemptIndex] = { ...updatedHistory[attemptIndex], teacherRemarks: remark };
+            return { ...obj, interventionHistory: updatedHistory, lastUpdated: new Date() };
+          }
+          return obj;
+        })
       }));
       
-      // TODO: Add backend API call when endpoint is ready
-      // await IEPService.updateInterventionAttemptRemarks(studentId, objectiveId, interventionHistory);
-      
-      showSuccessMessage('Intervention attempt remarks saved successfully!');
+      showSuccessMessage('Remark saved successfully!');
+      closeAttemptModal();
       
     } catch (error) {
-      console.error('Error saving intervention attempt remarks:', error);
-      setError('Failed to save intervention attempt remarks. Please try again.');
+      console.error('Error saving attempt remark:', error);
+      setError('Failed to save remark. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -443,11 +526,67 @@ const IEPReport = ({
     );
   };
 
+  // Render main assessment remarks cell with edit functionality
+  const renderMainAssessmentRemarksCell = (objective) => {
+    const isEditing = editingMainRemarks[objective._id];
+    const currentMainRemarks = isEditing ? tempMainRemarks[objective._id] : objective.mainAssessmentRemarks;
+
+    if (isEditing) {
+      return (
+        <div className="literexia-main-remarks-editor">
+          <textarea
+            value={currentMainRemarks || ''}
+            onChange={(e) => handleMainRemarksChange(objective._id, e.target.value)}
+            placeholder="Add your remarks about the main assessment performance..."
+            disabled={saving}
+            rows={3}
+          />
+          <div className="literexia-remarks-actions">
+            <button
+              className="literexia-save-button"
+              onClick={() => saveMainRemarks(objective._id)}
+              disabled={saving}
+              title="Save main assessment remarks"
+            >
+              {saving ? <FaSpinner className="spinning" /> : <FaSave />}
+              Save
+            </button>
+            <button
+              className="literexia-cancel-button"
+              onClick={() => cancelEditingMainRemarks(objective._id)}
+              disabled={saving}
+              title="Cancel editing"
+            >
+              <FaTimes />
+              Cancel
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="literexia-main-remarks-display">
+        <p className="literexia-remarks-text">
+          {currentMainRemarks || 'Click to add main assessment remarks'}
+        </p>
+        <button
+          className="literexia-edit-button"
+          onClick={() => startEditingMainRemarks(objective._id, currentMainRemarks)}
+          disabled={saving}
+          title="Edit main assessment remarks"
+        >
+          <FaEdit />
+        </button>
+      </div>
+    );
+  };
+
   // Render remarks cell with edit functionality
   const renderRemarksCell = (objective) => {
     const isEditing = editingRemarks[objective._id];
     const currentRemarks = isEditing ? tempRemarks[objective._id] : objective.remarks;
-    
+
     if (isEditing) {
       return (
         <div className="literexia-remarks-editor">
@@ -459,7 +598,7 @@ const IEPReport = ({
             rows={3}
           />
           <div className="literexia-remarks-actions">
-            <button 
+            <button
               className="literexia-save-button"
               onClick={() => saveRemarks(objective._id)}
               disabled={saving}
@@ -468,7 +607,7 @@ const IEPReport = ({
               {saving ? <FaSpinner className="spinning" /> : <FaSave />}
               Save
             </button>
-            <button 
+            <button
               className="literexia-cancel-button"
               onClick={() => cancelEditingRemarks(objective._id)}
               disabled={saving}
@@ -481,13 +620,13 @@ const IEPReport = ({
         </div>
       );
     }
-    
+
     return (
       <div className="literexia-remarks-display">
         <p className="literexia-remarks-text">
           {currentRemarks || 'Click to add remarks'}
         </p>
-        <button 
+        <button
           className="literexia-edit-button"
           onClick={() => startEditingRemarks(objective._id, currentRemarks)}
           disabled={saving}
@@ -544,6 +683,12 @@ const IEPReport = ({
     });
   };
 
+  // Convert lesson name to category name (remove "Mastering" prefix)
+  const getCategoryName = (lessonName) => {
+    if (!lessonName) return '';
+    return lessonName.replace(/^Mastering\s+/i, '');
+  };
+
   // Get student name
   const getStudentName = () => {
     if (iepData.studentId?.firstName && iepData.studentId?.lastName) {
@@ -577,16 +722,16 @@ const IEPReport = ({
       )}
       
       {/* Header section */}
-      <div className="literexia-iep-info">
         <div className="literexia-iep-header">
+        <div className="literexia-header-icon">
           <FaInfoCircle />
-          <div>
-            <h4>Individualized Education Progress Report</h4>
+        </div>
+        <div className="literexia-head-content">
+          <h3>Individualized Education Progress Report</h3>
             <p>
               This report shows {getStudentName()}'s current progress and support needs across key reading skill categories.
               Teachers can update support levels and add remarks to track progress over time.
             </p>
-          </div>
         </div>
       </div>
       
@@ -661,18 +806,34 @@ const IEPReport = ({
           <thead>
             <tr>
               <th>Lesson</th>
-              <th>Category</th>
                 <th className="literexia-score-cell">Score</th>
                 <th colSpan={3} className="text-center">Support Level Needed</th>
                 <th>Intervention</th>
                 <th>Teacher Remarks</th>
             </tr>
             <tr className="literexia-support-level-header">
-                <th colSpan={3}></th>
-                <th>Minimal</th>
-                <th>Moderate</th>
-                <th>Extensive</th>
-                <th colSpan={2}></th>
+              <th></th>
+              <th></th>
+                <th>
+                  <div className="literexia-vertical-text">
+                    <span>MI</span>
+                    <span>NIMAL</span>
+                  </div>
+                </th>
+                <th>
+                  <div className="literexia-vertical-text">
+                    <span>MO</span>
+                    <span>DERATE</span>
+                  </div>
+                </th>
+                <th>
+                  <div className="literexia-vertical-text">
+                    <span>EX</span>
+                    <span>TENSIVE</span>
+                  </div>
+                </th>
+              <th></th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -684,43 +845,35 @@ const IEPReport = ({
                   <td className="literexia-lesson-cell">
                     <div className="literexia-lesson-content">
                       <div className="literexia-lesson-info">
-                        <strong>{objective.lesson}</strong>
-                        {objective.lastUpdated && (
-                          <span className="literexia-last-updated">
-                            Updated: {formatDate(objective.lastUpdated)}
-                          </span>
-                        )}
-                      </div>
+                      <strong>{getCategoryName(objective.lesson)}</strong>
+                      {objective.lastUpdated && (
+                        <span className="literexia-last-updated">
+                          Updated: {formatDate(objective.lastUpdated)}
+                        </span>
+                      )}
                     </div>
-                </td>
-                  <td className="literexia-category-cell">
-                    <span 
-                      className={`literexia-category-badge category-${objective.categoryName.toLowerCase().replace(/_/g, '-')}`}
-                      title={`Category: ${objective.categoryName} | Class: category-${objective.categoryName.toLowerCase().replace(/_/g, '-')}`}
-                    >
-                      {objective.categoryName.replace(/_/g, ' ')}
-                    </span>
+                    </div>
                 </td>
                   <td className="literexia-score-cell">
                     <div className="literexia-score-display">
                       <div className="literexia-score-main">
                         <div className="literexia-primary-score">
                           <span className="literexia-score-number">
-                            {objective.assessmentScore || objective.score || 0}%
-                          </span>
+                          {objective.assessmentScore || objective.score || 0}%
+                        </span>
                           <span className="literexia-score-label">Assessment</span>
-                        </div>
-                        {objective.hasIntervention && objective.latestInterventionScore && (
-                          <div className="literexia-intervention-score">
+                      </div>
+                      {objective.hasIntervention && objective.latestInterventionScore && (
+                        <div className="literexia-intervention-score">
                             <span className="literexia-score-number">
-                              {objective.latestInterventionScore}%
-                            </span>
+                            {objective.latestInterventionScore}%
+                          </span>
                             <span className="literexia-score-label">Intervention</span>
-                          </div>
-                        )}
+                        </div>
+                      )}
                       </div>
                       <div className={`literexia-status-indicator ${(objective.isPassed || objective.latestInterventionPassed) ? 'passed' : 'needs-work'}`}>
-                        {(objective.isPassed || objective.latestInterventionPassed) ? 'Passed' : 'Needs Work'}
+                          {(objective.isPassed || objective.latestInterventionPassed) ? 'Passed' : 'Needs Work'}
                       </div>
 
                   </div>
@@ -754,28 +907,33 @@ const IEPReport = ({
                             </div>
                           ) : (
                             <div 
-                              className="literexia-intervention-summary literexia-intervention-clickable"
+                              className="iep-intervention-card"
                               onClick={() => openInterventionModal(objective)}
                               title="Click to view detailed intervention information"
                             >
-                              <div className="literexia-intervention-icon">
-                                <FaFlask />
-                              </div>
-                              <div className="literexia-intervention-info">
-                                <div className="literexia-attempts">
-                                  {objective.interventionAttempts || 0} attempts
+                              <div className="iep-intervention-header">
+                                <div className="iep-intervention-icon-wrapper">
+                                  <FaFlask />
                                 </div>
-                                <div className="literexia-latest-score">
-                                  Latest: {objective.latestInterventionScore || 0}%
-                                </div>
-                                {objective.interventionImprovement !== undefined && objective.interventionImprovement !== 0 && (
-                                  <div className={`literexia-improvement ${objective.interventionImprovement > 0 ? 'positive' : 'negative'}`}>
-                                    {objective.interventionImprovement > 0 ? '+' : ''}{objective.interventionImprovement}%
+                                <div className="iep-intervention-info">
+                                  <div className="iep-intervention-stats">
+                                    <div className="iep-attempts-badge">
+                                      {objective.interventionAttempts || 0} attempts
+                                    </div>
+                                    <div className="iep-score-badge">
+                                      Latest: {objective.latestInterventionScore || 0}%
+                                    </div>
+                                    {objective.interventionImprovement !== undefined && objective.interventionImprovement !== 0 && (
+                                      <div className={`iep-improvement-indicator ${objective.interventionImprovement > 0 ? 'positive' : 'negative'}`}>
+                                        <span className="iep-improvement-icon">{objective.interventionImprovement > 0 ? '+' : ''}</span>
+                                        {objective.interventionImprovement}%
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                              <div className="literexia-intervention-arrow">
-                                <FaEye />
+                                </div>
+                                <div className="iep-expand-toggle">
+                                  <FaEye className="iep-expand-icon" />
+                                </div>
                               </div>
                             </div>
                           )}
@@ -784,28 +942,104 @@ const IEPReport = ({
                       </div>
                 </td>
                 <td className="literexia-remarks-cell">
-                      <div 
-                        className="literexia-remarks-display literexia-remarks-clickable"
-                        onClick={() => openRemarksModal(objective)}
-                        title="Click to edit remarks"
-                      >
-                        <div className="literexia-remarks-preview">
-                          {objective.interventionHistory && objective.interventionHistory.length > 0 ? (
-                            <div className="literexia-intervention-summary">
-                              <span className="literexia-attempts-count">
-                                {objective.interventionHistory.length} attempt{objective.interventionHistory.length !== 1 ? 's' : ''}
-                              </span>
-                              <span className="literexia-remarks-status">
-                                {objective.interventionHistory.filter(attempt => attempt.teacherRemarks).length} with remarks
-                              </span>
+                      <div className="literexia-remarks-container">
+                        {/* Main Assessment Remarks Section */}
+                        <div className="literexia-main-assessment-remarks-section">
+                          <div className="literexia-section-header">
+                            <FaBook className="literexia-section-icon" />
+                            <span className="literexia-section-title">Main Assessment</span>
+                          </div>
+                          {renderMainAssessmentRemarksCell(objective)}
+                        </div>
+
+                        {/* Intervention Remarks Section */}
+                        {objective.interventionHistory && objective.interventionHistory.length > 0 ? (
+                          <div className="literexia-intervention-remarks-section">
+                            <div className="literexia-section-header">
+                              <FaFlask className="literexia-section-icon" />
+                              <span className="literexia-section-title">Interventions</span>
                             </div>
-                          ) : (
-                            <span className="literexia-remarks-placeholder">No intervention attempts</span>
-                          )}
-                        </div>
-                        <div className="literexia-remarks-arrow">
-                          <FaEdit />
-                        </div>
+                            <div className="literexia-attempts-container">
+                              {/* Summary View - Always Visible */}
+                              <div className="literexia-attempts-summary">
+                                <div className="literexia-summary-header">
+                                  <span className="literexia-summary-title">Add Remarks</span>
+                                  <button
+                                    className="literexia-expand-button"
+                                    onClick={() => toggleRemarksExpansion(objective._id)}
+                                    title={expandedRemarks[objective._id] ? "Collapse attempts" : "Show all attempts"}
+                                  >
+                                    <span className="literexia-summary-count">
+                                      {objective.interventionHistory.length} attempt{objective.interventionHistory.length !== 1 ? 's' : ''}
+                                    </span>
+                                    <FaEye className={`literexia-expand-icon ${expandedRemarks[objective._id] ? 'expanded' : ''}`} />
+                                  </button>
+                                </div>
+
+                                {/* Quick Stats */}
+                                <div className="literexia-quick-stats">
+                                  <div className="literexia-stat-item">
+                                    <span className="literexia-stat-label">Latest:</span>
+                                    <span className={`literexia-stat-value ${objective.latestInterventionScore >= 70 ? 'passed' : 'failed'}`}>
+                                      {objective.latestInterventionScore || 0}%
+                                    </span>
+                                  </div>
+                                  <div className="literexia-stat-item">
+                                    <span className="literexia-stat-label">With remarks:</span>
+                                    <span className="literexia-stat-value">
+                                      {objective.interventionHistory.filter(attempt => attempt.teacherRemarks).length}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Expanded View - Only when expanded */}
+                              {expandedRemarks[objective._id] && (
+                                <div className="literexia-attempts-expanded">
+                                  <div className="literexia-attempts-header">
+                                    <span className="literexia-attempts-title">All Attempts</span>
+                                    <button
+                                      className="literexia-collapse-button"
+                                      onClick={() => toggleRemarksExpansion(objective._id)}
+                                      title="Collapse"
+                                    >
+                                      <FaEye className="literexia-collapse-icon" />
+                                    </button>
+                                  </div>
+                                  <div className="literexia-attempt-buttons">
+                                    {objective.interventionHistory.map((attempt, index) => (
+                                      <button
+                                        key={attempt._id || index}
+                                        className={`literexia-attempt-button ${attempt.teacherRemarks ? 'has-remarks' : 'no-remarks'}`}
+                                        onClick={() => openAttemptModal(objective, attempt, index)}
+                                        title={`Edit remark for attempt #${attempt.attemptNumber || (index + 1)}`}
+                                      >
+                                        <div className="literexia-attempt-button-content">
+                                          <span className="literexia-attempt-text">
+                                            Attempt {attempt.attemptNumber || (index + 1)} - Edit Remark
+                                          </span>
+                                          {attempt.teacherRemarks && (
+                                            <FaCheck className="literexia-remarks-indicator" />
+                                          )}
+                                        </div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="literexia-intervention-remarks-section">
+                            <div className="literexia-section-header">
+                              <FaFlask className="literexia-section-icon" />
+                              <span className="literexia-section-title">Interventions</span>
+                            </div>
+                            <div className="literexia-no-attempts-simple">
+                              <span className="literexia-remarks-placeholder">No intervention attempts</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                 </td>
               </tr>
@@ -833,7 +1067,7 @@ const IEPReport = ({
                 <FaFlask className="literexia-modal-icon" />
                 <div>
                   <h3>Intervention Details</h3>
-                  <p>{interventionModal.objective.lesson}</p>
+                  <p>{getCategoryName(interventionModal.objective.lesson)}</p>
                 </div>
               </div>
               <button className="literexia-modal-close" onClick={closeInterventionModal}>
@@ -902,116 +1136,94 @@ const IEPReport = ({
         </div>
       )}
 
-      {/* Teacher Remarks Modal */}
-      {remarksModal.isOpen && remarksModal.objective && (
-        <div className="literexia-modal-overlay" onClick={closeRemarksModal}>
-          <div className="literexia-remarks-modal" onClick={(e) => e.stopPropagation()}>
+      {/* Individual Attempt Remark Modal */}
+      {attemptModal.isOpen && attemptModal.objective && attemptModal.attempt && (
+        <div className="literexia-modal-overlay" onClick={closeAttemptModal}>
+          <div className="literexia-attempt-modal" onClick={(e) => e.stopPropagation()}>
             <div className="literexia-modal-header">
               <div className="literexia-modal-title">
                 <FaEdit className="literexia-modal-icon" />
                 <div>
-                  <h3>Teacher Remarks</h3>
-                  <p>{remarksModal.objective.lesson}</p>
+                  <h3>Edit Remark</h3>
+                  <p>{getCategoryName(attemptModal.objective.lesson)} - Attempt {attemptModal.attempt.attemptNumber || (attemptModal.attemptIndex + 1)}</p>
                 </div>
               </div>
-              <button className="literexia-modal-close" onClick={closeRemarksModal}>
+              <button className="literexia-modal-close" onClick={closeAttemptModal}>
                 <FaTimes />
               </button>
             </div>
 
             <div className="literexia-modal-content">
-              <div className="literexia-remarks-editor-modal">
-                <div className="literexia-remarks-header-modal">
-                  <h4>Intervention Attempt Remarks</h4>
-                  <p>Add remarks for each intervention attempt to track progress and provide specific feedback.</p>
+              <div className="literexia-attempt-info-card">
+                <div className="literexia-attempt-details-header">
+                  <h4>Attempt Details</h4>
+                </div>
+                <div className="literexia-attempt-details-grid">
+                  <div className="literexia-detail-item">
+                    <span className="literexia-detail-label">Score:</span>
+                    <span className={`literexia-detail-value ${attemptModal.attempt.isPassed ? 'passed' : 'failed'}`}>
+                      {attemptModal.attempt.score}%
+                    </span>
+                  </div>
+                  <div className="literexia-detail-item">
+                    <span className="literexia-detail-label">Status:</span>
+                    <span className={`literexia-detail-value ${attemptModal.attempt.isPassed ? 'passed' : 'failed'}`}>
+                      {attemptModal.attempt.isPassed ? 'PASSED' : 'FAILED'}
+                    </span>
+                  </div>
+                  <div className="literexia-detail-item">
+                    <span className="literexia-detail-label">Date:</span>
+                    <span className="literexia-detail-value">
+                      {attemptModal.attempt.attemptedAt ? formatDate(attemptModal.attempt.attemptedAt) : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="literexia-remark-editor-simple">
+                <div className="literexia-remark-header">
+                  <h4>Your Remark</h4>
+                  <p>Write your observations and feedback for this attempt.</p>
                 </div>
                 
-                <div className="literexia-intervention-attempts-remarks">
-                  {remarksModal.objective.interventionHistory && remarksModal.objective.interventionHistory.length > 0 ? (
-                    remarksModal.objective.interventionHistory.map((attempt, index) => (
-                      <div key={attempt._id || index} className="literexia-attempt-remark-card">
-                        <div className="literexia-attempt-header">
-                          <div className="literexia-attempt-info">
-                            <h5>Attempt #{attempt.attemptNumber || (index + 1)}</h5>
-                            <div className="literexia-attempt-details">
-                              <span className={`literexia-attempt-score ${attempt.isPassed ? 'passed' : 'failed'}`}>
-                                {attempt.score}%
-                              </span>
-                              <span className={`literexia-attempt-status ${attempt.isPassed ? 'passed' : 'failed'}`}>
-                                {attempt.isPassed ? 'PASSED' : 'FAILED'}
-                              </span>
-                              {attempt.attemptedAt && (
-                                <span className="literexia-attempt-date">
-                                  {formatDate(attempt.attemptedAt)}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="literexia-attempt-remark-editor">
-                          <textarea
-                            className="literexia-attempt-textarea"
-                            placeholder={`Add remarks for attempt #${attempt.attemptNumber || (index + 1)}...`}
-                            value={attempt.teacherRemarks || ''}
-                            onChange={(e) => {
-                              // Update the attempt's remarks in real-time
-                              const updatedHistory = [...remarksModal.objective.interventionHistory];
-                              updatedHistory[index] = { ...attempt, teacherRemarks: e.target.value };
-                              const updatedObjective = { 
-                                ...remarksModal.objective, 
-                                interventionHistory: updatedHistory 
-                              };
-                              setRemarksModal({ ...remarksModal, objective: updatedObjective });
-                            }}
-                            rows={4}
-                            maxLength={500}
-                          />
-                          <div className="literexia-attempt-counter">
-                            {(attempt.teacherRemarks || '').length}/500 characters
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="literexia-no-attempts">
-                      <FaInfoCircle className="literexia-info-icon" />
-                      <p>No intervention attempts found for this category.</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="literexia-remarks-actions-modal">
-                  <button 
-                    className="literexia-btn-secondary"
-                    onClick={closeRemarksModal}
-                    disabled={saving}
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    className="literexia-btn-primary"
-                    onClick={async () => {
-                      try {
-                        setSaving(true);
-                        // Save all attempt remarks
-                        await saveInterventionAttemptRemarks(remarksModal.objective._id, remarksModal.objective.interventionHistory);
-                        closeRemarksModal();
-                        setSuccessMessage('All remarks saved successfully!');
-                        setTimeout(() => setSuccessMessage(''), 3000);
-                      } catch (error) {
-                        console.error('Error saving remarks:', error);
-                        setError('Failed to save remarks. Please try again.');
-                      } finally {
-                        setSaving(false);
-                      }
+                <div className="literexia-remark-textarea-container">
+                  <textarea
+                    className="literexia-remark-textarea"
+                    placeholder="Enter your remark here... (e.g., 'Student showed improvement in letter recognition but still needs practice with vowel sounds.')"
+                    value={attemptModal.attempt.teacherRemarks || ''}
+                    onChange={(e) => {
+                      const updatedAttempt = { ...attemptModal.attempt, teacherRemarks: e.target.value };
+                      setAttemptModal({ ...attemptModal, attempt: updatedAttempt });
                     }}
-                    disabled={saving}
-                  >
-                    {saving ? <FaSpinner className="spinning" /> : <FaSave />}
-                    {saving ? 'Saving...' : 'Save All Remarks'}
-                  </button>
+                    rows={6}
+                    maxLength={500}
+                  />
+                  <div className="literexia-remark-counter">
+                    {(attemptModal.attempt.teacherRemarks || '').length}/500 characters
+                  </div>
                 </div>
+              </div>
+
+              <div className="literexia-attempt-actions">
+                <button 
+                  className="literexia-btn-secondary"
+                  onClick={closeAttemptModal}
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="literexia-btn-primary"
+                  onClick={() => saveAttemptRemark(
+                    attemptModal.objective._id, 
+                    attemptModal.attemptIndex, 
+                    attemptModal.attempt.teacherRemarks || ''
+                  )}
+                  disabled={saving}
+                >
+                  {saving ? <FaSpinner className="spinning" /> : <FaSave />}
+                  {saving ? 'Saving...' : 'Save Remark'}
+                </button>
               </div>
             </div>
           </div>
