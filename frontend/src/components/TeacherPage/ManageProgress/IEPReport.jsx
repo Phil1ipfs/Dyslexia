@@ -40,6 +40,7 @@ import {
 } from 'react-icons/fa';
 import IEPService from '../../../services/Teachers/ManageProgress/IEPService';
 import StudentDetailsService from '../../../services/Teachers/StudentDetailsService';
+import { fetchTeacherProfile } from '../../../services/Teachers/teacherService';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { toast } from '../../../utils/toastHelper';
@@ -91,6 +92,9 @@ const IEPReport = ({
   const [parentImageError, setParentImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 2;
+  
+  // Teacher profile state
+  const [teacherProfile, setTeacherProfile] = useState(null);
 
   // Refs for PDF generation
   const reportRef = useRef();
@@ -106,6 +110,19 @@ const IEPReport = ({
     };
   }
 
+  // Load teacher profile
+  const loadTeacherProfile = async () => {
+    try {
+      const profile = await fetchTeacherProfile();
+      setTeacherProfile(profile);
+      console.log('Teacher profile loaded:', profile);
+    } catch (error) {
+      console.error('Error loading teacher profile:', error);
+      // Don't let teacher profile loading break the component
+      setTeacherProfile(null);
+    }
+  };
+
   // Load IEP data when component mounts or student changes
   useEffect(() => {
     const studentId = student?.id || student?._id;
@@ -116,8 +133,10 @@ const IEPReport = ({
       if (!iepData || loadedStudentRef.current !== studentId) {
         console.log('Loading data for student:', studentId);
         loadedStudentRef.current = studentId;
-      loadIEPData();
-      loadParentData();
+        loadIEPData();
+        loadParentData();
+        // Load teacher profile (optional - don't let it break the component)
+        loadTeacherProfile().catch(err => console.warn('Teacher profile loading failed:', err));
       } else {
         console.log('useEffect skipped - data already loaded for student:', studentId);
       }
@@ -128,13 +147,13 @@ const IEPReport = ({
 
       if (parentName && parentName !== 'No parent information') {
         setFeedbackMessage({
-          subject: `Progress Report for ${studentName}`,
-          content: `Dear ${parentName},\n\nI'm writing to update you on ${studentName}'s progress in our reading comprehension activities...`
+          subject: `IEP Progress Report for ${studentName}`,
+          content: `Dear ${parentName},\n\nI hope this message finds you well. I'm writing to share ${studentName}'s progress in our Individualized Education Program (IEP).\n\n${studentName} has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about ${studentName}'s performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss ${studentName}'s progress further, please don't hesitate to reach out to me. Your partnership in ${studentName}'s educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nTeacher`
         });
       } else {
         setFeedbackMessage({
-          subject: `Progress Report for ${studentName}`,
-          content: `Dear Parent,\n\nI'm writing to update you on ${studentName}'s progress in our reading comprehension activities...`
+          subject: `IEP Progress Report for ${studentName}`,
+          content: `Dear Parent,\n\nI hope this message finds you well. I'm writing to share ${studentName}'s progress in our Individualized Education Program (IEP).\n\n${studentName} has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about ${studentName}'s performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss ${studentName}'s progress further, please don't hesitate to reach out to me. Your partnership in ${studentName}'s educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nTeacher`
         });
       }
     }
@@ -149,6 +168,24 @@ const IEPReport = ({
   useEffect(() => {
     console.log('DataLoaded state changed to:', dataLoaded);
   }, [dataLoaded]);
+
+  // Update feedback message when teacher profile loads
+  useEffect(() => {
+    if (teacherProfile && feedbackMessage.content) {
+      const studentName = getStudentName();
+      const parentName = getParentName();
+      const teacherName = getTeacherName();
+
+      // Only update if the teacher name has changed
+      if (teacherName !== 'Teacher') {
+        const updatedContent = feedbackMessage.content.replace(/Best regards,\nTeacher/g, `Best regards,\n${teacherName}`);
+        setFeedbackMessage(prev => ({
+          ...prev,
+          content: updatedContent
+        }));
+      }
+    }
+  }, [teacherProfile]);
 
   // Force re-render when forceUpdate changes
   useEffect(() => {
@@ -556,6 +593,13 @@ const IEPReport = ({
   // Handle saving feedback message (from StudentDetails.jsx)
   const handleSaveFeedback = () => setIsEditingFeedback(false);
 
+  // Handle canceling feedback message editing
+  const handleCancelFeedback = () => {
+    setIsEditingFeedback(false);
+    // Optionally, you could reset the feedback message to its original state here
+    // if you want to discard unsaved changes
+  };
+
   // Load parent data using StudentDetailsService (matching StudentDetails.jsx implementation)
   const loadParentData = async () => {
     try {
@@ -731,8 +775,16 @@ const IEPReport = ({
       }
 
       // Show a loading message
-      console.log('Preparing IEP report for sending...');
-      toast.loading('Preparing IEP report...');
+      console.log('Preparing IEP report for sending...', {
+        includeProgressReport,
+        willGeneratePDF: includeProgressReport
+      });
+      
+      if (includeProgressReport) {
+        toast.loading('Preparing IEP report with PDF...');
+      } else {
+        toast.loading('Preparing IEP message...');
+      }
 
       // If including progress report, generate the PDF
       let pdfBase64 = null;
@@ -864,10 +916,16 @@ const IEPReport = ({
       const reportData = {
         subject: feedbackMessage.subject,
         content: feedbackMessage.content,
-        includeProgressReport: includeProgressReport && !!pdfBase64, // Only include if we have PDF data
-        pdfData: pdfBase64,
+        includeProgressReport: includeProgressReport && !!pdfBase64, // Only include if checkbox is checked AND we have PDF data
+        pdfData: includeProgressReport ? pdfBase64 : null, // Explicitly set to null if not including report
         reportDate: new Date().toISOString().split('T')[0]
       };
+
+      console.log('Report data prepared:', {
+        includeProgressReport: reportData.includeProgressReport,
+        hasPdfData: !!reportData.pdfData,
+        checkboxChecked: includeProgressReport
+      });
 
       toast.loading('Sending IEP report to parent...');
       console.log('Sending IEP report to parent...');
@@ -882,9 +940,14 @@ const IEPReport = ({
 
         if (result && result.success) {
           console.log('IEP report sent successfully:', result);
-          toast.success('IEP report sent successfully!');
+          const successMessage = includeProgressReport && pdfBase64 
+            ? 'IEP Progress report with PDF has been successfully sent!'
+            : 'IEP message has been successfully sent!';
+          toast.success(successMessage);
           setSuccessDialogData({
-            message: `IEP Progress report has been successfully sent to ${getParentName()}!`,
+            message: includeProgressReport && pdfBase64
+              ? `IEP Progress report has been successfully sent to ${getParentName()}!`
+              : `IEP message has been successfully sent to ${getParentName()}!`,
             submessage: 'A copy has been saved to the student\'s records.'
           });
           setShowSuccessDialog(true);
@@ -1371,6 +1434,22 @@ const IEPReport = ({
     }
   };
 
+  // Get teacher name
+  const getTeacherName = () => {
+    try {
+      if (teacherProfile?.firstName && teacherProfile?.lastName) {
+        return `${teacherProfile.firstName} ${teacherProfile.lastName}`;
+      } else if (teacherProfile?.name) {
+        return teacherProfile.name;
+      } else {
+        return 'Teacher';
+      }
+    } catch (error) {
+      console.error('Error getting teacher name:', error);
+      return 'Teacher';
+    }
+  };
+
   // Get parent name for display
   const getParentName = () => {
     // Check if parentInfo exists and has name properties
@@ -1437,13 +1516,6 @@ const IEPReport = ({
 
   return (
     <div className="literexia-iep-container">
-      {/* DEBUG: Test if main content renders */}
-      <div style={{background: 'red', color: 'white', padding: '10px', margin: '10px'}}>
-        🎉 SUCCESS: Main content is rendering! 
-        Data Source: {iepData ? 'LOCAL' : 'GLOBAL'}, 
-        Objectives: {currentIepData.objectives.length}, 
-        Student: {currentIepData.studentId?.firstName || 'Unknown'}
-      </div>
       
       {/* Success message */}
       {successMessage && (
@@ -1873,18 +1945,6 @@ const IEPReport = ({
                 </span>
               </div>
             </div>
-            <div className="sdx-contact-item">
-              <FaBuilding className="sdx-contact-icon" />
-              <div className="sdx-detail-content">
-                <span className="sdx-detail-label">Occupation</span>
-                <span className="sdx-detail-value">
-                  {parentProfile && parentProfile.occupation ?
-                    parentProfile.occupation :
-                    student?.parent && typeof student.parent === 'object' && student.parent.occupation ?
-                      student.parent.occupation : 'Not provided'}
-                </span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -1945,22 +2005,30 @@ const IEPReport = ({
             </label>
           </div>
 
-          <div className="sdx-message-actions">
-            {isEditingFeedback ? (
-              <button
-                className="sdx-save-btn"
-                onClick={handleSaveFeedback}
-              >
-                <FaSave /> Save Message
-              </button>
-            ) : (
-              <button
-                className="sdx-edit-btn"
-                onClick={() => setIsEditingFeedback(true)}
-              >
-                <FaEdit /> Edit Message
-              </button>
-            )}
+            <div className="sdx-message-actions">
+              {isEditingFeedback ? (
+                <>
+                  <button
+                    className="sdx-save-btn"
+                    onClick={handleSaveFeedback}
+                  >
+                    <FaSave /> Save Message
+                  </button>
+                  <button
+                    className="sdx-cancel-btn"
+                    onClick={handleCancelFeedback}
+                  >
+                    <FaTimes /> Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="sdx-edit-btn"
+                  onClick={() => setIsEditingFeedback(true)}
+                >
+                  <FaEdit /> Edit Message
+                </button>
+              )}
 
             <button
               className="sdx-send-btn"
@@ -1986,15 +2054,6 @@ const IEPReport = ({
           {generatingPdf ? 'Generating...' : 'Generate PDF'}
         </button>
 
-        <button
-          className="literexia-export-advanced-btn"
-          onClick={exportToPDF}
-          disabled={generatingPdf}
-          title="Export Professional Progress Report"
-        >
-          {generatingPdf ? <FaSpinner className="spinning" /> : <FaDownload />}
-          {generatingPdf ? 'Exporting...' : 'Export Advanced PDF'}
-        </button>
       </div>
 
       
