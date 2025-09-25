@@ -3845,6 +3845,18 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
+/* Make PDF button wider in table header */
+.literexia-iep-table-header .literexia-pdf-btn {
+  padding: 0.75rem 3rem;
+  min-width: 220px;
+}
+
+/* Make Refresh button wider in table header */
+.literexia-iep-table-header .literexia-refresh-button {
+  padding: 0.75rem 3rem;
+  min-width: 220px;
+}
+
 .literexia-parent-details {
   padding: 2rem;
   background: #ffffff;

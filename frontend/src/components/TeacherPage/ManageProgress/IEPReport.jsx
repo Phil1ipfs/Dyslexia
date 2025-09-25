@@ -1599,6 +1599,7 @@ const IEPReport = ({
         </div>
       </div>
 
+
       
       {/* Table section */}
       <div className="literexia-iep-table-container">
@@ -1618,9 +1619,15 @@ const IEPReport = ({
             {refreshing ? <FaSpinner className="spinning" /> : <FaRedoAlt />}
             Refresh Data Results
           </button>
-          <div className="literexia-table-info">
-            <span>Click intervention details to view attempt history</span>
-          </div>
+          <button
+            className="literexia-pdf-btn"
+            onClick={generatePDF}
+            disabled={generatingPdf}
+            title="Generate PDF Report"
+          >
+            {generatingPdf ? <FaSpinner className="spinning" /> : <FaFilePdf />}
+            {generatingPdf ? 'Generating...' : 'Generate PDF'}
+          </button>
         </div>
         
         <div className="literexia-table-responsive">
@@ -2050,19 +2057,6 @@ const IEPReport = ({
         </div>
       </div>
 
-      {/* Export Actions */}
-      <div className="literexia-export-actions">
-        <button
-          className="literexia-pdf-btn"
-          onClick={generatePDF}
-          disabled={generatingPdf}
-          title="Generate PDF Report"
-        >
-          {generatingPdf ? <FaSpinner className="spinning" /> : <FaFilePdf />}
-          {generatingPdf ? 'Generating...' : 'Generate PDF'}
-        </button>
-
-      </div>
 
       
       {/* Saving overlay */}
