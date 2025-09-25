@@ -34,17 +34,27 @@ const AssessmentResultsOverview = () => {
 
           // Map students with their category_results
           const combinedStudents = fetchedStudents.map(student => {
-            const result = categoryResults.find(r => String(r.studentId) === String(student.idNumber) && r.assessmentType === 'main-assessment');
-            if (result) {
-              console.log(`Match found for studentId: ${student.idNumber}`, result);
-            } else {
-              console.log(`No match for studentId: ${student.idNumber}`);
-            }
+            const result = categoryResults.find(r => String(r.studentId) === String(student.idNumber));
+
+            // Normalize categories to keyed object: e.g., 'Alphabet Knowledge' -> 'alphabet_knowledge'
+            const categoryScores = (() => {
+              if (!result || !Array.isArray(result.categories)) return {};
+              const map = {};
+              result.categories.forEach(cat => {
+                const key = (cat.categoryName || '')
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, '_')
+                  .replace(/^_|_$/g, '');
+                map[key] = cat;
+              });
+              return map;
+            })();
+
             return {
               ...student,
               assessmentDate: result ? result.updatedAt : null,
               overallScore: result ? result.overallScore : null,
-              categoryScores: result ? result.categories : {},
+              categoryScores, // normalized object
               readingLevel: result ? result.readingLevel : 'Not Assessed',
               totalQuestions: result ? result.totalQuestions : 0,
               correctAnswers: result ? result.correctAnswers : 0,
@@ -154,6 +164,12 @@ const AssessmentResultsOverview = () => {
       (student.categoryScores?.[category]?.score || 0) >= 75
     ).length;
     return Math.round((passedCount / filteredStudents.length) * 100);
+  };
+
+  // NEW: count of students who passed a specific category
+  const getCategoryPassedCount = (category) => {
+    if (!filteredStudents.length) return 0;
+    return filteredStudents.filter(student => (student.categoryScores?.[category]?.score || 0) >= 75).length;
   };
 
   // Format date for display
@@ -278,7 +294,7 @@ const AssessmentResultsOverview = () => {
             <div className="assessment-results__category-header">
               <h3>Alphabet Knowledge</h3>
               <span className={`assessment-results__category-percentage ${getCategoryPassingRate('alphabet_knowledge') >= 75 ? 'good' : 'needs-improvement'}`}>
-                {getCategoryPassingRate('alphabet_knowledge')}%
+                {getCategoryPassedCount('alphabet_knowledge')}
               </span>
             </div>
             <div className="assessment-results__progress-bar">
@@ -296,7 +312,7 @@ const AssessmentResultsOverview = () => {
             <div className="assessment-results__category-header">
               <h3>Phonological Awareness</h3>
               <span className={`assessment-results__category-percentage ${getCategoryPassingRate('phonological_awareness') >= 75 ? 'good' : 'needs-improvement'}`}>
-                {getCategoryPassingRate('phonological_awareness')}%
+                {getCategoryPassedCount('phonological_awareness')}
               </span>
             </div>
             <div className="assessment-results__progress-bar">
@@ -314,7 +330,7 @@ const AssessmentResultsOverview = () => {
             <div className="assessment-results__category-header">
               <h3>Decoding</h3>
               <span className={`assessment-results__category-percentage ${getCategoryPassingRate('decoding') >= 75 ? 'good' : 'needs-improvement'}`}>
-                {getCategoryPassingRate('decoding')}%
+                {getCategoryPassedCount('decoding')}
               </span>
             </div>
             <div className="assessment-results__progress-bar">
@@ -332,7 +348,7 @@ const AssessmentResultsOverview = () => {
             <div className="assessment-results__category-header">
               <h3>Word Recognition</h3>
               <span className={`assessment-results__category-percentage ${getCategoryPassingRate('word_recognition') >= 75 ? 'good' : 'needs-improvement'}`}>
-                {getCategoryPassingRate('word_recognition')}%
+                {getCategoryPassedCount('word_recognition')}
               </span>
             </div>
             <div className="assessment-results__progress-bar">
@@ -350,7 +366,7 @@ const AssessmentResultsOverview = () => {
             <div className="assessment-results__category-header">
               <h3>Reading Comprehension</h3>
               <span className={`assessment-results__category-percentage ${getCategoryPassingRate('reading_comprehension') >= 75 ? 'good' : 'needs-improvement'}`}>
-                {getCategoryPassingRate('reading_comprehension')}%
+                {getCategoryPassedCount('reading_comprehension')}
               </span>
             </div>
             <div className="assessment-results__progress-bar">
@@ -498,12 +514,9 @@ const AssessmentResultsOverview = () => {
                         'Word Recognition',
                         'Reading Comprehension'
                       ];
-                      const catMap = {};
-                      (Array.isArray(student.categoryScores) ? student.categoryScores : []).forEach(cat => {
-                        catMap[cat.categoryName] = cat;
-                      });
                       return categoryOrder.map(catName => {
-                        const cat = catMap[catName];
+                        const key = catName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+                        const cat = student.categoryScores?.[key];
                         return (
                           <div key={catName} className="assessment-results__category-score-item">
                             <span className="assessment-results__category-score-label">{catName}:</span>

@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, FileText, BarChart2, 
   Book, Award, Layers, CheckCircle, XCircle, AlertTriangle, 
-  ChevronDown, ChevronUp, Download, Printer, Share2, Edit
+  ChevronDown, ChevronUp, Download, Printer, Share2, Edit, X
 } from 'lucide-react';
 import '../../css/Admin/AssessmentResults/StudentAssessmentResults.css';
 import axios from 'axios';
@@ -13,7 +13,10 @@ const StudentAssessmentResults = () => {
   const { id } = useParams();
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [expandedCategories, setExpandedCategories] = useState([]);
+  const [questionResponses, setQuestionResponses] = useState({});
+  const [loadingResponses, setLoadingResponses] = useState({});
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   useEffect(() => {
     const fetchStudentData = async () => {
@@ -38,11 +41,8 @@ const StudentAssessmentResults = () => {
 
         const assessmentData = assessmentResponse.data.data;
 
-        // Only use categories if assessmentType is main-assessment
-        let mainAssessmentCategories = [];
-        if (assessmentData.assessmentType === 'main-assessment') {
-          mainAssessmentCategories = assessmentData.categories || [];
-        }
+        // Use categories from assessment data
+        let mainAssessmentCategories = assessmentData.categories || [];
 
         // Combine student and assessment data
         const combinedData = {
@@ -87,14 +87,45 @@ const StudentAssessmentResults = () => {
     }
   };
 
-  // Toggle category expansion
-  const toggleCategory = (categoryId) => {
-    setExpandedCategories(prev => {
-      if (prev.includes(categoryId)) {
-        return prev.filter(id => id !== categoryId);
+  // Fetch question responses for a specific category
+  const fetchQuestionResponses = async (studentId, category) => {
+    try {
+      setLoadingResponses(prev => ({ ...prev, [category]: true }));
+      
+      const response = await axios.get(`http://localhost:5001/api/admin/student-responses/${studentId}/${category}`);
+      
+      if (response.data.success) {
+        const sanitized = (response.data.data || []).map(item => {
+          const { correctMatches, totalMatches, matches, ...rest } = item || {};
+          return rest;
+        });
+        setQuestionResponses(prev => ({
+          ...prev,
+          [category]: sanitized
+        }));
       }
-      return [...prev, categoryId];
-    });
+    } catch (error) {
+      console.error(`Error fetching responses for ${category}:`, error);
+      setQuestionResponses(prev => ({
+        ...prev,
+        [category]: []
+      }));
+    } finally {
+      setLoadingResponses(prev => ({ ...prev, [category]: false }));
+    }
+  };
+
+  // Open category modal
+  const openCategoryModal = (category) => {
+    setSelectedCategory(category);
+    setModalOpen(true);
+    fetchQuestionResponses(student?.idNumber, category.categoryName);
+  };
+
+  // Close modal
+  const closeModal = () => {
+    setModalOpen(false);
+    setSelectedCategory(null);
   };
 
   // Format category name for display
@@ -223,31 +254,6 @@ const StudentAssessmentResults = () => {
         </h2>
         
         <div className="student-assessment__summary-grid">
-          <div className="student-assessment__summary-card">
-            <div className="student-assessment__summary-icon">
-              <Book size={20} />
-            </div>
-            <div className="student-assessment__summary-content">
-              <h3>Total Questions</h3>
-              <p className="student-assessment__summary-value">{student.totalQuestions}</p>
-              <p className="student-assessment__summary-detail">
-                Questions across all categories
-              </p>
-            </div>
-          </div>
-          
-          <div className="student-assessment__summary-card">
-            <div className="student-assessment__summary-icon">
-              <CheckCircle size={20} />
-            </div>
-            <div className="student-assessment__summary-content">
-              <h3>Correct Answers</h3>
-              <p className="student-assessment__summary-value">{student.correctAnswers}</p>
-              <p className="student-assessment__summary-detail">
-                {Math.round((student.correctAnswers / student.totalQuestions) * 100)}% accuracy rate
-              </p>
-            </div>
-          </div>
           
           <div className="student-assessment__summary-card">
             <div className="student-assessment__summary-icon">
@@ -272,8 +278,7 @@ const StudentAssessmentResults = () => {
                 {Object.values(student.categoryScores).filter(category => category.score >= 75).length} / 5
               </p>
               <p className="student-assessment__summary-detail">
-                {Object.values(student.categoryScores).filter(category => category.score >= 75).length === 5 ? 
-                  'All categories passed!' : 'Some categories need improvement'}
+                Some categories need improvement
               </p>
             </div>
           </div>
@@ -290,17 +295,17 @@ const StudentAssessmentResults = () => {
         <div className="student-assessment__categories-grid">
           {Array.isArray(student.categoryScores)
             ? student.categoryScores.map((cat, idx) => (
-                <div key={cat.categoryName || idx} className="student-assessment__category-card">
+                <div key={cat.categoryName || idx} className="student-assessment__category-card" onClick={() => openCategoryModal(cat)}>
                   <div className="student-assessment__category-header">
                     <h3>{cat.categoryName || `Category ${idx + 1}`}</h3>
                     <button 
                       className="student-assessment__toggle-btn"
-                      onClick={() => toggleCategory(cat.categoryName)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openCategoryModal(cat);
+                      }}
                     >
-                      {expandedCategories.includes(cat.categoryName) ? 
-                        <ChevronUp size={18} /> : 
-                        <ChevronDown size={18} />
-                      }
+                      <ChevronDown size={18} />
                     </button>
                   </div>
                   <div className="student-assessment__category-score">
@@ -323,34 +328,175 @@ const StudentAssessmentResults = () => {
                       style={{ width: `${cat.score}%` }}
                     ></div>
                   </div>
-                  {expandedCategories.includes(cat.categoryName) && (
-                    <div className="student-assessment__category-details">
-                      <p>{cat.description}</p>
-                      <div className="student-assessment__questions-overview">
-                        <h4>Question Results</h4>
-                        <div className="student-assessment__questions-grid">
-                          {cat.questions && cat.questions.map((question, index) => (
-                            <div 
-                              key={question.id || index} 
-                              className={`student-assessment__question-result ${question.result}`}
-                              title={question.question}
-                            >
-                              {index + 1}
-                              {question.result === 'correct' ? 
-                                <CheckCircle size={12} /> : 
-                                <XCircle size={12} />
-                              }
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               ))
             : null}
         </div>
       </div>
+
+      {/* Category Details Modal */}
+      {modalOpen && selectedCategory && (
+        <div className="student-assessment__modal-overlay" onClick={closeModal}>
+          <div className="student-assessment__modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="student-assessment__modal-header">
+              <h2>{selectedCategory.categoryName}</h2>
+              <button className="student-assessment__modal-close" onClick={closeModal}>
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="student-assessment__modal-body">
+              {/* Question Results Section */}
+              <div className="student-assessment__questions-overview">
+                <h4>Question Results</h4>
+                {loadingResponses[selectedCategory.categoryName] ? (
+                  <div className="student-assessment__loading">
+                    <p>Loading question responses...</p>
+                  </div>
+                ) : (
+                  <div className="student-assessment__questions-list">
+                    {questionResponses[selectedCategory.categoryName] && questionResponses[selectedCategory.categoryName].length > 0 ? (
+                      questionResponses[selectedCategory.categoryName].map((response, index) => (
+                        <div 
+                          key={response._id || index} 
+                          className={`student-assessment__question-item ${response.isCorrect ? 'correct' : 'incorrect'}`}
+                        >
+                          <div className="student-assessment__question-header">
+                            <span className="student-assessment__question-number">Q{index + 1}</span>
+                            <span className="student-assessment__question-id">{response.questionId}</span>
+                            <div className={`student-assessment__question-status ${response.isCorrect ? 'correct' : 'incorrect'}`}>
+                              {response.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                              {response.isCorrect ? 'Correct' : 'Incorrect'}
+                            </div>
+                          </div>
+                          
+                          {response.questionDetails && (
+                            <div className="student-assessment__question-content">
+                              <div className="student-assessment__question-text">
+                                <strong>Question:</strong> {response.questionDetails.question || 'Question text not available'}
+                              </div>
+                              {response.questionDetails.image && (
+                                <div className="student-assessment__question-image">
+                                  <img 
+                                    src={response.questionDetails.image} 
+                                    alt="Question illustration"
+                                    style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '0.5rem' }}
+                                  />
+                                </div>
+                              )}
+                              {selectedCategory?.categoryName !== 'Phonological Awareness' && (
+                                <div className="student-assessment__correct-answer">
+                                  <strong>Correct Answer:</strong> {response.questionDetails.correctAnswer || 'Correct answer not available'}
+                                </div>
+                              )}
+                              {response.questionDetails.questionType === 'fill_blank' && response.questionDetails.options && response.questionDetails.options.length > 0 && (
+                                <div className="student-assessment__blank-options">
+                                  <strong>Blank Options:</strong>
+                                  <div className="student-assessment__blank-options-list">
+                                    {response.questionDetails.options.map((option, index) => {
+                                      const optionText = typeof option === 'object' && option.optionText ? option.optionText : String(option);
+                                      return (
+                                        <span key={index} className="student-assessment__blank-option">
+                                          {optionText}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          <div className="student-assessment__response-details">
+                            <div className="student-assessment__student-answer">
+                              <strong>Student's Answer:</strong>
+                              {(() => {
+                                const value = response.response;
+                                const toDisplay = () => {
+                                  if (Array.isArray(value)) {
+                                    const joined = value
+                                      .map((item) => {
+                                        if (typeof item === 'object' && item !== null) {
+                                          return JSON.stringify(item);
+                                        }
+                                        if (item === 0 || (typeof item === 'string' && item.trim() === '0')) return '';
+                                        return String(item);
+                                      })
+                                      .filter(part => part && part.trim() !== '')
+                                      .join(', ');
+                                    return joined;
+                                  } else if (typeof value === 'object' && value !== null) {
+                                    return JSON.stringify(value);
+                                  } else {
+                                    if (value === 0 || (typeof value === 'string' && value.trim() === '0')) return '';
+                                    return value ?? '';
+                                  }
+                                };
+                                const text = toDisplay();
+                                return text && text.trim() !== '' ? text : null;
+                              })()}
+                            </div>
+                            {response.responseTime && (
+                              <div className="student-assessment__response-time">
+                                <strong>Response Time:</strong> {response.responseTime}ms
+                              </div>
+                            )}
+                            {(response.answeredAt) && (
+                              <div className="student-assessment__response-date">
+                                <strong>Answered:</strong> {formatDate(response.answeredAt)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="student-assessment__no-responses">
+                        <p>No question responses found for this category.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {/* Intervention History Section */}
+              {selectedCategory.interventionAttempts > 0 && (
+                <div className="student-assessment__intervention-history">
+                  <h4>Intervention History</h4>
+                  <div className="student-assessment__intervention-summary">
+                    <p><strong>Total Attempts:</strong> {selectedCategory.interventionAttempts}</p>
+                    <p><strong>Status:</strong> {selectedCategory.interventionCompleted ? 'Completed' : 'In Progress'}</p>
+                  </div>
+                  
+                  {selectedCategory.interventionHistory && selectedCategory.interventionHistory.length > 0 && (
+                    <div className="student-assessment__intervention-attempts">
+                      {selectedCategory.interventionHistory.map((attempt, index) => (
+                        <div key={attempt._id || index} className={`student-assessment__intervention-attempt ${attempt.isPassed ? 'passed' : 'failed'}`}>
+                          <div className="student-assessment__attempt-header">
+                            <span className="student-assessment__attempt-number">Attempt {attempt.attemptNumber}</span>
+                            <div className={`student-assessment__attempt-status ${attempt.isPassed ? 'passed' : 'failed'}`}>
+                              {attempt.isPassed ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                              {attempt.isPassed ? 'Passed' : 'Failed'}
+                            </div>
+                          </div>
+                          <div className="student-assessment__attempt-details">
+                            <div className="student-assessment__attempt-score">
+                              <strong>Score:</strong> {attempt.score}%
+                            </div>
+                            <div className="student-assessment__attempt-dates">
+                              <div><strong>Started:</strong> {formatDate(attempt.attemptedAt)}</div>
+                              <div><strong>Completed:</strong> {formatDate(attempt.completedAt)}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
