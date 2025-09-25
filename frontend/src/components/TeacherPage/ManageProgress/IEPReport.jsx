@@ -940,15 +940,19 @@ const IEPReport = ({
 
         if (result && result.success) {
           console.log('IEP report sent successfully:', result);
+          const studentName = getStudentName();
+          const parentName = getParentName();
+          const subject = feedbackMessage.subject;
+          
           const successMessage = includeProgressReport && pdfBase64 
-            ? 'IEP Progress report with PDF has been successfully sent!'
-            : 'IEP message has been successfully sent!';
+            ? `📧 IEP Progress Report sent to ${parentName} - Subject: "${subject}"`
+            : `📧 Message sent to ${parentName} - Subject: "${subject}"`;
           toast.success(successMessage);
           setSuccessDialogData({
             message: includeProgressReport && pdfBase64
-              ? `IEP Progress report has been successfully sent to ${getParentName()}!`
-              : `IEP message has been successfully sent to ${getParentName()}!`,
-            submessage: 'A copy has been saved to the student\'s records.'
+              ? `IEP Progress Report has been successfully sent to ${parentName}!`
+              : `Message has been successfully sent to ${parentName}!`,
+            submessage: `Subject: "${subject}" - A copy has been saved to ${studentName}'s records.`
           });
           setShowSuccessDialog(true);
         } else {
@@ -985,10 +989,14 @@ const IEPReport = ({
 
               if (simpleResult && simpleResult.success) {
                 console.log('Simple IEP report sent successfully:', simpleResult);
-                toast.success('IEP message sent successfully (without PDF attachment)');
+                const studentName = getStudentName();
+                const parentName = getParentName();
+                const subject = feedbackMessage.subject;
+                
+                toast.success(`📧 Message sent to ${parentName} (without PDF) - Subject: "${subject}"`);
                 setSuccessDialogData({
-                  message: `IEP Progress report has been successfully sent to ${getParentName()}!`,
-                  submessage: 'A copy has been saved to the student\'s records.'
+                  message: `Message has been successfully sent to ${parentName}!`,
+                  submessage: `Subject: "${subject}" - A copy has been saved to ${studentName}'s records.`
                 });
                 setShowSuccessDialog(true);
               } else {
