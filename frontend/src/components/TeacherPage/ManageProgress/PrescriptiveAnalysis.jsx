@@ -5981,17 +5981,36 @@ const PrescriptiveAnalysis = ({
                                         </div>
                                       )}
                                       
-                                      {/* Display sentence questions */}
+                                      {/* Display each question with its answers */}
                                       {question.sentenceQuestions && question.sentenceQuestions.length > 0 && (
                                         <div className="intervention-response-sentence-questions">
-                                          <h6>Questions:</h6>
-                                          {question.sentenceQuestions.map((sentenceQ, index) => (
-                                            <div key={index} className="intervention-response-sentence-question">
-                                              <div className="intervention-response-sentence-question-text">
-                                                <strong>Q{sentenceQ.questionNumber}:</strong> {sentenceQ.questionText}
+                                          <h6>Questions & Answers:</h6>
+                                          {question.sentenceQuestions.map((sentenceQ, index) => {
+                                            const studentAnswer = response.response && response.response[index] ? response.response[index] : 'No answer';
+                                            const correctAnswer = sentenceQ.sentenceCorrectAnswer || 'No correct answer available';
+                                            
+                                            return (
+                                              <div key={index} className="intervention-response-question-answer-pair">
+                                                <div className="intervention-response-question-text">
+                                                  <strong>Q{sentenceQ.questionNumber}:</strong> {sentenceQ.questionText}
+                                                </div>
+                                                <div className="intervention-response-answer-comparison">
+                                                  <div className="intervention-response-answer-item student-answer">
+                                                    <span className="intervention-response-answer-label">Student Answer</span>
+                                                    <span className={`intervention-response-answer-value ${response.isCorrect ? 'correct' : 'incorrect'}`}>
+                                                      {studentAnswer}
+                                                    </span>
+                                                  </div>
+                                                  <div className="intervention-response-answer-item correct-answer">
+                                                    <span className="intervention-response-answer-label">Correct Answer</span>
+                                                    <span className="intervention-response-answer-value correct">
+                                                      {correctAnswer}
+                                                    </span>
+                                                  </div>
+                                                </div>
                                               </div>
-                                            </div>
-                                          ))}
+                                            );
+                                          })}
                                         </div>
                                       )}
                                     </div>
@@ -6059,191 +6078,177 @@ const PrescriptiveAnalysis = ({
                               }
                               return null;
                             })()}
-                            {response.questionImage && response.questionImage.trim() !== '' ? (
-                              <div className="intervention-response-question-image">
-                                <img
-                                  src={sanitizeImageUrl(response.questionImage)}
-                                  alt="Question image"
-                                  className="intervention-response-image"
-                                  onError={(e) => {
-                                    console.warn('Failed to load question image:', response.questionImage);
-                                    console.warn('Sanitized URL:', sanitizeImageUrl(response.questionImage));
-                                    console.warn('This could be due to network issues, CORS settings, or temporary AWS issues');
+                            {(() => {
+                              // For Reading Comprehension, don't show image here since it's integrated with the passage
+                              if (selectedInterventionData.category === 'Reading Comprehension') {
+                                return (
+                                  <div className="intervention-response-question-image-placeholder">
+                                    <span>Image displayed with reading passage above</span>
+                                  </div>
+                                );
+                              }
+                              
+                              // For other categories, use the original logic
+                              if (response.questionImage && response.questionImage.trim() !== '') {
+                                return (
+                                  <div className="intervention-response-question-image">
+                                    <img
+                                      src={sanitizeImageUrl(response.questionImage)}
+                                      alt="Question image"
+                                      className="intervention-response-image"
+                                      onError={(e) => {
+                                        console.warn('Failed to load question image:', response.questionImage);
+                                        console.warn('Sanitized URL:', sanitizeImageUrl(response.questionImage));
+                                        console.warn('This could be due to network issues, CORS settings, or temporary AWS issues');
 
-                                    // Try alternative path if original failed
-                                    const originalUrl = response.questionImage;
-                                    if (originalUrl.includes('/mobile/')) {
-                                      const filename = originalUrl.split('/mobile/')[1];
-                                      const alternativeUrl = `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/general/${filename}`;
-                                      console.log(`🔄 Trying alternative path: ${alternativeUrl}`);
-                                      
-                                      // Try loading the alternative URL
-                                      const img = new Image();
-                                      img.onload = () => {
-                                        console.log('✅ Alternative image loaded successfully');
-                                        e.target.src = alternativeUrl;
-                                        e.target.style.display = 'block';
-                                        // Remove any existing error div
-                                        const errorDiv = e.target.parentNode.querySelector('.intervention-response-image-retry');
-                                        if (errorDiv) {
-                                          errorDiv.remove();
+                                        // Try alternative path if original failed
+                                        const originalUrl = response.questionImage;
+                                        if (originalUrl.includes('/mobile/')) {
+                                          const filename = originalUrl.split('/mobile/')[1];
+                                          const alternativeUrl = `https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/general/${filename}`;
+                                          console.log(`🔄 Trying alternative path: ${alternativeUrl}`);
+                                          
+                                          // Try loading the alternative URL
+                                          const img = new Image();
+                                          img.onload = () => {
+                                            console.log('✅ Alternative image loaded successfully');
+                                            e.target.src = alternativeUrl;
+                                            e.target.style.display = 'block';
+                                            // Remove any existing error div
+                                            const errorDiv = e.target.parentNode.querySelector('.intervention-response-image-retry');
+                                            if (errorDiv) {
+                                              errorDiv.remove();
+                                            }
+                                          };
+                                          img.onerror = () => {
+                                            console.warn('❌ Alternative image also failed to load');
+                                          };
+                                          img.src = alternativeUrl;
+                                          return; // Don't show error message yet, wait for alternative attempt
                                         }
-                                      };
-                                      img.onerror = () => {
-                                        console.warn('❌ Alternative image also failed to load');
-                                      };
-                                      img.src = alternativeUrl;
-                                      return; // Don't show error message yet, wait for alternative attempt
-                                    }
 
-                                    // Check if this is actually a corrupted URL (contains JavaScript code)
-                                    const isActuallyCorrupted = response.questionImage.includes('async () =>') ||
-                                                              response.questionImage.includes('function(') ||
-                                                              response.questionImage.includes('=>') ||
-                                                              response.questionImage.includes('javascript:');
+                                        // Check if this is actually a corrupted URL (contains JavaScript code)
+                                        const isActuallyCorrupted = response.questionImage.includes('async () =>') ||
+                                                                  response.questionImage.includes('function(') ||
+                                                                  response.questionImage.includes('=>') ||
+                                                                  response.questionImage.includes('javascript:');
 
-                                    if (isActuallyCorrupted) {
-                                      // Only show corruption warning for truly corrupted URLs
-                                      e.target.style.display = 'none';
-                                      const errorDiv = document.createElement('div');
-                                      errorDiv.className = 'intervention-response-image-error';
-                                      errorDiv.innerHTML = `
-                                        <div style="padding: 20px; text-align: center; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #dc2626;">
-                                          <strong>Corrupted Image URL Detected</strong><br>
-                                          <small>URL contains invalid characters or code</small><br>
-                                          <small style="word-break: break-all; font-family: monospace; font-size: 10px;">${response.questionImage}</small>
-                                        </div>
-                                      `;
-                                      e.target.parentNode.appendChild(errorDiv);
-                                    } else {
-                                      // For valid S3 URLs that just failed to load, show a retry button
-                                      e.target.style.display = 'none';
-                                      const retryDiv = document.createElement('div');
-                                      retryDiv.className = 'intervention-response-image-retry';
-                                      retryDiv.innerHTML = `
-                                        <div style="padding: 15px; text-align: center; background: #fef3cd; border: 1px solid #fde68a; border-radius: 8px; color: #92400e;">
-                                          <strong>Image Loading Failed</strong><br>
-                                          <small>This may be temporary. Click to retry loading.</small><br>
-                                          <button style="margin-top: 8px; padding: 4px 12px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer;" onclick="this.parentNode.parentNode.previousElementSibling.style.display='block'; this.parentNode.parentNode.previousElementSibling.src='${sanitizeImageUrl(response.questionImage)}?t=' + Date.now(); this.parentNode.parentNode.remove();">
-                                            Retry Loading Image
-                                          </button><br>
-                                          <small style="word-break: break-all; font-family: monospace; font-size: 10px; margin-top: 8px; display: block;">${response.questionImage}</small>
-                                        </div>
-                                      `;
-                                      e.target.parentNode.appendChild(retryDiv);
-                                    }
-                                  }}
-                                />
-                              </div>
-                            ) : (
-                              <div className="intervention-response-question-image-placeholder">
-                                <span>No image available</span>
-                              </div>
-                            )}
+                                        if (isActuallyCorrupted) {
+                                          // Only show corruption warning for truly corrupted URLs
+                                          e.target.style.display = 'none';
+                                          const errorDiv = document.createElement('div');
+                                          errorDiv.className = 'intervention-response-image-error';
+                                          errorDiv.innerHTML = `
+                                            <div style="padding: 20px; text-align: center; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #dc2626;">
+                                              <strong>Corrupted Image URL Detected</strong><br>
+                                              <small>URL contains invalid characters or code</small><br>
+                                              <small style="word-break: break-all; font-family: monospace; font-size: 10px;">${response.questionImage}</small>
+                                            </div>
+                                          `;
+                                          e.target.parentNode.appendChild(errorDiv);
+                                        } else {
+                                          // For valid S3 URLs that just failed to load, show a retry button
+                                          e.target.style.display = 'none';
+                                          const retryDiv = document.createElement('div');
+                                          retryDiv.className = 'intervention-response-image-retry';
+                                          retryDiv.innerHTML = `
+                                            <div style="padding: 15px; text-align: center; background: #fef3cd; border: 1px solid #fde68a; border-radius: 8px; color: #92400e;">
+                                              <strong>Image Loading Failed</strong><br>
+                                              <small>This may be temporary. Click to retry loading.</small><br>
+                                              <button style="margin-top: 8px; padding: 4px 12px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer;" onclick="this.parentNode.parentNode.previousElementSibling.style.display='block'; this.parentNode.parentNode.previousElementSibling.src='${sanitizeImageUrl(response.questionImage)}?t=' + Date.now(); this.parentNode.parentNode.remove();">
+                                                Retry Loading Image
+                                              </button><br>
+                                              <small style="word-break: break-all; font-family: monospace; font-size: 10px; margin-top: 8px; display: block;">${response.questionImage}</small>
+                                            </div>
+                                          `;
+                                          e.target.parentNode.appendChild(retryDiv);
+                                        }
+                                      }}
+                                    />
+                                  </div>
+                                );
+                              }
+                              
+                              return (
+                                <div className="intervention-response-question-image-placeholder">
+                                  <span>No image available</span>
+                                </div>
+                              );
+                            })()}
                           </div>
 
-                          <div className="intervention-response-answers-section">
-                            <div className={`intervention-response-answer-row ${selectedInterventionData.category === 'Decoding' ? 'decoding-only' : ''}`}>
-                              <div className="intervention-response-answer-item student-answer">
-                                <span className="intervention-response-answer-label">Student Answer</span>
-                                <span className={`intervention-response-answer-value ${response.isCorrect ? 'correct' : 'incorrect'}`}>
-                                  {(() => {
-                                    if (!response.response) return 'No response';
-
-                                    // Handle Reading Comprehension responses
-                                    if (selectedInterventionData.category === 'Reading Comprehension' && Array.isArray(response.response)) {
-                                      // Find the corresponding question to get sentence questions
-                                      if (selectedInterventionData?.interventionAssessment?.questions) {
-                                        const question = selectedInterventionData.interventionAssessment.questions.find(
-                                          q => q.questionId === response.questionId
-                                        );
-                                        
-                                        if (question && question.sentenceQuestions) {
-                                          // Map each response to its corresponding sentence question
-                                          return response.response.map((studentAnswer, index) => {
-                                            const sentenceQ = question.sentenceQuestions[index];
-                                            if (sentenceQ) {
-                                              return `Q${sentenceQ.questionNumber}: ${studentAnswer}`;
-                                            }
-                                            return `Q${index + 1}: ${studentAnswer}`;
-                                          }).join('; ');
-                                        }
-                                      }
-                                      
-                                      // Fallback: just show the responses with Q numbers
-                                      return response.response.map((answer, index) => 
-                                        `Q${index + 1}: ${answer}`
-                                      ).join('; ');
-                                    }
-
-                                    // Handle Phonological Awareness audio-visual pairs
-                                    if (typeof response.response === 'object' && Array.isArray(response.response)) {
-                                      // Format: [{"audio": "S", "match": "Aa"}, {"audio": "A", "match": "Ss"}, {"audio": "V", "match": "Vv"}]
-                                      return response.response.map(item => {
-                                        if (typeof item === 'object' && item.audio && item.match) {
-                                          return `${item.audio} → ${item.match}`;
-                                        } else if (typeof item === 'object' && item.audio && item.visual) {
-                                          return `${item.audio} → ${item.visual}`;
-                                        } else if (typeof item === 'object') {
-                                          // Handle any other object format
-                                          const keys = Object.keys(item);
-                                          if (keys.length === 2) {
-                                            return `${keys[0]} → ${item[keys[0]]}`;
-                                          }
-                                          return JSON.stringify(item);
-                                        }
-                                        return String(item);
-                                      }).join(', ');
-                                    } else if (typeof response.response === 'object' && response.response.audio && response.response.match) {
-                                      return `${response.response.audio} → ${response.response.match}`;
-                                    } else if (typeof response.response === 'object' && response.response.audio && response.response.visual) {
-                                      return `${response.response.audio} → ${response.response.visual}`;
-                                    } else if (typeof response.response === 'object') {
-                                      return JSON.stringify(response.response);
-                                    }
-
-                                    return String(response.response);
-                                  })()}
-                                </span>
-                              </div>
-                              
-                              {/* Only show correct answer for non-Decoding categories */}
-                              {selectedInterventionData.category !== 'Decoding' && (
-                                <div className="intervention-response-answer-item correct-answer">
-                                  <span className="intervention-response-answer-label">Correct Answer</span>
-                                  <span className="intervention-response-answer-value correct">
+                          {/* Only show the general answers section for non-Reading Comprehension categories */}
+                          {selectedInterventionData.category !== 'Reading Comprehension' && (
+                            <div className="intervention-response-answers-section">
+                              <div className={`intervention-response-answer-row ${selectedInterventionData.category === 'Decoding' ? 'decoding-only' : ''}`}>
+                                <div className="intervention-response-answer-item student-answer">
+                                  <span className="intervention-response-answer-label">Student Answer</span>
+                                  <span className={`intervention-response-answer-value ${response.isCorrect ? 'correct' : 'incorrect'}`}>
                                     {(() => {
-                                      // Find the corresponding question in the intervention assessment
-                                      if (selectedInterventionData?.interventionAssessment?.questions) {
-                                        const question = selectedInterventionData.interventionAssessment.questions.find(
-                                          q => q.questionId === response.questionId
-                                        );
+                                      if (!response.response) return 'No response';
 
-                                        console.log('🔍 [CORRECT ANSWER] Found question for', response.questionId, ':', question);
-
-                                        if (question) {
-                                          // Special handling for Reading Comprehension
-                                          if (selectedInterventionData.category === 'Reading Comprehension' && question.sentenceQuestions) {
-                                            return question.sentenceQuestions.map((sentenceQ, index) => 
-                                              `Q${sentenceQ.questionNumber}: ${sentenceQ.sentenceCorrectAnswer}`
-                                            ).join('; ');
+                                      // Handle Phonological Awareness audio-visual pairs
+                                      if (typeof response.response === 'object' && Array.isArray(response.response)) {
+                                        // Format: [{"audio": "S", "match": "Aa"}, {"audio": "A", "match": "Ss"}, {"audio": "V", "match": "Vv"}]
+                                        return response.response.map(item => {
+                                          if (typeof item === 'object' && item.audio && item.match) {
+                                            return `${item.audio} → ${item.match}`;
+                                          } else if (typeof item === 'object' && item.audio && item.visual) {
+                                            return `${item.audio} → ${item.visual}`;
+                                          } else if (typeof item === 'object') {
+                                            // Handle any other object format
+                                            const keys = Object.keys(item);
+                                            if (keys.length === 2) {
+                                              return `${keys[0]} → ${item[keys[0]]}`;
+                                            }
+                                            return JSON.stringify(item);
                                           }
-                                          
-                                          // DYNAMIC CORRECT ANSWER EXTRACTION FOR ALL OTHER CATEGORIES
-                                          return extractCorrectAnswerForCategory(question, selectedInterventionData.category);
-                                        }
-
-                                        console.log('🔍 [CORRECT ANSWER] Question not found');
+                                          return String(item);
+                                        }).join(', ');
+                                      } else if (typeof response.response === 'object' && response.response.audio && response.response.match) {
+                                        return `${response.response.audio} → ${response.response.match}`;
+                                      } else if (typeof response.response === 'object' && response.response.audio && response.response.visual) {
+                                        return `${response.response.audio} → ${response.response.visual}`;
+                                      } else if (typeof response.response === 'object') {
+                                        return JSON.stringify(response.response);
                                       }
 
-                                      console.log('🔍 [CORRECT ANSWER] No intervention assessment or questions found');
-                                      return 'N/A - No intervention assessment data';
+                                      return String(response.response);
                                     })()}
                                   </span>
                                 </div>
-                              )}
+                                
+                                {/* Only show correct answer for non-Decoding categories */}
+                                {selectedInterventionData.category !== 'Decoding' && (
+                                  <div className="intervention-response-answer-item correct-answer">
+                                    <span className="intervention-response-answer-label">Correct Answer</span>
+                                    <span className="intervention-response-answer-value correct">
+                                      {(() => {
+                                        // Find the corresponding question in the intervention assessment
+                                        if (selectedInterventionData?.interventionAssessment?.questions) {
+                                          const question = selectedInterventionData.interventionAssessment.questions.find(
+                                            q => q.questionId === response.questionId
+                                          );
+
+                                          console.log('🔍 [CORRECT ANSWER] Found question for', response.questionId, ':', question);
+
+                                          if (question) {
+                                            // DYNAMIC CORRECT ANSWER EXTRACTION FOR ALL CATEGORIES
+                                            return extractCorrectAnswerForCategory(question, selectedInterventionData.category);
+                                          }
+
+                                          console.log('🔍 [CORRECT ANSWER] Question not found');
+                                        }
+
+                                        console.log('🔍 [CORRECT ANSWER] No intervention assessment or questions found');
+                                        return 'N/A - No intervention assessment data';
+                                      })()}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                       </div>
                     ))
