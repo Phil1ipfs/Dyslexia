@@ -100,15 +100,30 @@
   display: block; /* Ensure it's visible */
 }
 
-/* Page break indicator for visual separation */
-.iep-pdf-page-break-indicator {
-  height: 50px;
+/* Page break spacer for visual separation */
+.iep-pdf-page-break-spacer {
+  height: 300px; /* Double space for maximum visual separation */
   margin: 0;
   padding: 0;
   background: transparent;
   border: none;
   page-break-before: always !important;
   break-before: page !important;
+  display: block;
+  width: 100%;
+}
+
+/* Page 4 spacer for Word Recognition category */
+.iep-pdf-page-4-spacer {
+  height: 250px; /* Maximum spacing for page 4 transition */
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  page-break-before: always !important;
+  break-before: page !important;
+  display: block;
+  width: 100%;
 }
 
 /* Force Learning Objectives section to start on a new page (Page 2) */
@@ -127,6 +142,19 @@
   break-before: page !important;
   margin-top: 0 !important;
   padding-top: 20px !important;
+}
+
+/* Page 4 categories (last 2 categories) */
+.iep-pdf-page-4-category {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+/* Page 4 section (signatures) */
+.iep-pdf-page-4-section {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  margin-top: 20px !important;
 }
 
 /* Ensure section titles don't break */
@@ -621,10 +649,20 @@
   }
   
   /* Force page breaks for major sections */
-  .iep-pdf-page-break-indicator {
+  .iep-pdf-page-break-spacer {
     page-break-before: always !important;
     break-before: page !important;
-    height: 50px !important;
+    height: 300px !important;
+    display: block !important;
+    width: 100% !important;
+  }
+  
+  .iep-pdf-page-4-spacer {
+    page-break-before: always !important;
+    break-before: page !important;
+    height: 250px !important;
+    display: block !important;
+    width: 100% !important;
   }
   
   .iep-pdf-page-2-section {
@@ -641,6 +679,17 @@
     break-before: page !important;
     margin-top: 0 !important;
     padding-top: 20px !important;
+  }
+  
+  .iep-pdf-page-4-category {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  
+  .iep-pdf-page-4-section {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-top: 20px !important;
   }
   
   .iep-pdf-section-title {

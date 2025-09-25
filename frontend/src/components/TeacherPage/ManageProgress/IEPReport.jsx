@@ -180,6 +180,71 @@ const IEPReport = ({
     // If no file paths found, return the cleaned remark if it has actual content
     return cleanedRemark.length >= 2 ? cleanedRemark : null;
   };
+
+  // Generate automatic progress summary when manual remarks are empty
+  const generateProgressSummary = (objective) => {
+    if (!objective) return null;
+
+    const {
+      score: assessmentScore,
+      latestInterventionScore,
+      interventionImprovement,
+      interventionAttempts,
+      interventionHistory,
+      passingThreshold = 75
+    } = objective;
+
+    // Assessment progress summary
+    let assessmentSummary = '';
+    if (assessmentScore !== undefined) {
+      if (assessmentScore >= passingThreshold) {
+        assessmentSummary = `Strong initial performance (${assessmentScore}%) - met mastery criteria without intervention.`;
+      } else {
+        const level = assessmentScore < 25 ? 'significant challenges' :
+                     assessmentScore < 50 ? 'moderate challenges' :
+                     'some difficulties';
+        assessmentSummary = `Initial assessment showed ${level} (${assessmentScore}%).`;
+      }
+    }
+
+    // Intervention progress summary
+    let interventionSummary = '';
+    if (interventionHistory && interventionHistory.length > 0) {
+      const finalAttempt = interventionHistory[interventionHistory.length - 1];
+      const firstScore = interventionHistory[0]?.score || 0;
+      const finalScore = finalAttempt?.score || 0;
+      const totalImprovement = finalScore - (assessmentScore || 0);
+
+      if (finalAttempt?.isPassed) {
+        if (interventionAttempts === 1) {
+          interventionSummary = ` Achieved mastery (${finalScore}%) on first intervention attempt with ${totalImprovement}% improvement.`;
+        } else {
+          interventionSummary = ` Through ${interventionAttempts} intervention attempts, achieved mastery (${finalScore}%) with ${totalImprovement}% total improvement.`;
+        }
+      } else {
+        interventionSummary = ` Intervention in progress (${interventionAttempts} attempts, current: ${finalScore}%).`;
+      }
+    }
+
+    return assessmentSummary + interventionSummary;
+  };
+
+  // Get the best available remark or generate one automatically
+  const getBestAvailableRemark = (objective, type = 'assessment') => {
+    if (type === 'assessment') {
+      // Try manual remarks first
+      const manualRemark = extractCleanRemark(objective.remarks || objective.mainAssessmentRemarks);
+      if (manualRemark && manualRemark.length > 10) { // Only use if substantial
+        return manualRemark;
+      }
+
+      // Generate automatic progress summary if no good manual remark
+      const autoSummary = generateProgressSummary(objective);
+      return autoSummary || 'Assessment completed - no additional remarks provided';
+    }
+
+    return null;
+  };
   const loadedStudentRef = useRef(null);
   
   // Global state management to persist across component re-mounts
@@ -801,7 +866,7 @@ const IEPReport = ({
           canvasWidth: canvas.width
         });
 
-        // Add image to PDF across multiple pages
+        // Add image to PDF across multiple pages with better page handling
         for (let pageNum = 0; pageNum < totalPages; pageNum++) {
           if (pageNum > 0) {
           pdf.addPage();
@@ -810,8 +875,10 @@ const IEPReport = ({
           // Calculate the y-offset for this page
           const yOffset = -pageNum * pdfH;
           
-          // Add the image to this page
+          // Add the image to this page with proper positioning
           pdf.addImage(imgData, 'JPEG', 0, yOffset, imgW, imgH, undefined, 'FAST');
+          
+          console.log(`Added page ${pageNum + 1} with yOffset: ${yOffset}`);
         }
 
         // Save the PDF with the student's name
@@ -912,17 +979,40 @@ const IEPReport = ({
           const imgHeight = canvas.height;
           const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
 
-          // Add image with compression settings
+        // Calculate how many pages we need based on content height
+        const totalPages = Math.ceil((imgHeight * ratio) / pdfHeight);
+        
+        console.log('Email PDF generation info:', {
+          totalPages,
+          imgHeight: imgHeight * ratio,
+          pdfHeight,
+          canvasHeight: canvas.height,
+          canvasWidth: canvas.width
+        });
+
+        // Add image to PDF across multiple pages
+        for (let pageNum = 0; pageNum < totalPages; pageNum++) {
+          if (pageNum > 0) {
+            pdf.addPage();
+          }
+          
+          // Calculate the y-offset for this page
+          const yOffset = -pageNum * pdfHeight;
+          
+          // Add the image to this page
           pdf.addImage(
             imgData,
             'JPEG',
             0,
-            0,
+            yOffset,
             imgWidth * ratio,
             imgHeight * ratio,
             undefined,
-            'FAST' // Use FAST compression
+            'FAST'
           );
+          
+          console.log(`Email PDF: Added page ${pageNum + 1} with yOffset: ${yOffset}`);
+        }
 
           // Convert to base64 with lower quality
           const pdfOutput = pdf.output('datauristring');
@@ -2512,7 +2602,7 @@ const IEPReport = ({
 
                 {/* IEP Progress Table */}
                 <div className="iep-pdf-page-2-section">
-                  <div className="iep-pdf-page-break-indicator"></div>
+                  <div className="iep-pdf-page-break-spacer"></div>
                   <div className="iep-pdf-section-title">Learning Objectives and Progress</div>
                   <div className="iep-pdf-progress-table">
                   <table className="iep-pdf-table">
@@ -2674,7 +2764,7 @@ const IEPReport = ({
                      (categoryData && categoryData.interventionHistory && categoryData.interventionHistory.length > 0);
                  }) && (
                   <div className="iep-pdf-intervention-details">
-                    <div className="iep-pdf-page-break-indicator"></div>
+                    <div className="iep-pdf-page-break-spacer"></div>
                     <div className="iep-pdf-section-title">Intervention Details</div>
                     <div className="iep-pdf-intervention-content">
                       {currentIepData.objectives.map((objective, index) => {
@@ -2693,7 +2783,7 @@ const IEPReport = ({
                         return (
                           <div key={index} className={`iep-pdf-intervention-category ${index >= 3 ? 'iep-pdf-page-4-category' : ''}`}>
                             {/* Add page break after first 3 categories (index 2) for page 4 layout */}
-                            {index === 3 && <div className="iep-pdf-page-break-indicator"></div>}
+                            {index === 3 && <div className="iep-pdf-page-4-spacer"></div>}
                             
                             <h4 className="iep-pdf-intervention-category-title">
                               {objective.categoryName || getCategoryName(objective.lesson)}
@@ -2752,7 +2842,8 @@ const IEPReport = ({
                 )}
 
                 {/* Authorized Personnel - Stay on page 4 with last 2 categories */}
-                <div className="iep-pdf-signatures">
+                <div className="iep-pdf-page-4-section">
+                  <div className="iep-pdf-signatures">
                   <div className="iep-pdf-signature">
                     <p className="iep-pdf-sign-name">{getTeacherName()}</p>
                     <p className="iep-pdf-sign-title">Grade 1 Teacher</p>
@@ -2762,6 +2853,7 @@ const IEPReport = ({
                     <p className="iep-pdf-sign-name">Ms. Jasmine P. Lim</p>
                     <p className="iep-pdf-sign-title">School Principal</p>
                     <p className="iep-pdf-sign-date">Date: {new Date().toLocaleDateString()}</p>
+                  </div>
                   </div>
                 </div>
               </div>
