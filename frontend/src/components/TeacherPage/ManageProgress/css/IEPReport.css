@@ -1,5 +1,109 @@
 /* IEP Report Component Styles - Modern Design with Expand/Collapse */
 
+/* IEP PDF-specific styles (additions to StudentDetails.css) */
+.sdx-iep-summary-section {
+  margin: 2rem 0;
+  background-color: #f9f9fb;
+  border: 1px solid #e6e9ef;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.sdx-iep-summary-details {
+  padding: 1.5rem;
+}
+
+.sdx-iep-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e6e9ef;
+}
+
+.sdx-iep-detail:last-child {
+  border-bottom: none;
+}
+
+.sdx-iep-label {
+  font-weight: 600;
+  color: #3B4F81;
+  font-size: 0.95rem;
+}
+
+.sdx-iep-value {
+  font-weight: 500;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.sdx-level-overall-summary {
+  background-color: rgba(59, 79, 129, 0.05);
+  border-radius: 8px;
+  padding: 1.25rem;
+  border-left: 4px solid #3B4F81;
+  margin-top: 1rem;
+}
+
+.sdx-level-overall-description {
+  color: #333;
+  line-height: 1.6;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.sdx-score-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sdx-score {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.sdx-score.passing {
+  color: #2563eb;
+}
+
+.sdx-score.failing {
+  color: #dc2626;
+}
+
+.sdx-status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.sdx-status-badge.status-completed {
+  background-color: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.sdx-status-badge.status-in_progress {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.sdx-status-badge.status-not_started {
+  background-color: rgba(107, 114, 128, 0.1);
+  color: #4b5563;
+  border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
+.sdx-no-remarks {
+  color: #999;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
 /* Main container */
 .literexia-iep-container {
   display: flex;
@@ -3413,4 +3517,260 @@
 
 .teacher-remarks-assessment-button:hover .teacher-remarks-edit {
   color: #3B4F81;
+}
+
+/* Parent Information Section Styles */
+.literexia-parent-section {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.literexia-parent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-bottom: 1px solid #e2e8f0;
+  gap: 1rem;
+}
+
+.literexia-parent-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.literexia-parent-icon {
+  color: #3b82f6;
+  font-size: 1.5rem;
+}
+
+.literexia-parent-title h3 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.literexia-toggle-parent-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #475569;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.literexia-toggle-parent-btn:hover {
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  transform: translateY(-1px);
+}
+
+.literexia-toggle-icon {
+  transition: transform 0.3s ease;
+}
+
+.literexia-toggle-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.literexia-report-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.literexia-pdf-btn,
+.literexia-email-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.literexia-pdf-btn {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: white;
+}
+
+.literexia-pdf-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+}
+
+.literexia-email-btn {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: white;
+}
+
+.literexia-email-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(5, 150, 105, 0.3);
+}
+
+.literexia-pdf-btn:disabled,
+.literexia-email-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.literexia-parent-details {
+  padding: 2rem;
+  background: #ffffff;
+  animation: slideIn 0.3s ease-out;
+}
+
+.literexia-parent-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  color: #64748b;
+}
+
+.literexia-parent-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.literexia-parent-info-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.literexia-parent-info-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.literexia-parent-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.literexia-parent-card-icon {
+  color: #3b82f6;
+  font-size: 1.125rem;
+}
+
+.literexia-parent-card-header h4 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.literexia-parent-info-content {
+  padding: 1.25rem;
+}
+
+.literexia-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  gap: 1rem;
+}
+
+.literexia-info-row:last-child {
+  margin-bottom: 0;
+}
+
+.literexia-info-label {
+  font-weight: 600;
+  color: #475569;
+  min-width: 120px;
+  font-size: 0.875rem;
+}
+
+.literexia-info-value {
+  color: #1e293b;
+  font-weight: 500;
+  text-align: right;
+  flex: 1;
+}
+
+.literexia-no-parent-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem 2rem;
+  color: #64748b;
+  text-align: center;
+}
+
+.literexia-no-parent-info svg {
+  font-size: 3rem;
+  opacity: 0.5;
+}
+
+.literexia-pdf-content {
+  background: #ffffff;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+/* Responsive design for parent section */
+@media (max-width: 768px) {
+  .literexia-parent-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .literexia-report-actions {
+    justify-content: center;
+  }
+
+  .literexia-parent-info-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .literexia-info-row {
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: left;
+  }
+
+  .literexia-info-value {
+    text-align: left;
+  }
+
+  .literexia-info-label {
+    min-width: auto;
+  }
 } 

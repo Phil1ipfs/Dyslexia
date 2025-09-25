@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   FaCheckCircle,
   FaEdit,
@@ -21,10 +21,34 @@ import {
   FaAward,
   FaExclamationCircle,
   FaSync,
-  FaRedoAlt
+  FaRedoAlt,
+  FaFilePdf,
+  FaEnvelope,
+  FaUser,
+  FaPhone,
+  FaMapMarkerAlt,
+  FaBriefcase,
+  FaHome,
+  FaPrint,
+  FaDownload,
+  FaPaperPlane,
+  FaAddressCard,
+  FaRing,
+  FaVenusMars,
+  FaBuilding,
+  FaCheckSquare
 } from 'react-icons/fa';
 import IEPService from '../../../services/Teachers/ManageProgress/IEPService';
+import StudentDetailsService from '../../../services/Teachers/StudentDetailsService';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+import { toast } from '../../../utils/toastHelper';
+import SuccessDialog from '../../Teachers/SuccessDialog';
 import './css/IEPReport.css';
+import '../../../css/Teachers/StudentDetails.css'; // Import PDF modal styles
+
+// Import cradle logo
+const cradleLogo = new URL('../../../assets/images/Teachers/cradleLogo.jpg', import.meta.url).href;
 
 const IEPReport = ({ 
   student,
@@ -33,8 +57,10 @@ const IEPReport = ({
   // State management
   const [iepData, setIepData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(0); // Force update counter
   const [interventionModal, setInterventionModal] = useState({ isOpen: false, objective: null });
   const [attemptModal, setAttemptModal] = useState({ isOpen: false, objective: null, attempt: null, attemptIndex: null });
   const [assessmentModal, setAssessmentModal] = useState({ isOpen: false, objective: null });
@@ -47,16 +73,152 @@ const IEPReport = ({
   const [tempMainRemarks, setTempMainRemarks] = useState({}); // Store temporary main assessment remarks during editing
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Parent information and PDF/Email functionality state
+  const [parentInfo, setParentInfo] = useState(null);
+  const [parentProfile, setParentProfile] = useState(null);
+  const [loadingParent, setLoadingParent] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [showParentSection, setShowParentSection] = useState(true);
+  const [emailModal, setEmailModal] = useState({ isOpen: false, emailData: null });
+  const [showProgressReport, setShowProgressReport] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [successDialogData, setSuccessDialogData] = useState({ message: '', submessage: '' });
+  const [feedbackMessage, setFeedbackMessage] = useState({ subject: '', content: '' });
+  const [isEditingFeedback, setIsEditingFeedback] = useState(false);
+  const [includeProgressReport, setIncludeProgressReport] = useState(true);
+  const [parentImageLoaded, setParentImageLoaded] = useState(false);
+  const [parentImageError, setParentImageError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 2;
+
+  // Refs for PDF generation
+  const reportRef = useRef();
+  const loadedStudentRef = useRef(null);
+  
+  // Global state management to persist across component re-mounts
+  if (!window.iepReportGlobalState) {
+    window.iepReportGlobalState = {
+      iepData: null,
+      loading: true,
+      dataLoaded: false,
+      error: null
+    };
+  }
+
   // Load IEP data when component mounts or student changes
   useEffect(() => {
-    if (student?.id || student?._id) {
+    const studentId = student?.id || student?._id;
+    if (studentId) {
+      console.log('useEffect triggered for student:', studentId, 'current iepData:', !!iepData);
+
+      // Only load if we don't already have data for this student
+      if (!iepData || loadedStudentRef.current !== studentId) {
+        console.log('Loading data for student:', studentId);
+        loadedStudentRef.current = studentId;
       loadIEPData();
+      loadParentData();
+      } else {
+        console.log('useEffect skipped - data already loaded for student:', studentId);
+      }
+
+      // Initialize feedback message with pre-filled content (like StudentDetails)
+      const studentName = getStudentName();
+      const parentName = getParentName();
+
+      if (parentName && parentName !== 'No parent information') {
+        setFeedbackMessage({
+          subject: `Progress Report for ${studentName}`,
+          content: `Dear ${parentName},\n\nI'm writing to update you on ${studentName}'s progress in our reading comprehension activities...`
+        });
+      } else {
+        setFeedbackMessage({
+          subject: `Progress Report for ${studentName}`,
+          content: `Dear Parent,\n\nI'm writing to update you on ${studentName}'s progress in our reading comprehension activities...`
+        });
+      }
     }
-  }, [student]);
+  }, [student?.id, student?._id, iepData]); // Include iepData to properly trigger when it changes
+
+  // Debug: Monitor loading state changes
+  useEffect(() => {
+    console.log('Loading state changed to:', loading);
+  }, [loading]);
+
+  // Debug: Monitor dataLoaded state changes
+  useEffect(() => {
+    console.log('DataLoaded state changed to:', dataLoaded);
+  }, [dataLoaded]);
+
+  // Force re-render when forceUpdate changes
+  useEffect(() => {
+    console.log('Force update triggered:', forceUpdate);
+  }, [forceUpdate]);
+
+  // Emergency fallback: If we have data but still showing loading, force render
+  useEffect(() => {
+    if (currentIepData && currentIepData.objectives && currentIepData.objectives.length > 0 && loading) {
+      console.log('🚨 EMERGENCY: Data exists but loading is true - forcing loading to false');
+      setLoading(false);
+    }
+  }, [iepData, loading]);
+
+  // Force re-render when global state changes
+  useEffect(() => {
+    const checkGlobalState = () => {
+      const globalData = window.iepReportGlobalState?.iepData;
+      if (globalData && globalData.objectives && globalData.objectives.length > 0 && loading) {
+        console.log('🚨 GLOBAL STATE DETECTED: Forcing component update');
+        setForceUpdate(prev => prev + 1);
+        setLoading(false);
+      }
+    };
+
+    // Check immediately
+    checkGlobalState();
+
+    // Also check after a short delay
+    const timeout = setTimeout(checkGlobalState, 100);
+    
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
+  // Remove conflicting useEffect - loading state is managed directly in loadIEPData
+
+  // Global state watcher: Force re-render when global state changes
+  useEffect(() => {
+    const checkGlobalState = () => {
+      if (window.iepReportGlobalState?.iepData && !iepData) {
+        console.log('🚨 GLOBAL STATE WATCHER: Found global data, forcing state sync');
+        setIepData(window.iepReportGlobalState.iepData);
+        setDataLoaded(true);
+        setLoading(false);
+        setForceUpdate(prev => prev + 1);
+      }
+    };
+    
+    // Check immediately
+    checkGlobalState();
+    
+    // Set up interval to check for global state changes
+    const interval = setInterval(checkGlobalState, 100);
+    
+    return () => clearInterval(interval);
+  }, [iepData]);
+
+  // Add ref for preventing duplicate calls
+  const loadingRef = useRef(false);
 
   // Load IEP report data from backend
   const loadIEPData = async () => {
+    // Prevent multiple simultaneous calls using ref, not state
+    if (loadingRef.current) {
+      console.log('IEP data already loading, skipping duplicate call');
+      return;
+    }
+
     try {
+      loadingRef.current = true;
       setLoading(true);
       setError(null);
       
@@ -66,8 +228,38 @@ const IEPReport = ({
       const response = await IEPService.getIEPReport(studentId);
       
       if (response.success && response.data) {
+        console.log('Setting IEP data:', response.data);
+        console.log('About to call setIepData...');
+
+          // Use direct state setters with immediate verification
+          console.log('🔄 Using direct state setters...');
+          
+          // Update global state first
+          window.iepReportGlobalState.iepData = response.data;
+          window.iepReportGlobalState.dataLoaded = true;
+          window.iepReportGlobalState.loading = false;
+          window.iepReportGlobalState.error = null;
+          
+          // Set all states at once
         setIepData(response.data);
-        console.log('IEP data loaded:', response.data);
+          setDataLoaded(true);
+          setLoading(false);
+          setForceUpdate(prev => prev + 1);
+          
+          console.log('✅ All state setters called - Global state updated:', window.iepReportGlobalState);
+          
+          // Immediate verification - check if state actually changed
+          setTimeout(() => {
+            console.log('🔍 Immediate verification - checking if state updated...');
+            // This will trigger a re-render and show the current state
+          }, 10);
+          
+          // Force React to process state changes immediately
+          import('react-dom').then(({ flushSync }) => {
+            flushSync(() => {
+              console.log('🔄 FlushSync: Forcing immediate React update');
+            });
+          });
         
         // Notify parent component of successful load
         if (onDataUpdate) {
@@ -80,8 +272,12 @@ const IEPReport = ({
     } catch (err) {
       console.error('Error loading IEP data:', err);
       setError(err.message || 'Failed to load IEP report');
-    } finally {
+      console.log('Setting loading to false in error case');
       setLoading(false);
+    } finally {
+      // Reset the loading ref
+      loadingRef.current = false;
+      console.log('In finally block - loading ref reset to false');
     }
   };
 
@@ -173,7 +369,7 @@ const IEPReport = ({
       console.log('Updating support level:', { objectiveId, newSupportLevel });
       
       // If clicking the currently selected level, deselect it (make it optional)
-      const currentLevel = iepData.objectives.find(obj => obj._id === objectiveId)?.supportLevel;
+      const currentLevel = currentIepData.objectives.find(obj => obj._id === objectiveId)?.supportLevel;
       const updatedLevel = currentLevel === newSupportLevel ? null : newSupportLevel;
       
       await IEPService.updateSupportLevel(studentId, objectiveId, updatedLevel);
@@ -355,6 +551,472 @@ const IEPReport = ({
   const showSuccessMessage = (message) => {
     setSuccessMessage(message);
     setTimeout(() => setSuccessMessage(''), 3000);
+  };
+
+  // Handle saving feedback message (from StudentDetails.jsx)
+  const handleSaveFeedback = () => setIsEditingFeedback(false);
+
+  // Load parent data using StudentDetailsService (matching StudentDetails.jsx implementation)
+  const loadParentData = async () => {
+    try {
+      setLoadingParent(true);
+      const studentId = student?.id || student?._id;
+
+      if (!studentId) return;
+
+      console.log('Loading parent data for student:', studentId);
+
+      // First get student details to get parentId
+      const studentData = await StudentDetailsService.getStudentDetails(studentId);
+
+      if (studentData && studentData.parentId) {
+        try {
+          console.log('Fetching parent profile for ID:', studentData.parentId);
+          // Use the same method as StudentDetails.jsx - pass student data as fallback
+          const parentData = await StudentDetailsService.getParentProfileWithFallback(
+            studentData.parentId,
+            studentData
+          );
+          setParentInfo(parentData);
+          setParentProfile(parentData);
+          console.log('Parent profile loaded:', parentData);
+
+          // Update feedbackMessage with parent name and comprehensive content
+          const studentName = getStudentName();
+          const parentName = parentData?.name || getParentName();
+          setFeedbackMessage({
+            subject: `IEP Progress Report for ${studentName}`,
+            content: `Dear ${parentName},\n\nI hope this message finds you well. I'm writing to share ${studentName}'s progress in our Individualized Education Program (IEP).\n\n${studentName} has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about ${studentName}'s performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss ${studentName}'s progress further, please don't hesitate to reach out to me. Your partnership in ${studentName}'s educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nTeacher`
+          });
+        } catch (e) {
+          console.warn('Could not load parent profile:', e);
+          // Set feedback with fallback parent name
+          const studentName = getStudentName();
+          setFeedbackMessage({
+            subject: `IEP Progress Report for ${studentName}`,
+            content: `Dear Parent,\n\nI hope this message finds you well. I'm writing to share ${studentName}'s progress in our Individualized Education Program (IEP).\n\n${studentName} has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about ${studentName}'s performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss ${studentName}'s progress further, please don't hesitate to reach out to me. Your partnership in ${studentName}'s educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nTeacher`
+          });
+        }
+      } else {
+        console.warn('No parentId found in student data');
+        // Set default feedback message
+        const studentName = getStudentName();
+        setFeedbackMessage({
+          subject: `IEP Progress Report for ${studentName}`,
+          content: `Dear Parent,\n\nI hope this message finds you well. I'm writing to share ${studentName}'s progress in our Individualized Education Program (IEP).\n\n${studentName} has been working diligently on their reading skills, and I wanted to update you on their recent achievements and areas where we continue to focus our efforts.\n\nPlease find the detailed IEP progress report attached, which includes specific information about ${studentName}'s performance across different reading categories, intervention progress, and support level recommendations.\n\nIf you have any questions about this report or would like to discuss ${studentName}'s progress further, please don't hesitate to reach out to me. Your partnership in ${studentName}'s educational journey is invaluable.\n\nThank you for your continued support.\n\nBest regards,\nTeacher`
+        });
+      }
+    } catch (err) {
+      console.error('Error loading parent data:', err);
+    } finally {
+      setLoadingParent(false);
+    }
+  };
+
+  // Show PDF preview modal (don't auto-generate PDF)
+  const generatePDF = () => {
+    console.log("Showing IEP PDF preview with:", {
+      hasStudent: !!student,
+      hasIepData: !!iepData,
+      studentName: getStudentName(),
+      hasParentInfo: !!parentInfo,
+      objectivesCount: currentIepData?.objectives?.length || 0
+    });
+
+    // Just show the modal for preview
+    setShowProgressReport(true);
+  };
+
+  // Actually export the PDF when user clicks export button
+  const exportToPDF = async () => {
+    try {
+      setGeneratingPdf(true);
+
+      // Wait a moment for the modal to render completely
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      if (!reportRef.current) {
+        console.error("IEP report element not found");
+        toast.error("Failed to generate PDF - Report element not found");
+        return;
+      }
+
+      try {
+        // Use html2canvas to capture the report with optimized settings
+        const canvas = await html2canvas(reportRef.current, {
+          scale: 1.5, // Balanced scale for quality and file size
+          useCORS: true,
+          logging: false,
+          allowTaint: true,
+          scrollY: -window.scrollY,
+          backgroundColor: '#ffffff',
+          removeContainer: true,
+          imageTimeout: 15000
+        });
+
+        // Create PDF with proper dimensions
+        const imgData = canvas.toDataURL('image/jpeg', 0.8); // Use JPEG for smaller file size
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfW = pdf.internal.pageSize.getWidth();
+        const pdfH = pdf.internal.pageSize.getHeight();
+
+        // Calculate image dimensions for PDF
+        const imgW = pdfW;
+        const imgH = (canvas.height * imgW) / canvas.width;
+
+        // Add image to PDF, potentially across multiple pages
+        let yOffset = 0;
+        let remainingH = imgH;
+
+        // First page
+        pdf.addImage(imgData, 'JPEG', 0, yOffset, imgW, imgH, undefined, 'FAST');
+        remainingH -= pdfH;
+        yOffset -= pdfH;
+
+        // Add extra pages if needed
+        while (remainingH > 0) {
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, yOffset, imgW, imgH, undefined, 'FAST');
+          remainingH -= pdfH;
+          yOffset -= pdfH;
+        }
+
+        // Save the PDF with the student's name
+        const studentName = getStudentName() || 'Student';
+        const fileName = `IEP_Progress_Report_${studentName.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+        pdf.save(fileName);
+
+        console.log("IEP PDF generated successfully");
+        toast.success("IEP Progress Report PDF generated successfully");
+        showSuccessMessage('IEP PDF report generated successfully!');
+
+      } catch (error) {
+        console.error("Error generating IEP PDF:", error);
+        toast.error("Failed to generate IEP PDF");
+        setError("There was an error generating the PDF. Please try again.");
+      }
+    } catch (error) {
+      console.error('Error preparing IEP PDF data:', error);
+      toast.error("Failed to prepare IEP PDF data");
+      setError('Failed to prepare PDF data. Please try again.');
+    } finally {
+      setGeneratingPdf(false);
+      // Keep modal open so user can continue viewing or export again
+    }
+  };
+
+  // Check if parent is connected (from StudentDetails.jsx)
+  const isParentConnected = () => {
+    return (
+      (parentInfo && (parentInfo.name || parentInfo.email)) ||
+      (typeof student?.parent === 'string' && student.parent) ||
+      (student?.parent && student.parent.name) ||
+      (student?.parentId)
+    );
+  };
+
+  // Complete handleSendReport function with PDF size optimization (from StudentDetails.jsx)
+  const handleSendReport = async () => {
+    try {
+      // Validate parent connection
+      if (!isParentConnected() || !student?.parentId) {
+        alert('Cannot send report - No parent account is connected to this student.');
+        return;
+      }
+
+      // Don't allow sending if editing the message
+      if (isEditingFeedback) {
+        alert('Please save your message before sending the report.');
+        return;
+      }
+
+      // Show a loading message
+      console.log('Preparing IEP report for sending...');
+      toast.loading('Preparing IEP report...');
+
+      // If including progress report, generate the PDF
+      let pdfBase64 = null;
+      if (includeProgressReport) {
+        try {
+          // First show the progress report modal to ensure it's rendered
+          setShowProgressReport(true);
+
+          // Wait for the modal to render
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          // Check if the element is available
+          const element = reportRef.current;
+          if (!element) {
+            throw new Error('Progress report element not found');
+          }
+
+          // Generate PDF data with optimized settings
+          const canvas = await html2canvas(element, {
+            scale: 1.5, // Reduced from 2 to lower file size
+            useCORS: true,
+            scrollY: -window.scrollY,
+            logging: false,
+            imageTimeout: 15000,
+            backgroundColor: '#ffffff',
+            // Add quality options to reduce file size
+            allowTaint: true,
+            removeContainer: true
+          });
+
+          const imgData = canvas.toDataURL('image/jpeg', 0.7); // Use JPEG instead of PNG for smaller file size
+
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = pdf.internal.pageSize.getHeight();
+          const imgWidth = canvas.width;
+          const imgHeight = canvas.height;
+          const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+
+          // Add image with compression settings
+          pdf.addImage(
+            imgData,
+            'JPEG',
+            0,
+            0,
+            imgWidth * ratio,
+            imgHeight * ratio,
+            undefined,
+            'FAST' // Use FAST compression
+          );
+
+          // Convert to base64 with lower quality
+          const pdfOutput = pdf.output('datauristring');
+          pdfBase64 = pdfOutput.split(',')[1]; // Extract the base64 part
+
+          console.log(`PDF generated successfully, original size: ${pdfBase64.length} bytes`);
+
+          // Try to reduce size if needed
+          if (pdfBase64.length > 5000000) { // Check if PDF is over 5MB
+            toast.loading('PDF is too large, attempting to optimize...');
+
+            // Try a more aggressive approach for large PDFs
+            const smallerCanvas = document.createElement('canvas');
+            const ctx = smallerCanvas.getContext('2d');
+            const scaleFactor = 0.5; // Scale down by 50%
+
+            smallerCanvas.width = canvas.width * scaleFactor;
+            smallerCanvas.height = canvas.height * scaleFactor;
+
+            ctx.drawImage(canvas, 0, 0, smallerCanvas.width, smallerCanvas.height);
+            const smallerImgData = smallerCanvas.toDataURL('image/jpeg', 0.5);
+
+            const smallerPdf = new jsPDF('p', 'mm', 'a4');
+            smallerPdf.addImage(
+              smallerImgData,
+              'JPEG',
+              0,
+              0,
+              pdfWidth,
+              pdfHeight * (smallerCanvas.height / smallerCanvas.width) * (pdfWidth / pdfHeight),
+              undefined,
+              'FAST'
+            );
+
+            const smallerPdfOutput = smallerPdf.output('datauristring');
+            const smallerPdfBase64 = smallerPdfOutput.split(',')[1];
+
+            console.log(`Reduced PDF size from ${pdfBase64.length} to ${smallerPdfBase64.length} bytes`);
+
+            if (smallerPdfBase64.length <= 5000000) {
+              pdfBase64 = smallerPdfBase64;
+            } else {
+              console.warn('PDF is still too large after optimization');
+              const continueWithoutPDF = window.confirm(
+                'The generated PDF is too large to send. Would you like to send the message without the PDF attachment?'
+              );
+
+              if (continueWithoutPDF) {
+                pdfBase64 = null;
+                setIncludeProgressReport(false);
+              } else {
+                setShowProgressReport(false);
+                return;
+              }
+            }
+          }
+
+          // Hide the modal after generating PDF
+          setShowProgressReport(false);
+        } catch (pdfError) {
+          console.error('Error generating PDF:', pdfError);
+          setShowProgressReport(false);
+          toast.error('Failed to generate PDF');
+
+          // Ask user if they want to continue without PDF
+          const continueWithoutPDF = window.confirm(
+            'Failed to generate PDF report. Would you like to send the message without the PDF attachment?'
+          );
+
+          if (continueWithoutPDF) {
+            setIncludeProgressReport(false);
+          } else {
+            return;
+          }
+        }
+      }
+
+      // Prepare report data
+      const reportData = {
+        subject: feedbackMessage.subject,
+        content: feedbackMessage.content,
+        includeProgressReport: includeProgressReport && !!pdfBase64, // Only include if we have PDF data
+        pdfData: pdfBase64,
+        reportDate: new Date().toISOString().split('T')[0]
+      };
+
+      toast.loading('Sending IEP report to parent...');
+      console.log('Sending IEP report to parent...');
+
+      try {
+        // Send report through service
+        const result = await IEPService.sendReportToParent(
+          student?.id || student?._id,
+          student.parentId,
+          reportData
+        );
+
+        if (result && result.success) {
+          console.log('IEP report sent successfully:', result);
+          toast.success('IEP report sent successfully!');
+          setSuccessDialogData({
+            message: `IEP Progress report has been successfully sent to ${getParentName()}!`,
+            submessage: 'A copy has been saved to the student\'s records.'
+          });
+          setShowSuccessDialog(true);
+        } else {
+          throw new Error(result?.message || 'Failed to send report');
+        }
+      } catch (sendError) {
+        console.error('Error sending report:', sendError);
+        toast.error('Error sending report');
+
+        // If error is likely related to PDF size, offer to send without PDF
+        if (sendError.message.includes('too large') ||
+            sendError.message.includes('413') ||
+            sendError.message.includes('Server error') ||
+            sendError.message.includes('offset') ||
+            sendError.message.includes('size')) {
+
+          const continueWithoutPDF = window.confirm(
+            `${sendError.message}\n\nWould you like to try sending just the message without the PDF attachment?`
+          );
+
+          if (continueWithoutPDF) {
+            // Try again without PDF
+            try {
+              toast.loading('Trying to send without PDF attachment...');
+              const simpleResult = await IEPService.sendReportToParent(
+                student?.id || student?._id,
+                student.parentId,
+                {
+                  ...reportData,
+                  includeProgressReport: false,
+                  pdfData: null
+                }
+              );
+
+              if (simpleResult && simpleResult.success) {
+                console.log('Simple IEP report sent successfully:', simpleResult);
+                toast.success('IEP message sent successfully (without PDF attachment)');
+                setSuccessDialogData({
+                  message: `IEP Progress report has been successfully sent to ${getParentName()}!`,
+                  submessage: 'A copy has been saved to the student\'s records.'
+                });
+                setShowSuccessDialog(true);
+              } else {
+                throw new Error(simpleResult?.message || 'Failed to send simple report');
+              }
+            } catch (finalError) {
+              console.error('Error sending simple report:', finalError);
+              toast.error('Failed to send report');
+              alert(`Error sending report: ${finalError.message || 'Unknown error'}`);
+            }
+          } else {
+            alert(`Error sending report: ${sendError.message}`);
+          }
+        } else {
+          alert(`Error sending report: ${sendError.message}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error sending report:', error);
+      toast.error('Error preparing report');
+      alert(`Error preparing report: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  // Simple wrapper that calls the advanced email function
+  const sendReportToParent = async () => {
+    await handleSendReport();
+  };
+
+
+  // Parent image handling functions (from StudentDetails.jsx)
+  const handleParentImageLoad = () => {
+    console.log("Parent image loaded successfully");
+    setParentImageLoaded(true);
+    setParentImageError(false);
+  };
+
+  const handleParentImageError = (e) => {
+    console.error("Error loading parent image:", e.target.src);
+    console.warn("Failed image URL:", e.target.src);
+    setParentImageError(true);
+    setParentImageLoaded(false);
+  };
+
+  const retryLoadImage = () => {
+    if (retryCount < MAX_RETRIES) {
+      console.log(`Retrying image load (${retryCount + 1}/${MAX_RETRIES})`);
+      console.log("Original URL:", parentProfile?.profileImageUrl);
+
+      setParentImageError(false);
+      setRetryCount(prev => prev + 1);
+
+      // Force image reload by updating timestamp
+      const img = new Image();
+      img.onload = handleParentImageLoad;
+      img.onerror = handleParentImageError;
+      img.src = parentProfile?.profileImageUrl + '?retry=' + Date.now();
+    }
+  };
+
+  // Render parent image with proper fallback (from StudentDetails.jsx)
+  const renderParentImage = () => {
+    if (parentProfile && parentProfile.profileImageUrl) {
+      return (
+        <img
+          src={parentProfile.profileImageUrl}
+          alt={getParentName()}
+          className="sdx-parent-avatar-img"
+          onLoad={handleParentImageLoad}
+          onError={handleParentImageError}
+        />
+      );
+    }
+
+    const initial = parentProfile && parentProfile.name ?
+      parentProfile.name.charAt(0).toUpperCase() :
+      typeof student?.parent === 'string' ?
+        student.parent.charAt(0).toUpperCase() :
+        student?.parent && student.parent.name ?
+          student.parent.name.charAt(0).toUpperCase() : 'P';
+
+    return (
+      <div className="sdx-parent-avatar-placeholder">
+        {initial}
+      </div>
+    );
+  };
+
+  // Toggle parent section visibility
+  const toggleParentSection = () => {
+    setShowParentSection(!showParentSection);
   };
 
   // Render support level checkbox
@@ -617,8 +1279,28 @@ const IEPReport = ({
     );
   };
 
-  // Render loading state
-  if (loading) {
+  // SIMPLIFIED RENDER LOGIC - Use either local or global data
+  const renderTime = new Date().toLocaleTimeString();
+  
+  // Get data from either local state or global state
+  const currentIepData = iepData || window.iepReportGlobalState?.iepData;
+  const hasData = !!(currentIepData && currentIepData.objectives && currentIepData.objectives.length > 0);
+  
+  console.log(`[${renderTime}] IEPReport render state:`, {
+    loading,
+    dataLoaded,
+    error,
+    hasLocalData: !!iepData,
+    hasGlobalData: !!window.iepReportGlobalState?.iepData,
+    hasCurrentData: hasData,
+    objectivesCount: currentIepData?.objectives?.length || 0,
+    studentId: student?.id || student?._id,
+    dataSource: iepData ? 'LOCAL' : 'GLOBAL'
+  });
+
+  // Show loading state only if we're actually loading and have no data
+  if (loading && !hasData) {
+    console.log('Rendering loading state');
     return (
       <div className="literexia-iep-loading">
         <FaSpinner className="spinning" />
@@ -627,8 +1309,9 @@ const IEPReport = ({
     );
   }
 
-  // Render error state
-  if (error && !iepData) {
+  // Show error state if there's an error and no data
+  if (error && !hasData) {
+    console.log('Rendering error state:', error);
     return (
       <div className="literexia-iep-error">
         <FaExclamationTriangle />
@@ -641,16 +1324,23 @@ const IEPReport = ({
     );
   }
 
-  // Render empty state
-  if (!iepData || !iepData.objectives || iepData.objectives.length === 0) {
+  // Show empty state if no data available
+  if (!hasData) {
+    console.log('Rendering empty state - no IEP data available');
     return (
       <div className="literexia-empty-state">
         <FaInfoCircle />
         <h3>No IEP Report Available</h3>
         <p>There is no IEP report available for this student yet. Complete an assessment first.</p>
+        <button className="literexia-retry-button" onClick={loadIEPData}>
+          <FaSync /> Retry Loading
+        </button>
       </div>
     );
   }
+
+  // If we have data, render the full IEP report
+  console.log('🚨 RENDERING FULL IEP REPORT: Using', iepData ? 'LOCAL' : 'GLOBAL', 'data with', currentIepData.objectives.length, 'objectives');
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -670,8 +1360,8 @@ const IEPReport = ({
 
   // Get student name
   const getStudentName = () => {
-    if (iepData.studentId?.firstName && iepData.studentId?.lastName) {
-      return `${iepData.studentId.firstName} ${iepData.studentId.lastName}`;
+    if (currentIepData.studentId?.firstName && currentIepData.studentId?.lastName) {
+      return `${currentIepData.studentId.firstName} ${currentIepData.studentId.lastName}`;
     } else if (student?.firstName && student?.lastName) {
       return `${student.firstName} ${student.lastName}`;
     } else if (student?.name) {
@@ -681,8 +1371,80 @@ const IEPReport = ({
     }
   };
 
+  // Get parent name for display
+  const getParentName = () => {
+    // Check if parentInfo exists and has name properties
+    if (parentInfo) {
+      // First check for a complete name property
+      if (parentInfo.name) {
+        return parentInfo.name;
+      }
+
+      // Next check for firstName/lastName/middleName
+      if (parentInfo.firstName || parentInfo.lastName) {
+        return `${parentInfo.firstName || ''} ${parentInfo.middleName ? parentInfo.middleName + ' ' : ''}${parentInfo.lastName || ''}`.trim();
+      }
+    }
+
+    // Check student.parent object
+    if (typeof student?.parent === 'string' && student.parent) {
+      return student.parent;
+    }
+
+    if (student?.parent && typeof student.parent === 'object') {
+      // Check if parent object has a name
+      if (student.parent.name) {
+        return student.parent.name;
+      }
+
+      // Check if parent object has firstName/lastName/middleName
+      if (student.parent.firstName || student.parent.lastName) {
+        return `${student.parent.firstName || ''} ${student.parent.middleName ? student.parent.middleName + ' ' : ''}${student.parent.lastName || ''}`.trim();
+      }
+    }
+
+    // Check for parentName property
+    if (student?.parentName) {
+      return student.parentName;
+    }
+
+    // If parentId exists but we don't have the name, return generic
+    if (student?.parentId) {
+      return `Registered Parent (ID: ${student.parentId.substring(0, 6)}...)`;
+    }
+
+    return 'Parent';
+  };
+
+  // Get parent email
+  const getParentEmail = () => {
+    // Check parentInfo first
+    if (parentInfo?.email) {
+      return parentInfo.email;
+    }
+
+    // Check student parent data
+    if (student?.parentEmail) {
+      return student.parentEmail;
+    }
+
+    if (student?.parent?.email) {
+      return student.parent.email;
+    }
+
+    return null;
+  };
+
   return (
     <div className="literexia-iep-container">
+      {/* DEBUG: Test if main content renders */}
+      <div style={{background: 'red', color: 'white', padding: '10px', margin: '10px'}}>
+        🎉 SUCCESS: Main content is rendering! 
+        Data Source: {iepData ? 'LOCAL' : 'GLOBAL'}, 
+        Objectives: {currentIepData.objectives.length}, 
+        Student: {currentIepData.studentId?.firstName || 'Unknown'}
+      </div>
+      
       {/* Success message */}
       {successMessage && (
         <div className="literexia-success-alert">
@@ -690,7 +1452,7 @@ const IEPReport = ({
           {successMessage}
         </div>
       )}
-      
+
       {/* Error message */}
       {error && (
         <div className="literexia-error-alert">
@@ -699,8 +1461,8 @@ const IEPReport = ({
           <button onClick={() => setError(null)}>×</button>
         </div>
       )}
-      
-      {/* Header section */}
+
+        {/* Header section */}
         <div className="literexia-iep-header">
         <div className="literexia-header-icon">
           <FaInfoCircle />
@@ -708,7 +1470,7 @@ const IEPReport = ({
         <div className="literexia-head-content">
           <h3>Individualized Education Progress Report</h3>
             <p>
-              This report shows {getStudentName()}'s current progress and support needs across key reading skill categories.
+              This report shows {currentIepData.studentId?.firstName || 'Student'}'s current progress and support needs across key reading skill categories.
               Teachers can update support levels and add remarks to track progress over time.
             </p>
         </div>
@@ -722,7 +1484,7 @@ const IEPReport = ({
           </div>
           <div className="literexia-summary-content">
             <span className="literexia-summary-label">Student</span>
-            <span className="literexia-summary-value">{getStudentName()}</span>
+            <span className="literexia-summary-value">{currentIepData.studentId?.firstName} {currentIepData.studentId?.lastName}</span>
           </div>
         </div>
         
@@ -732,7 +1494,7 @@ const IEPReport = ({
           </div>
           <div className="literexia-summary-content">
             <span className="literexia-summary-label">Reading Level</span>
-            <span className="literexia-summary-value">{iepData.readingLevel || 'Not Assessed'}</span>
+            <span className="literexia-summary-value">{currentIepData.readingLevel || 'Not Assessed'}</span>
           </div>
         </div>
         
@@ -742,7 +1504,7 @@ const IEPReport = ({
           </div>
           <div className="literexia-summary-content">
             <span className="literexia-summary-label">Overall Score</span>
-            <span className="literexia-summary-value">{iepData.overallScore || 0}%</span>
+            <span className="literexia-summary-value">{currentIepData.overallScore || 0}%</span>
           </div>
         </div>
         
@@ -752,10 +1514,11 @@ const IEPReport = ({
           </div>
           <div className="literexia-summary-content">
             <span className="literexia-summary-label">Last Updated</span>
-            <span className="literexia-summary-value">{formatDate(iepData.updatedAt)}</span>
+            <span className="literexia-summary-value">{formatDate(currentIepData.updatedAt)}</span>
           </div>
         </div>
       </div>
+
       
       {/* Table section */}
       <div className="literexia-iep-table-container">
@@ -816,7 +1579,7 @@ const IEPReport = ({
             </tr>
           </thead>
           <tbody>
-              {iepData.objectives.map((objective) => {
+              {currentIepData.objectives.map((objective) => {
               return (
                 <React.Fragment key={objective._id}>
                   {/* Main row - always visible */}
@@ -1014,6 +1777,226 @@ const IEPReport = ({
         </table>
       </div>
       </div>
+
+      {/* Parent Information Section - Moved to bottom of Reading Skills Progress */}
+      <div className="sdx-parent-card">
+        <h3 className="sdx-section-title">
+          <FaUser /> Parent/Guardian Information
+        </h3>
+        <div className="sdx-parent-details">
+          <div className="sdx-parent-avatar">
+            {renderParentImage()}
+            {parentImageError && retryCount < MAX_RETRIES && (
+              <div className="sdx-image-retry" onClick={retryLoadImage}>
+                <FaSync size={14} /> Retry
+              </div>
+            )}
+          </div>
+          <div className="sdx-parent-info">
+            <h4 className="sdx-parent-name">
+              {isParentConnected() ? getParentName() : 'Not connected'}
+            </h4>
+            {isParentConnected() ? (
+              <div className="sdx-parent-contact">
+                <div className="sdx-contact-item">
+                  <FaEnvelope className="sdx-contact-icon" />
+                  <span>
+                    {parentProfile && parentProfile.email ?
+                      parentProfile.email :
+                      typeof student?.parentEmail === 'string' ?
+                        student.parentEmail :
+                        student?.parent && student.parent.email ?
+                          student.parent.email : 'Not available'}
+                  </span>
+                </div>
+                <div className="sdx-contact-item">
+                  <FaPhone className="sdx-contact-icon" />
+                  <span>
+                    {parentProfile && parentProfile.phoneNumber ?
+                      parentProfile.phoneNumber :
+                      typeof student?.parentContact === 'string' ?
+                        student.parentContact :
+                        student?.parent && student.parent.contact ?
+                          student.parent.contact : 'Not available'}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="sdx-parent-contact">
+                <div className="sdx-contact-item">
+                  <FaEnvelope className="sdx-contact-icon" />
+                  <span>Not available</span>
+                </div>
+                <div className="sdx-contact-item">
+                  <FaPhone className="sdx-contact-icon" />
+                  <span>Not available</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Additional parent details in grid format */}
+          <div className="sdx-parent-details-grid">
+            <div className="sdx-contact-item">
+              <FaAddressCard className="sdx-contact-icon" />
+              <div className="sdx-detail-content">
+                <span className="sdx-detail-label">Address</span>
+                <span className="sdx-detail-value">
+                  {parentProfile && parentProfile.address ?
+                    parentProfile.address :
+                    student?.parent && typeof student.parent === 'object' && student.parent.address ?
+                      student.parent.address : 'Not provided'}
+                </span>
+              </div>
+            </div>
+            <div className="sdx-contact-item">
+              <FaRing className="sdx-contact-icon" />
+              <div className="sdx-detail-content">
+                <span className="sdx-detail-label">Civil Status</span>
+                <span className="sdx-detail-value">
+                  {parentProfile && parentProfile.civilStatus ?
+                    parentProfile.civilStatus :
+                    student?.parent && typeof student.parent === 'object' && student.parent.civilStatus ?
+                      student.parent.civilStatus : 'Not provided'}
+                </span>
+              </div>
+            </div>
+            <div className="sdx-contact-item">
+              <FaVenusMars className="sdx-contact-icon" />
+              <div className="sdx-detail-content">
+                <span className="sdx-detail-label">Gender</span>
+                <span className="sdx-detail-value">
+                  {parentProfile && parentProfile.gender ?
+                    parentProfile.gender :
+                    student?.parent && typeof student.parent === 'object' && student.parent.gender ?
+                      student.parent.gender : 'Not provided'}
+                </span>
+              </div>
+            </div>
+            <div className="sdx-contact-item">
+              <FaBuilding className="sdx-contact-icon" />
+              <div className="sdx-detail-content">
+                <span className="sdx-detail-label">Occupation</span>
+                <span className="sdx-detail-value">
+                  {parentProfile && parentProfile.occupation ?
+                    parentProfile.occupation :
+                    student?.parent && typeof student.parent === 'object' && student.parent.occupation ?
+                      student.parent.occupation : 'Not provided'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Send Progress Report Section */}
+      <div className="sdx-send-report-section">
+        <h3 className="sdx-section-title">
+          <FaPaperPlane /> Send Report to Parent
+        </h3>
+
+        <div className="sdx-message-box">
+          <div className="sdx-message-header">
+            <div className="sdx-message-subject">
+              <label><strong>Subject:</strong></label>
+              {isEditingFeedback ? (
+                <input
+                  type="text"
+                  value={feedbackMessage.subject}
+                  onChange={(e) => setFeedbackMessage({ ...feedbackMessage, subject: e.target.value })}
+                  className="sdx-subject-input"
+                />
+              ) : (
+                <span>{feedbackMessage.subject}</span>
+              )}
+            </div>
+            <div className="sdx-message-recipient">
+              <span>To:</span>
+              <div className="sdx-recipient-badge">
+                <FaUser className="sdx-recipient-icon" />
+                <span>{getParentName()}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="sdx-message-content">
+            {isEditingFeedback ? (
+              <textarea
+                value={feedbackMessage.content}
+                onChange={(e) => setFeedbackMessage({ ...feedbackMessage, content: e.target.value })}
+                className="sdx-message-textarea"
+                rows="6"
+              ></textarea>
+            ) : (
+              <p className="sdx-message-text">{feedbackMessage.content}</p>
+            )}
+          </div>
+
+          <div className="sdx-include-report">
+            <label className="sdx-include-report-label">
+              <input
+                type="checkbox"
+                checked={includeProgressReport}
+                onChange={() => setIncludeProgressReport(!includeProgressReport)}
+                className="sdx-include-report-checkbox"
+              />
+              <FaCheckSquare className={`sdx-checkbox-icon ${includeProgressReport ? 'checked' : ''}`} />
+              <span><strong>Include Progress Report</strong></span>
+            </label>
+          </div>
+
+          <div className="sdx-message-actions">
+            {isEditingFeedback ? (
+              <button
+                className="sdx-save-btn"
+                onClick={handleSaveFeedback}
+              >
+                <FaSave /> Save Message
+              </button>
+            ) : (
+              <button
+                className="sdx-edit-btn"
+                onClick={() => setIsEditingFeedback(true)}
+              >
+                <FaEdit /> Edit Message
+              </button>
+            )}
+
+            <button
+              className="sdx-send-btn"
+              onClick={handleSendReport}
+              disabled={isEditingFeedback || sendingEmail}
+            >
+              {sendingEmail ? <FaSpinner className="spinning" /> : <FaPaperPlane />}
+              {sendingEmail ? 'Sending...' : 'Send Report'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Export Actions */}
+      <div className="literexia-export-actions">
+        <button
+          className="literexia-pdf-btn"
+          onClick={generatePDF}
+          disabled={generatingPdf}
+          title="Generate PDF Report"
+        >
+          {generatingPdf ? <FaSpinner className="spinning" /> : <FaFilePdf />}
+          {generatingPdf ? 'Generating...' : 'Generate PDF'}
+        </button>
+
+        <button
+          className="literexia-export-advanced-btn"
+          onClick={exportToPDF}
+          disabled={generatingPdf}
+          title="Export Professional Progress Report"
+        >
+          {generatingPdf ? <FaSpinner className="spinning" /> : <FaDownload />}
+          {generatingPdf ? 'Exporting...' : 'Export Advanced PDF'}
+        </button>
+      </div>
+
       
       {/* Saving overlay */}
       {saving && (
@@ -1250,6 +2233,260 @@ const IEPReport = ({
           </div>
         </div>
       )}
+
+      {/* Professional Progress Report Modal (Advanced from StudentDetails.jsx) */}
+      {showProgressReport && (
+        <div className="sdx-modal-overlay" onClick={() => setShowProgressReport(false)}>
+          <div className="sdx-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="sdx-modal-header">
+              <h2 className="sdx-modal-title">IEP Progress Report</h2>
+              <div className="sdx-modal-actions">
+                <button className="sdx-export-btn" onClick={exportToPDF} disabled={generatingPdf}>
+                  {generatingPdf ? <FaSpinner className="spinning" /> : <FaFilePdf />}
+                  {generatingPdf ? 'Generating...' : 'Export as PDF'}
+                </button>
+                <button
+                  className="sdx-close-btn"
+                  onClick={() => setShowProgressReport(false)}
+                >
+                  <FaTimes />
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable wrapper keeps the scrollbar */}
+            <div className="sdx-scroll-wrapper">
+              {/* Printable body (FULL height) */}
+              <div className="sdx-report-printable" ref={reportRef}>
+                {/* Report Header with School Branding */}
+                <div className="sdx-report-header">
+                  <img src={cradleLogo} alt="Cradle of Learners Logo" className="sdx-report-logo" />
+                  <div className="sdx-report-school-info">
+                    <h1 className="sdx-report-school-name">CRADLE OF LEARNERS</h1>
+                    <p className="sdx-report-school-tagline">(Inclusive School for Individualized Education), Inc.</p>
+                    <p className="sdx-report-school-address">3rd Floor TUCP Bldg. Elliptical Road Corner Maharlika St. Quezon City</p>
+                    <p className="sdx-report-school-contact">☎ 8294‑7772 | ✉ cradle.of.learners@gmail.com</p>
+                  </div>
+                </div>
+
+                {/* Report Title */}
+                <div className="sdx-report-title-section">
+                  <h2 className="sdx-report-main-title">PROGRESS REPORT</h2>
+                  <p className="sdx-report-school-year">S.Y. {new Date().getFullYear()}-{new Date().getFullYear() + 1}</p>
+                </div>
+
+                {/* Student Information */}
+                <div className="sdx-report-student-info">
+                  <div className="sdx-report-info-row">
+                    <div className="sdx-report-info-item">
+                      <strong>Name:</strong> {getStudentName()}
+                    </div>
+                    <div className="sdx-report-info-item">
+                      <strong>Age:</strong> {currentIepData?.studentId?.age || student?.age || 'N/A'}
+                    </div>
+                  </div>
+                  <div className="sdx-report-info-row">
+                    <div className="sdx-report-info-item">
+                      <strong>Grade:</strong> {currentIepData?.studentId?.gradeLevel || student?.gradeLevel || 'N/A'}
+                    </div>
+                    <div className="sdx-report-info-item">
+                      <strong>Gender:</strong> {currentIepData?.studentId?.gender || student?.gender || 'N/A'}
+                    </div>
+                  </div>
+                  <div className="sdx-report-info-row">
+                    <div className="sdx-report-info-item">
+                      <strong>Parent:</strong> {getParentName()}
+                    </div>
+                    <div className="sdx-report-info-item">
+                      <strong>Date:</strong> {new Date().toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="sdx-report-info-row">
+                    <div className="sdx-report-info-item">
+                      <strong>Reading Level:</strong> {currentIepData?.readingLevel || 'Not Assessed'}
+                    </div>
+                    <div className="sdx-report-info-item">
+                      <strong>Last Assessment:</strong> {currentIepData?.updatedAt ? formatDate(currentIepData.updatedAt) : 'N/A'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reading Level Progress Section */}
+                <div className="sdx-report-section-title">Reading Level Progress</div>
+                <div className="sdx-report-level-progress">
+                  <div className="sdx-level-overall-summary">
+                    <p className="sdx-level-overall-description">
+                      {getStudentName()} is currently at the <strong>{currentIepData?.readingLevel || 'Not Assessed'}</strong> reading level
+                      with an overall score of <strong>{currentIepData?.overallScore || 0}%</strong>.
+                      {currentIepData?.readingLevel && currentIepData.readingLevel !== 'Not Assessed' ?
+                        ` This level indicates good progress in fundamental reading skills and comprehension abilities.` :
+                        ' An assessment is needed to determine the appropriate reading level.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* IEP Progress Table */}
+                <div className="sdx-report-section-title">Learning Progress</div>
+                <div className="sdx-report-progress-table">
+                  <table className="sdx-report-table">
+                    <thead>
+                      <tr>
+                        <th className="sdx-report-th">Lesson</th>
+                        <th className="sdx-report-th">Status</th>
+                        <th className="sdx-report-th">Score</th>
+                        <th className="sdx-report-th" colSpan="3">Support Level</th>
+                        <th className="sdx-report-th">Remarks</th>
+                      </tr>
+                      <tr>
+                        <th className="sdx-report-th-empty"></th>
+                        <th className="sdx-report-th-empty"></th>
+                        <th className="sdx-report-th-empty"></th>
+                        <th className="sdx-report-th-level">Minimal</th>
+                        <th className="sdx-report-th-level">Moderate</th>
+                        <th className="sdx-report-th-level">Extensive</th>
+                        <th className="sdx-report-th-empty"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentIepData && currentIepData.objectives && currentIepData.objectives.length > 0 ? (
+                        currentIepData.objectives.map((objective, index) => (
+                          <tr key={index} className="sdx-report-tr">
+                            <td className="sdx-report-td sdx-report-td-aralin">
+                              <div>
+                                <div>{getCategoryName(objective.lesson)}</div>
+                                <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                                  {objective.categoryName || getCategoryName(objective.lesson)}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="sdx-report-td sdx-report-td-status">
+                              <span className={`sdx-status-badge ${(objective.isPassed || objective.latestInterventionPassed) ? 'status-completed' : objective.hasIntervention ? 'status-in_progress' : 'status-not_started'}`}>
+                                {(objective.isPassed || objective.latestInterventionPassed) ? 'Completed' : objective.hasIntervention ? 'In Progress' : 'Not Started'}
+                              </span>
+                            </td>
+                            <td className="sdx-report-td sdx-report-td-score">
+                              <div className="sdx-score-container">
+                                <span className={`sdx-score ${(objective.latestInterventionScore || objective.assessmentScore || objective.score || 0) >= 75 ? 'passing' : 'failing'}`}>
+                                  {objective.latestInterventionScore || objective.assessmentScore || objective.score || 0}%
+                                </span>
+                                {objective.hasIntervention && objective.latestInterventionScore && (
+                                  <div style={{ fontSize: '0.8rem', marginTop: '2px', color: '#666' }}>
+                                    Assessment: {objective.assessmentScore || objective.score || 0}%
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="sdx-report-td sdx-report-td-support">
+                              {objective.supportLevel === 'minimal' ? "✓" : ""}
+                            </td>
+                            <td className="sdx-report-td sdx-report-td-support">
+                              {objective.supportLevel === 'moderate' ? "✓" : ""}
+                            </td>
+                            <td className="sdx-report-td sdx-report-td-support">
+                              {objective.supportLevel === 'extensive' ? "✓" : ""}
+                            </td>
+                            <td className="sdx-report-td sdx-report-td-puna">
+                              <div>
+                                {objective.remarks || objective.mainAssessmentRemarks ? (
+                                  <span>{objective.remarks || objective.mainAssessmentRemarks}</span>
+                                ) : (
+                                  <span className="sdx-no-remarks">No remarks added</span>
+                                )}
+                                {objective.hasIntervention && (
+                                  <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', fontStyle: 'italic', color: '#ff6b00' }}>
+                                    Intervention: {objective.interventionAttempts || 0} attempt{(objective.interventionAttempts || 0) !== 1 ? 's' : ''}
+                                    {objective.latestInterventionPassed && ' - Completed successfully'}
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr className="sdx-report-tr">
+                          <td colSpan="7" className="sdx-report-td-empty">
+                            No learning activities recorded yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* IEP Summary Section */}
+                {currentIepData && currentIepData.objectives && currentIepData.objectives.length > 0 && (
+                  <div className="sdx-iep-summary-section">
+                    <div className="sdx-report-section-title">IEP Summary</div>
+                    <div className="sdx-iep-summary-details">
+                      <div className="sdx-iep-detail">
+                        <span className="sdx-iep-label">Academic Year:</span>
+                        <span className="sdx-iep-value">{currentIepData.academicYear || new Date().getFullYear()}</span>
+                      </div>
+                      <div className="sdx-iep-detail">
+                        <span className="sdx-iep-label">Overall Score:</span>
+                        <span className="sdx-iep-value">{currentIepData.overallScore || 0}%</span>
+                      </div>
+                      <div className="sdx-iep-detail">
+                        <span className="sdx-iep-label">Reading Level:</span>
+                        <span className="sdx-iep-value">{currentIepData.readingLevel || 'Not Assessed'}</span>
+                      </div>
+                      <div className="sdx-iep-detail">
+                        <span className="sdx-iep-label">Active Interventions:</span>
+                        <span className="sdx-iep-value">
+                          {currentIepData.objectives ?
+                            currentIepData.objectives.filter(obj => obj.hasIntervention).length : 0}
+                          of {currentIepData.objectives ? currentIepData.objectives.length : 0}
+                        </span>
+                      </div>
+                      <div className="sdx-iep-detail">
+                        <span className="sdx-iep-label">Last Updated:</span>
+                        <span className="sdx-iep-value">{formatDate(currentIepData.updatedAt)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Prescriptive Recommendations */}
+                <div className="sdx-report-section-title">Prescriptive Recommendations</div>
+                <div className="sdx-report-recommendations">
+                  <ul className="sdx-report-rec-list">
+                    <li className="sdx-report-rec-item">
+                      Student continues to develop reading skills. {currentIepData?.objectives && currentIepData.objectives.some(obj => !obj.isPassed && !obj.latestInterventionPassed) ? 'May need additional practice and support to improve reading comprehension.' : 'Shows good progress across reading categories.'}
+                    </li>
+                    <li className="sdx-report-rec-item">
+                      {currentIepData?.objectives && currentIepData.objectives.some(obj => obj.hasIntervention) ? 'Continue with current intervention strategies for categories showing improvement.' : 'Encourage practice with phonemic awareness activities at home to strengthen reading foundation.'}
+                    </li>
+                    <li className="sdx-report-rec-item">
+                      Regular practice with guided reading will help improve fluency and comprehension. Monitor progress closely and adjust support levels as needed.
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Signatures */}
+                <div className="sdx-report-signatures">
+                  <div className="sdx-report-signature">
+                    <div className="sdx-report-sign-line"></div>
+                    <p className="sdx-report-sign-name">Teacher's Signature</p>
+                  </div>
+                  <div className="sdx-report-signature">
+                    <div className="sdx-report-sign-line"></div>
+                    <p className="sdx-report-sign-name">Principal's Signature</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Dialog */}
+      <SuccessDialog
+        isOpen={showSuccessDialog}
+        onClose={() => setShowSuccessDialog(false)}
+        title="Success"
+        message={successDialogData.message}
+        submessage={successDialogData.submessage}
+      />
     </div>
   );
 };
