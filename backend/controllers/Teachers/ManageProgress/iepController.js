@@ -205,18 +205,56 @@ class IEPController {
         console.log(`Category ${index + 1}: ${cat.categoryName} - Score: ${cat.score}% - Passed: ${cat.isPassed}`);
       });
       
-      // Create new IEP report
-      const iepReport = new IEPReport({
+      // Check if IEP report already exists for this student with SAME reading level and academic year
+      const currentReadingLevel = latestResults.readingLevel || student.readingLevel;
+      const currentAcademicYear = new Date().getFullYear().toString();
+
+      console.log(`Checking for existing IEP report for reading level: ${currentReadingLevel}, academic year: ${currentAcademicYear}...`);
+      let iepReport = await IEPReport.findOne({
         studentId: new mongoose.Types.ObjectId(studentId),
-        studentNumber: student.idNumber,
-        readingLevel: latestResults.readingLevel || student.readingLevel,
-        overallScore: latestResults.overallScore || 0,
-        basedOnAssessmentId: latestResults._id,
-        lastModifiedBy: teacherId ? new mongoose.Types.ObjectId(teacherId) : null
+        readingLevel: currentReadingLevel,
+        academicYear: currentAcademicYear,
+        isActive: true
       });
 
-      // Generate objectives from category results with enhanced intervention data
-      console.log('Generating objectives from category results...');
+      let isUpdate = false;
+      if (iepReport) {
+        console.log(`✅ Found existing IEP report for SAME reading level (${currentReadingLevel}): ${iepReport._id} - UPDATING same record`);
+        isUpdate = true;
+
+        // Update existing report with latest data (same reading level)
+        iepReport.overallScore = latestResults.overallScore || 0;
+        iepReport.basedOnAssessmentId = latestResults._id;
+        iepReport.lastModifiedBy = teacherId ? new mongoose.Types.ObjectId(teacherId) : null;
+        iepReport.updatedAt = new Date();
+      } else {
+        // Check if there's an existing record with different reading level
+        const previousIEP = await IEPReport.findOne({
+          studentId: new mongoose.Types.ObjectId(studentId),
+          isActive: true
+        }).sort({ createdAt: -1 });
+
+        if (previousIEP && previousIEP.readingLevel !== currentReadingLevel) {
+          console.log(`📈 Student progressed from ${previousIEP.readingLevel} → ${currentReadingLevel} - Creating NEW record for reading level progression`);
+        } else if (previousIEP && previousIEP.academicYear !== currentAcademicYear) {
+          console.log(`📅 New academic year (${previousIEP.academicYear} → ${currentAcademicYear}) - Creating NEW record`);
+        } else {
+          console.log('No existing IEP report found - Creating initial record');
+        }
+
+        iepReport = new IEPReport({
+          studentId: new mongoose.Types.ObjectId(studentId),
+          studentNumber: student.idNumber,
+          readingLevel: currentReadingLevel,
+          overallScore: latestResults.overallScore || 0,
+          basedOnAssessmentId: latestResults._id,
+          lastModifiedBy: teacherId ? new mongoose.Types.ObjectId(teacherId) : null,
+          academicYear: currentAcademicYear
+        });
+      }
+
+      // Generate/update objectives from category results with enhanced intervention data
+      console.log(`${isUpdate ? 'Updating' : 'Generating'} objectives from category results...`);
       iepReport.generateObjectivesFromCategoryResults(latestResults);
 
       // Enhance objectives with detailed intervention data
@@ -341,7 +379,11 @@ class IEPController {
       });
 
       await iepReport.save();
-      console.log(`✅ Created and saved IEP report for student ${student.idNumber}`);
+      if (isUpdate) {
+        console.log(`✅ Updated existing IEP report for student ${student.idNumber} - SAME reading level (${currentReadingLevel}) - Record ID: ${iepReport._id}`);
+      } else {
+        console.log(`✅ Created new IEP report for student ${student.idNumber} - Reading level: ${currentReadingLevel} - Record ID: ${iepReport._id}`);
+      }
 
       return iepReport;
       
