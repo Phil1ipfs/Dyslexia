@@ -1298,34 +1298,94 @@
   min-height: 200px;
 }
 
-/* Section styling for Main Assessment and Interventions */
-.literexia-main-assessment-remarks-section,
-.literexia-intervention-remarks-section {
+/* Unified Remarks Section */
+.literexia-unified-remarks-section {
   background: white;
-  border: 2px solid #e5e7eb;
+  border: 2px solid #3B4F81;
   border-radius: 12px;
   padding: 1rem;
   transition: all 0.2s;
 }
 
-.literexia-main-assessment-remarks-section {
-  border-color: #3B4F81;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-}
-
-.literexia-main-assessment-remarks-section:hover {
+.literexia-unified-remarks-section:hover {
   border-color: #2a3d6b;
   box-shadow: 0 4px 12px rgba(59, 79, 129, 0.15);
 }
 
-.literexia-intervention-remarks-section {
-  border-color: #10b981;
-  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+/* Sub-areas within unified section */
+.literexia-main-remarks-area,
+.literexia-intervention-remarks-area {
+  margin-bottom: 1rem;
 }
 
-.literexia-intervention-remarks-section:hover {
-  border-color: #059669;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+.literexia-main-remarks-area:last-child,
+.literexia-intervention-remarks-area:last-child {
+  margin-bottom: 0;
+}
+
+/* Assessment Remarks Button */
+.literexia-assessment-remarks-button {
+  background: rgba(59, 79, 129, 0.05);
+  border: 1px solid rgba(59, 79, 129, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 0.5rem;
+}
+
+.literexia-assessment-remarks-button:hover {
+  background: rgba(59, 79, 129, 0.1);
+  border-color: rgba(59, 79, 129, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(59, 79, 129, 0.1);
+}
+
+.literexia-assessment-remarks-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.literexia-assessment-remarks-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.literexia-remarks-preview {
+  font-size: 0.875rem;
+  color: #374151;
+  line-height: 1.4;
+  display: block;
+}
+
+.literexia-remarks-placeholder {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  font-style: italic;
+  display: block;
+}
+
+.literexia-assessment-remarks-indicator {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 4px;
+  background: rgba(59, 79, 129, 0.1);
+}
+
+.literexia-remarks-check {
+  color: #10b981;
+  font-size: 0.75rem;
+}
+
+.literexia-remarks-edit {
+  color: #3B4F81;
+  font-size: 0.75rem;
 }
 
 /* Section headers with icons */
@@ -1364,14 +1424,40 @@
   font-size: 0.875rem;
   font-weight: 600;
   margin: 0;
-}
-
-.literexia-main-assessment-remarks-section .literexia-remarks-section-title {
   color: #3B4F81;
 }
 
-.literexia-intervention-remarks-section .literexia-remarks-section-title {
-  color: #065f46;
+/* Subheader styling */
+.literexia-remarks-subheader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid rgba(59, 79, 129, 0.1);
+}
+
+.literexia-subheader-icon {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  background: rgba(59, 79, 129, 0.1);
+  color: #3B4F81;
+}
+
+.literexia-subheader-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin: 0;
+  color: #3B4F81;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* Enhanced content areas */
@@ -2108,8 +2194,7 @@
     min-height: 150px;
   }
 
-  .literexia-main-assessment-remarks-section,
-  .literexia-intervention-remarks-section {
+  .literexia-unified-remarks-section {
     padding: 0.75rem;
   }
 
@@ -2169,7 +2254,7 @@
   .literexia-iep-table {
     font-size: 0.875rem;
   }
-
+  
   .literexia-iep-table th,
   .literexia-iep-table td {
     padding: 0.75rem 0.5rem;
@@ -2196,8 +2281,7 @@
     min-height: 120px;
   }
 
-  .literexia-main-assessment-remarks-section,
-  .literexia-intervention-remarks-section {
+  .literexia-unified-remarks-section {
     padding: 0.5rem;
     border-radius: 8px;
   }
@@ -2237,7 +2321,7 @@
     margin-top: 0.25rem;
     flex-direction: column;
   }
-
+  
   .literexia-remarks-save-btn,
   .literexia-remarks-cancel-btn,
   .literexia-remarks-edit-btn {
@@ -2338,7 +2422,7 @@
   color: white;
   display: flex;
   align-items: center;
-  justify-content: center;
+    justify-content: center;
   font-size: 0.875rem;
 }
 
@@ -2542,7 +2626,7 @@
 /* Individual Attempt Modal Styles */
 .literexia-attempt-modal {
   background: white;
-  border-radius: 12px;
+    border-radius: 12px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   max-width: 600px;
   width: 100%;
