@@ -532,7 +532,7 @@ const IEPReport = ({
     );
   };
 
-  // Render main assessment remarks cell as clickable button
+  // Render main assessment remarks cell as simple clickable area
   const renderMainAssessmentRemarksCell = (objective) => {
     const currentMainRemarks = objective.mainAssessmentRemarks;
     const hasRemarks = currentMainRemarks && currentMainRemarks.trim().length > 0;
@@ -541,22 +541,13 @@ const IEPReport = ({
       <div 
         className="literexia-assessment-remarks-button"
         onClick={() => openAssessmentModal(objective)}
-        title="Click to edit assessment performance remarks"
+        title="Click to edit post assessment remarks"
       >
         <div className="literexia-assessment-remarks-content">
           <div className="literexia-assessment-remarks-text">
-            {hasRemarks ? (
-              <span className="literexia-remarks-preview">
-                {currentMainRemarks.length > 50 
-                  ? `${currentMainRemarks.substring(0, 50)}...` 
-                  : currentMainRemarks
-                }
-              </span>
-            ) : (
-              <span className="literexia-remarks-placeholder">
-                Click to add assessment performance remarks
-              </span>
-            )}
+            <span className="literexia-remarks-placeholder">
+              Click to add post assessment remarks
+            </span>
           </div>
           <div className="literexia-assessment-remarks-indicator">
             {hasRemarks ? (
@@ -942,7 +933,7 @@ const IEPReport = ({
                            <div className="literexia-main-remarks-area">
                              <div className="literexia-remarks-subheader">
                                <FaBook className="literexia-subheader-icon" />
-                               <span className="literexia-subheader-title">Assessment Performance</span>
+                               <span className="literexia-subheader-title">Post Assessment</span>
                              </div>
                              {renderMainAssessmentRemarksCell(objective)}
                            </div>
@@ -970,22 +961,6 @@ const IEPReport = ({
                                        <FaEye className={`literexia-expand-icon ${expandedRemarks[objective._id] ? 'expanded' : ''}`} />
                                      </button>
                                    </div>
-
-                                   {/* Quick Stats */}
-                                   <div className="literexia-quick-stats">
-                                     <div className="literexia-stat-item">
-                                       <span className="literexia-stat-label">Latest:</span>
-                                       <span className={`literexia-stat-value ${objective.latestInterventionScore >= 70 ? 'passed' : 'failed'}`}>
-                                         {objective.latestInterventionScore || 0}%
-                                       </span>
-                                     </div>
-                                     <div className="literexia-stat-item">
-                                       <span className="literexia-stat-label">With remarks:</span>
-                                       <span className="literexia-stat-value">
-                                         {objective.interventionHistory.filter(attempt => attempt.teacherRemarks).length}
-                                       </span>
-                                     </div>
-                                   </div>
                                  </div>
 
                                  {/* Expanded View - Only when expanded */}
@@ -993,13 +968,6 @@ const IEPReport = ({
                                    <div className="literexia-attempts-expanded">
                                      <div className="literexia-attempts-header">
                                        <span className="literexia-attempts-title">All Attempts</span>
-                                       <button
-                                         className="literexia-collapse-button"
-                                         onClick={() => toggleRemarksExpansion(objective._id)}
-                                         title="Collapse"
-                                       >
-                                         <FaEye className="literexia-collapse-icon" />
-                                       </button>
                                      </div>
                                      <div className="literexia-attempt-buttons">
                                        {objective.interventionHistory.map((attempt, index) => (
@@ -1226,7 +1194,7 @@ const IEPReport = ({
         </div>
       )}
 
-      {/* Assessment Performance Modal */}
+      {/* Post Assessment Modal */}
       {assessmentModal.isOpen && assessmentModal.objective && (
         <div className="literexia-modal-overlay" onClick={closeAssessmentModal}>
           <div className="literexia-modal" onClick={(e) => e.stopPropagation()}>
@@ -1234,7 +1202,7 @@ const IEPReport = ({
               <div className="literexia-modal-title">
                 <FaBook className="literexia-modal-icon" />
                 <div>
-                  <h3>Assessment Performance Remarks</h3>
+                  <h3>Post Assessment Remarks</h3>
                   <p>{getCategoryName(assessmentModal.objective.lesson)}</p>
                 </div>
               </div>
@@ -1245,7 +1213,7 @@ const IEPReport = ({
 
             <div className="literexia-modal-content">
               <div className="literexia-remark-editor">
-                <label htmlFor="assessment-remark">Add your remarks about the student's assessment performance:</label>
+                <label htmlFor="assessment-remark">Add your remarks about the student's post assessment:</label>
                 <textarea
                   id="assessment-remark"
                   value={assessmentModal.objective.mainAssessmentRemarks || ''}
@@ -1253,7 +1221,7 @@ const IEPReport = ({
                     const updatedObjective = { ...assessmentModal.objective, mainAssessmentRemarks: e.target.value };
                     setAssessmentModal(prev => ({ ...prev, objective: updatedObjective }));
                   }}
-                  placeholder="Enter your remarks about the student's performance in this assessment..."
+                  placeholder="Enter your remarks about the student's post assessment performance..."
                   rows={6}
                   maxLength={500}
                 />

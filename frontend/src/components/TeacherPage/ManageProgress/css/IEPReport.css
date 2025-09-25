@@ -1353,12 +1353,7 @@
   min-width: 0;
 }
 
-.literexia-remarks-preview {
-  font-size: 0.875rem;
-  color: #374151;
-  line-height: 1.4;
-  display: block;
-}
+/* Removed .literexia-remarks-preview - no longer needed */
 
 .literexia-remarks-placeholder {
   font-size: 0.875rem;
@@ -1394,13 +1389,17 @@
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #3B4F81 0%, #2a3d6b 100%);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(59, 79, 129, 0.1);
 }
 
 .literexia-remarks-section-icon {
   width: 1.5rem;
   height: 1.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -1408,6 +1407,7 @@
   font-size: 0.75rem;
   font-weight: 600;
   flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .literexia-main-assessment-remarks-section .literexia-remarks-section-icon {
@@ -1651,25 +1651,84 @@
   gap: 0.5rem;
 }
 
+/* Attempts summary and expansion */
 .literexia-attempts-summary {
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  padding: 0.5rem;
+  background: rgba(59, 79, 129, 0.05);
+  border: 1px solid rgba(59, 79, 129, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .literexia-summary-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
 }
 
 .literexia-summary-title {
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  color: #374151;
+  color: #3B4F81;
 }
+
+.literexia-expand-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.literexia-expand-button:hover {
+  background: rgba(59, 79, 129, 0.1);
+}
+
+.literexia-summary-count {
+  font-size: 0.8rem;
+  color: #3B4F81;
+  font-weight: 600;
+}
+
+.literexia-expand-icon {
+  font-size: 0.8rem;
+  color: #3B4F81;
+  transition: transform 0.2s;
+}
+
+.literexia-expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+/* Expanded view styles */
+.literexia-attempts-expanded {
+  background: rgba(59, 79, 129, 0.02);
+  border: 1px solid rgba(59, 79, 129, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.literexia-attempts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(59, 79, 129, 0.1);
+}
+
+.literexia-attempts-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #3B4F81;
+}
+
+/* Removed collapse button styles - no longer needed */
 
 .literexia-expand-button {
   background: none;
