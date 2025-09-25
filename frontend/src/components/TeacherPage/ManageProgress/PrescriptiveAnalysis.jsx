@@ -6081,11 +6081,7 @@ const PrescriptiveAnalysis = ({
                             {(() => {
                               // For Reading Comprehension, don't show image here since it's integrated with the passage
                               if (selectedInterventionData.category === 'Reading Comprehension') {
-                                return (
-                                  <div className="intervention-response-question-image-placeholder">
-                                    <span>Image displayed with reading passage above</span>
-                                  </div>
-                                );
+                                return null; // Don't show any placeholder
                               }
                               
                               // For other categories, use the original logic
