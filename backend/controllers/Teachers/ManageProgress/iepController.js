@@ -214,19 +214,95 @@ class IEPController {
         basedOnAssessmentId: latestResults._id,
         lastModifiedBy: teacherId ? new mongoose.Types.ObjectId(teacherId) : null
       });
-      
-      // Generate objectives from category results
+
+      // Generate objectives from category results with enhanced intervention data
       console.log('Generating objectives from category results...');
       iepReport.generateObjectivesFromCategoryResults(latestResults);
-      
-      console.log(`Generated ${iepReport.objectives?.length || 0} objectives:`);
-      iepReport.objectives?.forEach((obj, index) => {
-        console.log(`${index + 1}. ${obj.lesson} - Support: ${obj.supportLevel} - Score: ${obj.score}%`);
+
+      // Enhance objectives with detailed intervention data
+      iepReport.objectives = iepReport.objectives.map(objective => {
+        // Find matching category data with intervention history
+        const categoryData = latestResults.categories.find(cat =>
+          cat.categoryName === objective.categoryName
+        );
+
+        if (categoryData) {
+          // Add detailed assessment data
+          objective.assessmentScore = categoryData.score || 0;
+          objective.isCompleted = categoryData.isCompleted || false;
+          objective.isPassed = categoryData.isPassed || false;
+          objective.passingThreshold = categoryData.passingThreshold || 75;
+          objective.totalQuestions = categoryData.totalQuestions || 0;
+          objective.correctAnswers = categoryData.correctAnswers || 0;
+
+          // Special handling for Phonological Awareness matching questions
+          if (categoryData.categoryName === 'Phonological Awareness') {
+            objective.totalPossibleMatches = categoryData.totalPossibleMatches || 0;
+            objective.correctMatches = categoryData.correctMatches || 0;
+          }
+
+          // Add detailed intervention data if exists
+          if (categoryData.interventionHistory && categoryData.interventionHistory.length > 0) {
+            objective.hasIntervention = true;
+            objective.interventionAttempts = categoryData.interventionAttempts || categoryData.interventionHistory.length;
+            objective.interventionCompleted = categoryData.interventionCompleted || false;
+
+            // Add complete intervention history
+            objective.interventionHistory = categoryData.interventionHistory.map(attempt => ({
+              attemptNumber: attempt.attemptNumber || 1,
+              score: attempt.score || 0,
+              isPassed: attempt.isPassed || false,
+              attemptedAt: attempt.attemptedAt || attempt.completedAt,
+              reason: attempt.attemptReason || attempt.reason || 'intervention_attempt',
+              revisionNumber: attempt.revisionNumber || 1
+            }));
+
+            // Get latest intervention result
+            const latestAttempt = categoryData.interventionHistory[categoryData.interventionHistory.length - 1];
+            if (latestAttempt) {
+              objective.latestInterventionScore = latestAttempt.score || 0;
+              objective.latestInterventionPassed = latestAttempt.isPassed || false;
+              objective.interventionStatus = latestAttempt.isPassed ? 'completed_passed' : 'completed_failed';
+              objective.interventionName = `${categoryData.categoryName} Intervention - ${latestAttempt.isPassed ? 'Passed' : 'Needs Revision'}`;
+            }
+
+            // Calculate intervention improvement
+            if (categoryData.interventionHistory.length > 1) {
+              const firstAttempt = categoryData.interventionHistory[0];
+              const lastAttempt = categoryData.interventionHistory[categoryData.interventionHistory.length - 1];
+              objective.interventionImprovement = (lastAttempt.score || 0) - (firstAttempt.score || 0);
+            } else if (categoryData.interventionHistory.length === 1) {
+              // Single attempt - show improvement from original assessment
+              const interventionScore = categoryData.interventionHistory[0].score || 0;
+              const originalScore = categoryData.score || 0;
+              objective.interventionImprovement = interventionScore - originalScore;
+            }
+          } else {
+            // No intervention data
+            objective.hasIntervention = false;
+            objective.interventionAttempts = 0;
+            objective.interventionHistory = [];
+            objective.interventionStatus = categoryData.isPassed ? 'not_needed' : 'required';
+            objective.interventionName = categoryData.isPassed ? 'No intervention needed' : 'Intervention required';
+          }
+        }
+
+        return objective;
       });
-      
+
+      console.log(`Generated ${iepReport.objectives?.length || 0} objectives with intervention data:`);
+      iepReport.objectives?.forEach((obj, index) => {
+        console.log(`${index + 1}. ${obj.lesson} - Score: ${obj.assessmentScore}% - Intervention: ${obj.hasIntervention ? `${obj.interventionAttempts} attempts` : 'None'}`);
+        if (obj.interventionHistory && obj.interventionHistory.length > 0) {
+          obj.interventionHistory.forEach((attempt, attemptIndex) => {
+            console.log(`    Attempt ${attempt.attemptNumber}: ${attempt.score}% - ${attempt.isPassed ? 'PASSED' : 'FAILED'}`);
+          });
+        }
+      });
+
       await iepReport.save();
       console.log(`✅ Created and saved IEP report for student ${student.idNumber}`);
-      
+
       return iepReport;
       
     } catch (error) {
