@@ -545,15 +545,9 @@ const IEPReport = ({
       >
         <div className="teacher-remarks-assessment-content">
           <div className="teacher-remarks-assessment-text">
-            {hasRemarks ? (
-              <span className="teacher-remarks-content">
-                {currentMainRemarks}
-              </span>
-            ) : (
-              <span className="teacher-remarks-placeholder">
-                Click to add post assessment remarks
-              </span>
-            )}
+            <span className="teacher-remarks-placeholder">
+              {hasRemarks ? "Remarks" : "Add Remark"}
+            </span>
           </div>
           <div className="teacher-remarks-assessment-indicator">
             {hasRemarks ? (
@@ -779,7 +773,7 @@ const IEPReport = ({
             disabled={refreshing}
           >
             {refreshing ? <FaSpinner className="spinning" /> : <FaRedoAlt />}
-            Refresh Interventions
+            Refresh Data Results
           </button>
           <div className="literexia-table-info">
             <span>Click intervention details to view attempt history</span>
@@ -1243,10 +1237,7 @@ const IEPReport = ({
                   <button
                     type="button"
                     className="iep-modal-btn-primary"
-                    onClick={() => {
-                      // Save the remarks here
-                      closeAssessmentModal();
-                    }}
+                    onClick={() => saveMainRemarks(assessmentModal.objective._id)}
                     disabled={!(assessmentModal.objective.mainAssessmentRemarks || '').trim()}
                   >
                     <FaSave />
