@@ -9,9 +9,7 @@ import AuthService from './services/authService';
 import Homepage from "./pages/Homepage";
 import ChooseAccountType from "./pages/ChooseAccountType";
 import TeacherDashboard from "./pages/Teachers/TeacherDashboard";
-import ViewStudent from "./pages/Teachers/StudentDetails/ViewStudent";
 import TeacherProfile from "./pages/Teachers/TeacherProfile";
-import StudentDetails from "./pages/Teachers/StudentDetails/StudentDetails";
 import ManageProgress from "./pages/Teachers/ManageProgress/ManageProgress";
 import StudentProgressView from "./pages/Teachers/ManageProgress/StudentProgressView";
 import TeacherChatbot from "./pages/Teachers/Chatbot/TeacherChatbot"; 
@@ -181,12 +179,10 @@ function App() {
           }
         >
           <Route path="dashboard" element={<TeacherDashboard />} />
-          <Route path="view-student" element={<ViewStudent />} />
           <Route path="manage-categories" element={<ManageCategories />} />
           <Route path="profile" element={<TeacherProfile />} />
           <Route path="manage-progress" element={<ManageProgress />} />
           <Route path="student-progress/:id" element={<StudentProgressView />} />
-          <Route path="student-details/:id" element={<StudentDetails />} />
           <Route path="chatbot" element={<TeacherChatbot />} />
           <Route path="student-report" element={<StudentProgressPDF />} />
           

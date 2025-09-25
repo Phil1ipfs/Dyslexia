@@ -1,0 +1,666 @@
+/* IEP Report PDF Styles - Dedicated CSS for PDF Generation */
+/* This file is specifically for PDF styling to avoid conflicts with other CSS */
+
+/* PDF Container - Short Bond Paper Format */
+.iep-pdf-container {
+  width: 100%;
+  max-width: 816px; /* 8.5 inches * 96 DPI */
+  min-height: 1056px; /* 11 inches * 96 DPI */
+  margin: 0 auto;
+  padding: 25px 20px; /* Reduced margins for better space utilization */
+  background: white;
+  font-family: 'Times New Roman', serif;
+  font-size: 10pt; /* Smaller font for better fit */
+  line-height: 1.2; /* Tighter line height */
+  color: #000;
+  box-sizing: border-box;
+  overflow: visible; /* Ensure all content is visible */
+}
+
+/* Header Section */
+.iep-pdf-header {
+  text-align: center;
+  margin-bottom: 25px;
+  border-bottom: 3px solid #3B4F81;
+  padding-bottom: 20px;
+}
+
+.iep-pdf-logo {
+  max-height: 70px;
+  margin-bottom: 15px;
+}
+
+.iep-pdf-school-name {
+  font-size: 18pt;
+  font-weight: bold;
+  margin: 8px 0;
+  color: #3B4F81;
+  text-transform: uppercase;
+}
+
+.iep-pdf-school-tagline {
+  font-size: 11pt;
+  margin: 4px 0;
+  color: #374151;
+  font-style: italic;
+}
+
+.iep-pdf-school-address {
+  font-size: 10pt;
+  margin: 3px 0;
+  color: #374151;
+}
+
+.iep-pdf-school-contact {
+  font-size: 10pt;
+  margin: 3px 0;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Title Section */
+.iep-pdf-title-section {
+  text-align: center;
+  margin: 25px 0;
+  background: #f8fafc;
+  padding: 15px;
+  border: 2px solid #3B4F81;
+  border-radius: 8px;
+}
+
+.iep-pdf-main-title {
+  font-size: 16pt;
+  font-weight: bold;
+  margin: 10px 0;
+  color: #3B4F81;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.iep-pdf-school-year {
+  font-size: 11pt;
+  margin: 5px 0;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Section Titles */
+.iep-pdf-section-title {
+  font-size: 12pt; /* Reduced font size */
+  font-weight: bold;
+  margin: 15px 0 10px 0; /* Reduced margins */
+  color: white;
+  text-transform: uppercase;
+  background: #3B4F81;
+  padding: 8px 12px; /* Reduced padding */
+  border-radius: 5px;
+  letter-spacing: 0.5px;
+  page-break-after: avoid; /* Prevent section title from being orphaned */
+  page-break-inside: avoid;
+  display: block; /* Ensure it's visible */
+}
+
+/* Student Information */
+.iep-pdf-student-info {
+  margin: 15px 0;
+  padding: 15px;
+  background: #f8fafc;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  border-left: 5px solid #3B4F81;
+}
+
+.iep-pdf-info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.iep-pdf-info-item {
+  flex: 1;
+  min-width: 200px;
+  margin: 3px 0;
+  font-size: 11pt;
+}
+
+.iep-pdf-info-item strong {
+  color: #3B4F81;
+  font-weight: bold;
+}
+
+/* Performance Summary */
+.iep-pdf-performance-summary {
+  margin: 15px 0;
+  padding: 15px;
+  background: #f8fafc;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  border-left: 5px solid #3B4F81;
+  page-break-inside: avoid; /* Keep summary together */
+}
+
+.iep-pdf-summary-content {
+  line-height: 1.4;
+}
+
+.iep-pdf-summary-text {
+  margin: 0 0 12px 0;
+  font-size: 10pt;
+  line-height: 1.4;
+  color: #374151;
+  text-align: justify;
+}
+
+/* Table Styling */
+.iep-pdf-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0; /* Reduced margin */
+  font-size: 9pt; /* Smaller font for better fit */
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  page-break-inside: auto; /* Allow table to break across pages */
+}
+
+.iep-pdf-table th {
+  background: #3B4F81;
+  color: white;
+  padding: 8px 6px; /* Reduced padding */
+  text-align: center;
+  font-weight: bold;
+  font-size: 9pt; /* Smaller font */
+  border: 1px solid #3B4F81;
+  page-break-after: avoid; /* Keep header with content */
+}
+
+.iep-pdf-th-category,
+.iep-pdf-th-score,
+.iep-pdf-th-intervention,
+.iep-pdf-th-support,
+.iep-pdf-th-remarks {
+  background: #3B4F81;
+  color: white;
+  padding: 12px 8px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 10pt;
+  border: 1px solid #3B4F81;
+}
+
+.iep-pdf-th-level {
+  background: #3B4F81;
+  color: white;
+  padding: 8px 4px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 9pt;
+  border: 1px solid #3B4F81;
+}
+
+.iep-pdf-th-empty {
+  background: #3B4F81;
+  border: 1px solid #3B4F81;
+  padding: 4px;
+}
+
+.iep-pdf-table td {
+  border: 1px solid #d1d5db;
+  padding: 6px 4px; /* Reduced padding */
+  vertical-align: top;
+  font-size: 8pt; /* Smaller font */
+  line-height: 1.2; /* Tighter line height */
+  page-break-inside: avoid; /* Prevent cell content from breaking */
+}
+
+.iep-pdf-table tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.iep-pdf-table tr:hover {
+  background: #f0f9ff;
+}
+
+.iep-pdf-tr {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.iep-pdf-empty-cell {
+  text-align: center;
+  font-style: italic;
+  color: #6b7280;
+  padding: 20px;
+  background: #f9fafb;
+}
+
+/* Category Column */
+.iep-pdf-category-cell {
+  width: 18%;
+  font-weight: bold;
+  color: #3B4F81;
+}
+
+.iep-pdf-category-name {
+  font-size: 11pt;
+  margin-bottom: 3px;
+}
+
+.iep-pdf-category-status {
+  font-size: 9pt;
+  color: #059669;
+  font-weight: normal;
+  font-style: italic;
+}
+
+/* Score Column */
+.iep-pdf-score-cell {
+  width: 15%;
+  text-align: center;
+}
+
+.iep-pdf-primary-score {
+  font-size: 12pt;
+  font-weight: bold;
+  margin-bottom: 3px;
+}
+
+.iep-pdf-score-passing {
+  color: #059669;
+}
+
+.iep-pdf-score-failing {
+  color: #dc2626;
+}
+
+.iep-pdf-score-status {
+  font-size: 9pt;
+  color: #6b7280;
+}
+
+/* Intervention Column */
+.iep-pdf-intervention-cell {
+  width: 20%;
+  font-size: 9pt;
+}
+
+.iep-pdf-intervention-details {
+  line-height: 1.2;
+}
+
+.iep-pdf-intervention-attempts {
+  margin-bottom: 3px;
+  font-weight: bold;
+}
+
+.iep-pdf-intervention-latest {
+  margin-bottom: 3px;
+}
+
+.iep-pdf-intervention-result {
+  font-weight: bold;
+  color: #059669;
+  font-size: 8pt;
+}
+
+/* Support Level Columns */
+.iep-pdf-support-cell {
+  width: 8%;
+  text-align: center;
+  font-size: 14pt;
+  color: #059669;
+  font-weight: bold;
+}
+
+/* Remarks Column */
+.iep-pdf-remarks-cell {
+  width: 25%;
+  max-width: 200px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.iep-pdf-remarks-container {
+  max-height: 150px;
+  overflow-y: auto;
+  font-size: 9pt;
+  line-height: 1.2;
+  padding: 5px;
+  background: #f9fafb;
+  border-radius: 4px;
+}
+
+.iep-pdf-remarks-section {
+  margin-bottom: 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.iep-pdf-remarks-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.iep-pdf-remarks-label {
+  font-weight: bold;
+  font-size: 8pt;
+  margin-bottom: 3px;
+  color: #374151;
+  text-transform: uppercase;
+}
+
+.iep-pdf-remarks-content {
+  font-size: 8pt;
+  line-height: 1.3;
+  word-wrap: break-word;
+  color: #4b5563;
+}
+
+.iep-pdf-attempt-remark {
+  margin-bottom: 4px;
+  font-size: 8pt;
+  line-height: 1.2;
+  padding: 2px 4px;
+  background: #f3f4f6;
+  border-radius: 3px;
+}
+
+.iep-pdf-no-remarks {
+  font-style: italic;
+  color: #9ca3af;
+  font-size: 8pt;
+}
+
+/* Intervention Details Section */
+.iep-pdf-intervention-details {
+  margin: 15px 0; /* Reduced margin */
+  page-break-before: auto; /* Allow natural page flow */
+  page-break-inside: auto; /* Allow content to flow across pages */
+}
+
+.iep-pdf-intervention-content {
+  margin-top: 15px;
+}
+
+.iep-pdf-intervention-category {
+  margin-bottom: 25px;
+  page-break-inside: avoid;
+}
+
+.iep-pdf-intervention-category-title {
+  font-size: 12pt;
+  font-weight: bold;
+  color: #3B4F81;
+  margin: 0 0 10px 0;
+  padding: 8px 12px;
+  background: #f1f5f9;
+  border-left: 4px solid #3B4F81;
+  border-radius: 4px;
+}
+
+.iep-pdf-intervention-table {
+  margin: 10px 0;
+  overflow-x: auto;
+}
+
+.iep-pdf-intervention-table-content {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8pt; /* Smaller font */
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  page-break-inside: auto; /* Allow table to break across pages */
+}
+
+.iep-pdf-intervention-th {
+  background: #3B4F81;
+  color: white;
+  padding: 6px 4px; /* Reduced padding */
+  text-align: center;
+  font-weight: bold;
+  font-size: 8pt; /* Smaller font */
+  border: 1px solid #3B4F81;
+  page-break-after: avoid; /* Keep header with content */
+}
+
+.iep-pdf-intervention-tr {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.iep-pdf-intervention-td {
+  border: 1px solid #d1d5db;
+  padding: 4px 3px; /* Reduced padding */
+  text-align: center;
+  vertical-align: middle;
+  font-size: 7pt; /* Smaller font */
+  line-height: 1.1; /* Tighter line height */
+  page-break-inside: avoid; /* Prevent cell content from breaking */
+}
+
+.iep-pdf-intervention-tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.iep-pdf-intervention-score {
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 9pt;
+}
+
+.iep-pdf-intervention-score.passed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.iep-pdf-intervention-score.failed {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.iep-pdf-intervention-status {
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 8pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.iep-pdf-intervention-status.status-passed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.iep-pdf-intervention-status.status-failed {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.iep-pdf-intervention-remarks {
+  text-align: left !important;
+  max-width: 200px;
+  word-wrap: break-word;
+}
+
+.iep-pdf-intervention-remarks-content {
+  padding: 4px;
+  font-size: 8pt;
+  line-height: 1.3;
+}
+
+.iep-pdf-intervention-remark-text {
+  color: #374151;
+  word-wrap: break-word;
+  white-space: normal;
+  display: block;
+}
+
+.iep-pdf-intervention-no-remarks {
+  color: #9ca3af;
+  font-style: italic;
+  font-size: 8pt;
+}
+
+
+
+/* Signatures Section */
+.iep-pdf-signatures {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 25px;
+  border-top: 2px solid #3B4F81;
+  page-break-inside: avoid;
+}
+
+.iep-pdf-signature {
+  text-align: center;
+  width: 45%;
+  padding: 15px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+}
+
+.iep-pdf-sign-line {
+  border-bottom: 2px solid #3B4F81;
+  height: 50px;
+  margin-bottom: 8px;
+  background: white;
+  border-radius: 4px;
+}
+
+.iep-pdf-sign-name {
+  font-size: 12pt;
+  margin: 0 0 5px 0;
+  color: #3B4F81;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #3B4F81;
+  padding-bottom: 5px;
+}
+
+.iep-pdf-sign-title {
+  font-size: 10pt;
+  margin: 0 0 8px 0;
+  color: #374151;
+  font-weight: normal;
+  font-style: italic;
+}
+
+.iep-pdf-sign-date {
+  font-size: 10pt;
+  margin: 0;
+  color: #374151;
+  font-weight: normal;
+}
+
+/* Print Media Queries for Proper Page Breaks */
+@media print {
+  .iep-pdf-container {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0.4in !important; /* Reduced padding for print */
+    box-shadow: none !important;
+    font-size: 9pt !important;
+    line-height: 1.1 !important;
+  }
+  
+  /* Force page breaks for major sections */
+  .iep-pdf-intervention-details {
+    page-break-before: auto !important;
+  }
+  
+  /* Table adjustments for print */
+  .iep-pdf-table {
+    font-size: 8pt !important;
+    page-break-inside: auto !important;
+  }
+  
+  .iep-pdf-table th,
+  .iep-pdf-table td {
+    padding: 4px 3px !important;
+    font-size: 8pt !important;
+  }
+  
+  /* Intervention table adjustments */
+  .iep-pdf-intervention-table-content {
+    font-size: 7pt !important;
+    page-break-inside: auto !important;
+  }
+  
+  .iep-pdf-intervention-th,
+  .iep-pdf-intervention-td {
+    padding: 3px 2px !important;
+    font-size: 7pt !important;
+  }
+  
+  /* Prevent orphaned headers */
+  .iep-pdf-section-title {
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  
+  /* Reduce margins for print */
+  .iep-pdf-header {
+    margin-bottom: 15px !important;
+    padding-bottom: 10px !important;
+  }
+  
+  .iep-pdf-student-info {
+    margin: 10px 0 !important;
+    padding: 10px !important;
+  }
+  
+  .iep-pdf-remarks-container {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  
+  /* Signature adjustments for print */
+  .iep-pdf-sign-name {
+    font-size: 11pt !important;
+  }
+  
+  .iep-pdf-sign-title {
+    font-size: 9pt !important;
+  }
+  
+  .iep-pdf-sign-date {
+    font-size: 9pt !important;
+  }
+}
+
+/* Utility Classes */
+.iep-pdf-text-center {
+  text-align: center;
+}
+
+.iep-pdf-text-bold {
+  font-weight: bold;
+}
+
+.iep-pdf-text-italic {
+  font-style: italic;
+}
+
+.iep-pdf-mb-10 {
+  margin-bottom: 10px;
+}
+
+.iep-pdf-mb-15 {
+  margin-bottom: 15px;
+}
+
+.iep-pdf-mb-20 {
+  margin-bottom: 20px;
+}

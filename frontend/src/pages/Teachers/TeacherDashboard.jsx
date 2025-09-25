@@ -267,14 +267,14 @@ const TeacherDashboard = () => {
   };
 
   /**
-   * Navigate to student details page
+   * Navigate to student progress page
    * @param {Object} student - Student to view
    */
   const viewStudentDetails = (student) => {
     if (studentDetailOpen) {
       closeStudentDetail();
     }
-    navigate(`/teacher/student-details/${student.id}`);
+    navigate(`/teacher/student-progress/${student.id}`);
   };
 
   /**
