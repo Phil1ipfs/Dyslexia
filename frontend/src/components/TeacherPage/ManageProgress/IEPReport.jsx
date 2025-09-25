@@ -99,6 +99,87 @@ const IEPReport = ({
 
   // Refs for PDF generation
   const reportRef = useRef();
+
+  // Utility function to clean teacher remarks and filter out file paths
+  const cleanTeacherRemarks = (remark) => {
+    if (!remark || typeof remark !== 'string') {
+      return null;
+    }
+
+    const cleanedRemark = remark.trim();
+
+    // Check if the remark contains file paths (common patterns)
+    const filePathPatterns = [
+      '/Users/',
+      '/Documents/',
+      '/backend/',
+      '/frontend/',
+      'goodboykit/Documents',
+      '/Dyslexia/',
+      'xshcdfhckbskcsdsds',
+      'C:\\',
+      'D:\\',
+      '.pdf',
+      '.doc',
+      '.txt'
+    ];
+
+    // If the remark contains any file path patterns, consider it invalid
+    const containsFilePath = filePathPatterns.some(pattern =>
+      cleanedRemark.includes(pattern)
+    );
+
+    if (containsFilePath) {
+      console.warn('File path detected in teacher remarks, filtering out:', cleanedRemark);
+      return null;
+    }
+
+    // If the remark is too long (likely a corrupted path), consider it invalid
+    if (cleanedRemark.length > 500) {
+      console.warn('Remark too long (possibly corrupted), filtering out');
+      return null;
+    }
+
+    // Return cleaned remark if valid
+    return cleanedRemark.length > 0 ? cleanedRemark : null;
+  };
+
+  // IMPROVED: Enhanced function to extract clean text before file path corruption
+  const extractCleanRemark = (remark) => {
+    if (!remark || typeof remark !== 'string') {
+      return null;
+    }
+
+    let cleanedRemark = remark.trim();
+
+    // File path patterns to identify corruption points
+    const filePathPatterns = [
+      '/Users/',
+      '/Documents/',
+      '/backend/',
+      '/frontend/',
+      'goodboykit/Documents',
+      '/Dyslexia/'
+    ];
+
+    // If the remark contains file paths, extract only the text before the file path corruption
+    for (const pattern of filePathPatterns) {
+      const pathIndex = cleanedRemark.indexOf(pattern);
+      if (pathIndex !== -1) {
+        // Extract text before the file path corruption
+        const textBeforePath = cleanedRemark.substring(0, pathIndex).trim();
+        if (textBeforePath.length >= 2) {
+          return textBeforePath;
+        } else {
+          // If no valid text before the path, return null
+          return null;
+        }
+      }
+    }
+
+    // If no file paths found, return the cleaned remark if it has actual content
+    return cleanedRemark.length >= 2 ? cleanedRemark : null;
+  };
   const loadedStudentRef = useRef(null);
   
   // Global state management to persist across component re-mounts
@@ -689,16 +770,14 @@ const IEPReport = ({
       try {
         // Use html2canvas to capture the report with optimized settings
         const canvas = await html2canvas(reportRef.current, {
-          scale: 1.8, // Optimized for short bond paper quality
+          scale: 1.5, // Balanced scale for quality and file size
           useCORS: true,
           logging: false,
           allowTaint: true,
           scrollY: -window.scrollY,
           backgroundColor: '#ffffff',
           removeContainer: true,
-          imageTimeout: 15000,
-          width: 816, // Short bond paper width equivalent (8.5 inches * 96 DPI)
-          height: 1056 // Short bond paper height equivalent (11 inches * 96 DPI)
+          imageTimeout: 15000
         });
 
         // Create PDF with short bond paper dimensions
@@ -711,21 +790,28 @@ const IEPReport = ({
         const imgW = pdfW;
         const imgH = (canvas.height * imgW) / canvas.width;
 
-        // Add image to PDF, potentially across multiple pages
-        let yOffset = 0;
-        let remainingH = imgH;
+        // Calculate how many pages we need based on content height
+        const totalPages = Math.ceil(imgH / pdfH);
+        
+        console.log('PDF generation info:', {
+          totalPages,
+          imgH,
+          pdfH,
+          canvasHeight: canvas.height,
+          canvasWidth: canvas.width
+        });
 
-        // First page
-        pdf.addImage(imgData, 'JPEG', 0, yOffset, imgW, imgH, undefined, 'FAST');
-        remainingH -= pdfH;
-        yOffset -= pdfH;
-
-        // Add extra pages if needed
-        while (remainingH > 0) {
+        // Add image to PDF across multiple pages
+        for (let pageNum = 0; pageNum < totalPages; pageNum++) {
+          if (pageNum > 0) {
           pdf.addPage();
+          }
+          
+          // Calculate the y-offset for this page
+          const yOffset = -pageNum * pdfH;
+          
+          // Add the image to this page
           pdf.addImage(imgData, 'JPEG', 0, yOffset, imgW, imgH, undefined, 'FAST');
-          remainingH -= pdfH;
-          yOffset -= pdfH;
         }
 
         // Save the PDF with the student's name
@@ -807,16 +893,14 @@ const IEPReport = ({
 
           // Generate PDF data with optimized settings for short bond paper
           const canvas = await html2canvas(element, {
-            scale: 2.0, // High quality for short bond paper
+            scale: 1.5, // Balanced scale for quality and file size
             useCORS: true,
             scrollY: -window.scrollY,
             logging: false,
             imageTimeout: 15000,
             backgroundColor: '#ffffff',
             allowTaint: true,
-            removeContainer: true,
-            width: 816, // Short bond paper width (8.5" x 11")
-            height: 1056 // Short bond paper height
+            removeContainer: true
           });
 
           const imgData = canvas.toDataURL('image/jpeg', 0.8); // High quality JPEG
@@ -2427,8 +2511,10 @@ const IEPReport = ({
                 </div>
 
                 {/* IEP Progress Table */}
-                <div className="iep-pdf-section-title">Learning Objectives and Progress</div>
-                <div className="iep-pdf-progress-table">
+                <div className="iep-pdf-page-2-section">
+                  <div className="iep-pdf-page-break-indicator"></div>
+                  <div className="iep-pdf-section-title">Learning Objectives and Progress</div>
+                  <div className="iep-pdf-progress-table">
                   <table className="iep-pdf-table">
                     <thead>
                       <tr>
@@ -2530,7 +2616,7 @@ const IEPReport = ({
                                     <div className="iep-pdf-remarks-section">
                                       <div className="iep-pdf-remarks-label">Assessment:</div>
                                       <div className="iep-pdf-remarks-content">
-                                        {objective.remarks || objective.mainAssessmentRemarks}
+                                        {extractCleanRemark(objective.remarks || objective.mainAssessmentRemarks) || 'No assessment remarks added'}
                                       </div>
                                     </div>
                                   )}
@@ -2541,15 +2627,15 @@ const IEPReport = ({
                                       <div className="iep-pdf-remarks-label">Intervention:</div>
                                       <div className="iep-pdf-intervention-remarks">
                                         {categoryData.interventionHistory
-                                          .filter(attempt => attempt.teacherRemarks && attempt.teacherRemarks.trim())
+                                          .filter(attempt => extractCleanRemark(attempt.teacherRemarks))
                                           .map((attempt, idx) => (
                                             <div key={idx} className="iep-pdf-attempt-remark">
                                               <small>Attempt {attempt.attemptNumber}: </small>
-                                              {attempt.teacherRemarks}
+                                              {extractCleanRemark(attempt.teacherRemarks) || 'No remarks added'}
                                   </div>
                                           ))
                                         }
-                                        {!categoryData.interventionHistory.some(attempt => attempt.teacherRemarks) && (
+                                        {!categoryData.interventionHistory.some(attempt => extractCleanRemark(attempt.teacherRemarks)) && (
                                           <small className="iep-pdf-no-remarks">No intervention remarks added</small>
                                         )}
                                       </div>
@@ -2558,7 +2644,7 @@ const IEPReport = ({
 
                                   {/* No remarks message */}
                                   {!(objective.remarks || objective.mainAssessmentRemarks) &&
-                                   !(categoryData?.interventionHistory?.some(attempt => attempt.teacherRemarks)) && (
+                                   !(categoryData?.interventionHistory?.some(attempt => extractCleanRemark(attempt.teacherRemarks))) && (
                                     <div className="iep-pdf-no-remarks">No remarks added</div>
                                 )}
                               </div>
@@ -2576,17 +2662,19 @@ const IEPReport = ({
                     </tbody>
                   </table>
                 </div>
+                      </div>
 
                 {/* Intervention Details Section - Only show if we have intervention data */}
-                {currentIepData && currentIepData.objectives && currentIepData.objectives.length > 0 && 
+                {currentIepData && currentIepData.objectives && currentIepData.objectives.length > 0 &&
                  currentIepData.objectives.some(objective => {
                    const categoryData = currentIepData.categories?.find(cat =>
                      cat.categoryName === getCategoryName(objective.lesson)
                    );
-                   return objective.hasIntervention || 
+                   return objective.hasIntervention ||
                      (categoryData && categoryData.interventionHistory && categoryData.interventionHistory.length > 0);
                  }) && (
                   <div className="iep-pdf-intervention-details">
+                    <div className="iep-pdf-page-break-indicator"></div>
                     <div className="iep-pdf-section-title">Intervention Details</div>
                     <div className="iep-pdf-intervention-content">
                       {currentIepData.objectives.map((objective, index) => {
@@ -2603,7 +2691,10 @@ const IEPReport = ({
                         }
                         
                         return (
-                          <div key={index} className="iep-pdf-intervention-category">
+                          <div key={index} className={`iep-pdf-intervention-category ${index >= 3 ? 'iep-pdf-page-4-category' : ''}`}>
+                            {/* Add page break after first 3 categories (index 2) for page 4 layout */}
+                            {index === 3 && <div className="iep-pdf-page-break-indicator"></div>}
+                            
                             <h4 className="iep-pdf-intervention-category-title">
                               {objective.categoryName || getCategoryName(objective.lesson)}
                             </h4>
@@ -2637,9 +2728,9 @@ const IEPReport = ({
                                       </td>
                                       <td className="iep-pdf-intervention-td iep-pdf-intervention-remarks">
                                         <div className="iep-pdf-intervention-remarks-content">
-                                          {attempt.teacherRemarks && attempt.teacherRemarks.trim() ? (
+                                          {extractCleanRemark(attempt.teacherRemarks) ? (
                                             <span className="iep-pdf-intervention-remark-text">
-                                              {attempt.teacherRemarks}
+                                              {extractCleanRemark(attempt.teacherRemarks) || 'No remarks added'}
                                             </span>
                                           ) : (
                                             <span className="iep-pdf-intervention-no-remarks">
@@ -2660,15 +2751,13 @@ const IEPReport = ({
                   </div>
                 )}
 
-
-
-                {/* Authorized Personnel */}
+                {/* Authorized Personnel - Stay on page 4 with last 2 categories */}
                 <div className="iep-pdf-signatures">
                   <div className="iep-pdf-signature">
                     <p className="iep-pdf-sign-name">{getTeacherName()}</p>
                     <p className="iep-pdf-sign-title">Grade 1 Teacher</p>
                     <p className="iep-pdf-sign-date">Date: {new Date().toLocaleDateString()}</p>
-                  </div>
+                </div>
                   <div className="iep-pdf-signature">
                     <p className="iep-pdf-sign-name">Ms. Jasmine P. Lim</p>
                     <p className="iep-pdf-sign-title">School Principal</p>

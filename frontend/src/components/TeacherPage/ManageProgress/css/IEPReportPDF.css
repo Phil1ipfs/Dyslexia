@@ -100,6 +100,51 @@
   display: block; /* Ensure it's visible */
 }
 
+/* Page break indicator for visual separation */
+.iep-pdf-page-break-indicator {
+  height: 50px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  page-break-before: always !important;
+  break-before: page !important;
+}
+
+/* Force Learning Objectives section to start on a new page (Page 2) */
+.iep-pdf-page-2-section {
+  page-break-before: always !important;
+  break-before: page !important;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  margin-top: 0 !important;
+  padding-top: 20px !important;
+}
+
+/* Force Intervention Details to start on a new page (Page 3) */
+.iep-pdf-intervention-details {
+  page-break-before: always !important;
+  break-before: page !important;
+  margin-top: 0 !important;
+  padding-top: 20px !important;
+}
+
+/* Ensure section titles don't break */
+.iep-pdf-section-title {
+  page-break-after: avoid !important;
+  break-after: avoid !important;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+/* Ensure the progress table stays together */
+.iep-pdf-progress-table {
+  page-break-after: avoid !important;
+  break-after: avoid !important;
+  page-break-inside: auto !important;
+  break-inside: auto !important;
+}
+
 /* Student Information */
 .iep-pdf-student-info {
   margin: 15px 0;
@@ -576,8 +621,40 @@
   }
   
   /* Force page breaks for major sections */
+  .iep-pdf-page-break-indicator {
+    page-break-before: always !important;
+    break-before: page !important;
+    height: 50px !important;
+  }
+  
+  .iep-pdf-page-2-section {
+    page-break-before: always !important;
+    break-before: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-top: 0 !important;
+    padding-top: 20px !important;
+  }
+  
   .iep-pdf-intervention-details {
-    page-break-before: auto !important;
+    page-break-before: always !important;
+    break-before: page !important;
+    margin-top: 0 !important;
+    padding-top: 20px !important;
+  }
+  
+  .iep-pdf-section-title {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  
+  .iep-pdf-progress-table {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
   }
   
   /* Table adjustments for print */
@@ -664,3 +741,4 @@
 .iep-pdf-mb-20 {
   margin-bottom: 20px;
 }
+
