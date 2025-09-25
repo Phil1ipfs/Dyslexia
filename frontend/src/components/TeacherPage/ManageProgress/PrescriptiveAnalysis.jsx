@@ -5927,6 +5927,80 @@ const PrescriptiveAnalysis = ({
                               return null;
                             })()}
 
+                            {/* Display Reading Comprehension passages and questions */}
+                            {selectedInterventionData.category === 'Reading Comprehension' && (() => {
+                              // Find the corresponding question in the intervention assessment
+                              if (selectedInterventionData?.interventionAssessment?.questions) {
+                                const question = selectedInterventionData.interventionAssessment.questions.find(
+                                  q => q.questionId === response.questionId
+                                );
+                                
+                                if (question) {
+                                  return (
+                                    <div className="intervention-response-reading-comprehension">
+                                      {/* Display story title */}
+                                      {question.storyTitle && (
+                                        <div className="intervention-response-story-title">
+                                          <h6>Story Title:</h6>
+                                          <p className="intervention-response-story-title-text">{question.storyTitle}</p>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Display passages */}
+                                      {question.passages && question.passages.length > 0 && (
+                                        <div className="intervention-response-passages">
+                                          <h6>Reading Passage:</h6>
+                                          {question.passages.map((passage, index) => (
+                                            <div key={index} className="intervention-response-passage">
+                                              <div className="intervention-response-passage-text">
+                                                {passage.text}
+                                              </div>
+                                              {passage.image && (
+                                                <div className="intervention-response-passage-image">
+                                                  <img
+                                                    src={sanitizeImageUrl(passage.image)}
+                                                    alt={`Passage ${index + 1} image`}
+                                                    className="intervention-response-image"
+                                                    onError={(e) => {
+                                                      e.target.style.display = 'none';
+                                                      const errorDiv = document.createElement('div');
+                                                      errorDiv.className = 'intervention-response-image-error';
+                                                      errorDiv.innerHTML = `
+                                                        <div style="padding: 10px; text-align: center; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #dc2626; font-size: 12px;">
+                                                          <strong>Image Loading Failed</strong><br>
+                                                          <small>Passage image unavailable</small>
+                                                        </div>
+                                                      `;
+                                                      e.target.parentNode.appendChild(errorDiv);
+                                                    }}
+                                                  />
+                                                </div>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Display sentence questions */}
+                                      {question.sentenceQuestions && question.sentenceQuestions.length > 0 && (
+                                        <div className="intervention-response-sentence-questions">
+                                          <h6>Questions:</h6>
+                                          {question.sentenceQuestions.map((sentenceQ, index) => (
+                                            <div key={index} className="intervention-response-sentence-question">
+                                              <div className="intervention-response-sentence-question-text">
+                                                <strong>Q{sentenceQ.questionNumber}:</strong> {sentenceQ.questionText}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                }
+                              }
+                              return null;
+                            })()}
+
                             {/* Display Sequence for Decoding questions */}
                             {selectedInterventionData.category === 'Decoding' && (() => {
                               // Find the corresponding question in the intervention assessment
@@ -6076,6 +6150,32 @@ const PrescriptiveAnalysis = ({
                                   {(() => {
                                     if (!response.response) return 'No response';
 
+                                    // Handle Reading Comprehension responses
+                                    if (selectedInterventionData.category === 'Reading Comprehension' && Array.isArray(response.response)) {
+                                      // Find the corresponding question to get sentence questions
+                                      if (selectedInterventionData?.interventionAssessment?.questions) {
+                                        const question = selectedInterventionData.interventionAssessment.questions.find(
+                                          q => q.questionId === response.questionId
+                                        );
+                                        
+                                        if (question && question.sentenceQuestions) {
+                                          // Map each response to its corresponding sentence question
+                                          return response.response.map((studentAnswer, index) => {
+                                            const sentenceQ = question.sentenceQuestions[index];
+                                            if (sentenceQ) {
+                                              return `Q${sentenceQ.questionNumber}: ${studentAnswer}`;
+                                            }
+                                            return `Q${index + 1}: ${studentAnswer}`;
+                                          }).join('; ');
+                                        }
+                                      }
+                                      
+                                      // Fallback: just show the responses with Q numbers
+                                      return response.response.map((answer, index) => 
+                                        `Q${index + 1}: ${answer}`
+                                      ).join('; ');
+                                    }
+
                                     // Handle Phonological Awareness audio-visual pairs
                                     if (typeof response.response === 'object' && Array.isArray(response.response)) {
                                       // Format: [{"audio": "S", "match": "Aa"}, {"audio": "A", "match": "Ss"}, {"audio": "V", "match": "Vv"}]
@@ -6122,7 +6222,14 @@ const PrescriptiveAnalysis = ({
                                         console.log('🔍 [CORRECT ANSWER] Found question for', response.questionId, ':', question);
 
                                         if (question) {
-                                          // DYNAMIC CORRECT ANSWER EXTRACTION FOR ALL CATEGORIES
+                                          // Special handling for Reading Comprehension
+                                          if (selectedInterventionData.category === 'Reading Comprehension' && question.sentenceQuestions) {
+                                            return question.sentenceQuestions.map((sentenceQ, index) => 
+                                              `Q${sentenceQ.questionNumber}: ${sentenceQ.sentenceCorrectAnswer}`
+                                            ).join('; ');
+                                          }
+                                          
+                                          // DYNAMIC CORRECT ANSWER EXTRACTION FOR ALL OTHER CATEGORIES
                                           return extractCorrectAnswerForCategory(question, selectedInterventionData.category);
                                         }
 
