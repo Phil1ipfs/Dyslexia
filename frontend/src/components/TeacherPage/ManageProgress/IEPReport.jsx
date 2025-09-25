@@ -578,7 +578,7 @@ const IEPReport = ({
           <textarea
             value={currentRemarks || ''}
             onChange={(e) => handleRemarksChange(objective._id, e.target.value)}
-            placeholder="Add your remarks about the student's progress..."
+            placeholder="Add remarks here..."
             disabled={saving}
             rows={3}
           />
@@ -1150,40 +1150,36 @@ const IEPReport = ({
                 </div>
               </div>
 
-              <div className="literexia-remark-editor-simple">
-                <div className="literexia-remark-header">
-                  <h4>Your Remark</h4>
-                  <p>Write your observations and feedback for this attempt.</p>
-                </div>
-                
-                <div className="literexia-remark-textarea-container">
+              <div className="iep-modal-editor">
+                <label htmlFor="attempt-remark">Your Remark</label>
+                <div className="iep-modal-textarea-container">
                   <textarea
-                    className="literexia-remark-textarea"
-                    placeholder="Enter your remark here... (e.g., 'Student showed improvement in letter recognition but still needs practice with vowel sounds.')"
+                    id="attempt-remark"
+                    className="iep-modal-textarea"
+                    placeholder="Enter your remark here..."
                     value={attemptModal.attempt.teacherRemarks || ''}
                     onChange={(e) => {
                       const updatedAttempt = { ...attemptModal.attempt, teacherRemarks: e.target.value };
                       setAttemptModal({ ...attemptModal, attempt: updatedAttempt });
                     }}
-                    rows={6}
                     maxLength={500}
                   />
-                  <div className="literexia-remark-counter">
+                  <div className="iep-modal-counter">
                     {(attemptModal.attempt.teacherRemarks || '').length}/500 characters
                   </div>
                 </div>
               </div>
 
-              <div className="literexia-attempt-actions">
+              <div className="iep-modal-actions">
                 <button 
-                  className="literexia-btn-secondary"
+                  className="iep-modal-btn-secondary"
                   onClick={closeAttemptModal}
                   disabled={saving}
                 >
                   Cancel
                 </button>
                 <button 
-                  className="literexia-btn-primary"
+                  className="iep-modal-btn-primary"
                   onClick={() => saveAttemptRemark(
                     attemptModal.objective._id, 
                     attemptModal.attemptIndex, 
@@ -1218,42 +1214,48 @@ const IEPReport = ({
             </div>
 
             <div className="literexia-modal-content">
-              <div className="literexia-remark-editor">
+              <div className="iep-modal-editor">
                 <label htmlFor="assessment-remark">Add your remarks about the student's post assessment:</label>
-                <textarea
-                  id="assessment-remark"
-                  value={assessmentModal.objective.mainAssessmentRemarks || ''}
-                  onChange={(e) => {
-                    const updatedObjective = { ...assessmentModal.objective, mainAssessmentRemarks: e.target.value };
-                    setAssessmentModal(prev => ({ ...prev, objective: updatedObjective }));
-                  }}
-                  placeholder="Enter your remarks about the student's post assessment performance..."
-                  rows={6}
-                  maxLength={500}
-                />
-                <div className="literexia-remark-counter">
-                  {(assessmentModal.objective.mainAssessmentRemarks || '').length}/500 characters
+                <div className="iep-modal-textarea-container">
+                  <textarea
+                    id="assessment-remark"
+                    className="iep-modal-textarea"
+                    value={assessmentModal.objective.mainAssessmentRemarks || ''}
+                    onChange={(e) => {
+                      const updatedObjective = { ...assessmentModal.objective, mainAssessmentRemarks: e.target.value };
+                      setAssessmentModal(prev => ({ ...prev, objective: updatedObjective }));
+                    }}
+                    placeholder="Type your remarks here..."
+                    maxLength={500}
+                  />
+                  <div className="iep-modal-counter">
+                    {(assessmentModal.objective.mainAssessmentRemarks || '').length}/500 characters
+                  </div>
+                </div>
+                <div className="iep-modal-actions">
+                  <button
+                    type="button"
+                    className="iep-modal-btn-secondary"
+                    onClick={closeAssessmentModal}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="iep-modal-btn-primary"
+                    onClick={() => {
+                      // Save the remarks here
+                      closeAssessmentModal();
+                    }}
+                    disabled={!(assessmentModal.objective.mainAssessmentRemarks || '').trim()}
+                  >
+                    <FaSave />
+                    Save Remarks
+                  </button>
                 </div>
               </div>
             </div>
 
-            <div className="literexia-attempt-actions">
-              <button 
-                className="literexia-btn-secondary"
-                onClick={closeAssessmentModal}
-                disabled={saving}
-              >
-                Cancel
-              </button>
-              <button 
-                className="literexia-btn-primary"
-                onClick={() => saveMainRemarks(assessmentModal.objective._id)}
-                disabled={saving}
-              >
-                {saving ? <FaSpinner className="spinning" /> : <FaSave />}
-                {saving ? 'Saving...' : 'Save Remarks'}
-              </button>
-            </div>
           </div>
         </div>
       )}

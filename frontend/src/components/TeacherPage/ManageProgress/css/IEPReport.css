@@ -2614,7 +2614,7 @@
   border-radius: 12px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   max-width: 600px;
-  width: 100%;
+    width: 100%;
   max-height: 80vh;
   overflow: hidden;
   display: flex;
@@ -2699,6 +2699,9 @@
   overflow-y: auto;
   flex: 1;
   background: #fafbfc;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .literexia-intervention-summary-modal {
@@ -2995,9 +2998,10 @@
 .literexia-attempt-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
-  padding-top: 1rem;
+  gap: 2rem;
+  padding: 1.5rem 0 0 0;
   border-top: 1px solid #e5e7eb;
+  margin-top: 1rem;
 }
 
 .literexia-remarks-editor-modal {
@@ -3161,14 +3165,21 @@
   line-height: 1.5;
 }
 
-.literexia-remarks-textarea-container {
+.iep-modal-textarea-container {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
 }
 
-.literexia-remarks-textarea-modal {
+.iep-modal-textarea {
   width: 100%;
-  min-height: 200px;
-  padding: 1.25rem;
+  min-height: 120px;
+  padding: 1.5rem;
   border: 2px solid #e5e7eb;
   border-radius: 12px;
   font-size: 0.875rem;
@@ -3178,55 +3189,67 @@
   resize: vertical;
   transition: all 0.2s;
   font-family: inherit;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  outline: none;
 }
 
-.literexia-remarks-textarea-modal:focus {
+.iep-modal-textarea:focus {
   outline: none;
   border-color: #3B4F81;
   background: white;
-  box-shadow: 0 0 0 3px rgba(59, 79, 129, 0.1), 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0 0 3px rgba(59, 79, 129, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15);
   transform: translateY(-1px);
 }
 
-.literexia-remarks-textarea-modal::placeholder {
+.iep-modal-textarea::placeholder {
   color: #9ca3af;
+  font-style: italic;
 }
 
-/* Modal label styling */
-.literexia-remark-editor label {
+/* Modal remark editor styling */
+.iep-modal-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.iep-modal-editor label {
   display: block;
-  margin-bottom: 0.75rem;
   font-size: 0.875rem;
   font-weight: 600;
   color: #374151;
   line-height: 1.4;
+  margin: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.literexia-remarks-counter {
-  position: absolute;
-  bottom: 0.5rem;
-  right: 0.75rem;
+.iep-modal-counter {
+  align-self: flex-end;
   font-size: 0.75rem;
   color: #6b7280;
   background: rgba(255, 255, 255, 0.9);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
+  border: 1px solid #e5e7eb;
+  margin-top: 0.25rem;
+  font-weight: 500;
 }
 
-.literexia-remarks-actions-modal {
+.iep-modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
-  padding-top: 1rem;
+  gap: 2rem;
+  padding: 1.5rem 0 0 0;
   border-top: 1px solid #e5e7eb;
+  margin-top: 1rem;
 }
 
-.literexia-btn-primary {
+.iep-modal-btn-primary {
   background: linear-gradient(135deg, #3B4F81 0%, #2a3d6b 100%);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
+  padding: 0.875rem 2rem;
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 600;
@@ -3235,41 +3258,53 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-width: 140px;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.literexia-btn-primary:hover:not(:disabled) {
+.iep-modal-btn-primary:hover:not(:disabled) {
   background: linear-gradient(135deg, #2a3d6b 0%, #1e2a4a 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgba(59, 79, 129, 0.3);
 }
 
-.literexia-btn-primary:disabled {
+.iep-modal-btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
 }
 
-.literexia-btn-secondary {
+.iep-modal-btn-secondary {
   background: white;
   color: #3B4F81;
   border: 1px solid #3B4F81;
-  padding: 0.75rem 1.5rem;
+  padding: 0.875rem 2rem;
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 140px;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.literexia-btn-secondary:hover:not(:disabled) {
+.iep-modal-btn-secondary:hover:not(:disabled) {
   background: #f0f4ff;
   border-color: #2a3d6b;
   color: #2a3d6b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(59, 79, 129, 0.2);
 }
 
-.literexia-btn-secondary:disabled {
+.iep-modal-btn-secondary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
 /* Modal responsive design */
