@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  FaCheckCircle, 
+import {
+  FaCheckCircle,
   FaEdit,
-  FaSave, 
+  FaSave,
   FaTimes,
   FaExclamationTriangle,
   FaSpinner,
@@ -12,8 +12,15 @@ import {
   FaChartLine,
   FaUserGraduate,
   FaCalendarAlt,
-  FaSync,
   FaFlask,
+  FaArrowUp,
+  FaArrowDown,
+  FaEquals,
+  FaEye,
+  FaClipboardList,
+  FaAward,
+  FaExclamationCircle,
+  FaSync,
   FaRedoAlt
 } from 'react-icons/fa';
 import IEPService from '../../../services/Teachers/ManageProgress/IEPService';
@@ -28,6 +35,7 @@ const IEPReport = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [expandedInterventions, setExpandedInterventions] = useState({});
   const [error, setError] = useState(null);
   const [editingRemarks, setEditingRemarks] = useState({}); // Track which remarks are being edited
   const [tempRemarks, setTempRemarks] = useState({}); // Store temporary remarks during editing
@@ -102,6 +110,14 @@ const IEPReport = ({
     } finally {
       setRefreshing(false);
     }
+  };
+
+  // Toggle intervention details visibility
+  const toggleInterventionDetails = (objectiveId) => {
+    setExpandedInterventions(prev => ({
+      ...prev,
+      [objectiveId]: !prev[objectiveId]
+    }));
   };
 
   // Handle support level change (checkbox clicks)
@@ -221,33 +237,160 @@ const IEPReport = ({
     );
   };
 
-  // Render intervention status
+  // Render comprehensive intervention status with history
   const renderInterventionStatus = (objective) => {
     if (!objective.hasIntervention) {
+      const statusClass = objective.isPassed ? 'no-intervention-passed' : 'intervention-required';
       return (
-        <div className="literexia-intervention-status no-intervention">
-          <span>No intervention needed</span>
+        <div className={`literexia-intervention-status ${statusClass}`}>
+          <div className="literexia-no-intervention">
+            {objective.isPassed ? (
+              <>
+                <FaAward className="literexia-success-icon" />
+                <span>No intervention needed</span>
+              </>
+            ) : (
+              <>
+                <FaExclamationCircle className="literexia-warning-icon" />
+                <span>Intervention required</span>
+              </>
+            )}
+          </div>
         </div>
       );
     }
-    
+
+    const isExpanded = expandedInterventions[objective._id];
+    const latestScore = objective.latestInterventionScore || 0;
+    const improvementIcon = objective.interventionImprovement > 0 ? FaArrowUp :
+                           objective.interventionImprovement < 0 ? FaArrowDown : FaEquals;
+    const improvementClass = objective.interventionImprovement > 0 ? 'positive' :
+                            objective.interventionImprovement < 0 ? 'negative' : 'neutral';
+
     return (
       <div className="literexia-intervention-status has-intervention">
-        <div className="literexia-intervention-info">
-          <FaFlask />
-          <div className="literexia-intervention-details">
-            <span className="literexia-intervention-description">
-              {objective.interventionName}
-            </span>
-            <span className={`literexia-intervention-badge status-${objective.interventionStatus}`}>
-              {objective.interventionStatus}
-            </span>
-            {objective.interventionCreatedAt && (
-              <small className="literexia-intervention-date">
-                Created: {formatDate(objective.interventionCreatedAt)}
-              </small>
-            )}
+        <div className="literexia-intervention-summary">
+          <div className="literexia-intervention-header" onClick={() => toggleInterventionDetails(objective._id)}>
+            <div className="literexia-intervention-main">
+              <FaFlask className="literexia-intervention-icon" />
+              <div className="literexia-intervention-basic">
+                <div className="literexia-attempts-info">
+                  <span className="literexia-attempts-count">
+                    {objective.interventionAttempts || 0} attempt{(objective.interventionAttempts || 0) !== 1 ? 's' : ''}
+                  </span>
+                  <span className={`literexia-latest-score ${objective.latestInterventionPassed ? 'passed' : 'failed'}`}>
+                    Latest: {latestScore}%
+                  </span>
+                </div>
+                {objective.interventionImprovement !== undefined && (
+                  <div className={`literexia-improvement ${improvementClass}`}>
+                    {React.createElement(improvementIcon)}
+                    <span>{objective.interventionImprovement > 0 ? '+' : ''}{objective.interventionImprovement}%</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <FaEye className={`literexia-expand-icon ${isExpanded ? 'expanded' : ''}`} />
           </div>
+
+          {isExpanded && objective.interventionHistory && objective.interventionHistory.length > 0 && (
+            <div className="literexia-intervention-history">
+              <div className="literexia-history-header">
+                <FaClipboardList />
+                <span>Intervention History</span>
+              </div>
+              <div className="literexia-history-list">
+                {objective.interventionHistory.map((attempt, index) => {
+                  // Calculate improvement from previous attempt
+                  let improvementFromPrevious = 0;
+                  if (index > 0) {
+                    const previousScore = objective.interventionHistory[index - 1].score || 0;
+                    improvementFromPrevious = (attempt.score || 0) - previousScore;
+                  } else {
+                    // First attempt - compare to assessment
+                    improvementFromPrevious = (attempt.score || 0) - (objective.assessmentScore || 0);
+                  }
+
+                  return (
+                    <div key={index} className={`literexia-history-item ${attempt.isPassed ? 'passed' : 'failed'}`}>
+                      <div className="literexia-attempt-number">
+                        #{attempt.attemptNumber || (index + 1)}
+                        {attempt.revisionNumber && attempt.revisionNumber > 1 && (
+                          <small className="literexia-revision-info">v{attempt.revisionNumber}</small>
+                        )}
+                      </div>
+                      <div className="literexia-attempt-details">
+                        <div className="literexia-attempt-score">
+                          <strong>{attempt.score || 0}%</strong>
+                          <span className={`literexia-attempt-result ${attempt.isPassed ? 'passed' : 'failed'}`}>
+                            {attempt.isPassed ? 'PASSED' : 'FAILED'}
+                          </span>
+
+                          {/* Show improvement from previous */}
+                          {improvementFromPrevious !== 0 && (
+                            <span className={`literexia-score-change ${improvementFromPrevious > 0 ? 'positive' : 'negative'}`}>
+                              ({improvementFromPrevious > 0 ? '+' : ''}{improvementFromPrevious}%)
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="literexia-attempt-meta">
+                          {attempt.attemptedAt && (
+                            <div className="literexia-attempt-date">
+                              <FaCalendarAlt className="literexia-date-icon" />
+                              {formatDate(attempt.attemptedAt)}
+                            </div>
+                          )}
+
+                          {attempt.reason && attempt.reason !== 'intervention_attempt' && (
+                            <div className="literexia-attempt-reason">
+                              <FaInfoCircle className="literexia-reason-icon" />
+                              {attempt.reason === 'teacher_revision' ? 'After Teacher Revision' :
+                               attempt.reason === 'student_retake' ? 'Student Retake' :
+                               attempt.reason === 'initial_attempt' ? 'Initial Attempt' :
+                               attempt.reason.replace(/_/g, ' ')}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Progress indicator for this attempt */}
+                      {index === objective.interventionHistory.length - 1 && (
+                        <div className="literexia-latest-indicator">
+                          <FaAward className="literexia-latest-icon" />
+                          <small>Latest</small>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Summary of intervention journey */}
+                {objective.interventionHistory.length > 1 && (
+                  <div className="literexia-intervention-summary">
+                    <div className="literexia-journey-stats">
+                      <div className="literexia-stat-item">
+                        <FaChartLine className="literexia-stat-icon" />
+                        <span>Total Attempts: {objective.interventionAttempts || objective.interventionHistory.length}</span>
+                      </div>
+
+                      {objective.interventionImprovement !== 0 && (
+                        <div className="literexia-stat-item">
+                          {objective.interventionImprovement > 0 ? <FaArrowUp className="literexia-stat-icon positive" /> : <FaArrowDown className="literexia-stat-icon negative" />}
+                          <span>Overall Progress: {objective.interventionImprovement > 0 ? '+' : ''}{objective.interventionImprovement}%</span>
+                        </div>
+                      )}
+
+                      <div className="literexia-stat-item">
+                        {objective.latestInterventionPassed ? <FaCheck className="literexia-stat-icon passed" /> : <FaTimes className="literexia-stat-icon failed" />}
+                        <span>Status: {objective.latestInterventionPassed ? 'Successfully Completed' : 'Needs Further Support'}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -461,6 +604,9 @@ const IEPReport = ({
             {refreshing ? <FaSpinner className="spinning" /> : <FaRedoAlt />}
             Refresh Interventions
           </button>
+          <div className="literexia-table-info">
+            <span>Click intervention details to view attempt history</span>
+          </div>
         </div>
         
         <div className="literexia-table-responsive">
@@ -496,16 +642,58 @@ const IEPReport = ({
                     </div>
                 </td>
                   <td className="literexia-category-cell">
-                    <span className={`literexia-category-badgeee categoryy-${objective.categoryName.toLowerCase().replace(/_/g, '-')}`}>
+                    <span className={`literexia-category-badge category-${objective.categoryName.toLowerCase().replace(/_/g, '-')}`}>
                       {objective.categoryName.replace(/_/g, ' ')}
                     </span>
                 </td>
                   <td className="literexia-score-cell">
                     <div className="literexia-score-display">
-                      <span className={`literexia-score ${objective.score >= (objective.passingThreshold || 75) ? 'passing' : 'needs-improvement'}`}>
-                        {objective.score || 0}%
-                      </span>
-                      <small>{objective.score >= (objective.passingThreshold || 75) ? 'Passed' : 'Needs Work'}</small>
+                      <div className="literexia-assessment-score">
+                        <span className={`literexia-score ${(objective.assessmentScore || objective.score || 0) >= (objective.passingThreshold || 75) ? 'passing' : 'needs-improvement'}`}>
+                          {objective.assessmentScore || objective.score || 0}%
+                        </span>
+                        <small className="literexia-score-type">Assessment</small>
+
+                        {/* Detailed assessment breakdown */}
+                        {(objective.totalQuestions > 0 || objective.totalPossibleMatches > 0) && (
+                          <div className="literexia-assessment-details">
+                            {objective.totalQuestions > 0 && (
+                              <small className="literexia-score-breakdown">
+                                {objective.correctAnswers || 0}/{objective.totalQuestions} correct
+                              </small>
+                            )}
+                            {objective.totalPossibleMatches > 0 && (
+                              <small className="literexia-score-breakdown">
+                                {objective.correctMatches || 0}/{objective.totalPossibleMatches} matches
+                              </small>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {objective.hasIntervention && objective.latestInterventionScore && (
+                        <div className="literexia-intervention-score">
+                          <span className={`literexia-score ${objective.latestInterventionScore >= 75 ? 'passing' : 'needs-improvement'}`}>
+                            {objective.latestInterventionScore}%
+                          </span>
+                          <small className="literexia-score-type">Latest Intervention</small>
+
+                          {/* Show intervention improvement */}
+                          {objective.interventionImprovement !== 0 && (
+                            <div className={`literexia-improvement-indicator ${objective.interventionImprovement > 0 ? 'positive' : 'negative'}`}>
+                              <small>
+                                {objective.interventionImprovement > 0 ? '+' : ''}{objective.interventionImprovement}% improvement
+                              </small>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="literexia-overall-status">
+                        <small className={`literexia-status ${(objective.isPassed || objective.latestInterventionPassed) ? 'passed' : 'needs-work'}`}>
+                          {(objective.isPassed || objective.latestInterventionPassed) ? 'Passed' : 'Needs Work'}
+                        </small>
+                      </div>
                   </div>
                 </td>
                 <td className="literexia-support-cell">

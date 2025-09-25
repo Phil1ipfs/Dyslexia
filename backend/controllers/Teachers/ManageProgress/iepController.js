@@ -227,63 +227,103 @@ class IEPController {
         );
 
         if (categoryData) {
-          // Add detailed assessment data
+          // Add comprehensive assessment data
           objective.assessmentScore = categoryData.score || 0;
+          objective.totalQuestions = categoryData.totalQuestions || 0;
+          objective.correctAnswers = categoryData.correctAnswers || 0;
+          objective.totalPossibleMatches = categoryData.totalPossibleMatches || 0;
+          objective.correctMatches = categoryData.correctMatches || 0;
           objective.isCompleted = categoryData.isCompleted || false;
           objective.isPassed = categoryData.isPassed || false;
           objective.passingThreshold = categoryData.passingThreshold || 75;
-          objective.totalQuestions = categoryData.totalQuestions || 0;
-          objective.correctAnswers = categoryData.correctAnswers || 0;
 
-          // Special handling for Phonological Awareness matching questions
-          if (categoryData.categoryName === 'Phonological Awareness') {
-            objective.totalPossibleMatches = categoryData.totalPossibleMatches || 0;
-            objective.correctMatches = categoryData.correctMatches || 0;
-          }
+          console.log(`Processing intervention data for ${categoryData.categoryName}:`);
+          console.log(`  Assessment: ${objective.assessmentScore}% (${objective.correctAnswers}/${objective.totalQuestions})`);
+          console.log(`  Intervention History: ${categoryData.interventionHistory?.length || 0} attempts`);
 
-          // Add detailed intervention data if exists
+          // Add comprehensive intervention data if exists
           if (categoryData.interventionHistory && categoryData.interventionHistory.length > 0) {
             objective.hasIntervention = true;
             objective.interventionAttempts = categoryData.interventionAttempts || categoryData.interventionHistory.length;
             objective.interventionCompleted = categoryData.interventionCompleted || false;
+            objective.interventionId = categoryData.currentInterventionId || null;
 
-            // Add complete intervention history
-            objective.interventionHistory = categoryData.interventionHistory.map(attempt => ({
-              attemptNumber: attempt.attemptNumber || 1,
-              score: attempt.score || 0,
-              isPassed: attempt.isPassed || false,
-              attemptedAt: attempt.attemptedAt || attempt.completedAt,
-              reason: attempt.attemptReason || attempt.reason || 'intervention_attempt',
-              revisionNumber: attempt.revisionNumber || 1
-            }));
+            // Map complete intervention history with comprehensive data
+            objective.interventionHistory = categoryData.interventionHistory.map((attempt, index) => {
+              const mappedAttempt = {
+                attemptNumber: attempt.attemptNumber || (index + 1),
+                score: attempt.score || 0,
+                isPassed: attempt.isPassed || false,
+                attemptedAt: attempt.attemptedAt || attempt.completedAt || new Date(),
+                reason: attempt.attemptReason || attempt.reason || 'intervention_attempt',
+                revisionNumber: attempt.revisionNumber || 1
+              };
+
+              console.log(`    Attempt ${mappedAttempt.attemptNumber}: ${mappedAttempt.score}% - ${mappedAttempt.isPassed ? 'PASSED' : 'FAILED'}`);
+              return mappedAttempt;
+            });
 
             // Get latest intervention result
             const latestAttempt = categoryData.interventionHistory[categoryData.interventionHistory.length - 1];
             if (latestAttempt) {
               objective.latestInterventionScore = latestAttempt.score || 0;
               objective.latestInterventionPassed = latestAttempt.isPassed || false;
-              objective.interventionStatus = latestAttempt.isPassed ? 'completed_passed' : 'completed_failed';
-              objective.interventionName = `${categoryData.categoryName} Intervention - ${latestAttempt.isPassed ? 'Passed' : 'Needs Revision'}`;
+
+              // Set intervention status based on latest attempt outcome
+              if (latestAttempt.isPassed) {
+                objective.interventionStatus = 'completed_passed';
+                objective.interventionName = `${categoryData.categoryName} Intervention - Passed`;
+              } else {
+                objective.interventionStatus = 'completed_failed';
+                objective.interventionName = `${categoryData.categoryName} Intervention - Needs Revision (Attempt ${objective.interventionAttempts})`;
+              }
+
+              console.log(`  Latest: ${objective.latestInterventionScore}% - ${objective.latestInterventionPassed ? 'PASSED' : 'FAILED'}`);
             }
 
-            // Calculate intervention improvement
+            // Calculate comprehensive intervention improvement
             if (categoryData.interventionHistory.length > 1) {
+              // Multiple attempts - show progress from first to last
               const firstAttempt = categoryData.interventionHistory[0];
               const lastAttempt = categoryData.interventionHistory[categoryData.interventionHistory.length - 1];
               objective.interventionImprovement = (lastAttempt.score || 0) - (firstAttempt.score || 0);
+              console.log(`  Improvement across attempts: +${objective.interventionImprovement}% (${firstAttempt.score}% → ${lastAttempt.score}%)`);
             } else if (categoryData.interventionHistory.length === 1) {
               // Single attempt - show improvement from original assessment
               const interventionScore = categoryData.interventionHistory[0].score || 0;
               const originalScore = categoryData.score || 0;
               objective.interventionImprovement = interventionScore - originalScore;
+              console.log(`  Improvement from assessment: +${objective.interventionImprovement}% (${originalScore}% → ${interventionScore}%)`);
             }
+
+            // Set intervention created date from history
+            if (categoryData.interventionHistory.length > 0) {
+              const firstAttempt = categoryData.interventionHistory[0];
+              objective.interventionCreatedAt = firstAttempt.attemptedAt || firstAttempt.completedAt;
+            }
+
           } else {
-            // No intervention data
+            // No intervention data - set appropriate status
             objective.hasIntervention = false;
             objective.interventionAttempts = 0;
+            objective.interventionCompleted = false;
             objective.interventionHistory = [];
-            objective.interventionStatus = categoryData.isPassed ? 'not_needed' : 'required';
-            objective.interventionName = categoryData.isPassed ? 'No intervention needed' : 'Intervention required';
+            objective.latestInterventionScore = 0;
+            objective.latestInterventionPassed = false;
+            objective.interventionImprovement = 0;
+            objective.interventionId = null;
+            objective.interventionCreatedAt = null;
+
+            // Set status based on whether intervention is needed
+            if (categoryData.isPassed) {
+              objective.interventionStatus = 'not_needed';
+              objective.interventionName = 'No intervention needed - Assessment passed';
+            } else {
+              objective.interventionStatus = 'required';
+              objective.interventionName = 'Intervention required - Assessment failed';
+            }
+
+            console.log(`  No intervention data - Status: ${objective.interventionStatus}`);
           }
         }
 

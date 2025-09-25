@@ -41,7 +41,39 @@ const iepObjectiveSchema = new mongoose.Schema({
     type: Number,
     default: 75
   },
-  // Intervention fields
+  // Assessment data fields
+  assessmentScore: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 0
+  },
+  totalQuestions: {
+    type: Number,
+    default: 0
+  },
+  correctAnswers: {
+    type: Number,
+    default: 0
+  },
+  totalPossibleMatches: {
+    type: Number,
+    default: 0 // For Phonological Awareness matching questions
+  },
+  correctMatches: {
+    type: Number,
+    default: 0 // For Phonological Awareness matching questions
+  },
+  isCompleted: {
+    type: Boolean,
+    default: false
+  },
+  isPassed: {
+    type: Boolean,
+    default: false
+  },
+
+  // Comprehensive intervention tracking fields
   hasIntervention: {
     type: Boolean,
     default: false
@@ -57,9 +89,65 @@ const iepObjectiveSchema = new mongoose.Schema({
   },
   interventionStatus: {
     type: String,
-    enum: ['active', 'completed', 'inactive', null],
+    enum: ['not_needed', 'required', 'completed_passed', 'completed_failed', 'in_progress', null],
     default: null
   },
+  interventionAttempts: {
+    type: Number,
+    default: 0
+  },
+  interventionCompleted: {
+    type: Boolean,
+    default: false
+  },
+
+  // Detailed intervention history (all attempts)
+  interventionHistory: [{
+    attemptNumber: {
+      type: Number,
+      required: true
+    },
+    score: {
+      type: Number,
+      min: 0,
+      max: 100,
+      required: true
+    },
+    isPassed: {
+      type: Boolean,
+      required: true
+    },
+    attemptedAt: {
+      type: Date,
+      required: true
+    },
+    reason: {
+      type: String,
+      enum: ['initial_attempt', 'teacher_revision', 'student_retake', 'intervention_attempt'],
+      default: 'intervention_attempt'
+    },
+    revisionNumber: {
+      type: Number,
+      default: 1
+    }
+  }],
+
+  // Intervention outcome tracking
+  latestInterventionScore: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 0
+  },
+  latestInterventionPassed: {
+    type: Boolean,
+    default: false
+  },
+  interventionImprovement: {
+    type: Number,
+    default: 0 // Difference between original and latest intervention score
+  },
+
   interventionCreatedAt: {
     type: Date,
     default: null
@@ -168,11 +256,28 @@ iepReportSchema.methods.generateObjectivesFromCategoryResults = function(categor
       supportLevel: null,
       score: category.score || 0,
       passingThreshold: category.passingThreshold || 75,
-      remarks: '', 
+      remarks: '',
+
+      // Assessment data fields
+      assessmentScore: category.score || 0,
+      totalQuestions: category.totalQuestions || 0,
+      correctAnswers: category.correctAnswers || 0,
+      totalPossibleMatches: category.totalPossibleMatches || 0,
+      correctMatches: category.correctMatches || 0,
+      isCompleted: category.isCompleted || false,
+      isPassed: category.isPassed || false,
+
+      // Intervention tracking fields (will be populated by controller)
       hasIntervention: false,
       interventionId: null,
       interventionName: '',
       interventionStatus: null,
+      interventionAttempts: 0,
+      interventionCompleted: false,
+      interventionHistory: [],
+      latestInterventionScore: 0,
+      latestInterventionPassed: false,
+      interventionImprovement: 0,
       interventionCreatedAt: null
     };
   });
