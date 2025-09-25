@@ -538,22 +538,28 @@ const IEPReport = ({
     const hasRemarks = currentMainRemarks && currentMainRemarks.trim().length > 0;
 
     return (
-      <div 
-        className="literexia-assessment-remarks-button"
+      <div
+        className="teacher-remarks-assessment-button"
         onClick={() => openAssessmentModal(objective)}
         title="Click to edit post assessment remarks"
       >
-        <div className="literexia-assessment-remarks-content">
-          <div className="literexia-assessment-remarks-text">
-            <span className="literexia-remarks-placeholder">
-              Click to add post assessment remarks
-            </span>
-          </div>
-          <div className="literexia-assessment-remarks-indicator">
+        <div className="teacher-remarks-assessment-content">
+          <div className="teacher-remarks-assessment-text">
             {hasRemarks ? (
-              <FaCheck className="literexia-remarks-check" />
+              <span className="teacher-remarks-content">
+                {currentMainRemarks}
+              </span>
             ) : (
-              <FaEdit className="literexia-remarks-edit" />
+              <span className="teacher-remarks-placeholder">
+                Click to add post assessment remarks
+              </span>
+            )}
+          </div>
+          <div className="teacher-remarks-assessment-indicator">
+            {hasRemarks ? (
+              <FaCheck className="teacher-remarks-check" />
+            ) : (
+              <FaEdit className="teacher-remarks-edit" />
             )}
           </div>
         </div>
@@ -784,7 +790,7 @@ const IEPReport = ({
         <table className="literexia-iep-table">
           <thead>
             <tr>
-              <th>Lesson</th>
+              <th>Category</th>
                 <th className="literexia-score-cell">Score</th>
                 <th colSpan={3} className="text-center">Support Level Needed</th>
                 <th>Intervention</th>
@@ -923,27 +929,27 @@ const IEPReport = ({
                 <td className="literexia-remarks-cell">
                        <div className="literexia-remarks-container">
                          {/* Unified Remarks Section */}
-                         <div className="literexia-unified-remarks-section">
-                           <div className="literexia-section-header">
-                             <FaEdit className="literexia-section-icon" />
-                             <span className="literexia-section-title">Teacher Remarks</span>
+                         <div className="teacher-remarks-unified-section">
+                           <div className="teacher-remarks-section-header">
+                             <FaEdit className="teacher-remarks-section-icon" />
+                             <span className="teacher-remarks-section-title">Teacher Remarks</span>
                            </div>
                            
                            {/* Main Assessment Remarks */}
-                           <div className="literexia-main-remarks-area">
-                             <div className="literexia-remarks-subheader">
-                               <FaBook className="literexia-subheader-icon" />
-                               <span className="literexia-subheader-title">Post Assessment</span>
+                           <div className="teacher-remarks-main-area">
+                             <div className="teacher-remarks-subheader">
+                               <FaBook className="teacher-remarks-subheader-icon" />
+                               <span className="teacher-remarks-subheader-title">Post Assessment</span>
                              </div>
                              {renderMainAssessmentRemarksCell(objective)}
                            </div>
 
                            {/* Intervention Remarks */}
                            {objective.interventionHistory && objective.interventionHistory.length > 0 ? (
-                             <div className="literexia-intervention-remarks-area">
-                               <div className="literexia-remarks-subheader">
-                                 <FaFlask className="literexia-subheader-icon" />
-                                 <span className="literexia-subheader-title">Intervention Attempts</span>
+                             <div className="teacher-remarks-intervention-area">
+                               <div className="teacher-remarks-subheader">
+                                 <FaFlask className="teacher-remarks-subheader-icon" />
+                                 <span className="teacher-remarks-subheader-title">Intervention Attempts</span>
                                </div>
                                <div className="literexia-attempts-container">
                                  {/* Summary View - Always Visible */}
@@ -993,10 +999,10 @@ const IEPReport = ({
                                </div>
                              </div>
                            ) : (
-                             <div className="literexia-intervention-remarks-area">
-                               <div className="literexia-remarks-subheader">
-                                 <FaFlask className="literexia-subheader-icon" />
-                                 <span className="literexia-subheader-title">Intervention Attempts</span>
+                             <div className="teacher-remarks-intervention-area">
+                               <div className="teacher-remarks-subheader">
+                                 <FaFlask className="teacher-remarks-subheader-icon" />
+                                 <span className="teacher-remarks-subheader-title">Intervention Attempts</span>
                                </div>
                                <div className="literexia-no-attempts-simple">
                                  <span className="literexia-remarks-placeholder">No intervention attempts</span>

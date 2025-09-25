@@ -236,7 +236,7 @@
 }
 
 .literexia-iep-table thead {
-  background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #3B4F81 0%, #2a3d6b 100%);
   color: white;
 }
 
@@ -398,8 +398,8 @@
 
 .literexia-expand-row-button:hover {
   background: #e5e7eb;
-  border-color: #3b82f6;
-  color: #3b82f6;
+  border-color: #3B4F81;
+  color: #3B4F81;
 }
 
 .literexia-expand-row-icon {
@@ -636,13 +636,13 @@
 }
 
 .literexia-support-checkbox:hover {
-  border-color: #3b82f6;
+  border-color: #3B4F81;
   background-color: #f0f9ff;
 }
 
 .literexia-support-checkbox.selected {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  border-color: #1d4ed8;
+  background: linear-gradient(135deg, #3B4F81 0%, #2a3d6b 100%);
+  border-color: #3B4F81;
   color: white;
 }
 
@@ -699,7 +699,7 @@
 
 .literexia-intervention-clickable:hover {
   background: #f1f5f9;
-  border-color: #3b82f6;
+  border-color: #3B4F81;
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
@@ -712,14 +712,14 @@
 }
 
 .literexia-intervention-clickable:hover .literexia-intervention-arrow {
-  color: #3b82f6;
+  color: #3B4F81;
 }
 
 .literexia-intervention-icon {
   width: 2rem;
   height: 2rem;
   border-radius: 6px;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #3B4F81 0%, #2a3d6b 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -795,7 +795,7 @@
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 8px;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #3B4F81 0%, #2a3d6b 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1303,7 +1303,7 @@
   background: white;
   border: 2px solid #3B4F81;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1.5rem;
   transition: all 0.2s;
 }
 
@@ -1315,7 +1315,7 @@
 /* Sub-areas within unified section */
 .literexia-main-remarks-area,
 .literexia-intervention-remarks-area {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .literexia-main-remarks-area:last-child,
@@ -1328,10 +1328,10 @@
   background: rgba(59, 79, 129, 0.05);
   border: 1px solid rgba(59, 79, 129, 0.2);
   border-radius: 8px;
-  padding: 0.75rem;
+  padding: 1rem;
   cursor: pointer;
   transition: all 0.2s;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .literexia-assessment-remarks-button:hover {
@@ -1345,7 +1345,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .literexia-assessment-remarks-text {
@@ -1410,21 +1410,16 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.literexia-main-assessment-remarks-section .literexia-remarks-section-icon {
-  background: #3B4F81;
-  color: white;
-}
-
-.literexia-intervention-remarks-section .literexia-remarks-section-icon {
-  background: #10b981;
-  color: white;
-}
+/* Removed specific icon styles - now using unified design */
 
 .literexia-remarks-section-title {
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   margin: 0;
-  color: #3B4F81;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Subheader styling */
@@ -1612,7 +1607,7 @@
 
 .literexia-remarks-clickable:hover {
   background: #f8fafc;
-  border-color: #3b82f6;
+  border-color: #3B4F81;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -1625,7 +1620,7 @@
 }
 
 .literexia-remarks-clickable:hover .literexia-remarks-arrow {
-  color: #3b82f6;
+  color: #3B4F81;
 }
 
 .literexia-intervention-summary {
@@ -1656,8 +1651,8 @@
   background: rgba(59, 79, 129, 0.05);
   border: 1px solid rgba(59, 79, 129, 0.1);
   border-radius: 8px;
-  padding: 0.75rem;
-  margin-bottom: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .literexia-summary-header {
@@ -1709,8 +1704,8 @@
   background: rgba(59, 79, 129, 0.02);
   border: 1px solid rgba(59, 79, 129, 0.1);
   border-radius: 8px;
-  padding: 0.75rem;
-  margin-top: 0.5rem;
+  padding: 1rem;
+  margin-top: 0.75rem;
 }
 
 .literexia-attempts-header {
@@ -1729,6 +1724,159 @@
 }
 
 /* Removed collapse button styles - no longer needed */
+
+/* ===== TEACHER REMARKS UNIQUE STYLES ===== */
+/* Unified remarks section styling */
+.teacher-remarks-unified-section {
+  background: white;
+  border: 2px solid #3B4F81;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.1);
+}
+
+.teacher-remarks-unified-section:hover {
+  border-color: #2a3d6b;
+  box-shadow: 0 4px 12px rgba(59, 79, 129, 0.15);
+}
+
+/* Sub-areas within unified section */
+.teacher-remarks-main-area,
+.teacher-remarks-intervention-area {
+  margin-bottom: 1.5rem;
+}
+
+.teacher-remarks-main-area:last-child,
+.teacher-remarks-intervention-area:last-child {
+  margin-bottom: 0;
+}
+
+/* Section headers with icons */
+.teacher-remarks-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #3B4F81 0%, #2a3d6b 100%);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(59, 79, 129, 0.1);
+}
+
+.teacher-remarks-section-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.teacher-remarks-section-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin: 0;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Subheader styling */
+.teacher-remarks-subheader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(59, 79, 129, 0.1);
+}
+
+.teacher-remarks-subheader-icon {
+  width: 1rem;
+  height: 1rem;
+  background: rgba(59, 79, 129, 0.1);
+  color: #3B4F81;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  flex-shrink: 0;
+}
+
+.teacher-remarks-subheader-title {
+  font-size: 0.75rem;
+  color: #3B4F81;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+/* Assessment Remarks Button */
+.teacher-remarks-assessment-button {
+  background: rgba(59, 79, 129, 0.05);
+  border: 1px solid rgba(59, 79, 129, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 0.75rem;
+}
+
+.teacher-remarks-assessment-button:hover {
+  background: rgba(59, 79, 129, 0.1);
+  border-color: rgba(59, 79, 129, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(59, 79, 129, 0.1);
+}
+
+.teacher-remarks-assessment-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.teacher-remarks-assessment-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.teacher-remarks-placeholder {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  font-style: italic;
+  display: block;
+}
+
+.teacher-remarks-assessment-indicator {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 4px;
+  background: rgba(59, 79, 129, 0.1);
+}
+
+.teacher-remarks-check {
+  color: #10b981;
+  font-size: 0.75rem;
+}
+
+.teacher-remarks-edit {
+  color: #3B4F81;
+  font-size: 0.75rem;
+}
 
 .literexia-expand-button {
   background: none;
@@ -1870,7 +2018,7 @@
 }
 
 .literexia-attempt-button:hover {
-  border-color: #3b82f6;
+  border-color: #3B4F81;
   background: #f8fafc;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -2055,8 +2203,8 @@
 
 .literexia-remarks-editor textarea:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #3B4F81;
+  box-shadow: 0 0 0 3px rgba(59, 79, 129, 0.1);
   background: white;
 }
 
@@ -2144,7 +2292,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #3B4F81 0%, #2a3d6b 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -2154,7 +2302,7 @@
 }
 
 .literexia-retry-button:hover {
-  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  background: linear-gradient(135deg, #2a3d6b 0%, #1e2a5e 100%);
 }
 
 /* Saving overlay */
@@ -2266,10 +2414,18 @@
     width: 1.25rem;
     height: 1.25rem;
     font-size: 0.7rem;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
   }
 
   .literexia-remarks-section-title {
     font-size: 0.8rem;
+    color: white;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
 
   .literexia-remarks-text-display {
@@ -2355,10 +2511,18 @@
     width: 1rem;
     height: 1rem;
     font-size: 0.65rem;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
   }
 
   .literexia-remarks-section-title {
     font-size: 0.75rem;
+    color: white;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
 
   .literexia-remarks-text-display {
@@ -2461,10 +2625,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-    padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(59, 79, 129, 0.1);
+  background: linear-gradient(135deg, #3B4F81 0%, #2a3d6b 100%);
   border-radius: 12px 12px 0 0;
+  box-shadow: 0 2px 4px rgba(59, 79, 129, 0.1);
 }
 
 .literexia-modal-title {
@@ -2477,31 +2642,34 @@
   width: 2rem;
   height: 2rem;
   border-radius: 6px;
-  background: linear-gradient(135deg, #3B4F81 0%, #2a3d6b 100%);
+  background: rgba(255, 255, 255, 0.2);
   color: white;
   display: flex;
   align-items: center;
     justify-content: center;
   font-size: 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .literexia-modal-title h3 {
   margin: 0;
   font-size: 1.25rem;
-  font-weight: 600;
-  color: #3B4F81;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .literexia-modal-title p {
   margin: 0;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
 }
 
 .literexia-modal-close {
   background: none;
   border: none;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 1.25rem;
   cursor: pointer;
   padding: 0.5rem;
@@ -2510,14 +2678,15 @@
 }
 
 .literexia-modal-close:hover {
-  background: #f3f4f6;
-  color: #374151;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
 }
 
 .literexia-modal-content {
-  padding: 1.5rem;
+  padding: 2rem;
   overflow-y: auto;
   flex: 1;
+  background: #fafbfc;
 }
 
 .literexia-intervention-summary-modal {
@@ -2791,9 +2960,9 @@
 
 .literexia-remark-textarea:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: #3B4F81;
   background: white;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(59, 79, 129, 0.1);
 }
 
 .literexia-remark-textarea::placeholder {
@@ -2921,8 +3090,8 @@
 
 .literexia-attempt-textarea:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #3B4F81;
+  box-shadow: 0 0 0 3px rgba(59, 79, 129, 0.1);
 }
 
 .literexia-attempt-textarea::placeholder {
@@ -2987,27 +3156,39 @@
 .literexia-remarks-textarea-modal {
   width: 100%;
   min-height: 200px;
-    padding: 1rem;
+  padding: 1.25rem;
   border: 2px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 0.875rem;
-  line-height: 1.5;
+  line-height: 1.6;
   color: #111827;
-  background: #f9fafb;
+  background: white;
   resize: vertical;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
   font-family: inherit;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .literexia-remarks-textarea-modal:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: #3B4F81;
   background: white;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(59, 79, 129, 0.1), 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
 }
 
 .literexia-remarks-textarea-modal::placeholder {
   color: #9ca3af;
+}
+
+/* Modal label styling */
+.literexia-remark-editor label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  line-height: 1.4;
 }
 
 .literexia-remarks-counter {
@@ -3108,4 +3289,74 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+/* Main Assessment Remarks Styling */
+.teacher-remarks-assessment-button {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(59, 79, 129, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 2.5rem;
+}
+
+.teacher-remarks-assessment-button:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #3B4F81;
+  box-shadow: 0 2px 8px rgba(59, 79, 129, 0.15);
+  transform: translateY(-1px);
+}
+
+.teacher-remarks-assessment-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.75rem;
+}
+
+.teacher-remarks-assessment-text {
+  flex: 1;
+  text-align: left;
+}
+
+.teacher-remarks-content {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: #374151;
+  word-break: break-word;
+}
+
+.teacher-remarks-placeholder {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.teacher-remarks-assessment-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.teacher-remarks-check {
+  color: #10b981;
+  font-size: 0.875rem;
+}
+
+.teacher-remarks-edit {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.teacher-remarks-assessment-button:hover .teacher-remarks-edit {
+  color: #3B4F81;
 } 
