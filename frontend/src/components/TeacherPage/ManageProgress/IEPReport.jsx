@@ -151,6 +151,7 @@ const IEPReport = ({
     }
 
     let cleanedRemark = remark.trim();
+    console.log('Processing remark:', cleanedRemark);
 
     // File path patterns to identify corruption points
     const filePathPatterns = [
@@ -168,6 +169,7 @@ const IEPReport = ({
       if (pathIndex !== -1) {
         // Extract text before the file path corruption
         const textBeforePath = cleanedRemark.substring(0, pathIndex).trim();
+        console.log('Found file path, extracted text:', textBeforePath);
         if (textBeforePath.length >= 2) {
           return textBeforePath;
         } else {
@@ -178,7 +180,9 @@ const IEPReport = ({
     }
 
     // If no file paths found, return the cleaned remark if it has actual content
-    return cleanedRemark.length >= 2 ? cleanedRemark : null;
+    const result = cleanedRemark.length >= 2 ? cleanedRemark : null;
+    console.log('No file path found, returning:', result);
+    return result;
   };
 
   // Generate automatic progress summary when manual remarks are empty
@@ -229,21 +233,43 @@ const IEPReport = ({
     return assessmentSummary + interventionSummary;
   };
 
-  // Get the best available remark or generate one automatically
-  const getBestAvailableRemark = (objective, type = 'assessment') => {
-    if (type === 'assessment') {
-      // Try manual remarks first
-      const manualRemark = extractCleanRemark(objective.remarks || objective.mainAssessmentRemarks);
-      if (manualRemark && manualRemark.length > 10) { // Only use if substantial
-        return manualRemark;
-      }
+  // Get EXACTLY what's in the database - no fallbacks, no automatic generation
+  const getDatabaseRemark = (objective) => {
+    // For main assessment remarks: show remarks or mainAssessmentRemarks, cleaned up
+    const mainRemark = extractCleanRemark(objective.remarks || objective.mainAssessmentRemarks);
+    return mainRemark || 'No remarks added';
+  };
 
-      // Generate automatic progress summary if no good manual remark
-      const autoSummary = generateProgressSummary(objective);
-      return autoSummary || 'Assessment completed - no additional remarks provided';
-    }
+  // Generate specific learning objectives based on category and progress
+  const generateLearningObjective = (objective) => {
+    if (!objective) return 'Learning objective not specified';
 
-    return null;
+    const categoryName = getCategoryName(objective.lesson);
+    const isCompleted = objective.latestInterventionPassed || (objective.score >= 75);
+
+    const objectives = {
+      'Alphabet Knowledge': isCompleted
+        ? 'Successfully demonstrate mastery of letter recognition, including uppercase and lowercase letters, and letter-sound correspondence.'
+        : 'Develop accurate letter recognition skills and strengthen letter-sound correspondence for improved reading foundation.',
+
+      'Phonological Awareness': isCompleted
+        ? 'Demonstrate mastery of sound discrimination, phonemic awareness, and ability to manipulate sounds within words.'
+        : 'Strengthen phonological processing skills including sound discrimination, rhyming, and phoneme manipulation.',
+
+      'Decoding': isCompleted
+        ? 'Successfully decode unfamiliar words using phonetic strategies and structural analysis with high accuracy.'
+        : 'Develop systematic decoding strategies for unknown words using phonics and structural analysis skills.',
+
+      'Word Recognition': isCompleted
+        ? 'Demonstrate automatic recognition of high-frequency words and apply context clues for word identification.'
+        : 'Build sight word vocabulary and develop strategies for word recognition using context and structural clues.',
+
+      'Reading Comprehension': isCompleted
+        ? 'Demonstrate strong reading comprehension with ability to answer literal and inferential questions about text.'
+        : 'Improve reading comprehension skills including literal understanding and making simple inferences from text.'
+    };
+
+    return objectives[categoryName] || `Develop proficiency in ${categoryName} skills through targeted instruction and practice.`;
   };
   const loadedStudentRef = useRef(null);
   
@@ -2701,15 +2727,13 @@ const IEPReport = ({
                             </td>
                               <td className="iep-pdf-remarks-cell">
                                 <div className="iep-pdf-remarks-container">
-                                  {/* Post Assessment Remarks */}
-                                  {(objective.remarks || objective.mainAssessmentRemarks) && (
-                                    <div className="iep-pdf-remarks-section">
-                                      <div className="iep-pdf-remarks-label">Assessment:</div>
-                                      <div className="iep-pdf-remarks-content">
-                                        {extractCleanRemark(objective.remarks || objective.mainAssessmentRemarks) || 'No assessment remarks added'}
-                                      </div>
+                                  {/* Post Assessment Remarks - EXACTLY from database */}
+                                  <div className="iep-pdf-remarks-section">
+                                    <div className="iep-pdf-remarks-label">Teacher Assessment Remarks:</div>
+                                    <div className="iep-pdf-remarks-content">
+                                      {getDatabaseRemark(objective)}
                                     </div>
-                                  )}
+                                  </div>
 
                                   {/* Intervention Remarks */}
                                   {categoryData?.interventionHistory && categoryData.interventionHistory.length > 0 && (
@@ -2722,21 +2746,17 @@ const IEPReport = ({
                                             <div key={idx} className="iep-pdf-attempt-remark">
                                               <small>Attempt {attempt.attemptNumber}: </small>
                                               {extractCleanRemark(attempt.teacherRemarks) || 'No remarks added'}
-                                  </div>
+                                            </div>
                                           ))
                                         }
                                         {!categoryData.interventionHistory.some(attempt => extractCleanRemark(attempt.teacherRemarks)) && (
                                           <small className="iep-pdf-no-remarks">No intervention remarks added</small>
                                         )}
                                       </div>
-                                    </div>
-                                  )}
-
-                                  {/* No remarks message */}
-                                  {!(objective.remarks || objective.mainAssessmentRemarks) &&
-                                   !(categoryData?.interventionHistory?.some(attempt => extractCleanRemark(attempt.teacherRemarks))) && (
-                                    <div className="iep-pdf-no-remarks">No remarks added</div>
+                                  </div>
                                 )}
+
+                                  {/* Note: No "No remarks message" needed since we always generate progress summaries */}
                               </div>
                             </td>
                           </tr>
@@ -2768,13 +2788,9 @@ const IEPReport = ({
                     <div className="iep-pdf-section-title">Intervention Details</div>
                     <div className="iep-pdf-intervention-content">
                       {currentIepData.objectives.map((objective, index) => {
-                        // Check if we have intervention data in categories array
-                        const categoryData = currentIepData.categories?.find(cat =>
-                          cat.categoryName === getCategoryName(objective.lesson)
-                        );
-                        
+                        // Check if we have intervention data directly in the objective
                         const hasInterventionData = objective.hasIntervention || 
-                          (categoryData && categoryData.interventionHistory && categoryData.interventionHistory.length > 0);
+                          (objective.interventionHistory && objective.interventionHistory.length > 0);
                         
                         if (!hasInterventionData) {
                           return null;
@@ -2800,13 +2816,15 @@ const IEPReport = ({
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {(categoryData?.interventionHistory || objective.interventionHistory || []).map((attempt, attemptIndex) => (
+                                  {(objective.interventionHistory || []).map((attempt, attemptIndex) => {
+                                    console.log('Processing attempt:', attempt.attemptNumber, 'Remarks:', attempt.teacherRemarks);
+                                    return (
                                     <tr key={attemptIndex} className="iep-pdf-intervention-tr">
                                       <td className="iep-pdf-intervention-td">{attempt.attemptNumber}</td>
                                       <td className="iep-pdf-intervention-td">
                                         <span className={`iep-pdf-intervention-score ${attempt.isPassed ? 'passed' : 'failed'}`}>
                                           {attempt.score}%
-                        </span>
+                                        </span>
                                       </td>
                                       <td className="iep-pdf-intervention-td">
                                         <span className={`iep-pdf-intervention-status ${attempt.isPassed ? 'status-passed' : 'status-failed'}`}>
@@ -2818,19 +2836,14 @@ const IEPReport = ({
                                       </td>
                                       <td className="iep-pdf-intervention-td iep-pdf-intervention-remarks">
                                         <div className="iep-pdf-intervention-remarks-content">
-                                          {extractCleanRemark(attempt.teacherRemarks) ? (
-                                            <span className="iep-pdf-intervention-remark-text">
-                                              {extractCleanRemark(attempt.teacherRemarks) || 'No remarks added'}
-                                            </span>
-                                          ) : (
-                                            <span className="iep-pdf-intervention-no-remarks">
-                                              No remarks
-                                            </span>
-                                          )}
+                                          <span className="iep-pdf-intervention-remark-text">
+                                            {extractCleanRemark(attempt.teacherRemarks) || 'No remarks'}
+                        </span>
                       </div>
                                       </td>
                                     </tr>
-                                  ))}
+                                    );
+                                  })}
                                 </tbody>
                               </table>
                       </div>

@@ -102,7 +102,7 @@
 
 /* Page break spacer for visual separation */
 .iep-pdf-page-break-spacer {
-  height: 300px; /* Double space for maximum visual separation */
+  height: 300px; /* Increased space for better page 3 positioning */
   margin: 0;
   padding: 0;
   background: transparent;
