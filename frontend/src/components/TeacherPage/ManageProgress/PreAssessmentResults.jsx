@@ -59,8 +59,11 @@ const renderQuestionComparison = (question, onImageClick) => {
         if (question.studentResponse && Array.isArray(question.studentResponse)) {
           // New format: Array of objects like [{"T": "Tt"}, {"N": "Hh"}, {"H": "Nn"}]
           const pairs = question.studentResponse.map(pair => {
-            const [audio, match] = Object.entries(pair)[0];
-            return `${audio} → ${match}`;
+            if (pair && typeof pair === 'object') {
+              const [audio, match] = Object.entries(pair)[0] || ['', ''];
+              return `${audio} → ${match}`;
+            }
+            return 'Invalid pair format';
           }).join(', ');
 
           const matchSummary = question.correctMatches !== undefined && question.totalMatches !== undefined
@@ -154,16 +157,19 @@ const renderQuestionComparison = (question, onImageClick) => {
         if (question.correctPairs && Array.isArray(question.correctPairs)) {
           // Display the correct pairs in a readable format
           const correctPairsDisplay = question.correctPairs.map(pair => {
-            if (typeof pair === 'object') {
+            if (typeof pair === 'object' && pair) {
               // Handle format like [{"audio": "T", "match": "Tt"}] or [{"T": "Tt"}]
               if (pair.audio && pair.match) {
                 return `${pair.audio} → ${pair.match}`;
               } else {
-                const [audio, match] = Object.entries(pair)[0];
-                return `${audio} → ${match}`;
+                const entries = Object.entries(pair);
+                if (entries.length > 0) {
+                  const [audio, match] = entries[0];
+                  return `${audio} → ${match}`;
+                }
               }
             }
-            return pair;
+            return String(pair); // Fallback for non-object values
           }).join(', ');
 
           return (

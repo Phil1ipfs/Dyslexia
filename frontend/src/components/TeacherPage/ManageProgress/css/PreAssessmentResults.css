@@ -1084,6 +1084,50 @@
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
+/* ===== PHONOLOGICAL AWARENESS SPECIFIC STYLES ===== */
+.pre-assessment-results__phonological-response {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pre-assessment-results__response-pairs {
+  font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+  background: rgba(74, 84, 148, 0.05);
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(74, 84, 148, 0.15);
+  font-size: 0.9rem;
+}
+
+.pre-assessment-results__match-summary {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.pre-assessment-results__correct-pairs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pre-assessment-results__expected-pairs {
+  font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+  background: rgba(16, 185, 129, 0.05);
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  font-size: 0.9rem;
+}
+
+.pre-assessment-results__pairs-note {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
 /* ===== READING COMPREHENSION PASSAGES STYLES ===== */
 .pre-assessment-results__reading-passages {
   background: #f8faff;
