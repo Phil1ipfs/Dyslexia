@@ -29,7 +29,6 @@ const TeacherDashboard = () => {
 
   // State variables
   const [selectedReadingLevel, setSelectedReadingLevel] = useState('All Levels');
-  const [timeFrame, setTimeFrame] = useState('weekly');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentDetailOpen, setStudentDetailOpen] = useState(false);
@@ -55,7 +54,6 @@ const TeacherDashboard = () => {
     averageScore: 0,
     pendingEdits: 0
   });
-  const [progressData, setProgressData] = useState({});
   const [prescriptiveData, setPrescriptiveData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState('');
@@ -202,26 +200,16 @@ const TeacherDashboard = () => {
 
   /**
    * Calculate which students need attention based on failed categories
-   * A student needs attention if they have failed any category applicable to their reading level
+   * A student needs attention if they have failed any category (score < 75%)
    * This function processes real test data from separate files
    */
   const calculateStudentsNeedingAttention = (studentsData) => {
-    // Reading level category assignments from CLAUDE.md (STRICT)
-    const readingLevelCategories = {
-      "Low Emerging": ["Alphabet Knowledge"],
-      "High Emerging": ["Alphabet Knowledge", "Phonological Awareness"],
-      "Developing": ["Alphabet Knowledge", "Phonological Awareness", "Decoding"],
-      "Transitioning": ["Alphabet Knowledge", "Phonological Awareness", "Decoding", "Word Recognition"],
-      "At Grade Level": ["Alphabet Knowledge", "Phonological Awareness", "Decoding", "Word Recognition", "Reading Comprehension"]
-    };
-
-    // Load and parse category results from test data (since API might not merge them)
+    // Load and parse category results from test data
     let categoryResultsData = [];
     try {
-      // In real implementation, this would come from the API
-      // For now, we'll simulate loading the test data
       if (window.testCategoryResults) {
         categoryResultsData = window.testCategoryResults;
+        console.log('Processing category results data:', categoryResultsData.length, 'records');
       }
     } catch (error) {
       console.warn('Could not load category results test data:', error);
@@ -230,100 +218,92 @@ const TeacherDashboard = () => {
     const studentsNeedingAttention = [];
 
     studentsData.forEach(student => {
-      const requiredCategories = readingLevelCategories[student.readingLevel] || [];
-
-      // Skip if no required categories for this reading level
-      if (requiredCategories.length === 0) {
-        return;
-      }
-
-      // Find category results for this student
+      // Find category results for this student using idNumber
       const studentCategoryResult = categoryResultsData.find(cr =>
-        cr.studentId === student.idNumber || cr.studentId === student.id
+        cr.studentId === student.idNumber
       );
 
-      const failedCategories = [];
-      const categoriesNeedingImprovement = [];
+      console.log(`Processing student ${student.idNumber}:`, {
+        firstName: student.firstName,
+        lastName: student.lastName,
+        readingLevel: student.readingLevel,
+        foundCategoryResult: !!studentCategoryResult
+      });
 
-      // Check each required category for this student's reading level
-      requiredCategories.forEach(categoryName => {
-        let categoryResult = null;
-
-        if (studentCategoryResult && studentCategoryResult.categories) {
-          // Find the specific category result
-          categoryResult = studentCategoryResult.categories.find(cat =>
-            cat.categoryName === categoryName
-          );
-        }
-
-        // Debug logging for Rainier
-        if (student.firstName === 'Rainier' && student.lastName === 'Aganan') {
-          console.log(`DEBUG - Rainier ${categoryName}:`, {
-            requiredCategories,
-            categoryResult: categoryResult ? {
-              score: categoryResult.score,
-              isPassed: categoryResult.isPassed,
-              interventionRequired: categoryResult.interventionRequired,
-              interventionCompleted: categoryResult.interventionCompleted
-            } : 'NOT_FOUND',
-            studentCategoryResultFound: !!studentCategoryResult
-          });
-        }
-
-        if (categoryResult) {
-          // Check if category failed or needs intervention
-          const hasFailed = categoryResult.isPassed === false || categoryResult.score < 75;
-          const needsIntervention = categoryResult.interventionRequired === true;
-          const interventionCompleted = categoryResult.interventionCompleted === true;
-
-          if (hasFailed && !interventionCompleted) {
-            failedCategories.push(categoryName);
-
-            // Determine intervention status
-            let status = 'Assessment Failed';
-            if (needsIntervention && !interventionCompleted) {
-              status = 'Intervention Required';
-            } else if (interventionCompleted) {
-              status = 'Intervention Completed';
-            }
-
-            categoriesNeedingImprovement.push({
-              category: categoryName,
-              score: Math.round(categoryResult.score || 0),
-              status: status,
-              interventionRequired: needsIntervention,
-              interventionCompleted: interventionCompleted
-            });
-          }
-        } else {
-          // No category result found - assume needs assessment
-          failedCategories.push(categoryName);
-          categoriesNeedingImprovement.push({
-            category: categoryName,
+      if (!studentCategoryResult || !studentCategoryResult.categories) {
+        // No category results found - assume needs assessment
+        const studentName = `${student.firstName || 'Student'} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName || 'Name'}`;
+        studentsNeedingAttention.push({
+          ...student,
+          id: student.idNumber,
+          name: studentName,
+          failedCategories: ['Assessment needed'],
+          categoriesNeedingImprovement: [{
+            category: 'Assessment',
             score: 0,
             status: 'Not Assessed',
             interventionRequired: false,
             interventionCompleted: false
+          }],
+          reason: 'Needs initial assessment'
+        });
+        return;
+      }
+
+      const failedCategories = [];
+      const categoriesNeedingImprovement = [];
+
+      // Check each category result for failures (score < 75%)
+      studentCategoryResult.categories.forEach(categoryResult => {
+        const hasFailed = categoryResult.isPassed === false || categoryResult.score < 75;
+        const needsIntervention = categoryResult.interventionRequired === true;
+        const interventionCompleted = categoryResult.interventionCompleted === true;
+
+        if (hasFailed && !interventionCompleted) {
+          failedCategories.push(categoryResult.categoryName);
+
+          // Determine intervention status
+          let status = 'Assessment Failed';
+          if (needsIntervention && !interventionCompleted) {
+            status = 'Intervention Required';
+          } else if (interventionCompleted) {
+            status = 'Intervention Completed';
+          }
+
+          categoriesNeedingImprovement.push({
+            category: categoryResult.categoryName,
+            score: Math.round(categoryResult.score || 0),
+            status: status,
+            interventionRequired: needsIntervention,
+            interventionCompleted: interventionCompleted
           });
         }
       });
 
       // If student has any failed categories, they need attention
       if (failedCategories.length > 0) {
+        const studentName = `${student.firstName || 'Student'} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName || 'Name'}`;
         studentsNeedingAttention.push({
           ...student,
-          name: `${student.firstName} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName}`,
+          id: student.idNumber,
+          name: studentName,
           failedCategories,
           categoriesNeedingImprovement,
-          lastScore: student.readingPercentage || 0,
           // Calculate attention reason
           reason: failedCategories.length === 1 ?
             `Failed ${failedCategories[0]}` :
             `Failed ${failedCategories.length} categories`
         });
+
+        console.log(`Added student to attention list:`, {
+          name: studentName,
+          failedCategories,
+          categoriesCount: categoriesNeedingImprovement.length
+        });
       }
     });
 
+    console.log(`Total students needing attention: ${studentsNeedingAttention.length}`);
     return studentsNeedingAttention;
   };
 
@@ -335,42 +315,62 @@ const TeacherDashboard = () => {
     setError(null);
 
     try {
-      console.log('Fetching dashboard data from database...');
+      console.log('Fetching dashboard data from test files...');
+
+      // Load test users data
+      let usersData = [];
+      try {
+        const usersResponse = await fetch('/test.users.json');
+        if (usersResponse.ok) {
+          usersData = await usersResponse.json();
+          console.log('Loaded test users data:', usersData.length, 'records');
+        }
+      } catch (error) {
+        console.warn('Could not load test users data:', error);
+        usersData = [];
+      }
 
       // Load test category results data for processing
-      // In production, this would come from the API
+      let categoryResultsData = [];
       try {
         const categoryResultsResponse = await fetch('/test.category_results.json');
         if (categoryResultsResponse.ok) {
-          const categoryResultsData = await categoryResultsResponse.json();
+          categoryResultsData = await categoryResultsResponse.json();
           window.testCategoryResults = categoryResultsData;
           console.log('Loaded test category results data:', categoryResultsData.length, 'records');
         }
       } catch (error) {
         console.warn('Could not load test category results:', error);
         window.testCategoryResults = [];
+        categoryResultsData = [];
       }
 
-      // Use the dashboard service to fetch data from database
-      const dashboardData = await DashboardApiService.getDashboardData(getAuthHeaders());
-
-      console.log('Successfully received dashboard data:', dashboardData);
-
-      // Validate that we received proper data structure
-      if (!dashboardData || typeof dashboardData !== 'object') {
-        throw new Error('Invalid data format received from server');
-      }
+      console.log('Successfully loaded test data files');
 
       // Set students data - ensure it's properly formatted for category-based attention
-      const students = dashboardData.students || [];
-      console.log('Raw students data from API:', students.slice(0, 2)); // Debug first 2 students
+      const students = usersData || [];
+      console.log('Raw students data from test files:', students.slice(0, 2)); // Debug first 2 students
       setStudents(students);
 
-      // Set reading level distribution
-      setReadingLevelDistribution(dashboardData.readingLevelDistribution || []);
+      // Calculate reading level distribution from test users data
+      const levelCounts = {};
+      usersData.forEach(student => {
+        const level = student.readingLevel || 'Not Assessed';
+        levelCounts[level] = (levelCounts[level] || 0) + 1;
+      });
+
+      const testReadingLevelDistribution = Object.entries(levelCounts).map(([level, count]) => ({
+        name: level,
+        value: count,
+        level: level,
+        count: count,
+        percentage: Math.round((count / usersData.length) * 100),
+        color: getReadingLevelColor(level)
+      }));
+
+      setReadingLevelDistribution(testReadingLevelDistribution);
 
       // Process students with category results for proper attention calculation
-      const categoryResultsData = window.testCategoryResults || [];
       console.log('Category results data loaded:', categoryResultsData.length);
 
       // Merge students with their category results and overall scores
@@ -401,36 +401,39 @@ const TeacherDashboard = () => {
         categoriesNeedingImprovement: s.categoriesNeedingImprovement
       })));
 
-      // Set dashboard metrics
-      setMetrics(dashboardData.metrics || {
+      // Set dashboard metrics using test data
+      const testMetrics = {
         totalStudents: students.length,
-        completionRate: 0,
-        averageScore: 0,
+        studentsNeedingAttention: studentsNeedingAttention.length,
+        completionRate: Math.round(((students.length - studentsNeedingAttention.length) / students.length) * 100) || 0,
+        averageScore: 0, // Could be calculated from category results if needed
         pendingEdits: studentsNeedingAttention.length
+      };
+      setMetrics(testMetrics);
+
+      // Set sections from test users data
+      const sectionCounts = {};
+      usersData.forEach(student => {
+        const section = student.section || 'Unassigned';
+        sectionCounts[section] = (sectionCounts[section] || 0) + 1;
       });
 
-      // Set sections from actual data
-      const availableSections = dashboardData.sections || [];
+      const availableSections = Object.keys(sectionCounts);
       setSections(availableSections);
 
-      // Set intervention progress data
-      setInterventionProgress(dashboardData.interventionProgress || []);
+      // Set intervention progress data (empty for test data)
+      setInterventionProgress([]);
 
       // Set notification count based on students needing attention
       setNotificationCount(studentsNeedingAttention.length);
 
-      // Set progress data for charts
-      setProgressData(dashboardData.progressData || {
-        weekly: [],
-        monthly: []
-      });
 
-      // Set prescriptive analytics
-      setPrescriptiveData(dashboardData.prescriptiveData || []);
+      // Set prescriptive analytics (using default data since we're loading from test files)
+      setPrescriptiveData([]);
 
       // Set initial selected reading level
-      if (dashboardData.readingLevelDistribution && dashboardData.readingLevelDistribution.length > 0) {
-        const initialLevel = dashboardData.readingLevelDistribution[0].name;
+      if (testReadingLevelDistribution && testReadingLevelDistribution.length > 0) {
+        const initialLevel = testReadingLevelDistribution[0].name;
         setSelectedReadingLevel(initialLevel);
 
         // Set students in selected level
@@ -765,8 +768,9 @@ const TeacherDashboard = () => {
             <ResponsiveContainer width="100%" height={180}>
               <BarChart
                 data={sectionFilteredStudents.map(student => ({
-                  name: student.name.split(' ')[0], // First name only for chart
-                  score: student.lastScore
+                  name: student.name ? student.name.split(' ')[0] : 'Student', // First name only for chart
+                  failedCategories: student.failedCategories ? student.failedCategories.length : 0,
+                  totalCategories: student.categoriesNeedingImprovement ? student.categoriesNeedingImprovement.length : 0
                 }))}
                 margin={{ top: 10, right: 0, left: 0, bottom: 20 }}
                 barSize={18}
@@ -779,16 +783,16 @@ const TeacherDashboard = () => {
                   axisLine={{ stroke: 'rgba(255,255,255,0.3)' }}
                 />
                 <YAxis
-                  domain={[0, 100]}
+                  domain={[0, 10]}
                   tick={{ fill: 'white', fontSize: 10 }}
                   axisLine={{ stroke: 'rgba(255,255,255,0.3)' }}
-                  tickFormatter={(value) => `${value}%`}
+                  tickFormatter={(value) => `${value}`}
                 />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
-                      const score = payload[0].value;
-                      const student = payload[0].payload;
+                      const failedCount = payload[0].value;
+                      const student = sectionFilteredStudents.find(s => s.name && s.name.split(' ')[0] === label);
                       return (
                         <div style={{
                           background: '#2B3A67',
@@ -800,8 +804,11 @@ const TeacherDashboard = () => {
                           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
                           minWidth: '160px',
                         }}>
-                          <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>{student.name}</div>
-                          <div style={{ fontSize: '0.9rem' }}> Score Percentage: {score}%</div>
+                          <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>{student?.name || label}</div>
+                          <div style={{ fontSize: '0.9rem' }}>Failed Categories: {failedCount}</div>
+                          {student?.reason && (
+                            <div style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>{student.reason}</div>
+                          )}
                         </div>
                       );
                     }
@@ -809,8 +816,8 @@ const TeacherDashboard = () => {
                   }}
                   cursor={{ fill: 'transparent' }}
                 />
-                <ReferenceLine y={70} stroke="#F3C922" strokeWidth={1} strokeDasharray="3 3" />
-                <Bar dataKey="score" radius={[4, 4, 0, 0]}>
+                <ReferenceLine y={3} stroke="#F3C922" strokeWidth={1} strokeDasharray="3 3" />
+                <Bar dataKey="failedCategories" radius={[4, 4, 0, 0]}>
                   {sectionFilteredStudents.map((student, i) => (
                     <Cell
                       key={`cell-${i}`}
@@ -905,21 +912,6 @@ const TeacherDashboard = () => {
                     letterSpacing: '0.05em',
                     width: '30%'
                   }}>Categories Needing Improvement</th>
-                  <th style={{
-                    fontSize: '0.9rem',
-                    fontWeight: '500',
-                    color: 'white',
-                    padding: '12px 16px',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                    backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
-                    position: 'sticky',
-                    top: '0',
-                    zIndex: '10',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    width: '10%',
-                    textAlign: 'center'
-                  }}>Score</th>
                   <th style={{
                     textAlign: 'left',
                     fontSize: '0.9rem',
@@ -1016,15 +1008,6 @@ const TeacherDashboard = () => {
                         fontSize: '0.95rem',
                         verticalAlign: 'middle',
                         color: 'white',
-                        backgroundColor: 'transparent',
-                        textAlign: 'center'
-                      }}>{student.readingLevel === 'Not Assessed' ? 'N/A' : `${student.lastScore}%`}</td>
-                      <td style={{
-                        padding: '12px 16px',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                        fontSize: '0.95rem',
-                        verticalAlign: 'middle',
-                        color: 'white',
                         backgroundColor: 'transparent'
                       }}>
                         <button
@@ -1063,7 +1046,7 @@ const TeacherDashboard = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" style={{
+                    <td colSpan="5" style={{
                       textAlign: 'center',
                       padding: '20px',
                       color: 'white',
@@ -1208,151 +1191,6 @@ const TeacherDashboard = () => {
             </div>
           </div>
 
-          {/* Top-right cell: Progress Chart */}
-          <div className="teacher-dashboard__grid-cell">
-            <div className="teacher-card teacher-chart-card">
-              <div className="teacher-chart__header">
-                <h2 className="teacher-card__title">
-                  {timeFrame === 'weekly' ? 'Weekly' : 'Monthly'} Reading Progress
-                </h2>
-                <div className="teacher-chart__controls">
-                  <button
-                    className="teacher-timeframe-btn"
-                    onClick={toggleTimeFrame}
-                  >
-                    {timeFrame === 'weekly' ? 'Show Monthly' : 'Show Weekly'}
-                  </button>
-                  <div className="teacher-dropdown">
-                    <button
-                      className="teacher-dropdown__trigger"
-                      onClick={toggleDropdown}
-                    >
-                      {selectedReadingLevel}
-                      <span className={`teacher-dropdown__arrow ${isDropdownOpen ? 'teacher-dropdown__arrow--open' : ''}`}>▼</span>
-                    </button>
-                    {isDropdownOpen && (
-                      <div className="teacher-dropdown__menu">
-                        {readingLevelDistribution
-                          .filter(level => level.name !== 'Not Assessed') // Exclude Not Assessed from progress chart
-                          .map((level, index) => (
-                            <div
-                              key={index}
-                              className={`teacher-dropdown__item ${selectedReadingLevel === level.name ? 'teacher-dropdown__item--active' : ''}`}
-                              onClick={() => selectReadingLevel(level.name)}
-                            >
-                              {level.name}
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="teacher-chart__container">
-                {selectedReadingLevel !== 'Not Assessed' && chartData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart
-                      data={chartData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.3)" />
-                      <XAxis
-                        dataKey="name"
-                        axisLine={{ stroke: 'white', strokeWidth: 2 }}
-                        tick={{ fill: 'white', fontSize: 12 }}
-                        tickLine={{ stroke: 'white', strokeWidth: 2 }}
-                        tickMargin={12}
-                      />
-                      <YAxis
-                        domain={[0, 100]}
-                        axisLine={{ stroke: 'white', strokeWidth: 2 }}
-                        tick={{ fill: 'white', fontSize: 11 }}
-                        tickLine={{ stroke: 'white' }}
-                        tickFormatter={(value) => `${value}%`}
-                      />
-                      <defs>
-                        <linearGradient id="teacherAreaFill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={getReadingLevelColor(selectedReadingLevel)} stopOpacity={0.8} />
-                          <stop offset="95%" stopColor={getReadingLevelColor(selectedReadingLevel)} stopOpacity={0.1} />
-                        </linearGradient>
-                      </defs>
-                      <Area
-                        type="monotone"
-                        dataKey="progress"
-                        fill="url(#teacherAreaFill)"
-                        stroke="none"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="progress"
-                        stroke={getReadingLevelColor(selectedReadingLevel)}
-                        strokeWidth={3}
-                        dot={{
-                          fill: '#3B4F81',
-                          stroke: 'white',
-                          strokeWidth: 2,
-                          r: 6
-                        }}
-                        activeDot={{
-                          r: 8,
-                          fill: '#F3C922',
-                          stroke: 'white'
-                        }}
-                      />
-                      <ReferenceLine
-                        y={80}
-                        stroke="#F3C922"
-                        strokeWidth={2}
-                        strokeDasharray="5 5"
-                        label={{
-                          value: 'Target',
-                          position: 'right',
-                          fill: '#F3C922',
-                          fontSize: 12
-                        }}
-                      />
-                      <Tooltip
-                        content={({ active, payload, label }) => {
-                          if (active && payload && payload.length) {
-                            const value = payload[0].value;
-                            return (
-                              <div className="teacher-progress-chart-custom-tooltip">
-                                <div className="teacher-progress-tooltip-header">
-                                  {timeFrame === 'weekly' ? `Week ${label}` : label}
-                                </div>
-                                <div className="teacher-progress-tooltip-content">
-                                  <div className="teacher-progress-tooltip-item">
-                                    <span 
-                                      className="teacher-progress-tooltip-color" 
-                                      style={{ backgroundColor: getReadingLevelColor(selectedReadingLevel) }}
-                                    ></span>
-                                    <span className="teacher-progress-tooltip-label">
-                                      Progress: {value}%
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                        cursor={{ strokeDasharray: '3 3', stroke: 'rgba(255,255,255,0.5)' }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="teacher-no-data-message">
-                    {selectedReadingLevel === 'Not Assessed' ? (
-                      <p>No progress data available for students who haven't been assessed.</p>
-                    ) : (
-                      <p>No progress data available for this reading level.</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Student Intervention Progress Section */}
@@ -1390,7 +1228,7 @@ const TeacherDashboard = () => {
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart
                   data={filteredInterventionProgress.map(progress => ({
-                    name: progress.studentName || 'Unknown',
+                    name: progress.studentName || 'Student',
                     completed: progress.percentComplete || 0,
                     correct: progress.percentCorrect || 0
                   }))}
@@ -1593,7 +1431,7 @@ const TeacherDashboard = () => {
                 <div className="teacher-intervention-summary">
                   <div className="teacher-intervention-summary-header">
                     <div className="teacher-intervention-student-info">
-                      <h3>{selectedIntervention.studentName || 'Unknown Student'}</h3>
+                      <h3>{selectedIntervention.studentName || 'Student'}</h3>
                       <div className="teacher-intervention-student-details">
                         <span className="teacher-level-badge modal-badge">
                           {selectedIntervention.readingLevel || selectedIntervention.studentReadingLevel || 'Not Assessed'}
