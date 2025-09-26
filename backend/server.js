@@ -513,8 +513,8 @@ connectDB().then(async (connected) => {
     // Load dashboard routes
     try {
       const dashboardRoutes = require('./routes/Teachers/dashboardRoutes');
-      app.use('/api/dashboard', dashboardRoutes);
-      console.log('✅ Loaded dashboard routes');
+      app.use('/api/teachers/dashboard', dashboardRoutes);
+      console.log('✅ Loaded dashboard routes at /api/teachers/dashboard/*');
     } catch (error) {
       console.warn('⚠️ Could not load dashboard routes:', error.message);
     }
