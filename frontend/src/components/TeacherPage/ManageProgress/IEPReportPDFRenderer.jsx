@@ -226,6 +226,65 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
+  checkmarkContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    padding: 4,
+  },
+
+  checkboxWrapper: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  checkboxLabel: {
+    fontSize: 6,
+    color: '#374151',
+    fontWeight: 'bold',
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+
+  checkbox: {
+    fontSize: 12,
+    color: '#059669',
+    textAlign: 'center',
+    fontFamily: 'Times-Roman',
+    fontWeight: 'bold',
+  },
+
+  supportLevelText: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#374151',
+  },
+
+  legendContainer: {
+    backgroundColor: '#F3F4F6',
+    padding: 8,
+    marginBottom: 10,
+    borderRadius: 3,
+  },
+
+  legendTitle: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#374151',
+    marginBottom: 2,
+  },
+
+  legendRow: {
+    marginBottom: 2,
+  },
+
+  legendItem: {
+    fontSize: 7,
+    color: '#6B7280',
+  },
+
   // Signature section
   signatureSection: {
     flexDirection: 'row',
@@ -265,6 +324,31 @@ const IEPReportPDFRenderer = ({ iepData }) => {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  // Render support level checkboxes
+  const renderSupportLevelCheckmarks = (supportLevel) => {
+    const level = supportLevel?.toLowerCase();
+    const isMinimal = level === 'minimal' || level === 'min';
+    const isModerate = level === 'moderate' || level === 'mod';
+    const isExtensive = level === 'extensive' || level === 'ext';
+
+    return (
+      <View style={styles.checkmarkContainer}>
+        <View style={styles.checkboxWrapper}>
+          <Text style={styles.checkboxLabel}>Minimal</Text>
+          <Text style={styles.checkbox}>{isMinimal ? '[X]' : '[ ]'}</Text>
+        </View>
+        <View style={styles.checkboxWrapper}>
+          <Text style={styles.checkboxLabel}>Moderate</Text>
+          <Text style={styles.checkbox}>{isModerate ? '[X]' : '[ ]'}</Text>
+        </View>
+        <View style={styles.checkboxWrapper}>
+          <Text style={styles.checkboxLabel}>Extensive</Text>
+          <Text style={styles.checkbox}>{isExtensive ? '[X]' : '[ ]'}</Text>
+        </View>
+      </View>
+    );
   };
 
   // Get student name
@@ -534,34 +618,11 @@ const IEPReportPDFRenderer = ({ iepData }) => {
           <Text>STUDENT PERFORMANCE SUMMARY</Text>
         </View>
 
-        {/* Reading Level Information */}
-        <View style={styles.summaryText}>
-          <Text><Text style={styles.summaryLabel}>Reading Level: </Text>{summary.readingLevel.level} - {summary.readingLevel.title}</Text>
-        </View>
-
-        {/* Achievement Summary */}
-        <View style={styles.summaryText}>
-          <Text><Text style={styles.summaryLabel}>Achievement: </Text>{summary.achievement}</Text>
-        </View>
-
-        {/* Performance Overview */}
-        <View style={styles.summaryText}>
-          <Text><Text style={styles.summaryLabel}>Performance: </Text>{summary.performanceOverview}</Text>
-        </View>
-
-        {/* Intervention Summary */}
-        <View style={styles.summaryText}>
-          <Text><Text style={styles.summaryLabel}>Intervention: </Text>{summary.interventionJourney}</Text>
-        </View>
-
-        {/* Detailed Analysis */}
-        <View style={styles.summaryText}>
-          <Text><Text style={styles.summaryLabel}>Category Analysis: </Text>{summary.detailedAnalysis}</Text>
-        </View>
-
-        {/* Next Steps */}
-        <View style={styles.summaryText}>
-          <Text><Text style={styles.summaryLabel}>Next Steps: </Text>{summary.nextSteps}</Text>
+        {/* Comprehensive Summary Paragraph */}
+        <View style={styles.summaryParagraph}>
+          <Text>
+            {getStudentName()} is currently working at the "{summary.readingLevel.level}" level ({summary.readingLevel.title}), demonstrating {summary.achievement.toLowerCase()}. {summary.performanceOverview} {summary.interventionJourney} {summary.detailedAnalysis} {summary.nextSteps}
+          </Text>
         </View>
       </Page>
 
@@ -569,6 +630,17 @@ const IEPReportPDFRenderer = ({ iepData }) => {
       <Page size="A4" style={styles.page}>
         <View style={styles.sectionHeader}>
           <Text>LEARNING OBJECTIVES AND PROGRESS</Text>
+        </View>
+
+        {/* Support Level Legend */}
+        <View style={styles.legendContainer}>
+          <Text style={styles.legendTitle}>Support Level Legend:</Text>
+          <View style={styles.legendRow}>
+            <Text style={styles.legendItem}>[X] = Required | [ ] = Not Required</Text>
+          </View>
+          <View style={styles.legendRow}>
+            <Text style={styles.legendItem}>Min | Mod | Ext</Text>
+          </View>
         </View>
 
         {/* Table Header */}
@@ -622,9 +694,9 @@ const IEPReportPDFRenderer = ({ iepData }) => {
               <Text style={styles.tableCell}>{objective.categoryName}</Text>
                 <Text style={styles.tableCell}>{initialScore}%</Text>
                 <Text style={styles.tableCell}>{interventionProgress}</Text>
-                <Text style={[styles.tableCellSupport, getSupportStyle(supportLevel)]}>
-                  {supportLevel.toUpperCase()}
-              </Text>
+                <View style={[styles.tableCellSupport, getSupportStyle(supportLevel)]}>
+                  {renderSupportLevelCheckmarks(supportLevel)}
+                </View>
               <Text style={[
                 styles.tableCell,
                   isMastered ? styles.statusPassed : styles.statusFailed
@@ -642,7 +714,7 @@ const IEPReportPDFRenderer = ({ iepData }) => {
 
       {/* Page 3: Intervention Details */}
       <Page size="A4" style={styles.page}>
-        <View style={styles.sectionHeader}>
+        <View style={[styles.sectionHeader, { marginTop: 20 }]}>
           <Text>INTERVENTION DETAILS</Text>
         </View>
 
@@ -653,7 +725,7 @@ const IEPReportPDFRenderer = ({ iepData }) => {
           const improvement = objective.interventionImprovement || 0;
           
           return (
-            <View key={categoryIndex} style={{ marginBottom: 25 }}>
+            <View key={categoryIndex} style={{ marginBottom: 30, marginTop: 15 }}>
               {/* Category Header with Summary */}
               <View style={{ 
                 backgroundColor: '#F3F4F6', 
