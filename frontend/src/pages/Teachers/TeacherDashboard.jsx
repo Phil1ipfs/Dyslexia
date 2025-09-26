@@ -60,6 +60,9 @@ const TeacherDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Error state for database connection issues
+  const [error, setError] = useState(null);
+
   // Fetch dashboard data on component mount
   useEffect(() => {
     fetchDashboardData();
@@ -111,63 +114,362 @@ const TeacherDashboard = () => {
 
 
   /**
+   * Get category performance data based on reading level specifications from CLAUDE.md
+   * Uses real category results data from test files
+   */
+  const getCategoryPerformanceData = () => {
+    // Reading level category assignments from CLAUDE.md (STRICT)
+    const readingLevelCategories = {
+      "Low Emerging": ["Alphabet Knowledge"],
+      "High Emerging": ["Alphabet Knowledge", "Phonological Awareness"],
+      "Developing": ["Alphabet Knowledge", "Phonological Awareness", "Decoding"],
+      "Transitioning": ["Alphabet Knowledge", "Phonological Awareness", "Decoding", "Word Recognition"],
+      "At Grade Level": ["Alphabet Knowledge", "Phonological Awareness", "Decoding", "Word Recognition", "Reading Comprehension"]
+    };
+
+    // If no students data available, return empty array
+    if (!students || students.length === 0) {
+      return [];
+    }
+
+    // Get category results data
+    const categoryResultsData = window.testCategoryResults || [];
+
+    // Group students by reading level
+    const studentsByLevel = students.reduce((acc, student) => {
+      const level = student.readingLevel;
+      if (!acc[level]) {
+        acc[level] = [];
+      }
+      acc[level].push(student);
+      return acc;
+    }, {});
+
+    // Process category performance for each reading level
+    const performanceData = Object.keys(readingLevelCategories).map(readingLevel => {
+      const studentsInLevel = studentsByLevel[readingLevel] || [];
+      const categoriesForLevel = readingLevelCategories[readingLevel];
+
+      if (studentsInLevel.length === 0) {
+        return null; // Skip levels with no students
+      }
+
+      // Calculate performance for each category applicable to this reading level
+      const categoryData = {};
+
+      categoriesForLevel.forEach(categoryName => {
+        let totalStudentsWithData = 0;
+        let passedStudents = 0;
+
+        // Process each student's category results
+        studentsInLevel.forEach(student => {
+          // Find category results for this student
+          const studentCategoryResult = categoryResultsData.find(cr =>
+            cr.studentId === student.idNumber || cr.studentId === student.id
+          );
+
+          if (studentCategoryResult && studentCategoryResult.categories) {
+            // Find the specific category result
+            const categoryResult = studentCategoryResult.categories.find(cat =>
+              cat.categoryName === categoryName
+            );
+
+            if (categoryResult && categoryResult.isCompleted === true) {
+              totalStudentsWithData++;
+              if (categoryResult.isPassed === true && categoryResult.score >= 75) {
+                passedStudents++;
+              }
+            }
+          }
+        });
+
+        // Calculate pass percentage for this category
+        const passPercentage = totalStudentsWithData > 0 ?
+          Math.round((passedStudents / totalStudentsWithData) * 100) : 0;
+
+        categoryData[categoryName] = passPercentage;
+      });
+
+      return {
+        readingLevel,
+        studentCount: studentsInLevel.length,
+        ...categoryData
+      };
+    }).filter(data => data !== null); // Remove null entries for levels with no students
+
+    return performanceData;
+  };
+
+  /**
+   * Calculate which students need attention based on failed categories
+   * A student needs attention if they have failed any category applicable to their reading level
+   * This function processes real test data from separate files
+   */
+  const calculateStudentsNeedingAttention = (studentsData) => {
+    // Reading level category assignments from CLAUDE.md (STRICT)
+    const readingLevelCategories = {
+      "Low Emerging": ["Alphabet Knowledge"],
+      "High Emerging": ["Alphabet Knowledge", "Phonological Awareness"],
+      "Developing": ["Alphabet Knowledge", "Phonological Awareness", "Decoding"],
+      "Transitioning": ["Alphabet Knowledge", "Phonological Awareness", "Decoding", "Word Recognition"],
+      "At Grade Level": ["Alphabet Knowledge", "Phonological Awareness", "Decoding", "Word Recognition", "Reading Comprehension"]
+    };
+
+    // Load and parse category results from test data (since API might not merge them)
+    let categoryResultsData = [];
+    try {
+      // In real implementation, this would come from the API
+      // For now, we'll simulate loading the test data
+      if (window.testCategoryResults) {
+        categoryResultsData = window.testCategoryResults;
+      }
+    } catch (error) {
+      console.warn('Could not load category results test data:', error);
+    }
+
+    const studentsNeedingAttention = [];
+
+    studentsData.forEach(student => {
+      const requiredCategories = readingLevelCategories[student.readingLevel] || [];
+
+      // Skip if no required categories for this reading level
+      if (requiredCategories.length === 0) {
+        return;
+      }
+
+      // Find category results for this student
+      const studentCategoryResult = categoryResultsData.find(cr =>
+        cr.studentId === student.idNumber || cr.studentId === student.id
+      );
+
+      const failedCategories = [];
+      const categoriesNeedingImprovement = [];
+
+      // Check each required category for this student's reading level
+      requiredCategories.forEach(categoryName => {
+        let categoryResult = null;
+
+        if (studentCategoryResult && studentCategoryResult.categories) {
+          // Find the specific category result
+          categoryResult = studentCategoryResult.categories.find(cat =>
+            cat.categoryName === categoryName
+          );
+        }
+
+        // Debug logging for Rainier
+        if (student.firstName === 'Rainier' && student.lastName === 'Aganan') {
+          console.log(`DEBUG - Rainier ${categoryName}:`, {
+            requiredCategories,
+            categoryResult: categoryResult ? {
+              score: categoryResult.score,
+              isPassed: categoryResult.isPassed,
+              interventionRequired: categoryResult.interventionRequired,
+              interventionCompleted: categoryResult.interventionCompleted
+            } : 'NOT_FOUND',
+            studentCategoryResultFound: !!studentCategoryResult
+          });
+        }
+
+        if (categoryResult) {
+          // Check if category failed or needs intervention
+          const hasFailed = categoryResult.isPassed === false || categoryResult.score < 75;
+          const needsIntervention = categoryResult.interventionRequired === true;
+          const interventionCompleted = categoryResult.interventionCompleted === true;
+
+          if (hasFailed && !interventionCompleted) {
+            failedCategories.push(categoryName);
+
+            // Determine intervention status
+            let status = 'Assessment Failed';
+            if (needsIntervention && !interventionCompleted) {
+              status = 'Intervention Required';
+            } else if (interventionCompleted) {
+              status = 'Intervention Completed';
+            }
+
+            categoriesNeedingImprovement.push({
+              category: categoryName,
+              score: Math.round(categoryResult.score || 0),
+              status: status,
+              interventionRequired: needsIntervention,
+              interventionCompleted: interventionCompleted
+            });
+          }
+        } else {
+          // No category result found - assume needs assessment
+          failedCategories.push(categoryName);
+          categoriesNeedingImprovement.push({
+            category: categoryName,
+            score: 0,
+            status: 'Not Assessed',
+            interventionRequired: false,
+            interventionCompleted: false
+          });
+        }
+      });
+
+      // If student has any failed categories, they need attention
+      if (failedCategories.length > 0) {
+        studentsNeedingAttention.push({
+          ...student,
+          name: `${student.firstName} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName}`,
+          failedCategories,
+          categoriesNeedingImprovement,
+          lastScore: student.readingPercentage || 0,
+          // Calculate attention reason
+          reason: failedCategories.length === 1 ?
+            `Failed ${failedCategories[0]}` :
+            `Failed ${failedCategories.length} categories`
+        });
+      }
+    });
+
+    return studentsNeedingAttention;
+  };
+
+  /**
    * Main function to fetch all dashboard data
    */
   const fetchDashboardData = async () => {
     setIsLoading(true);
+    setError(null);
+
     try {
-      // Use the dashboard service to fetch data
+      console.log('Fetching dashboard data from database...');
+
+      // Load test category results data for processing
+      // In production, this would come from the API
+      try {
+        const categoryResultsResponse = await fetch('/test.category_results.json');
+        if (categoryResultsResponse.ok) {
+          const categoryResultsData = await categoryResultsResponse.json();
+          window.testCategoryResults = categoryResultsData;
+          console.log('Loaded test category results data:', categoryResultsData.length, 'records');
+        }
+      } catch (error) {
+        console.warn('Could not load test category results:', error);
+        window.testCategoryResults = [];
+      }
+
+      // Use the dashboard service to fetch data from database
       const dashboardData = await DashboardApiService.getDashboardData(getAuthHeaders());
 
-      if (dashboardData) {
-        // Set students data
-        setStudents(dashboardData.students || []);
+      console.log('Successfully received dashboard data:', dashboardData);
 
-        // Set reading level distribution
-        setReadingLevelDistribution(dashboardData.readingLevelDistribution || []);
+      // Validate that we received proper data structure
+      if (!dashboardData || typeof dashboardData !== 'object') {
+        throw new Error('Invalid data format received from server');
+      }
 
-        // Set students needing attention
-        setStudentsNeedingAttention(dashboardData.studentsNeedingAttention || []);
+      // Set students data - ensure it's properly formatted for category-based attention
+      const students = dashboardData.students || [];
+      console.log('Raw students data from API:', students.slice(0, 2)); // Debug first 2 students
+      setStudents(students);
 
-        // Set dashboard metrics
-        setMetrics(dashboardData.metrics || {
-          totalStudents: 0,
-          completionRate: 0,
-          averageScore: 0,
-          pendingEdits: 0
-        });
+      // Set reading level distribution
+      setReadingLevelDistribution(dashboardData.readingLevelDistribution || []);
 
-        // Set sections
-        setSections(dashboardData.sections || ['Sampaguita', 'Unity', 'Dignity']);
+      // Process students with category results for proper attention calculation
+      const categoryResultsData = window.testCategoryResults || [];
+      console.log('Category results data loaded:', categoryResultsData.length);
 
-        // Set intervention progress data
-        setInterventionProgress(dashboardData.interventionProgress || []);
-
-        // Set notification count based on students needing attention
-        setNotificationCount(
-          (dashboardData.studentsNeedingAttention || []).length
+      // Merge students with their category results and overall scores
+      const studentsWithCategoryData = students.map(student => {
+        const categoryResult = categoryResultsData.find(cr =>
+          cr.studentId === student.idNumber || cr.studentId === student.id
         );
 
-        // Set progress data for charts
-        setProgressData(dashboardData.progressData || {});
+        return {
+          ...student,
+          // Use overallScore from category results if available, fallback to readingPercentage
+          lastScore: categoryResult ? categoryResult.overallScore : (student.readingPercentage || 0),
+          categoryResult: categoryResult // Attach category result for processing
+        };
+      });
 
-        // Set prescriptive analytics
-        setPrescriptiveData(dashboardData.prescriptiveData || []);
+      console.log('Students with category data:', studentsWithCategoryData.slice(0, 2));
 
-        // Set initial selected reading level
-        if (dashboardData.readingLevelDistribution && dashboardData.readingLevelDistribution.length > 0) {
-          const initialLevel = dashboardData.readingLevelDistribution[0].name;
-          setSelectedReadingLevel(initialLevel);
+      // Set students needing attention - calculate based on category failures
+      const studentsNeedingAttention = calculateStudentsNeedingAttention(studentsWithCategoryData);
+      setStudentsNeedingAttention(studentsNeedingAttention);
 
-          // Set students in selected level
-          const studentsInLevel = (dashboardData.students || []).filter(
-            student => student.readingLevel === initialLevel
-          );
-          setStudentsInSelectedLevel(studentsInLevel);
-        }
+      console.log(`Found ${studentsNeedingAttention.length} students needing attention based on category failures`);
+      console.log('Students needing attention:', studentsNeedingAttention.map(s => ({
+        name: s.name,
+        readingLevel: s.readingLevel,
+        failedCategories: s.failedCategories,
+        categoriesNeedingImprovement: s.categoriesNeedingImprovement
+      })));
+
+      // Set dashboard metrics
+      setMetrics(dashboardData.metrics || {
+        totalStudents: students.length,
+        completionRate: 0,
+        averageScore: 0,
+        pendingEdits: studentsNeedingAttention.length
+      });
+
+      // Set sections from actual data
+      const availableSections = dashboardData.sections || [];
+      setSections(availableSections);
+
+      // Set intervention progress data
+      setInterventionProgress(dashboardData.interventionProgress || []);
+
+      // Set notification count based on students needing attention
+      setNotificationCount(studentsNeedingAttention.length);
+
+      // Set progress data for charts
+      setProgressData(dashboardData.progressData || {
+        weekly: [],
+        monthly: []
+      });
+
+      // Set prescriptive analytics
+      setPrescriptiveData(dashboardData.prescriptiveData || []);
+
+      // Set initial selected reading level
+      if (dashboardData.readingLevelDistribution && dashboardData.readingLevelDistribution.length > 0) {
+        const initialLevel = dashboardData.readingLevelDistribution[0].name;
+        setSelectedReadingLevel(initialLevel);
+
+        // Set students in selected level
+        const studentsInLevel = students.filter(
+          student => student.readingLevel === initialLevel
+        );
+        setStudentsInSelectedLevel(studentsInLevel);
       }
+
+      console.log('Dashboard data successfully loaded and processed');
+
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
+
+      // Set comprehensive error state
+      setError({
+        message: error.message || 'Failed to fetch dashboard data',
+        type: 'DATABASE_ERROR',
+        details: error.message.includes('Network Error') ? 'Unable to connect to database server' :
+                error.message.includes('API Error') ? 'Database returned an error' :
+                'An unexpected error occurred while loading dashboard data'
+      });
+
+      // Set empty states to prevent crashes
+      setStudents([]);
+      setStudentsNeedingAttention([]);
+      setReadingLevelDistribution([]);
+      setMetrics({
+        totalStudents: 0,
+        completionRate: 0,
+        averageScore: 0,
+        pendingEdits: 0
+      });
+      setSections([]);
+      setInterventionProgress([]);
+      setNotificationCount(0);
+      setProgressData({ weekly: [], monthly: [] });
+      setPrescriptiveData([]);
+
     } finally {
       setIsLoading(false);
     }
@@ -318,6 +620,58 @@ const TeacherDashboard = () => {
 
   return (
     <div className="teacher-dashboard">
+      {/* Database Error Display */}
+      {error && (
+        <div style={{
+          backgroundColor: '#ff4444',
+          color: 'white',
+          padding: '1rem 1.5rem',
+          margin: '0 0 2rem 0',
+          borderRadius: '8px',
+          border: '1px solid #cc0000',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <div>
+              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '600' }}>
+                🚫 Database Connection Error
+              </h4>
+              <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem' }}>
+                {error.details}
+              </p>
+              <p style={{ margin: '0', fontSize: '0.85rem', opacity: 0.9 }}>
+                Please check your database connection or contact system administrator.
+              </p>
+            </div>
+            <button
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: '500',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)'}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
+              onClick={() => {
+                console.log('Retrying database connection...');
+                fetchDashboardData();
+              }}
+            >
+              Retry Connection
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header with dashboard title and notification bell */}
       <main className="teacher-dashboard__content">
         <div className="teacher-dashboard__header">
@@ -651,9 +1005,9 @@ const TeacherDashboard = () => {
                         }}>
                           {student.readingLevel === 'Not Assessed'
                             ? 'Needs assessment to determine areas for improvement'
-                            : (student.improvementCategories && Array.isArray(student.improvementCategories)
-                              ? student.improvementCategories.join(', ')
-                              : 'Needs assessment')}
+                            : (student.categoriesNeedingImprovement && Array.isArray(student.categoriesNeedingImprovement)
+                              ? student.categoriesNeedingImprovement.map(cat => `${cat.category} (${cat.score}%)`).join(', ')
+                              : 'All categories passed')}
                         </span>
                       </td>
                       <td style={{
@@ -729,7 +1083,58 @@ const TeacherDashboard = () => {
 
         {/* Main 2x2 grid structure */}
         <div className="teacher-dashboard__main-grid">
-          {/* Top-left cell: Reading Level Distribution Chart */}
+          {/* Top-left cell: Category Performance by Reading Level Chart */}
+          <div className="teacher-dashboard__grid-cell">
+            <div className="teacher-card teacher-distribution-card">
+              <h2 className="teacher-card__title">Category Performance by Reading Level</h2>
+              <div className="teacher-category-performance-chart" style={{ height: '400px' }}>
+                <ResponsiveContainer width="100%" height={400}>
+                  <BarChart
+                    data={getCategoryPerformanceData()}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                    <XAxis
+                      dataKey="readingLevel"
+                      stroke="white"
+                      fontSize={12}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis
+                      stroke="white"
+                      fontSize={12}
+                      domain={[0, 100]}
+                      label={{ value: 'Pass Rate (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: 'white' } }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(42, 60, 109, 0.95)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        color: 'white'
+                      }}
+                      formatter={(value, name) => [`${value}%`, name]}
+                      labelStyle={{ color: 'white' }}
+                    />
+                    <ReferenceLine y={75} stroke="#FFC154" strokeDasharray="5 5" strokeWidth={2} />
+                    <Legend
+                      wrapperStyle={{ color: 'white', fontSize: '12px' }}
+                      iconType="rect"
+                    />
+                    <Bar dataKey="Alphabet Knowledge" stackId="a" fill="#4BC0C0" name="Alphabet Knowledge" />
+                    <Bar dataKey="Phonological Awareness" stackId="b" fill="#FF9F40" name="Phonological Awareness" />
+                    <Bar dataKey="Decoding" stackId="c" fill="#FF6B6B" name="Decoding" />
+                    <Bar dataKey="Word Recognition" stackId="d" fill="#9F7AEA" name="Word Recognition" />
+                    <Bar dataKey="Reading Comprehension" stackId="e" fill="#48BB78" name="Reading Comprehension" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Top-right cell: Reading Level Distribution Chart */}
           <div className="teacher-dashboard__grid-cell">
             <div className="teacher-card teacher-distribution-card">
               <h2 className="teacher-card__title">Students by Reading Level</h2>
@@ -1716,11 +2121,13 @@ const TeacherDashboard = () => {
                   <h3>Categories Needing Improvement</h3>
                   {selectedStudent.readingLevel !== 'Not Assessed' ? (
                     <div className="teacher-categories-list">
-                      {selectedStudent.improvementCategories && selectedStudent.improvementCategories.length > 0 ? (
-                        selectedStudent.improvementCategories.map((category, index) => (
+                      {selectedStudent.categoriesNeedingImprovement && selectedStudent.categoriesNeedingImprovement.length > 0 ? (
+                        selectedStudent.categoriesNeedingImprovement.map((categoryInfo, index) => (
                           <div key={index} className="teacher-category-item">
                             <div className="teacher-category-marker" style={{ backgroundColor: getReadingLevelColor(selectedStudent.readingLevel) }}></div>
-                            <div className="teacher-category-name">{category}</div>
+                            <div className="teacher-category-name">
+                              {categoryInfo.category} ({categoryInfo.score}%) - {categoryInfo.status}
+                            </div>
                           </div>
                         ))
                       ) : (

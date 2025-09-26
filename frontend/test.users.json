@@ -1,0 +1,547 @@
+[{
+  "_id": {
+    "$oid": "683e948a9b13d43b098eb6e3"
+  },
+  "idNumber": 202533333,
+  "firstName": "Philip",
+  "middleName": "Casingal",
+  "lastName": "Pangilinan",
+  "age": "6",
+  "gender": "Male",
+  "gradeLevel": "Grade 1",
+  "section": "Patience",
+  "address": "Mandaluyong",
+  "email": null,
+  "profileImageUrl": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/student-profiles/1748931720760_rfdryb.png",
+  "completedLessons": [],
+  "readingLevel": "High Emerging",
+  "readingPercentage": 30,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-06-03T06:22:02.826Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-18T05:49:30.245Z"
+  },
+  "parentId": {
+    "$oid": "683e7186a1338769a9095a7a"
+  },
+  "lastAssessmentDate": "2025-08-18T12:03:31.912503",
+  "lastLogin": {
+    "$date": "2025-09-22T18:40:09.952Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68484489bc8ea7a4e8583489"
+  },
+  "idNumber": 202511111,
+  "firstName": "Cherish",
+  "middleName": "Mae",
+  "lastName": "Sarmiento",
+  "age": "6",
+  "gender": "Female",
+  "gradeLevel": "Grade 1",
+  "section": "Patience",
+  "address": "555 MF Jhocson Street, Barangay 408, Sampaloc, Manila",
+  "email": null,
+  "profileImageUrl": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/student-profiles/1749566599635_2hpcuc.png",
+  "completedLessons": [],
+  "readingLevel": "At Grade Level",
+  "readingPercentage": 100,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-06-10T14:43:21.193Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-20T11:22:02.184Z"
+  },
+  "lastAssessmentDate": "2025-09-20T15:39:58.332290",
+  "lastLogin": {
+    "$date": "2025-09-25T22:51:36.618Z"
+  },
+  "parentId": {
+    "$oid": "68d4c867bfe5f7869b91e977"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491110988139e71b308b55"
+  },
+  "idNumber": 202522233,
+  "firstName": "Ali",
+  "middleName": "Kat",
+  "lastName": "Alejaga",
+  "age": "7",
+  "gender": "Female",
+  "gradeLevel": "Grade 1",
+  "section": "Integrity",
+  "address": "123 Maharlika Street Los Baños Laguna",
+  "email": null,
+  "profileImageUrl": "",
+  "completedLessons": [],
+  "readingLevel": "At Grade Level",
+  "readingPercentage": 80,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-06-11T05:16:00.131Z"
+  },
+  "updatedAt": "2025-08-20T04:47:39.678396",
+  "lastAssessmentDate": "2025-08-20T04:47:39.677994",
+  "lastLogin": {
+    "$date": "2025-09-25T21:30:03.046Z"
+  },
+  "parentId": {
+    "$oid": "68d4ddce266d4c7405929d43"
+  }
+},
+{
+  "_id": {
+    "$oid": "68491428988139e71b308cca"
+  },
+  "idNumber": 2025121,
+  "firstName": "efgwf",
+  "middleName": "ewfe",
+  "lastName": "ewfw",
+  "age": "5",
+  "gender": "Male",
+  "gradeLevel": "Grade 1",
+  "section": "Honesty",
+  "address": "123 Maharlika Street Los Baños Laguna",
+  "email": null,
+  "profileImageUrl": "",
+  "completedLessons": [],
+  "readingLevel": "At Grade Level",
+  "readingPercentage": 0,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-06-11T05:29:12.903Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-21T17:37:51.296Z"
+  },
+  "lastAssessmentDate": "2025-09-20T17:21:12.039403",
+  "lastLogin": {
+    "$date": "2025-09-25T21:40:02.714Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68b9beaf24ba05af669d7dc0"
+  },
+  "idNumber": 202599999,
+  "firstName": "Philip",
+  "middleName": "C.",
+  "lastName": "Casingal",
+  "age": "19",
+  "gender": "Male",
+  "gradeLevel": "Grade 1",
+  "section": "Honesty",
+  "address": "123 Mabini Street, Quezon City, Metro Manila",
+  "email": null,
+  "profileImageUrl": "https://literexia-bucket.s3.ap-southeast-2.amazonaws.com/student-profiles/1757003438859_wdjads.jpg",
+  "completedLessons": [],
+  "readingLevel": "At Grade Level",
+  "readingPercentage": 93.33333333333333,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-09-04T16:30:39.575Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-15T17:50:26.961Z"
+  },
+  "lastLogin": {
+    "$date": "2025-09-25T21:34:46.765Z"
+  },
+  "lastAssessmentDate": "2025-09-14T12:56:29.991333"
+},
+{
+  "_id": {
+    "$oid": "68c85b5d36175ea3c6226270"
+  },
+  "idNumber": 202549506,
+  "firstName": "Nicole Franscine",
+  "middleName": "A",
+  "lastName": "Alcantara",
+  "age": 5,
+  "gender": "Female",
+  "gradeLevel": "Grade 1",
+  "section": "Patience",
+  "address": "789 Luna Street, Cebu City, Cebu",
+  "profileImageUrl": "",
+  "readingLevel": "At Grade Level",
+  "readingPercentage": 90,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-09-15T18:30:53.119Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-16T00:48:32.722Z"
+  },
+  "lastLogin": {
+    "$date": "2025-09-24T14:29:05.179Z"
+  },
+  "lastAssessmentDate": "2025-09-16T09:09:07.384710"
+},
+{
+  "_id": {
+    "$oid": "68c85b7936175ea3c6226272"
+  },
+  "idNumber": 202529405,
+  "firstName": "Rainier",
+  "middleName": "A",
+  "lastName": "Aganan",
+  "age": 5,
+  "gender": "Male",
+  "gradeLevel": "Grade 1",
+  "section": "Hope",
+  "address": "123 Mabini Street, Quezon City, Metro Manila",
+  "profileImageUrl": "",
+  "readingLevel": "Low Emerging",
+  "readingPercentage": 19,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-09-15T18:31:21.164Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-15T20:28:22.735Z"
+  },
+  "lastLogin": {
+    "$date": "2025-09-25T21:30:38.869Z"
+  },
+  "lastAssessmentDate": "2025-09-15T21:05:21.947972"
+},
+{
+  "_id": {
+    "$oid": "68c8b8ac742c75de4a27104c"
+  },
+  "idNumber": 202538947,
+  "firstName": "Kit",
+  "middleName": "T.",
+  "lastName": "Santiago",
+  "age": 4,
+  "gender": "Male",
+  "gradeLevel": "Grade 1",
+  "section": "Patience",
+  "address": "789 Luna Street, Cebu City, Cebu",
+  "profileImageUrl": "",
+  "readingLevel": "Undefined",
+  "readingPercentage": 0,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-09-16T01:09:00.105Z"
+  },
+  "updatedAt": "2025-09-19T15:39:56.316851",
+  "lastLogin": {
+    "$date": "2025-09-19T13:16:35.700Z"
+  },
+  "lastAssessmentDate": "2025-09-19T15:39:56.316563"
+},
+{
+  "_id": {
+    "$oid": "68c8b8c5742c75de4a27104e"
+  },
+  "idNumber": 202530693,
+  "firstName": "Santiago",
+  "middleName": "t.",
+  "lastName": "Kit",
+  "age": 4,
+  "gender": "Male",
+  "gradeLevel": "Grade 1",
+  "section": "Patience",
+  "address": "123 Maharlika Street Los Baños Laguna",
+  "profileImageUrl": "",
+  "readingLevel": "At Grade Level",
+  "readingPercentage": 100,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-09-16T01:09:25.433Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-18T12:25:35.397Z"
+  },
+  "lastLogin": {
+    "$date": "2025-09-25T22:55:11.916Z"
+  },
+  "lastAssessmentDate": "2025-09-18T12:25:35.088316"
+},
+{
+  "_id": {
+    "$oid": "68c95cb62a9c03445d7448e3"
+  },
+  "idNumber": 202534029,
+  "firstName": "Rodney",
+  "middleName": "Lei",
+  "lastName": "Estrada",
+  "age": 8,
+  "gender": "Male",
+  "gradeLevel": "Grade 1",
+  "section": "Hope",
+  "address": "321 Bonifacio Drive, Davao City, Davao del Sur",
+  "profileImageUrl": "",
+  "readingLevel": "Transitioning",
+  "readingPercentage": 4,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-09-16T12:48:54.259Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-19T17:46:51.207Z"
+  },
+  "lastLogin": {
+    "$date": "2025-09-24T14:21:18.262Z"
+  },
+  "lastAssessmentDate": "2025-09-19T19:43:48.027777"
+},
+{
+  "_id": {
+    "$oid": "68c95ccc2a9c03445d7448e5"
+  },
+  "idNumber": 202510679,
+  "firstName": "PpppHilip",
+  "middleName": "C",
+  "lastName": "Casingal",
+  "age": 5,
+  "gender": "Male",
+  "gradeLevel": "Grade 1",
+  "section": "Hope",
+  "address": "789 Luna Street, Cebu City, Cebu",
+  "profileImageUrl": "",
+  "readingLevel": "Undefined",
+  "readingPercentage": 0,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-09-16T12:49:16.958Z"
+  },
+  "updatedAt": "2025-09-19T16:48:24.931367",
+  "lastLogin": {
+    "$date": "2025-09-19T16:43:16.680Z"
+  },
+  "lastAssessmentDate": "2025-09-19T16:48:24.931309"
+},
+{
+  "_id": {
+    "$oid": "68cc0092e165b83dada4c44e"
+  },
+  "idNumber": 2025102151,
+  "firstName": "Rainier",
+  "middleName": "C",
+  "lastName": "Aganan",
+  "age": 8,
+  "gender": "Male",
+  "gradeLevel": "Grade 1",
+  "section": "Hope",
+  "address": "321 Bonifacio Drive, Davao City, Davao del Sur",
+  "profileImageUrl": "",
+  "readingLevel": "at Grade Level",
+  "readingPercentage": 100,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-09-16T12:49:51.718Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-19T12:02:39.889Z"
+  },
+  "lastLogin": {
+    "$date": "2025-09-22T18:20:12.659Z"
+  },
+  "lastAssessmentDate": "2025-09-19T20:29:25.419809"
+},
+{
+  "_id": {
+    "$oid": "68d0558e337858a8e1ba1ca8"
+  },
+  "idNumber": 2025203496,
+  "firstName": "Rs",
+  "middleName": "T",
+  "lastName": "Sa",
+  "age": 5,
+  "gender": "Female",
+  "gradeLevel": "Grade 1",
+  "section": "Honesty",
+  "address": "123 Maharlika Street Los Baños Laguna",
+  "profileImageUrl": "",
+  "readingLevel": null,
+  "readingPercentage": null,
+  "preAssessmentCompleted": false,
+  "createdAt": {
+    "$date": "2025-09-21T19:44:14.878Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-21T19:44:14.878Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68d055a8337858a8e1ba1cab"
+  },
+  "idNumber": 202504789,
+  "firstName": "Re",
+  "middleName": "Me",
+  "lastName": "Sa",
+  "age": 5,
+  "gender": "Female",
+  "gradeLevel": "Grade 1",
+  "section": "Hope",
+  "address": "364 San Diego Street",
+  "profileImageUrl": "",
+  "readingLevel": null,
+  "readingPercentage": null,
+  "preAssessmentCompleted": false,
+  "createdAt": {
+    "$date": "2025-09-21T19:44:40.369Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-21T19:44:40.369Z"
+  },
+  "lastLogin": {
+    "$date": "2025-09-23T20:03:47.718Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68d055bd337858a8e1ba1db2"
+  },
+  "idNumber": 20252025,
+  "firstName": "mE",
+  "middleName": "Sa",
+  "lastName": "sa",
+  "age": 5,
+  "gender": "Female",
+  "gradeLevel": "Grade 1",
+  "section": "Integrity",
+  "address": "123 Mabini Street, Quezon City, Metro Manila",
+  "profileImageUrl": "",
+  "readingLevel": "High Emerging",
+  "readingPercentage": 90,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-09-21T19:45:01.899Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-21T19:45:01.899Z"
+  },
+  "lastLogin": {
+    "$date": "2025-09-25T22:53:32.627Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68d4114ac4db4aa23e4ead0d"
+  },
+  "idNumber": 2025121121,
+  "firstName": "efgwf",
+  "middleName": "ewfe",
+  "lastName": "ewfw",
+  "age": "5",
+  "gender": "Male",
+  "gradeLevel": "Grade 1",
+  "section": "Honesty",
+  "address": "123 Maharlika Street Los Baños Laguna",
+  "email": null,
+  "profileImageUrl": "",
+  "completedLessons": [],
+  "readingLevel": "High Emerging",
+  "readingPercentage": 0,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-06-11T05:29:12.903Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-21T17:37:51.296Z"
+  },
+  "lastAssessmentDate": "2025-09-20T17:21:12.039403",
+  "lastLogin": {
+    "$date": "2025-09-24T16:38:17.525Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68d425e8fea8309ca8b6a8c6"
+  },
+  "idNumber": 2025,
+  "firstName": "efgwf",
+  "middleName": "ewfe",
+  "lastName": "ewfw",
+  "age": "5",
+  "gender": "Male",
+  "gradeLevel": "Grade 1",
+  "section": "Honesty",
+  "address": "123 Maharlika Street Los Baños Laguna",
+  "email": null,
+  "profileImageUrl": "",
+  "completedLessons": [],
+  "readingLevel": "High Emerging",
+  "readingPercentage": 0,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-06-11T05:29:12.903Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-21T17:37:51.296Z"
+  },
+  "lastAssessmentDate": "2025-09-20T17:21:12.039403",
+  "lastLogin": {
+    "$date": "2025-09-24T17:35:06.813Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68d437595d846d179cd59ce1"
+  },
+  "idNumber": 2003,
+  "firstName": "efgwf",
+  "middleName": "ewfe",
+  "lastName": "ewfw",
+  "age": "5",
+  "gender": "Male",
+  "gradeLevel": "Grade 1",
+  "section": "Honesty",
+  "address": "123 Maharlika Street Los Baños Laguna",
+  "email": null,
+  "profileImageUrl": "",
+  "completedLessons": [],
+  "readingLevel": "High Emerging",
+  "readingPercentage": 0,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-06-11T05:29:12.903Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-21T17:37:51.296Z"
+  },
+  "lastAssessmentDate": "2025-09-20T17:21:12.039403",
+  "lastLogin": {
+    "$date": "2025-09-24T18:24:43.838Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68d43bde5d846d179cd59cec"
+  },
+  "idNumber": 2001,
+  "firstName": "efgwf",
+  "middleName": "ewfe",
+  "lastName": "ewfw",
+  "age": "5",
+  "gender": "Male",
+  "gradeLevel": "Grade 1",
+  "section": "Honesty",
+  "address": "123 Maharlika Street Los Baños Laguna",
+  "email": null,
+  "profileImageUrl": "",
+  "completedLessons": [],
+  "readingLevel": "At Grade Level",
+  "readingPercentage": 0,
+  "preAssessmentCompleted": true,
+  "createdAt": {
+    "$date": "2025-06-11T05:29:12.903Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-21T17:37:51.296Z"
+  },
+  "lastAssessmentDate": "2025-09-20T17:21:12.039403",
+  "lastLogin": {
+    "$date": "2025-09-24T20:01:49.612Z"
+  }
+}]
