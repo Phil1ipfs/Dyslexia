@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceLine, Area, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, PieChart, Pie, Cell,
   BarChart, Bar, Legend
 } from 'recharts';
 
@@ -113,7 +113,7 @@ const TeacherDashboard = () => {
 
   /**
    * Get category performance data based on reading level specifications from CLAUDE.md
-   * Uses real category results data from test files
+   * Uses real category results data from MongoDB
    */
   const getCategoryPerformanceData = () => {
     // Reading level category assignments from CLAUDE.md (STRICT)
@@ -130,8 +130,9 @@ const TeacherDashboard = () => {
       return [];
     }
 
-    // Get category results data
-    const categoryResultsData = window.testCategoryResults || [];
+    // Get category results data from state (loaded from MongoDB)
+    const categoryResultsData = studentsNeedingAttention.length > 0 ? 
+      studentsNeedingAttention.map(s => s.categoryResult).filter(Boolean) : [];
 
     // Group students by reading level
     const studentsByLevel = students.reduce((acc, student) => {
@@ -201,19 +202,10 @@ const TeacherDashboard = () => {
   /**
    * Calculate which students need attention based on failed categories
    * A student needs attention if they have failed any category (score < 75%)
-   * This function processes real test data from separate files
+   * This function processes real data from MongoDB
    */
-  const calculateStudentsNeedingAttention = (studentsData) => {
-    // Load and parse category results from test data
-    let categoryResultsData = [];
-    try {
-      if (window.testCategoryResults) {
-        categoryResultsData = window.testCategoryResults;
-        console.log('Processing category results data:', categoryResultsData.length, 'records');
-      }
-    } catch (error) {
-      console.warn('Could not load category results test data:', error);
-    }
+  const calculateStudentsNeedingAttention = (studentsData, categoryResultsData = []) => {
+    console.log('Processing category results data from MongoDB:', categoryResultsData.length, 'records');
 
     const studentsNeedingAttention = [];
 
@@ -308,54 +300,57 @@ const TeacherDashboard = () => {
   };
 
   /**
-   * Main function to fetch all dashboard data
+   * Main function to fetch all dashboard data from MongoDB
    */
   const fetchDashboardData = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      console.log('Fetching dashboard data from test files...');
+      console.log('Fetching dashboard data from MongoDB...');
 
-      // Load test users data
+      // Fetch students data from MongoDB
       let usersData = [];
       try {
-        const usersResponse = await fetch('/test.users.json');
+        const usersResponse = await fetch('/api/students', getAuthHeaders());
         if (usersResponse.ok) {
           usersData = await usersResponse.json();
-          console.log('Loaded test users data:', usersData.length, 'records');
+          console.log('Loaded students data from MongoDB:', usersData.length, 'records');
+        } else {
+          throw new Error(`Failed to fetch students: ${usersResponse.status}`);
         }
       } catch (error) {
-        console.warn('Could not load test users data:', error);
-        usersData = [];
+        console.error('Could not load students data from MongoDB:', error);
+        throw new Error('Failed to fetch students data from database');
       }
 
-      // Load test category results data for processing
+      // Fetch category results data from MongoDB
       let categoryResultsData = [];
       try {
-        const categoryResultsResponse = await fetch('/test.category_results.json');
+        const categoryResultsResponse = await fetch('/api/category-results', getAuthHeaders());
         if (categoryResultsResponse.ok) {
           categoryResultsData = await categoryResultsResponse.json();
-          window.testCategoryResults = categoryResultsData;
-          console.log('Loaded test category results data:', categoryResultsData.length, 'records');
+          console.log('Loaded category results data from MongoDB:', categoryResultsData.length, 'records');
+        } else {
+          console.warn('Could not load category results from MongoDB, continuing without them');
+          categoryResultsData = [];
         }
       } catch (error) {
-        console.warn('Could not load test category results:', error);
-        window.testCategoryResults = [];
+        console.warn('Could not load category results from MongoDB:', error);
         categoryResultsData = [];
       }
 
-      console.log('Successfully loaded test data files');
+      console.log('Successfully loaded data from MongoDB');
 
       // Set students data - ensure it's properly formatted for category-based attention
       const students = usersData || [];
-      console.log('Raw students data from test files:', students.slice(0, 2)); // Debug first 2 students
+      console.log('Raw students data from MongoDB:', students.slice(0, 2)); // Debug first 2 students
       setStudents(students);
 
-      // Calculate reading level distribution from test users data
+      // Calculate reading level distribution from MongoDB data
       const levelCounts = {};
       usersData.forEach(student => {
-        const level = student.readingLevel || 'Not Assessed';
+        const level = sanitizeData(student.readingLevel, 'readingLevel');
         levelCounts[level] = (levelCounts[level] || 0) + 1;
       });
 
@@ -371,7 +366,7 @@ const TeacherDashboard = () => {
       setReadingLevelDistribution(testReadingLevelDistribution);
 
       // Process students with category results for proper attention calculation
-      console.log('Category results data loaded:', categoryResultsData.length);
+      console.log('Category results data loaded from MongoDB:', categoryResultsData.length);
 
       // Merge students with their category results and overall scores
       const studentsWithCategoryData = students.map(student => {
@@ -390,7 +385,7 @@ const TeacherDashboard = () => {
       console.log('Students with category data:', studentsWithCategoryData.slice(0, 2));
 
       // Set students needing attention - calculate based on category failures
-      const studentsNeedingAttention = calculateStudentsNeedingAttention(studentsWithCategoryData);
+      const studentsNeedingAttention = calculateStudentsNeedingAttention(studentsWithCategoryData, categoryResultsData);
       setStudentsNeedingAttention(studentsNeedingAttention);
 
       console.log(`Found ${studentsNeedingAttention.length} students needing attention based on category failures`);
@@ -401,7 +396,7 @@ const TeacherDashboard = () => {
         categoriesNeedingImprovement: s.categoriesNeedingImprovement
       })));
 
-      // Set dashboard metrics using test data
+      // Set dashboard metrics using MongoDB data
       const testMetrics = {
         totalStudents: students.length,
         studentsNeedingAttention: studentsNeedingAttention.length,
@@ -411,7 +406,7 @@ const TeacherDashboard = () => {
       };
       setMetrics(testMetrics);
 
-      // Set sections from test users data
+      // Set sections from MongoDB data
       const sectionCounts = {};
       usersData.forEach(student => {
         const section = student.section || 'Unassigned';
@@ -421,14 +416,14 @@ const TeacherDashboard = () => {
       const availableSections = Object.keys(sectionCounts);
       setSections(availableSections);
 
-      // Set intervention progress data (empty for test data)
+      // Set intervention progress data from MongoDB
       setInterventionProgress([]);
 
       // Set notification count based on students needing attention
       setNotificationCount(studentsNeedingAttention.length);
 
 
-      // Set prescriptive analytics (using default data since we're loading from test files)
+      // Set prescriptive analytics from MongoDB data
       setPrescriptiveData([]);
 
       // Set initial selected reading level
@@ -443,7 +438,7 @@ const TeacherDashboard = () => {
         setStudentsInSelectedLevel(studentsInLevel);
       }
 
-      console.log('Dashboard data successfully loaded and processed');
+      console.log('Dashboard data successfully loaded and processed from MongoDB');
 
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
@@ -574,6 +569,45 @@ const TeacherDashboard = () => {
       closeStudentDetail();
     }
     navigate(`/teacher/student-progress/${student.id}`);
+  };
+
+  /**
+   * Sanitize data to prevent unrelated terms from appearing
+   * @param {string} value - Value to sanitize
+   * @param {string} type - Type of data (readingLevel, section, name, etc.)
+   * @returns {string} Sanitized value
+   */
+  const sanitizeData = (value, type = 'general') => {
+    if (!value || value === null || value === undefined) {
+      switch (type) {
+        case 'readingLevel':
+          return 'Not Assessed';
+        case 'section':
+          return 'Unassigned';
+        case 'name':
+          return 'Student Name';
+        case 'category':
+          return 'Assessment Needed';
+        default:
+          return 'Not Available';
+      }
+    }
+
+    // List of unrelated terms to replace
+    const unrelatedTerms = {
+      'undefined': 'Not Assessed',
+      'unknown': 'Not Available',
+      'null': 'Not Available',
+      'n/a': 'Not Available',
+      'na': 'Not Available',
+      'tbd': 'To Be Determined',
+      'tba': 'To Be Announced',
+      'pending': 'In Progress',
+      'incomplete': 'In Progress'
+    };
+
+    const lowerValue = value.toLowerCase().trim();
+    return unrelatedTerms[lowerValue] || value;
   };
 
   /**
