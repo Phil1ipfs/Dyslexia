@@ -3,13 +3,12 @@ import {
   FaInfoCircle, FaChartBar, FaExpandArrowsAlt, FaCompressArrowsAlt,
   FaCheckCircle, FaTimesCircle, FaClock, FaUser, FaCalendarAlt,
   FaClipboardList, FaQuestionCircle, FaLightbulb, FaFileAlt, FaImage,
-  FaVolumeUp, FaBook, FaEye, FaExclamationCircle, FaDownload, FaSpinner
+  FaVolumeUp, FaBook, FaEye, FaExclamationCircle
 } from 'react-icons/fa';
 
 import './css/PreAssessmentResults.css';
 import ImagePreviewModal from './ImagePreviewModal';
 import PreAssessmentDataProcessor from '../../../services/Teachers/PreAssessmentDataProcessor';
-import PreAssessmentPDFService from '../../../services/Teachers/PreAssessmentPDFService';
 // Helper function to render question comparison with correct answers
 const renderQuestionComparison = (question, onImageClick) => {
   const getAnswerStatus = (question) => {
@@ -273,7 +272,6 @@ const renderQuestionComparison = (question, onImageClick) => {
 const PreAssessmentResults = ({ assessmentData, userResponses, student, categoryResults }) => {
   const [expandedSkills, setExpandedSkills] = useState({});
   const [processedData, setProcessedData] = useState(null);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [imagePreview, setImagePreview] = useState({
     isOpen: false,
     imageUrl: '',
@@ -306,27 +304,6 @@ const PreAssessmentResults = ({ assessmentData, userResponses, student, category
     }
   }, [assessmentData, userResponses, student]);
 
-  // Handle PDF generation
-  const handleDownloadPDF = async () => {
-    if (!processedData || !student) {
-      alert('Unable to generate PDF. Student or assessment data is missing.');
-      return;
-    }
-
-    try {
-      setIsGeneratingPDF(true);
-      await PreAssessmentPDFService.generatePreAssessmentPDF(
-        student, 
-        processedData, 
-        userResponses
-      );
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Error generating PDF report. Please try again.');
-    } finally {
-      setIsGeneratingPDF(false);
-    }
-  };
 
   // Handle image preview
   const handleImageClick = (imageUrl, title, questionText) => {
@@ -488,30 +465,6 @@ const PreAssessmentResults = ({ assessmentData, userResponses, student, category
             }
           </h3>
           <div className="pre-assessment-results__overview-actions">
-            <button
-              className="pre-assessment-results__download-btn"
-              onClick={handleDownloadPDF}
-              disabled={isGeneratingPDF || !dataToDisplay.hasCompleted}
-              title={categoryResults && categoryResults.categories && categoryResults.categories.length > 0 && !categoryResults.isPreAssessment ? 
-                'Download Assessment Progress Report as PDF' : 
-                'Download Pre-Assessment Report as PDF'
-              }
-            >
-              {isGeneratingPDF ? (
-                <>
-                  <FaSpinner className="pre-assessment-results__spinner" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <FaDownload />
-                  {categoryResults && categoryResults.categories && categoryResults.categories.length > 0 && !categoryResults.isPreAssessment ? 
-                    'Download PDF Report' : 
-                    'Download PDF Report'
-                  }
-                </>
-              )}
-            </button>
             <div className={`pre-assessment-results__score-badge ${getReadingLevelClass(student?.readingLevel || dataToDisplay.readingLevel)}`}>
               {student?.readingLevel || dataToDisplay.readingLevel}
             </div>
