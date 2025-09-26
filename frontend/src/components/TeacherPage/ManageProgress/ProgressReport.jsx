@@ -29,9 +29,6 @@ import {
   FaEye,
   FaImage,
   FaClipboardList,
-  FaFilePdf,
-  FaDownload,
-  FaSpinner,
   FaLock,
   FaEdit
 } from 'react-icons/fa';
@@ -39,7 +36,6 @@ import {
 import './css/ProgressReport.css';
 import ProgressApiService from '../../../services/Teachers/ManageProgress/ProgressApiService';
 import MainAssessmentService from '../../../services/Teachers/MainAssessmentService';
-import PdfReportService from '../../../services/Teachers/ManageProgress/PdfReportService';
 import ImagePreviewModal from './ImagePreviewModal';
 
 const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLoading = false, onViewRecommendations }) => {
@@ -56,11 +52,6 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     imageUrl: '',
     title: '',
     questionText: ''
-  });
-  const [pdfGeneration, setPdfGeneration] = useState({
-    isGenerating: false,
-    progress: 0,
-    error: null
   });
   
   useEffect(() => {
@@ -431,6 +422,60 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     console.error('[PROGRESS REPORT] ❌ Error setting basic values:', error);
   }
 
+  // NEW: Get latest intervention attempt for a category
+  const getLatestInterventionAttempt = (category) => {
+    console.log(`[INTERVENTION ATTEMPT] Category: ${category.categoryName}`);
+    console.log(`[INTERVENTION ATTEMPT] Has interventionHistory:`, !!category.interventionHistory);
+    console.log(`[INTERVENTION ATTEMPT] History length:`, category.interventionHistory?.length || 0);
+    console.log(`[INTERVENTION ATTEMPT] Full history:`, category.interventionHistory);
+    
+    if (!category.interventionHistory || category.interventionHistory.length === 0) {
+      console.log(`[INTERVENTION ATTEMPT] No intervention history found`);
+      return null;
+    }
+    
+    // First, try to find any passed intervention attempts
+    const passedAttempts = category.interventionHistory.filter(attempt => attempt.isPassed === true);
+    console.log(`[INTERVENTION ATTEMPT] Passed attempts:`, passedAttempts);
+    
+    if (passedAttempts.length > 0) {
+      // Return the latest passed attempt
+      const sortedPassed = [...passedAttempts].sort((a, b) => b.attemptNumber - a.attemptNumber);
+      console.log(`[INTERVENTION ATTEMPT] Latest passed attempt:`, sortedPassed[0]);
+      return sortedPassed[0];
+    }
+    
+    // If no passed attempts, return the latest attempt (even if failed)
+    const sortedHistory = [...category.interventionHistory].sort((a, b) => b.attemptNumber - a.attemptNumber);
+    console.log(`[INTERVENTION ATTEMPT] Latest attempt (any):`, sortedHistory[0]);
+    return sortedHistory[0];
+  };
+
+  // NEW: Get the current display score for a category (prioritizes passed intervention scores)
+  const getCurrentDisplayScore = (category) => {
+    const latestAttempt = getLatestInterventionAttempt(category);
+
+    console.log(`[DISPLAY SCORE] Category: ${category.categoryName}`);
+    console.log(`[DISPLAY SCORE] Original score: ${category.score}`);
+    console.log(`[DISPLAY SCORE] Latest attempt:`, latestAttempt);
+
+    // ✅ ENHANCED: If there's a passed intervention attempt, use that score
+    if (latestAttempt && latestAttempt.isPassed && latestAttempt.score >= 75) {
+      console.log(`[DISPLAY SCORE] ✅ Using passed intervention score: ${latestAttempt.score}%`);
+      return latestAttempt.score;
+    }
+
+    // If there's any intervention attempt (even failed), use the latest score
+    if (latestAttempt) {
+      console.log(`[DISPLAY SCORE] Using latest intervention score: ${latestAttempt.score}%`);
+      return latestAttempt.score;
+    }
+
+    // Otherwise, use the original category score
+    console.log(`[DISPLAY SCORE] Using original score: ${category.score}%`);
+    return Number(category.score) || 0;
+  };
+
   try {
     // ✅ ENHANCED: Calculate overall score using intervention scores when higher
     overallScore = normalizedProgressData.overallScore || (hasValidCategoryData ?
@@ -652,35 +697,6 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     return { correct: 0, total: 0 };
   };
 
-  // NEW: Get latest intervention attempt for a category
-  const getLatestInterventionAttempt = (category) => {
-    console.log(`[INTERVENTION ATTEMPT] Category: ${category.categoryName}`);
-    console.log(`[INTERVENTION ATTEMPT] Has interventionHistory:`, !!category.interventionHistory);
-    console.log(`[INTERVENTION ATTEMPT] History length:`, category.interventionHistory?.length || 0);
-    console.log(`[INTERVENTION ATTEMPT] Full history:`, category.interventionHistory);
-    
-    if (!category.interventionHistory || category.interventionHistory.length === 0) {
-      console.log(`[INTERVENTION ATTEMPT] No intervention history found`);
-      return null;
-    }
-    
-    // First, try to find any passed intervention attempts
-    const passedAttempts = category.interventionHistory.filter(attempt => attempt.isPassed === true);
-    console.log(`[INTERVENTION ATTEMPT] Passed attempts:`, passedAttempts);
-    
-    if (passedAttempts.length > 0) {
-      // Return the latest passed attempt
-      const sortedPassed = [...passedAttempts].sort((a, b) => b.attemptNumber - a.attemptNumber);
-      console.log(`[INTERVENTION ATTEMPT] Latest passed attempt:`, sortedPassed[0]);
-      return sortedPassed[0];
-    }
-    
-    // If no passed attempts, return the latest attempt (even if failed)
-    const sortedHistory = [...category.interventionHistory].sort((a, b) => b.attemptNumber - a.attemptNumber);
-    console.log(`[INTERVENTION ATTEMPT] Latest attempt (any):`, sortedHistory[0]);
-    return sortedHistory[0];
-  };
-
   // NEW: Determine if category is unlocked based on intervention progression
   const isCategoryUnlocked = (categoryName, categoryIndex) => {
     console.log(`[DEBUG UNLOCK] Checking unlock for ${categoryName} (index ${categoryIndex})`);
@@ -714,31 +730,6 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
 
     console.log(`[DEBUG UNLOCK] All prerequisites met - UNLOCKED`);
     return true;
-  };
-
-  // NEW: Get the current display score for a category (prioritizes passed intervention scores)
-  const getCurrentDisplayScore = (category) => {
-    const latestAttempt = getLatestInterventionAttempt(category);
-
-    console.log(`[DISPLAY SCORE] Category: ${category.categoryName}`);
-    console.log(`[DISPLAY SCORE] Original score: ${category.score}`);
-    console.log(`[DISPLAY SCORE] Latest attempt:`, latestAttempt);
-
-    // ✅ ENHANCED: If there's a passed intervention attempt, use that score
-    if (latestAttempt && latestAttempt.isPassed && latestAttempt.score >= 75) {
-      console.log(`[DISPLAY SCORE] ✅ Using passed intervention score: ${latestAttempt.score}%`);
-      return latestAttempt.score;
-    }
-
-    // If there's any intervention attempt (even failed), use the latest score
-    if (latestAttempt) {
-      console.log(`[DISPLAY SCORE] Using latest intervention score: ${latestAttempt.score}%`);
-      return latestAttempt.score;
-    }
-
-    // Otherwise, use the original category score
-    console.log(`[DISPLAY SCORE] Using original score: ${category.score}%`);
-    return Number(category.score) || 0;
   };
 
   // NEW: Get the current display status for a category
@@ -1022,62 +1013,6 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     console.log('expandedCategories:', expandedCategories);
   };
 
-  // PDF Generation function - integrated with PdfReportService
-  const generatePdfReport = async () => {
-    try {
-      setPdfGeneration({ isGenerating: true, progress: 0, error: null });
-      
-      // Prepare student data for PDF generation
-      const studentData = {
-        studentId: progressData?.studentId || 'N/A',
-        fullName: progressData?.studentName || `Student ${progressData?.studentId}`,
-        gradeLevel: progressData?.gradeLevel || 'Not specified',
-        readingLevel: progressData?.readingLevel || 'Unknown',
-        assessmentDate: progressData?.assessmentDate ? 
-          new Date(progressData.assessmentDate).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          }) : 'Not specified'
-      };
-
-      // Progress callback function
-      const onProgress = (step, progress) => {
-        console.log(`${progress}% - ${step}`);
-        setPdfGeneration(prev => ({ ...prev, progress }));
-      };
-
-      // Generate PDF using the service
-      const pdfBlob = await PdfReportService.generateProgressReport(
-        studentData,
-        progressData,
-        studentResponses,
-        assessmentQuestions,
-        onProgress
-      );
-
-      // Create download link and trigger download
-      const url = window.URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Progress_Report_${studentData.studentId}_${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      console.log('📄 PDF Report Generated and Downloaded Successfully!');
-      setPdfGeneration({ isGenerating: false, progress: 0, error: null });
-      
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      setPdfGeneration({
-        isGenerating: false,
-        progress: 0,
-        error: error.message || 'Failed to generate PDF report. Please try again.'
-      });
-    }
-  };
   
   console.log('[PROGRESS REPORT] ✅ About to render - Final validation:', {
     hasValidCategoryData,
@@ -1151,18 +1086,6 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
               <FaChartLine className="student-progress-section-icon" /> 
               Reading Skills Assessment
             </h3>
-            <div className="student-progress-section-actions">
-              <button
-                className="student-progress-pdf-button"
-                onClick={generatePdfReport}
-                disabled={pdfGeneration.isGenerating}
-                title={pdfGeneration.isGenerating ? `Generating PDF... ${pdfGeneration.progress}%` : "Download comprehensive PDF report"}
-              >
-                <FaFilePdf />
-                <FaDownload className="student-progress-pdf-icon" />
-                {pdfGeneration.isGenerating ? `Generating... ${pdfGeneration.progress}%` : 'Download PDF Report'}
-              </button>
-            </div>
           </div>
           
           <div className="student-progress-info" style={{ marginBottom: '1.5rem' }}>
@@ -1179,7 +1102,7 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
           {/* Category Access Loading Indicator */}
           {categoryAccessLoading && (
             <div className="student-progress-loading-state" style={{ textAlign: 'center', padding: '10px 0', color: '#6c757d' }}>
-              <FaSpinner style={{ animation: 'spin 1s linear infinite', marginRight: '8px' }} />
+              <FaClock style={{ marginRight: '8px' }} />
               Validating category access permissions...
             </div>
           )}
