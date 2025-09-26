@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   },
 
   checkboxLabel: {
-    fontSize: 6,
+    fontSize: 5,
     color: '#374151',
     fontWeight: 'bold',
     marginBottom: 2,
@@ -639,7 +639,7 @@ const IEPReportPDFRenderer = ({ iepData }) => {
             <Text style={styles.legendItem}>[X] = Required | [ ] = Not Required</Text>
           </View>
           <View style={styles.legendRow}>
-            <Text style={styles.legendItem}>Min | Mod | Ext</Text>
+            <Text style={styles.legendItem}>Minimal | Moderate | Extensive</Text>
           </View>
         </View>
 
