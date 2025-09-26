@@ -55,9 +55,29 @@ const renderQuestionComparison = (question, onImageClick) => {
         return question.studentAnswerText || `Option ${question.studentAnswer}`;
         
       case 'malapantig':
-        // Phonological Awareness - Use formatted text with actual pairs
+        // Phonological Awareness - Display actual response pairs
+        if (question.studentResponse && Array.isArray(question.studentResponse)) {
+          // New format: Array of objects like [{"T": "Tt"}, {"N": "Hh"}, {"H": "Nn"}]
+          const pairs = question.studentResponse.map(pair => {
+            const [audio, match] = Object.entries(pair)[0];
+            return `${audio} → ${match}`;
+          }).join(', ');
+
+          const matchSummary = question.correctMatches !== undefined && question.totalMatches !== undefined
+            ? ` (${question.correctMatches}/${question.totalMatches} correct)`
+            : '';
+
+          return (
+            <div className="pre-assessment-results__phonological-response">
+              <div className="pre-assessment-results__response-pairs">{pairs}</div>
+              <div className="pre-assessment-results__match-summary">{matchSummary}</div>
+            </div>
+          );
+        }
+
+        // Fallback for legacy format or studentAnswerText
         return question.studentAnswerText || (
-          question.correctMatches !== undefined && question.totalMatches !== undefined 
+          question.correctMatches !== undefined && question.totalMatches !== undefined
             ? `${question.correctMatches}/${question.totalMatches} correct matches`
             : 'Matching response'
         );
@@ -130,9 +150,33 @@ const renderQuestionComparison = (question, onImageClick) => {
         return question.correctAnswerText || 'See correct option';
         
       case 'malapantig':
-        // Phonological Awareness - Use formatted text with actual pairs
+        // Phonological Awareness - Display expected correct pairs
+        if (question.correctPairs && Array.isArray(question.correctPairs)) {
+          // Display the correct pairs in a readable format
+          const correctPairsDisplay = question.correctPairs.map(pair => {
+            if (typeof pair === 'object') {
+              // Handle format like [{"audio": "T", "match": "Tt"}] or [{"T": "Tt"}]
+              if (pair.audio && pair.match) {
+                return `${pair.audio} → ${pair.match}`;
+              } else {
+                const [audio, match] = Object.entries(pair)[0];
+                return `${audio} → ${match}`;
+              }
+            }
+            return pair;
+          }).join(', ');
+
+          return (
+            <div className="pre-assessment-results__correct-pairs">
+              <div className="pre-assessment-results__expected-pairs">{correctPairsDisplay}</div>
+              <div className="pre-assessment-results__pairs-note">All pairs must be matched correctly</div>
+            </div>
+          );
+        }
+
+        // Fallback for legacy format
         return question.correctAnswerText || (
-          question.correctPairs 
+          question.correctPairs
             ? `${question.correctPairs.length} correct pairs expected`
             : 'All audio-text pairs matched correctly'
         );
