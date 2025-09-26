@@ -864,9 +864,33 @@ const TeacherDashboard = () => {
       const availableSections = Object.keys(sectionCounts);
       setSections(availableSections);
 
-      // Calculate and set active interventions from MongoDB
-      const activeInterventions = calculateActiveInterventions(categoryResultsData);
-      setInterventionProgress(activeInterventions);
+      // Fetch comprehensive intervention progress from new API endpoint
+      try {
+        console.log('Fetching comprehensive intervention progress data...');
+        const interventionResponse = await fetch('/api/teachers/dashboard/intervention-progress', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        if (interventionResponse.ok) {
+          const comprehensiveInterventionData = await interventionResponse.json();
+          console.log('Comprehensive intervention data received:', comprehensiveInterventionData.length, 'records');
+          setInterventionProgress(comprehensiveInterventionData);
+        } else {
+          console.warn('Failed to fetch intervention progress, using fallback');
+          // Fallback to old method if new endpoint fails
+          const activeInterventions = calculateActiveInterventions(categoryResultsData);
+          setInterventionProgress(activeInterventions);
+        }
+      } catch (interventionError) {
+        console.error('Error fetching intervention progress:', interventionError);
+        // Fallback to old method if new endpoint fails
+        const activeInterventions = calculateActiveInterventions(categoryResultsData);
+        setInterventionProgress(activeInterventions);
+      }
 
       // Set notification count based on students needing attention
       setNotificationCount(studentsNeedingAttention.length);
@@ -880,14 +904,19 @@ const TeacherDashboard = () => {
         const initialLevel = testReadingLevelDistribution[0].name;
         setSelectedReadingLevel(initialLevel);
 
-        // Set students in selected level
-        const studentsInLevel = students.filter(student => {
+        // Set students in selected level - use processed studentsNeedingAttention to get proper data structure
+        const allProcessedStudents = [...studentsNeedingAttention, ...studentsWithCategoryData.filter(s => !studentsNeedingAttention.find(na => na.id === s.idNumber))];
+        const studentsInLevel = allProcessedStudents.filter(student => {
           if (initialLevel === 'Not Assessed') {
             // For "Not Assessed", include students with null, undefined, or "Not Assessed" reading level
             return !student.readingLevel || student.readingLevel === 'Not Assessed';
           }
           return student.readingLevel === initialLevel;
-        });
+        }).map(student => ({
+          ...student,
+          id: student.id || student.idNumber, // Ensure id field is set
+          name: student.name || `${student.firstName} ${student.lastName}`, // Ensure name field is set
+        }));
         setStudentsInSelectedLevel(studentsInLevel);
       }
 
@@ -939,14 +968,19 @@ const TeacherDashboard = () => {
     setSelectedReadingLevel(level);
     setIsDropdownOpen(false);
 
-    // Update students in selected level
-    setStudentsInSelectedLevel(students.filter(s => {
+    // Update students in selected level - use processed students to get proper data structure
+    const allProcessedStudents = [...studentsNeedingAttention, ...students.filter(s => !studentsNeedingAttention.find(na => na.id === s.idNumber))];
+    setStudentsInSelectedLevel(allProcessedStudents.filter(s => {
       if (level === 'Not Assessed') {
         // For "Not Assessed", include students with null, undefined, or "Not Assessed" reading level
         return !s.readingLevel || s.readingLevel === 'Not Assessed';
       }
       return s.readingLevel === level;
-    }));
+    }).map(student => ({
+      ...student,
+      id: student.id || student.idNumber, // Ensure id field is set
+      name: student.name || `${student.firstName} ${student.lastName}`, // Ensure name field is set
+    })));
   };
 
 
@@ -956,14 +990,19 @@ const TeacherDashboard = () => {
    */
   const handleReadingLevelPieClick = (entry) => {
     setSelectedReadingLevel(entry.name);
-    // Update students in selected level
-    setStudentsInSelectedLevel(students.filter(s => {
+    // Update students in selected level - use processed students to get proper data structure
+    const allProcessedStudents = [...studentsNeedingAttention, ...students.filter(s => !studentsNeedingAttention.find(na => na.id === s.idNumber))];
+    setStudentsInSelectedLevel(allProcessedStudents.filter(s => {
       if (entry.name === 'Not Assessed') {
         // For "Not Assessed", include students with null, undefined, or "Not Assessed" reading level
         return !s.readingLevel || s.readingLevel === 'Not Assessed';
       }
       return s.readingLevel === entry.name;
-    }));
+    }).map(student => ({
+      ...student,
+      id: student.id || student.idNumber, // Ensure id field is set
+      name: student.name || `${student.firstName} ${student.lastName}`, // Ensure name field is set
+    })));
     setReadingLevelDetailOpen(true);
   };
 
@@ -1233,10 +1272,14 @@ const TeacherDashboard = () => {
           <div className="teacher-stat-card teacher-stat-card--pending">
             <img src={pendingIcon} alt="Pending" className="teacher-stat-card__icon" />
             <div className="teacher-stat-card__info">
-              <h3 className="teacher-stat-card__heading">Active Interventions</h3>
+              <h3 className="teacher-stat-card__heading">Total Interventions</h3>
               <p className="teacher-stat-card__value">
                 {interventionProgress.length} {interventionProgress.length === 1 ? 'intervention' : 'interventions'}
               </p>
+              <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.8)', marginTop: '0.25rem' }}>
+                {interventionProgress.filter(p => p.isPassed).length} completed • {' '}
+                {interventionProgress.filter(p => p.status === 'Needs Teacher Revision').length} need revision
+              </div>
             </div>
           </div>
         </div>
@@ -1836,20 +1879,26 @@ const TeacherDashboard = () => {
                     className={`teacher-level-pill ${interventionFilter === 'all' ? 'teacher-level-pill--active' : ''}`}
                     onClick={() => setInterventionFilter('all')}
                   >
-                    All
+                    All ({interventionProgress.length})
                   </button>
-                  <button
-                    className={`teacher-level-pill ${interventionFilter === 'Low Emerging' ? 'teacher-level-pill--active' : ''}`}
-                    onClick={() => setInterventionFilter('Low Emerging')}
-                  >
-                    Low Emerging
-                  </button>
-                  <button
-                    className={`teacher-level-pill ${interventionFilter === 'Transitioning' ? 'teacher-level-pill--active' : ''}`}
-                    onClick={() => setInterventionFilter('Transitioning')}
-                  >
-                    Transitioning
-                  </button>
+                  {Array.from(new Set(interventionProgress.map(p => p.readingLevel)))
+                    .filter(level => level && level !== 'Not Assessed')
+                    .sort((a, b) => {
+                      const levelOrder = ['Low Emerging', 'High Emerging', 'Developing', 'Transitioning', 'At Grade Level'];
+                      return levelOrder.indexOf(a) - levelOrder.indexOf(b);
+                    })
+                    .map(level => {
+                      const count = interventionProgress.filter(p => p.readingLevel === level).length;
+                      return (
+                        <button
+                          key={level}
+                          className={`teacher-level-pill ${interventionFilter === level ? 'teacher-level-pill--active' : ''}`}
+                          onClick={() => setInterventionFilter(level)}
+                        >
+                          {level} ({count})
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
             </div>
@@ -1860,8 +1909,9 @@ const TeacherDashboard = () => {
                 <BarChart
                   data={filteredInterventionProgress.map(progress => ({
                     name: progress.studentName || 'Student',
-                    completed: progress.percentComplete || 0,
-                    correct: progress.percentCorrect || 0
+                    completed: progress.latestScore || 0,
+                    correct: progress.improvement || 0,
+                    category: progress.category
                   }))}
                   margin={{ top: 10, right: 30, left: 20, bottom: 60 }}
                   barGap={0}
@@ -1890,15 +1940,20 @@ const TeacherDashboard = () => {
                             <div className="teacher-intervention-tooltip-header">{label}</div>
                             {payload.map((entry, index) => (
                               <div key={index} className="teacher-intervention-tooltip-item">
-                                <span 
-                                  className="teacher-intervention-tooltip-color" 
+                                <span
+                                  className="teacher-intervention-tooltip-color"
                                   style={{ backgroundColor: entry.color }}
                                 ></span>
                                 <span className="teacher-intervention-tooltip-label">
-                                  {entry.dataKey === 'completed' ? 'Completion' : 'Correct Answers'}: {entry.value}%
+                                  {entry.dataKey === 'completed' ? 'Latest Score' : 'Improvement'}: {entry.value}%
                                 </span>
                               </div>
                             ))}
+                            {payload[0]?.payload?.category && (
+                              <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.8)', marginTop: '0.3rem' }}>
+                                Category: {payload[0].payload.category}
+                              </div>
+                            )}
                           </div>
                         );
                       }
@@ -1907,8 +1962,8 @@ const TeacherDashboard = () => {
                     cursor={false}
                   />
                   <ReferenceLine y={75} stroke="#F3C922" strokeWidth={1} />
-                  <Bar dataKey="completed" name="Completion %" fill="#4BC0C0" radius={[4, 4, 0, 0]} maxBarSize={30} />
-                  <Bar dataKey="correct" name="Correct Answers %" fill="#FF9E40" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                  <Bar dataKey="completed" name="Latest Score %" fill="#4BC0C0" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                  <Bar dataKey="correct" name="Improvement %" fill="#FF9E40" radius={[4, 4, 0, 0]} maxBarSize={30} />
                   <Legend
                     verticalAlign="bottom"
                     height={36}
@@ -1920,7 +1975,7 @@ const TeacherDashboard = () => {
               </ResponsiveContainer>
             </div>
 
-            {/* Intervention Progress Table */}
+            {/* Comprehensive Intervention Progress Table */}
             <div style={{
               padding: '0',
               overflowX: 'auto',
@@ -1932,113 +1987,146 @@ const TeacherDashboard = () => {
                 <thead>
                   <tr>
                     <th>STUDENT</th>
-                    <th>INTERVENTION PLAN</th>
+                    <th>CATEGORY</th>
                     <th>READING LEVEL</th>
-                    <th>COMPLETION</th>
-                    <th>CORRECT %</th>
+                    <th>ATTEMPTS</th>
+                    <th>LATEST SCORE</th>
+                    <th>IMPROVEMENT</th>
+                    <th>STATUS</th>
+                    <th>LAST ATTEMPT</th>
                     <th>ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredInterventionProgress && filteredInterventionProgress.length > 0 ? (
                     filteredInterventionProgress.map((progress) => (
-                      <tr key={progress._id.$oid || progress._id}>
-                        <td>{progress.studentName}</td>
-                        <td>Intervention Plan</td>
+                      <tr key={progress.id}>
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontWeight: '500' }}>{progress.studentName}</span>
+                            <span style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+                              {progress.section} - {progress.gradeLevel}
+                            </span>
+                          </div>
+                        </td>
                         <td>
                           <span style={{
                             display: 'inline-block',
-                            padding: '0.4rem 0.8rem',
+                            padding: '0.3rem 0.6rem',
                             backgroundColor: 'rgba(255, 255, 255, 0.1)',
                             borderRadius: '4px',
-                            fontSize: '0.85rem',
+                            fontSize: '0.8rem',
                             fontWeight: '500'
                           }}>
-                            {progress.readingLevel || 'Not Assessed'}
+                            {progress.category}
                           </span>
+                        </td>
+                        <td>
+                          <span style={{
+                            display: 'inline-block',
+                            padding: '0.3rem 0.6rem',
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            borderRadius: '4px',
+                            fontSize: '0.8rem',
+                            fontWeight: '500'
+                          }}>
+                            {progress.readingLevel}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ textAlign: 'center' }}>
+                            <span style={{ fontWeight: '600', fontSize: '1.1rem' }}>{progress.totalAttempts}</span>
+                            {progress.teacherRevisions > 0 && (
+                              <div style={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                {progress.teacherRevisions} revisions
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontWeight: '600' }}>{progress.latestScore}%</span>
+                            <div style={{
+                              fontSize: '0.7rem',
+                              color: progress.latestScore >= 75 ? '#3D9970' : '#FF6B8A'
+                            }}>
+                              (was {progress.originalScore}%)
+                            </div>
+                          </div>
                         </td>
                         <td>
                           <div style={{
                             display: 'flex',
-                            alignItems: 'center',
-                            gap: '1rem'
+                            flexDirection: 'column',
+                            alignItems: 'center'
                           }}>
-                            <div style={{
-                              flex: 1,
-                              height: '10px',
-                              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                              borderRadius: '5px',
-                              overflow: 'hidden'
-                            }}>
-                              <div 
-                                style={{
-                                  height: '100%',
-                                  backgroundColor: '#F3C922',
-                                  borderRadius: '5px',
-                                  width: `${progress.percentComplete || 0}%`
-                                }}
-                              ></div>
-                            </div>
                             <span style={{
-                              fontSize: '0.85rem',
-                              color: 'white',
-                              minWidth: '40px',
-                              textAlign: 'right'
-                            }}>{progress.percentComplete || 0}%</span>
+                              color: progress.improvement >= 0 ? '#3D9970' : '#FF6B8A',
+                              fontWeight: '600'
+                            }}>
+                              {progress.improvement >= 0 ? '+' : ''}{progress.improvement}%
+                            </span>
+                            {progress.improvementPercentage !== 0 && (
+                              <div style={{
+                                fontSize: '0.7rem',
+                                color: 'rgba(255, 255, 255, 0.7)'
+                              }}>
+                                ({progress.improvementPercentage >= 0 ? '+' : ''}{progress.improvementPercentage}% rel.)
+                              </div>
+                            )}
                           </div>
                         </td>
-                        <td>{progress.percentCorrect || 0}%</td>
                         <td>
-                          {progress.passedThreshold ? (
-                            <button style={{
+                          <span style={{
+                            display: 'inline-block',
+                            padding: '0.4rem 0.8rem',
+                            backgroundColor: progress.statusColor,
+                            color: progress.statusColor === '#3D9970' ? 'white' : '#1E2A4A',
+                            borderRadius: '20px',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            textAlign: 'center',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {progress.status}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: '0.8rem' }}>
+                          {progress.lastAttemptDate}
+                        </td>
+                        <td>
+                          <button
+                            style={{
                               backgroundColor: '#4BC0C0',
                               color: '#1E2A4A',
                               padding: '0.5rem 1rem',
                               borderRadius: '6px',
-                              fontSize: '0.85rem',
+                              fontSize: '0.8rem',
                               fontWeight: '500',
                               cursor: 'pointer',
                               transition: 'all 0.2s',
                               textAlign: 'center',
                               border: 'none',
                               whiteSpace: 'nowrap'
-                            }}>
-                              Resolved
-                            </button>
-                          ) : (
-                            <button 
-                              style={{
-                                backgroundColor: '#FF9E40',
-                                color: '#1E2A4A',
-                                padding: '0.5rem 1rem',
-                                borderRadius: '6px',
-                                fontSize: '0.85rem',
-                                fontWeight: '500',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                                textAlign: 'center',
-                                border: 'none',
-                                whiteSpace: 'nowrap'
-                              }}
-                              onMouseOver={(e) => {
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.boxShadow = '0 3px 8px rgba(0, 0, 0, 0.2)';
-                              }}
-                              onMouseOut={(e) => {
-                                e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.boxShadow = 'none';
-                              }}
-                              onClick={() => openInterventionDetail(progress)}
-                            >
-                              View Progress
-                            </button>
-                          )}
+                            }}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.transform = 'translateY(-2px)';
+                              e.currentTarget.style.boxShadow = '0 3px 8px rgba(0, 0, 0, 0.2)';
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.transform = 'translateY(0)';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
+                            onClick={() => openInterventionDetail(progress)}
+                          >
+                            View Details
+                          </button>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" className="teacher-no-data-cell">
+                      <td colSpan="9" className="teacher-no-data-cell">
                         No intervention progress data available.
                       </td>
                     </tr>

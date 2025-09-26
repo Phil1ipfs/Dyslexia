@@ -764,7 +764,7 @@ exports.updateActivity = async (req, res) => {
 exports.getStudentsBySection = async (req, res) => {
   try {
     const { section } = req.params;
-    
+
     const students = await User.find({
       section,
       $and: [
@@ -772,12 +772,405 @@ exports.getStudentsBySection = async (req, res) => {
         { $or: [{ preAssessmentCompleted: { $exists: true } }, { readingLevel: { $exists: true } }] }
       ]
     }).lean();
-    
+
     const categoryResults = await CategoryResult.find({}).lean();
     const processedStudents = (await processStudentData(students, categoryResults)).allStudents;
     res.json(processedStudents);
   } catch (error) {
     console.error('Error fetching students by section:', error);
     res.status(500).json({ error: 'Failed to fetch students by section', message: error.message });
+  }
+};
+
+/**
+ * Get comprehensive intervention progress data
+ * Shows students who have finished interventions and their attempt counts
+ */
+exports.getInterventionProgress = async (req, res) => {
+  try {
+    console.log('Fetching comprehensive intervention progress data...');
+
+    // Use existing models - don't create new ones
+    let InterventionAssessment, InterventionResultsReal;
+
+    try {
+      // Check if intervention models exist, if not create them
+      try {
+        InterventionAssessment = mongoose.model('InterventionAssessment');
+      } catch {
+        const interventionAssessmentSchema = new mongoose.Schema({
+          studentId: { type: Number, required: true },
+          prescriptiveAnalysisId: mongoose.Schema.Types.ObjectId,
+          category: String,
+          readingLevel: String,
+          passThreshold: { type: Number, default: 75 },
+          totalQuestions: Number,
+          revisionNumber: { type: Number, default: 1 },
+          revisionHistory: [{
+            version: Number,
+            editedBy: mongoose.Schema.Types.ObjectId,
+            editedAt: Date,
+            changes: String
+          }],
+          status: String,
+          completedAt: Date,
+          interventionResultsId: mongoose.Schema.Types.ObjectId,
+          createdAt: Date,
+          updatedAt: Date
+        }, { collection: 'intervention_assessment' });
+        InterventionAssessment = mongoose.model('InterventionAssessment', interventionAssessmentSchema);
+      }
+
+      try {
+        InterventionResultsReal = mongoose.model('InterventionResults');
+      } catch {
+        const interventionResultsRealSchema = new mongoose.Schema({
+          studentId: { type: Number, required: true },
+          interventionAssessmentId: mongoose.Schema.Types.ObjectId,
+          prescriptiveAnalysisId: mongoose.Schema.Types.ObjectId,
+          category: String,
+          assessmentDate: Date,
+          assessmentType: String,
+          readingLevel: String,
+          revisionNumber: Number,
+          totalQuestions: Number,
+          correctAnswers: Number,
+          score: Number,
+          isPassed: Boolean,
+          passThreshold: Number,
+          previousScore: Number,
+          improvement: Number,
+          improvementPercentage: Number,
+          skillMastery: mongoose.Schema.Types.Mixed,
+          interventionEffectiveness: mongoose.Schema.Types.Mixed,
+          completedAt: Date,
+          createdAt: Date
+        }, { collection: 'intervention_results' });
+        InterventionResultsReal = mongoose.model('InterventionResults', interventionResultsRealSchema);
+      }
+
+    } catch (modelError) {
+      console.error('Error setting up intervention models:', modelError);
+      throw modelError;
+    }
+
+    // Fetch all students
+    const students = await User.find({
+      $and: [
+        { $or: [{ roles: { $exists: false } }, { roles: null }, { roles: "" }] },
+        { $or: [{ preAssessmentCompleted: { $exists: true } }, { readingLevel: { $exists: true } }] }
+      ]
+    }).lean();
+
+    console.log(`Found ${students.length} students`);
+
+    // Use the existing CategoryResult model instead of creating a new one
+    const categoryResults = await CategoryResult.find({}).lean();
+
+    // Fetch other intervention data
+    const [interventionAssessments, interventionResults] = await Promise.all([
+      InterventionAssessment.find({}).lean().catch(() => []),
+      InterventionResultsReal.find({}).lean().catch(() => [])
+    ]);
+
+    console.log(`Found ${interventionAssessments.length} intervention assessments`);
+    console.log(`Found ${interventionResults.length} intervention results`);
+    console.log(`Found ${categoryResults.length} category results with intervention history`);
+
+    // Debug: Check for specific student
+    const testStudent = categoryResults.find(cr => cr.studentId === 202522233);
+    if (testStudent) {
+      console.log(`Found test student 202522233 with ${testStudent.categories?.length} categories`);
+      testStudent.categories?.forEach(cat => {
+        if (cat.interventionHistory && cat.interventionHistory.length > 0) {
+          console.log(`Category ${cat.categoryName}: ${cat.interventionHistory.length} intervention attempts`);
+        }
+      });
+    } else {
+      console.log('Test student 202522233 not found in category results');
+    }
+
+    // Debug: Check students collection
+    const testStudentUser = students.find(s => s.idNumber === 202522233);
+    if (testStudentUser) {
+      console.log(`Found test student in users: ${testStudentUser.firstName} ${testStudentUser.lastName}`);
+    } else {
+      console.log('Test student not found in users collection');
+    }
+
+    // Process intervention progress data
+    const interventionProgressData = processComprehensiveInterventionData(
+      students,
+      interventionAssessments,
+      interventionResults,
+      categoryResults
+    );
+
+    console.log(`Processed ${interventionProgressData.length} intervention progress records`);
+
+    // Debug: Check if our test student made it through processing
+    const testStudentProgress = interventionProgressData.filter(p => p.studentId === 202522233);
+    console.log(`Test student has ${testStudentProgress.length} intervention progress records`);
+
+    res.json(interventionProgressData);
+  } catch (error) {
+    console.error('Error fetching comprehensive intervention progress:', error);
+    res.status(500).json({
+      error: 'Failed to fetch intervention progress data',
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+};
+
+/**
+ * Process comprehensive intervention data for dashboard display
+ * Shows students who have finished interventions with attempt counts and progress metrics
+ */
+const processComprehensiveInterventionData = (students, interventionAssessments, interventionResults, categoryResults) => {
+  console.log('Processing comprehensive intervention data...');
+  console.log(`Input: ${students.length} students, ${interventionAssessments.length} assessments, ${interventionResults.length} results, ${categoryResults.length} category results`);
+
+  const studentMap = new Map();
+  students.forEach(student => {
+    const studentId = student.idNumber || student._id;
+    studentMap.set(studentId, {
+      id: studentId,
+      name: student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim(),
+      readingLevel: student.readingLevel || 'Not Assessed',
+      section: student.section || 'Unassigned',
+      gradeLevel: student.gradeLevel || 'Grade 1'
+    });
+  });
+
+  console.log(`Created student map with ${studentMap.size} entries`);
+
+  // Create maps for quick lookups
+  const assessmentMap = new Map();
+  interventionAssessments.forEach(assessment => {
+    const key = `${assessment.studentId}-${assessment.category}`;
+    assessmentMap.set(key, assessment);
+  });
+
+  const resultsMap = new Map();
+  interventionResults.forEach(result => {
+    const key = `${result.studentId}-${result.category}`;
+    if (!resultsMap.has(key)) {
+      resultsMap.set(key, []);
+    }
+    resultsMap.get(key).push(result);
+  });
+
+  // Process each student's intervention history from category results
+  const interventionProgress = [];
+
+  console.log('Processing category results for intervention history...');
+
+  categoryResults.forEach((categoryResult, index) => {
+    const studentId = categoryResult.studentId;
+    const student = studentMap.get(studentId);
+
+    if (index === 0 || studentId === 202522233) {
+      console.log(`Processing category result ${index} for student ${studentId}:`, {
+        found: !!student,
+        categoriesCount: categoryResult.categories?.length || 0
+      });
+    }
+
+    if (!student) {
+      if (studentId === 202522233) {
+        console.log(`ISSUE: Student 202522233 not found in student map. Student map keys:`, Array.from(studentMap.keys()).slice(0, 10));
+      }
+      return; // Skip if student not found
+    }
+
+    // Process each category with intervention history
+    categoryResult.categories?.forEach(category => {
+      if (!category.interventionHistory || category.interventionHistory.length === 0) {
+        if (studentId === 202522233) {
+          console.log(`Category ${category.categoryName} has no intervention history for student 202522233`);
+        }
+        return; // Skip categories without intervention history
+      }
+
+      if (studentId === 202522233) {
+        console.log(`Processing category ${category.categoryName} for student 202522233 with ${category.interventionHistory.length} intervention attempts`);
+      }
+
+      const assessmentKey = `${studentId}-${category.categoryName}`;
+      const assessment = assessmentMap.get(assessmentKey);
+      const results = resultsMap.get(assessmentKey) || [];
+
+      // Sort intervention history by attempt number
+      const sortedHistory = [...category.interventionHistory].sort((a, b) => a.attemptNumber - b.attemptNumber);
+
+      // Get latest intervention attempt
+      const latestAttempt = sortedHistory[sortedHistory.length - 1];
+      const firstAttempt = sortedHistory[0];
+
+      // Determine intervention status
+      let status = 'In Progress';
+      let statusColor = '#FF9E40';
+
+      if (latestAttempt.isPassed === true) {
+        status = 'Completed Successfully';
+        statusColor = '#3D9970';
+      } else if (latestAttempt.isPassed === false) {
+        status = 'Needs Teacher Revision';
+        statusColor = '#FF6B8A';
+      }
+
+      // Calculate improvement metrics
+      const originalScore = category.score || 0;
+      const latestScore = latestAttempt.score || 0;
+      const improvement = latestScore - originalScore;
+      const improvementPercentage = originalScore > 0 ? Math.round((improvement / originalScore) * 100) : 0;
+
+      // Find corresponding intervention results for additional data
+      const latestResult = results.find(r => r.revisionNumber === latestAttempt.revisionNumber);
+
+      interventionProgress.push({
+        id: `${studentId}-${category.categoryName}-${Date.now()}`,
+        studentId: studentId,
+        studentName: student.name,
+        readingLevel: student.readingLevel,
+        section: student.section,
+        gradeLevel: student.gradeLevel,
+        category: category.categoryName,
+
+        // Attempt information
+        totalAttempts: sortedHistory.length,
+        latestAttemptNumber: latestAttempt.attemptNumber,
+
+        // Score information
+        originalScore: originalScore,
+        latestScore: latestScore,
+        improvement: improvement,
+        improvementPercentage: improvementPercentage,
+
+        // Status information
+        status: status,
+        statusColor: statusColor,
+        isPassed: latestAttempt.isPassed === true,
+
+        // Timing information
+        startedAt: firstAttempt.attemptedAt ? new Date(firstAttempt.attemptedAt).toLocaleDateString() : 'N/A',
+        lastAttemptDate: latestAttempt.completedAt ? new Date(latestAttempt.completedAt).toLocaleDateString() :
+                        (latestAttempt.attemptedAt ? new Date(latestAttempt.attemptedAt).toLocaleDateString() : 'N/A'),
+
+        // Assessment information
+        totalQuestions: assessment?.totalQuestions || category.totalQuestions || 0,
+        revisionNumber: latestAttempt.revisionNumber || 1,
+        teacherRevisions: assessment?.revisionHistory?.length || 0,
+
+        // Additional metrics from intervention results
+        skillMasteryGrowth: latestResult?.skillMastery ?
+          (latestResult.skillMastery[category.categoryName]?.masteryGrowth || 0) : 0,
+        interventionEffectiveness: latestResult?.interventionEffectiveness?.overallEffectiveness || 'N/A',
+
+        // Raw data for detailed view
+        interventionHistory: sortedHistory,
+        assessmentData: assessment,
+        resultData: latestResult
+      });
+    });
+  });
+
+  // Sort by latest attempt date (most recent first)
+  interventionProgress.sort((a, b) => {
+    const dateA = new Date(a.lastAttemptDate === 'N/A' ? '1970-01-01' : a.lastAttemptDate);
+    const dateB = new Date(b.lastAttemptDate === 'N/A' ? '1970-01-01' : b.lastAttemptDate);
+    return dateB - dateA;
+  });
+
+  console.log(`Generated ${interventionProgress.length} intervention progress records`);
+
+  return interventionProgress;
+};
+
+/**
+ * Debug endpoint to diagnose intervention progress issues
+ */
+exports.debugInterventionProgress = async (req, res) => {
+  try {
+    console.log('=== DEBUG INTERVENTION PROGRESS ===');
+
+    // Test with specific student ID
+    const testStudentId = 202522233;
+
+    // Fetch students
+    const students = await User.find({
+      $and: [
+        { $or: [{ roles: { $exists: false } }, { roles: null }, { roles: "" }] },
+        { $or: [{ preAssessmentCompleted: { $exists: true } }, { readingLevel: { $exists: true } }] }
+      ]
+    }).lean();
+
+    const testUser = students.find(s => s.idNumber === testStudentId);
+    console.log('Test user found:', !!testUser);
+    if (testUser) {
+      console.log('Test user details:', {
+        id: testUser.idNumber,
+        name: `${testUser.firstName} ${testUser.lastName}`,
+        readingLevel: testUser.readingLevel
+      });
+    }
+
+    // Fetch category results
+    const categoryResults = await CategoryResult.find({ studentId: testStudentId }).lean();
+    console.log(`Found ${categoryResults.length} category results for student ${testStudentId}`);
+
+    if (categoryResults.length > 0) {
+      const result = categoryResults[0];
+      console.log('Categories with intervention history:');
+      result.categories?.forEach(cat => {
+        if (cat.interventionHistory && cat.interventionHistory.length > 0) {
+          console.log(`- ${cat.categoryName}: ${cat.interventionHistory.length} attempts`);
+          console.log(`  Latest attempt: ${cat.interventionHistory[cat.interventionHistory.length - 1].isPassed ? 'PASSED' : 'FAILED'} (${cat.interventionHistory[cat.interventionHistory.length - 1].score}%)`);
+        }
+      });
+    }
+
+    // Test processing with minimal data
+    if (testUser && categoryResults.length > 0) {
+      const testProcessing = processComprehensiveInterventionData(
+        [testUser],
+        [],
+        [],
+        categoryResults
+      );
+
+      console.log(`Test processing result: ${testProcessing.length} records`);
+      if (testProcessing.length > 0) {
+        console.log('Sample record:', {
+          studentName: testProcessing[0].studentName,
+          category: testProcessing[0].category,
+          totalAttempts: testProcessing[0].totalAttempts,
+          status: testProcessing[0].status
+        });
+      }
+
+      res.json({
+        debug: true,
+        testStudentFound: !!testUser,
+        categoryResultsFound: categoryResults.length,
+        processedRecords: testProcessing.length,
+        sampleData: testProcessing.slice(0, 3)
+      });
+    } else {
+      res.json({
+        debug: true,
+        testStudentFound: !!testUser,
+        categoryResultsFound: categoryResults.length,
+        issue: testUser ? 'No category results' : 'Student not found'
+      });
+    }
+
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({
+      debug: true,
+      error: error.message
+    });
   }
 };
