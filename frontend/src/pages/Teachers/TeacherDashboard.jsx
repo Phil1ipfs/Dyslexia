@@ -470,7 +470,6 @@ const TeacherDashboard = () => {
       setSections([]);
       setInterventionProgress([]);
       setNotificationCount(0);
-      setProgressData({ weekly: [], monthly: [] });
       setPrescriptiveData([]);
 
     } finally {
@@ -496,11 +495,6 @@ const TeacherDashboard = () => {
     setStudentsInSelectedLevel(students.filter(s => s.readingLevel === level));
   };
 
-  /**
-   * Toggle time frame for progress chart
-   */
-  const toggleTimeFrame = () =>
-    setTimeFrame(tf => (tf === 'weekly' ? 'monthly' : 'weekly'));
 
   /**
    * Open reading level detail modal when pie chart segment is clicked
@@ -599,8 +593,6 @@ const TeacherDashboard = () => {
     return colors[level] || '#B0B0B0';
   };
 
-  // Get chart data for the selected reading level
-  const chartData = progressData[selectedReadingLevel]?.[timeFrame] || [];
 
   // Filter students based on selected filters
   const filteredStudents = studentFilter === 'all'
