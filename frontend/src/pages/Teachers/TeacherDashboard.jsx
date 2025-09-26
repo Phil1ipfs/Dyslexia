@@ -116,17 +116,19 @@ const TeacherDashboard = () => {
   /**
    * Get category performance data showing intervention needs per category
    * Uses real category results data from MongoDB to show students needing intervention
+   * Based on reading level category assignments from CLAUDE.md
    * @param {string} filterLevel - Optional reading level to filter by
    */
   const getCategoryPerformanceData = (filterLevel = null) => {
-    // All available categories that can be assessed
-    const allCategories = [
-      "Alphabet Knowledge",
-      "Phonological Awareness", 
-      "Decoding",
-      "Word Recognition",
-      "Reading Comprehension"
-    ];
+    // Reading level category assignments from CLAUDE.md (STRICT)
+    const readingLevelCategories = {
+      "Low Emerging": ["Alphabet Knowledge"],
+      "High Emerging": ["Alphabet Knowledge", "Phonological Awareness"],
+      "Developing": ["Alphabet Knowledge", "Phonological Awareness", "Decoding"],
+      "Transitioning": ["Alphabet Knowledge", "Phonological Awareness", "Decoding", "Word Recognition"],
+      "At Grade Level": ["Alphabet Knowledge", "Phonological Awareness", "Decoding", "Word Recognition", "Reading Comprehension"],
+      "Not Assessed": [] // Students who haven't completed assessment - no categories to show
+    };
 
     // If no students data available, return empty array
     if (!students || students.length === 0) {
@@ -163,10 +165,13 @@ const TeacherDashboard = () => {
         return null; // Skip levels with no students
       }
 
-      // Calculate intervention needs for ALL categories for this reading level
+      // Calculate intervention needs for categories relevant to this reading level
       const categoryData = {};
 
-      allCategories.forEach(categoryName => {
+      // Get the categories that are relevant to this reading level
+      const relevantCategories = readingLevelCategories[readingLevel] || [];
+
+      relevantCategories.forEach(categoryName => {
         let totalStudentsWithData = 0;
         let studentsNeedingIntervention = 0;
 
@@ -195,12 +200,44 @@ const TeacherDashboard = () => {
             if (categoryResult && categoryResult.isCompleted === true) {
               totalStudentsWithData++;
               console.log(`  ✓ ${categoryName}: score=${categoryResult.score}, isPassed=${categoryResult.isPassed}, completed=${categoryResult.isCompleted}`);
-              // Count students who failed this category (score < 75% or isPassed === false)
+              
+              // Check if student needs intervention based on comprehensive logic
+              let needsIntervention = false;
+              let interventionStatus = '';
+              
               if (categoryResult.isPassed === false || categoryResult.score < 75) {
-                studentsNeedingIntervention++;
-                console.log(`  ❌ Student needs intervention for ${categoryName}`);
+                // Student failed the category - now check intervention status
+                if (!categoryResult.currentInterventionId || categoryResult.interventionHistory.length === 0) {
+                  // No intervention assigned yet - NEEDS INTERVENTION
+                  needsIntervention = true;
+                  interventionStatus = 'No intervention assigned';
+                } else {
+                  // Has intervention - check if latest attempt passed
+                  const latestAttempt = categoryResult.interventionHistory.reduce((latest, current) => {
+                    return current.attemptNumber > latest.attemptNumber ? current : latest;
+                  });
+                  
+                  if (latestAttempt.isPassed === false) {
+                    // Latest intervention attempt failed - STILL NEEDS INTERVENTION
+                    needsIntervention = true;
+                    interventionStatus = `Active intervention (attempt ${latestAttempt.attemptNumber})`;
+                  } else {
+                    // Latest intervention attempt passed - INTERVENTION COMPLETED
+                    needsIntervention = false;
+                    interventionStatus = `Intervention completed (attempt ${latestAttempt.attemptNumber})`;
+                  }
+                }
               } else {
-                console.log(`  ✅ Student passed ${categoryName}`);
+                // Student passed the category - NO INTERVENTION NEEDED
+                needsIntervention = false;
+                interventionStatus = 'Passed assessment';
+              }
+              
+              if (needsIntervention) {
+                studentsNeedingIntervention++;
+                console.log(`  ❌ Student needs intervention for ${categoryName}: ${interventionStatus}`);
+              } else {
+                console.log(`  ✅ Student does not need intervention for ${categoryName}: ${interventionStatus}`);
               }
             } else if (categoryResult) {
               console.log(`  ⚠️ ${categoryName}: not completed (completed=${categoryResult.isCompleted})`);
@@ -319,21 +356,56 @@ const TeacherDashboard = () => {
 
     studentsData.forEach(student => {
       // Find category results for this student using idNumber
-      const studentCategoryResult = categoryResultsData.find(cr =>
+      // Get ALL category results for this student and find the most recent one
+      const allStudentCategoryResults = categoryResultsData.filter(cr =>
         cr.studentId === student.idNumber
       );
+
+      // If multiple category results exist (due to reading level progression), use the most recent one
+      const studentCategoryResult = allStudentCategoryResults.length > 0
+        ? allStudentCategoryResults.reduce((latest, current) => {
+            const latestDate = new Date(latest.assessmentDate);
+            const currentDate = new Date(current.assessmentDate);
+            return currentDate > latestDate ? current : latest;
+          })
+        : null;
+
+      // Log if multiple records found (potential data consistency issue)
+      if (allStudentCategoryResults.length > 1) {
+        console.warn(`[DATA CONSISTENCY] Student ${student.idNumber} has ${allStudentCategoryResults.length} category results:`,
+          allStudentCategoryResults.map(cr => ({
+            readingLevel: cr.readingLevel,
+            assessmentDate: cr.assessmentDate,
+            categories: cr.categories?.map(cat => `${cat.categoryName}(${cat.score}%)`)
+          }))
+        );
+      }
 
       console.log(`Processing student ${student.idNumber}:`, {
         firstName: student.firstName,
         lastName: student.lastName,
         readingLevel: student.readingLevel,
-        foundCategoryResult: !!studentCategoryResult
+        foundCategoryResult: !!studentCategoryResult,
+        categoryResultsCount: allStudentCategoryResults.length
       });
 
       const studentName = `${student.firstName || 'Student'} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName || 'Name'}`;
 
-      // Get required categories for this student's reading level
-      const requiredCategories = READING_LEVEL_CATEGORIES[student.readingLevel] || [];
+      // Validate reading level consistency between users table and most recent category results
+      let currentReadingLevel = student.readingLevel;
+      if (studentCategoryResult && studentCategoryResult.readingLevel &&
+          studentCategoryResult.readingLevel !== student.readingLevel) {
+        console.warn(`[READING LEVEL MISMATCH] Student ${student.idNumber} (${studentName}):`, {
+          userTableLevel: student.readingLevel,
+          mostRecentAssessmentLevel: studentCategoryResult.readingLevel,
+          assessmentDate: studentCategoryResult.assessmentDate
+        });
+        // Use the reading level from the most recent category result for consistency
+        currentReadingLevel = studentCategoryResult.readingLevel;
+      }
+
+      // Get required categories for the current reading level (use most recent assessment level)
+      const requiredCategories = READING_LEVEL_CATEGORIES[currentReadingLevel] || [];
 
       if (!studentCategoryResult || !studentCategoryResult.categories) {
         // No category results found - student needs assessment
@@ -341,6 +413,7 @@ const TeacherDashboard = () => {
           ...student,
           id: student.idNumber,
           name: studentName,
+          readingLevel: 'Not Assessed', // Set to "Not Assessed" for students without assessment data
           failedCategories: ['Assessment needed'],
           categoriesNeedingImprovement: [{
             category: 'Assessment',
@@ -349,7 +422,13 @@ const TeacherDashboard = () => {
             interventionRequired: false,
             interventionCompleted: false
           }],
-          reason: 'Needs initial assessment'
+          reason: 'Needs initial assessment',
+          dataConsistency: {
+            userTableReadingLevel: student.readingLevel,
+            assessmentReadingLevel: null,
+            hasMultipleRecords: allStudentCategoryResults.length > 1,
+            mostRecentAssessmentDate: null
+          }
         });
         return;
       }
@@ -379,24 +458,65 @@ const TeacherDashboard = () => {
 
         // Check if category failed (score < 75% or isPassed = false)
         const hasFailed = categoryResult.isPassed === false || categoryResult.score < 75;
-        const needsIntervention = categoryResult.interventionRequired === true;
-        const interventionCompleted = categoryResult.interventionCompleted === true;
+        
+        // Comprehensive intervention validation logic (same as chart)
+        let needsIntervention = false;
+        let interventionStatus = '';
+        let shouldShowInAttentionList = false;
+        let latestAttemptInfo = null;
+        
+        if (hasFailed) {
+          // Student failed the category - now check intervention status
+          if (!categoryResult.currentInterventionId || categoryResult.interventionHistory.length === 0) {
+            // No intervention assigned yet - NEEDS INTERVENTION
+            needsIntervention = true;
+            interventionStatus = 'No intervention assigned';
+            shouldShowInAttentionList = true;
+          } else {
+            // Has intervention - check if latest attempt passed
+            const latestAttempt = categoryResult.interventionHistory.reduce((latest, current) => {
+              return current.attemptNumber > latest.attemptNumber ? current : latest;
+            });
+            
+            latestAttemptInfo = latestAttempt; // Store for detailed display
+            
+            if (latestAttempt.isPassed === false) {
+              // Latest intervention attempt failed - STILL NEEDS INTERVENTION
+              needsIntervention = true;
+              interventionStatus = `Active intervention (attempt ${latestAttempt.attemptNumber}, score: ${latestAttempt.score}%)`;
+              shouldShowInAttentionList = true;
+            } else {
+              // Latest intervention attempt passed - INTERVENTION COMPLETED
+              needsIntervention = false;
+              interventionStatus = `Intervention completed (attempt ${latestAttempt.attemptNumber}, score: ${latestAttempt.score}%)`;
+              shouldShowInAttentionList = false; // Don't show in attention list
+            }
+          }
+        } else {
+          // Student passed the category - NO INTERVENTION NEEDED
+          needsIntervention = false;
+          interventionStatus = 'Passed assessment';
+          shouldShowInAttentionList = false;
+        }
 
         // Student needs attention if:
-        // 1. Category failed AND intervention not completed, OR
+        // 1. Category failed AND still needs intervention (no intervention assigned or active intervention), OR
         // 2. Category not completed yet
-        if ((hasFailed && !interventionCompleted) || !categoryResult.isCompleted) {
+        if ((hasFailed && shouldShowInAttentionList) || !categoryResult.isCompleted) {
           failedCategories.push(categoryResult.categoryName);
 
-          // Determine intervention status
+          // Determine status based on comprehensive intervention validation
           let status = 'Assessment Failed';
-          if (needsIntervention && !interventionCompleted) {
-            status = 'Intervention Required';
-          } else if (needsIntervention && interventionCompleted) {
-            // If intervention completed but still failed, needs teacher revision
-            status = 'Intervention Completed - May Need Revision';
-          } else if (!categoryResult.isCompleted) {
+          if (!categoryResult.isCompleted) {
             status = 'Assessment Incomplete';
+          } else if (needsIntervention && interventionStatus === 'No intervention assigned') {
+            status = 'Intervention Required';
+          } else if (needsIntervention && interventionStatus.includes('Active intervention')) {
+            // Include attempt number and score in the status
+            status = `Active Intervention (Attempt ${latestAttemptInfo.attemptNumber}, Score: ${latestAttemptInfo.score}%)`;
+          } else if (!needsIntervention && interventionStatus.includes('Intervention completed')) {
+            // Include attempt number and score in the status
+            status = `Intervention Completed (Attempt ${latestAttemptInfo.attemptNumber}, Score: ${latestAttemptInfo.score}%)`;
           }
 
           categoriesNeedingImprovement.push({
@@ -404,8 +524,9 @@ const TeacherDashboard = () => {
             score: Math.round(categoryResult.score || 0),
             status: status,
             interventionRequired: needsIntervention,
-            interventionCompleted: interventionCompleted,
-            isCompleted: categoryResult.isCompleted || false
+            interventionCompleted: !needsIntervention && interventionStatus.includes('Intervention completed'),
+            isCompleted: categoryResult.isCompleted || false,
+            interventionStatus: interventionStatus // Add detailed intervention status for debugging
           });
         }
       });
@@ -418,8 +539,9 @@ const TeacherDashboard = () => {
         return categoryResult && categoryResult.isPassed === true && categoryResult.score >= 75;
       });
 
-      // Validate reading level progression
-      const progressionValidation = validateReadingLevelProgression(student, studentCategoryResult, requiredCategories);
+      // Validate reading level progression (use corrected student data)
+      const studentWithCorrectedLevel = { ...student, readingLevel: currentReadingLevel };
+      const progressionValidation = validateReadingLevelProgression(studentWithCorrectedLevel, studentCategoryResult, requiredCategories);
 
       // If student has any failed categories or progression issues, they need attention
       if (failedCategories.length > 0 || progressionValidation.shouldHaveProgressed) {
@@ -442,13 +564,14 @@ const TeacherDashboard = () => {
           ...student,
           id: student.idNumber,
           name: studentName,
+          readingLevel: currentReadingLevel, // Use the corrected reading level for consistency
           failedCategories,
           categoriesNeedingImprovement,
           // Calculate attention reason based on issue type
           reason: progressionValidation.shouldHaveProgressed && failedCategories.includes('Progression Required') ?
             `Ready for progression to ${progressionValidation.nextLevel}` :
             failedCategories.length === 1 ?
-              `Failed ${failedCategories[0]}` :
+            `Failed ${failedCategories[0]}` :
               `Failed ${failedCategories.length}/${requiredCategories.length} required categories`,
           // Add comprehensive progression info
           progressionInfo: {
@@ -457,35 +580,109 @@ const TeacherDashboard = () => {
             failedCategories: failedCategories.length,
             canProgress: passedCategories.length === requiredCategories.length,
             shouldHaveProgressed: progressionValidation.shouldHaveProgressed,
-            currentLevel: student.readingLevel,
+            currentLevel: currentReadingLevel,
             nextLevel: progressionValidation.nextLevel,
             progressionReason: progressionValidation.reason
+          },
+          // Add data consistency info for debugging
+          dataConsistency: {
+            userTableReadingLevel: student.readingLevel,
+            assessmentReadingLevel: studentCategoryResult?.readingLevel || null,
+            hasMultipleRecords: allStudentCategoryResults.length > 1,
+            mostRecentAssessmentDate: studentCategoryResult?.assessmentDate || null
           }
         });
 
         console.log(`Added student to attention list:`, {
           name: studentName,
-          readingLevel: student.readingLevel,
+          userTableReadingLevel: student.readingLevel,
+          correctedReadingLevel: currentReadingLevel,
           requiredCategories,
           failedCategories,
           progressionBlocked: passedCategories.length < requiredCategories.length,
           shouldHaveProgressed: progressionValidation.shouldHaveProgressed,
-          progressionReason: progressionValidation.reason
+          progressionReason: progressionValidation.reason,
+          hasMultipleRecords: allStudentCategoryResults.length > 1
         });
       } else {
         console.log(`Student ${studentName} does not need attention:`, {
-          readingLevel: student.readingLevel,
+          userTableReadingLevel: student.readingLevel,
+          correctedReadingLevel: currentReadingLevel,
           passedCategories: passedCategories.length,
           requiredCategories: requiredCategories.length,
           allPassed: passedCategories.length === requiredCategories.length,
           progressionStatus: progressionValidation.reason,
-          isAtMaxLevel: progressionValidation.isAtMaxLevel || false
+          isAtMaxLevel: progressionValidation.isAtMaxLevel || false,
+          hasMultipleRecords: allStudentCategoryResults.length > 1
         });
       }
     });
 
     console.log(`Total students needing attention: ${studentsNeedingAttention.length}`);
+    console.log('[STUDENTS NEEDING ATTENTION SUMMARY]', {
+      totalStudents: studentsData.length,
+      studentsWithCategoryResults: studentsData.filter(s => categoryResultsData.find(cr => cr.studentId === s.idNumber)).length,
+      studentsNeedingAttention: studentsNeedingAttention.length,
+      readingLevelBreakdown: studentsNeedingAttention.reduce((acc, student) => {
+        acc[student.readingLevel] = (acc[student.readingLevel] || 0) + 1;
+        return acc;
+      }, {}),
+      sectionBreakdown: studentsNeedingAttention.reduce((acc, student) => {
+        acc[student.section] = (acc[student.section] || 0) + 1;
+        return acc;
+      }, {})
+    });
     return studentsNeedingAttention;
+  };
+
+  /**
+   * Calculate active interventions based on category results data
+   * An intervention is considered active if:
+   * 1. Student has a currentInterventionId
+   * 2. Their latest intervention attempt in interventionHistory has isPassed: false
+   */
+  const calculateActiveInterventions = (categoryResultsData = []) => {
+    console.log('Calculating active interventions from category results:', categoryResultsData.length, 'records');
+    
+    const activeInterventions = [];
+    
+    categoryResultsData.forEach(categoryResult => {
+      if (!categoryResult.categories) return;
+      
+      categoryResult.categories.forEach(category => {
+        // Check if this category has an active intervention
+        if (category.currentInterventionId && category.interventionHistory && category.interventionHistory.length > 0) {
+          // Get the latest intervention attempt (highest attemptNumber)
+          const latestAttempt = category.interventionHistory.reduce((latest, current) => {
+            return current.attemptNumber > latest.attemptNumber ? current : latest;
+          });
+          
+          // If the latest attempt failed (isPassed: false), the intervention is still active
+          if (latestAttempt.isPassed === false) {
+            activeInterventions.push({
+              studentId: categoryResult.studentId,
+              categoryName: category.categoryName,
+              currentInterventionId: category.currentInterventionId,
+              latestAttempt: latestAttempt,
+              interventionAttempts: category.interventionAttempts,
+              assessmentDate: categoryResult.assessmentDate
+            });
+            
+            console.log(`Active intervention found:`, {
+              studentId: categoryResult.studentId,
+              category: category.categoryName,
+              attemptNumber: latestAttempt.attemptNumber,
+              score: latestAttempt.score,
+              isPassed: latestAttempt.isPassed,
+              attemptedAt: latestAttempt.attemptedAt
+            });
+          }
+        }
+      });
+    });
+    
+    console.log(`Total active interventions: ${activeInterventions.length}`);
+    return activeInterventions;
   };
 
   /**
@@ -608,8 +805,9 @@ const TeacherDashboard = () => {
       const availableSections = Object.keys(sectionCounts);
       setSections(availableSections);
 
-      // Set intervention progress data from MongoDB
-      setInterventionProgress([]);
+      // Calculate and set active interventions from MongoDB
+      const activeInterventions = calculateActiveInterventions(categoryResultsData);
+      setInterventionProgress(activeInterventions);
 
       // Set notification count based on students needing attention
       setNotificationCount(studentsNeedingAttention.length);
@@ -624,9 +822,13 @@ const TeacherDashboard = () => {
         setSelectedReadingLevel(initialLevel);
 
         // Set students in selected level
-        const studentsInLevel = students.filter(
-          student => student.readingLevel === initialLevel
-        );
+        const studentsInLevel = students.filter(student => {
+          if (initialLevel === 'Not Assessed') {
+            // For "Not Assessed", include students with null, undefined, or "Not Assessed" reading level
+            return !student.readingLevel || student.readingLevel === 'Not Assessed';
+          }
+          return student.readingLevel === initialLevel;
+        });
         setStudentsInSelectedLevel(studentsInLevel);
       }
 
@@ -679,7 +881,13 @@ const TeacherDashboard = () => {
     setIsDropdownOpen(false);
 
     // Update students in selected level
-    setStudentsInSelectedLevel(students.filter(s => s.readingLevel === level));
+    setStudentsInSelectedLevel(students.filter(s => {
+      if (level === 'Not Assessed') {
+        // For "Not Assessed", include students with null, undefined, or "Not Assessed" reading level
+        return !s.readingLevel || s.readingLevel === 'Not Assessed';
+      }
+      return s.readingLevel === level;
+    }));
   };
 
 
@@ -690,7 +898,13 @@ const TeacherDashboard = () => {
   const handleReadingLevelPieClick = (entry) => {
     setSelectedReadingLevel(entry.name);
     // Update students in selected level
-    setStudentsInSelectedLevel(students.filter(s => s.readingLevel === entry.name));
+    setStudentsInSelectedLevel(students.filter(s => {
+      if (entry.name === 'Not Assessed') {
+        // For "Not Assessed", include students with null, undefined, or "Not Assessed" reading level
+        return !s.readingLevel || s.readingLevel === 'Not Assessed';
+      }
+      return s.readingLevel === entry.name;
+    }));
     setReadingLevelDetailOpen(true);
   };
 
@@ -829,6 +1043,27 @@ const TeacherDashboard = () => {
   const sectionFilteredStudents = sectionFilter === 'all'
     ? filteredStudents
     : filteredStudents.filter(student => student.section === sectionFilter);
+
+  // Debug logging for filtering issues
+  console.log('[DASHBOARD FILTER DEBUG]', {
+    studentFilter,
+    sectionFilter,
+    totalStudentsNeedingAttention: studentsNeedingAttention.length,
+    afterReadingLevelFilter: filteredStudents.length,
+    afterSectionFilter: sectionFilteredStudents.length,
+    studentsNeedingAttentionSample: studentsNeedingAttention.slice(0, 2).map(s => ({
+      name: s.name,
+      readingLevel: s.readingLevel,
+      section: s.section,
+      failedCategories: s.failedCategories
+    })),
+    sectionFilteredStudentsSample: sectionFilteredStudents.slice(0, 2).map(s => ({
+      name: s.name,
+      readingLevel: s.readingLevel,
+      section: s.section,
+      failedCategories: s.failedCategories
+    }))
+  });
 
   if (isLoading) {
     return (
@@ -979,74 +1214,6 @@ const TeacherDashboard = () => {
                 ))}
               </div>
             </div>
-          </div>
-
-          {/* Student Scores Bar Chart */}
-          <div className="teacher-score-chart-container">
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart
-                data={sectionFilteredStudents.map(student => ({
-                  name: student.name ? student.name.split(' ')[0] : 'Student', // First name only for chart
-                  failedCategories: student.failedCategories ? student.failedCategories.length : 0,
-                  totalCategories: student.categoriesNeedingImprovement ? student.categoriesNeedingImprovement.length : 0
-                }))}
-                margin={{ top: 10, right: 0, left: 0, bottom: 20 }}
-                barSize={18}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                <XAxis
-                  dataKey="name"
-                  scale="band"
-                  tick={{ fill: 'white', fontSize: 10 }}
-                  axisLine={{ stroke: 'rgba(255,255,255,0.3)' }}
-                />
-                <YAxis
-                  domain={[0, 10]}
-                  tick={{ fill: 'white', fontSize: 10 }}
-                  axisLine={{ stroke: 'rgba(255,255,255,0.3)' }}
-                  tickFormatter={(value) => `${value}`}
-                />
-                <Tooltip
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      const failedCount = payload[0].value;
-                      const student = sectionFilteredStudents.find(s => s.name && s.name.split(' ')[0] === label);
-                      return (
-                        <div style={{
-                          background: '#2B3A67',
-                          border: '1px solid #F3C922',
-                          borderRadius: '10px',
-                          padding: '12px 16px',
-                          color: 'white',
-                          fontFamily: 'Poppins, sans-serif',
-                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-                          minWidth: '160px',
-                        }}>
-                          <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>{student?.name || label}</div>
-                          <div style={{ fontSize: '0.9rem' }}>Failed Categories: {failedCount}</div>
-                          {student?.reason && (
-                            <div style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>{student.reason}</div>
-                          )}
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                  cursor={{ fill: 'transparent' }}
-                />
-                <ReferenceLine y={3} stroke="#F3C922" strokeWidth={1} strokeDasharray="3 3" />
-                <Bar dataKey="failedCategories" radius={[4, 4, 0, 0]}>
-                  {sectionFilteredStudents.map((student, i) => (
-                    <Cell
-                      key={`cell-${i}`}
-                      fill={getReadingLevelColor(student.readingLevel)}
-                      cursor="pointer"
-                      onClick={() => openStudentDetail(student)}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
           </div>
 
 
@@ -1315,7 +1482,7 @@ const TeacherDashboard = () => {
                   </div>
                 </div>
               </div>
-              <div className="teacher-category-performance-chart" style={{ height: '400px' }}>
+              <div className="teacher-category-performance-chart" style={{ height: '380px' }}>
                 {(() => {
                   const chartData = getCategoryPerformanceData(selectedReadingLevel !== 'All Levels' ? selectedReadingLevel : null);
                   
@@ -1364,11 +1531,11 @@ const TeacherDashboard = () => {
                   }
                   
                   return (
-                    <ResponsiveContainer width="100%" height={400}>
-                      <BarChart
+                    <ResponsiveContainer width="100%" height={380}>
+                  <BarChart
                         data={chartData}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                      >
+                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
                     <XAxis
                       dataKey="readingLevel"
@@ -1395,17 +1562,63 @@ const TeacherDashboard = () => {
                       labelStyle={{ color: 'white' }}
                     />
                     <ReferenceLine y={50} stroke="#FFC154" strokeDasharray="5 5" strokeWidth={2} />
-                    <Legend
-                      wrapperStyle={{ color: 'white', fontSize: '12px' }}
-                      iconType="rect"
-                    />
-                        <Bar dataKey="Alphabet Knowledge" fill="#4BC0C0" name="Alphabet Knowledge" />
-                        <Bar dataKey="Phonological Awareness" fill="#FF9F40" name="Phonological Awareness" />
-                        <Bar dataKey="Decoding" fill="#FF6B6B" name="Decoding" />
-                        <Bar dataKey="Word Recognition" fill="#9F7AEA" name="Word Recognition" />
-                        <Bar dataKey="Reading Comprehension" fill="#48BB78" name="Reading Comprehension" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                        {chartData.length > 0 && Object.keys(chartData[0]).filter(key => 
+                          ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'].includes(key)
+                        ).map(categoryName => {
+                          const colors = {
+                            'Alphabet Knowledge': '#4BC0C0',
+                            'Phonological Awareness': '#FF9F40',
+                            'Decoding': '#FF6B6B',
+                            'Word Recognition': '#9F7AEA',
+                            'Reading Comprehension': '#48BB78'
+                          };
+                          return (
+                            <Bar 
+                              key={categoryName}
+                              dataKey={categoryName} 
+                              fill={colors[categoryName]} 
+                              name={categoryName} 
+                            />
+                          );
+                        })}
+                  </BarChart>
+                </ResponsiveContainer>
+                  );
+                })()}
+                
+                {/* Dynamic Custom Legend - Only show categories that are in the chart */}
+                {(() => {
+                  const chartData = getCategoryPerformanceData(selectedReadingLevel !== 'All Levels' ? selectedReadingLevel : null);
+                  const displayedCategories = chartData.length > 0 ? 
+                    Object.keys(chartData[0]).filter(key => 
+                      ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'].includes(key)
+                    ) : [];
+                  
+                  const colors = {
+                    'Alphabet Knowledge': '#4BC0C0',
+                    'Phonological Awareness': '#FF9F40',
+                    'Decoding': '#FF6B6B',
+                    'Word Recognition': '#9F7AEA',
+                    'Reading Comprehension': '#48BB78'
+                  };
+                  
+                  return (
+                    <div style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      justifyContent: 'center',
+                      gap: '20px',
+                      marginTop: '10px',
+                      marginBottom: '10px',
+                      padding: '8px 0'
+                    }}>
+                      {displayedCategories.map(categoryName => (
+                        <div key={categoryName} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ width: '12px', height: '12px', backgroundColor: colors[categoryName], borderRadius: '2px' }}></div>
+                          <span style={{ color: 'white', fontSize: '12px', fontWeight: '500' }}>{categoryName}</span>
+              </div>
+                      ))}
+                    </div>
                   );
                 })()}
               </div>
@@ -2232,20 +2445,6 @@ const TeacherDashboard = () => {
                     <div className="teacher-info-item">
                       <span className="teacher-info-label">Section:</span>
                       <span className="teacher-info-value">{selectedStudent.section}</span>
-                    </div>
-                    {selectedStudent.readingLevel !== 'Not Assessed' && (
-                      <div className="teacher-info-item">
-                        <span className="teacher-info-label">Last Score:</span>
-                        <span className="teacher-info-value">{selectedStudent.lastScore}%</span>
-                      </div>
-                    )}
-                    <div className="teacher-info-item">
-                      <span className="teacher-info-label">Completion Rate:</span>
-                      <span className="teacher-info-value">{selectedStudent.completionRate}%</span>
-                    </div>
-                    <div className="teacher-info-item">
-                      <span className="teacher-info-label">Last Assessment:</span>
-                      <span className="teacher-info-value">{selectedStudent.lastAssessment}</span>
                     </div>
                   </div>
                 </div>

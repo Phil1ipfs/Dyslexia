@@ -5,6 +5,28 @@
  * Uses a namespaced approach with 'teacher-' prefix to avoid conflicts with existing styles.
  * Primary color scheme based on dark blue tones with yellow accents.
  */
+/* Chart Legend Styles */
+.recharts-legend-wrapper {
+  color: white !important;
+}
+
+.recharts-legend-item {
+  color: white !important;
+  margin: 0 8px !important;
+  display: inline-block !important;
+}
+
+.recharts-legend-item-text {
+  color: white !important;
+  font-size: 12px !important;
+  margin-left: 4px !important;
+  font-weight: 500 !important;
+}
+
+.recharts-legend-item .recharts-surface {
+  margin-right: 4px !important;
+}
+
 /* Base Variables - Using teacherDash prefix to avoid conflicts */
 :root {
   /* Primary Colors */
