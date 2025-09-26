@@ -1,26 +1,31 @@
 /* IEP Report PDF Styles - Dedicated CSS for PDF Generation */
 /* This file is specifically for PDF styling to avoid conflicts with other CSS */
 
-/* PDF Container - Short Bond Paper Format */
+/* Define page size and margins for proper PDF generation */
+@page {
+  size: 8.5in 11in; /* Short bond paper size */
+  margin: 1in 0.75in; /* Top/bottom: 1in, Left/right: 0.75in */
+}
+
+/* PDF Container - Proper page flow */
 .iep-pdf-container {
   width: 100%;
-  max-width: 816px; /* 8.5 inches * 96 DPI */
-  min-height: 1056px; /* 11 inches * 96 DPI */
+  max-width: 7in; /* 8.5in - (0.75in * 2) margins */
   margin: 0 auto;
-  padding: 25px 20px; /* Reduced margins for better space utilization */
+  padding: 20px; /* Add padding for better content spacing */
   background: white;
   font-family: 'Times New Roman', serif;
-  font-size: 10pt; /* Smaller font for better fit */
-  line-height: 1.2; /* Tighter line height */
+  font-size: 10pt;
+  line-height: 1.3;
   color: #000;
   box-sizing: border-box;
-  overflow: visible; /* Ensure all content is visible */
+  page-break-inside: avoid;
 }
 
 /* Header Section */
 .iep-pdf-header {
   text-align: center;
-  margin-bottom: 25px;
+  margin: 0.25in 0 25px 0; /* Small top margin for first page */
   border-bottom: 3px solid #3B4F81;
   padding-bottom: 20px;
 }
@@ -100,9 +105,9 @@
   display: block; /* Ensure it's visible */
 }
 
-/* Page break spacer for visual separation */
+/* Page break spacer - minimal height since @page handles spacing */
 .iep-pdf-page-break-spacer {
-  height: 300px; /* Increased space for better page 3 positioning */
+  height: 0; /* No extra height needed with proper page margins */
   margin: 0;
   padding: 0;
   background: transparent;
@@ -113,9 +118,9 @@
   width: 100%;
 }
 
-/* Page 4 spacer for Word Recognition category */
+/* Page 4 spacer - minimal height since @page handles spacing */
 .iep-pdf-page-4-spacer {
-  height: 250px; /* Maximum spacing for page 4 transition */
+  height: 0; /* No extra height needed with proper page margins */
   margin: 0;
   padding: 0;
   background: transparent;
@@ -133,7 +138,8 @@
   page-break-inside: avoid !important;
   break-inside: avoid !important;
   margin-top: 0 !important;
-  padding-top: 20px !important;
+  padding-top: 0 !important;
+  min-height: 0 !important;
 }
 
 /* Force Intervention Details to start on a new page (Page 3) */
@@ -141,7 +147,8 @@
   page-break-before: always !important;
   break-before: page !important;
   margin-top: 0 !important;
-  padding-top: 20px !important;
+  padding-top: 0 !important;
+  min-height: 0 !important;
 }
 
 /* Page 4 categories (last 2 categories) */
@@ -652,7 +659,7 @@
   .iep-pdf-page-break-spacer {
     page-break-before: always !important;
     break-before: page !important;
-    height: 300px !important;
+    height: 50px !important;
     display: block !important;
     width: 100% !important;
   }
@@ -660,7 +667,7 @@
   .iep-pdf-page-4-spacer {
     page-break-before: always !important;
     break-before: page !important;
-    height: 250px !important;
+    height: 50px !important;
     display: block !important;
     width: 100% !important;
   }
@@ -671,14 +678,16 @@
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     margin-top: 0 !important;
-    padding-top: 20px !important;
+    padding-top: 0 !important;
+    min-height: 0 !important;
   }
   
   .iep-pdf-intervention-details {
     page-break-before: always !important;
     break-before: page !important;
     margin-top: 0 !important;
-    padding-top: 20px !important;
+    padding-top: 0 !important;
+    min-height: 0 !important;
   }
   
   .iep-pdf-page-4-category {

@@ -41,8 +41,8 @@ import {
 import IEPService from '../../../services/Teachers/ManageProgress/IEPService';
 import StudentDetailsService from '../../../services/Teachers/StudentDetailsService';
 import { fetchTeacherProfile } from '../../../services/Teachers/teacherService';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import { pdf } from '@react-pdf/renderer';
+import IEPReportPDFRenderer from './IEPReportPDFRenderer';
 import { toast } from '../../../utils/toastHelper';
 import SuccessDialog from '../../Teachers/SuccessDialog';
 import './css/IEPReport.css';
@@ -96,6 +96,67 @@ const IEPReport = ({
   
   // Teacher profile state
   const [teacherProfile, setTeacherProfile] = useState(null);
+
+  // Get data from either local state or global state
+  const currentIepData = iepData || window.iepReportGlobalState?.iepData;
+
+  // Get student name
+  const getStudentName = () => {
+    if (currentIepData?.studentId?.firstName && currentIepData?.studentId?.lastName) {
+      return `${currentIepData.studentId.firstName} ${currentIepData.studentId.lastName}`;
+    } else if (student?.firstName && student?.lastName) {
+      return `${student.firstName} ${student.lastName}`;
+    } else if (student?.name) {
+      return student.name;
+    } else {
+      return 'Student';
+    }
+  };
+
+  // Get parent name for display
+  const getParentName = () => {
+    // Check if parentInfo exists and has name properties
+    if (parentInfo) {
+      // First check for a complete name property
+      if (parentInfo.name) {
+        return parentInfo.name;
+      }
+
+      // Next check for firstName/lastName/middleName
+      if (parentInfo.firstName || parentInfo.lastName) {
+        return `${parentInfo.firstName || ''} ${parentInfo.middleName ? parentInfo.middleName + ' ' : ''}${parentInfo.lastName || ''}`.trim();
+      }
+    }
+
+    // Check student.parent object
+    if (typeof student?.parent === 'string' && student.parent) {
+      return student.parent;
+    }
+
+    if (student?.parent && typeof student.parent === 'object') {
+      // Check if parent object has a name
+      if (student.parent.name) {
+        return student.parent.name;
+      }
+
+      // Check if parent object has firstName/lastName/middleName
+      if (student.parent.firstName || student.parent.lastName) {
+        return `${student.parent.firstName || ''} ${student.parent.middleName ? student.parent.middleName + ' ' : ''}${student.parent.lastName || ''}`.trim();
+      }
+    }
+
+    // Check for parentName property
+    if (student?.parentName) {
+      return student.parentName;
+    }
+
+    // If parentId exists but we don't have the name, return generic
+    if (student?.parentId) {
+      return `Registered Parent (ID: ${student.parentId.substring(0, 6)}...)`;
+    }
+
+    return 'Parent';
+  };
 
   // Refs for PDF generation
   const reportRef = useRef();
@@ -151,7 +212,6 @@ const IEPReport = ({
     }
 
     let cleanedRemark = remark.trim();
-    console.log('Processing remark:', cleanedRemark);
 
     // File path patterns to identify corruption points
     const filePathPatterns = [
@@ -169,7 +229,6 @@ const IEPReport = ({
       if (pathIndex !== -1) {
         // Extract text before the file path corruption
         const textBeforePath = cleanedRemark.substring(0, pathIndex).trim();
-        console.log('Found file path, extracted text:', textBeforePath);
         if (textBeforePath.length >= 2) {
           return textBeforePath;
         } else {
@@ -180,9 +239,7 @@ const IEPReport = ({
     }
 
     // If no file paths found, return the cleaned remark if it has actual content
-    const result = cleanedRemark.length >= 2 ? cleanedRemark : null;
-    console.log('No file path found, returning:', result);
-    return result;
+    return cleanedRemark.length >= 2 ? cleanedRemark : null;
   };
 
   // Generate automatic progress summary when manual remarks are empty
@@ -849,82 +906,76 @@ const IEPReport = ({
     try {
       setGeneratingPdf(true);
 
-      // Wait a moment for the modal to render completely
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('Starting React PDF generation...');
+      console.log('Current IEP Data being used:', currentIepData);
+      console.log('Student data being used:', student);
 
-      if (!reportRef.current) {
-        console.error("IEP report element not found");
-        toast.error("Failed to generate PDF - Report element not found");
-        return;
-      }
+      // Prepare complete data for PDF renderer including student information
+      const pdfData = {
+        ...currentIepData,
+        student: student,                    // Include student prop
+        studentName: getStudentName(),       // Include computed student name
+        studentAge: student?.age,            // Include student age
+        studentGrade: student?.gradeLevel,   // Include student grade
+        studentGender: student?.gender,      // Include student gender
+        parentName: student?.parentName || student?.parent?.name || 'N/A',
+        academicYear: new Date().getFullYear(),
+        // Validate and clean objectives data
+        objectives: (currentIepData?.objectives || []).map(obj => {
+          const initialScore = Math.min(100, Math.max(0, obj.assessmentScore || obj.score || 0));
+          let finalScore = initialScore;
 
-      try {
-        // Use html2canvas to capture the report with optimized settings
-        const canvas = await html2canvas(reportRef.current, {
-          scale: 1.5, // Balanced scale for quality and file size
-          useCORS: true,
-          logging: false,
-          allowTaint: true,
-          scrollY: -window.scrollY,
-          backgroundColor: '#ffffff',
-          removeContainer: true,
-          imageTimeout: 15000
-        });
-
-        // Create PDF with short bond paper dimensions
-        const imgData = canvas.toDataURL('image/jpeg', 0.85); // Optimized quality for formal documents
-        const pdf = new jsPDF('p', 'mm', [215.9, 279.4]); // Short bond paper dimensions (8.5" x 11")
-        const pdfW = pdf.internal.pageSize.getWidth();
-        const pdfH = pdf.internal.pageSize.getHeight();
-
-        // Calculate image dimensions for PDF
-        const imgW = pdfW;
-        const imgH = (canvas.height * imgW) / canvas.width;
-
-        // Calculate how many pages we need based on content height
-        const totalPages = Math.ceil(imgH / pdfH);
-        
-        console.log('PDF generation info:', {
-          totalPages,
-          imgH,
-          pdfH,
-          canvasHeight: canvas.height,
-          canvasWidth: canvas.width
-        });
-
-        // Add image to PDF across multiple pages with better page handling
-        for (let pageNum = 0; pageNum < totalPages; pageNum++) {
-          if (pageNum > 0) {
-          pdf.addPage();
+          // Calculate realistic final score
+          if (obj.latestInterventionScore && obj.latestInterventionScore > 0 && obj.latestInterventionScore <= 100) {
+            finalScore = obj.latestInterventionScore;
+          } else if (obj.isPassed || obj.latestInterventionPassed) {
+            // If marked as passed, ensure at least 75% or current score
+            finalScore = Math.max(initialScore, 75);
           }
-          
-          // Calculate the y-offset for this page
-          const yOffset = -pageNum * pdfH;
-          
-          // Add the image to this page with proper positioning
-          pdf.addImage(imgData, 'JPEG', 0, yOffset, imgW, imgH, undefined, 'FAST');
-          
-          console.log(`Added page ${pageNum + 1} with yOffset: ${yOffset}`);
-        }
+
+          // Calculate realistic improvement
+          const realImprovement = Math.max(0, finalScore - initialScore);
+
+          return {
+            ...obj,
+            assessmentScore: initialScore,
+            latestInterventionScore: finalScore !== initialScore ? finalScore : null,
+            interventionImprovement: realImprovement
+          };
+        })
+      };
+
+      console.log('PDF Data being passed to renderer:', pdfData);
+      console.log('Student data:', student);
+      console.log('IEP objectives:', iepData?.objectives);
+
+      // Generate PDF using React PDF renderer
+      const blob = await pdf(<IEPReportPDFRenderer iepData={pdfData} />).toBlob();
+
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
 
         // Save the PDF with the student's name
         const studentName = getStudentName() || 'Student';
         const fileName = `IEP_Progress_Report_${studentName.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-        pdf.save(fileName);
+      link.download = fileName;
+
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
         console.log("IEP PDF generated successfully");
         toast.success("IEP Progress Report PDF generated successfully");
         showSuccessMessage('IEP PDF report generated successfully!');
 
       } catch (error) {
-        console.error("Error generating IEP PDF:", error);
-        toast.error("Failed to generate IEP PDF");
+      console.error('Error generating PDF:', error);
+      toast.error(`Failed to generate PDF: ${error.message || 'Unknown error'}`);
         setError("There was an error generating the PDF. Please try again.");
-      }
-    } catch (error) {
-      console.error('Error preparing IEP PDF data:', error);
-      toast.error("Failed to prepare IEP PDF data");
-      setError('Failed to prepare PDF data. Please try again.');
     } finally {
       setGeneratingPdf(false);
       // Keep modal open so user can continue viewing or export again
@@ -984,106 +1035,64 @@ const IEPReport = ({
             throw new Error('Progress report element not found');
           }
 
-          // Generate PDF data with optimized settings for short bond paper
-          const canvas = await html2canvas(element, {
-            scale: 1.5, // Balanced scale for quality and file size
-            useCORS: true,
-            scrollY: -window.scrollY,
-            logging: false,
-            imageTimeout: 15000,
-            backgroundColor: '#ffffff',
-            allowTaint: true,
-            removeContainer: true
-          });
+          // Generate PDF using React PDF renderer
+          console.log('Email PDF: Starting React PDF generation...');
 
-          const imgData = canvas.toDataURL('image/jpeg', 0.8); // High quality JPEG
+          // Prepare complete data for PDF renderer including student information
+          const pdfData = {
+            ...currentIepData,
+            student: student,                    // Include student prop
+            studentName: getStudentName(),       // Include computed student name
+            studentAge: student?.age,            // Include student age
+            studentGrade: student?.gradeLevel,   // Include student grade
+            studentGender: student?.gender,      // Include student gender
+            parentName: student?.parentName || student?.parent?.name || 'N/A',
+            academicYear: new Date().getFullYear(),
+            // Validate and clean objectives data
+            objectives: (currentIepData?.objectives || []).map(obj => {
+              const initialScore = Math.min(100, Math.max(0, obj.assessmentScore || obj.score || 0));
+              let finalScore = initialScore;
 
-          const pdf = new jsPDF('p', 'mm', [215.9, 279.4]); // Short bond paper dimensions (8.5" x 11")
-          const pdfWidth = pdf.internal.pageSize.getWidth();
-          const pdfHeight = pdf.internal.pageSize.getHeight();
-          const imgWidth = canvas.width;
-          const imgHeight = canvas.height;
-          const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+              // Calculate realistic final score
+              if (obj.latestInterventionScore && obj.latestInterventionScore > 0 && obj.latestInterventionScore <= 100) {
+                finalScore = obj.latestInterventionScore;
+              } else if (obj.isPassed || obj.latestInterventionPassed) {
+                // If marked as passed, ensure at least 75% or current score
+                finalScore = Math.max(initialScore, 75);
+              }
 
-        // Calculate how many pages we need based on content height
-        const totalPages = Math.ceil((imgHeight * ratio) / pdfHeight);
-        
-        console.log('Email PDF generation info:', {
-          totalPages,
-          imgHeight: imgHeight * ratio,
-          pdfHeight,
-          canvasHeight: canvas.height,
-          canvasWidth: canvas.width
-        });
+              // Calculate realistic improvement
+              const realImprovement = Math.max(0, finalScore - initialScore);
 
-        // Add image to PDF across multiple pages
-        for (let pageNum = 0; pageNum < totalPages; pageNum++) {
-          if (pageNum > 0) {
-            pdf.addPage();
+              return {
+                ...obj,
+                assessmentScore: initialScore,
+                latestInterventionScore: finalScore !== initialScore ? finalScore : null,
+                interventionImprovement: realImprovement
+              };
+            })
+          };
+
+          console.log('Email PDF Data being passed to renderer:', pdfData);
+
+          const blob = await pdf(<IEPReportPDFRenderer iepData={pdfData} />).toBlob();
+
+          // Convert blob to base64 for email/S3 upload
+          const arrayBuffer = await blob.arrayBuffer();
+          const bytes = new Uint8Array(arrayBuffer);
+          let binary = '';
+          for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
           }
-          
-          // Calculate the y-offset for this page
-          const yOffset = -pageNum * pdfHeight;
-          
-          // Add the image to this page
-          pdf.addImage(
-            imgData,
-            'JPEG',
-            0,
-            yOffset,
-            imgWidth * ratio,
-            imgHeight * ratio,
-            undefined,
-            'FAST'
-          );
-          
-          console.log(`Email PDF: Added page ${pageNum + 1} with yOffset: ${yOffset}`);
-        }
+          pdfBase64 = btoa(binary);
 
-          // Convert to base64 with lower quality
-          const pdfOutput = pdf.output('datauristring');
-          pdfBase64 = pdfOutput.split(',')[1]; // Extract the base64 part
+          console.log(`React PDF generated successfully, size: ${pdfBase64.length} bytes`);
 
-          console.log(`PDF generated successfully, original size: ${pdfBase64.length} bytes`);
-
-          // Try to reduce size if needed
+          // React PDF generates smaller files, but still check if too large
           if (pdfBase64.length > 5000000) { // Check if PDF is over 5MB
-            toast.loading('PDF is too large, attempting to optimize...');
-
-            // Try a more aggressive approach for large PDFs
-            const smallerCanvas = document.createElement('canvas');
-            const ctx = smallerCanvas.getContext('2d');
-            const scaleFactor = 0.5; // Scale down by 50%
-
-            smallerCanvas.width = canvas.width * scaleFactor;
-            smallerCanvas.height = canvas.height * scaleFactor;
-
-            ctx.drawImage(canvas, 0, 0, smallerCanvas.width, smallerCanvas.height);
-            const smallerImgData = smallerCanvas.toDataURL('image/jpeg', 0.5);
-
-            const smallerPdf = new jsPDF('p', 'mm', 'a4');
-            smallerPdf.addImage(
-              smallerImgData,
-              'JPEG',
-              0,
-              0,
-              pdfWidth,
-              pdfHeight * (smallerCanvas.height / smallerCanvas.width) * (pdfWidth / pdfHeight),
-              undefined,
-              'FAST'
-            );
-
-            const smallerPdfOutput = smallerPdf.output('datauristring');
-            const smallerPdfBase64 = smallerPdfOutput.split(',')[1];
-
-            console.log(`Reduced PDF size from ${pdfBase64.length} to ${smallerPdfBase64.length} bytes`);
-
-            if (smallerPdfBase64.length <= 5000000) {
-              pdfBase64 = smallerPdfBase64;
-            } else {
-              console.warn('PDF is still too large after optimization');
+            console.warn('PDF is too large for email');
               const continueWithoutPDF = window.confirm(
-                'The generated PDF is too large to send. Would you like to send the message without the PDF attachment?'
+              'The generated PDF is too large to send via email. Would you like to send the message without the PDF attachment?'
               );
 
               if (continueWithoutPDF) {
@@ -1092,7 +1101,6 @@ const IEPReport = ({
               } else {
                 setShowProgressReport(false);
                 return;
-              }
             }
           }
 
@@ -1557,8 +1565,6 @@ const IEPReport = ({
   // SIMPLIFIED RENDER LOGIC - Use either local or global data
   const renderTime = new Date().toLocaleTimeString();
   
-  // Get data from either local state or global state
-  const currentIepData = iepData || window.iepReportGlobalState?.iepData;
   const hasData = !!(currentIepData && currentIepData.objectives && currentIepData.objectives.length > 0);
   
   console.log(`[${renderTime}] IEPReport render state:`, {
@@ -1633,18 +1639,6 @@ const IEPReport = ({
     return lessonName.replace(/^Mastering\s+/i, '');
   };
 
-  // Get student name
-  const getStudentName = () => {
-    if (currentIepData.studentId?.firstName && currentIepData.studentId?.lastName) {
-      return `${currentIepData.studentId.firstName} ${currentIepData.studentId.lastName}`;
-    } else if (student?.firstName && student?.lastName) {
-      return `${student.firstName} ${student.lastName}`;
-    } else if (student?.name) {
-      return student.name;
-    } else {
-      return 'Student';
-    }
-  };
 
   // Get teacher name
   const getTeacherName = () => {
@@ -1653,7 +1647,7 @@ const IEPReport = ({
         return `${teacherProfile.firstName} ${teacherProfile.lastName}`;
       } else if (teacherProfile?.name) {
         return teacherProfile.name;
-      } else {
+    } else {
         return 'Teacher';
       }
     } catch (error) {
@@ -1662,50 +1656,6 @@ const IEPReport = ({
     }
   };
 
-  // Get parent name for display
-  const getParentName = () => {
-    // Check if parentInfo exists and has name properties
-    if (parentInfo) {
-      // First check for a complete name property
-      if (parentInfo.name) {
-        return parentInfo.name;
-      }
-
-      // Next check for firstName/lastName/middleName
-      if (parentInfo.firstName || parentInfo.lastName) {
-        return `${parentInfo.firstName || ''} ${parentInfo.middleName ? parentInfo.middleName + ' ' : ''}${parentInfo.lastName || ''}`.trim();
-      }
-    }
-
-    // Check student.parent object
-    if (typeof student?.parent === 'string' && student.parent) {
-      return student.parent;
-    }
-
-    if (student?.parent && typeof student.parent === 'object') {
-      // Check if parent object has a name
-      if (student.parent.name) {
-        return student.parent.name;
-      }
-
-      // Check if parent object has firstName/lastName/middleName
-      if (student.parent.firstName || student.parent.lastName) {
-        return `${student.parent.firstName || ''} ${student.parent.middleName ? student.parent.middleName + ' ' : ''}${student.parent.lastName || ''}`.trim();
-      }
-    }
-
-    // Check for parentName property
-    if (student?.parentName) {
-      return student.parentName;
-    }
-
-    // If parentId exists but we don't have the name, return generic
-    if (student?.parentId) {
-      return `Registered Parent (ID: ${student.parentId.substring(0, 6)}...)`;
-    }
-
-    return 'Parent';
-  };
 
   // Get parent email
   const getParentEmail = () => {
@@ -2816,9 +2766,7 @@ const IEPReport = ({
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {(objective.interventionHistory || []).map((attempt, attemptIndex) => {
-                                    console.log('Processing attempt:', attempt.attemptNumber, 'Remarks:', attempt.teacherRemarks);
-                                    return (
+                                  {(objective.interventionHistory || []).map((attempt, attemptIndex) => (
                                     <tr key={attemptIndex} className="iep-pdf-intervention-tr">
                                       <td className="iep-pdf-intervention-td">{attempt.attemptNumber}</td>
                                       <td className="iep-pdf-intervention-td">
@@ -2842,8 +2790,7 @@ const IEPReport = ({
                       </div>
                                       </td>
                                     </tr>
-                                    );
-                                  })}
+                                  ))}
                                 </tbody>
                               </table>
                       </div>
