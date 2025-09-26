@@ -172,11 +172,12 @@ const TeacherDashboard = () => {
       const relevantCategories = readingLevelCategories[readingLevel] || [];
 
       relevantCategories.forEach(categoryName => {
-        let totalStudentsWithData = 0;
+        let totalStudentsInLevel = studentsInLevel.length; // Total students in this reading level
         let studentsNeedingIntervention = 0;
+        let detailedInterventionData = []; // Store detailed intervention information
 
         console.log(`\n=== Processing category: ${categoryName} for reading level: ${readingLevel} ===`);
-        console.log(`Total students in this level: ${studentsInLevel.length}`);
+        console.log(`Total students in this level: ${totalStudentsInLevel}`);
 
         // Process each student's category results
         studentsInLevel.forEach((student, index) => {
@@ -185,7 +186,7 @@ const TeacherDashboard = () => {
             cr.studentId === student.idNumber
           );
 
-          console.log(`Student ${index + 1}/${studentsInLevel.length}: ${student.idNumber} (${student.firstName} ${student.lastName})`, {
+          console.log(`Student ${index + 1}/${totalStudentsInLevel}: ${student.idNumber} (${student.firstName} ${student.lastName})`, {
             foundCategoryResult: !!studentCategoryResult,
             studentId: student.idNumber,
             readingLevel: student.readingLevel
@@ -198,7 +199,6 @@ const TeacherDashboard = () => {
             );
 
             if (categoryResult && categoryResult.isCompleted === true) {
-              totalStudentsWithData++;
               console.log(`  ✓ ${categoryName}: score=${categoryResult.score}, isPassed=${categoryResult.isPassed}, completed=${categoryResult.isCompleted}`);
               
               // Check if student needs intervention based on comprehensive logic
@@ -236,29 +236,89 @@ const TeacherDashboard = () => {
               if (needsIntervention) {
                 studentsNeedingIntervention++;
                 console.log(`  ❌ Student needs intervention for ${categoryName}: ${interventionStatus}`);
+                
+                // Store detailed intervention information for tooltip
+                detailedInterventionData.push({
+                  studentName: `${student.firstName} ${student.lastName}`,
+                  studentId: student.idNumber,
+                  categoryName: categoryName,
+                  assessmentScore: categoryResult.score,
+                  interventionStatus: interventionStatus,
+                  latestAttempt: categoryResult.interventionHistory.length > 0 ? 
+                    categoryResult.interventionHistory.reduce((latest, current) => {
+                      return current.attemptNumber > latest.attemptNumber ? current : latest;
+                    }) : null
+                });
               } else {
                 console.log(`  ✅ Student does not need intervention for ${categoryName}: ${interventionStatus}`);
               }
             } else if (categoryResult) {
               console.log(`  ⚠️ ${categoryName}: not completed (completed=${categoryResult.isCompleted})`);
+              // Student has category result but not completed - needs intervention
+              studentsNeedingIntervention++;
+              detailedInterventionData.push({
+                studentName: `${student.firstName} ${student.lastName}`,
+                studentId: student.idNumber,
+                categoryName: categoryName,
+                assessmentScore: 0,
+                interventionStatus: 'Assessment Incomplete',
+                latestAttempt: null
+              });
             } else {
               console.log(`  ❌ ${categoryName}: no category result found`);
+              // Student has no category result - needs intervention
+              studentsNeedingIntervention++;
+              detailedInterventionData.push({
+                studentName: `${student.firstName} ${student.lastName}`,
+                studentId: student.idNumber,
+                categoryName: categoryName,
+                assessmentScore: 0,
+                interventionStatus: 'No Assessment Data',
+                latestAttempt: null
+              });
             }
           } else {
             console.log(`  ❌ No category results found for student ${student.idNumber}`);
+            // Student has no category results at all - needs intervention
+            studentsNeedingIntervention++;
+            detailedInterventionData.push({
+              studentName: `${student.firstName} ${student.lastName}`,
+              studentId: student.idNumber,
+              categoryName: categoryName,
+              assessmentScore: 0,
+              interventionStatus: 'No Assessment Data',
+              latestAttempt: null
+            });
           }
         });
 
         // Calculate percentage of students needing intervention for this category
-        const interventionPercentage = totalStudentsWithData > 0 ?
-          Math.round((studentsNeedingIntervention / totalStudentsWithData) * 100) : 0;
+        // Based on TOTAL students in the reading level, not just students with assessment data
+        const interventionPercentage = totalStudentsInLevel > 0 ?
+          Math.round((studentsNeedingIntervention / totalStudentsInLevel) * 100) : 0;
 
         console.log(`\n📊 FINAL RESULT for ${categoryName}:`);
-        console.log(`   Students with data: ${totalStudentsWithData}`);
+        console.log(`   Category name (raw): "${categoryName}"`);
+        console.log(`   Category name (length): ${categoryName.length}`);
+        console.log(`   Category name (char codes):`, Array.from(categoryName).map(c => c.charCodeAt(0)));
+        console.log(`   Total students in level: ${totalStudentsInLevel}`);
         console.log(`   Students needing intervention: ${studentsNeedingIntervention}`);
         console.log(`   Intervention percentage: ${interventionPercentage}%`);
+        console.log(`   Detailed intervention data:`, detailedInterventionData);
         
-        categoryData[categoryName] = interventionPercentage;
+        // Debug: Show which students are being counted
+        if (detailedInterventionData.length > 0) {
+          console.log(`   Students needing intervention:`, detailedInterventionData.map(s => `${s.studentName} (${s.interventionStatus})`));
+        } else {
+          console.log(`   No students need intervention for ${categoryName} in ${readingLevel}`);
+        }
+        
+        // Store both percentage and detailed intervention data
+        // Keep original category name to avoid data structure issues
+        categoryData[categoryName] = {
+          percentage: interventionPercentage,
+          detailedData: detailedInterventionData
+        };
       });
 
       const levelData = {
@@ -1016,6 +1076,18 @@ const TeacherDashboard = () => {
     return unrelatedTerms[lowerValue] || value;
   };
 
+  // Helper function to ensure proper text rendering
+  const getSafeCategoryName = (name) => {
+    const categoryMap = {
+      'Alphabet Knowledge': 'Alphabet Knowledge',
+      'Phonological Awareness': 'Phonological Awareness',
+      'Decoding': 'Decoding', 
+      'Word Recognition': 'Word Recognition',
+      'Reading Comprehension': 'Reading Comprehension'
+    };
+    return categoryMap[name] || name;
+  };
+
   /**
    * Get color for a reading level
    * @param {string} level - Reading level
@@ -1556,9 +1628,45 @@ const TeacherDashboard = () => {
                         backgroundColor: 'rgba(42, 60, 109, 0.95)',
                         border: '1px solid rgba(255, 255, 255, 0.2)',
                         borderRadius: '8px',
-                        color: 'white'
+                        color: 'white',
+                        maxWidth: '400px',
+                        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                        fontSize: '14px',
+                        lineHeight: '1.4'
                       }}
-                      formatter={(value, name) => [`${value}% need intervention`, name]}
+                        formatter={(value, name, props) => {
+                          const chartData = getCategoryPerformanceData(selectedReadingLevel !== 'All Levels' ? selectedReadingLevel : null);
+                          const currentData = chartData.find(item => item.readingLevel === props.payload.readingLevel);
+                          
+                          const safeCategoryName = getSafeCategoryName(name);
+                          
+                          if (currentData && currentData[name] && currentData[name].detailedData) {
+                            const detailedData = currentData[name].detailedData;
+                            if (detailedData.length > 0) {
+                              return [
+                                <div key="tooltip-content">
+                                  <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+                                    {safeCategoryName}: {value}% need intervention
+                                  </div>
+                                  <div style={{ fontSize: '12px' }}>
+                                    {detailedData.map((student, index) => (
+                                      <div key={index} style={{ marginBottom: '4px' }}>
+                                        <strong>{student.studentName}</strong> - {student.interventionStatus}
+                                        {student.latestAttempt && (
+                                          <span style={{ color: '#FFC154' }}>
+                                            {' '}(Attempt {student.latestAttempt.attemptNumber}, Score: {student.latestAttempt.score}%)
+                                          </span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>,
+                                safeCategoryName
+                              ];
+                            }
+                          }
+                          return [`${value}% need intervention`, safeCategoryName];
+                        }}
                       labelStyle={{ color: 'white' }}
                     />
                     <ReferenceLine y={50} stroke="#FFC154" strokeDasharray="5 5" strokeWidth={2} />
@@ -1575,7 +1683,7 @@ const TeacherDashboard = () => {
                           return (
                             <Bar 
                               key={categoryName}
-                              dataKey={categoryName} 
+                              dataKey={`${categoryName}.percentage`} 
                               fill={colors[categoryName]} 
                               name={categoryName} 
                             />
@@ -1612,12 +1720,22 @@ const TeacherDashboard = () => {
                       marginBottom: '10px',
                       padding: '8px 0'
                     }}>
-                      {displayedCategories.map(categoryName => (
-                        <div key={categoryName} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <div style={{ width: '12px', height: '12px', backgroundColor: colors[categoryName], borderRadius: '2px' }}></div>
-                          <span style={{ color: 'white', fontSize: '12px', fontWeight: '500' }}>{categoryName}</span>
+                      {displayedCategories.map(categoryName => {
+                        const safeCategoryName = getSafeCategoryName(categoryName);
+                        
+                        return (
+                          <div key={categoryName} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div style={{ width: '12px', height: '12px', backgroundColor: colors[categoryName], borderRadius: '2px' }}></div>
+                            <span style={{ 
+                              color: 'white', 
+                              fontSize: '12px', 
+                              fontWeight: '500', 
+                              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                              lineHeight: '1.2'
+                            }}>{safeCategoryName}</span>
               </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   );
                 })()}
