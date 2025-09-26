@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell,
+  ResponsiveContainer, ReferenceLine, PieChart, Pie, Cell,
   BarChart, Bar, Legend
 } from 'recharts';
 
@@ -16,6 +16,7 @@ import '../../css/Teachers/TeacherDashboard.css';
 
 // Dashboard API Service
 import DashboardApiService from '../../services/Teachers/DashboardApiService';
+import { API_BASE_URL } from '../../config/apiConfig';
 
 /**
  * TeacherDashboard Component
@@ -312,9 +313,10 @@ const TeacherDashboard = () => {
       // Fetch students data from MongoDB
       let usersData = [];
       try {
-        const usersResponse = await fetch('/api/students', getAuthHeaders());
+        const usersResponse = await fetch(`${API_BASE_URL}/admin/manage/students`, getAuthHeaders());
         if (usersResponse.ok) {
-          usersData = await usersResponse.json();
+          const responseData = await usersResponse.json();
+          usersData = responseData.data || responseData; // Handle different response formats
           console.log('Loaded students data from MongoDB:', usersData.length, 'records');
         } else {
           throw new Error(`Failed to fetch students: ${usersResponse.status}`);
@@ -327,9 +329,10 @@ const TeacherDashboard = () => {
       // Fetch category results data from MongoDB
       let categoryResultsData = [];
       try {
-        const categoryResultsResponse = await fetch('/api/category-results', getAuthHeaders());
+        const categoryResultsResponse = await fetch(`${API_BASE_URL}/admin/category-results`, getAuthHeaders());
         if (categoryResultsResponse.ok) {
-          categoryResultsData = await categoryResultsResponse.json();
+          const responseData = await categoryResultsResponse.json();
+          categoryResultsData = responseData.data || responseData; // Handle different response formats
           console.log('Loaded category results data from MongoDB:', categoryResultsData.length, 'records');
         } else {
           console.warn('Could not load category results from MongoDB, continuing without them');
