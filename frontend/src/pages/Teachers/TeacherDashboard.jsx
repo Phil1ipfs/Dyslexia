@@ -9,9 +9,8 @@ import {
 
 // Import icons (replace with actual paths to your icons)
 import studentsIcon from '../../assets/icons/Teachers/students.png';
-import activitiesIcon from '../../assets/icons/Teachers/students.png';
-import pendingIcon from '../../assets/icons/Teachers/students.png';
 import scoringIcon from '../../assets/icons/Teachers/students.png';
+import pendingIcon from '../../assets/icons/Teachers/activitymanage.png';
 import '../../css/Teachers/TeacherDashboard.css';
 
 // Dashboard API Service
@@ -1527,36 +1526,28 @@ const TeacherDashboard = () => {
           <div className="teacher-dashboard__grid-cell">
             <div className="teacher-card teacher-distribution-card">
               <div className="teacher-card__header">
-                <h2 className="teacher-card__title">
-                  {selectedReadingLevel === 'All Levels' 
-                    ? 'Students Needing Intervention by Category' 
-                    : `Students Needing Intervention - ${selectedReadingLevel} Level`}
-                </h2>
-                <div className="teacher-filter-controls">
-                  <span className="teacher-filter-label">Filter by Reading Level:</span>
-                  <div className="teacher-filter-buttons">
-                    <button
-                      className={`teacher-filter-btn ${selectedReadingLevel === 'All Levels' ? 'teacher-filter-btn--active' : ''}`}
-                      onClick={() => setSelectedReadingLevel('All Levels')}
-                    >
-                      All Levels
-                    </button>
-                    {readingLevelDistribution.map((level) => (
-                      <button
-                        key={level.name}
-                        className={`teacher-filter-btn ${selectedReadingLevel === level.name ? 'teacher-filter-btn--active' : ''}`}
-                        style={selectedReadingLevel === level.name ? { backgroundColor: level.color } : {}}
-                        onClick={() => setSelectedReadingLevel(level.name)}
-                      >
-                        {level.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                  <h2 className="teacher-card__title">
+                    Students Needing Intervention - {selectedReadingLevel} Level
+                  </h2>
+                 <div className="teacher-filter-controls">
+                   <span className="teacher-filter-label">Filter by Reading Level:</span>
+                   <div className="teacher-filter-buttons">
+                     {readingLevelDistribution.map((level) => (
+                       <button
+                         key={level.name}
+                         className={`teacher-filter-btn ${selectedReadingLevel === level.name ? 'teacher-filter-btn--active' : ''}`}
+                         style={selectedReadingLevel === level.name ? { backgroundColor: level.color } : {}}
+                         onClick={() => setSelectedReadingLevel(level.name)}
+                       >
+                         {level.name}
+                       </button>
+                     ))}
+                   </div>
+                 </div>
               </div>
-              <div className="teacher-category-performance-chart" style={{ height: '380px' }}>
+              <div className="teacher-category-performance-chart" style={{ height: '400px' }}>
                 {(() => {
-                  const chartData = getCategoryPerformanceData(selectedReadingLevel !== 'All Levels' ? selectedReadingLevel : null);
+                  const chartData = getCategoryPerformanceData(selectedReadingLevel);
                   
                   console.log('Chart data for rendering:', chartData);
                   console.log('Selected reading level:', selectedReadingLevel);
@@ -1588,14 +1579,10 @@ const TeacherDashboard = () => {
                       }}>
                         <div>
                           <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600' }}>
-                            {selectedReadingLevel === 'All Levels' 
-                              ? 'No intervention data available' 
-                              : `No intervention data available for ${selectedReadingLevel} level`}
+                            No intervention data available for {selectedReadingLevel} level
                           </p>
                           <p style={{ margin: '0', opacity: 0.8, fontSize: '0.9rem' }}>
-                            {selectedReadingLevel === 'All Levels' 
-                              ? 'Students may need to complete assessments first to identify intervention needs' 
-                              : 'Students in this level may need to complete assessments first to identify intervention needs'}
+                            Students in this level may need to complete assessments first to identify intervention needs
                           </p>
                         </div>
                       </div>
@@ -1603,7 +1590,7 @@ const TeacherDashboard = () => {
                   }
                   
                   return (
-                    <ResponsiveContainer width="100%" height={380}>
+                    <ResponsiveContainer width="100%" height={360}>
                   <BarChart
                         data={chartData}
                     margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
@@ -1635,7 +1622,7 @@ const TeacherDashboard = () => {
                         lineHeight: '1.4'
                       }}
                         formatter={(value, name, props) => {
-                          const chartData = getCategoryPerformanceData(selectedReadingLevel !== 'All Levels' ? selectedReadingLevel : null);
+                          const chartData = getCategoryPerformanceData(selectedReadingLevel);
                           const currentData = chartData.find(item => item.readingLevel === props.payload.readingLevel);
                           
                           const safeCategoryName = getSafeCategoryName(name);
@@ -1696,7 +1683,7 @@ const TeacherDashboard = () => {
                 
                 {/* Dynamic Custom Legend - Only show categories that are in the chart */}
                 {(() => {
-                  const chartData = getCategoryPerformanceData(selectedReadingLevel !== 'All Levels' ? selectedReadingLevel : null);
+                  const chartData = getCategoryPerformanceData(selectedReadingLevel);
                   const displayedCategories = chartData.length > 0 ? 
                     Object.keys(chartData[0]).filter(key => 
                       ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'].includes(key)
@@ -1715,23 +1702,41 @@ const TeacherDashboard = () => {
                       display: 'flex',
                       flexWrap: 'wrap',
                       justifyContent: 'center',
-                      gap: '20px',
-                      marginTop: '10px',
-                      marginBottom: '10px',
-                      padding: '8px 0'
+                      gap: '15px',
+                      marginTop: '5px',
+                      marginBottom: '5px',
+                      padding: '5px 0',
+                      maxWidth: '100%',
+                      overflow: 'hidden'
                     }}>
                       {displayedCategories.map(categoryName => {
                         const safeCategoryName = getSafeCategoryName(categoryName);
                         
                         return (
-                          <div key={categoryName} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <div style={{ width: '12px', height: '12px', backgroundColor: colors[categoryName], borderRadius: '2px' }}></div>
+                          <div key={categoryName} style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '6px',
+                            flexShrink: 0,
+                            minWidth: 'fit-content'
+                          }}>
+                            <div style={{ 
+                              width: '10px', 
+                              height: '10px', 
+                              backgroundColor: colors[categoryName], 
+                              borderRadius: '2px',
+                              flexShrink: 0
+                            }}></div>
                             <span style={{ 
                               color: 'white', 
-                              fontSize: '12px', 
+                              fontSize: '11px', 
                               fontWeight: '500', 
                               fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                              lineHeight: '1.2'
+                              lineHeight: '1.2',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              maxWidth: '120px'
                             }}>{safeCategoryName}</span>
               </div>
                         );
@@ -2050,7 +2055,7 @@ const TeacherDashboard = () => {
             <div className="teacher-modal-content teacher-intervention-modal" onClick={(e) => e.stopPropagation()}>
               <div className="teacher-modal-header" style={{ backgroundColor: "#FF9E40" }}>
                 <h2>Intervention Progress Summary</h2>
-                <button className="teacher-modal-close" onClick={closeInterventionDetail}>&times;</button>
+                <button className="teacher-modal-close" onClick={closeInterventionDetail}>×</button>
               </div>
 
               <div className="teacher-modal-body">
@@ -2205,59 +2210,13 @@ const TeacherDashboard = () => {
               style={{ backgroundColor: getReadingLevelColor(selectedReadingLevel) }}
             >
               <h2>{selectedReadingLevel} Details</h2>
-              <button className="teacher-modal-close" onClick={closeReadingLevelModal}>&times;</button>
+              <button className="teacher-modal-close" onClick={closeReadingLevelModal}>×</button>
             </div>
 
             <div className="teacher-modal-body">
-              {/* Stats */}
-              <div className="teacher-stats-section">
-                <div className="teacher-student-info-summary">
-                  <div className="teacher-student-info-section">
-                    <h3>Performance Summary</h3>
-                    <div className="teacher-info-grid">
-                      <div className="teacher-info-item">
-                        <span className="teacher-info-label">Students:</span>
-                        <span className="teacher-info-value">
-                          {readingLevelDistribution.find(a => a.name === selectedReadingLevel)?.value || 0}
-                        </span>
-                      </div>
-
-                      <div className="teacher-info-item">
-                        <span className="teacher-info-label">Completion Rate:</span>
-                        <span className="teacher-info-value">
-                          {selectedReadingLevel === 'Not Assessed' ? 'N/A' : Math.round(
-                            studentsInSelectedLevel
-                              .reduce((sum, s) => sum + s.completionRate, 0) /
-                            (studentsInSelectedLevel.length || 1)
-                          ) + '%'}
-                        </span>
-                      </div>
-
-                      <div className="teacher-info-item">
-                        <span className="teacher-info-label">Avg. Score:</span>
-                        <span className="teacher-info-value">
-                          {selectedReadingLevel === 'Not Assessed' ? 'N/A' :
-                            Math.round(studentsInSelectedLevel
-                              .reduce((sum, s) => sum + s.lastScore, 0) /
-                              (studentsInSelectedLevel.length || 1)
-                            ) + '%'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="teacher-student-categories">
-                    <h3>Prescriptive Analysis</h3>
-                    <p>
-                      {prescriptiveData.find(d => d.readingLevel === selectedReadingLevel)?.broadAnalysis ||
-                        "No analysis available for this reading level yet."}
-                    </p>
-                  </div>
-                </div>
-
                 {/* Students in this reading level */}
                 <div style={{
-                  marginTop: '1.5rem'
+                marginTop: '0'
                 }}>
                   <h4 style={{
                     fontSize: '1.1rem',
@@ -2368,7 +2327,7 @@ const TeacherDashboard = () => {
                                 verticalAlign: 'middle',
                                 color: 'white',
                                 backgroundColor: 'transparent'
-                              }}>{student.name}</td>
+                              }}>{student.firstName} {student.middleName} {student.lastName}</td>
                               <td style={{
                                 padding: '12px 16px',
                                 borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
@@ -2376,7 +2335,7 @@ const TeacherDashboard = () => {
                                 verticalAlign: 'middle',
                                 color: 'white',
                                 backgroundColor: 'transparent'
-                              }}>{student.section}</td>
+                              }}>{student.section || 'N/A'}</td>
                               <td style={{
                                 padding: '12px 16px',
                                 borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
@@ -2384,7 +2343,7 @@ const TeacherDashboard = () => {
                                 verticalAlign: 'middle',
                                 color: 'white',
                                 backgroundColor: 'transparent'
-                              }}>{student.gradeLevel}</td>
+                              }}>{student.gradeLevel || 'Grade 1'}</td>
                               {selectedReadingLevel !== 'Not Assessed' && <td style={{
                                 padding: '12px 16px',
                                 borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
@@ -2392,7 +2351,7 @@ const TeacherDashboard = () => {
                                 verticalAlign: 'middle',
                                 color: 'white',
                                 backgroundColor: 'transparent'
-                              }}>{student.lastScore}%</td>}
+                              }}>{student.readingPercentage ? `${student.readingPercentage}%` : 'N/A'}</td>}
                               <td style={{
                                 padding: '12px 16px',
                                 borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
@@ -2455,77 +2414,7 @@ const TeacherDashboard = () => {
               </div>
             </div>
 
-            <div style={{
-              padding: '1.5rem',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: '1rem',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-              backgroundColor: 'rgba(43, 58, 103, 0.5)',
-              borderRadius: '0 0 12px 12px'
-            }}>
-              <button
-                style={{
-                  backgroundColor: '#F3C922',
-                  border: 'none',
-                  borderRadius: '6px',
-                  color: '#2B3A67',
-                  padding: '0.6rem 1.2rem',
-                  fontSize: '0.95rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
-                  letterSpacing: '0.03em',
-                  textTransform: 'uppercase'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#FFE066';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.25)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = '#F3C922';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.2)';
-                }}
-                onClick={() => {
-                  closeReadingLevelModal();
-                  navigate('/teacher/students', { state: { filterReadingLevel: selectedReadingLevel } });
-                }}
-              >
-                See All Students
-              </button>
-              <button 
-                style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '6px',
-                  color: 'white',
-                  padding: '0.6rem 1.2rem',
-                  fontSize: '0.95rem',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  letterSpacing: '0.03em'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.2)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-                onClick={closeReadingLevelModal}
-              >
-                Close
-              </button>
             </div>
-          </div>
-        </div>
       )}
 
       {/* Student Detail Modal */}
@@ -2537,7 +2426,7 @@ const TeacherDashboard = () => {
               style={{ backgroundColor: getReadingLevelColor(selectedStudent.readingLevel) }}
             >
               <h2>{selectedStudent.name}</h2>
-              <button className="teacher-modal-close" onClick={closeStudentDetail}>&times;</button>
+              <button className="teacher-modal-close" onClick={closeStudentDetail}>×</button>
             </div>
 
             <div className="teacher-modal-body">
