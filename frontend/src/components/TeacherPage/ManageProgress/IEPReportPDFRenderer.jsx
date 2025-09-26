@@ -328,7 +328,27 @@ const IEPReportPDFRenderer = ({ iepData }) => {
 
   // Render support level checkboxes
   const renderSupportLevelCheckmarks = (supportLevel) => {
-    const level = supportLevel?.toLowerCase();
+    // Handle null, undefined, or empty support level
+    if (!supportLevel || supportLevel === null || supportLevel === undefined || supportLevel === '') {
+      return (
+        <View style={styles.checkmarkContainer}>
+          <View style={styles.checkboxWrapper}>
+            <Text style={styles.checkboxLabel}>Minimal</Text>
+            <Text style={styles.checkbox}>[ ]</Text>
+          </View>
+          <View style={styles.checkboxWrapper}>
+            <Text style={styles.checkboxLabel}>Moderate</Text>
+            <Text style={styles.checkbox}>[ ]</Text>
+          </View>
+          <View style={styles.checkboxWrapper}>
+            <Text style={styles.checkboxLabel}>Extensive</Text>
+            <Text style={styles.checkbox}>[ ]</Text>
+          </View>
+        </View>
+      );
+    }
+
+    const level = supportLevel.toLowerCase();
     const isMinimal = level === 'minimal' || level === 'min';
     const isModerate = level === 'moderate' || level === 'mod';
     const isExtensive = level === 'extensive' || level === 'ext';
@@ -661,8 +681,8 @@ const IEPReportPDFRenderer = ({ iepData }) => {
             const attempts = objective.interventionAttempts || 0;
             const isMastered = objective.latestInterventionPassed || objective.isPassed;
 
-            // Get support level (Min/Mod/Ext)
-            const supportLevel = objective.supportLevel || 'Min';
+            // Get support level (preserve null values)
+            const supportLevel = objective.supportLevel;
             const getSupportStyle = (level) => {
               switch(level?.toLowerCase()) {
                 case 'minimal':
