@@ -49,6 +49,7 @@ const TeacherDashboard = () => {
   const [studentsNeedingAttention, setStudentsNeedingAttention] = useState([]);
   const [studentsInSelectedLevel, setStudentsInSelectedLevel] = useState([]);
   const [interventionProgress, setInterventionProgress] = useState([]);
+  const [categoryResultsData, setCategoryResultsData] = useState([]); // Add this to store raw category results
   const [metrics, setMetrics] = useState({
     totalStudents: 0,
     completionRate: 0,
@@ -113,18 +114,19 @@ const TeacherDashboard = () => {
 
 
   /**
-   * Get category performance data based on reading level specifications from CLAUDE.md
-   * Uses real category results data from MongoDB
+   * Get category performance data showing intervention needs per category
+   * Uses real category results data from MongoDB to show students needing intervention
+   * @param {string} filterLevel - Optional reading level to filter by
    */
-  const getCategoryPerformanceData = () => {
-    // Reading level category assignments from CLAUDE.md (STRICT)
-    const readingLevelCategories = {
-      "Low Emerging": ["Alphabet Knowledge"],
-      "High Emerging": ["Alphabet Knowledge", "Phonological Awareness"],
-      "Developing": ["Alphabet Knowledge", "Phonological Awareness", "Decoding"],
-      "Transitioning": ["Alphabet Knowledge", "Phonological Awareness", "Decoding", "Word Recognition"],
-      "At Grade Level": ["Alphabet Knowledge", "Phonological Awareness", "Decoding", "Word Recognition", "Reading Comprehension"]
-    };
+  const getCategoryPerformanceData = (filterLevel = null) => {
+    // All available categories that can be assessed
+    const allCategories = [
+      "Alphabet Knowledge",
+      "Phonological Awareness", 
+      "Decoding",
+      "Word Recognition",
+      "Reading Comprehension"
+    ];
 
     // If no students data available, return empty array
     if (!students || students.length === 0) {
@@ -132,8 +134,8 @@ const TeacherDashboard = () => {
     }
 
     // Get category results data from state (loaded from MongoDB)
-    const categoryResultsData = studentsNeedingAttention.length > 0 ? 
-      studentsNeedingAttention.map(s => s.categoryResult).filter(Boolean) : [];
+    console.log('Raw category results data:', categoryResultsData);
+    console.log('Students data:', students);
 
     // Group students by reading level
     const studentsByLevel = students.reduce((acc, student) => {
@@ -144,29 +146,45 @@ const TeacherDashboard = () => {
       acc[level].push(student);
       return acc;
     }, {});
+    
+    console.log('Students grouped by level:', studentsByLevel);
+
+    // Get all available reading levels from the data
+    const allReadingLevels = Object.keys(studentsByLevel);
+    
+    // Determine which reading levels to process
+    const levelsToProcess = filterLevel ? [filterLevel] : allReadingLevels;
 
     // Process category performance for each reading level
-    const performanceData = Object.keys(readingLevelCategories).map(readingLevel => {
+    const performanceData = levelsToProcess.map(readingLevel => {
       const studentsInLevel = studentsByLevel[readingLevel] || [];
-      const categoriesForLevel = readingLevelCategories[readingLevel];
 
       if (studentsInLevel.length === 0) {
         return null; // Skip levels with no students
       }
 
-      // Calculate performance for each category applicable to this reading level
+      // Calculate intervention needs for ALL categories for this reading level
       const categoryData = {};
 
-      categoriesForLevel.forEach(categoryName => {
+      allCategories.forEach(categoryName => {
         let totalStudentsWithData = 0;
-        let passedStudents = 0;
+        let studentsNeedingIntervention = 0;
+
+        console.log(`\n=== Processing category: ${categoryName} for reading level: ${readingLevel} ===`);
+        console.log(`Total students in this level: ${studentsInLevel.length}`);
 
         // Process each student's category results
-        studentsInLevel.forEach(student => {
-          // Find category results for this student
+        studentsInLevel.forEach((student, index) => {
+          // Find category results for this student using idNumber
           const studentCategoryResult = categoryResultsData.find(cr =>
-            cr.studentId === student.idNumber || cr.studentId === student.id
+            cr.studentId === student.idNumber
           );
+
+          console.log(`Student ${index + 1}/${studentsInLevel.length}: ${student.idNumber} (${student.firstName} ${student.lastName})`, {
+            foundCategoryResult: !!studentCategoryResult,
+            studentId: student.idNumber,
+            readingLevel: student.readingLevel
+          });
 
           if (studentCategoryResult && studentCategoryResult.categories) {
             // Find the specific category result
@@ -176,37 +194,126 @@ const TeacherDashboard = () => {
 
             if (categoryResult && categoryResult.isCompleted === true) {
               totalStudentsWithData++;
-              if (categoryResult.isPassed === true && categoryResult.score >= 75) {
-                passedStudents++;
+              console.log(`  ✓ ${categoryName}: score=${categoryResult.score}, isPassed=${categoryResult.isPassed}, completed=${categoryResult.isCompleted}`);
+              // Count students who failed this category (score < 75% or isPassed === false)
+              if (categoryResult.isPassed === false || categoryResult.score < 75) {
+                studentsNeedingIntervention++;
+                console.log(`  ❌ Student needs intervention for ${categoryName}`);
+              } else {
+                console.log(`  ✅ Student passed ${categoryName}`);
               }
+            } else if (categoryResult) {
+              console.log(`  ⚠️ ${categoryName}: not completed (completed=${categoryResult.isCompleted})`);
+            } else {
+              console.log(`  ❌ ${categoryName}: no category result found`);
             }
+          } else {
+            console.log(`  ❌ No category results found for student ${student.idNumber}`);
           }
         });
 
-        // Calculate pass percentage for this category
-        const passPercentage = totalStudentsWithData > 0 ?
-          Math.round((passedStudents / totalStudentsWithData) * 100) : 0;
+        // Calculate percentage of students needing intervention for this category
+        const interventionPercentage = totalStudentsWithData > 0 ?
+          Math.round((studentsNeedingIntervention / totalStudentsWithData) * 100) : 0;
 
-        categoryData[categoryName] = passPercentage;
+        console.log(`\n📊 FINAL RESULT for ${categoryName}:`);
+        console.log(`   Students with data: ${totalStudentsWithData}`);
+        console.log(`   Students needing intervention: ${studentsNeedingIntervention}`);
+        console.log(`   Intervention percentage: ${interventionPercentage}%`);
+        
+        categoryData[categoryName] = interventionPercentage;
       });
 
-      return {
+      const levelData = {
         readingLevel,
         studentCount: studentsInLevel.length,
         ...categoryData
       };
+      
+      console.log(`Final data for ${readingLevel}:`, levelData);
+      return levelData;
     }).filter(data => data !== null); // Remove null entries for levels with no students
 
+    console.log('Category Performance Data (Intervention Needs):', performanceData);
     return performanceData;
   };
 
   /**
-   * Calculate which students need attention based on failed categories
-   * A student needs attention if they have failed any category (score < 75%)
-   * This function processes real data from MongoDB
+   * Validate if a student should have progressed to the next reading level
+   * Returns progression status and any issues found
+   */
+  const validateReadingLevelProgression = (student, studentCategoryResult, requiredCategories) => {
+    if (!studentCategoryResult || !studentCategoryResult.categories) {
+      return {
+        shouldHaveProgressed: false,
+        reason: 'No category results available'
+      };
+    }
+
+    // Define reading level progression sequence
+    const READING_LEVEL_PROGRESSION = {
+      'Low Emerging': 'High Emerging',
+      'High Emerging': 'Developing',
+      'Developing': 'Transitioning',
+      'Transitioning': 'At Grade Level',
+      'At Grade Level': null // Maximum level
+    };
+
+    // Check if all required categories for current level are passed
+    const passedCategories = requiredCategories.filter(requiredCategory => {
+      const categoryResult = studentCategoryResult.categories.find(cat =>
+        cat.categoryName === requiredCategory
+      );
+      return categoryResult && categoryResult.isPassed === true && categoryResult.score >= 75;
+    });
+
+    const allCategoriesPassed = passedCategories.length === requiredCategories.length;
+    const nextLevel = READING_LEVEL_PROGRESSION[student.readingLevel];
+
+    // If all categories passed and there's a next level, student should have progressed
+    if (allCategoriesPassed && nextLevel) {
+      return {
+        shouldHaveProgressed: true,
+        currentLevel: student.readingLevel,
+        nextLevel: nextLevel,
+        passedCategories: passedCategories.length,
+        requiredCategories: requiredCategories.length,
+        reason: `All ${requiredCategories.length} categories passed - should progress to ${nextLevel}`
+      };
+    }
+
+    // If at maximum level and all categories passed, mark as completed
+    if (allCategoriesPassed && !nextLevel) {
+      return {
+        shouldHaveProgressed: false,
+        isAtMaxLevel: true,
+        isCompleted: true,
+        reason: 'Student at maximum level (At Grade Level) with all categories passed'
+      };
+    }
+
+    return {
+      shouldHaveProgressed: false,
+      reason: `${passedCategories.length}/${requiredCategories.length} categories passed`
+    };
+  };
+
+  /**
+   * Calculate which students need attention based on failed categories and reading level requirements
+   * A student needs attention if they have failed any required category for their reading level
+   * This function processes real data from MongoDB with proper reading level validation
    */
   const calculateStudentsNeedingAttention = (studentsData, categoryResultsData = []) => {
     console.log('Processing category results data from MongoDB:', categoryResultsData.length, 'records');
+
+    // Define required categories for each reading level based on CLAUDE.md
+    const READING_LEVEL_CATEGORIES = {
+      'Low Emerging': ['Alphabet Knowledge'],
+      'High Emerging': ['Alphabet Knowledge', 'Phonological Awareness'],
+      'Developing': ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding'],
+      'Transitioning': ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition'],
+      'At Grade Level': ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension']
+    };
 
     const studentsNeedingAttention = [];
 
@@ -223,9 +330,13 @@ const TeacherDashboard = () => {
         foundCategoryResult: !!studentCategoryResult
       });
 
+      const studentName = `${student.firstName || 'Student'} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName || 'Name'}`;
+
+      // Get required categories for this student's reading level
+      const requiredCategories = READING_LEVEL_CATEGORIES[student.readingLevel] || [];
+
       if (!studentCategoryResult || !studentCategoryResult.categories) {
-        // No category results found - assume needs assessment
-        const studentName = `${student.firstName || 'Student'} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName || 'Name'}`;
+        // No category results found - student needs assessment
         studentsNeedingAttention.push({
           ...student,
           id: student.idNumber,
@@ -246,21 +357,46 @@ const TeacherDashboard = () => {
       const failedCategories = [];
       const categoriesNeedingImprovement = [];
 
-      // Check each category result for failures (score < 75%)
-      studentCategoryResult.categories.forEach(categoryResult => {
+      // Check each REQUIRED category for this reading level
+      requiredCategories.forEach(requiredCategory => {
+        // Find the category result for this required category
+        const categoryResult = studentCategoryResult.categories.find(cat =>
+          cat.categoryName === requiredCategory
+        );
+
+        if (!categoryResult) {
+          // Required category not found - needs assessment
+          failedCategories.push(requiredCategory);
+          categoriesNeedingImprovement.push({
+            category: requiredCategory,
+            score: 0,
+            status: 'Not Assessed',
+            interventionRequired: false,
+            interventionCompleted: false
+          });
+          return;
+        }
+
+        // Check if category failed (score < 75% or isPassed = false)
         const hasFailed = categoryResult.isPassed === false || categoryResult.score < 75;
         const needsIntervention = categoryResult.interventionRequired === true;
         const interventionCompleted = categoryResult.interventionCompleted === true;
 
-        if (hasFailed && !interventionCompleted) {
+        // Student needs attention if:
+        // 1. Category failed AND intervention not completed, OR
+        // 2. Category not completed yet
+        if ((hasFailed && !interventionCompleted) || !categoryResult.isCompleted) {
           failedCategories.push(categoryResult.categoryName);
 
           // Determine intervention status
           let status = 'Assessment Failed';
           if (needsIntervention && !interventionCompleted) {
             status = 'Intervention Required';
-          } else if (interventionCompleted) {
-            status = 'Intervention Completed';
+          } else if (needsIntervention && interventionCompleted) {
+            // If intervention completed but still failed, needs teacher revision
+            status = 'Intervention Completed - May Need Revision';
+          } else if (!categoryResult.isCompleted) {
+            status = 'Assessment Incomplete';
           }
 
           categoriesNeedingImprovement.push({
@@ -268,30 +404,82 @@ const TeacherDashboard = () => {
             score: Math.round(categoryResult.score || 0),
             status: status,
             interventionRequired: needsIntervention,
-            interventionCompleted: interventionCompleted
+            interventionCompleted: interventionCompleted,
+            isCompleted: categoryResult.isCompleted || false
           });
         }
       });
 
-      // If student has any failed categories, they need attention
-      if (failedCategories.length > 0) {
-        const studentName = `${student.firstName || 'Student'} ${student.middleName ? student.middleName + ' ' : ''}${student.lastName || 'Name'}`;
+      // Check for reading level progression blocking
+      const passedCategories = requiredCategories.filter(requiredCategory => {
+        const categoryResult = studentCategoryResult.categories.find(cat =>
+          cat.categoryName === requiredCategory
+        );
+        return categoryResult && categoryResult.isPassed === true && categoryResult.score >= 75;
+      });
+
+      // Validate reading level progression
+      const progressionValidation = validateReadingLevelProgression(student, studentCategoryResult, requiredCategories);
+
+      // If student has any failed categories or progression issues, they need attention
+      if (failedCategories.length > 0 || progressionValidation.shouldHaveProgressed) {
+        // Handle progression issues for students who should have progressed
+        if (progressionValidation.shouldHaveProgressed && failedCategories.length === 0) {
+          // Student passed all categories but hasn't progressed - add progression issue
+          failedCategories.push('Progression Required');
+          categoriesNeedingImprovement.push({
+            category: 'Reading Level Progression',
+            score: 100, // All categories passed
+            status: 'Progression Required',
+            interventionRequired: false,
+            interventionCompleted: true, // Categories are complete
+            isCompleted: true,
+            progressionIssue: true
+          });
+        }
+
         studentsNeedingAttention.push({
           ...student,
           id: student.idNumber,
           name: studentName,
           failedCategories,
           categoriesNeedingImprovement,
-          // Calculate attention reason
-          reason: failedCategories.length === 1 ?
-            `Failed ${failedCategories[0]}` :
-            `Failed ${failedCategories.length} categories`
+          // Calculate attention reason based on issue type
+          reason: progressionValidation.shouldHaveProgressed && failedCategories.includes('Progression Required') ?
+            `Ready for progression to ${progressionValidation.nextLevel}` :
+            failedCategories.length === 1 ?
+              `Failed ${failedCategories[0]}` :
+              `Failed ${failedCategories.length}/${requiredCategories.length} required categories`,
+          // Add comprehensive progression info
+          progressionInfo: {
+            requiredCategories: requiredCategories.length,
+            passedCategories: passedCategories.length,
+            failedCategories: failedCategories.length,
+            canProgress: passedCategories.length === requiredCategories.length,
+            shouldHaveProgressed: progressionValidation.shouldHaveProgressed,
+            currentLevel: student.readingLevel,
+            nextLevel: progressionValidation.nextLevel,
+            progressionReason: progressionValidation.reason
+          }
         });
 
         console.log(`Added student to attention list:`, {
           name: studentName,
+          readingLevel: student.readingLevel,
+          requiredCategories,
           failedCategories,
-          categoriesCount: categoriesNeedingImprovement.length
+          progressionBlocked: passedCategories.length < requiredCategories.length,
+          shouldHaveProgressed: progressionValidation.shouldHaveProgressed,
+          progressionReason: progressionValidation.reason
+        });
+      } else {
+        console.log(`Student ${studentName} does not need attention:`, {
+          readingLevel: student.readingLevel,
+          passedCategories: passedCategories.length,
+          requiredCategories: requiredCategories.length,
+          allPassed: passedCategories.length === requiredCategories.length,
+          progressionStatus: progressionValidation.reason,
+          isAtMaxLevel: progressionValidation.isAtMaxLevel || false
         });
       }
     });
@@ -368,7 +556,8 @@ const TeacherDashboard = () => {
 
       setReadingLevelDistribution(testReadingLevelDistribution);
 
-      // Process students with category results for proper attention calculation
+      // Store category results data in state for chart processing
+      setCategoryResultsData(categoryResultsData);
       console.log('Category results data loaded from MongoDB:', categoryResultsData.length);
 
       // Merge students with their category results and overall scores
@@ -1098,13 +1287,88 @@ const TeacherDashboard = () => {
           {/* Top-left cell: Category Performance by Reading Level Chart */}
           <div className="teacher-dashboard__grid-cell">
             <div className="teacher-card teacher-distribution-card">
-              <h2 className="teacher-card__title">Category Performance by Reading Level</h2>
+              <div className="teacher-card__header">
+                <h2 className="teacher-card__title">
+                  {selectedReadingLevel === 'All Levels' 
+                    ? 'Students Needing Intervention by Category' 
+                    : `Students Needing Intervention - ${selectedReadingLevel} Level`}
+                </h2>
+                <div className="teacher-filter-controls">
+                  <span className="teacher-filter-label">Filter by Reading Level:</span>
+                  <div className="teacher-filter-buttons">
+                    <button
+                      className={`teacher-filter-btn ${selectedReadingLevel === 'All Levels' ? 'teacher-filter-btn--active' : ''}`}
+                      onClick={() => setSelectedReadingLevel('All Levels')}
+                    >
+                      All Levels
+                    </button>
+                    {readingLevelDistribution.map((level) => (
+                      <button
+                        key={level.name}
+                        className={`teacher-filter-btn ${selectedReadingLevel === level.name ? 'teacher-filter-btn--active' : ''}`}
+                        style={selectedReadingLevel === level.name ? { backgroundColor: level.color } : {}}
+                        onClick={() => setSelectedReadingLevel(level.name)}
+                      >
+                        {level.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
               <div className="teacher-category-performance-chart" style={{ height: '400px' }}>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart
-                    data={getCategoryPerformanceData()}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                  >
+                {(() => {
+                  const chartData = getCategoryPerformanceData(selectedReadingLevel !== 'All Levels' ? selectedReadingLevel : null);
+                  
+                  console.log('Chart data for rendering:', chartData);
+                  console.log('Selected reading level:', selectedReadingLevel);
+                  
+                  // Debug: Check if chart data has valid structure
+                  if (chartData.length > 0) {
+                    console.log('Chart data structure check:', {
+                      firstItem: chartData[0],
+                      hasCategories: Object.keys(chartData[0]).filter(key => 
+                        ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'].includes(key)
+                      ),
+                      categoryValues: Object.entries(chartData[0]).filter(([key, value]) => 
+                        ['Alphabet Knowledge', 'Phonological Awareness', 'Decoding', 'Word Recognition', 'Reading Comprehension'].includes(key)
+                      )
+                    });
+                  }
+                  
+                  if (chartData.length === 0) {
+                    return (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '100%',
+                        color: 'white',
+                        fontSize: '1.1rem',
+                        textAlign: 'center',
+                        padding: '2rem'
+                      }}>
+                        <div>
+                          <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600' }}>
+                            {selectedReadingLevel === 'All Levels' 
+                              ? 'No intervention data available' 
+                              : `No intervention data available for ${selectedReadingLevel} level`}
+                          </p>
+                          <p style={{ margin: '0', opacity: 0.8, fontSize: '0.9rem' }}>
+                            {selectedReadingLevel === 'All Levels' 
+                              ? 'Students may need to complete assessments first to identify intervention needs' 
+                              : 'Students in this level may need to complete assessments first to identify intervention needs'}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart
+                        data={chartData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                      >
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
                     <XAxis
                       dataKey="readingLevel"
@@ -1118,7 +1382,7 @@ const TeacherDashboard = () => {
                       stroke="white"
                       fontSize={12}
                       domain={[0, 100]}
-                      label={{ value: 'Pass Rate (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: 'white' } }}
+                      label={{ value: 'Students Needing Intervention (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: 'white' } }}
                     />
                     <Tooltip
                       contentStyle={{
@@ -1127,21 +1391,23 @@ const TeacherDashboard = () => {
                         borderRadius: '8px',
                         color: 'white'
                       }}
-                      formatter={(value, name) => [`${value}%`, name]}
+                      formatter={(value, name) => [`${value}% need intervention`, name]}
                       labelStyle={{ color: 'white' }}
                     />
-                    <ReferenceLine y={75} stroke="#FFC154" strokeDasharray="5 5" strokeWidth={2} />
+                    <ReferenceLine y={50} stroke="#FFC154" strokeDasharray="5 5" strokeWidth={2} />
                     <Legend
                       wrapperStyle={{ color: 'white', fontSize: '12px' }}
                       iconType="rect"
                     />
-                    <Bar dataKey="Alphabet Knowledge" stackId="a" fill="#4BC0C0" name="Alphabet Knowledge" />
-                    <Bar dataKey="Phonological Awareness" stackId="b" fill="#FF9F40" name="Phonological Awareness" />
-                    <Bar dataKey="Decoding" stackId="c" fill="#FF6B6B" name="Decoding" />
-                    <Bar dataKey="Word Recognition" stackId="d" fill="#9F7AEA" name="Word Recognition" />
-                    <Bar dataKey="Reading Comprehension" stackId="e" fill="#48BB78" name="Reading Comprehension" />
-                  </BarChart>
-                </ResponsiveContainer>
+                        <Bar dataKey="Alphabet Knowledge" fill="#4BC0C0" name="Alphabet Knowledge" />
+                        <Bar dataKey="Phonological Awareness" fill="#FF9F40" name="Phonological Awareness" />
+                        <Bar dataKey="Decoding" fill="#FF6B6B" name="Decoding" />
+                        <Bar dataKey="Word Recognition" fill="#9F7AEA" name="Word Recognition" />
+                        <Bar dataKey="Reading Comprehension" fill="#48BB78" name="Reading Comprehension" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  );
+                })()}
               </div>
             </div>
           </div>

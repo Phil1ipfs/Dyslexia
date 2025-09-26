@@ -4,7 +4,7 @@
   },
   "studentId": 202533333,
   "assessmentDate": {
-    "$date": "2025-09-22T04:37:07.250Z"
+    "$date": "2025-09-26T07:30:56.756Z"
   },
   "categories": [
     {
@@ -24,16 +24,16 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d0d273292fc5c39a2cc355"
+        "$oid": "68d64130282883e8256a4dd9"
       }
     },
     {
       "categoryName": "Phonological Awareness",
-      "totalQuestions": 6,
+      "totalQuestions": 12,
       "correctAnswers": 0,
-      "totalPossibleMatches": 15,
-      "correctMatches": 5,
-      "score": 33,
+      "totalPossibleMatches": 35,
+      "correctMatches": 15,
+      "score": 43,
       "isPassed": false,
       "passingThreshold": 75,
       "isCompleted": true,
@@ -44,83 +44,23 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d0d273292fc5c39a2cc356"
-      }
-    },
-    {
-      "categoryName": "Decoding",
-      "totalQuestions": 15,
-      "correctAnswers": 0,
-      "totalPossibleMatches": 0,
-      "correctMatches": 0,
-      "score": 0,
-      "isPassed": false,
-      "passingThreshold": 75,
-      "isCompleted": false,
-      "lastQuestionAnswered": "",
-      "interventionRequired": true,
-      "interventionAttempts": 0,
-      "interventionCompleted": false,
-      "currentInterventionId": null,
-      "interventionHistory": [],
-      "_id": {
-        "$oid": "68d47a5b27ed793e560b9efb"
-      }
-    },
-    {
-      "categoryName": "Word Recognition",
-      "totalQuestions": 15,
-      "correctAnswers": 0,
-      "totalPossibleMatches": 0,
-      "correctMatches": 0,
-      "score": 0,
-      "isPassed": false,
-      "passingThreshold": 75,
-      "isCompleted": false,
-      "lastQuestionAnswered": "",
-      "interventionRequired": true,
-      "interventionAttempts": 0,
-      "interventionCompleted": false,
-      "currentInterventionId": null,
-      "interventionHistory": [],
-      "_id": {
-        "$oid": "68d47a5b27ed793e560b9efe"
-      }
-    },
-    {
-      "categoryName": "Reading Comprehension",
-      "totalQuestions": 10,
-      "correctAnswers": 0,
-      "totalPossibleMatches": 0,
-      "correctMatches": 0,
-      "score": 0,
-      "isPassed": false,
-      "passingThreshold": 75,
-      "isCompleted": false,
-      "lastQuestionAnswered": "",
-      "interventionRequired": true,
-      "interventionAttempts": 0,
-      "interventionCompleted": false,
-      "currentInterventionId": null,
-      "interventionHistory": [],
-      "_id": {
-        "$oid": "68d47a5b27ed793e560b9f01"
+        "$oid": "68d64130282883e8256a4dda"
       }
     }
   ],
-  "overallScore": 16,
+  "overallScore": 40,
   "completedCategories": 1,
-  "totalCategories": 5,
+  "totalCategories": 2,
   "allCategoriesPassed": false,
   "readingLevel": "High Emerging",
-  "readingLevelUpdated": true,
+  "readingLevelUpdated": false,
   "createdAt": {
     "$date": "2025-09-15T20:47:11.170Z"
   },
   "updatedAt": {
-    "$date": "2025-09-24T23:10:38.809Z"
+    "$date": "2025-09-26T07:30:53.629Z"
   },
-  "__v": 1
+  "__v": 2
 },
 {
   "_id": {
@@ -128,16 +68,16 @@
   },
   "studentId": 202530693,
   "assessmentDate": {
-    "$date": "2025-09-26T05:45:20.077Z"
+    "$date": "2025-09-26T07:31:03.939Z"
   },
   "categories": [
     {
       "categoryName": "Alphabet Knowledge",
-      "totalQuestions": 60,
-      "correctAnswers": 15,
+      "totalQuestions": 45,
+      "correctAnswers": 2,
       "totalPossibleMatches": 0,
       "correctMatches": 0,
-      "score": 25,
+      "score": 4,
       "isPassed": false,
       "passingThreshold": 75,
       "isCompleted": true,
@@ -148,7 +88,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628706eca84e68b096565"
+        "$oid": "68d64137282883e8256a53fe"
       }
     },
     {
@@ -168,129 +108,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628706eca84e68b096566"
-      }
-    },
-    {
-      "categoryName": "Decoding",
-      "totalQuestions": 0,
-      "correctAnswers": 0,
-      "totalPossibleMatches": 0,
-      "correctMatches": 0,
-      "score": 0,
-      "isPassed": false,
-      "passingThreshold": 75,
-      "isCompleted": false,
-      "lastQuestionAnswered": "",
-      "interventionRequired": true,
-      "interventionAttempts": 0,
-      "interventionCompleted": false,
-      "currentInterventionId": null,
-      "interventionHistory": [],
-      "_id": {
-        "$oid": "68d628706eca84e68b096567"
-      }
-    },
-    {
-      "categoryName": "Word Recognition",
-      "totalQuestions": 0,
-      "correctAnswers": 0,
-      "totalPossibleMatches": 0,
-      "correctMatches": 0,
-      "score": 0,
-      "isPassed": false,
-      "passingThreshold": 75,
-      "isCompleted": false,
-      "lastQuestionAnswered": "",
-      "interventionRequired": true,
-      "interventionAttempts": 0,
-      "interventionCompleted": false,
-      "currentInterventionId": null,
-      "interventionHistory": [],
-      "_id": {
-        "$oid": "68d628706eca84e68b096568"
-      }
-    },
-    {
-      "categoryName": "Reading Comprehension",
-      "totalQuestions": 0,
-      "correctAnswers": 0,
-      "totalPossibleMatches": 0,
-      "correctMatches": 0,
-      "score": 0,
-      "isPassed": false,
-      "passingThreshold": 75,
-      "isCompleted": false,
-      "lastQuestionAnswered": "",
-      "interventionRequired": true,
-      "interventionAttempts": 0,
-      "interventionCompleted": false,
-      "currentInterventionId": null,
-      "interventionHistory": [],
-      "_id": {
-        "$oid": "68d628706eca84e68b096569"
-      }
-    }
-  ],
-  "overallScore": 0,
-  "completedCategories": 0,
-  "totalCategories": 5,
-  "allCategoriesPassed": false,
-  "readingLevel": "At Grade Level",
-  "readingLevelUpdated": false,
-  "createdAt": {
-    "$date": "2025-09-18T23:08:27.541Z"
-  },
-  "updatedAt": "2025-09-26T07:04:08.466489",
-  "__v": 0
-},
-{
-  "_id": {
-    "$oid": "68cc90ecc092217bcd2dd122"
-  },
-  "studentId": 20252025,
-  "assessmentDate": {
-    "$date": "2025-09-26T05:45:22.720Z"
-  },
-  "categories": [
-    {
-      "categoryName": "Alphabet Knowledge",
-      "totalQuestions": 15,
-      "correctAnswers": 15,
-      "totalPossibleMatches": 0,
-      "correctMatches": 0,
-      "score": 100,
-      "isPassed": true,
-      "passingThreshold": 75,
-      "isCompleted": true,
-      "lastQuestionAnswered": "",
-      "interventionRequired": false,
-      "interventionAttempts": 0,
-      "interventionCompleted": false,
-      "currentInterventionId": null,
-      "interventionHistory": [],
-      "_id": {
-        "$oid": "68d628726eca84e68b0965fe"
-      }
-    },
-    {
-      "categoryName": "Phonological Awareness",
-      "totalQuestions": 7,
-      "correctAnswers": 0,
-      "totalPossibleMatches": 17,
-      "correctMatches": 9,
-      "score": 53,
-      "isPassed": false,
-      "passingThreshold": 75,
-      "isCompleted": true,
-      "lastQuestionAnswered": "",
-      "interventionRequired": true,
-      "interventionAttempts": 0,
-      "interventionCompleted": false,
-      "currentInterventionId": null,
-      "interventionHistory": [],
-      "_id": {
-        "$oid": "68d628726eca84e68b0965ff"
+        "$oid": "68d64137282883e8256a53ff"
       }
     },
     {
@@ -310,7 +128,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628726eca84e68b096600"
+        "$oid": "68d64137282883e8256a5400"
       }
     },
     {
@@ -330,7 +148,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628726eca84e68b096601"
+        "$oid": "68d64137282883e8256a5401"
       }
     },
     {
@@ -350,13 +168,77 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628726eca84e68b096602"
+        "$oid": "68d64137282883e8256a5402"
       }
     }
   ],
-  "overallScore": 20,
-  "completedCategories": 1,
+  "overallScore": 0,
+  "completedCategories": 0,
   "totalCategories": 5,
+  "allCategoriesPassed": false,
+  "readingLevel": "At Grade Level",
+  "readingLevelUpdated": false,
+  "createdAt": {
+    "$date": "2025-09-18T23:08:27.541Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-26T07:30:54.312Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68cc90ecc092217bcd2dd122"
+  },
+  "studentId": 20252025,
+  "assessmentDate": {
+    "$date": "2025-09-26T06:57:02.167Z"
+  },
+  "categories": [
+    {
+      "categoryName": "Alphabet Knowledge",
+      "totalQuestions": 15,
+      "correctAnswers": 15,
+      "totalPossibleMatches": 0,
+      "correctMatches": 0,
+      "score": 100,
+      "isPassed": true,
+      "passingThreshold": 75,
+      "isCompleted": true,
+      "lastQuestionAnswered": "",
+      "interventionRequired": false,
+      "interventionAttempts": 0,
+      "interventionCompleted": false,
+      "currentInterventionId": null,
+      "interventionHistory": [],
+      "_id": {
+        "$oid": "68d6393e9a0656d0d7534947"
+      }
+    },
+    {
+      "categoryName": "Phonological Awareness",
+      "totalQuestions": 6,
+      "correctAnswers": 0,
+      "totalPossibleMatches": 17,
+      "correctMatches": 9,
+      "score": 0,
+      "isPassed": false,
+      "passingThreshold": 75,
+      "isCompleted": true,
+      "lastQuestionAnswered": "",
+      "interventionRequired": true,
+      "interventionAttempts": 0,
+      "interventionCompleted": false,
+      "currentInterventionId": null,
+      "interventionHistory": [],
+      "_id": {
+        "$oid": "68d6393e9a0656d0d7534948"
+      }
+    }
+  ],
+  "overallScore": 50,
+  "completedCategories": 1,
+  "totalCategories": 2,
   "allCategoriesPassed": false,
   "readingLevel": "High Emerging",
   "readingLevelUpdated": false,
@@ -364,7 +246,7 @@
     "$date": "2025-09-18T23:08:28.380Z"
   },
   "updatedAt": {
-    "$date": "2025-09-25T11:19:14.872Z"
+    "$date": "2025-09-26T07:30:53.685Z"
   },
   "__v": 1
 },
@@ -602,7 +484,7 @@
   },
   "studentId": 202522233,
   "assessmentDate": {
-    "$date": "2025-09-26T05:45:15.598Z"
+    "$date": "2025-09-26T07:31:00.719Z"
   },
   "categories": [
     {
@@ -685,7 +567,7 @@
         }
       ],
       "_id": {
-        "$oid": "68d6286b6eca84e68b096433"
+        "$oid": "68d64134282883e8256a52be"
       }
     },
     {
@@ -748,7 +630,7 @@
         }
       ],
       "_id": {
-        "$oid": "68d6286b6eca84e68b096437"
+        "$oid": "68d64134282883e8256a52c2"
       }
     },
     {
@@ -831,7 +713,7 @@
         }
       ],
       "_id": {
-        "$oid": "68d6286b6eca84e68b09643a"
+        "$oid": "68d64134282883e8256a52c5"
       }
     },
     {
@@ -954,7 +836,7 @@
         }
       ],
       "_id": {
-        "$oid": "68d6286b6eca84e68b09643e"
+        "$oid": "68d64134282883e8256a52c9"
       }
     },
     {
@@ -1157,7 +1039,7 @@
         }
       ],
       "_id": {
-        "$oid": "68d6286b6eca84e68b096444"
+        "$oid": "68d64134282883e8256a52cf"
       }
     }
   ],
@@ -1171,7 +1053,7 @@
     "$date": "2025-09-17T00:10:23.643Z"
   },
   "updatedAt": {
-    "$date": "2025-09-26T05:45:08.565Z"
+    "$date": "2025-09-26T07:30:57.029Z"
   },
   "__v": 43
 },
@@ -1181,7 +1063,7 @@
   },
   "studentId": 202511111,
   "assessmentDate": {
-    "$date": "2025-09-26T05:45:10.890Z"
+    "$date": "2025-09-26T07:30:57.271Z"
   },
   "categories": [
     {
@@ -1201,7 +1083,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628666eca84e68b0960b1"
+        "$oid": "68d64131282883e8256a4f3c"
       }
     },
     {
@@ -1221,7 +1103,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628666eca84e68b0960b2"
+        "$oid": "68d64131282883e8256a4f3d"
       }
     },
     {
@@ -1241,7 +1123,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628666eca84e68b0960b3"
+        "$oid": "68d64131282883e8256a4f3e"
       }
     },
     {
@@ -1261,7 +1143,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628666eca84e68b0960b4"
+        "$oid": "68d64131282883e8256a4f3f"
       }
     },
     {
@@ -1281,7 +1163,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628666eca84e68b0960b5"
+        "$oid": "68d64131282883e8256a4f40"
       }
     }
   ],
@@ -1295,7 +1177,7 @@
     "$date": "2025-09-22T23:39:57.183Z"
   },
   "updatedAt": {
-    "$date": "2025-09-25T11:19:20.366Z"
+    "$date": "2025-09-26T07:30:57.068Z"
   },
   "__v": 1
 },
@@ -1305,7 +1187,7 @@
   },
   "studentId": 202549506,
   "assessmentDate": {
-    "$date": "2025-09-26T05:45:18.744Z"
+    "$date": "2025-09-26T07:31:02.954Z"
   },
   "categories": [
     {
@@ -1325,7 +1207,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d6286e6eca84e68b09651d"
+        "$oid": "68d64136282883e8256a53b6"
       }
     },
     {
@@ -1345,7 +1227,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d6286e6eca84e68b09651e"
+        "$oid": "68d64136282883e8256a53b7"
       }
     },
     {
@@ -1365,7 +1247,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d6286e6eca84e68b09651f"
+        "$oid": "68d64136282883e8256a53b8"
       }
     },
     {
@@ -1385,7 +1267,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d6286e6eca84e68b096520"
+        "$oid": "68d64136282883e8256a53b9"
       }
     },
     {
@@ -1405,7 +1287,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d6286e6eca84e68b096521"
+        "$oid": "68d64136282883e8256a53ba"
       }
     }
   ],
@@ -1419,7 +1301,7 @@
     "$date": "2025-09-22T23:40:00.651Z"
   },
   "updatedAt": {
-    "$date": "2025-09-25T11:19:15.529Z"
+    "$date": "2025-09-26T07:30:54.364Z"
   },
   "__v": 1
 },
@@ -1553,7 +1435,7 @@
   },
   "studentId": 202529405,
   "assessmentDate": {
-    "$date": "2025-09-26T05:45:19.302Z"
+    "$date": "2025-09-26T07:31:03.336Z"
   },
   "categories": [
     {
@@ -1573,7 +1455,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d6286f6eca84e68b096543"
+        "$oid": "68d64137282883e8256a53dc"
       }
     }
   ],
@@ -1593,57 +1475,11 @@
 },
 {
   "_id": {
-    "$oid": "68d25b24a19e3c3d5d07f7a7"
-  },
-  "studentId": 202510679,
-  "assessmentDate": {
-    "$date": "2025-09-23T08:32:36.740Z"
-  },
-  "categories": [],
-  "overallScore": 0,
-  "completedCategories": 0,
-  "totalCategories": 0,
-  "allCategoriesPassed": false,
-  "readingLevel": "Undefined",
-  "readingLevelUpdated": true,
-  "createdAt": {
-    "$date": "2025-09-23T08:32:36.740Z"
-  },
-  "updatedAt": {
-    "$date": "2025-09-25T11:19:17.639Z"
-  },
-  "__v": 0
-},
-{
-  "_id": {
-    "$oid": "68d26179f7b6be3cbf1b18dc"
-  },
-  "studentId": 202538947,
-  "assessmentDate": {
-    "$date": "2025-09-23T08:59:37.166Z"
-  },
-  "categories": [],
-  "overallScore": 0,
-  "completedCategories": 0,
-  "totalCategories": 0,
-  "allCategoriesPassed": false,
-  "readingLevel": "Undefined",
-  "readingLevelUpdated": true,
-  "createdAt": {
-    "$date": "2025-09-23T08:59:37.168Z"
-  },
-  "updatedAt": {
-    "$date": "2025-09-25T11:19:17.391Z"
-  },
-  "__v": 0
-},
-{
-  "_id": {
     "$oid": "68d4265ed8339ea65f3da61e"
   },
   "studentId": 2025121,
   "assessmentDate": {
-    "$date": "2025-09-26T05:45:17.472Z"
+    "$date": "2025-09-26T07:31:02.044Z"
   },
   "categories": [
     {
@@ -1663,7 +1499,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d6286d6eca84e68b0964c9"
+        "$oid": "68d64136282883e8256a5354"
       }
     },
     {
@@ -1683,7 +1519,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d6286d6eca84e68b0964ca"
+        "$oid": "68d64136282883e8256a5355"
       }
     },
     {
@@ -1703,7 +1539,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d6286d6eca84e68b0964cb"
+        "$oid": "68d64136282883e8256a5356"
       }
     },
     {
@@ -1723,7 +1559,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d6286d6eca84e68b0964cc"
+        "$oid": "68d64136282883e8256a5357"
       }
     },
     {
@@ -1743,7 +1579,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d6286d6eca84e68b0964cd"
+        "$oid": "68d64136282883e8256a5358"
       }
     }
   ],
@@ -1757,7 +1593,7 @@
     "$date": "2025-09-24T17:11:58.884Z"
   },
   "updatedAt": {
-    "$date": "2025-09-25T11:19:20.433Z"
+    "$date": "2025-09-26T07:30:57.104Z"
   },
   "__v": 0
 },
@@ -1767,7 +1603,7 @@
   },
   "studentId": 2025,
   "assessmentDate": {
-    "$date": "2025-09-26T05:45:23.382Z"
+    "$date": "2025-09-26T07:31:05.520Z"
   },
   "categories": [
     {
@@ -1787,7 +1623,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628736eca84e68b096622"
+        "$oid": "68d64139282883e8256a5472"
       }
     },
     {
@@ -1807,7 +1643,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628736eca84e68b096623"
+        "$oid": "68d64139282883e8256a5473"
       }
     }
   ],
@@ -1831,7 +1667,7 @@
   },
   "studentId": 2003,
   "assessmentDate": {
-    "$date": "2025-09-26T05:45:24.354Z"
+    "$date": "2025-09-26T07:31:06.162Z"
   },
   "categories": [
     {
@@ -1851,7 +1687,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628746eca84e68b09664e"
+        "$oid": "68d6413a282883e8256a549e"
       }
     },
     {
@@ -1871,7 +1707,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628746eca84e68b09664f"
+        "$oid": "68d6413a282883e8256a549f"
       }
     }
   ],
@@ -1895,7 +1731,7 @@
   },
   "studentId": 2001,
   "assessmentDate": {
-    "$date": "2025-09-26T05:45:26.076Z"
+    "$date": "2025-09-26T07:31:07.326Z"
   },
   "categories": [
     {
@@ -1915,7 +1751,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628766eca84e68b0966aa"
+        "$oid": "68d6413b282883e8256a54fa"
       }
     },
     {
@@ -1935,7 +1771,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628766eca84e68b0966ab"
+        "$oid": "68d6413b282883e8256a54fb"
       }
     },
     {
@@ -1955,7 +1791,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628766eca84e68b0966ac"
+        "$oid": "68d6413b282883e8256a54fc"
       }
     },
     {
@@ -1975,7 +1811,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628766eca84e68b0966ad"
+        "$oid": "68d6413b282883e8256a54fd"
       }
     },
     {
@@ -1995,7 +1831,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628766eca84e68b0966ae"
+        "$oid": "68d6413b282883e8256a54fe"
       }
     }
   ],
@@ -2083,16 +1919,16 @@
   },
   "studentId": 202534029,
   "assessmentDate": {
-    "$date": "2025-09-26T05:45:21.028Z"
+    "$date": "2025-09-26T07:31:04.590Z"
   },
   "categories": [
     {
       "categoryName": "Alphabet Knowledge",
-      "totalQuestions": 130,
-      "correctAnswers": 20,
+      "totalQuestions": 120,
+      "correctAnswers": 10,
       "totalPossibleMatches": 0,
       "correctMatches": 0,
-      "score": 15,
+      "score": 8,
       "isPassed": false,
       "passingThreshold": 75,
       "isCompleted": true,
@@ -2103,7 +1939,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628716eca84e68b096598"
+        "$oid": "68d64138282883e8256a5431"
       }
     },
     {
@@ -2123,7 +1959,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628716eca84e68b096599"
+        "$oid": "68d64138282883e8256a5432"
       }
     },
     {
@@ -2143,7 +1979,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628716eca84e68b09659a"
+        "$oid": "68d64138282883e8256a5433"
       }
     },
     {
@@ -2163,7 +1999,7 @@
       "currentInterventionId": null,
       "interventionHistory": [],
       "_id": {
-        "$oid": "68d628716eca84e68b09659b"
+        "$oid": "68d64138282883e8256a5434"
       }
     }
   ],
@@ -2177,7 +2013,7 @@
     "$date": "2025-09-24T23:02:40.278Z"
   },
   "updatedAt": {
-    "$date": "2025-09-25T11:19:20.498Z"
+    "$date": "2025-09-26T07:30:54.413Z"
   }
 },
 {
@@ -2199,173 +2035,6 @@
     "$date": "2025-09-24T23:02:40.914Z"
   },
   "updatedAt": {
-    "$date": "2025-09-25T11:19:17.777Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68d47891273264650fe90de0"
-  },
-  "studentId": 2025203496,
-  "assessmentDate": {
-    "$date": "2025-09-24T23:02:41.102Z"
-  },
-  "categories": [],
-  "overallScore": 0,
-  "completedCategories": 0,
-  "totalCategories": 0,
-  "allCategoriesPassed": false,
-  "readingLevel": null,
-  "readingLevelUpdated": true,
-  "createdAt": {
-    "$date": "2025-09-24T23:02:41.102Z"
-  },
-  "updatedAt": {
-    "$date": "2025-09-24T23:10:42.742Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68d47891273264650fe90de4"
-  },
-  "studentId": 202504789,
-  "assessmentDate": {
-    "$date": "2025-09-24T23:02:41.291Z"
-  },
-  "categories": [],
-  "overallScore": 0,
-  "completedCategories": 0,
-  "totalCategories": 0,
-  "allCategoriesPassed": false,
-  "readingLevel": null,
-  "readingLevelUpdated": true,
-  "createdAt": {
-    "$date": "2025-09-24T23:02:41.291Z"
-  },
-  "updatedAt": {
-    "$date": "2025-09-24T23:10:42.969Z"
-  }
-},
-{
-  "_id": {
-    "$oid": "68d47a5d27ed793e560b9f6b"
-  },
-  "studentId": 202533333,
-  "assessmentDate": {
-    "$date": "2025-09-26T05:45:09.809Z"
-  },
-  "categories": [
-    {
-      "categoryName": "Alphabet Knowledge",
-      "totalQuestions": 15,
-      "correctAnswers": 12,
-      "totalPossibleMatches": 0,
-      "correctMatches": 0,
-      "score": 80,
-      "isPassed": true,
-      "passingThreshold": 75,
-      "isCompleted": true,
-      "lastQuestionAnswered": "",
-      "interventionRequired": false,
-      "interventionAttempts": 0,
-      "interventionCompleted": false,
-      "currentInterventionId": null,
-      "interventionHistory": [],
-      "_id": {
-        "$oid": "68d628656eca84e68b096077"
-      }
-    },
-    {
-      "categoryName": "Phonological Awareness",
-      "totalQuestions": 12,
-      "correctAnswers": 0,
-      "totalPossibleMatches": 35,
-      "correctMatches": 15,
-      "score": 43,
-      "isPassed": false,
-      "passingThreshold": 75,
-      "isCompleted": true,
-      "lastQuestionAnswered": "",
-      "interventionRequired": true,
-      "interventionAttempts": 0,
-      "interventionCompleted": false,
-      "currentInterventionId": null,
-      "interventionHistory": [],
-      "_id": {
-        "$oid": "68d628656eca84e68b096078"
-      }
-    },
-    {
-      "categoryName": "Decoding",
-      "totalQuestions": 15,
-      "correctAnswers": 0,
-      "totalPossibleMatches": 0,
-      "correctMatches": 0,
-      "score": 0,
-      "isPassed": false,
-      "passingThreshold": 75,
-      "isCompleted": false,
-      "lastQuestionAnswered": "",
-      "interventionRequired": true,
-      "interventionAttempts": 0,
-      "interventionCompleted": false,
-      "currentInterventionId": null,
-      "interventionHistory": [],
-      "_id": {
-        "$oid": "68d628656eca84e68b096079"
-      }
-    },
-    {
-      "categoryName": "Word Recognition",
-      "totalQuestions": 15,
-      "correctAnswers": 0,
-      "totalPossibleMatches": 0,
-      "correctMatches": 0,
-      "score": 0,
-      "isPassed": false,
-      "passingThreshold": 75,
-      "isCompleted": false,
-      "lastQuestionAnswered": "",
-      "interventionRequired": true,
-      "interventionAttempts": 0,
-      "interventionCompleted": false,
-      "currentInterventionId": null,
-      "interventionHistory": [],
-      "_id": {
-        "$oid": "68d628656eca84e68b09607a"
-      }
-    },
-    {
-      "categoryName": "Reading Comprehension",
-      "totalQuestions": 10,
-      "correctAnswers": 0,
-      "totalPossibleMatches": 0,
-      "correctMatches": 0,
-      "score": 0,
-      "isPassed": false,
-      "passingThreshold": 75,
-      "isCompleted": false,
-      "lastQuestionAnswered": "",
-      "interventionRequired": true,
-      "interventionAttempts": 0,
-      "interventionCompleted": false,
-      "currentInterventionId": null,
-      "interventionHistory": [],
-      "_id": {
-        "$oid": "68d628656eca84e68b09607b"
-      }
-    }
-  ],
-  "overallScore": 16,
-  "completedCategories": 1,
-  "totalCategories": 5,
-  "allCategoriesPassed": false,
-  "readingLevel": "At Grade Level",
-  "readingLevelUpdated": false,
-  "createdAt": {
-    "$date": "2025-09-24T23:10:21.332Z"
-  },
-  "updatedAt": {
-    "$date": "2025-09-25T11:19:14.918Z"
+    "$date": "2025-09-26T07:30:55.663Z"
   }
 }]
