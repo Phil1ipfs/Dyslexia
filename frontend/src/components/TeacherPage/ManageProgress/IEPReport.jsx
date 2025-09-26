@@ -497,6 +497,7 @@ const IEPReport = ({
       if (response.success && response.data) {
         console.log('Setting IEP data:', response.data);
         console.log('About to call setIepData...');
+        
 
           // Use direct state setters with immediate verification
           console.log('🔄 Using direct state setters...');
