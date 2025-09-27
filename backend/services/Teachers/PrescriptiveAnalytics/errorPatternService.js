@@ -7,8 +7,59 @@ const MainAssessment = require('../../../models/Teachers/mainAssessmentModel');
 class ErrorPatternService {
   
   /**
-   * Analyze error patterns from student responses
-   * 
+   * Analyze error patterns from specific responses (reading level aware)
+   *
+   * @param {Array} responses - Specific student responses to analyze
+   * @param {string} readingLevel - Reading level context
+   * @returns {Object} Error patterns by category
+   */
+  async analyzeErrorPatternsFromResponses(responses, readingLevel) {
+    try {
+      console.log(`[ERROR PATTERN ANALYSIS] Analyzing ${responses.length} responses for reading level: ${readingLevel}`);
+
+      // Group responses by category
+      const responsesByCategory = this.groupResponsesByCategory(responses);
+
+      const errorPatterns = {};
+
+      // Analyze each category that has responses
+      for (const [category, categoryResponses] of Object.entries(responsesByCategory)) {
+        console.log(`[ERROR PATTERN ANALYSIS] Analyzing ${categoryResponses.length} responses for category: ${category}`);
+
+        switch (category) {
+          case 'Alphabet Knowledge':
+            errorPatterns[category] = await this.analyzeAlphabetKnowledgeErrors(categoryResponses);
+            break;
+          case 'Phonological Awareness':
+            errorPatterns[category] = await this.analyzePhonologicalAwarenessErrors(categoryResponses);
+            break;
+          case 'Decoding':
+            errorPatterns[category] = await this.analyzeDecodingErrors(categoryResponses);
+            break;
+          case 'Word Recognition':
+            errorPatterns[category] = await this.analyzeWordRecognitionErrors(categoryResponses);
+            break;
+          case 'Reading Comprehension':
+            errorPatterns[category] = await this.analyzeReadingComprehensionErrors(categoryResponses);
+            break;
+          default:
+            console.warn(`[ERROR PATTERN ANALYSIS] Unknown category: ${category}`);
+            errorPatterns[category] = { detailedErrorAnalysis: [] };
+        }
+      }
+
+      console.log(`[ERROR PATTERN ANALYSIS] Completed analysis for categories: [${Object.keys(errorPatterns).join(', ')}]`);
+      return errorPatterns;
+
+    } catch (error) {
+      console.error('[ERROR PATTERN ANALYSIS] Error in analyzeErrorPatternsFromResponses:', error);
+      return {};
+    }
+  }
+
+  /**
+   * Analyze error patterns from student responses (original method - fetches all responses)
+   *
    * @param {number} studentId - Student ID
    * @param {string} categoryResultId - Category result ID to link responses
    * @returns {Object} Error patterns by category

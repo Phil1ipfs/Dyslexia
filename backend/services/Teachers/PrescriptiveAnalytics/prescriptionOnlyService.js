@@ -150,8 +150,12 @@ class PrescriptionOnlyService {
     // Calculate skill mastery using BKT
     const skillMastery = await this.calculateSkillMastery(responses, readingLevel);
 
-    // Analyze error patterns
-    const errorPatterns = await errorPatternService.analyzeErrorPatterns(categoryResult.studentId);
+    // ✅ FIX: Only analyze error patterns from current reading level responses
+    // Don't mix error patterns from previous reading levels
+    console.log(`[ERROR PATTERNS] Analyzing error patterns for current reading level: ${readingLevel}`);
+    console.log(`[ERROR PATTERNS] Using ${responses.length} responses from current reading level only`);
+
+    const errorPatterns = await errorPatternService.analyzeErrorPatternsFromResponses(responses, readingLevel);
 
     // Determine severity levels
     const severityLevels = this.analyzeSeverityLevels(categoryResult.categories, skillMastery);
