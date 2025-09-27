@@ -1,0 +1,720 @@
+[{
+    "_id": {
+      "$oid": "68d7934959eb5a6bd38cb7e4"
+    },
+    "categoryResultId": {
+      "$oid": "68d791ceb215e61c8e1981f0"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:33:29.842Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d7934a59eb5a6bd38cb857"
+    },
+    "categoryResultId": {
+      "$oid": "68d791ceb215e61c8e1981f0"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:33:30.622Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d7934f59eb5a6bd38cbb04"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:33:35.952Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d7935059eb5a6bd38cbb44"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:33:36.909Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d7935559eb5a6bd38cbc6d"
+    },
+    "categoryResultId": {
+      "$oid": "68d47890273264650fe90dd1"
+    },
+    "studentId": 202534029,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202534029, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202534029, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:33:41.019Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d7936685a3da4bb55916d5"
+    },
+    "categoryResultId": {
+      "$oid": "68d791ceb215e61c8e1981f0"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:33:58.068Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d7936685a3da4bb5591747"
+    },
+    "categoryResultId": {
+      "$oid": "68d791ceb215e61c8e1981f0"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:33:58.829Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d7936d85a3da4bb55919f4"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:34:05.550Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d7936e85a3da4bb5591a34"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:34:06.520Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d7937285a3da4bb5591b5d"
+    },
+    "categoryResultId": {
+      "$oid": "68d47890273264650fe90dd1"
+    },
+    "studentId": 202534029,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202534029, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202534029, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:34:10.820Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d7938f5327eda885f7916a"
+    },
+    "categoryResultId": {
+      "$oid": "68d7938c5327eda885f78db9"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:34:39.126Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d793905327eda885f79197"
+    },
+    "categoryResultId": {
+      "$oid": "68d7938c5327eda885f78db9"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:34:40.042Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d793965327eda885f79444"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:34:46.942Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d793985327eda885f79484"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:34:48.073Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d7939d5327eda885f795ad"
+    },
+    "categoryResultId": {
+      "$oid": "68d47890273264650fe90dd1"
+    },
+    "studentId": 202534029,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202534029, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202534029, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:34:53.137Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d793c38d8532d7e12888fc"
+    },
+    "categoryResultId": {
+      "$oid": "68d7938c5327eda885f78db9"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:35:31.846Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d793c48d8532d7e128896e"
+    },
+    "categoryResultId": {
+      "$oid": "68d7938c5327eda885f78db9"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:35:32.622Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d793cb8d8532d7e1288c1b"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:35:39.233Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d793cc8d8532d7e1288c5b"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:35:40.141Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d793d08d8532d7e1288d84"
+    },
+    "categoryResultId": {
+      "$oid": "68d47890273264650fe90dd1"
+    },
+    "studentId": 202534029,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202534029, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202534029, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:35:44.334Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794104cb5e97348daa260"
+    },
+    "categoryResultId": {
+      "$oid": "68d7938c5327eda885f78db9"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:36:48.898Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794114cb5e97348daa2d1"
+    },
+    "categoryResultId": {
+      "$oid": "68d7938c5327eda885f78db9"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:36:49.632Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794174cb5e97348daa57e"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:36:55.171Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794184cb5e97348daa5be"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:36:56.089Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d7941d4d27acebbbbac733"
+    },
+    "categoryResultId": {
+      "$oid": "68d7938c5327eda885f78db9"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:37:01.283Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d7941e4d27acebbbbac826"
+    },
+    "categoryResultId": {
+      "$oid": "68d7938c5327eda885f78db9"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:37:02.001Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794234d27acebbbbacad3"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:37:07.528Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794244d27acebbbbacb13"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:37:08.462Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794284d27acebbbbacc3c"
+    },
+    "categoryResultId": {
+      "$oid": "68d47890273264650fe90dd1"
+    },
+    "studentId": 202534029,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202534029, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202534029, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:37:12.750Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d79442759632f96fe3e7e6"
+    },
+    "categoryResultId": {
+      "$oid": "68d7938c5327eda885f78db9"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:37:38.808Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d79443759632f96fe3e8a1"
+    },
+    "categoryResultId": {
+      "$oid": "68d7938c5327eda885f78db9"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:37:39.393Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d79447759632f96fe3eb4e"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:37:43.691Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d79448759632f96fe3eb8e"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:37:44.424Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d7944c759632f96fe3ecb7"
+    },
+    "categoryResultId": {
+      "$oid": "68d47890273264650fe90dd1"
+    },
+    "studentId": 202534029,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202534029, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202534029, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:37:48.671Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794d38aaa0882c17ab608"
+    },
+    "categoryResultId": {
+      "$oid": "68d7938c5327eda885f78db9"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:40:03.662Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794d48aaa0882c17ab6c3"
+    },
+    "categoryResultId": {
+      "$oid": "68d7938c5327eda885f78db9"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:40:04.518Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794db8aaa0882c17ab970"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:40:11.050Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794dc8aaa0882c17ab9b0"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:40:12.114Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794e18aaa0882c17abad9"
+    },
+    "categoryResultId": {
+      "$oid": "68d47890273264650fe90dd1"
+    },
+    "studentId": 202534029,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202534029, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202534029, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:40:17.011Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794ed2e358620559ad954"
+    },
+    "categoryResultId": {
+      "$oid": "68d7938c5327eda885f78db9"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:40:29.197Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794ed2e358620559ada47"
+    },
+    "categoryResultId": {
+      "$oid": "68d7938c5327eda885f78db9"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:40:29.943Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794f32e358620559adcf4"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:40:35.434Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794f42e358620559add34"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:40:36.361Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794f535a86e82edbd9e65"
+    },
+    "categoryResultId": {
+      "$oid": "68d7938c5327eda885f78db9"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:40:37.708Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794f635a86e82edbd9ed7"
+    },
+    "categoryResultId": {
+      "$oid": "68d7938c5327eda885f78db9"
+    },
+    "studentId": 202533333,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202533333, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:40:38.460Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794f82e358620559ade5d"
+    },
+    "categoryResultId": {
+      "$oid": "68d47890273264650fe90dd1"
+    },
+    "studentId": 202534029,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202534029, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 202534029, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:40:40.539Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794fb35a86e82edbda185"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:40:43.890Z"
+    },
+    "resolved": false
+  },
+  {
+    "_id": {
+      "$oid": "68d794fc35a86e82edbda1c5"
+    },
+    "categoryResultId": {
+      "$oid": "68d4265ed8339ea65f3da61e"
+    },
+    "studentId": 2025121,
+    "errorMessage": "E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }",
+    "errorStack": "MongoServerError: E11000 duplicate key error collection: test.prescriptive_analysis index: studentId_1_categoryId_1 dup key: { studentId: 2025121, categoryId: null }\n    at InsertOneOperation.execute (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/insert.js:51:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async tryOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:207:20)\n    at async executeOperation (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/operations/execute_operation.js:75:16)\n    at async Collection.insertOne (/Users/goodboykit/Documents/Dyslexia/backend/node_modules/mongodb/lib/collection.js:157:16)",
+    "timestamp": {
+      "$date": "2025-09-27T07:40:44.800Z"
+    },
+    "resolved": false
+  }]

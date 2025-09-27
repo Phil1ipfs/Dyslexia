@@ -74,4 +74,11 @@ router.post('/prescriptive-duplicates', DatabaseCleanupController.removePrescrip
  */
 router.get('/prescriptive-duplicates/:studentId', DatabaseCleanupController.checkPrescriptiveDuplicates);
 
+/**
+ * POST /api/cleanup/restore-historical-analysis
+ * Restore accidentally deleted historical prescriptive analysis records
+ * Body: { "studentId": 202533333, "historicalData": {...} }
+ */
+router.post('/restore-historical-analysis', DatabaseCleanupController.restoreHistoricalAnalysis);
+
 module.exports = router;

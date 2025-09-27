@@ -602,8 +602,13 @@ prescriptiveAnalysisSchema.pre('save', function(next) {
 
 // Indexes for efficient querying
 prescriptiveAnalysisSchema.index({ studentId: 1, assessmentType: 1 });
-prescriptiveAnalysisSchema.index({ studentId: 1, categoryId: 1 }, { sparse: true });
+// 🛡️ FIXED: Allow multiple prescriptive analysis records per student for progress tracking
+// Replace unique constraint with a compound index that includes timestamp for uniqueness
+prescriptiveAnalysisSchema.index({ studentId: 1, categoryId: 1, createdAt: 1 }, { sparse: true });
 prescriptiveAnalysisSchema.index({ categoryResultId: 1 }, { sparse: true });
+
+// 🛡️ SAFETY: Index to prevent ACTUAL duplicates (same categoryResultId)
+prescriptiveAnalysisSchema.index({ categoryResultId: 1 }, { unique: true, sparse: true });
 
 // Static method to find by category result ID
 prescriptiveAnalysisSchema.statics.findByCategoryResult = function(categoryResultId) {

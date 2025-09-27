@@ -83,6 +83,11 @@ class PrescriptionOnlyService {
         assessmentType: 'main',
         readingLevel,
 
+        // ✅ FIX: Add categoryId to prevent duplicate key errors
+        // Since prescriptive analysis covers multiple categories, use the primary failed category
+        // If no failed categories, use null (maintenance analysis)
+        categoryId: failedCategories.length > 0 ? failedCategories[0].categoryName : null,
+
         // Map diagnosis to schema fields
         skillMastery: new Map(Object.entries(diagnosis.skillMastery)),
         abilityEstimates: new Map(Object.entries(this.calculateAbilityEstimates(diagnosis.skillMastery))),
