@@ -169,7 +169,7 @@ class InterventionGeneratorService {
       // Update category_results to link with this intervention (currentInterventionId)
       try {
         console.log(`[INTERVENTION GENERATOR] Updating category_results to link with intervention ${intervention._id} for category: ${category}`);
-        await this.updateCategoryResultInterventionId(analysis.studentId, category, intervention._id);
+        await this.updateCategoryResultInterventionId(analysis.studentId, category, intervention._id, intervention.readingLevel);
         console.log(`[INTERVENTION GENERATOR] ✅ Successfully linked category_results with intervention ${intervention._id}`);
       } catch (linkError) {
         // Don't fail the intervention creation if category_results linking fails
@@ -2476,18 +2476,20 @@ class InterventionGeneratorService {
    * @param {number} studentId - Student ID
    * @param {string} category - Category name
    * @param {string} interventionId - Intervention assessment ID
+   * @param {string} readingLevel - Reading level to target specific category_results record
    */
-  async updateCategoryResultInterventionId(studentId, category, interventionId) {
-    console.log(`[INTERVENTION GENERATOR] Updating category_results currentInterventionId for student ${studentId}, category: ${category}`);
+  async updateCategoryResultInterventionId(studentId, category, interventionId, readingLevel) {
+    console.log(`[INTERVENTION GENERATOR] Updating category_results currentInterventionId for student ${studentId}, category: ${category}, reading level: ${readingLevel}`);
 
-    // Find the category_results document that contains this category
+    // ✅ CRITICAL FIX: Find the category_results document for the SPECIFIC reading level only
     const categoryResults = await CategoryResult.find({
       studentId: studentId,
+      readingLevel: readingLevel,           // ✅ Target specific reading level
       'categories.categoryName': category
     });
 
     if (!categoryResults || categoryResults.length === 0) {
-      throw new Error(`No category_results found for student ${studentId} and category ${category}`);
+      throw new Error(`No category_results found for student ${studentId}, category ${category}, reading level ${readingLevel}`);
     }
 
     // Update the currentInterventionId for the specific category across all matching documents
