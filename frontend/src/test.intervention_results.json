@@ -16,6 +16,8 @@
   "assessmentType": "intervention",
   "readingLevel": "At Grade Level",
   "revisionNumber": 1,
+  "attemptNumber": 1,
+  "attemptReason": "initial_attempt",
   "totalQuestions": 9,
   "correctAnswers": 4,
   "totalPossibleMatches": 0,

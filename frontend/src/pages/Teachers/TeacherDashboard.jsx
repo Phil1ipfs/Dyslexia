@@ -92,7 +92,60 @@ const TeacherDashboard = () => {
   };
 
   const openInterventionDetail = (intervention) => {
-    setSelectedIntervention(intervention);
+    // Calculate detailed intervention statistics from real data
+    const calculateInterventionStats = (interventionData) => {
+      const {
+        totalAttempts = 0,
+        latestScore = 0,
+        originalScore = 0,
+        totalQuestions = 0,
+        interventionHistory = [],
+        category = '',
+        improvement = 0,
+        improvementPercentage = 0,
+        revisionNumber = 1,
+        teacherRevisions = 0
+      } = interventionData;
+
+      // Calculate completion percentage based on attempts and pass status
+      const completionPercentage = latestScore >= 75 ? 100 : Math.min((totalAttempts / 3) * 100, 100);
+
+      // Calculate correct/incorrect from intervention history
+      let totalCorrect = 0;
+      let totalIncorrect = 0;
+
+      interventionHistory.forEach(attempt => {
+        if (attempt.score >= 75) {
+          totalCorrect += (attempt.score / 100) * totalQuestions;
+        } else {
+          totalIncorrect += totalQuestions - ((attempt.score / 100) * totalQuestions);
+        }
+      });
+
+      // Average correct answers across attempts
+      const avgCorrectAnswers = totalAttempts > 0 ? Math.round(totalCorrect / totalAttempts) : 0;
+      const avgIncorrectAnswers = totalAttempts > 0 ? Math.round(totalIncorrect / totalAttempts) : 0;
+
+      return {
+        ...interventionData,
+        percentComplete: Math.round(completionPercentage),
+        percentCorrect: Math.round(latestScore),
+        completedActivities: totalAttempts,
+        totalActivities: totalQuestions,
+        correctAnswers: avgCorrectAnswers,
+        incorrectAnswers: avgIncorrectAnswers,
+        interventionPlanName: `${category} Intervention`,
+        notes: totalAttempts > 1
+          ? `${totalAttempts} attempts completed. Latest revision: ${revisionNumber}. ${teacherRevisions > 0 ? `Teacher revised ${teacherRevisions} times.` : ''}`
+          : `Initial intervention attempt. ${improvement > 0 ? `Improved by ${improvement}% from original score.` : 'Needs improvement.'}`,
+        lastActivityDate: interventionHistory.length > 0
+          ? new Date(interventionHistory[interventionHistory.length - 1].completedAt).toLocaleDateString()
+          : 'N/A'
+      };
+    };
+
+    const enhancedIntervention = calculateInterventionStats(intervention);
+    setSelectedIntervention(enhancedIntervention);
     setInterventionDetailOpen(true);
   };
 
@@ -2259,6 +2312,83 @@ const TeacherDashboard = () => {
                         </div>
                       </div>
                     </div>
+
+                    {/* Intervention Attempt History */}
+                    {selectedIntervention.interventionHistory && selectedIntervention.interventionHistory.length > 0 && (
+                      <div className="teacher-intervention-history-section" style={{ marginTop: '20px' }}>
+                        <h4>Intervention Attempt History</h4>
+                        <div className="teacher-intervention-attempts">
+                          {selectedIntervention.interventionHistory.map((attempt, index) => (
+                            <div key={index} className="teacher-attempt-card" style={{
+                              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                              borderRadius: '8px',
+                              padding: '12px',
+                              marginBottom: '8px',
+                              border: `2px solid ${attempt.isPassed ? '#3D9970' : '#FF6B8A'}`
+                            }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                  <span className="teacher-attempt-label" style={{ color: 'white', fontWeight: 'bold' }}>
+                                    Attempt #{attempt.attemptNumber}
+                                  </span>
+                                  {attempt.revisionNumber && attempt.revisionNumber > 1 && (
+                                    <span style={{
+                                      marginLeft: '8px',
+                                      backgroundColor: '#FF9E40',
+                                      color: 'white',
+                                      padding: '2px 6px',
+                                      borderRadius: '4px',
+                                      fontSize: '0.8rem'
+                                    }}>
+                                      Rev {attempt.revisionNumber}
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <span style={{ color: 'white', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                                    {attempt.score}%
+                                  </span>
+                                  <span style={{
+                                    backgroundColor: attempt.isPassed ? '#3D9970' : '#FF6B8A',
+                                    color: 'white',
+                                    padding: '4px 8px',
+                                    borderRadius: '4px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 'bold'
+                                  }}>
+                                    {attempt.isPassed ? 'PASSED' : 'FAILED'}
+                                  </span>
+                                </div>
+                              </div>
+                              <div style={{ marginTop: '8px', color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.9rem' }}>
+                                <div>Started: {attempt.attemptedAt ? new Date(attempt.attemptedAt).toLocaleDateString() : 'N/A'}</div>
+                                <div>Completed: {attempt.completedAt ? new Date(attempt.completedAt).toLocaleDateString() : 'N/A'}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Teacher Revision Information */}
+                    {selectedIntervention.teacherRevisions > 0 && (
+                      <div className="teacher-revision-info" style={{
+                        marginTop: '20px',
+                        backgroundColor: 'rgba(255, 158, 64, 0.2)',
+                        padding: '15px',
+                        borderRadius: '8px',
+                        border: '1px solid #FF9E40'
+                      }}>
+                        <h4 style={{ color: '#FF9E40', marginBottom: '10px' }}>Teacher Revision History</h4>
+                        <div style={{ color: 'white' }}>
+                          <p>This intervention has been revised <strong>{selectedIntervention.teacherRevisions}</strong> times by teachers.</p>
+                          <p>Current revision number: <strong>{selectedIntervention.revisionNumber}</strong></p>
+                          {selectedIntervention.improvement > 0 && (
+                            <p>Overall improvement: <strong>{selectedIntervention.improvement}%</strong> from original score</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
