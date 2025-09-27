@@ -31,6 +31,19 @@ class CategoryResultsService {
       // Step 4: Fix existing overall scores that don't include intervention results
       await this.fixExistingOverallScores();
 
+      // 🔧 FORCE FIX: Handle stubborn records that don't update properly
+      console.log('[FORCE FIX] 🔧 Running force fix for specific problematic students...');
+      const problematicStudents = [202533333]; // Students with known score calculation issues
+
+      for (const studentId of problematicStudents) {
+        const forceResult = await this.forceFixStudentOverallScore(studentId);
+        if (forceResult.success) {
+          console.log(`[FORCE FIX] ✅ Student ${studentId}: ${forceResult.oldScore}% → ${forceResult.newScore}%`);
+        } else {
+          console.log(`[FORCE FIX] ❌ Student ${studentId}: ${forceResult.error}`);
+        }
+      }
+
       console.log('[AUTO-FIX] ✅ Comprehensive category repair completed successfully');
 
     } catch (error) {
@@ -1666,6 +1679,64 @@ class CategoryResultsService {
     } catch (error) {
       console.error('[OVERALL SCORE FIX] ❌ Error fixing overall scores:', error);
       throw error;
+    }
+  }
+
+  /**
+   * 🔧 FORCE FIX: Manually update specific student's overall score
+   * This method forces a direct MongoDB update to bypass any save issues
+   */
+  static async forceFixStudentOverallScore(studentId) {
+    try {
+      console.log(`[FORCE FIX] 🔧 Force fixing overall score for student ${studentId}...`);
+
+      // Get the student's category result
+      const categoryResult = await CategoryResult.findOne({ studentId: studentId });
+      if (!categoryResult) {
+        console.log(`[FORCE FIX] ❌ No category result found for student ${studentId}`);
+        return { success: false, error: 'No category result found' };
+      }
+
+      console.log(`[FORCE FIX] 📊 Current overall score: ${categoryResult.overallScore || 0}%`);
+
+      // Calculate correct score using our working logic
+      const correctStats = this.calculateOverallStats(categoryResult.categories);
+      const correctScore = correctStats.overallScore;
+
+      console.log(`[FORCE FIX] 📊 Calculated correct score: ${correctScore}%`);
+
+      // Force update using direct MongoDB updateOne (bypasses Mongoose middleware)
+      const updateResult = await CategoryResult.updateOne(
+        { studentId: studentId },
+        {
+          $set: {
+            overallScore: correctScore,
+            completedCategories: correctStats.passedCategories,
+            allCategoriesPassed: correctStats.passedCategories === categoryResult.categories.length,
+            updatedAt: new Date()
+          }
+        }
+      );
+
+      console.log(`[FORCE FIX] 📊 MongoDB updateOne result:`, updateResult);
+
+      // Verify the update worked
+      const verifyResult = await CategoryResult.findOne({ studentId: studentId });
+      const actualScore = verifyResult?.overallScore || 0;
+
+      console.log(`[FORCE FIX] ✅ Verification: Overall score is now ${actualScore}%`);
+
+      if (actualScore === correctScore) {
+        console.log(`[FORCE FIX] ✅ SUCCESS: Student ${studentId} overall score fixed: ${actualScore}%`);
+        return { success: true, oldScore: categoryResult.overallScore, newScore: actualScore };
+      } else {
+        console.log(`[FORCE FIX] ❌ FAILED: Score not updated correctly`);
+        return { success: false, error: 'Score not updated correctly' };
+      }
+
+    } catch (error) {
+      console.error(`[FORCE FIX] ❌ Error force fixing student ${studentId}:`, error);
+      return { success: false, error: error.message };
     }
   }
 
