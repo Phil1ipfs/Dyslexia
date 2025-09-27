@@ -940,29 +940,28 @@ const PrescriptiveAnalysis = ({
         return;
       }
 
-      // Get ALL categories that have intervention history (not just ones needing intervention)
-      console.log('[INTERVENTION RESULTS] Checking categories for intervention history:', liveCategoryResults?.categories?.map(cat => ({
+      // ✅ FIX: Check for intervention results for ALL categories, not just ones with intervention history
+      // This fixes the issue where intervention results exist but category.interventionHistory hasn't been updated yet
+      console.log('[INTERVENTION RESULTS] Checking ALL categories for potential intervention results:', liveCategoryResults?.categories?.map(cat => ({
         name: cat.categoryName,
         hasHistory: !!(cat.interventionHistory && cat.interventionHistory.length > 0),
         historyLength: cat.interventionHistory?.length || 0,
-        firstAttempt: cat.interventionHistory?.[0]
+        isPassed: cat.isPassed,
+        score: cat.score
       })));
 
-      const categoriesWithInterventionHistory = liveCategoryResults?.categories?.filter(cat => {
-        const hasHistory = cat.interventionHistory && cat.interventionHistory.length > 0;
-        console.log(`[INTERVENTION RESULTS] ${cat.categoryName}: hasHistory=${hasHistory}, historyLength=${cat.interventionHistory?.length || 0}`);
-        return hasHistory;
-      }) || [];
+      const allCategories = liveCategoryResults?.categories || [];
 
-      console.log('[INTERVENTION RESULTS] Categories WITH intervention history:', categoriesWithInterventionHistory.map(cat => cat.categoryName));
+      console.log('[INTERVENTION RESULTS] Will check intervention results for ALL categories:', allCategories.map(cat => cat.categoryName));
 
-      // Skip if no categories have intervention history
-      if (categoriesWithInterventionHistory.length === 0) {
+      // ✅ FIX: Don't skip - always try to load intervention results for all categories
+      if (allCategories.length === 0) {
+        console.log('[INTERVENTION RESULTS] No categories found in liveCategoryResults');
         setInterventionResults({});
         return;
       }
 
-      console.log('[INTERVENTION RESULTS] Loading intervention results for categories with history:', categoriesWithInterventionHistory.map(cat => cat.categoryName));
+      console.log('[INTERVENTION RESULTS] Loading intervention results for ALL categories:', allCategories.map(cat => cat.categoryName));
       console.log('[INTERVENTION RESULTS] Using student ID:', currentStudentId);
       console.log('[INTERVENTION RESULTS] Student data source:', {
         liveStudent: !!liveStudent,
@@ -975,7 +974,8 @@ const PrescriptiveAnalysis = ({
 
       try {
         const results = {};
-        for (const category of categoriesWithInterventionHistory) {
+        // ✅ FIX: Loop through ALL categories to check for intervention results
+        for (const category of allCategories) {
           try {
             console.log(`[INTERVENTION RESULTS] Fetching results for: ${category.categoryName} (student: ${currentStudentId})`);
             const categoryResults = await fetchInterventionResults(currentStudentId, category.categoryName);
