@@ -370,6 +370,8 @@
   "assessmentType": "intervention",
   "readingLevel": "At Grade Level",
   "revisionNumber": 2,
+  "attemptNumber": 2,
+  "attemptReason": "retry_after_failure",
   "totalQuestions": 9,
   "correctAnswers": 4,
   "totalPossibleMatches": 0,

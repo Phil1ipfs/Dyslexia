@@ -1066,6 +1066,10 @@ const processComprehensiveInterventionData = (students, interventionAssessments,
         // Additional metrics from intervention results
         skillMasteryGrowth: latestResult?.skillMastery ?
           (latestResult.skillMastery[category.categoryName]?.masteryGrowth || 0) : 0,
+        currentMastery: latestResult?.skillMastery ?
+          (latestResult.skillMastery[category.categoryName]?.currentMastery || 0) : 0,
+        masteryProbability: latestResult?.skillMastery ?
+          (latestResult.skillMastery[category.categoryName]?.masteryProbability || 0) : 0,
         interventionEffectiveness: latestResult?.interventionEffectiveness?.overallEffectiveness || 'N/A',
 
         // Raw data for detailed view

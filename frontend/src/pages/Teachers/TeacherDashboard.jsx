@@ -102,44 +102,55 @@ const TeacherDashboard = () => {
         interventionHistory = [],
         category = '',
         improvement = 0,
-        improvementPercentage = 0,
-        revisionNumber = 1,
-        teacherRevisions = 0
+        improvementPercentage = 0
       } = interventionData;
 
-      // Calculate completion percentage based on attempts and pass status
-      const completionPercentage = latestScore >= 75 ? 100 : Math.min((totalAttempts / 3) * 100, 100);
+      // Get latest attempt data from intervention history
+      const latestAttempt = interventionHistory.length > 0
+        ? interventionHistory[interventionHistory.length - 1]
+        : null;
 
-      // Calculate correct/incorrect from intervention history
-      let totalCorrect = 0;
-      let totalIncorrect = 0;
+      const latestAttemptNumber = latestAttempt ? latestAttempt.attemptNumber : 1;
+      const currentScore = latestAttempt ? latestAttempt.score : latestScore;
+      const currentPassed = latestAttempt ? latestAttempt.isPassed : false;
 
-      interventionHistory.forEach(attempt => {
-        if (attempt.score >= 75) {
-          totalCorrect += (attempt.score / 100) * totalQuestions;
-        } else {
-          totalIncorrect += totalQuestions - ((attempt.score / 100) * totalQuestions);
-        }
-      });
+      // Calculate completion percentage based on pass status
+      const completionPercentage = currentPassed ? 100 : Math.min((totalAttempts / 3) * 100, 100);
 
-      // Average correct answers across attempts
-      const avgCorrectAnswers = totalAttempts > 0 ? Math.round(totalCorrect / totalAttempts) : 0;
-      const avgIncorrectAnswers = totalAttempts > 0 ? Math.round(totalIncorrect / totalAttempts) : 0;
+      // Determine correct status based on intervention completion
+      let interventionStatus = 'In Progress';
+      if (currentPassed && currentScore >= 75) {
+        interventionStatus = 'Completed Successfully';
+      } else if (totalAttempts > 0 && !currentPassed) {
+        interventionStatus = 'Needs Teacher Revision';
+      }
+
+      // Calculate correct/incorrect from latest attempt score
+      const latestCorrectAnswers = Math.round((currentScore / 100) * totalQuestions);
+      const latestIncorrectAnswers = totalQuestions - latestCorrectAnswers;
+
+      // Calculate mastery growth and improvement from intervention results
+      const masteryGrowth = interventionData.skillMasteryGrowth || 0;
+      const currentMastery = interventionData.currentMastery || interventionData.masteryProbability || 0;
 
       return {
         ...interventionData,
         percentComplete: Math.round(completionPercentage),
-        percentCorrect: Math.round(latestScore),
+        percentCorrect: Math.round(currentScore),
         completedActivities: totalAttempts,
         totalActivities: totalQuestions,
-        correctAnswers: avgCorrectAnswers,
-        incorrectAnswers: avgIncorrectAnswers,
+        correctAnswers: latestCorrectAnswers,
+        incorrectAnswers: latestIncorrectAnswers,
         interventionPlanName: `${category} Intervention`,
-        notes: totalAttempts > 1
-          ? `${totalAttempts} attempts completed. Latest revision: ${revisionNumber}. ${teacherRevisions > 0 ? `Teacher revised ${teacherRevisions} times.` : ''}`
-          : `Initial intervention attempt. ${improvement > 0 ? `Improved by ${improvement}% from original score.` : 'Needs improvement.'}`,
-        lastActivityDate: interventionHistory.length > 0
-          ? new Date(interventionHistory[interventionHistory.length - 1].completedAt).toLocaleDateString()
+        currentRevisionNumber: latestAttemptNumber,
+        currentMastery: currentMastery,
+        masteryGrowth: masteryGrowth,
+        improvementFromOriginal: improvement,
+        status: interventionStatus,
+        passedThreshold: currentPassed,
+        notes: `${totalAttempts} attempts completed. Current mastery: ${Math.round(currentMastery * 100)}%. ${improvement > 0 ? `Overall improvement: ${improvement}% from original score.` : ''}`,
+        lastActivityDate: latestAttempt && latestAttempt.completedAt
+          ? new Date(latestAttempt.completedAt).toLocaleDateString()
           : 'N/A'
       };
     };
@@ -2224,8 +2235,12 @@ const TeacherDashboard = () => {
                       </div>
                       <div className="teacher-stat-item">
                         <span className="teacher-stat-label">Status</span>
-                        <span className={`teacher-stat-status ${selectedIntervention.passedThreshold ? 'passed' : 'in-progress'}`}>
-                          {selectedIntervention.passedThreshold ? 'Passed' : 'In Progress'}
+                        <span className={`teacher-stat-status ${
+                          selectedIntervention.status === 'Completed Successfully' ? 'passed' :
+                          selectedIntervention.status === 'Needs Teacher Revision' ? 'needs-revision' :
+                          'in-progress'
+                        }`}>
+                          {selectedIntervention.status || 'In Progress'}
                         </span>
                       </div>
                     </div>
@@ -2370,25 +2385,6 @@ const TeacherDashboard = () => {
                       </div>
                     )}
 
-                    {/* Teacher Revision Information */}
-                    {selectedIntervention.teacherRevisions > 0 && (
-                      <div className="teacher-revision-info" style={{
-                        marginTop: '20px',
-                        backgroundColor: 'rgba(255, 158, 64, 0.2)',
-                        padding: '15px',
-                        borderRadius: '8px',
-                        border: '1px solid #FF9E40'
-                      }}>
-                        <h4 style={{ color: '#FF9E40', marginBottom: '10px' }}>Teacher Revision History</h4>
-                        <div style={{ color: 'white' }}>
-                          <p>This intervention has been revised <strong>{selectedIntervention.teacherRevisions}</strong> times by teachers.</p>
-                          <p>Current revision number: <strong>{selectedIntervention.revisionNumber}</strong></p>
-                          {selectedIntervention.improvement > 0 && (
-                            <p>Overall improvement: <strong>{selectedIntervention.improvement}%</strong> from original score</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
