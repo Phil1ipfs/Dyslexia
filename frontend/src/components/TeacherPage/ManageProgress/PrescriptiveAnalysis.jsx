@@ -353,14 +353,21 @@ const PrescriptiveAnalysis = ({
       }
     }
 
-    // 🎯 PRIORITY 2: Check intervention results state (fallback)
+    // 🎯 PRIORITY 2: Check intervention results state (fallback) WITH reading level validation
     const results = interventionResults[categoryName];
-    if (results?.passed && results?.score >= 75) {
-      console.log(`[INTERVENTION STATUS] ${categoryName} detected as intervention SUCCESS via results state`);
+    const currentReadingLevel = liveCategoryResults?.readingLevel || liveStudent?.readingLevel;
+    const isValidInterventionResult = results &&
+      // 🎯 FIX: Only consider intervention results valid if they match current reading level
+      (!currentReadingLevel || !results.readingLevel || results.readingLevel === currentReadingLevel);
+
+    if (isValidInterventionResult && results?.passed && results?.score >= 75) {
+      console.log(`[INTERVENTION STATUS] ${categoryName} detected as intervention SUCCESS via results state (reading level: ${currentReadingLevel})`);
       return 'success';
-    } else if (results?.passed === false && results?.score < 75) {
-      console.log(`[INTERVENTION STATUS] ${categoryName} needs revision via results state`);
+    } else if (isValidInterventionResult && results?.passed === false && results?.score < 75) {
+      console.log(`[INTERVENTION STATUS] ${categoryName} needs revision via results state (reading level: ${currentReadingLevel})`);
       return 'revision_needed';
+    } else if (results && !isValidInterventionResult) {
+      console.warn(`[INTERVENTION STATUS] ${categoryName} has intervention results from different reading level (${results.readingLevel} vs ${currentReadingLevel}) - ignoring`);
     }
 
     console.log(`[INTERVENTION STATUS] ${categoryName} has no intervention attempts - using initial status`);
@@ -890,16 +897,21 @@ const PrescriptiveAnalysis = ({
    */
   useEffect(() => {
     if (!selectedCategory) {
-      // ✅ FIX: Only auto-select categories that have prescriptive analysis data
+      // ✅ FIX: Only auto-select categories that have prescriptive analysis data for current reading level
       const categoriesWithAnalysis = liveCategoryResults?.categories?.filter(cat => {
         if (!liveAnalyses || liveAnalyses.length === 0) return false;
 
-        // Check if any prescriptive analysis contains skillMastery data for this category
+        // 🎯 FIX: Get current reading level for validation
+        const currentReadingLevel = liveCategoryResults?.readingLevel || liveStudent?.readingLevel;
+
+        // Check if any prescriptive analysis contains skillMastery data for this category AND current reading level
         return liveAnalyses.some(analysis =>
           analysis?.skillMastery &&
           analysis.skillMastery[cat.categoryName] &&
           analysis.skillMastery[cat.categoryName].responseHistory &&
-          analysis.skillMastery[cat.categoryName].responseHistory.length > 0
+          analysis.skillMastery[cat.categoryName].responseHistory.length > 0 &&
+          // 🎯 FIX: CRITICAL - Only accept analysis from CURRENT reading level
+          (!currentReadingLevel || !analysis.readingLevel || analysis.readingLevel === currentReadingLevel)
         );
       }) || [];
 
@@ -1621,9 +1633,30 @@ const PrescriptiveAnalysis = ({
     if (!effectiveInterventions || !Array.isArray(effectiveInterventions)) {
       return [];
     }
-    return effectiveInterventions.filter(
-      intervention => intervention.category === categoryName
-    );
+
+    // 🎯 FIX: Filter interventions by category AND current reading level to prevent cross-level contamination
+    const currentReadingLevel = liveCategoryResults?.readingLevel || liveStudent?.readingLevel;
+
+    return effectiveInterventions.filter(intervention => {
+      // Must match category name
+      const matchesCategory = intervention.category === categoryName;
+
+      // 🎯 FIX: Must match current reading level (or no reading level specified)
+      const matchesReadingLevel = !currentReadingLevel ||
+                                  !intervention.readingLevel ||
+                                  intervention.readingLevel === currentReadingLevel;
+
+      console.log(`[CURRENT INTERVENTIONS] Filtering intervention for ${categoryName}:`, {
+        category: intervention.category,
+        readingLevel: intervention.readingLevel,
+        currentReadingLevel,
+        matchesCategory,
+        matchesReadingLevel,
+        included: matchesCategory && matchesReadingLevel
+      });
+
+      return matchesCategory && matchesReadingLevel;
+    });
   };
 
 
@@ -1649,9 +1682,15 @@ const PrescriptiveAnalysis = ({
    * @param {Object} existingActivity - Existing activity to edit (optional)
    */
   const handleCreateActivity = (category, existingActivity = null) => {
-    // Check if this is for creating version 2 based on failed intervention results
+    // 🎯 FIX: Check if this is for creating version 2 based on failed intervention results WITH reading level validation
     const interventionResultData = interventionResults[category];
-    const hasInterventionResults = interventionResultData && interventionResultData.score !== undefined;
+    const currentReadingLevel = liveCategoryResults?.readingLevel || liveStudent?.readingLevel;
+    const isValidInterventionResult = interventionResultData &&
+      interventionResultData.score !== undefined &&
+      // Only consider intervention results valid if they match current reading level
+      (!currentReadingLevel || !interventionResultData.readingLevel || interventionResultData.readingLevel === currentReadingLevel);
+
+    const hasInterventionResults = isValidInterventionResult;
     const isFailedIntervention = hasInterventionResults && !interventionResultData.isPassed;
 
     // Pass additional context for version 2 creation
@@ -4897,11 +4936,16 @@ const PrescriptiveAnalysis = ({
     try {
       console.log(`[ENHANCED INTERVENTION RESULTS] Fetching dynamic results for student ${studentId}, category: ${category}`);
 
-      // Get all intervention results for this student and category
+      // 🎯 FIX: Get current reading level for filtering
+      const currentReadingLevel = liveCategoryResults?.readingLevel || liveStudent?.readingLevel;
+      console.log(`[ENHANCED INTERVENTION RESULTS] Current reading level: ${currentReadingLevel}`);
+
+      // 🎯 FIX: Get all intervention results for this student and category WITH reading level filtering
       const response = await axios.get(`/api/intervention-results`, {
         params: {
           studentId: studentId,
           category: category,
+          readingLevel: currentReadingLevel, // 🎯 FIX: Filter by current reading level
           includeVersionTracking: true,
           includeAnalytics: true,
           sortBy: 'assessmentDate',
@@ -4912,6 +4956,14 @@ const PrescriptiveAnalysis = ({
       if (response.data.success && response.data.data.length > 0) {
         // Get the most recent intervention result (newest)
         const latestResult = response.data.data[0];
+
+        // 🎯 FIX: Validate that intervention results match current reading level
+        const interventionReadingLevel = latestResult.readingLevel;
+        if (interventionReadingLevel && currentReadingLevel && interventionReadingLevel !== currentReadingLevel) {
+          console.warn(`[ENHANCED INTERVENTION RESULTS] ⚠️ Reading level mismatch - intervention is for ${interventionReadingLevel}, current is ${currentReadingLevel}. Skipping intervention results.`);
+          console.log(`[ENHANCED INTERVENTION RESULTS] No valid intervention results found for current reading level ${currentReadingLevel}`);
+          return null;
+        }
 
         // Enhanced version tracking analysis
         const versionTracking = {
@@ -5421,18 +5473,23 @@ const PrescriptiveAnalysis = ({
     if (categoryData?.isPassed) {
       return true;
     }
-    
-    // Check if there are intervention results that indicate the category has passed
+
+    // 🎯 FIX: Check if there are intervention results that indicate the category has passed WITH reading level validation
     const interventionResultData = interventionResults[categoryName];
-    if (interventionResultData && interventionResultData.isPassed && interventionResultData.score >= 75) {
+    const currentReadingLevel = liveCategoryResults?.readingLevel || liveStudent?.readingLevel;
+    const isValidInterventionResult = interventionResultData &&
+      // Only consider intervention results valid if they match current reading level
+      (!currentReadingLevel || !interventionResultData.readingLevel || interventionResultData.readingLevel === currentReadingLevel);
+
+    if (isValidInterventionResult && interventionResultData.isPassed && interventionResultData.score >= 75) {
       return true;
     }
-    
+
     // Check if there's a successful intervention attempt in the category's intervention history
     if (categoryData?.interventionHistory?.some(attempt => attempt.isPassed && attempt.score >= 75)) {
       return true;
     }
-    
+
     return false;
   };
     
@@ -5471,16 +5528,21 @@ const PrescriptiveAnalysis = ({
       
       {/* Selected category analysis */}
       {selectedCategory && selectedCategoryData && (() => {
-        // ✅ FIX: Check if there's prescriptive analysis data for this category
+        // ✅ FIX: Check if there's prescriptive analysis data for this category AND current reading level
         const hasPrescriptiveAnalysisForCategory = (() => {
           if (!liveAnalyses || liveAnalyses.length === 0) return false;
 
-          // Check if any prescriptive analysis contains skillMastery data for this category
+          // 🎯 FIX: Get current reading level for validation
+          const currentReadingLevel = liveCategoryResults?.readingLevel || liveStudent?.readingLevel;
+
+          // Check if any prescriptive analysis contains skillMastery data for this category AND current reading level
           return liveAnalyses.some(analysis =>
             analysis?.skillMastery &&
             analysis.skillMastery[selectedCategory] &&
             analysis.skillMastery[selectedCategory].responseHistory &&
-            analysis.skillMastery[selectedCategory].responseHistory.length > 0
+            analysis.skillMastery[selectedCategory].responseHistory.length > 0 &&
+            // 🎯 FIX: CRITICAL - Only accept analysis from CURRENT reading level
+            (!currentReadingLevel || !analysis.readingLevel || analysis.readingLevel === currentReadingLevel)
           );
         })();
 
@@ -5508,17 +5570,27 @@ const PrescriptiveAnalysis = ({
               <FaCheckCircle style={{color: '#4CAF50'}} />
               <p>
                 The student has mastered {formatCategoryName(selectedCategory)} with a score of {(() => {
-                  // Get the most recent score - prioritize intervention results
+                  // 🎯 FIX: Get the most recent score - prioritize intervention results WITH reading level validation
                   const interventionResultData = interventionResults[selectedCategory];
+                  const currentReadingLevel = liveCategoryResults?.readingLevel || liveStudent?.readingLevel;
 
                   // Debug logging
                   console.log(`[SUCCESS BANNER] ${selectedCategory} - Intervention Results:`, interventionResultData);
                   console.log(`[SUCCESS BANNER] ${selectedCategory} - Category Data:`, selectedCategoryData);
+                  console.log(`[SUCCESS BANNER] ${selectedCategory} - Current Reading Level:`, currentReadingLevel);
 
-                  // Check intervention results first
-                  if (interventionResultData && interventionResultData.score !== undefined && interventionResultData.isPassed) {
-                    console.log(`[SUCCESS BANNER] Using intervention score: ${interventionResultData.score}%`);
+                  // 🎯 FIX: Check intervention results first WITH reading level validation
+                  const isValidInterventionResult = interventionResultData &&
+                    interventionResultData.score !== undefined &&
+                    interventionResultData.isPassed &&
+                    // Only use intervention results if they match current reading level
+                    (!currentReadingLevel || !interventionResultData.readingLevel || interventionResultData.readingLevel === currentReadingLevel);
+
+                  if (isValidInterventionResult) {
+                    console.log(`[SUCCESS BANNER] Using intervention score: ${interventionResultData.score}% (reading level: ${currentReadingLevel})`);
                     return interventionResultData.score;
+                  } else if (interventionResultData && !isValidInterventionResult) {
+                    console.warn(`[SUCCESS BANNER] Ignoring intervention results from different reading level (${interventionResultData.readingLevel} vs ${currentReadingLevel})`);
                   }
 
                   // Check intervention history in category data
@@ -5532,11 +5604,15 @@ const PrescriptiveAnalysis = ({
                   console.log(`[SUCCESS BANNER] Using category score: ${selectedCategoryData?.score || 0}%`);
                   return selectedCategoryData?.score || 0;
                 })()}% {(() => {
-                  // Determine pass method
+                  // 🎯 FIX: Determine pass method WITH reading level validation
                   const interventionResultData = interventionResults[selectedCategory];
+                  const currentReadingLevel = liveCategoryResults?.readingLevel || liveStudent?.readingLevel;
+                  const isValidInterventionResult = interventionResultData?.isPassed &&
+                    (!currentReadingLevel || !interventionResultData.readingLevel || interventionResultData.readingLevel === currentReadingLevel);
+
                   const latestIntervention = selectedCategoryData?.interventionHistory?.find(attempt => attempt.isPassed);
 
-                  if (interventionResultData?.isPassed || latestIntervention) {
+                  if (isValidInterventionResult || latestIntervention) {
                     return "(passed via intervention)";
                   }
                   return "(above the 75% threshold)";
