@@ -116,7 +116,20 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
         console.log('No student responses found in progressData, fetching separately...');
         const responsesResult = await ProgressApiService.getStudentResponses(studentId);
         if (responsesResult.success && responsesResult.data) {
-          setStudentResponses(responsesResult.data);
+          // ✅ FIX: Filter responses by current reading level only
+          const currentReadingLevel = progressData.readingLevel || progressData.data?.readingLevel;
+          console.log(`[FRONTEND FIX] Filtering responses for current reading level: ${currentReadingLevel}`);
+
+          if (currentReadingLevel) {
+            const filteredResponses = responsesResult.data.filter(response =>
+              response.readingLevel === currentReadingLevel
+            );
+            console.log(`[FRONTEND FIX] Filtered ${responsesResult.data.length} responses to ${filteredResponses.length} for reading level ${currentReadingLevel}`);
+            setStudentResponses(filteredResponses);
+          } else {
+            console.log('[FRONTEND FIX] No reading level found, using all responses (fallback)');
+            setStudentResponses(responsesResult.data);
+          }
         }
       }
 
@@ -317,18 +330,28 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
     if (!studentResponses || studentResponses.length === 0) {
       // Fallback to category results if no response data
       return {
-        totalQuestions: hasCategoryResults ? 
+        totalQuestions: hasCategoryResults ?
           progressData.categories.reduce((total, category) => total + (Number(category.totalQuestions) || 0), 0) : 0,
-        correctAnswers: hasCategoryResults ? 
+        correctAnswers: hasCategoryResults ?
           progressData.categories.reduce((total, category) => total + (Number(category.correctAnswers) || 0), 0) : 0
       };
     }
 
+    // ✅ FIX: Filter responses by current reading level first
+    const currentReadingLevel = normalizedProgressData.readingLevel;
+    console.log(`[METRICS RECALC] Filtering responses for current reading level: ${currentReadingLevel}`);
+
+    const filteredResponses = currentReadingLevel ?
+      studentResponses.filter(response => response.readingLevel === currentReadingLevel) :
+      studentResponses;
+
+    console.log(`[METRICS RECALC] Using ${filteredResponses.length} responses from ${studentResponses.length} total for reading level ${currentReadingLevel}`);
+
     let totalQuestions = 0;
     let correctAnswers = 0;
 
-    // Group responses by category
-    const responsesByCategory = studentResponses.reduce((acc, response) => {
+    // Group filtered responses by category
+    const responsesByCategory = filteredResponses.reduce((acc, response) => {
       const category = response.category || 'Unknown';
       if (!acc[category]) acc[category] = [];
       acc[category].push(response);
@@ -548,19 +571,23 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
   // Extract student responses from prescriptive analysis skillMastery data
   const extractStudentResponsesFromSkillMastery = (skillMastery) => {
     const responses = [];
-    
+
     if (!skillMastery || typeof skillMastery !== 'object') {
       console.log('No skillMastery data available for extraction');
       return responses;
     }
-    
+
+    // ✅ FIX: Get current reading level for filtering
+    const currentReadingLevel = progressData.readingLevel || progressData.data?.readingLevel;
+    console.log(`[SKILL MASTERY EXTRACT] Extracting responses for current reading level: ${currentReadingLevel}`);
+
     Object.keys(skillMastery).forEach(categoryName => {
       const categoryData = skillMastery[categoryName];
-      
+
       // Check if category has response history
       if (categoryData && categoryData.responseHistory && Array.isArray(categoryData.responseHistory)) {
         console.log(`Extracting responses for ${categoryName}: ${categoryData.responseHistory.length} responses`);
-        
+
         categoryData.responseHistory.forEach((response, index) => {
           try {
             // Convert responseHistory format to expected student response format
@@ -569,12 +596,14 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
               category: categoryName,
               isCorrect: Boolean(response.correct),
               responseTime: response.responseTime || 0,
-              answeredAt: response.timestamp ? 
-                new Date(response.timestamp.$date || response.timestamp) : 
+              answeredAt: response.timestamp ?
+                new Date(response.timestamp.$date || response.timestamp) :
                 new Date(),
-              createdAt: response.timestamp ? 
-                new Date(response.timestamp.$date || response.timestamp) : 
+              createdAt: response.timestamp ?
+                new Date(response.timestamp.$date || response.timestamp) :
                 new Date(),
+              // ✅ FIX: Add readingLevel to extracted responses
+              readingLevel: currentReadingLevel,
               // Add additional fields that might be expected
               correctAnswers: response.correct ? 1 : 0,
               totalAnswers: 1,
@@ -591,8 +620,8 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
         console.log(`No response history found for ${categoryName}`);
       }
     });
-    
-    console.log(`Extracted ${responses.length} total responses from skillMastery`);
+
+    console.log(`[SKILL MASTERY EXTRACT] Extracted ${responses.length} total responses from skillMastery for reading level ${currentReadingLevel}`);
     return responses;
   };
 
@@ -651,9 +680,18 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
   const getCategoryActualCounts = (categoryName, categoryData = null) => {
     // First try to get data from student responses
     if (studentResponses && studentResponses.length > 0) {
-      const categoryResponses = studentResponses.filter(response => 
-        response.category && response.category.toLowerCase().includes(categoryName.toLowerCase())
-      );
+      const currentReadingLevel = normalizedProgressData.readingLevel;
+      console.log(`[CATEGORY COUNTS] Filtering responses for ${categoryName} at reading level: ${currentReadingLevel}`);
+
+      // ✅ FIX: Filter by both category AND current reading level
+      const categoryResponses = studentResponses.filter(response => {
+        const categoryMatch = response.category && response.category.toLowerCase().includes(categoryName.toLowerCase());
+        const readingLevelMatch = !currentReadingLevel || response.readingLevel === currentReadingLevel;
+        console.log(`[CATEGORY COUNTS] Response: ${response.category}, Reading Level: ${response.readingLevel}, Category Match: ${categoryMatch}, Level Match: ${readingLevelMatch}`);
+        return categoryMatch && readingLevelMatch;
+      });
+
+      console.log(`[CATEGORY COUNTS] Found ${categoryResponses.length} responses for ${categoryName} at ${currentReadingLevel}`);
 
       if (categoryName.toLowerCase().includes('phonological')) {
         // For Phonological Awareness: aggregate matches from responses
@@ -828,10 +866,17 @@ const ProgressReport = ({ progressData, categoryAccessMap = {}, categoryAccessLo
       return [];
     }
     
-    // Filter student responses for this category
-    const categoryResponses = studentResponses.filter(response => 
-      response.category && response.category.toLowerCase().includes(categoryName.toLowerCase())
-    );
+    // ✅ FIX: Filter student responses for this category AND current reading level
+    const currentReadingLevel = normalizedProgressData.readingLevel;
+    console.log(`[CATEGORY QUESTIONS] Filtering responses for ${categoryName} at reading level: ${currentReadingLevel}`);
+
+    const categoryResponses = studentResponses.filter(response => {
+      const categoryMatch = response.category && response.category.toLowerCase().includes(categoryName.toLowerCase());
+      const readingLevelMatch = !currentReadingLevel || response.readingLevel === currentReadingLevel;
+      return categoryMatch && readingLevelMatch;
+    });
+
+    console.log(`[CATEGORY QUESTIONS] Found ${categoryResponses.length} responses for ${categoryName} at ${currentReadingLevel}`);
     
     console.log('📝 Found category responses:', categoryResponses.length, categoryResponses);
     
