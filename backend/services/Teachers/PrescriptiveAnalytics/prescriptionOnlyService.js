@@ -64,6 +64,10 @@ class PrescriptionOnlyService {
 
       console.log(`[PRESCRIPTION] Found ${responses.length} responses for student ${studentId} at reading level ${readingLevel}`);
 
+      // Extract failed categories from category result
+      const failedCategories = categoryResult.categories.filter(cat => !cat.isPassed || cat.score < 75);
+      console.log(`[PRESCRIPTION] Found ${failedCategories.length} failed categories:`, failedCategories.map(cat => cat.categoryName));
+
       // DIAGNOSIS: Analyze what's wrong
       const diagnosis = await this.generateDiagnosis(responses, categoryResult, readingLevel);
 
@@ -85,8 +89,10 @@ class PrescriptionOnlyService {
 
         // ✅ FIX: Add categoryId to prevent duplicate key errors
         // Since prescriptive analysis covers multiple categories, use the primary failed category
-        // If no failed categories, use null (maintenance analysis)
-        categoryId: failedCategories.length > 0 ? failedCategories[0].categoryName : null,
+        // If no failed categories, create unique maintenance analysis identifier
+        categoryId: failedCategories.length > 0
+          ? failedCategories[0].categoryName
+          : `maintenance_${readingLevel}_${Date.now()}`,
 
         // Map diagnosis to schema fields
         skillMastery: new Map(Object.entries(diagnosis.skillMastery)),
