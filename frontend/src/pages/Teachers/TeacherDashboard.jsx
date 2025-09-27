@@ -134,8 +134,8 @@ const TeacherDashboard = () => {
         ...interventionData,
         percentComplete: Math.round(completionPercentage),
         percentCorrect: Math.round(currentScore),
-        completedActivities: totalAttempts,
-        totalActivities: totalQuestions,
+        completedActivities: interventionData.completedActivities || totalAttempts,
+        totalActivities: interventionData.totalQuestions || totalQuestions,
         interventionPlanName: `${category} Intervention`,
         currentRevisionNumber: currentRevisionNumber,
         latestAttemptNumber: latestAttemptNumber,
@@ -144,7 +144,7 @@ const TeacherDashboard = () => {
         improvementFromOriginal: improvement,
         status: interventionStatus,
         passedThreshold: currentPassed,
-        notes: `${totalAttempts} attempts completed. Latest revision: ${currentRevisionNumber}. Current mastery: ${Math.round(currentMastery * 100)}%. ${improvement > 0 ? `Overall improvement: ${improvement}% from original score.` : ''}`,
+        notes: `${totalAttempts} attempts completed. Latest attempt: ${currentScore}% score, ${currentPassed ? 'PASSED' : 'FAILED'}. ${improvement > 0 ? `Overall improvement: ${improvement}% from original score.` : 'No improvement data available.'}`,
         lastActivityDate: latestAttempt && latestAttempt.completedAt
           ? new Date(latestAttempt.completedAt).toLocaleDateString()
           : 'N/A'
@@ -2252,24 +2252,8 @@ const TeacherDashboard = () => {
                         <span className="teacher-detail-value">{selectedIntervention.category || 'N/A'}</span>
                       </div>
                       <div className="teacher-detail-item">
-                        <span className="teacher-detail-label">Total Activities:</span>
-                        <span className="teacher-detail-value">{selectedIntervention.totalActivities || 0}</span>
-                      </div>
-                      <div className="teacher-detail-item">
-                        <span className="teacher-detail-label">Completed Activities:</span>
+                        <span className="teacher-detail-label">Completed Attempts:</span>
                         <span className="teacher-detail-value">{selectedIntervention.completedActivities || 0}</span>
-                      </div>
-                      <div className="teacher-detail-item">
-                        <span className="teacher-detail-label">Latest Revision:</span>
-                        <span className="teacher-detail-value">{selectedIntervention.currentRevisionNumber || 1}</span>
-                      </div>
-                      <div className="teacher-detail-item">
-                        <span className="teacher-detail-label">Current Mastery:</span>
-                        <span className="teacher-detail-value">{Math.round((selectedIntervention.currentMastery || 0) * 100)}%</span>
-                      </div>
-                      <div className="teacher-detail-item">
-                        <span className="teacher-detail-label">Mastery Growth:</span>
-                        <span className="teacher-detail-value">{Math.round((selectedIntervention.masteryGrowth || 0) * 100)}%</span>
                       </div>
                       <div className="teacher-detail-item">
                         <span className="teacher-detail-label">Improvement %:</span>
