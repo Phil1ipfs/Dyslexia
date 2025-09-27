@@ -288,13 +288,14 @@ class ReadingLevelProgressionService {
 
       console.log(`[PROGRESSION] ✅ Updated user reading level: ${fromLevel} → ${toLevel}`);
 
-      // Step 2: Update category results to mark progression as completed
+      // Step 2: Update OLD category results to mark progression as completed
+      // ✅ CLAUDE.md COMPLIANCE: Keep old record's readingLevel, just mark as updated
       const categoryResultsUpdate = await CategoryResult.updateOne(
-        { studentId: studentId },
+        { studentId: studentId, readingLevel: fromLevel }, // Find the old level record
         {
           $set: {
-            readingLevelUpdated: true,
-            readingLevel: toLevel, // Update to new level
+            readingLevelUpdated: true, // Mark as progression completed
+            // ✅ Keep original readingLevel (fromLevel) - don't change it to toLevel
             updatedAt: new Date()
           }
         },
@@ -357,15 +358,20 @@ class ReadingLevelProgressionService {
 
       console.log(`[PROGRESSION] 📊 Question counts for ${newLevel}:`, questionCounts);
 
-      // Check if placeholder already exists for this level
+      // ✅ CLAUDE.md COMPLIANCE: Always create fresh category_results for new level
+      // Check if placeholder already exists for this level and remove it
       const existingPlaceholder = await CategoryResult.findOne({
         studentId: studentId,
         readingLevel: newLevel
       }).session(session);
 
       if (existingPlaceholder) {
-        console.log(`[PROGRESSION] ⚠️ Category results placeholder already exists for ${newLevel} - skipping creation`);
-        return;
+        console.log(`[PROGRESSION] 🔄 Found existing ${newLevel} record - removing to create fresh placeholder with all required categories`);
+        await CategoryResult.deleteOne({
+          studentId: studentId,
+          readingLevel: newLevel
+        }).session(session);
+        console.log(`[PROGRESSION] ✅ Removed existing ${newLevel} record - will create fresh one`);
       }
 
       // Create categories array with proper question counts
