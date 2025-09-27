@@ -1705,11 +1705,28 @@ class CategoryResultsService {
 
       console.log(`[FORCE FIX] 📊 Calculated correct score: ${correctScore}%`);
 
+      // 🔧 CRITICAL FIX: Update category isPassed flags based on intervention success
+      const updatedCategories = categoryResult.categories.map(cat => {
+        const mainAssessmentPassed = (cat.score || 0) >= 75;
+        const hasSuccessfulIntervention = cat.interventionHistory && cat.interventionHistory.some(intervention => intervention.isPassed === true);
+        const shouldBePassed = mainAssessmentPassed || hasSuccessfulIntervention;
+
+        if (cat.isPassed !== shouldBePassed) {
+          console.log(`[FORCE FIX] 🔧 Fixing ${cat.categoryName} isPassed: ${cat.isPassed} → ${shouldBePassed} (${hasSuccessfulIntervention ? 'intervention passed' : 'main assessment passed'})`);
+        }
+
+        return {
+          ...cat,
+          isPassed: shouldBePassed
+        };
+      });
+
       // Force update using direct MongoDB updateOne (bypasses Mongoose middleware)
       const updateResult = await CategoryResult.updateOne(
         { studentId: studentId },
         {
           $set: {
+            categories: updatedCategories,
             overallScore: correctScore,
             completedCategories: correctStats.passedCategories,
             allCategoriesPassed: correctStats.passedCategories === categoryResult.categories.length,

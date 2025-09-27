@@ -2442,11 +2442,11 @@ class InterventionResultsAnalysisService {
 
       console.log(`[INTERVENTION ANALYSIS] 📊 completedCategories updated: ${previousCompletedCategories} → ${categoryResults.completedCategories}`);
 
-      // Recalculate overallScore (weighted average based on effectively completed categories)
-      const totalCategories = categoryResults.categories.length;
-      const overallScore = Math.round((completedCategories.length / totalCategories) * 100);
+      // ✅ FIX: Use CategoryResultsService.calculateOverallStats for correct calculation
+      const CategoryResultsService = require('./CategoryResultsService');
+      const correctStats = CategoryResultsService.calculateOverallStats(categoryResults.categories);
       const previousOverallScore = categoryResults.overallScore || 0;
-      categoryResults.overallScore = overallScore;
+      categoryResults.overallScore = correctStats.overallScore;
 
       console.log(`[INTERVENTION ANALYSIS] 📊 overallScore updated: ${previousOverallScore}% → ${categoryResults.overallScore}%`);
 
