@@ -1,0 +1,555 @@
+{
+    "_id": {
+      "$oid": "68c87b4f47bd7d555f07a56d"
+    },
+    "studentId": 202533333,
+    "categoryResultId": {
+      "$oid": "68c87b4f47bd7d555f07a55f"
+    },
+    "assessmentDate": {
+      "$date": "2025-09-15T20:47:11.166Z"
+    },
+    "assessmentType": "main",
+    "readingLevel": "High Emerging",
+    "skillMastery": {
+      "Alphabet Knowledge": {
+        "masteryProbability": 1,
+        "lastUpdated": {
+          "$date": "2025-09-15T20:47:11.373Z"
+        },
+        "totalQuestions": 15,
+        "correctAnswers": 12,
+        "totalPossibleMatches": 0,
+        "correctMatches": 0,
+        "score": 80,
+        "isPassed": true,
+        "status": "ADEQUATE",
+        "responseHistory": [
+          {
+            "questionId": "AK_001",
+            "correct": true,
+            "timestamp": {
+              "$date": "2025-09-10T08:32:00.000Z"
+            },
+            "masteryAfter": 0.775
+          },
+          {
+            "questionId": "AK_002",
+            "correct": true,
+            "timestamp": {
+              "$date": "2025-09-10T08:32:15.000Z"
+            },
+            "masteryAfter": 0.921
+          },
+          {
+            "questionId": "AK_003",
+            "correct": true,
+            "timestamp": {
+              "$date": "2025-09-10T08:32:30.000Z"
+            },
+            "masteryAfter": 0.975
+          },
+          {
+            "questionId": "AK_004",
+            "correct": true,
+            "timestamp": {
+              "$date": "2025-09-10T08:32:45.000Z"
+            },
+            "masteryAfter": 0.992
+          },
+          {
+            "questionId": "AK_005",
+            "correct": true,
+            "timestamp": {
+              "$date": "2025-09-10T08:33:00.000Z"
+            },
+            "masteryAfter": 0.998
+          },
+          {
+            "questionId": "AK_006",
+            "correct": true,
+            "timestamp": {
+              "$date": "2025-09-10T08:33:15.000Z"
+            },
+            "masteryAfter": 0.999
+          },
+          {
+            "questionId": "AK_007",
+            "correct": true,
+            "timestamp": {
+              "$date": "2025-09-10T08:33:30.000Z"
+            },
+            "masteryAfter": 1
+          },
+          {
+            "questionId": "AK_008",
+            "correct": true,
+            "timestamp": {
+              "$date": "2025-09-10T08:33:45.000Z"
+            },
+            "masteryAfter": 1
+          },
+          {
+            "questionId": "AK_009",
+            "correct": false,
+            "timestamp": {
+              "$date": "2025-09-10T08:34:00.000Z"
+            },
+            "masteryAfter": 1
+          },
+          {
+            "questionId": "AK_010",
+            "correct": true,
+            "timestamp": {
+              "$date": "2025-09-10T08:34:15.000Z"
+            },
+            "masteryAfter": 1
+          },
+          {
+            "questionId": "AK_011",
+            "correct": true,
+            "timestamp": {
+              "$date": "2025-09-10T08:34:30.000Z"
+            },
+            "masteryAfter": 1
+          },
+          {
+            "questionId": "AK_012",
+            "correct": false,
+            "timestamp": {
+              "$date": "2025-09-10T08:34:45.000Z"
+            },
+            "masteryAfter": 1
+          },
+          {
+            "questionId": "AK_013",
+            "correct": true,
+            "timestamp": {
+              "$date": "2025-09-10T08:35:00.000Z"
+            },
+            "masteryAfter": 1
+          },
+          {
+            "questionId": "AK_014",
+            "correct": true,
+            "timestamp": {
+              "$date": "2025-09-10T08:35:15.000Z"
+            },
+            "masteryAfter": 1
+          },
+          {
+            "questionId": "AK_015",
+            "correct": false,
+            "timestamp": {
+              "$date": "2025-09-10T08:35:30.000Z"
+            },
+            "masteryAfter": 1
+          }
+        ]
+      },
+      "Phonological Awareness": {
+        "masteryProbability": 0.125,
+        "lastUpdated": {
+          "$date": "2025-09-15T20:47:11.373Z"
+        },
+        "totalQuestions": 6,
+        "correctAnswers": 0,
+        "totalPossibleMatches": 15,
+        "correctMatches": 5,
+        "score": 33,
+        "isPassed": false,
+        "status": "ADEQUATE",
+        "responseHistory": [
+          {
+            "questionId": "PA_001",
+            "correct": false,
+            "timestamp": {
+              "$date": "2025-09-10T08:40:00.000Z"
+            },
+            "masteryAfter": 0.213
+          },
+          {
+            "questionId": "PA_002",
+            "correct": false,
+            "timestamp": {
+              "$date": "2025-09-10T08:41:00.000Z"
+            },
+            "masteryAfter": 0.133
+          },
+          {
+            "questionId": "PA_003",
+            "correct": false,
+            "timestamp": {
+              "$date": "2025-09-10T08:42:00.000Z"
+            },
+            "masteryAfter": 0.119
+          },
+          {
+            "questionId": "PA_004",
+            "correct": true,
+            "timestamp": {
+              "$date": "2025-09-10T08:43:00.000Z"
+            },
+            "masteryAfter": 0.36
+          },
+          {
+            "questionId": "PA_005",
+            "correct": false,
+            "timestamp": {
+              "$date": "2025-09-10T08:44:00.000Z"
+            },
+            "masteryAfter": 0.167
+          },
+          {
+            "questionId": "PA_006",
+            "correct": false,
+            "timestamp": {
+              "$date": "2025-09-10T08:45:00.000Z"
+            },
+            "masteryAfter": 0.125
+          }
+        ]
+      }
+    },
+    "abilityEstimates": {
+      "Alphabet Knowledge": 0.5,
+      "Phonological Awareness": -2
+    },
+    "errorPatterns": {
+      "Alphabet Knowledge": {
+        "detailedErrorAnalysis": []
+      },
+      "Phonological Awareness": {
+        "matching_errors": {
+          "count": 5,
+          "total": 6,
+          "percentage": 83,
+          "avg_partial_success": 0.2,
+          "error_type": "sound_discrimination",
+          "questionIds": [
+            "PA_001",
+            "PA_002",
+            "PA_003",
+            "PA_005",
+            "PA_006"
+          ],
+          "confusionPairs": [
+            {
+              "sounds": [
+                "H",
+                "Hh"
+              ],
+              "confusionRate": 20,
+              "interventionFocus": "Focus on H-Hh discrimination with mouth position awareness"
+            },
+            {
+              "sounds": [
+                "T",
+                "Tt"
+              ],
+              "confusionRate": 20,
+              "interventionFocus": "Focus on T-Tt discrimination with mouth position awareness"
+            },
+            {
+              "sounds": [
+                "N",
+                "Ll"
+              ],
+              "confusionRate": 20,
+              "interventionFocus": "Focus on N-Ll discrimination with mouth position awareness"
+            },
+            {
+              "sounds": [
+                "L",
+                "Pp"
+              ],
+              "confusionRate": 20,
+              "interventionFocus": "Focus on L-Pp discrimination with mouth position awareness"
+            },
+            {
+              "sounds": [
+                "P",
+                "Ll"
+              ],
+              "confusionRate": 20,
+              "interventionFocus": "Focus on P-Ll discrimination with mouth position awareness"
+            }
+          ],
+          "sequentialDifficulty": {
+            "twoSounds": 0,
+            "threeSounds": 0,
+            "fourSounds": 0,
+            "workingMemoryCapacity": "adequate"
+          },
+          "cognitiveImplications": {
+            "workingMemory": "Severe working memory limitations - reduce sequence length",
+            "auditoryProcessing": "Significant auditory discrimination deficits - intensive training needed",
+            "visualStrengths": "Can benefit from visual cues and mouth position images",
+            "attentionFactors": "High error rate suggests attention regulation difficulties"
+          }
+        },
+        "detailedErrorAnalysis": []
+      }
+    },
+    "interventionPlan": {
+      "required": true,
+      "priority": [
+        "Phonological Awareness"
+      ],
+      "specificFocus": {
+        "Phonological Awareness": {
+          "focus": "Sound discrimination training",
+          "targetSounds": [
+            "H-Hh discrimination",
+            "T-Tt discrimination",
+            "N-Ll discrimination",
+            "L-Pp discrimination",
+            "P-Ll discrimination"
+          ],
+          "targetPatterns": [
+            "Foundation phonological awareness skills"
+          ],
+          "recommendedActivities": [
+            "Visual-tactile multisensory approach",
+            "Systematic, explicit instruction",
+            "Immediate corrective feedback"
+          ],
+          "questionDistribution": {
+            "total": 17
+          }
+        }
+      }
+    },
+    "insights": {
+      "strengths": [
+        "Alphabet Knowledge"
+      ],
+      "weaknesses": [
+        "Phonological Awareness - 13%"
+      ],
+      "overallReadiness": "Intervention needed for Phonological Awareness. Teacher should create approximately 17 questions total, focusing on identified error patterns and target skills.",
+      "recommendedAction": "immediate_intervention",
+      "passedCategories": 1,
+      "failedCategories": 1,
+      "overallScore": 57
+    },
+    "researchBasedPrescriptions": {
+      "Alphabet Knowledge": {
+        "categoryStatus": "passed",
+        "maintenanceRecommendations": {
+          "activities": [
+            {
+              "activity": "Continue alphabet knowledge practice",
+              "purpose": "Skill maintenance and reinforcement",
+              "frequency": "Weekly",
+              "implementation": "Integrated into regular curriculum",
+              "rationale": "Maintain mastery while building advanced skills"
+            }
+          ],
+          "researchFoundation": {
+            "primaryEvidence": [
+              {
+                "citation": "National Reading Panel (2000)",
+                "relevantFinding": "Systematic skill maintenance prevents regression",
+                "applicationToStudent": "Student shows mastery in Alphabet Knowledge",
+                "strengthOfEvidence": "strong"
+              }
+            ],
+            "theoreticalFramework": "Mastery Learning Theory",
+            "interventionApproach": "Maintenance with enrichment",
+            "assessmentBasis": []
+          },
+          "implementationGuidance": {
+            "frequency": "Weekly",
+            "duration": "10-15 minutes",
+            "integration": "Embedded in regular instruction",
+            "monitoringIndicators": [
+              "Maintained accuracy",
+              "Skill transfer"
+            ]
+          }
+        },
+        "accelerationRecommendations": {
+          "nextLevelSkills": [
+            {
+              "skill": "Advanced alphabet knowledge",
+              "targetMastery": "90% accuracy",
+              "timeframe": "4-6 weeks",
+              "prerequisiteCheck": "Current mastery confirmed",
+              "progressIndicators": []
+            }
+          ],
+          "bridgingActivities": [
+            "Connect alphabet knowledge to reading fluency"
+          ],
+          "enrichmentFocus": "Complex alphabet knowledge applications",
+          "timelineGuidance": "2-4 weeks for next level introduction",
+          "researchEvidence": []
+        },
+        "deficitAnalysis": {
+          "cognitiveFactors": [],
+          "linguisticFactors": [],
+          "specificDeficits": []
+        },
+        "interventionPrescription": {
+          "primaryApproach": "balanced_literacy",
+          "specificTechniques": [
+            {
+              "technique": "Skill maintenance and enrichment",
+              "description": "Maintain mastery in alphabet knowledge while building advanced skills",
+              "duration": "Ongoing",
+              "materials": "Regular curriculum materials with enrichment activities",
+              "progressCriteria": "Maintained 85%+ accuracy with skill transfer",
+              "researchBasis": "Mastery learning and spaced practice principles"
+            }
+          ],
+          "intensityLevel": "standard",
+          "sessionStructure": {
+            "sessionComponents": []
+          },
+          "materialRecommendations": [],
+          "progressMonitoring": {
+            "keyIndicators": []
+          }
+        },
+        "escalationProtocol": {
+          "triggers": []
+        },
+        "_id": {
+          "$oid": "68c87b4f47bd7d555f07a56e"
+        }
+      },
+      "Phonological Awareness": {
+        "categoryStatus": "failed",
+        "maintenanceRecommendations": {
+          "implementationGuidance": {
+            "monitoringIndicators": []
+          },
+          "activities": []
+        },
+        "accelerationRecommendations": {
+          "bridgingActivities": [],
+          "nextLevelSkills": [],
+          "researchEvidence": []
+        },
+        "deficitAnalysis": {
+          "specificDeficits": [
+            {
+              "deficit": "Sound discrimination training",
+              "severity": "severe",
+              "manifestation": "Score: 33% (below 75% threshold)",
+              "errorRate": "67%",
+              "researchEvidence": "Evidence-based deficit identification"
+            }
+          ],
+          "rootCauseAnalysis": "Phonological Awareness: Sound discrimination difficulties",
+          "cognitiveFactors": [
+            "workingMemory",
+            "processingSpeed",
+            "attention",
+            "auditoryProcessing"
+          ],
+          "researchClassification": "Phonological Awareness learning difficulty",
+          "linguisticFactors": []
+        },
+        "interventionPrescription": {
+          "primaryApproach": "multisensory_structured",
+          "specificTechniques": [
+            {
+              "technique": "Sound discrimination training",
+              "description": "Targeted phonological awareness intervention",
+              "duration": "6-8 weeks intensive intervention",
+              "materials": "Teacher-created intervention questions from templates",
+              "progressCriteria": "75% accuracy on intervention assessment",
+              "researchBasis": "Systematic, explicit instruction principles"
+            }
+          ],
+          "intensityLevel": "highly_intensive",
+          "sessionStructure": {
+            "optimalLength": "15-20 minutes",
+            "sessionComponents": [
+              "Visual-tactile multisensory approach",
+              "Systematic, explicit instruction",
+              "Immediate corrective feedback"
+            ],
+            "breakPattern": "Short breaks every 10 minutes"
+          },
+          "materialRecommendations": [
+            "Create 17 intervention questions using templates",
+            "Focus on identified error patterns",
+            "Use multisensory approach"
+          ],
+          "progressMonitoring": {
+            "frequency": "Weekly",
+            "keyIndicators": [
+              "Accuracy improvement",
+              "Error pattern reduction"
+            ],
+            "dataCollectionMethod": "Intervention assessment performance"
+          }
+        },
+        "escalationProtocol": {
+          "triggers": [
+            {
+              "trigger": "No improvement after 2 weeks",
+              "approach": "Increase intervention intensity",
+              "researchFoundation": "Response to Intervention (RTI) model",
+              "specificTechniques": [
+                {
+                  "technique": "Intensive one-on-one instruction",
+                  "purpose": "Address persistent learning difficulties",
+                  "implementation": "Daily 20-minute sessions",
+                  "materials": [
+                    "Teacher-created materials",
+                    "Multisensory aids"
+                  ],
+                  "progression": "Gradual skill building",
+                  "researchBasis": "Systematic synthetic phonics approach",
+                  "researchEvidence": "Evidence-based intervention research"
+                }
+              ],
+              "intensityRecommendations": {
+                "duration": "4-6 weeks intensive",
+                "frequency": "Daily sessions",
+                "totalIntervention": "20-30 hours",
+                "researchSupport": "RTI framework guidelines"
+              }
+            }
+          ]
+        },
+        "_id": {
+          "$oid": "68c87b4f47bd7d555f07a56f"
+        }
+      }
+    },
+    "analyticsMetrics": {
+      "fatigueIndicators": {
+        "performanceDecline": false,
+        "responseTimeIncrease": false,
+        "errorPatternShift": false
+      },
+      "confidenceMetrics": {
+        "skillMasteryConfidence": 0,
+        "interventionSuccessProbability": 0
+      },
+      "totalQuestions": 0,
+      "totalCorrect": 0,
+      "averageResponseTime": 0,
+      "consistencyIndex": 0
+    },
+    "strengths": [],
+    "weaknesses": [
+      "Phonological Awareness: Fundamental skill gaps"
+    ],
+    "recommendations": [
+      "Phonological Awareness: Create 17 intervention questions"
+    ],
+    "createdAt": {
+      "$date": "2025-09-15T20:47:11.416Z"
+    },
+    "updatedAt": {
+      "$date": "2025-09-15T20:47:11.432Z"
+    },
+    "interventionHistory": [],
+    "__v": 0
+  }

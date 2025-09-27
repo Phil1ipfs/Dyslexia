@@ -384,7 +384,7 @@ class ReadingLevelProgressionService {
           categoryName: categoryName,
           totalQuestions: questionCount,
           correctAnswers: 0,
-          totalPossibleMatches: categoryName === 'Phonological Awareness' ? questionCount * 3 : 0, // PA has matching questions
+          totalPossibleMatches: 0, // ✅ FIX: Will be calculated from actual student_responses when assessment is taken
           correctMatches: 0,
           score: 0,
           isPassed: false,
