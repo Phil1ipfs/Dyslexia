@@ -28,6 +28,9 @@ class CategoryResultsService {
       // Step 3: Repair ALL incomplete category records
       await this.repairAllIncompleteCategoryRecords();
 
+      // Step 4: Fix existing overall scores that don't include intervention results
+      await this.fixExistingOverallScores();
+
       console.log('[AUTO-FIX] ✅ Comprehensive category repair completed successfully');
 
     } catch (error) {
@@ -1620,8 +1623,55 @@ class CategoryResultsService {
   }
 
   /**
-   * Calculate overall statistics from categories
-   * ✅ FIX: Updated to properly detect categories that pass without intervention
+   * ✅ FIX EXISTING OVERALL SCORES: Update records with incorrect overall scores
+   * This specifically fixes records that have intervention successes but wrong overall scores
+   */
+  static async fixExistingOverallScores() {
+    try {
+      console.log('[OVERALL SCORE FIX] 🔧 Fixing existing records with incorrect overall scores...');
+
+      // Find all category results that might have incorrect overall scores
+      const allCategoryResults = await CategoryResult.find({});
+      let fixedCount = 0;
+      let checkedCount = 0;
+
+      for (const categoryResult of allCategoryResults) {
+        checkedCount++;
+        const studentId = categoryResult.studentId;
+
+        // Calculate what the overall score SHOULD be using our new logic
+        const correctStats = this.calculateOverallStats(categoryResult.categories);
+        const currentScore = categoryResult.overallScore || 0;
+        const correctScore = correctStats.overallScore;
+
+        if (Math.abs(currentScore - correctScore) > 1) { // Allow 1% rounding difference
+          console.log(`[OVERALL SCORE FIX] Student ${studentId}: Current ${currentScore}% → Correct ${correctScore}%`);
+
+          // Update the record with correct overall score
+          categoryResult.overallScore = correctScore;
+          categoryResult.completedCategories = correctStats.passedCategories;
+          categoryResult.allCategoriesPassed = correctStats.passedCategories === categoryResult.categories.length;
+          categoryResult.updatedAt = new Date();
+
+          await categoryResult.save();
+          fixedCount++;
+
+          console.log(`[OVERALL SCORE FIX] ✅ Fixed student ${studentId}: ${currentScore}% → ${correctScore}%`);
+        }
+      }
+
+      console.log(`[OVERALL SCORE FIX] ✅ Complete: ${fixedCount} fixed, ${checkedCount - fixedCount} already correct`);
+      return { fixedCount, checkedCount };
+
+    } catch (error) {
+      console.error('[OVERALL SCORE FIX] ❌ Error fixing overall scores:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate overall statistics using simple average with intervention scores
+   * ✅ FIX: Uses intervention scores when intervention passed
    *
    * @param {Array} categories - Array of category data
    * @returns {Object} - Overall statistics
@@ -1660,40 +1710,32 @@ class CategoryResultsService {
 
     let overallScore = 0;
 
-    if (effectivelyCompletedCategories.length > 0) {
-      // Calculate effective score for each COMPLETED category (use intervention if higher)
-      const effectiveScores = effectivelyCompletedCategories.map(cat => {
-        let effectiveScore = cat.score || 0;
+    // Calculate scores for ALL categories (use intervention score if passed via intervention)
+    const allScores = categories.map(cat => {
+      const mainAssessmentPassed = (cat.score || 0) >= 75;
+      const hasSuccessfulIntervention = cat.interventionHistory && cat.interventionHistory.some(intervention => intervention.isPassed === true);
 
-        // Check if category has intervention history with passed attempts
-        if (cat.interventionHistory && cat.interventionHistory.length > 0) {
-          // Find the highest scoring passed intervention
-          const passedInterventions = cat.interventionHistory.filter(attempt => attempt.isPassed === true);
-          if (passedInterventions.length > 0) {
-            const highestInterventionScore = Math.max(...passedInterventions.map(attempt => attempt.score || 0));
+      let finalScore = cat.score || 0;
 
-            // Use intervention score if higher than original
-            if (highestInterventionScore > effectiveScore) {
-              console.log(`[OVERALL STATS] Using intervention score for ${cat.categoryName}: ${highestInterventionScore}% (original: ${effectiveScore}%)`);
-              effectiveScore = highestInterventionScore;
-            }
-          }
-        }
+      // If main assessment didn't pass but intervention passed, use intervention score
+      if (!mainAssessmentPassed && hasSuccessfulIntervention) {
+        const passedInterventions = cat.interventionHistory.filter(attempt => attempt.isPassed === true);
+        const highestInterventionScore = Math.max(...passedInterventions.map(attempt => attempt.score || 0));
+        finalScore = highestInterventionScore;
+        console.log(`[OVERALL STATS] Using intervention score for ${cat.categoryName}: ${highestInterventionScore}% (original: ${cat.score}%)`);
+      } else {
+        console.log(`[OVERALL STATS] Using original score for ${cat.categoryName}: ${finalScore}%`);
+      }
 
-        return effectiveScore;
-      });
+      return finalScore;
+    });
 
-      // ✅ CRITICAL FIX: Include completed category scores, divided by TOTAL categories for reading level
-      // This properly reflects partial completion across all reading levels
-      const totalScore = effectiveScores.reduce((sum, score) => sum + score, 0);
-      overallScore = Math.round(totalScore / categories.length);
+    // Simple average of all category scores
+    const totalScore = allScores.reduce((sum, score) => sum + score, 0);
+    overallScore = Math.round(totalScore / categories.length);
 
-      console.log(`[OVERALL STATS] ✅ COMPLETION-AWARE CALCULATION: ${overallScore}% (${effectivelyCompletedCategories.length} completed out of ${categories.length} total)`);
-      console.log(`[OVERALL STATS] Completed scores: [${effectiveScores.join(', ')}]`);
-      console.log(`[OVERALL STATS] Completed: ${effectivelyCompletedCategories.length}, Incomplete: ${incompleteCategories.length}, Total: ${categories.length}`);
-    } else {
-      console.log(`[OVERALL STATS] No completed categories - overall score remains 0%`);
-    }
+    console.log(`[OVERALL STATS] ✅ SIMPLE CALCULATION: ${overallScore}% average of [${allScores.join(', ')}]`);
+    console.log(`[OVERALL STATS] Passed: ${effectivelyCompletedCategories.length}, Failed: ${incompleteCategories.length}, Total: ${categories.length}`);
 
     const interventionRequired = incompleteCategories.length > 0;
 
