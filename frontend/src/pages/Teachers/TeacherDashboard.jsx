@@ -2482,20 +2482,6 @@ const TeacherDashboard = () => {
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em'
                           }}>Grade</th>
-                          {selectedReadingLevel !== 'Not Assessed' && <th style={{
-                            textAlign: 'left',
-                            fontSize: '0.9rem',
-                            fontWeight: '500',
-                            color: 'white',
-                            padding: '12px 16px',
-                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                            backgroundColor: '#2a3c6d', // Darker blue as shown in screenshot
-                            position: 'sticky',
-                            top: '0',
-                            zIndex: '10',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em'
-                          }}>Score</th>}
                           <th style={{
                             textAlign: 'left',
                             fontSize: '0.9rem',
@@ -2544,14 +2530,6 @@ const TeacherDashboard = () => {
                                 color: 'white',
                                 backgroundColor: 'transparent'
                               }}>{student.gradeLevel || 'Grade 1'}</td>
-                              {selectedReadingLevel !== 'Not Assessed' && <td style={{
-                                padding: '12px 16px',
-                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                                fontSize: '0.95rem',
-                                verticalAlign: 'middle',
-                                color: 'white',
-                                backgroundColor: 'transparent'
-                              }}>{student.readingPercentage ? `${student.readingPercentage}%` : 'N/A'}</td>}
                               <td style={{
                                 padding: '12px 16px',
                                 borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
@@ -2595,7 +2573,7 @@ const TeacherDashboard = () => {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan={selectedReadingLevel !== 'Not Assessed' ? 5 : 4} style={{
+                            <td colSpan="4" style={{
                               textAlign: 'center',
                               padding: '20px',
                               color: 'white',
