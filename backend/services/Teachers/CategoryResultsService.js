@@ -1368,7 +1368,9 @@ class CategoryResultsService {
             return existingResult; // Return the existing record without modification
           }
 
-        // 🎯 SAFE TO MODIFY: Detect and repair incomplete existing records (only for current level)
+          console.log(`[CATEGORY RESULTS] ✅ VALIDATION PASSED - Safe to modify current level record`);
+
+          // 🎯 SAFE TO MODIFY: Detect and repair incomplete existing records (only for current level)
         const requiredCategories = this.getCategoriesForReadingLevel(readingLevel);
         const existingCategoryNames = existingResult.categories.map(c => c.categoryName);
         const missingCategories = requiredCategories.filter(cat => !existingCategoryNames.includes(cat));
@@ -1491,6 +1493,7 @@ class CategoryResultsService {
         console.log(`[CATEGORY RESULTS] Categories: ${updatedResult.categories.map(c => `${c.categoryName} (${c.totalQuestions}Q, ${c.interventionHistory?.length || 0} interventions)`).join(', ')}`);
 
         return updatedResult;
+        }
       }
 
       // No existing record found - create new one
