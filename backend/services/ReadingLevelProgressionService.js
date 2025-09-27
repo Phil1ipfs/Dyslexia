@@ -374,26 +374,15 @@ class ReadingLevelProgressionService {
         console.log(`[PROGRESSION] ✅ Removed existing ${newLevel} record - will create fresh one`);
       }
 
-      // ✅ FIX: Get intervention history from previous reading level for shared categories
-      const previousLevelCategories = await this.getPreviousLevelInterventionHistory(studentId, newLevel, session);
-      console.log(`[PROGRESSION] 📋 Previous level intervention history:`, previousLevelCategories);
+      // ✅ CRITICAL FIX: DO NOT copy intervention history between reading levels
+      // Each reading level should start with fresh, empty intervention history
+      console.log(`[PROGRESSION] 📋 Starting fresh - no intervention history copying between reading levels`);
 
-      // Create categories array with proper question counts and preserved intervention history
+      // Create categories array with proper question counts and FRESH intervention status
       const categories = requiredCategories.map(categoryName => {
         const questionCount = questionCounts[categoryName] || 15; // Default to 15 if not found
-        const previousCategoryData = previousLevelCategories[categoryName];
 
-        console.log(`[PROGRESSION]   📝 ${categoryName}: ${questionCount} questions`);
-
-        if (previousCategoryData) {
-          console.log(`[PROGRESSION]   ✅ Preserving intervention status for ${categoryName}:`, {
-            attempts: previousCategoryData.interventionAttempts,
-            historyCount: previousCategoryData.interventionHistory.length,
-            completed: previousCategoryData.interventionCompleted,
-            previousInterventionId: previousCategoryData.currentInterventionId,
-            newInterventionId: null // Reset for new reading level
-          });
-        }
+        console.log(`[PROGRESSION]   📝 ${categoryName}: ${questionCount} questions - FRESH START (no intervention history)`);
 
         return {
           categoryName: categoryName,
@@ -407,12 +396,11 @@ class ReadingLevelProgressionService {
           isCompleted: false,
           lastQuestionAnswered: '',
           interventionRequired: false,
-          // ✅ FIX: Preserve intervention completion status from previous level for shared categories
-          interventionAttempts: previousCategoryData?.interventionAttempts || 0,
-          interventionCompleted: previousCategoryData?.interventionCompleted || false,
-          // ✅ CRITICAL FIX: DO NOT copy currentInterventionId - each reading level needs its own interventions
-          currentInterventionId: null, // Always reset for new reading level
-          interventionHistory: previousCategoryData?.interventionHistory || []
+          // ✅ CRITICAL FIX: Start fresh - no intervention data copied from previous reading level
+          interventionAttempts: 0,              // Fresh start - no attempts
+          interventionCompleted: false,         // Fresh start - not completed
+          currentInterventionId: null,          // Fresh start - no current intervention
+          interventionHistory: []               // ✅ FRESH START - empty intervention history
         };
       });
 
@@ -435,7 +423,7 @@ class ReadingLevelProgressionService {
 
       console.log(`[PROGRESSION] ✅ Created category results placeholder for ${newLevel} with ${requiredCategories.length} categories`);
       console.log(`[PROGRESSION] 📋 Categories created: [${requiredCategories.join(', ')}]`);
-      console.log(`[PROGRESSION] 📋 Intervention history preserved for shared categories:`, Object.keys(previousLevelCategories));
+      console.log(`[PROGRESSION] 📋 All categories start fresh with empty intervention history - no data copied from previous level`);
 
     } catch (error) {
       console.error(`[PROGRESSION] ❌ Error creating category placeholder:`, error);
