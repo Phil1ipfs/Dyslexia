@@ -268,18 +268,43 @@ class CategoryResultsService {
           await this.createPlaceholderCategoryRecord(studentId, readingLevel, requiredCategories);
           repairedCount++;
         } else {
-          // Check if all required categories are present
-          const existingResult = existingResults[0]; // Take the first (should be only one)
-          const existingCategoryNames = existingResult.categories.map(cat => cat.categoryName);
-          const missingCategories = requiredCategories.filter(cat => !existingCategoryNames.includes(cat));
+          // 🎯 SMART RECORD SELECTION: Only repair records that match current reading level
+          const currentLevelRecord = existingResults.find(result => result.readingLevel === readingLevel);
 
-          if (missingCategories.length > 0) {
-            console.log(`[COMPREHENSIVE REPAIR]   🔧 INCOMPLETE RECORD - Missing ${missingCategories.length} categories: ${missingCategories.join(', ')}`);
-            await this.addMissingCategoriesToRecord(existingResult, missingCategories, readingLevel);
+          if (!currentLevelRecord) {
+            console.log(`[COMPREHENSIVE REPAIR]   ❌ NO CURRENT LEVEL RECORD - Found ${existingResults.length} historical records but none for ${readingLevel}`);
+            console.log(`[COMPREHENSIVE REPAIR]   📚 Historical levels: ${existingResults.map(r => r.readingLevel).join(', ')}`);
+            console.log(`[COMPREHENSIVE REPAIR]   ➕ Creating new record for current level: ${readingLevel}`);
+            await this.createPlaceholderCategoryRecord(studentId, readingLevel, requiredCategories);
             repairedCount++;
           } else {
-            console.log(`[COMPREHENSIVE REPAIR]   ✅ COMPLETE RECORD - All ${requiredCategories.length} categories present`);
-            alreadyCompleteCount++;
+            // 🚫 HISTORICAL RECORD PROTECTION: Skip completed historical records
+            if (currentLevelRecord.readingLevelUpdated === true) {
+              console.log(`[COMPREHENSIVE REPAIR]   🚫 HISTORICAL RECORD - Cannot modify completed record (readingLevelUpdated=true)`);
+              console.log(`[COMPREHENSIVE REPAIR]   📚 Record: ${currentLevelRecord.readingLevel} level, completed on ${currentLevelRecord.updatedAt}`);
+              alreadyCompleteCount++;
+              continue;
+            }
+
+            if (currentLevelRecord.allCategoriesPassed === true) {
+              console.log(`[COMPREHENSIVE REPAIR]   🚫 PROGRESSION COMPLETED - Cannot modify record (allCategoriesPassed=true)`);
+              console.log(`[COMPREHENSIVE REPAIR]   ✅ Record has completed its level progression`);
+              alreadyCompleteCount++;
+              continue;
+            }
+
+            // Check if all required categories are present in current level record
+            const existingCategoryNames = currentLevelRecord.categories.map(cat => cat.categoryName);
+            const missingCategories = requiredCategories.filter(cat => !existingCategoryNames.includes(cat));
+
+            if (missingCategories.length > 0) {
+              console.log(`[COMPREHENSIVE REPAIR]   🔧 INCOMPLETE CURRENT RECORD - Missing ${missingCategories.length} categories: ${missingCategories.join(', ')}`);
+              await this.addMissingCategoriesToRecord(currentLevelRecord, missingCategories, readingLevel);
+              repairedCount++;
+            } else {
+              console.log(`[COMPREHENSIVE REPAIR]   ✅ COMPLETE CURRENT RECORD - All ${requiredCategories.length} categories present`);
+              alreadyCompleteCount++;
+            }
           }
         }
       }
@@ -356,7 +381,30 @@ class CategoryResultsService {
    */
   static async addMissingCategoriesToRecord(existingResult, missingCategories, readingLevel) {
     try {
+      // 🚫 CRITICAL VALIDATION: Never modify historical records
+      if (existingResult.readingLevelUpdated === true) {
+        console.log(`[MISSING CATEGORIES] 🚫 HISTORICAL RECORD PROTECTION: Cannot modify completed record with readingLevelUpdated=true`);
+        console.log(`[MISSING CATEGORIES] 📚 Historical record: ${existingResult.readingLevel} level, completed on ${existingResult.updatedAt}`);
+        console.log(`[MISSING CATEGORIES] ✅ Skipping modification - historical record must remain intact`);
+        return; // Exit early without modification
+      }
+
+      // 🚫 READING LEVEL MISMATCH PROTECTION: Never modify records from different reading levels
+      if (existingResult.readingLevel !== readingLevel) {
+        console.log(`[MISSING CATEGORIES] 🚫 READING LEVEL MISMATCH: Record level (${existingResult.readingLevel}) ≠ Current level (${readingLevel})`);
+        console.log(`[MISSING CATEGORIES] ✅ This is a historical record from previous level - skipping modification`);
+        return; // Exit early without modification
+      }
+
+      // 🚫 PROGRESSION PROTECTION: Never modify records that have completed progression
+      if (existingResult.allCategoriesPassed === true) {
+        console.log(`[MISSING CATEGORIES] 🚫 PROGRESSION COMPLETED: Record shows allCategoriesPassed=true`);
+        console.log(`[MISSING CATEGORIES] ✅ This record has completed its level progression - skipping modification`);
+        return; // Exit early without modification
+      }
+
       console.log(`[MISSING CATEGORIES] ➕ Adding ${missingCategories.length} missing categories to record ${existingResult._id}`);
+      console.log(`[MISSING CATEGORIES] ✅ Validation passed - safe to modify current level record`);
 
       for (const categoryName of missingCategories) {
         // Get correct question count from main_assessment
@@ -1275,25 +1323,50 @@ class CategoryResultsService {
       const existingResults = await this.getCategoryResults(parseInt(studentId));
 
       if (existingResults && existingResults.length > 0) {
-        console.log(`[CATEGORY RESULTS] ⚠️  EXISTING RECORD FOUND - CHECKING IF MODIFICATION IS ALLOWED`);
+        console.log(`[CATEGORY RESULTS] ⚠️  EXISTING RECORDS FOUND - CHECKING IF MODIFICATION IS ALLOWED`);
+        console.log(`[CATEGORY RESULTS] 📊 Found ${existingResults.length} existing records for student ${studentId}`);
 
-        // 🎯 CRITICAL FIX: Never modify completed historical records
-        const existingResult = existingResults[0]; // Get the first (most recent) record
+        // 🎯 SMART RECORD SELECTION: Find record that matches current reading level
+        const currentLevelRecord = existingResults.find(result => result.readingLevel === readingLevel);
+        const hasHistoricalRecords = existingResults.some(result => result.readingLevel !== readingLevel);
 
-        // ✅ CRITICAL VALIDATION: Check if this is a completed historical record
-        if (existingResult.readingLevelUpdated === true) {
-          console.log(`[CATEGORY RESULTS] 🚫 HISTORICAL RECORD DETECTED - Cannot modify completed record with readingLevelUpdated=true`);
-          console.log(`[CATEGORY RESULTS] 📚 Historical record: ${existingResult.readingLevel} level, completed on ${existingResult.updatedAt}`);
-          console.log(`[CATEGORY RESULTS] ✅ Skipping modification - historical record must remain intact`);
-          return existingResult; // Return the historical record without modification
+        if (hasHistoricalRecords) {
+          const historicalLevels = existingResults
+            .filter(result => result.readingLevel !== readingLevel)
+            .map(result => result.readingLevel);
+          console.log(`[CATEGORY RESULTS] 📚 Historical records detected for levels: [${historicalLevels.join(', ')}]`);
+          console.log(`[CATEGORY RESULTS] 🚫 HISTORICAL PROTECTION: These records will not be modified`);
         }
 
-        // ✅ CRITICAL VALIDATION: Check if reading levels match
-        if (existingResult.readingLevel !== readingLevel) {
-          console.log(`[CATEGORY RESULTS] 🚫 READING LEVEL MISMATCH - Record level: ${existingResult.readingLevel}, Current level: ${readingLevel}`);
-          console.log(`[CATEGORY RESULTS] ✅ This indicates a progression occurred - old record should not be modified`);
-          return existingResult; // Return the existing record without modification
-        }
+        if (!currentLevelRecord) {
+          console.log(`[CATEGORY RESULTS] ❌ NO CURRENT LEVEL RECORD - Found historical records but none for ${readingLevel}`);
+          console.log(`[CATEGORY RESULTS] ➕ Creating new record for current level: ${readingLevel}`);
+          // Fall through to create new record
+        } else {
+          console.log(`[CATEGORY RESULTS] ✅ CURRENT LEVEL RECORD FOUND - Checking modification permissions`);
+          const existingResult = currentLevelRecord;
+
+          // ✅ CRITICAL VALIDATION: Check if this is a completed historical record
+          if (existingResult.readingLevelUpdated === true) {
+            console.log(`[CATEGORY RESULTS] 🚫 HISTORICAL RECORD DETECTED - Cannot modify completed record with readingLevelUpdated=true`);
+            console.log(`[CATEGORY RESULTS] 📚 Historical record: ${existingResult.readingLevel} level, completed on ${existingResult.updatedAt}`);
+            console.log(`[CATEGORY RESULTS] ✅ Skipping modification - historical record must remain intact`);
+            return existingResult; // Return the historical record without modification
+          }
+
+          // ✅ PROGRESSION PROTECTION: Check if progression is completed
+          if (existingResult.allCategoriesPassed === true) {
+            console.log(`[CATEGORY RESULTS] 🚫 PROGRESSION COMPLETED - Cannot modify record with allCategoriesPassed=true`);
+            console.log(`[CATEGORY RESULTS] ✅ This record has completed its level progression - skipping modification`);
+            return existingResult; // Return the completed record without modification
+          }
+
+          // ✅ CRITICAL VALIDATION: Double-check reading levels match
+          if (existingResult.readingLevel !== readingLevel) {
+            console.log(`[CATEGORY RESULTS] 🚫 READING LEVEL MISMATCH - Record level: ${existingResult.readingLevel}, Current level: ${readingLevel}`);
+            console.log(`[CATEGORY RESULTS] ✅ This indicates a progression occurred - old record should not be modified`);
+            return existingResult; // Return the existing record without modification
+          }
 
         // 🎯 SAFE TO MODIFY: Detect and repair incomplete existing records (only for current level)
         const requiredCategories = this.getCategoriesForReadingLevel(readingLevel);
