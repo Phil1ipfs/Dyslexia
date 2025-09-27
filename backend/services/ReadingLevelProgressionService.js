@@ -374,11 +374,26 @@ class ReadingLevelProgressionService {
         console.log(`[PROGRESSION] ✅ Removed existing ${newLevel} record - will create fresh one`);
       }
 
-      // Create categories array with proper question counts
+      // ✅ FIX: Get intervention history from previous reading level for shared categories
+      const previousLevelCategories = await this.getPreviousLevelInterventionHistory(studentId, newLevel, session);
+      console.log(`[PROGRESSION] 📋 Previous level intervention history:`, previousLevelCategories);
+
+      // Create categories array with proper question counts and preserved intervention history
       const categories = requiredCategories.map(categoryName => {
         const questionCount = questionCounts[categoryName] || 15; // Default to 15 if not found
+        const previousCategoryData = previousLevelCategories[categoryName];
 
         console.log(`[PROGRESSION]   📝 ${categoryName}: ${questionCount} questions`);
+
+        if (previousCategoryData) {
+          console.log(`[PROGRESSION]   ✅ Preserving intervention status for ${categoryName}:`, {
+            attempts: previousCategoryData.interventionAttempts,
+            historyCount: previousCategoryData.interventionHistory.length,
+            completed: previousCategoryData.interventionCompleted,
+            previousInterventionId: previousCategoryData.currentInterventionId,
+            newInterventionId: null // Reset for new reading level
+          });
+        }
 
         return {
           categoryName: categoryName,
@@ -392,10 +407,12 @@ class ReadingLevelProgressionService {
           isCompleted: false,
           lastQuestionAnswered: '',
           interventionRequired: false,
-          interventionAttempts: 0,
-          interventionCompleted: false,
-          currentInterventionId: null,
-          interventionHistory: []
+          // ✅ FIX: Preserve intervention completion status from previous level for shared categories
+          interventionAttempts: previousCategoryData?.interventionAttempts || 0,
+          interventionCompleted: previousCategoryData?.interventionCompleted || false,
+          // ✅ CRITICAL FIX: DO NOT copy currentInterventionId - each reading level needs its own interventions
+          currentInterventionId: null, // Always reset for new reading level
+          interventionHistory: previousCategoryData?.interventionHistory || []
         };
       });
 
@@ -418,11 +435,93 @@ class ReadingLevelProgressionService {
 
       console.log(`[PROGRESSION] ✅ Created category results placeholder for ${newLevel} with ${requiredCategories.length} categories`);
       console.log(`[PROGRESSION] 📋 Categories created: [${requiredCategories.join(', ')}]`);
+      console.log(`[PROGRESSION] 📋 Intervention history preserved for shared categories:`, Object.keys(previousLevelCategories));
 
     } catch (error) {
       console.error(`[PROGRESSION] ❌ Error creating category placeholder:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Get intervention history from previous reading level for shared categories
+   * This preserves intervention data when student progresses to new level
+   */
+  static async getPreviousLevelInterventionHistory(studentId, newLevel, session) {
+    try {
+      console.log(`[PROGRESSION] 🔍 Getting previous level intervention history for ${newLevel}`);
+
+      // Get previous reading level
+      const previousLevel = this.getPreviousReadingLevel(newLevel);
+      if (!previousLevel) {
+        console.log(`[PROGRESSION] 📋 No previous level for ${newLevel} - returning empty history`);
+        return {};
+      }
+
+      console.log(`[PROGRESSION] 📋 Previous level: ${previousLevel} → Current level: ${newLevel}`);
+
+      // Get categories for both levels
+      const previousCategories = this.getCategoriesForReadingLevel(previousLevel);
+      const newCategories = this.getCategoriesForReadingLevel(newLevel);
+      const sharedCategories = previousCategories.filter(cat => newCategories.includes(cat));
+
+      console.log(`[PROGRESSION] 📋 Shared categories between levels:`, sharedCategories);
+
+      if (sharedCategories.length === 0) {
+        console.log(`[PROGRESSION] 📋 No shared categories - returning empty history`);
+        return {};
+      }
+
+      // Get previous level category results
+      const previousCategoryResults = await CategoryResult.findOne({
+        studentId: studentId,
+        readingLevel: previousLevel
+      }).session(session);
+
+      if (!previousCategoryResults) {
+        console.log(`[PROGRESSION] ⚠️ No previous category results found for ${previousLevel}`);
+        return {};
+      }
+
+      // Extract intervention history for shared categories
+      const interventionHistory = {};
+      for (const categoryName of sharedCategories) {
+        const categoryData = previousCategoryResults.categories.find(cat => cat.categoryName === categoryName);
+        if (categoryData && (categoryData.interventionHistory?.length > 0 || categoryData.interventionAttempts > 0)) {
+          interventionHistory[categoryName] = {
+            interventionAttempts: categoryData.interventionAttempts || 0,
+            interventionCompleted: categoryData.interventionCompleted || false,
+            currentInterventionId: categoryData.currentInterventionId || null,
+            interventionHistory: categoryData.interventionHistory || []
+          };
+          console.log(`[PROGRESSION] ✅ Preserving intervention history for ${categoryName}:`, {
+            attempts: categoryData.interventionAttempts,
+            historyCount: categoryData.interventionHistory?.length || 0
+          });
+        }
+      }
+
+      return interventionHistory;
+    } catch (error) {
+      console.error(`[PROGRESSION] ❌ Error getting previous level intervention history:`, error);
+      return {};
+    }
+  }
+
+  /**
+   * Get the previous reading level for progression chain
+   */
+  static getPreviousReadingLevel(currentLevel) {
+    const levelOrder = [
+      'Low Emerging',
+      'High Emerging',
+      'Developing',
+      'Transitioning',
+      'At Grade Level'
+    ];
+
+    const currentIndex = levelOrder.indexOf(currentLevel);
+    return currentIndex > 0 ? levelOrder[currentIndex - 1] : null;
   }
 
   /**

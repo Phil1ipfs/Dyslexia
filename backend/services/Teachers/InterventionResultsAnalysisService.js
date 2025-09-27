@@ -2326,12 +2326,30 @@ class InterventionResultsAnalysisService {
     const { studentId, category } = dataContext;
 
     console.log(`[INTERVENTION ANALYSIS] 📊 Updating category_results with intervention data...`);
+    console.log(`[INTERVENTION ANALYSIS] 📊 Looking for category_results:`, {
+      studentId: studentId,
+      category: category,
+      readingLevel: interventionResults.readingLevel,
+      interventionId: interventionResults.interventionAssessmentId
+    });
 
-    const categoryResults = await CategoryResults.findOne({ studentId: studentId });
+    // ✅ FIX: Find category_results for the CORRECT reading level where intervention was taken
+    const categoryResults = await CategoryResults.findOne({
+      studentId: studentId,
+      readingLevel: interventionResults.readingLevel  // CRITICAL: Match reading level
+    });
+
     if (!categoryResults) {
-      console.warn(`[INTERVENTION ANALYSIS] ⚠️ Category results not found for student ${studentId}`);
+      console.warn(`[INTERVENTION ANALYSIS] ⚠️ Category results not found for student ${studentId} at reading level ${interventionResults.readingLevel}`);
+      console.warn(`[INTERVENTION ANALYSIS] ⚠️ This means intervention was taken but category_results record doesn't exist for this level`);
       return;
     }
+
+    console.log(`[INTERVENTION ANALYSIS] ✅ Found category_results for ${interventionResults.readingLevel} level:`, {
+      recordId: categoryResults._id,
+      readingLevel: categoryResults.readingLevel,
+      categoriesCount: categoryResults.categories.length
+    });
 
     const categoryIndex = categoryResults.categories.findIndex(cat => cat.categoryName === category);
     if (categoryIndex === -1) {
