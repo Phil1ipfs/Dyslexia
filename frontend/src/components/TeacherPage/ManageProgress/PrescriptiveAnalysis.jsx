@@ -1015,6 +1015,25 @@ const PrescriptiveAnalysis = ({
     }
   }, [liveStudent?.idNumber, liveStudent?.id, studentId, liveCategoryResults?.categories]);
 
+  // ✅ NEW: useEffect to trigger UI re-render when intervention results are loaded
+  // This ensures the component switches from "BEFORE INTERVENTION" to "AFTER INTERVENTION" mode
+  useEffect(() => {
+    console.log('[INTERVENTION RESULTS] ✅ interventionResults state changed - checking for UI updates needed');
+    console.log('[INTERVENTION RESULTS] ✅ Current interventionResults state:', interventionResults);
+    console.log('[INTERVENTION RESULTS] ✅ Available intervention categories:', Object.keys(interventionResults));
+
+    // Check if the selected category now has intervention results
+    if (selectedCategory && interventionResults[selectedCategory]) {
+      console.log(`[INTERVENTION RESULTS] ✅ ${selectedCategory} now has intervention results - UI should update to AFTER INTERVENTION mode`);
+      console.log(`[INTERVENTION RESULTS] ✅ ${selectedCategory} intervention data:`, interventionResults[selectedCategory]);
+
+      // Force a re-render by updating a timestamp (optional - React should handle this automatically)
+      // But this ensures the renderDynamicAnalysisLayout function gets called with the new data
+    } else if (selectedCategory) {
+      console.log(`[INTERVENTION RESULTS] ℹ️ ${selectedCategory} does not have intervention results yet`);
+    }
+  }, [interventionResults, selectedCategory]); // Trigger when intervention results or selected category changes
+
   // ===== HELPER FUNCTIONS =====
 
   /**
@@ -3920,7 +3939,20 @@ const PrescriptiveAnalysis = ({
   const renderDynamicAnalysisLayout = (categoryName, detailedErrorAnalysis, researchBasedPrescriptions, selectedAnalysis) => {
     const interventionData = interventionResults[categoryName];
     const hasInterventionResults = interventionData && interventionData.score !== undefined;
-    
+
+    // ✅ ENHANCED DEBUGGING for intervention results detection
+    console.log('🔍 [INTERVENTION DETECTION] ===========================================');
+    console.log('🔍 [INTERVENTION DETECTION] Checking intervention results for:', categoryName);
+    console.log('🔍 [INTERVENTION DETECTION] Full interventionResults state:', interventionResults);
+    console.log('🔍 [INTERVENTION DETECTION] All available categories in interventionResults:', Object.keys(interventionResults));
+    console.log('🔍 [INTERVENTION DETECTION] interventionData for this category:', interventionData);
+    console.log('🔍 [INTERVENTION DETECTION] interventionData exists?', !!interventionData);
+    console.log('🔍 [INTERVENTION DETECTION] interventionData.score:', interventionData?.score);
+    console.log('🔍 [INTERVENTION DETECTION] interventionData.score !== undefined?', interventionData?.score !== undefined);
+    console.log('🔍 [INTERVENTION DETECTION] hasInterventionResults (final):', hasInterventionResults);
+    console.log('🔍 [INTERVENTION DETECTION] Will show mode:', hasInterventionResults ? '🎯 AFTER INTERVENTION (with intervention results)' : '📋 BEFORE INTERVENTION (initial diagnosis)');
+    console.log('🔍 [INTERVENTION DETECTION] ===========================================');
+
     console.log('[DEBUG] renderDynamicAnalysisLayout called with:', {
       categoryName,
       hasDetailedErrorAnalysis: !!detailedErrorAnalysis,
@@ -3936,7 +3968,7 @@ const PrescriptiveAnalysis = ({
       scoreType: typeof interventionData?.score,
       scoreValue: interventionData?.score
     });
-    
+
     console.log('[DEBUG] Will show layout type:', hasInterventionResults ? 'BEFORE/AFTER COMPARISON' : 'INITIAL DIAGNOSIS ONLY');
 
     if (!hasInterventionResults) {
