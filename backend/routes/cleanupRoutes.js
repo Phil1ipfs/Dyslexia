@@ -61,4 +61,17 @@ router.post('/clear-cache', DatabaseCleanupController.clearCache);
  */
 router.get('/system-status', DatabaseCleanupController.getSystemStatus);
 
+/**
+ * POST /api/cleanup/prescriptive-duplicates
+ * Remove duplicate prescriptive analysis records that block new analysis generation
+ * Body: { "studentId": 202533333 } or { "confirm": "all" } to clean all duplicates
+ */
+router.post('/prescriptive-duplicates', DatabaseCleanupController.removePrescriptiveDuplicates);
+
+/**
+ * GET /api/cleanup/prescriptive-duplicates/:studentId
+ * Check for duplicate prescriptive analysis records for a specific student
+ */
+router.get('/prescriptive-duplicates/:studentId', DatabaseCleanupController.checkPrescriptiveDuplicates);
+
 module.exports = router;

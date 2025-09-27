@@ -252,6 +252,173 @@ class DatabaseCleanupController {
       });
     }
   }
+
+  /**
+   * Check for duplicate prescriptive analysis records for a specific student
+   */
+  async checkPrescriptiveDuplicates(req, res) {
+    try {
+      const { studentId } = req.params;
+      console.log(`🔍 [CLEANUP CONTROLLER] Checking prescriptive analysis duplicates for student ${studentId}...`);
+
+      const mongoose = require('mongoose');
+      const testDb = mongoose.connection.useDb('test');
+      const prescriptiveCollection = testDb.collection('prescriptive_analysis');
+
+      // Find all records for this student
+      const records = await prescriptiveCollection.find({
+        studentId: parseInt(studentId)
+      }).toArray();
+
+      // Find duplicates (records with same studentId and categoryId = null)
+      const duplicates = records.filter(record => record.categoryId === null);
+      const validRecords = records.filter(record => record.categoryId !== null);
+
+      console.log(`[CLEANUP CONTROLLER] Found ${records.length} total records, ${duplicates.length} duplicates, ${validRecords.length} valid`);
+
+      return res.status(200).json({
+        success: true,
+        message: `Duplicate check completed for student ${studentId}`,
+        data: {
+          studentId: parseInt(studentId),
+          totalRecords: records.length,
+          duplicateRecords: duplicates.length,
+          validRecords: validRecords.length,
+          duplicates: duplicates.map(d => ({
+            _id: d._id,
+            categoryId: d.categoryId,
+            readingLevel: d.readingLevel,
+            createdAt: d.createdAt
+          })),
+          blockingNewAnalysis: duplicates.length > 0
+        },
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ [CLEANUP CONTROLLER] Failed to check prescriptive duplicates:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to check prescriptive analysis duplicates',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
+   * Remove duplicate prescriptive analysis records that block new analysis generation
+   */
+  async removePrescriptiveDuplicates(req, res) {
+    try {
+      const { studentId, confirm } = req.body;
+      console.log(`🗑️ [CLEANUP CONTROLLER] Removing prescriptive analysis duplicates...`);
+
+      const mongoose = require('mongoose');
+      const testDb = mongoose.connection.useDb('test');
+      const prescriptiveCollection = testDb.collection('prescriptive_analysis');
+
+      let deletionResults = [];
+
+      if (studentId) {
+        // Remove duplicates for specific student
+        console.log(`[CLEANUP CONTROLLER] Targeting student ${studentId} for duplicate removal`);
+
+        const duplicates = await prescriptiveCollection.find({
+          studentId: parseInt(studentId),
+          categoryId: null
+        }).toArray();
+
+        if (duplicates.length > 0) {
+          const deleteResult = await prescriptiveCollection.deleteMany({
+            studentId: parseInt(studentId),
+            categoryId: null
+          });
+
+          deletionResults.push({
+            studentId: parseInt(studentId),
+            duplicatesFound: duplicates.length,
+            duplicatesRemoved: deleteResult.deletedCount,
+            removedIds: duplicates.map(d => d._id)
+          });
+
+          console.log(`[CLEANUP CONTROLLER] ✅ Removed ${deleteResult.deletedCount} duplicate records for student ${studentId}`);
+        } else {
+          console.log(`[CLEANUP CONTROLLER] ℹ️ No duplicate records found for student ${studentId}`);
+          deletionResults.push({
+            studentId: parseInt(studentId),
+            duplicatesFound: 0,
+            duplicatesRemoved: 0,
+            message: 'No duplicates found'
+          });
+        }
+
+      } else if (confirm === 'all') {
+        // Remove all duplicates across all students
+        console.log(`[CLEANUP CONTROLLER] Removing ALL prescriptive analysis duplicates`);
+
+        const allDuplicates = await prescriptiveCollection.find({
+          categoryId: null
+        }).toArray();
+
+        if (allDuplicates.length > 0) {
+          const deleteResult = await prescriptiveCollection.deleteMany({
+            categoryId: null
+          });
+
+          // Group by student for reporting
+          const byStudent = {};
+          allDuplicates.forEach(duplicate => {
+            if (!byStudent[duplicate.studentId]) {
+              byStudent[duplicate.studentId] = [];
+            }
+            byStudent[duplicate.studentId].push(duplicate._id);
+          });
+
+          Object.keys(byStudent).forEach(studentId => {
+            deletionResults.push({
+              studentId: parseInt(studentId),
+              duplicatesFound: byStudent[studentId].length,
+              duplicatesRemoved: byStudent[studentId].length,
+              removedIds: byStudent[studentId]
+            });
+          });
+
+          console.log(`[CLEANUP CONTROLLER] ✅ Removed ${deleteResult.deletedCount} total duplicate records across all students`);
+        } else {
+          console.log(`[CLEANUP CONTROLLER] ℹ️ No duplicate records found in database`);
+          deletionResults.push({
+            message: 'No duplicates found across all students'
+          });
+        }
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid request - provide studentId or confirm="all"',
+          examples: [
+            { studentId: 202533333 },
+            { confirm: 'all' }
+          ]
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Prescriptive analysis duplicate cleanup completed',
+        results: deletionResults,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ [CLEANUP CONTROLLER] Failed to remove prescriptive duplicates:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to remove prescriptive analysis duplicates',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
 }
 
 module.exports = new DatabaseCleanupController();

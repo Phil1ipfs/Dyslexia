@@ -114,7 +114,7 @@ const interventionTechniqueSchema = new mongoose.Schema({
   technique: { type: String, required: true },
   description: { type: String, required: true },
   duration: { type: String, required: true },
-  materials: { type: String, required: true },
+  materials: { type: mongoose.Schema.Types.Mixed, required: true },
   progressCriteria: { type: String, required: true },
   researchBasis: { type: String, required: true }
 }, { _id: false });
@@ -503,7 +503,7 @@ const prescriptiveAnalysisSchema = new mongoose.Schema({
       interventionPrescription: {
         primaryApproach: {
           type: String,
-          enum: ['multisensory_structured', 'phonics_based', 'whole_language_support', 'balanced_literacy', 'orton_gillingham'],
+          enum: ['multisensory_structured', 'phonics_based', 'whole_language_support', 'balanced_literacy', 'orton_gillingham', 'systematic_explicit_instruction'],
           required: true
         },
         specificTechniques: [interventionTechniqueSchema],

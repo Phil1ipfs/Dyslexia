@@ -56,9 +56,13 @@ class PrescriptionOnlyService {
 
       const readingLevel = student.readingLevel || 'Low Emerging';
 
-      // Fetch all student responses for analysis
-      const responses = await StudentResponse.find({ studentId })
-        .sort({ answeredAt: 1 });
+      // ✅ FIX: Fetch student responses ONLY for current reading level
+      const responses = await StudentResponse.find({
+        studentId,
+        readingLevel: readingLevel  // Only get responses for the current reading level
+      }).sort({ answeredAt: 1 });
+
+      console.log(`[PRESCRIPTION] Found ${responses.length} responses for student ${studentId} at reading level ${readingLevel}`);
 
       // DIAGNOSIS: Analyze what's wrong
       const diagnosis = await this.generateDiagnosis(responses, categoryResult, readingLevel);
